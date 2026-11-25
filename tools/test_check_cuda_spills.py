@@ -19,8 +19,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 import check_cuda_spills as CS  # noqa: E402
 
-MANGLED = "_ZN6strata7kernels10test_spillEv"
-DEMANGLED = "void strata::kernels::test_spill()"
+MANGLED = "_ZN6nostroma7kernels10test_spillEv"
+DEMANGLED = "void nostroma::kernels::test_spill()"
 ROWS = [("test.cu.o", "sm_86", MANGLED, {"REG": 32, "STACK": 64, "LOCAL": 0})]   # a spilling kernel, not in ALLOWED
 
 
@@ -40,7 +40,7 @@ def quiet(fn, *args):
 
 def run_main(d, filt, lib_rows=ROWS, argv=()):
     """main() with tool discovery and cuobjdump's rows stood in: the demangler is the only real process."""
-    lib = Path(d, "libstrata_kernels.a")
+    lib = Path(d, "libnostroma_kernels.a")
     lib.write_bytes(b"")
     with mock.patch.object(CS, "find_tools", return_value=("cuobjdump", filt)), \
          mock.patch.object(CS, "resource_usage", return_value=lib_rows), \
@@ -49,18 +49,18 @@ def run_main(d, filt, lib_rows=ROWS, argv=()):
 
 
 class Classification(unittest.TestCase):
-    def test_a_spilling_strata_kernel_is_a_violation(self):
+    def test_a_spilling_nostroma_kernel_is_a_violation(self):
         rc, out = quiet(CS.check, "x.a", ROWS, {MANGLED: DEMANGLED})
         self.assertEqual(rc, 1)
         self.assertIn("not in ALLOWED", out)
 
     def test_the_shipped_table_allows_its_own_measurements_and_a_lowered_allowance_fails(self):
-        mangled = "_ZN6strata7kernels12_GLOBAL__N_113rope_table_kernelEPKiifPf"
-        demangled = "strata::kernels::(anonymous namespace)::rope_table_kernel(int const*, int, float, float*)"
+        mangled = "_ZN6nostroma7kernels12_GLOBAL__N_113rope_table_kernelEPKiifPf"
+        demangled = "nostroma::kernels::(anonymous namespace)::rope_table_kernel(int const*, int, float, float*)"
         rows = [("dflash2.cu.o", "sm_86", mangled, {"REG": 16, "STACK": 32, "LOCAL": 0})]
         rc, out = quiet(CS.check, "x.a", rows, {mangled: demangled})
         self.assertEqual(rc, 0, out)                       # the measured frame is the allowance
-        key = "strata::kernels::{anonymous}::rope_table_kernel"
+        key = "nostroma::kernels::{anonymous}::rope_table_kernel"
         self.assertEqual(CS.ALLOWED[key]["sm_86"], (32, 0))
         with mock.patch.dict(CS.ALLOWED, {key: {"sm_86": (16, 0)}}):
             rc, out = quiet(CS.check, "x.a", rows, {mangled: demangled})
@@ -69,10 +69,10 @@ class Classification(unittest.TestCase):
 
     def test_sm_89_has_the_allowance_of_the_same_kernels_as_sm_86(self):
         # Ada runs the same device code as Ampere: every kernel the table lists for sm_86 that sm_89 also builds has the same stack there
-        key = "strata::kernels::{anonymous}::native_mmvq_il_pf_kernel"
+        key = "nostroma::kernels::{anonymous}::native_mmvq_il_pf_kernel"
         self.assertEqual(CS.ALLOWED[key]["sm_89"], CS.ALLOWED[key]["sm_86"])
-        mangled = "_ZN6strata7kernels12_GLOBAL__N_113rope_table_kernelEPKiifPf"
-        demangled = "strata::kernels::(anonymous namespace)::rope_table_kernel(int const*, int, float, float*)"
+        mangled = "_ZN6nostroma7kernels12_GLOBAL__N_113rope_table_kernelEPKiifPf"
+        demangled = "nostroma::kernels::(anonymous namespace)::rope_table_kernel(int const*, int, float, float*)"
         rows = [("dflash2.cu.o", "sm_89", mangled, {"REG": 16, "STACK": 32, "LOCAL": 0})]
         rc, out = quiet(CS.check, "x.a", rows, {mangled: demangled})
         self.assertEqual(rc, 0, out)
@@ -87,11 +87,11 @@ class Classification(unittest.TestCase):
         self.assertIn("1 vendored ggml entries skipped", out)
 
 
-KNOWN_NAME = "void strata::prefill::(anonymous namespace)::iq4_w4a8_kernel<12, 4, true>(int const*, int)"
-KNOWN_MANGLED = "_ZN6strata7prefill12_GLOBAL__N_116iq4_w4a8_kernelILi12ELi4ELb1EEEvPKii"
-KNOWN_KEY = "strata::prefill::{anonymous}::iq4_w4a8_kernel<12, 4, true>"
-OTHER_NAME = "void strata::prefill::(anonymous namespace)::iq4_w4a8_kernel<16, 4, true>(int const*, int)"
-OTHER_MANGLED = "_ZN6strata7prefill12_GLOBAL__N_116iq4_w4a8_kernelILi16ELi4ELb1EEEvPKii"
+KNOWN_NAME = "void nostroma::prefill::(anonymous namespace)::iq4_w4a8_kernel<12, 4, true>(int const*, int)"
+KNOWN_MANGLED = "_ZN6nostroma7prefill12_GLOBAL__N_116iq4_w4a8_kernelILi12ELi4ELb1EEEvPKii"
+KNOWN_KEY = "nostroma::prefill::{anonymous}::iq4_w4a8_kernel<12, 4, true>"
+OTHER_NAME = "void nostroma::prefill::(anonymous namespace)::iq4_w4a8_kernel<16, 4, true>(int const*, int)"
+OTHER_MANGLED = "_ZN6nostroma7prefill12_GLOBAL__N_116iq4_w4a8_kernelILi16ELi4ELb1EEEvPKii"
 NAMES = {KNOWN_MANGLED: KNOWN_NAME, OTHER_MANGLED: OTHER_NAME}
 BASE = {"sm_86": {KNOWN_KEY: (48, 0, CS.KNOWN_REASON)}, "sm_120": {KNOWN_KEY: (32, 0, CS.KNOWN_REASON)}}
 
@@ -103,17 +103,17 @@ def row(sm="sm_86", mangled=KNOWN_MANGLED, stack=48, local=0):
 class InstanceKey(unittest.TestCase):
     def test_the_exact_instance_without_return_type_and_parameters(self):
         self.assertEqual(CS.instance_key(KNOWN_NAME), KNOWN_KEY)
-        self.assertEqual(CS.instance_key(OTHER_NAME), "strata::prefill::{anonymous}::iq4_w4a8_kernel<16, 4, true>")
+        self.assertEqual(CS.instance_key(OTHER_NAME), "nostroma::prefill::{anonymous}::iq4_w4a8_kernel<16, 4, true>")
 
     def test_both_demanglers_spell_the_anonymous_namespace_alike(self):
         self.assertEqual(CS.instance_key(KNOWN_NAME.replace("(anonymous namespace)", "<unnamed>")), KNOWN_KEY)
 
     def test_cu_filt_and_c_filt_spell_one_instance_alike(self):
-        cu = ("void strata::prefill::mmq::<unnamed>::iq4_w4a8_kernel<(bool)1, strata::prefill::mmq::<unnamed>::Cfg<(int)96, (int)2, "
-              "(unsigned int)7, (long)-1>>(strata::prefill::mmq::Args)")
-        gnu = ("void strata::prefill::mmq::(anonymous namespace)::iq4_w4a8_kernel<true, strata::prefill::mmq::(anonymous namespace)::Cfg<96, 2, "
-               "7u, -1l> >(strata::prefill::mmq::Args)")
-        want = "strata::prefill::mmq::{anonymous}::iq4_w4a8_kernel<true, strata::prefill::mmq::{anonymous}::Cfg<96, 2, 7, -1>>"
+        cu = ("void nostroma::prefill::mmq::<unnamed>::iq4_w4a8_kernel<(bool)1, nostroma::prefill::mmq::<unnamed>::Cfg<(int)96, (int)2, "
+              "(unsigned int)7, (long)-1>>(nostroma::prefill::mmq::Args)")
+        gnu = ("void nostroma::prefill::mmq::(anonymous namespace)::iq4_w4a8_kernel<true, nostroma::prefill::mmq::(anonymous namespace)::Cfg<96, 2, "
+               "7u, -1l> >(nostroma::prefill::mmq::Args)")
+        want = "nostroma::prefill::mmq::{anonymous}::iq4_w4a8_kernel<true, nostroma::prefill::mmq::{anonymous}::Cfg<96, 2, 7, -1>>"
         self.assertEqual(CS.instance_key(cu), want)
         self.assertEqual(CS.instance_key(gnu), want)
         self.assertEqual(CS.instance_key(cu.replace("(bool)1", "(bool)0")), want.replace("<true,", "<false,"))   # a bool stays a bool
@@ -122,8 +122,8 @@ class InstanceKey(unittest.TestCase):
         self.assertEqual(CS.instance_key("void ns::k<(ns::E)3, ns::T<1, 2>, true>(float*)"), "ns::k<(ns::E)3, ns::T<1, 2>, true>")   # an enum cast is kept
 
     def test_a_plain_kernel_and_a_name_without_parameters(self):
-        self.assertEqual(CS.instance_key("void strata::kernels::tp_band_kernel(int)"), "strata::kernels::tp_band_kernel")
-        self.assertEqual(CS.instance_key("strata::k"), "strata::k")
+        self.assertEqual(CS.instance_key("void nostroma::kernels::tp_band_kernel(int)"), "nostroma::kernels::tp_band_kernel")
+        self.assertEqual(CS.instance_key("nostroma::k"), "nostroma::k")
 
     def test_instances_of_one_template_have_different_keys_but_one_allowance_key(self):
         self.assertNotEqual(CS.instance_key(KNOWN_NAME), CS.instance_key(OTHER_NAME))
@@ -193,7 +193,7 @@ class Baseline(unittest.TestCase):
         self.assertIn("baselines: none", out)
 
     def test_a_violation_that_is_allowed_is_not_counted_as_known(self):
-        names = {"_ZN6strata7kernels12_GLOBAL__N_113rope_table_kernelEv": "void strata::kernels::(anonymous namespace)::rope_table_kernel()"}
+        names = {"_ZN6nostroma7kernels12_GLOBAL__N_113rope_table_kernelEv": "void nostroma::kernels::(anonymous namespace)::rope_table_kernel()"}
         rows = [("d.cu.o", "sm_86", next(iter(names)), {"STACK": 32})]
         rc, out = quiet(CS.check, "x.a", rows, names, BASE)
         self.assertEqual(rc, 0, out)
@@ -313,7 +313,7 @@ class Demangling(unittest.TestCase):
         rc, out = quiet(CS.demangle, None, [MANGLED])
         self.assertIsNone(rc)
         with tempfile.TemporaryDirectory() as d:
-            lib = Path(d, "libstrata_kernels.a")
+            lib = Path(d, "libnostroma_kernels.a")
             lib.write_bytes(b"")
             with mock.patch.object(CS, "find_tools", return_value=("cuobjdump", None)), \
                  mock.patch.object(CS, "resource_usage", side_effect=AssertionError("read a library with no demangler")), \

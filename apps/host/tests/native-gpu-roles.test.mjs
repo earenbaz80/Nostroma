@@ -45,7 +45,7 @@ test('a settings file that names roles keeps them when the screen only suggests 
   const f = nativeFixture();
   try {
     await f.control.refresh(true);
-    const path = join(f.repo, 'strata-iq2_xs.json');
+    const path = join(f.repo, 'nostroma-iq2_xs.json');
     const config = JSON.parse(readFileSync(path, 'utf8'));
     Object.assign(config, { gpu: [0, 1], gpu_order: 'as_given', gpu_roles: { 0: 'helper', 1: 'main' } });
     writeFileSync(path, JSON.stringify(config));
@@ -79,7 +79,7 @@ test('"Tune this model" keeps a two-card role map exactly as the person set it, 
   const f = nativeFixture();
   try {
     await f.control.refresh(true);
-    const path = join(f.repo, 'strata-iq2_xs.json');
+    const path = join(f.repo, 'nostroma-iq2_xs.json');
     const config = JSON.parse(readFileSync(path, 'utf8'));
     Object.assign(config, { gpu: [0, 1], gpu_order: 'as_given', gpu_roles: { 0: 'helper', 1: 'main' }, gpu_cards: { 0: 'GTX 1080', 1: 'GTX 1080' } });
     writeFileSync(path, JSON.stringify(config));

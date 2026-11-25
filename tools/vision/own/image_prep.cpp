@@ -10,11 +10,11 @@
 #include <cstring>
 
 #define STBI_NO_STDIO
-#define STB_IMAGE_STATIC            // private to this file: the mtmd build of strata-vision has its own copy of stb_image
+#define STB_IMAGE_STATIC            // private to this file: the mtmd build of nostroma-vision has its own copy of stb_image
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-namespace strata_vit {
+namespace nostroma_vit {
 
 bool image_decode(const uint8_t* data, size_t n, ImageU8& out, std::string& err) {
     int nx = 0, ny = 0, nc = 0;
@@ -225,4 +225,4 @@ bool prepare_image(const ImageU8& src, const VitGeometry& g, int min_tokens, int
     return true;
 }
 
-}  // namespace strata_vit
+}  // namespace nostroma_vit

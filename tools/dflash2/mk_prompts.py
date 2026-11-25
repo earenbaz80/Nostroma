@@ -2,10 +2,10 @@
 import json, sys
 from pathlib import Path
 
-REPO = Path(r"C:\Users\AI-Server\Desktop\Strata\GitHub\wt-022-dflash2")
+REPO = Path(r"C:\Users\AI-Server\Desktop\Nostroma\GitHub\wt-022-dflash2")
 sys.path.insert(0, str(REPO / "tools"))
 sys.path.insert(0, str(REPO))
-import strata_tokenizer as ST
+import nostroma_tokenizer as ST
 from serve.frontend import ChatTemplate
 
 tp = Path(r"C:\dflash2-work\tok")

@@ -1,5 +1,5 @@
 {
-  "protocol_id": "strata-qwen38-thinking-v1-draft.1",
+  "protocol_id": "nostroma-qwen38-thinking-v1-draft.1",
   "bundle": "standard-v1",
   "profile": "qwen3.8-flash-next-thinking",
   "tokenizer_files": {

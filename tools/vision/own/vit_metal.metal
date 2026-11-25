@@ -1,6 +1,6 @@
 // tools/vision/own/vit_metal.metal - the Qwen vision tower's kernels on Metal (own-stack phase 3).  The counterparts of vit_gpu.cu's kernels, one for one,
 // with the same arithmetic: float32 activations, 16-bit GEMM inputs of the weight's own type (F16 or BF16), q / k / v and the attention scores in F16,
-// float32 accumulation.  Embedded into strata-vision at build time and compiled when the reader starts (vit_metal.mm); the tensor-op products are in
+// float32 accumulation.  Embedded into nostroma-vision at build time and compiled when the reader starts (vit_metal.mm); the tensor-op products are in
 // vit_metal_mpp.metal (Metal 4 only).
 //
 // Every kernel takes its buffers at [[buffer(0..)]] and its sizes in a small constant struct at [[buffer(15)]].
@@ -170,7 +170,7 @@ kernel void vk_cast(device const float* in [[buffer(0)]], device void* out [[buf
                     uint gid [[thread_position_in_grid]], uint gsz [[threads_per_grid]]) {
     for (ulong i = gid; i < a.n; i += gsz) store_kind(out, i, in[i], a.kind);
 }
-// y[i] rounded to the 16-bit kind and back (STRATA_VIT_REF_ROUND, a diagnostic)
+// y[i] rounded to the 16-bit kind and back (NOSTROMA_VIT_REF_ROUND, a diagnostic)
 kernel void vk_round(device float* y [[buffer(0)]], constant EltArgs& a [[buffer(15)]], uint gid [[thread_position_in_grid]], uint gsz [[threads_per_grid]]) {
     for (ulong i = gid; i < a.n; i += gsz) {
         const float v = y[i];

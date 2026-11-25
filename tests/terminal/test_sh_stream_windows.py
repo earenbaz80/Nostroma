@@ -1,4 +1,4 @@
-"""#3895: STRATA_SH_STREAM=1 (the shared expert on its own stream) together with --kv-resident failed the engine on its first request on one
+"""#3895: NOSTROMA_SH_STREAM=1 (the shared expert on its own stream) together with --kv-resident failed the engine on its first request on one
 Windows RX 6900 XT ("verify: unspecified launch failure"). AMD runs without the fork by default. Calibrate does not measure the combination, the
 tuner never picks it, and a person who set it by hand gets one warning line at the start. Nothing is refused.
 """
@@ -37,7 +37,7 @@ class CalibrateSkipsTheCombination(unittest.TestCase):
         self.assertNotIn("sh_stream", res["report"])
         self.assertEqual(res["report"]["sh_stream_skipped"], "windows with --kv-resident")
         self.assertTrue(all(CAL.SH_STREAM not in e for e in envs))
-        self.assertTrue(any("#3895" in line and "STRATA_SH_STREAM=1" in line for line in said))
+        self.assertTrue(any("#3895" in line and "NOSTROMA_SH_STREAM=1" in line for line in said))
 
     def test_linux_with_kv_streaming_and_windows_without_it_still_measure_it(self):
         for platform, args in (("linux", CAL.with_arg(BASE, "--kv-resident", "32768")), ("win32", BASE)):
@@ -55,7 +55,7 @@ class TunerNeverPicksIt(unittest.TestCase):
     def test_windows_amd_with_kv_streaming(self):
         ctx, patch = self.ctx("win32")
         with patch:
-            problems = tune_knobs.check_setting({}, {"STRATA_SH_STREAM": "1"}, ctx)
+            problems = tune_knobs.check_setting({}, {"NOSTROMA_SH_STREAM": "1"}, ctx)
         self.assertEqual(len(problems), 1)
         self.assertIn("#3895", problems[0])
 
@@ -63,7 +63,7 @@ class TunerNeverPicksIt(unittest.TestCase):
         for platform, backend, args in (("linux", "hip", ("--kv-resident", "32768")), ("win32", "hip", ()), ("win32", "cuda", ("--kv-resident", "32768"))):
             ctx, patch = self.ctx(platform, backend, args)
             with patch, self.subTest(platform=platform, backend=backend, args=args):
-                self.assertEqual(tune_knobs.check_setting({}, {"STRATA_SH_STREAM": "1"}, ctx), [])
+                self.assertEqual(tune_knobs.check_setting({}, {"NOSTROMA_SH_STREAM": "1"}, ctx), [])
 
 
 class StartWarning(unittest.TestCase):
@@ -71,25 +71,25 @@ class StartWarning(unittest.TestCase):
 
     def test_a_hand_set_fork_with_kv_streaming_on_windows_warns_once_per_start(self):
         with mock.patch.object(server.os, "name", "nt"):
-            note = server.sh_stream_warning({"STRATA_SH_STREAM": "1"}, self.CFG)
+            note = server.sh_stream_warning({"NOSTROMA_SH_STREAM": "1"}, self.CFG)
         self.assertIn("#3895", note)
         self.assertIn("WARNING", note)
-        self.assertIn("take STRATA_SH_STREAM out", note)
+        self.assertIn("take NOSTROMA_SH_STREAM out", note)
 
     def test_no_warning_without_the_combination(self):
         with mock.patch.object(server.os, "name", "nt"):
             self.assertIsNone(server.sh_stream_warning({}, self.CFG))
-            self.assertIsNone(server.sh_stream_warning({"STRATA_SH_STREAM": "0"}, self.CFG))
-            self.assertIsNone(server.sh_stream_warning({"STRATA_SH_STREAM": "1"}, {"backend": "hip", "args": ["--kv", "int8"]}))
+            self.assertIsNone(server.sh_stream_warning({"NOSTROMA_SH_STREAM": "0"}, self.CFG))
+            self.assertIsNone(server.sh_stream_warning({"NOSTROMA_SH_STREAM": "1"}, {"backend": "hip", "args": ["--kv", "int8"]}))
         with mock.patch.object(server.os, "name", "posix"):
-            self.assertIsNone(server.sh_stream_warning({"STRATA_SH_STREAM": "1"}, self.CFG))
+            self.assertIsNone(server.sh_stream_warning({"NOSTROMA_SH_STREAM": "1"}, self.CFG))
 
     def test_child_env_prints_it_and_still_passes_the_variable(self):
-        cfg = {**self.CFG, "env": {"STRATA_SH_STREAM": "1"}}
+        cfg = {**self.CFG, "env": {"NOSTROMA_SH_STREAM": "1"}}
         with mock.patch.object(server.os, "name", "nt"), mock.patch("builtins.print") as shown, \
                 mock.patch.object(server, "hip_env_guard", return_value=[]), mock.patch.object(server, "hip_auto_devices", return_value=None):
             env = server.child_env(cfg)
-        self.assertEqual(env["STRATA_SH_STREAM"], "1")                       # nothing is taken away
+        self.assertEqual(env["NOSTROMA_SH_STREAM"], "1")                       # nothing is taken away
         self.assertTrue(any("#3895" in str(call.args[0]) for call in shown.call_args_list if call.args))
 
 

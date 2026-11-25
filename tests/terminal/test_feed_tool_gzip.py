@@ -1,7 +1,7 @@
-"""feed_tool can gzip its tar.gz archives with several threads (OPT-IN, STRATA_PACK_THREADS) (Q4-READY 11-10: the gzip of one 180 MB engine archive was ~50 s on one core of a release box).
+"""feed_tool can gzip its tar.gz archives with several threads (OPT-IN, NOSTROMA_PACK_THREADS) (Q4-READY 11-10: the gzip of one 180 MB engine archive was ~50 s on one core of a release box).
 
 What these tests pin:
-  * a multi-threaded archive holds the same members, modes and bytes as the single-stream one (STRATA_PACK_THREADS=1, the gzip of before);
+  * a multi-threaded archive holds the same members, modes and bytes as the single-stream one (NOSTROMA_PACK_THREADS=1, the gzip of before);
   * it is several gzip members, and Python's gzip / tarfile (what Control's updater and components.py read) and the system's tar read it as one stream;
   * the same tree always gives the same archive bytes (no file name or time in the gzip headers);
   * pack-engine's entry names the archive's real sha256 and size, and a zip is unchanged.
@@ -49,7 +49,7 @@ class ParallelGzip(unittest.TestCase):
         self.tree = self.root / "tree"
         (self.tree / "lib").mkdir(parents=True)
         rnd = os.urandom(300_000)
-        (self.tree / "strata").write_bytes(b"\x7fELF" + rnd)                       # an "executable" (ELF magic)
+        (self.tree / "nostroma").write_bytes(b"\x7fELF" + rnd)                       # an "executable" (ELF magic)
         (self.tree / "lib" / "big.so").write_bytes(rnd * 7 + b"tail")               # compressible + random, several blocks
         (self.tree / "notes.txt").write_text("hello\n" * 5000)
         (self.tree / "empty.bin").write_bytes(b"")
@@ -60,8 +60,8 @@ class ParallelGzip(unittest.TestCase):
 
     def pack(self, name: str, threads: int) -> Path:
         out = self.root / name
-        with mock.patch.dict(os.environ, {"STRATA_PACK_THREADS": str(threads)}):
-            feed_tool._write_archive(self.files, out, "tar.gz", "strata")
+        with mock.patch.dict(os.environ, {"NOSTROMA_PACK_THREADS": str(threads)}):
+            feed_tool._write_archive(self.files, out, "tar.gz", "nostroma")
         return out
 
     def test_the_same_members_and_bytes_as_the_single_stream_archive(self):
@@ -75,7 +75,7 @@ class ParallelGzip(unittest.TestCase):
         raw = many.read_bytes()
         self.assertGreater(raw.count(b"\x1f\x8b\x08"), 4, "more than one gzip member")
         plain = self.root / "plain.tar"
-        feed_tool._write_tar(self.files, plain, "w", "strata")
+        feed_tool._write_tar(self.files, plain, "w", "nostroma")
         self.assertEqual(gzip.decompress(raw), plain.read_bytes())               # Python's gzip reads every member
         with tarfile.open(fileobj=io.BytesIO(raw), mode="r:gz") as tar:          # tarfile's r:gz (nostroma_control/components.py, updater.py)
             self.assertEqual(len(tar.getmembers()), len(members(many)))
@@ -95,30 +95,30 @@ class ParallelGzip(unittest.TestCase):
         self.assertEqual(sha(a), sha(b))                                         # pieces are cut by bytes, not by thread count
 
     def test_the_thread_count(self):
-        with mock.patch.dict(os.environ, {"STRATA_PACK_THREADS": "1"}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_PACK_THREADS": "1"}):
             self.assertEqual(feed_tool.gzip_threads(), 1)
-        with mock.patch.dict(os.environ, {"STRATA_PACK_THREADS": "6"}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_PACK_THREADS": "6"}):
             self.assertEqual(feed_tool.gzip_threads(), 6)
         for unset in ("", "x", "0"):                                          # OPT-IN: no setting (or a bad one) is the single stream
-            with mock.patch.dict(os.environ, {"STRATA_PACK_THREADS": unset}), mock.patch.object(os, "cpu_count", return_value=32):
+            with mock.patch.dict(os.environ, {"NOSTROMA_PACK_THREADS": unset}), mock.patch.object(os, "cpu_count", return_value=32):
                 self.assertEqual(feed_tool.gzip_threads(), 1)
-        env = {k: v for k, v in os.environ.items() if k != "STRATA_PACK_THREADS"}
+        env = {k: v for k, v in os.environ.items() if k != "NOSTROMA_PACK_THREADS"}
         with mock.patch.dict(os.environ, env, clear=True):
             self.assertEqual(feed_tool.gzip_threads(), 1)
 
     def test_the_default_archive_is_the_single_stream_gzip_of_before(self):
-        env = {k: v for k, v in os.environ.items() if k != "STRATA_PACK_THREADS"}
+        env = {k: v for k, v in os.environ.items() if k != "NOSTROMA_PACK_THREADS"}
         out = self.root / "default.tar.gz"
         with mock.patch.dict(os.environ, env, clear=True), mock.patch.object(feed_tool, "_parallel_gzip", side_effect=AssertionError("threaded by default")):
-            feed_tool._write_archive(self.files, out, "tar.gz", "strata")
+            feed_tool._write_archive(self.files, out, "tar.gz", "nostroma")
         self.assertEqual(out.read_bytes()[:3], b"\x1f\x8b\x08")
         with gzip.open(out) as g:                                               # one stream, as tarfile w:gz writes it
             g.read()
 
     def test_a_zip_is_unchanged(self):
         out = self.root / "c.zip"
-        with mock.patch.dict(os.environ, {"STRATA_PACK_THREADS": "4"}), mock.patch.object(feed_tool, "_parallel_gzip", side_effect=AssertionError("zip")):
-            feed_tool._write_archive(self.files, out, "zip", "strata.exe")
+        with mock.patch.dict(os.environ, {"NOSTROMA_PACK_THREADS": "4"}), mock.patch.object(feed_tool, "_parallel_gzip", side_effect=AssertionError("zip")):
+            feed_tool._write_archive(self.files, out, "zip", "nostroma.exe")
         self.assertTrue(out.is_file())
 
 

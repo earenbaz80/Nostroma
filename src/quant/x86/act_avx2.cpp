@@ -4,9 +4,9 @@
 #include "tier_common.hpp"
 
 #include "../registry.hpp"
-#include "strata/quant/act.hpp"
+#include "nostroma/quant/act.hpp"
 
-namespace strata::quant {
+namespace nostroma::quant {
 namespace avx2 {
 
 #include "x86_helpers.inc"
@@ -26,4 +26,4 @@ const ActKernel kTable[] = {
 
 ActTable avx2_act_table() noexcept { return {kTable, (int) (sizeof kTable / sizeof kTable[0])}; }
 
-}  // namespace strata::quant
+}  // namespace nostroma::quant

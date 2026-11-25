@@ -20,7 +20,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from serve.frontend import ChatTemplate
-from serve.server import (ByteTokenizer, LogprobEntries, LPLines, MockEngine, Service, StrataEngine, batch_slots_on,
+from serve.server import (ByteTokenizer, LogprobEntries, LPLines, MockEngine, Service, NostromaEngine, batch_slots_on,
                           logprob_span, serve, top_logprobs, allowed_ids)
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -146,13 +146,13 @@ class Keys(unittest.TestCase):
             self.assertEqual(allowed_ids(req), [])
 
     def test_the_engine_key_only_when_asked(self):
-        self.assertIn(" logprobs=0", StrataEngine.sampling_keys({"logprobs": True}))
-        self.assertIn(" logprobs=5", StrataEngine.sampling_keys({"logprobs": True, "top_logprobs": 5}))
-        self.assertNotIn("logprobs", StrataEngine.sampling_keys({}))
-        self.assertNotIn("logprobs", StrataEngine.sampling_keys({"logprobs": False, "temperature": 0}))
+        self.assertIn(" logprobs=0", NostromaEngine.sampling_keys({"logprobs": True}))
+        self.assertIn(" logprobs=5", NostromaEngine.sampling_keys({"logprobs": True, "top_logprobs": 5}))
+        self.assertNotIn("logprobs", NostromaEngine.sampling_keys({}))
+        self.assertNotIn("logprobs", NostromaEngine.sampling_keys({"logprobs": False, "temperature": 0}))
 
     def test_allowed_reaches_the_engine_line(self):
-        keys = StrataEngine.sampling_keys({"logprobs": True, "top_logprobs": 2,
+        keys = NostromaEngine.sampling_keys({"logprobs": True, "top_logprobs": 2,
                                            "allowed_token_ids": [7, 8, 9]})
         self.assertIn(" logprobs=2 ", keys)
         self.assertIn(" allowed=7,8,9", keys)
@@ -190,7 +190,7 @@ class Generate(unittest.TestCase):
     """The token's LP line is read next to it, and only when it was asked for."""
 
     def engine(self, *lines):
-        e = StrataEngine.__new__(StrataEngine)
+        e = NostromaEngine.__new__(NostromaEngine)
         e.proc = __import__("types").SimpleNamespace(
             stdin=__import__("io").StringIO(), poll=lambda: None)
         e.lines, e.can_stop, e.max_context, e.silence_s = queue.Queue(), False, 262144, 0

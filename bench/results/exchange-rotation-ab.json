@@ -120,8 +120,8 @@
     "{model}/Qwen3.8-Flash-Next-GSQ-RCO-Q2_0-00002-of-00002.gguf"
   ],
   "environment": {
-    "STRATA_ADAPT_NOWAIT": "0",
-    "STRATA_DECODE_TIMING": "1"
+    "NOSTROMA_ADAPT_NOWAIT": "0",
+    "NOSTROMA_DECODE_TIMING": "1"
   },
   "profile_sha256": "8f59b4aa8873209dff11c11e37bcda9529a1335b724a1afeea37bf6388975baf",
   "process_policy": "A fresh native engine per arm; no prompt or conversation reuse.",
@@ -185,8 +185,8 @@
         "engine": "0.1.39"
       },
       "diagnostics": [
-        "strata decode timing: 1024 windows, avg T 1.00, 1.00 tokens/window, 9.53 ms/window = verify 8.73 (GPU-reach wait 7.11 + per-layer host 1.28 [plan 0.03 actq 0.02 jobs 0.00 CPU 1.15] + stage 0.01) + commit/emit 0.01 + draft 0.00; per layer-window: CPU experts 0.54 (0.54 entries), VRAM hits 9.24, PCIe 0.22",
-        "strata serve: resident RAM: 16.19 GiB of experts in RAM, 3802 exchanged with the VRAM tier, 0 blob reads from the file"
+        "nostroma decode timing: 1024 windows, avg T 1.00, 1.00 tokens/window, 9.53 ms/window = verify 8.73 (GPU-reach wait 7.11 + per-layer host 1.28 [plan 0.03 actq 0.02 jobs 0.00 CPU 1.15] + stage 0.01) + commit/emit 0.01 + draft 0.00; per layer-window: CPU experts 0.54 (0.54 entries), VRAM hits 9.24, PCIe 0.22",
+        "nostroma serve: resident RAM: 16.19 GiB of experts in RAM, 3802 exchanged with the VRAM tier, 0 blob reads from the file"
       ],
       "output_token_ids_sha256": "b384e4b16b5bd1c41f4739d053eb50d100a9cbfdb18fc5b76e31d188015961be"
     },
@@ -244,9 +244,9 @@
       },
       "diagnostics": [
         "FileExpertSource: exchange buffer rotation enabled: 96 buffers, 1382400 bytes each; no host commit memcpy",
-        "strata decode timing: 1024 windows, avg T 1.00, 1.00 tokens/window, 8.82 ms/window = verify 8.41 (GPU-reach wait 6.83 + per-layer host 1.23 [plan 0.03 actq 0.02 jobs 0.01 CPU 1.10] + stage 0.01) + commit/emit 0.01 + draft 0.00; per layer-window: CPU experts 0.54 (0.54 entries), VRAM hits 9.24, PCIe 0.22",
-        "strata serve: resident RAM: 16.19 GiB of experts in RAM, 3802 exchanged with the VRAM tier, 0 blob reads from the file",
-        "strata serve: exchange rotation: 3802 blocks, 5255884800 host memcpy bytes avoided (cumulative payload)"
+        "nostroma decode timing: 1024 windows, avg T 1.00, 1.00 tokens/window, 8.82 ms/window = verify 8.41 (GPU-reach wait 6.83 + per-layer host 1.23 [plan 0.03 actq 0.02 jobs 0.01 CPU 1.10] + stage 0.01) + commit/emit 0.01 + draft 0.00; per layer-window: CPU experts 0.54 (0.54 entries), VRAM hits 9.24, PCIe 0.22",
+        "nostroma serve: resident RAM: 16.19 GiB of experts in RAM, 3802 exchanged with the VRAM tier, 0 blob reads from the file",
+        "nostroma serve: exchange rotation: 3802 blocks, 5255884800 host memcpy bytes avoided (cumulative payload)"
       ],
       "output_token_ids_sha256": "b384e4b16b5bd1c41f4739d053eb50d100a9cbfdb18fc5b76e31d188015961be"
     }

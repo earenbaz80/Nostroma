@@ -1,7 +1,7 @@
 # Preliminary native RTX 3090 / EPYC 7453 results
 
 Issue: [#165](https://github.com/earenbaz80/Nostroma/issues/165)
-Engine: Strata v0.1.26, source build at `ac8b251`
+Engine: Nostroma v0.1.26, source build at `ac8b251`
 Status: preliminary; prompt set and harness guidance requested upstream.
 
 ## Hardware
@@ -20,9 +20,9 @@ The power values above are configured caps, not measured workload draw. Idle dra
 
 Native Linux setup, local build from v0.1.26, `--prefill auto`, shipped expert profile, automatic expert cache, int8 KV, MTP on, images off, experimental speed projection off. The GPU power limit was 280 W per card. Native runs used a systemd service with `LimitMEMLOCK=infinity`; other llama-swap model containers were stopped.
 
-The local API harness used the public Strata source tree as its prompt corpus, with generated tasks, `temperature: 0`, `reasoning_effort: none`, and `max_tokens: 256`. It is not the upstream code-agent prompt set or harness. Runs use unique request IDs and no conversation reuse in speed mode. Three runs per speed cell are summarized by medians; actual `usage.prompt_tokens` are recorded because nominal context labels can drift. The first decode run is also shown. Several requests ended early on EOS, so actual generated counts are in the raw JSON.
+The local API harness used the public Nostroma source tree as its prompt corpus, with generated tasks, `temperature: 0`, `reasoning_effort: none`, and `max_tokens: 256`. It is not the upstream code-agent prompt set or harness. Runs use unique request IDs and no conversation reuse in speed mode. Three runs per speed cell are summarized by medians; actual `usage.prompt_tokens` are recorded because nominal context labels can drift. The first decode run is also shown. Several requests ended early on EOS, so actual generated counts are in the raw JSON.
 
-No calibration comparison, upstream prompt comparison, `STRATA_SPLIT_TIMING` stage timing, or under-load power-draw capture has been done. Treat all prompt/decode comparisons with upstream as indicative only until the requested upstream method is available.
+No calibration comparison, upstream prompt comparison, `NOSTROMA_SPLIT_TIMING` stage timing, or under-load power-draw capture has been done. Treat all prompt/decode comparisons with upstream as indicative only until the requested upstream method is available.
 
 ## Results
 

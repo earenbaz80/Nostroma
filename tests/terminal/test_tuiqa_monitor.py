@@ -132,7 +132,7 @@ class MonitorViews(unittest.TestCase):
             self.assertEqual(app.view, 5)
         self.run_app(MonitorApp, (120, 40), case)
 
-    def test_strata_monitor_is_the_same_seven_view_monitor_as_launchs(self):
+    def test_nostroma_monitor_is_the_same_seven_view_monitor_as_launchs(self):
         """`nostroma monitor --url ...` builds the launch monitor without the quit question: seven views, key 7, Connect points at that server."""
         from nostroma_cli import monitor_commands
         seen = {}
@@ -152,7 +152,7 @@ class MonitorViews(unittest.TestCase):
         self.assertEqual(seen["info"]["url"], "http://127.0.0.1:18765")      # the Connect view's address is the --url server
         self.assertIn("seven views", " ".join(monitor_commands.parser().format_help().split()))
 
-    def test_the_monitor_strata_monitor_opens_has_seven_views_and_connect_shows_the_server(self):
+    def test_the_monitor_nostroma_monitor_opens_has_seven_views_and_connect_shows_the_server(self):
         async def case(app, pilot):
             shown = text_of(app)
             self.assertIn("7 Connect", shown)

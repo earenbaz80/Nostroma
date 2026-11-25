@@ -308,7 +308,7 @@ class WorkerEngine:
         self.load_s = load_s
         self.vram_before = vram_before
         self.log = log
-        self.model = "strata-local"
+        self.model = "nostroma-local"
         self.min_avail: float | None = None
         self.facts: dict[str, Any] = parse_facts(self.log_text())
         self.salt_n = 0
@@ -343,9 +343,9 @@ class WorkerEngine:
 
     def chat(self, prompt: str, max_tokens: int, tune: dict[str, Any] | None = None, timeout: float = 1800.0) -> dict[str, Any]:
         body: dict[str, Any] = {"model": self.model, "stream": False, "max_tokens": max_tokens, "temperature": 0.0,
-                                "messages": [{"role": "user", "content": prompt}], "strata_checkpoint": False}
+                                "messages": [{"role": "user", "content": prompt}], "nostroma_checkpoint": False}
         if tune:
-            body["strata_tune"] = tune
+            body["nostroma_tune"] = tune
         req = urllib.request.Request(f"http://127.0.0.1:{self.port}/v1/chat/completions",
                                      data=json.dumps(body).encode(), headers=self._h(), method="POST")
         try:
@@ -449,7 +449,7 @@ class WorkerSession:
         self.base = json.loads(json.dumps(base_config))
         self.python = str(python or sys.executable)
         self.serve_dir = Path(serve_dir)
-        self.workdir = Path(workdir) if workdir else Path(tempfile.mkdtemp(prefix="strata-tune-"))
+        self.workdir = Path(workdir) if workdir else Path(tempfile.mkdtemp(prefix="nostroma-tune-"))
         self.workdir.mkdir(parents=True, exist_ok=True)
         self.boot_timeout_s = boot_timeout_s
         self.lock = lock
@@ -490,15 +490,15 @@ class WorkerSession:
             cfg_path.write_text(json.dumps(cfg, indent=1), encoding="utf-8")
             spawn_env = quiet_crash_env(dict(os.environ))      # no debugger on a user's machine (nostroma_control/childenv.py)
             spawn_env.update(self.extra_env)
-            spawn_env.pop("STRATA_API_KEY", None)        # the server reads this variable before the config's "api_key": the worker answers only to the key made for it (#5056)
+            spawn_env.pop("NOSTROMA_API_KEY", None)        # the server reads this variable before the config's "api_key": the worker answers only to the key made for it (#5056)
             for k, v in env.items():
                 if v is None:
                     spawn_env.pop(k, None)
             spawn_env["PYTHONUNBUFFERED"] = "1"
-            spawn_env["STRATA_NO_PRESET"] = "1"          # measure the configuration as given, not a saved tuning on top
+            spawn_env["NOSTROMA_NO_PRESET"] = "1"          # measure the configuration as given, not a saved tuning on top
             before = tune_machine.gpu_used_mib()
             wl = open(worker_log, "w")
-            argv = [self.python, "-m", "serve.server", "--engine", "strata", "--config", str(cfg_path),
+            argv = [self.python, "-m", "serve.server", "--engine", "nostroma", "--config", str(cfg_path),
                     "--host", "127.0.0.1", "--port", str(port)]
             t0 = time.time()
             try:

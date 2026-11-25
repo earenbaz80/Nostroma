@@ -27,14 +27,14 @@ nostroma launch --family qwen36 --model ud-q4_k_xl --vision on --parallel 2
 
 The vision encoder is Unsloth's `mmproj-F16.gguf` (0.9 GB, pinned revision, SHA-256 checked by setup): a 27-layer ViT
 with a 2x2 merger, the same projector family as the Flash-Next models' (`qwen3vl_merger`; only its output width
-differs: 2048 here, 2560 there). Nostroma runs it with the same helper (`strata-vision`, llama.cpp's `mtmd`), so the
+differs: 2048 here, 2560 there). Nostroma runs it with the same helper (`nostroma-vision`, llama.cpp's `mtmd`), so the
 encoder choices are the Flash-Next ones ([Images](DETAILS.md#images-vision)).
 
 Pictures are on by default, by the same rule as for every model on NVIDIA and AMD cards:
 
 - The CPU reader runs under 24 GB of graphics memory. It takes a few seconds per picture and no VRAM.
 - The card's reader runs from 24 GB (GPU encoder, about 1.2 GB of VRAM at up to 1,024 image tokens). On AMD it is
-  `strata-vision-hip`, with the CPU reader as its fallback.
+  `nostroma-vision-hip`, with the CPU reader as its fallback.
 
 Your explicit choice is kept, with a note. A picture becomes up to 1,024 tokens of the context (the CPU default is 300).
 The engine puts the encoder's rows where the prompt has `<|image_pad|>` tokens and gives every row its 2-D position,
@@ -55,7 +55,7 @@ picture). A different picture starts that conversation again.
 
 ## Several requests at once
 
-`"parallel": N` in the model's config (`strata-qwen36-<size>.json`) or `--parallel N` makes the engine keep N
+`"parallel": N` in the model's config (`nostroma-qwen36-<size>.json`) or `--parallel N` makes the engine keep N
 conversations open (`--batch N`, up to 8) and decode them together. Every window carries one token of each
 conversation, so the dense weights, the head and every routed expert that conversations share are read once for all of
 them. The server speaks the same engine protocol as for Flash-Next ([BATCHING.md](BATCHING.md)).
@@ -64,7 +64,7 @@ A new request waits only for the read of its own prompt, which runs between the 
 conversation continues in the slot that holds its start, or the engine copies the longer held start from another slot.
 A request that runs alone (the solo path, with its MTP drafts) moves into a batch slot when another arrives, and back
 when it is alone again, and gives the same text either way.
-`STRATA_Q36_READ_WINDOWS=4` lets the decoding slots produce more tokens during a long prompt read, at the cost of a
+`NOSTROMA_Q36_READ_WINDOWS=4` lets the decoding slots produce more tokens during a long prompt read, at the cost of a
 slower read. The default is one decode window per chunk.
 
 **MTP drafts.** A request that has the engine to itself keeps its MTP drafts. With several requests the batch window has
@@ -88,7 +88,7 @@ The engine says what the sessions take before it allocates them and refuses, wit
 
 In the hybrid mode the text of a request can differ a little between running alone and running beside others. The
 experts that sit on the GPU or on the CPU change with the routing of all the requests, and the two compute with
-different rounding. With the slot tables fixed (`STRATA_Q36_FIXED_SLOTS=1`, a test setting) every slot equals its solo
+different rounding. With the slot tables fixed (`NOSTROMA_Q36_FIXED_SLOTS=1`, a test setting) every slot equals its solo
 run there too.
 
 ## Prompt chunk
@@ -107,16 +107,16 @@ and the sessions' caches.
 | Hybrid mode | 2048; 1024 or 512 on a card with 7.5 or 5.5 GiB free |
 
 In the hybrid mode a bigger chunk takes expert slots (an RTX 3060 at chunk 4096 read prompts 5% faster and decoded 13%
-slower). `--prefill 512` (or `STRATA_Q36_CHUNK=512`) gives the 512 size, and then the text is the base engine's, bit
+slower). `--prefill 512` (or `NOSTROMA_Q36_CHUNK=512`) gives the 512 size, and then the text is the base engine's, bit
 for bit. The chunk size changes the GEMM tiles the BLAS picks and with them the last bits of the prompt state. This is
 the size of the llama.cpp CPU-against-HIP difference on the same file, not a quality loss. A prompt shorter than the
 chunk (every chat turn after the first) is one chunk either way.
 
 ## Speed and exactness
 
-Every change on the decode path gives the old kernels' bits. `STRATA_Q36_VERIFY=1 nostroma ... --no-graph` runs the old
-kernel beside each new one on the real activations and compares them bit for bit. `STRATA_Q36_OLD_KERNELS=1` switches
-the new kernels off. Gate/up for Q4_K experts uses the V2K kernels (`STRATA_EXPERT_V2K`, the default on gfx12).
+Every change on the decode path gives the old kernels' bits. `NOSTROMA_Q36_VERIFY=1 nostroma ... --no-graph` runs the old
+kernel beside each new one on the real activations and compares them bit for bit. `NOSTROMA_Q36_OLD_KERNELS=1` switches
+the new kernels off. Gate/up for Q4_K experts uses the V2K kernels (`NOSTROMA_EXPERT_V2K`, the default on gfx12).
 
 > **Measured on:** AMD Radeon AI PRO R9700 32 GB (HIP gfx1201), UD-Q4_K_XL, Nostroma 0.1.45 against the engine before it,
 > 5 interleaved pairs, medians; llama.cpp 972b5fc HIP on the same file (`-fa 1`).
@@ -190,7 +190,7 @@ tokens as without them (10 prompts x 128 greedy tokens).
 | | 2 | 85.1 | 52.5 | 1.62 |
 | | 4 | 99.3 | 63.0 | 1.58 |
 
-All pairs were faster for Strata. Every slot's tokens equal the tokens of the same request alone.
+All pairs were faster for Nostroma. Every slot's tokens equal the tokens of the same request alone.
 
 ### Several requests with the base engine, and with `--batch-mtp`
 
@@ -222,7 +222,7 @@ one-at-a-time-with-drafts (1.59x with `--batch-mtp`).
 > **Measured on:** R9700 32 GB, Nostroma 0.1.45, three decoding slots.
 
 A 3,008-token prompt was read in 0.95 s (3,200 tok/s, 6 chunks). Each decoding slot paused at most 160 ms (one chunk)
-and produced 20 tokens meanwhile. With `STRATA_Q36_READ_WINDOWS=4` they produced 65 tokens during a 1.14 s read.
+and produced 20 tokens meanwhile. With `NOSTROMA_Q36_READ_WINDOWS=4` they produced 65 tokens during a 1.14 s read.
 
 ### Speed work in 0.1.45
 

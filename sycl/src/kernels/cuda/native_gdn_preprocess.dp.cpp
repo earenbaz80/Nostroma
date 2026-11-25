@@ -24,17 +24,17 @@
 // SOFTWARE.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
-#include "strata/kprof.hpp"
+#include "nostroma/kprof.hpp"
 #include <dpct/dpct.hpp>
-#include "strata/sycl_queue.hpp"
-#include "strata/kernels/native_gdn_preprocess.hpp"
+#include "nostroma/sycl_queue.hpp"
+#include "nostroma/kernels/native_gdn_preprocess.hpp"
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <initializer_list>
 #include <stdexcept>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 constexpr int S = 128;
 
@@ -245,7 +245,7 @@ void native_gdn_conv_silu(float* history, const float* input, const float* weigh
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->template parallel_for<dpct_kernel_name<class conv_silu_1ba4e6>>(
                 sycl::nd_range<3>(
                     sycl::range(1, 1, unsigned((channels + 255) / 256)) *
@@ -265,7 +265,7 @@ void native_gdn_l2_norm(float* input, int64_t rows, int64_t cols, float epsilon,
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->submit([&](sycl::handler &cgh) {
                 auto epsilon_S_ct1 = epsilon / S;
                 auto sqrtf_float_S_ct2 = 1.0f / sqrtf(float(S));
@@ -290,7 +290,7 @@ void native_gdn_beta_gate(float* beta, int64_t heads, void* stream) {
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->template parallel_for<dpct_kernel_name<class beta_sigmoid_fcf68f>>(
                 sycl::nd_range<3>(
                     sycl::range(1, 1, unsigned((heads + 255) / 256)) *
@@ -316,7 +316,7 @@ void native_gdn_gate(const float* alpha, const float* dt, const float* ssm_a,
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->template parallel_for<dpct_kernel_name<class gate_softplus_a95cee>>(
                 sycl::nd_range<3>(
                     sycl::range(1, 1, unsigned((heads + 255) / 256)) *
@@ -343,7 +343,7 @@ void native_gdn_out_norm(const float* output, const float* z, const float* gamma
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->template parallel_for<dpct_kernel_name<class out_norm_a49e35>>(
                 sycl::nd_range<3>(sycl::range(1, 1, unsigned(heads)) *
                                       sycl::range(1, 1, 256),
@@ -356,4 +356,4 @@ void native_gdn_out_norm(const float* output, const float* z, const float* gamma
     }
     check_launch();
 }
-} // namespace strata::kernels
+} // namespace nostroma::kernels

@@ -1,4 +1,4 @@
-# STRATA_HC_PERSIST=1: the verifier's hyper-connection read as one persistent kernel (gfx1030)
+# NOSTROMA_HC_PERSIST=1: the verifier's hyper-connection read as one persistent kernel (gfx1030)
 
 2x RX 6900 XT (gfx1030, 16 GB, PCIe 4.0 x8 each), Ryzen 5 5600X, 128 GB DDR4-3200, Ubuntu 26.04, kernel 7.0.0-38,
 ROCm 10.0. Qwen3.8-Flash-Next IQ3_S (and Unsloth UD-Q4_K_XL), two-card layer split.
@@ -6,7 +6,7 @@ ROCm 10.0. Qwen3.8-Flash-Next IQ3_S (and Unsloth UD-Q4_K_XL), two-card layer spl
 ## Result
 
 - The read itself: **1.35-2.10x faster** at 1-8 tokens on 40 WGPs (38.9 us against 55.1 us at 2 tokens).
-- End to end, ms per verify window (`STRATA_DECODE_TIMING`, IQ3_S layer split, this branch, one binary with the
+- End to end, ms per verify window (`NOSTROMA_DECODE_TIMING`, IQ3_S layer split, this branch, one binary with the
   variable unset / set): **ten interleaved pairs on 0.1.43.1 with no other switch: -6.6 % at 4K and -4.4 % at 32K,
   10 of 10 pairs the same way**; with this machine's other gfx103x switches on, 6 rounds: -4.2 % / -2.8 %. Tokens
   per window and prompt speed unchanged.
@@ -54,7 +54,7 @@ barrier) and prefetching the epilogue inputs measured 0 and were removed - the 1
 - One line per card says what was decided:
 
 ```
-strata hc: CUDA0: STRATA_HC_PERSIST=1: the verifier's hyper-connection read runs as one persistent kernel (80 blocks on
+nostroma hc: CUDA0: NOSTROMA_HC_PERSIST=1: the verifier's hyper-connection read runs as one persistent kernel (80 blocks on
 40 multiprocessors, up to 8 tokens; 0 token counts timed out in the check; checked against the default read, max
 relative difference 1.8e-07)
 ```
@@ -74,12 +74,12 @@ is not simulated by it.
 
 ## End to end
 
-`strata-split.json`: `--layer-split`, IQ3_S, `--kv int8 --kv-resident 32768`, speculation 3 with min-p 0.7,
-`--pipeline-windows 2`, `STRATA_SH_STREAM=1`, `STRATA_SPLIT_MTP_BATCH=1`. Main (a0116b27) with this change, one
+`nostroma-split.json`: `--layer-split`, IQ3_S, `--kv int8 --kv-resident 32768`, speculation 3 with min-p 0.7,
+`--pipeline-windows 2`, `NOSTROMA_SH_STREAM=1`, `NOSTROMA_SPLIT_MTP_BATCH=1`. Main (a0116b27) with this change, one
 binary, cold server per arm, the variable unset (default) and set alternating, 6 rounds, two 4K and two 32K requests
-per arm (256 tokens out), ms per verify window from `STRATA_DECODE_TIMING`:
+per arm (256 tokens out), ms per verify window from `NOSTROMA_DECODE_TIMING`:
 
-| | default read | `STRATA_HC_PERSIST=1` | | rounds |
+| | default read | `NOSTROMA_HC_PERSIST=1` | | rounds |
 |---|---|---|---|---|
 | 4K, ms per window | 25.81 | 24.73 | **-4.2 %** | -4.3 / -2.6 / -3.6 / -3.4 / -5.8 / -5.2 |
 | 32K, ms per window | 24.40 | 23.72 | **-2.8 %** | -2.8 / -2.1 / -5.6 / -2.7 / -1.3 / -2.1 |
@@ -88,14 +88,14 @@ per arm (256 tokens out), ms per verify window from `STRATA_DECODE_TIMING`:
 
 Run-to-run noise in ms per window is about +-3 % per round here, which is why the rounds alternate. An earlier version
 of the kernel (the up weights prefetched into registers, since removed) measured -2.8 % / -2.0 % against the default read (two builds, 6 rounds) on
-Unsloth UD-Q4_K_XL (`STRATA_MMQ_KQUANTS=ON`, 0.1.42); this version was not re-measured on it.
+Unsloth UD-Q4_K_XL (`NOSTROMA_MMQ_KQUANTS=ON`, 0.1.42); this version was not re-measured on it.
 
 ### Ten interleaved pairs, no other switch
 
 0.1.43.1 (`a0116b27`) with this change, one binary, the engine's defaults (no environment variable at all) plus
-`STRATA_DECODE_TIMING=1`, the variable unset / set. IQ3_S layer split, `--spec 3 --spec-min-p 0.7
+`NOSTROMA_DECODE_TIMING=1`, the variable unset / set. IQ3_S layer split, `--spec 3 --spec-min-p 0.7
 --pipeline-windows 2`, no vision. Ten pairs of cold servers, the order inside a pair alternating (off-on, on-off,
-...), one 4K and one 32K request per server, 256 tokens out. Each server's log carries the `STRATA_HC_PERSIST=1`
+...), one 4K and one 32K request per server, 256 tokens out. Each server's log carries the `NOSTROMA_HC_PERSIST=1`
 line on both cards when set and not when unset (checked per arm).
 
 | ms per verify window | unset (median) | set (median) | per-pair median | pairs faster | the ten pairs |
@@ -108,15 +108,15 @@ Without the other switches the default read is a larger share of the window, so 
 
 ## Quality
 
-`STRATA_LOGPOS` over three chats (9.4K, 34.7K, 105.8K tokens; ~500 scored positions each, top-256), pipeline windows
+`NOSTROMA_LOGPOS` over three chats (9.4K, 34.7K, 105.8K tokens; ~500 scored positions each, top-256), pipeline windows
 off, on **this PR's code on main (a0116b27)**. Only the 106K chat is reproducible run to run on this machine (the
 first two differ in all positions between two runs of the same binary), so it is the one compared.
-`STRATA_HC_PERSIST=3` is a reference that accumulates the same kernel in double.
+`NOSTROMA_HC_PERSIST=3` is a reference that accumulates the same kernel in double.
 
 | 106K chat, against the double reference | KL mean | argmax same |
 |---|---|---|
 | default read | 0.0136 | 95.0 % |
-| `STRATA_HC_PERSIST=1` | 0.0131 | 96.3 % |
+| `NOSTROMA_HC_PERSIST=1` | 0.0131 | 96.3 % |
 
 On 0.1.42 the same comparison gave 0.047 (default) and 0.038 (the earlier version of the kernel).
 
@@ -124,7 +124,7 @@ Default path unchanged: main (a0116b27) built without and with this change, the 
 the 106K chat's 481 scored positions are bitwise identical. With the variable unset `fused_gr_persist_init` and
 `fused_gr_read_persist` return in their first line.
 
-0 stalls in every engine run with it (more than 30); three Strata slots on this machine use it daily since 2026-10-12.
+0 stalls in every engine run with it (more than 30); three Nostroma slots on this machine use it daily since 2026-10-12.
 
 ## Tried and dropped
 
@@ -134,7 +134,7 @@ the 106K chat's 481 scored positions are bitwise identical. With the variable un
   AMD clang 23 (ROCm 10.0) folds a constant address offset into the instruction offset, which the hardware also adds
   to the LDS destination - the data lands shifted unless the pointer is laundered through an empty `asm`.
 - Non-temporal loads for the weights: no effect.
-- `STRATA_GR_V3=1` as a comparison: on gfx1030 it needs the two-half split, which fails its check (#375), so it falls
+- `NOSTROMA_GR_V3=1` as a comparison: on gfx1030 it needs the two-half split, which fails its check (#375), so it falls
   back to the default read.
 
 ## Not tested
@@ -147,17 +147,17 @@ the 106K chat's 481 scored positions are bitwise identical. With the variable un
 
 ## Help wanted
 
-On any RDNA card, with `STRATA_HC_PERSIST=1` in the engine's environment:
+On any RDNA card, with `NOSTROMA_HC_PERSIST=1` in the engine's environment:
 
-1. the `strata hc:` line from the engine log (does it run, up to how many tokens, any timeouts?), and
-2. two runs of the same prompt with `STRATA_DECODE_TIMING=1`, with and without the variable (ms per window).
+1. the `nostroma hc:` line from the engine log (does it run, up to how many tokens, any timeouts?), and
+2. two runs of the same prompt with `NOSTROMA_DECODE_TIMING=1`, with and without the variable (ms per window).
 
 To time the read alone (from the repository root, after a HIP build in `build/`):
 
 ```
 hipcc -O3 --offload-arch=<your gfx> -I include -c bench/results/2026-10-12-hc-persist-gfx1030/hc_persist_bench.cpp -o hcpb.o
-hipcc --offload-arch=<your gfx> hcpb.o build/libstrata_kernels.a build/libstrata_core.a -lrocblas -o hc_persist_bench
-STRATA_HC_PERSIST=1 ./hc_persist_bench
+hipcc --offload-arch=<your gfx> hcpb.o build/libnostroma_kernels.a build/libnostroma_core.a -lrocblas -o hc_persist_bench
+NOSTROMA_HC_PERSIST=1 ./hc_persist_bench
 ```
 
 Developed with an AI coding assistant; every number above was measured on 2x RX 6900 XT (gfx1030, PCIe 4.0 x8 each) / Ryzen 5 5600X, ROCm 10.0.

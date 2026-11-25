@@ -2,9 +2,9 @@
 #include <cmath>
 #include <cstdio>
 
-#include "strata/prefill/switch_point_rule.hpp"
+#include "nostroma/prefill/switch_point_rule.hpp"
 
-namespace sp = strata::prefill::switch_point;
+namespace sp = nostroma::prefill::switch_point;
 
 static int failed = 0;
 #define CHECK(x) do { if (!(x)) { std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #x); ++failed; } } while (0)
@@ -92,14 +92,14 @@ int main() {
     CHECK(sp::share_limit_for(2048) == 3072);                        // A4000: measured break-even about 2,900
     CHECK(sp::share_limit_for(3840) % sp::kGrid == 0 && sp::share_limit_for(3840) > 3840);
 
-    // the class the rule is on for by default: CUDA, discrete, one GPU, link probe ran, compute capability 8.6; STRATA_SWITCH_POINT=0 is the way back, =1 asks for it elsewhere
+    // the class the rule is on for by default: CUDA, discrete, one GPU, link probe ran, compute capability 8.6; NOSTROMA_SWITCH_POINT=0 is the way back, =1 asks for it elsewhere
     {
         sp::DeviceClass in;
         in.cuda = true; in.discrete = true; in.single_gpu = true; in.link_probed = true; in.cc_major = 8; in.cc_minor = 6;
         CHECK(sp::in_default_class(in));
         CHECK(sp::enabled(in, -1));                                  // nothing set: on
-        CHECK(!sp::enabled(in, 0));                                  // STRATA_SWITCH_POINT=0 (or any value but 1): the way back
-        CHECK(sp::enabled(in, 1));                                   // STRATA_SWITCH_POINT=1: on
+        CHECK(!sp::enabled(in, 0));                                  // NOSTROMA_SWITCH_POINT=0 (or any value but 1): the way back
+        CHECK(sp::enabled(in, 1));                                   // NOSTROMA_SWITCH_POINT=1: on
         // every other compute capability is out of the class with nothing set
         const int other[][2] = {{6, 0}, {6, 1}, {7, 0}, {7, 5}, {8, 0}, {8, 7}, {8, 9}, {9, 0}, {10, 0}, {12, 0}, {12, 1}, {0, 0}};
         for (const auto& cc : other) {

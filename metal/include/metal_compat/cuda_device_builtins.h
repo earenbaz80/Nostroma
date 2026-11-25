@@ -18,8 +18,8 @@ struct dim3 {
     unsigned x, y, z;
     dim3(unsigned _x = 1, unsigned _y = 1, unsigned _z = 1) : x(_x), y(_y), z(_z) {}
 };
-struct strata_dim3 { unsigned x, y, z; };
-static strata_dim3 threadIdx{0, 0, 0}, blockIdx{0, 0, 0}, blockDim{1, 1, 1}, gridDim{1, 1, 1};
+struct nostroma_dim3 { unsigned x, y, z; };
+static nostroma_dim3 threadIdx{0, 0, 0}, blockIdx{0, 0, 0}, blockDim{1, 1, 1}, gridDim{1, 1, 1};
 
 static inline void __syncthreads() {}
 static inline void __syncwarp(unsigned = 0xffffffffu) {}
@@ -121,8 +121,8 @@ static inline int __dp4a(unsigned a, unsigned b, int c) {
 static inline float __fsub_rn(float a, float b) { return a - b; }
 static inline float __fdiv_rn(float a, float b) { return a / b; }
 static inline float __frcp_rn_(float a) { return 1.0f / a; }
-template <typename T> static inline T strata_min(T a, T b) { return a < b ? a : b; }
-template <typename T> static inline T strata_max(T a, T b) { return a > b ? a : b; }
+template <typename T> static inline T nostroma_min(T a, T b) { return a < b ? a : b; }
+template <typename T> static inline T nostroma_max(T a, T b) { return a > b ? a : b; }
 
 // the last names the kernel sources use (a full-list compile found twelve families, 2026-10-23): the grid type above, a
 // system fence, the funnel shift, the hardware transcendentals and the read-only/volatile loads.

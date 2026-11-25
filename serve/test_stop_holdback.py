@@ -22,7 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
-import strata_tokenizer as ST  # noqa: E402
+import nostroma_tokenizer as ST  # noqa: E402
 from serve import frontend, server  # noqa: E402
 from serve.frontend import ChatTemplate  # noqa: E402
 from serve.server import ByteTokenizer, Detokenizer, Service, StopMatcher, end_token_ids, serve  # noqa: E402

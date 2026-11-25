@@ -1,4 +1,4 @@
-// serve/web/chatstore.js - the saved chats, kept in this browser (IndexedDB, database "strata", store "chats", one record per
+// serve/web/chatstore.js - the saved chats, kept in this browser (IndexedDB, database "nostroma", store "chats", one record per
 // chat). Ported from PR #1787 by Scotty-Hudson. A chat can be several megabytes and localStorage holds about 5 MB for the whole
 // page, so the chats live here and only small keys (which chat is open, the settings) stay in localStorage. Nothing goes to the
 // server: the server has no endpoint for chats and never sees a title.
@@ -14,7 +14,7 @@
     function open() {
       return new Promise((resolve) => {
         let r;
-        try { r = idb.open("strata", 1); } catch (e) { resolve(null); return; }       // private mode: memory only
+        try { r = idb.open("nostroma", 1); } catch (e) { resolve(null); return; }       // private mode: memory only
         r.onupgradeneeded = () => {
           const d = r.result;
           if (!d.objectStoreNames.contains("chats")) d.createObjectStore("chats", {keyPath: "id"});
@@ -61,6 +61,6 @@
     return {start, all, put, remove, get usable() { return !!db; }};
   }
   const api = {createChatStore};
-  root.StrataChatStore = api;
+  root.NostromaChatStore = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

@@ -10,8 +10,8 @@ import { startScriptedWorker } from './helpers/scripted-worker.mjs';
 import { createAgentBridge } from '../server/agent/agent-bridge.mjs';
 import { resolveHarness } from '../server/agent/harness-runtime.mjs';
 
-const HARNESS = process.env.STRATA_HARNESS_DIR;
-const skip = !HARNESS || !resolveHarness({ env: process.env }).ok ? 'STRATA_HARNESS_DIR is not set to a built Harness' : false;
+const HARNESS = process.env.NOSTROMA_HARNESS_DIR;
+const skip = !HARNESS || !resolveHarness({ env: process.env }).ok ? 'NOSTROMA_HARNESS_DIR is not set to a built Harness' : false;
 
 test('search with no internet: one readable sentence that tells the model to go on without it', async () => {
   let t = 5_000_000;   // a pretend clock that moves when the search waits, as in web-search.test.mjs
@@ -34,7 +34,7 @@ test('opening a page with no internet: the card says so in plain words and keeps
 
 test('real Harness: the model gets the plain sentence when the search cannot reach the internet', { skip }, async t => {
   const worker = await startScriptedWorker({ chunkDelayMs: 5 });
-  const dir = mkdtempSync(join(tmpdir(), 'strata-weboff-'));
+  const dir = mkdtempSync(join(tmpdir(), 'nostroma-weboff-'));
   const ws = join(dir, 'ws'); mkdirSync(ws, { recursive: true });
   const bridge = createAgentBridge({ dataDir: dir, localInstances: () => [{ id: 'i', label: 'S', baseUrl: worker.url, modelId: 'scripted-model', context: 32768 }], connections: () => [], env: process.env, startTimeoutMs: 90_000, searchMock: 'offline' });
   t.after(async () => { await bridge.close(); await worker.close(); try { rmSync(dir, { recursive: true, force: true, maxRetries: 3 }); } catch { /* best effort */ } });

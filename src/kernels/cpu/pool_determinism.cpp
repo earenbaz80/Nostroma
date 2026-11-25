@@ -25,10 +25,10 @@
 #include <thread>
 #include <vector>
 
-#include "strata/kernels/cpu/native_expert.hpp"
-#include "strata/kernels/cpu/pool_quant.hpp"
+#include "nostroma/kernels/cpu/native_expert.hpp"
+#include "nostroma/kernels/cpu/pool_quant.hpp"
 
-namespace kc = strata::kernels::cpu;
+namespace kc = nostroma::kernels::cpu;
 
 namespace {
 constexpr int kH = 2048, kFF = 512;   // whole blocks of every format (256-value super-blocks, 64-value Q2_0 / NVFP4 blocks)

@@ -123,8 +123,8 @@ The public archive contains the exact historical sources. It is research source,
 not a proposed default change or a CUDA-qualified release:
 
 ```bash
-git clone https://github.com/saikiran-rs/Strata.git strata-research
-cd strata-research
+git clone https://github.com/saikiran-rs/Nostroma.git nostroma-research
+cd nostroma-research
 git checkout community/amd-helper-1m-report-20261007
 cd bench/results/2026-10-07-community-xtx-6800xt-1m-helper
 ```
@@ -135,7 +135,7 @@ creates those source worktrees and the pinned GGML tree without building or serv
 Install the pinned package versions from `packages.json`; the recipes expect the
 ROCm wheels under the virtualenv path named in `source-layout.json`.
 GGML is pinned to `3cf03257f219afbe7334045ff7c6a06ac68c627d`. [build-recipes](build-recipes/)
-contains the measured HIP flags; set`STRATA_RESEARCH_ROOT` to the reproduction
+contains the measured HIP flags; set`NOSTROMA_RESEARCH_ROOT` to the reproduction
 directory. Expected measured binary hash identifies the historical build;
 compiler/loader/path differences can change a rebuilt binary's hash.
 
@@ -153,7 +153,7 @@ parameters with portable placeholders. Replace`${RESEARCH_ROOT}`,`${MODELS}`,
 `${PACK}`,`${MTP}` and`${OUTPUT}` with your paths; copy the provided profile/table
 to the paths the configs name. Place the matching`.shared-settings.json` sidecar
 beside each rendered config. Serve with the pinned API using
-`python -m serve.server --engine strata --config <rendered-config> --port 8080`. Check that the HIP ordinals select only the
+`python -m serve.server --engine nostroma --config <rendered-config> --port 8080`. Check that the HIP ordinals select only the
 intended AMD cards. No included script starts/stops a service or changes tuning.
 
 Run the client against that already-running server:

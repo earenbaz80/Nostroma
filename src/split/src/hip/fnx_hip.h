@@ -2,7 +2,7 @@
 // cuBLAS names src/split uses that the shared shim does not rename.
 #pragma once
 #include <hip/hip_runtime.h>
-#include <cuda_runtime.h>   // the tree's shim (include/strata/hip_compat): its names are redefined below, so it must come first
+#include <cuda_runtime.h>   // the tree's shim (include/nostroma/hip_compat): its names are redefined below, so it must come first
 
 #define cudaDeviceGetPCIBusId hipDeviceGetPCIBusId
 #define cudaPointerAttributes hipPointerAttribute_t

@@ -21,19 +21,19 @@ def engine(**kw):
 
 
 def control(**kw):
-    c = {"platform": "linux-x86_64", "format": "tar.gz", "url": "c.tar.gz", "size": 10, "sha256": "a" * 64, "installed_bytes": 20, "entry": "strata.py"}
+    c = {"platform": "linux-x86_64", "format": "tar.gz", "url": "c.tar.gz", "size": 10, "sha256": "a" * 64, "installed_bytes": 20, "entry": "nostroma.py"}
     c.update(kw)
     return c
 
 
 def doc(**members):
-    d = {"schema_version": 1, "feed": "strata-updates", "channel": "stable", "sequence": 1, "generated_at": "2026-10-28T00:00:00Z", "expires_at": None}
+    d = {"schema_version": 1, "feed": "nostroma-updates", "channel": "stable", "sequence": 1, "generated_at": "2026-10-28T00:00:00Z", "expires_at": None}
     d.update(members)
     return d
 
 
 def parse(d):
-    return feedmod.parse(json.dumps(d).encode(), source="x/strata-feed.json", key_id="k")
+    return feedmod.parse(json.dumps(d).encode(), source="x/nostroma-feed.json", key_id="k")
 
 
 class UnknownEntriesAreSkipped(unittest.TestCase):

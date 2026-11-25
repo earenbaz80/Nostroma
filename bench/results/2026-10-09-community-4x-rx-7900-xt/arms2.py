@@ -1,4 +1,4 @@
-"""Two arms on the same box, same prompts and image: the five STRATA_* opt-ins off, then on (the live runner).
+"""Two arms on the same box, same prompts and image: the five NOSTROMA_* opt-ins off, then on (the live runner).
 
 Arm "optins-off": the live runner container is stopped (not removed) and a clone is started from its own
 `docker inspect` config with only those five variables dropped. Arm "optins-on": the live container itself,
@@ -15,10 +15,10 @@ import time
 import urllib.request
 from pathlib import Path
 
-C = "local-llm-runner-cluster-7900s-strata-bca809cd"
+C = "local-llm-runner-cluster-7900s-nostroma-bca809cd"
 CLONE = C + "-optins-off"
-D = Path.home() / "scratch/strata_bench2"
-OPT_INS = ("STRATA_SPLIT_OWN", "STRATA_STAGE_TRIM", "STRATA_PF_FUSED", "STRATA_PF_GEMM", "STRATA_PF_SWITCH_MIN_T")
+D = Path.home() / "scratch/nostroma_bench2"
+OPT_INS = ("NOSTROMA_SPLIT_OWN", "NOSTROMA_STAGE_TRIM", "NOSTROMA_PF_FUSED", "NOSTROMA_PF_GEMM", "NOSTROMA_PF_SWITCH_MIN_T")
 
 
 def sh(*args, check=True):
@@ -69,7 +69,7 @@ def bench(arm, container, t0):
     s = wait_loaded(t0, arm)
     (D / f"status_after_load-{arm}.json").write_text(json.dumps(s, indent=1))
     env = json.loads(sh("docker", "inspect", container).stdout)[0]["Config"]["Env"]
-    (D / f"container_env-{arm}.txt").write_text("".join(e + "\n" for e in env if e.startswith(("STRATA_", "HIP_"))))
+    (D / f"container_env-{arm}.txt").write_text("".join(e + "\n" for e in env if e.startswith(("NOSTROMA_", "HIP_"))))
     time.sleep(5)
     subprocess.run(["python3", "bench.py", "prompts.jsonl", f"matrix-{arm}.jsonl"], cwd=D, check=True)
     say(arm, "matrix done")

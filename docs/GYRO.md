@@ -93,16 +93,16 @@ If Gyro misbehaves on an RTX 50 card, update the engine.
 
 **Prompt speed and the ggml build.** The trellis prompt kernels (MMQ) are agentionai's, from their llama.cpp fork (MIT).
 Nostroma builds against upstream ggml, which does not have them, so it adds them at configure time.
-`cmake/strata_ggml_tq_overlay.cmake` writes a copy of the pinned ggml-cuda headers into the build folder with the
+`cmake/nostroma_ggml_tq_overlay.cmake` writes a copy of the pinned ggml-cuda headers into the build folder with the
 three trellis types routed like IQ2_XS. The tile loader is the fork's (`third_party/ggml-tq/`). Only Nostroma's own MMQ
 library sees the copy; every other type is compiled from the untouched files. The ready-made engines read Gyro prompts
 through it. If the pinned ggml changes and an anchor of the script no longer matches, the overlay switches itself off
-with a message and prompts take the slower FP16 path. A build against the fork (`-DSTRATA_GGML_DIR=<agentionai/llama.cpp>`)
+with a message and prompts take the slower FP16 path. A build against the fork (`-DNOSTROMA_GGML_DIR=<agentionai/llama.cpp>`)
 uses the fork's own instances instead.
 
-**Decode kernels.** The trellis decode kernels keep the 4 KB codebook in shared memory (`STRATA_IQ_STAGE_GRID=0` reads it
+**Decode kernels.** The trellis decode kernels keep the 4 KB codebook in shared memory (`NOSTROMA_IQ_STAGE_GRID=0` reads it
 from the global table again) and take four rows per warp. The sums are added in the same order as the unstaged kernels,
-so answers are bit for bit the same. A Tesla P100 (compute capability 6.0) runs its own variant, `STRATA_TQ_STAGE`.
+so answers are bit for bit the same. A Tesla P100 (compute capability 6.0) runs its own variant, `NOSTROMA_TQ_STAGE`.
 
 ## Intel Arc (SYCL)
 
@@ -194,12 +194,12 @@ For the fast prompt path, Nostroma's GGML dependency can be the agentionai llama
 ```sh
 git clone --depth 1 https://github.com/agentionai/llama.cpp ../agention-llama.cpp
 # NVIDIA. RTX 50 series: use CUDA 13 (CUDA 12.8 crashes the prompt path on sm_120)
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSTRATA_ENABLE_CUDA=ON \
-  -DCMAKE_CUDA_ARCHITECTURES=120 -DSTRATA_GGML_DIR=$PWD/../agention-llama.cpp
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DNOSTROMA_ENABLE_CUDA=ON \
+  -DCMAKE_CUDA_ARCHITECTURES=120 -DNOSTROMA_GGML_DIR=$PWD/../agention-llama.cpp
 # AMD (experimental; in a non-root container add --group-add $(getent group render | cut -d: -f3),
 # otherwise HIP finds no device)
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSTRATA_ENABLE_HIP=ON -DSTRATA_PREFILL_MMQ=ON \
-  -DCMAKE_HIP_ARCHITECTURES=gfx1201 -DSTRATA_GGML_DIR=$PWD/../agention-llama.cpp
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DNOSTROMA_ENABLE_HIP=ON -DNOSTROMA_PREFILL_MMQ=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1201 -DNOSTROMA_GGML_DIR=$PWD/../agention-llama.cpp
 cmake --build build -j
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 ```
@@ -229,11 +229,11 @@ cp data/draft_vocab.bin mtp/rt/draft_vocab.bin
 
 ### 4. Serve
 
-Save as `strata-gyro-s.json` at the repository root:
+Save as `nostroma-gyro-s.json` at the repository root:
 
 ```json
 {
-  "exe": "build/strata",
+  "exe": "build/nostroma",
   "args": [
     "--pack", "packs/gyro-s",
     "--native", "models/Qwen3.8-Flash-Next-Gyro-S-TQ1_0.gguf",
@@ -244,14 +244,14 @@ Save as `strata-gyro-s.json` at the repository root:
   "cwd": ".",
   "tokenizer": "packs/gyro-s/tokenizer",
   "model_name": "gyro-s-nostroma",
-  "log": "strata-gyro-s.log",
+  "log": "nostroma-gyro-s.log",
   "host": "127.0.0.1",
   "port": 8080
 }
 ```
 
 ```sh
-.venv/bin/python -m serve.server --engine strata --config strata-gyro-s.json --port 8080
+.venv/bin/python -m serve.server --engine nostroma --config nostroma-gyro-s.json --port 8080
 ```
 
 The web interface is at `http://127.0.0.1:8080`. API clients use `http://127.0.0.1:8080/v1` (OpenAI) or `/v1/messages`
@@ -271,8 +271,8 @@ The web interface is at `http://127.0.0.1:8080`. API clients use `http://127.0.0
   each other, not with a float reference.
 - Nostroma's own CPU kernels for the trellis types (`src/kernels/cpu/tq_*.cpp`, AVX2 and AVX-512, picked at run time)
   take about 45% of ggml-cpu's time per expert on AVX2 and decode a block once for all the tokens of a verify window
-  (`build/tq_cpu_parity --bench` measures them on your CPU). `STRATA_NO_TQ_KERNELS=1` goes back to ggml-cpu.
-  `STRATA_TQ_ISA=avx2` or `scalar` caps the instruction set.
+  (`build/tq_cpu_parity --bench` measures them on your CPU). `NOSTROMA_NO_TQ_KERNELS=1` goes back to ggml-cpu.
+  `NOSTROMA_TQ_ISA=avx2` or `scalar` caps the instruction set.
 
 ## Known limits
 
@@ -280,7 +280,7 @@ The web interface is at `http://127.0.0.1:8080`. API clients use `http://127.0.0
   decode peer. The prompt peer says it is not used for a Hadamard-folded pack, and the prompt stays on the first card.
   Prompt processing on a peer GPU over P2P is not validated end to end.
 - Token parity against llama.cpp has not been measured.
-- `strata --tokens-file ... --max-new N` (benchmark mode) decodes N tokens past the end of the answer. Compare speeds
+- `nostroma --tokens-file ... --max-new N` (benchmark mode) decodes N tokens past the end of the answer. Compare speeds
   only up to the answer's end.
 - AMD: the trellis kernels pass parity on gfx1151 (ROCm 7.2.1) and a short end-to-end run there generated correctly
   (28 to 31 tokens/s). There was no speed tuning or RDNA4 speed run. An AMD GPU other than gfx1151 runs with a warning.
@@ -289,7 +289,7 @@ The web interface is at `http://127.0.0.1:8080`. API clients use `http://127.0.0
 ## Credit and licenses
 
 The trellis types, the Hadamard rotation, the CPU and GPU kernels and the pack step were written by Laurent Zuijdwijk
-(agentionai) in agentionai/Strata `rc2` (MIT) and ported here commit by commit with his authorship kept.
+(agentionai) in agentionai/Nostroma `rc2` (MIT) and ported here commit by commit with his authorship kept.
 `third_party/ggml/ggml-common-tq.h` and the MMQ instances come from agentionai/llama.cpp (MIT, the ggml authors). The
 weights are agentionai's quantization of Qwen3.8-Flash-Next under the Qwen Community License 1.0
 (<https://huggingface.co/agentionai/Qwen3.8-Flash-Next-Gyro-GGUF/blob/main/LICENSE>).
@@ -308,7 +308,7 @@ weights are agentionai's quantization of Qwen3.8-Flash-Next under the Qwen Commu
 | Q2_0 (not changed) | 66.4 | 67.1 | 1.010 (noise) | unchanged (1.003, 0.999) |
 
 Against Q2_0 before the change: Gyro-S 54.2 against 64.4 tok/s (16% slower), Gyro-M 50.5 against 65.6 (23% slower).
-Gyro-S gained +30% on a Tesla P100 from the `STRATA_TQ_STAGE` variant (5 pairs).
+Gyro-S gained +30% on a Tesla P100 from the `NOSTROMA_TQ_STAGE` variant (5 pairs).
 
 ### Arc A750 before the XMX prompt path
 
@@ -323,7 +323,7 @@ Gyro-S gained +30% on a Tesla P100 from the `STRATA_TQ_STAGE` variant (5 pairs).
 
 > **Measured on:** one AMD Radeon AI PRO R9700 (gfx1201, ROCm 7), one card of four, `--prefill auto --spec 4
 > --spec-min-p 0.5 --mtp --kv int8`, 22K context, interleaved pairs, medians, the first Gyro release files (2026-10-07).
-> A = agentionai/Strata rc2, B = this port (Nostroma 0.1.45 base).
+> A = agentionai/Nostroma rc2, B = this port (Nostroma 0.1.45 base).
 
 | B's ggml | File | Decode tok/s A / B | Pairs B faster | Prompt 4K ms A / B | Prompt 20K ms A / B |
 | --- | --- | ---: | --- | ---: | ---: |
@@ -340,7 +340,7 @@ to rc2's tools for Gyro-S.
 
 ### The authors' measurements (rc2)
 
-> **Measured on:** the authors' machines, agentionai/Strata rc2, 2026-10-02 to 04; greedy or the stated sampling, MTP
+> **Measured on:** the authors' machines, agentionai/Nostroma rc2, 2026-10-02 to 04; greedy or the stated sampling, MTP
 > draft `--spec 4 --spec-min-p 0.5`, int8 KV. llama.cpp is the agentionai fork with the CUDA trellis fixes. The numbers
 > are theirs.
 
@@ -374,6 +374,6 @@ a slower GPU, often on a slower link: read these rows as "it stays usable", not 
 | 3,000 slots (about an 8 GB card's room) | 48.0 | 52.4 | 57.9 |
 
 Two RTX 4090 without NVLink or P2P (2026-10-04): the layer split works with Gyro, including the idle-card prompt helper
-(`STRATA_PREFILL_HELP=1`), and repeated runs give identical output. Decode with a second card (`--peer-device 1` or
+(`NOSTROMA_PREFILL_HELP=1`), and repeated runs give identical output. Decode with a second card (`--peer-device 1` or
 `--expert-cache-device1 auto`) matches single-GPU output. Prompt processing on the peer card needs GPU-to-GPU access
 (NVLink or data-centre GPUs). Without it Nostroma keeps the prompt on the first GPU and logs `no P2P`.

@@ -19,7 +19,7 @@
     "os": "Ubuntu 22.04.5 LTS",
     "kernel": "6.8.0-138-generic",
     "rocm": "6.2.0-66 (distribution ROCm; hipcc = HIP 6.2.41133-dd7f95766, AMD clang 18.0.0)",
-    "display_gpu": "a separate NVIDIA GT 710 drives the monitor; the Radeon Pro VII has no display attached and was dedicated to Strata during the runs"
+    "display_gpu": "a separate NVIDIA GT 710 drives the monitor; the Radeon Pro VII has no display attached and was dedicated to Nostroma during the runs"
   },
   "model": {
     "repository": "ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF",

@@ -1,6 +1,6 @@
-// ConversationBuffer on the segment pool (STRATA_PARK_SEGPOOL_MIB): a real-sized 2K and 64K K/V image alternating, a pool smaller than
+// ConversationBuffer on the segment pool (NOSTROMA_PARK_SEGPOOL_MIB): a real-sized 2K and 64K K/V image alternating, a pool smaller than
 // the request, and the buffers' bytes with the pool on and off.  Host only; the OS side is a fake that counts calls.
-#include "strata/core/conversation_buffer.hpp"
+#include "nostroma/core/conversation_buffer.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -11,7 +11,7 @@
 #include <malloc.h>
 #endif
 
-using namespace strata::core;
+using namespace nostroma::core;
 
 namespace {
 // 2 MiB aligned memory from the C library: MSVC's C runtime has no std::aligned_alloc (its free cannot release it), so _aligned_malloc there

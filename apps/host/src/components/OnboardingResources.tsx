@@ -6,7 +6,7 @@ export function OnboardingResources({ profile }: {
     profile: 'work' | 'performance';
 }) {
     const work = profile === 'work', share = work ? 80 : 100;
-    return <section className="onboard-sharing" data-profile={profile} aria-label={tr("Resource preference preview")} style={{ '--strata-share': `${share}%` } as CSSProperties}>
+    return <section className="onboard-sharing" data-profile={profile} aria-label={tr("Resource preference preview")} style={{ '--nostroma-share': `${share}%` } as CSSProperties}>
   <div className="onboard-sharing-computer" aria-hidden="true">
    <div className="onboard-sharing-screen">
     <div className="onboard-sharing-toolbar"><span /><span /><span /><small>{tr("Your computer")}</small></div>

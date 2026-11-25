@@ -16,6 +16,6 @@ test('no usable engine keeps the plain reason', () => {
 });
 
 test('a running worker and the unpacking message are unchanged', () => {
-  assert.equal(inferenceLine({ backend: { kind: 'strata', name: 'Nostroma engine' }, engine: null }), 'Nostroma engine');
+  assert.equal(inferenceLine({ backend: { kind: 'nostroma', name: 'Nostroma engine' }, engine: null }), 'Nostroma engine');
   assert.match(inferenceLine({ backend: none, settled: false }), /^unpacking/);
 });

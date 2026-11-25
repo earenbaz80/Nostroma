@@ -14,7 +14,7 @@ every backend. The evidence, gathered from the pinned checkout and this machine'
   ``--pool-workers``, ``--host-core``, ``--pool-affinity``, ``--ple-io``, ``--kv``, ``--kv-grow``,
   ``--prompt-cache-tail``, ``--spec-min-p``. Two of those, ``--vram-reserve-mib`` and
   ``--pcie-frac``, are NVIDIA/AMD concepts: the Apple Silicon engine does not parse them at all
-  (``strata --help`` on the Metal build lists neither). On Metal their "measurements" could only be
+  (``nostroma --help`` on the Metal build lists neither). On Metal their "measurements" could only be
   an engine refusal, so a HyperCore sweep there would produce ``FAIL_BOOT`` rows rather than
   evidence.
 * It resolves the engine by walking up from its own directory looking for a Nostroma checkout, and it

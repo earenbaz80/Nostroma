@@ -1,13 +1,13 @@
-#include "strata/core/native_dense.hpp"
-#include "strata/env.hpp"
-#include "strata/core/run_manifest.hpp"
+#include "nostroma/core/native_dense.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/core/run_manifest.hpp"
 #include <cstdlib>
-#include "strata/core/weights.hpp"
-#include "strata/artifact/gguf_reader.hpp"
-#include "strata/kernels/fused_gr.hpp"
-#include "strata/kernels/gfx_arch.hpp"
-#include "strata/kernels/native_mmvq.hpp"
-#include "strata/platform/memory.hpp"
+#include "nostroma/core/weights.hpp"
+#include "nostroma/artifact/gguf_reader.hpp"
+#include "nostroma/kernels/fused_gr.hpp"
+#include "nostroma/kernels/gfx_arch.hpp"
+#include "nostroma/kernels/native_mmvq.hpp"
+#include "nostroma/platform/memory.hpp"
 
 #include <cuda_runtime.h>
 #include <algorithm>
@@ -25,7 +25,7 @@
 #include <thread>
 #include <vector>
 
-namespace strata::core {
+namespace nostroma::core {
 namespace {
 // `load` makes one cudaMalloc per projection matrix, and the driver backs each call with 2 MiB granules
 // (measured on the RTX 5060: 300 buffers of 6.73 MiB asked 2019 MiB and cost 2400).  So a stage's real
@@ -44,39 +44,39 @@ bool in_range(const std::string& name) {
     const int l = std::atoi(name.c_str() + 4);
     return l >= g_layer_lb && l < g_layer_le;
 }
-// S23 experiment (STRATA_HC_Q8=1): the hyper-connection projections' Q8_0 bytes for the verify read
+// S23 experiment (NOSTROMA_HC_Q8=1): the hyper-connection projections' Q8_0 bytes for the verify read
 bool hc_q8_env() {
-    // STRATA_HC_Q8: 1 = on (the GGUF's own Q8_0 projections, or - a bf16 pack - a Q8_0 copy quantized at load); 0 = off;
+    // NOSTROMA_HC_Q8: 1 = on (the GGUF's own Q8_0 projections, or - a bf16 pack - a Q8_0 copy quantized at load); 0 = off;
     // unset / auto = on for gfx12 (RDNA4: the R9700 decode +2.5 to +4%, KL 0.0003-0.0010 over its noise floor) unless
-    // STRATA_GFX12_DEFAULTS=0; also on for gfx1151 (Strix Halo, STRATA_HC_Q8=0 turns it off), off elsewhere
+    // NOSTROMA_GFX12_DEFAULTS=0; also on for gfx1151 (Strix Halo, NOSTROMA_HC_Q8=0 turns it off), off elsewhere
     static const bool on = [] {
-        const char* v = strata::env("NOSTROMA_HC_Q8");
+        const char* v = nostroma::env("NOSTROMA_HC_Q8");
         if (v != nullptr && v[0] == '1') return true;
         if (v != nullptr && v[0] != '\0' && std::strcmp(v, "auto") != 0) return false;
-#if defined(STRATA_USE_HIP)
+#if defined(NOSTROMA_USE_HIP)
         {   // Strix Halo (gfx1151): on by default (decode +9.5%, json/code/tool/chat/agent +7.9..+10.7%); the answers differ in
             // near-tie tokens by about the size of the engine's own CPU-vs-GPU expert rounding (docs/AMD_HIP.md);
-            // STRATA_HC_Q8=0 keeps the bf16 read
+            // NOSTROMA_HC_Q8=0 keeps the bf16 read
             int dev1151 = 0;
             cudaDeviceProp p1151;
             const bool g1151 = cudaGetDevice(&dev1151) == cudaSuccess && cudaGetDeviceProperties(&p1151, dev1151) == cudaSuccess &&
-                               strata::kernels::gfx_arch_is_gfx1151(p1151.gcnArchName);
+                               nostroma::kernels::gfx_arch_is_gfx1151(p1151.gcnArchName);
             (void) cudaGetLastError();
             if (g1151) {
-                std::fprintf(stderr, "strata: Strix Halo (gfx1151): 8-bit hyper-connection weights are on (decode about 9%% faster, "
-                                     "answers can differ in near-tie tokens); STRATA_HC_Q8=0 keeps the bf16 read\n");
+                std::fprintf(stderr, "nostroma: Strix Halo (gfx1151): 8-bit hyper-connection weights are on (decode about 9%% faster, "
+                                     "answers can differ in near-tie tokens); NOSTROMA_HC_Q8=0 keeps the bf16 read\n");
                 return true;
             }
         }
-        const char* d = strata::env("NOSTROMA_GFX12_DEFAULTS");
+        const char* d = nostroma::env("NOSTROMA_GFX12_DEFAULTS");
         if (d != nullptr && d[0] == '0') return false;
         int dev = 0;
         cudaDeviceProp p;
         const bool g12 = cudaGetDevice(&dev) == cudaSuccess && cudaGetDeviceProperties(&p, dev) == cudaSuccess &&
-                         strata::kernels::gfx_arch_is_gfx12(p.gcnArchName);
+                         nostroma::kernels::gfx_arch_is_gfx12(p.gcnArchName);
         (void) cudaGetLastError();
-        if (g12) std::fprintf(stderr, "strata: gfx12 (RDNA4): the hyper-connection projections are read as Q8_0 (quantized at load, "
-                                      "decode faster, answers differ slightly); STRATA_HC_Q8=0 keeps the bf16 read\n");
+        if (g12) std::fprintf(stderr, "nostroma: gfx12 (RDNA4): the hyper-connection projections are read as Q8_0 (quantized at load, "
+                                      "decode faster, answers differ slightly); NOSTROMA_HC_Q8=0 keeps the bf16 read\n");
         return g12;
 #else
         return false;
@@ -84,14 +84,14 @@ bool hc_q8_env() {
     }();
     return on;
 }
-// STRATA_HC_Q8_ALL_STAGES=1: the Q8_0 hyper-connection rows of every layer are copied to every stage (the behaviour before #3559)
+// NOSTROMA_HC_Q8_ALL_STAGES=1: the Q8_0 hyper-connection rows of every layer are copied to every stage (the behaviour before #3559)
 bool hc_q8_stage_local() {
-    static const bool on = [] { const char* v = strata::env("NOSTROMA_HC_Q8_ALL_STAGES"); return !(v != nullptr && v[0] == '1'); }();
+    static const bool on = [] { const char* v = nostroma::env("NOSTROMA_HC_Q8_ALL_STAGES"); return !(v != nullptr && v[0] == '1'); }();
     return on;
 }
-// STRATA_HC_Q8_INJECT=1: the F32 inject rows get a Q8_0 copy too (S25)
+// NOSTROMA_HC_Q8_INJECT=1: the F32 inject rows get a Q8_0 copy too (S25)
 bool hc_q8_inject_env() {
-    static const bool on = [] { const char* v = strata::env("NOSTROMA_HC_Q8_INJECT"); return v && v[0] == '1'; }();
+    static const bool on = [] { const char* v = nostroma::env("NOSTROMA_HC_Q8_INJECT"); return v && v[0] == '1'; }();
     return on;
 }
 bool hc_q8_name(const std::string& name) {
@@ -163,7 +163,7 @@ std::vector<uint8_t> q8_0_of_bf16(const uint16_t* x, uint64_t n) {
     for (auto& th : pool) th.join();
     return out;
 }
-bool eligible(const strata::TensorInfo& tensor, bool include_ple_key) {
+bool eligible(const nostroma::TensorInfo& tensor, bool include_ple_key) {
     const auto& name = tensor.name;
     if (name.rfind("blk.", 0) != 0) return false;
     // Match the native PLE kernel: Q2_0, IQ3_XXS, IQ4_XS and Q8_0 (UD-Q4_K_XL). Other keys retain the packed BF16
@@ -179,7 +179,7 @@ bool eligible(const strata::TensorInfo& tensor, bool include_ple_key) {
 // #4741: a native-eligible projection a pack keeps unquantized (BF16, GGUF type 30; Heretic v2 IQ4_NL has its layer-0 attn_gate so)
 // has no native kernel.  Its siblings are Q8_0, so it is served as Q8_0 made from the file's BF16 values (ggml's rounding), and
 // the dispatchers that need a native projection find one.  The pack's BF16 copy stays where it is.
-bool bf16_as_q8_0(const strata::TensorInfo& tensor, const WeightRef& ref) {
+bool bf16_as_q8_0(const nostroma::TensorInfo& tensor, const WeightRef& ref) {
     return tensor.type == 30 && tensor.name != "blk.1.ple_key.weight" && tensor.shape.size() == 2 &&
            !ref.quantized() && ref.kind == WeightKind::Bf16InF32 &&
            ref.ne0 > 0 && ref.ne0 <= INT_MAX && ref.ne1 > 0 && ref.ne1 <= INT_MAX && ref.ne0 % 32 == 0 &&
@@ -192,7 +192,7 @@ struct Pending {
     int type;
     uint64_t bytes;
     DevicePtr data;
-    DevicePtr packed;   // STRATA_Q8_PACKED=1 copy, or null
+    DevicePtr packed;   // NOSTROMA_Q8_PACKED=1 copy, or null
 };
 }
 
@@ -200,9 +200,9 @@ bool NativeDense::served_names(const std::vector<std::string>& shards, bool incl
                                std::set<std::string>& out, std::string& err) {
     try {
         for (const auto& path : shards) {
-            strata::GgufFile gguf(path);
+            nostroma::GgufFile gguf(path);
             for (const auto& tensor : gguf.tensors())
-                if (eligible(tensor, include_ple_key) && strata::kernels::native_mmvq_supported(tensor.type) &&
+                if (eligible(tensor, include_ple_key) && nostroma::kernels::native_mmvq_supported(tensor.type) &&
                     tensor.shape.size() == 2)
                     out.insert(tensor.name);
         }
@@ -230,9 +230,9 @@ bool NativeDense::weight_bytes_for(const std::vector<std::string>& shards, Weigh
             return l >= lb && l < le;
         };
         for (const auto& path : shards) {
-            strata::GgufFile gguf(path);
+            nostroma::GgufFile gguf(path);
             for (const auto& tensor : gguf.tensors()) {
-                // STRATA_HC_Q8: `load` copies the GGUF's Q8_0 hyper-connection rows of its layers (and the final mixer's)
+                // NOSTROMA_HC_Q8: `load` copies the GGUF's Q8_0 hyper-connection rows of its layers (and the final mixer's)
                 // to the card, one cudaMalloc each, and the pack's bf16 rows get a Q8_0 copy below: priced as `load` makes them
                 if (hc_q8_env() && hc_q8_name(tensor.name) && tensor.shape.size() == 2) {
                     const bool f32_inject = hc_q8_inject_env() && tensor.type == 0 && tensor.name.ends_with("_inject.weight");
@@ -260,7 +260,7 @@ bool NativeDense::weight_bytes_for(const std::vector<std::string>& shards, Weigh
                     total += alloc_bytes((uint64_t) ref.ne0 / 32 * 34 * (uint64_t) ref.ne1);
                     continue;
                 }
-                if (!strata::kernels::native_mmvq_supported(tensor.type)) continue;
+                if (!nostroma::kernels::native_mmvq_supported(tensor.type)) continue;
                 if (tensor.name == "blk.1.ple_key.weight" && !ref.quantized()) continue;
                 if (!ref.quantized() || tensor.shape.size() != 2 ||
                     ref.ne0 <= 0 || ref.ne0 > INT_MAX || ref.ne1 <= 0 || ref.ne1 > INT_MAX ||
@@ -268,7 +268,7 @@ bool NativeDense::weight_bytes_for(const std::vector<std::string>& shards, Weigh
                     err = "native dense: incompatible matrix " + tensor.name;
                     return false;
                 }
-                total += alloc_bytes(strata::kernels::native_mmvq_weight_bytes(tensor.type, (int) ref.ne0, (int) ref.ne1));
+                total += alloc_bytes(nostroma::kernels::native_mmvq_weight_bytes(tensor.type, (int) ref.ne0, (int) ref.ne1));
             }
         }
         if (hc_q8_env())   // a bf16 pack: `load` quantizes the layers' down / up projections that the GGUF does not carry as Q8_0
@@ -295,7 +295,7 @@ bool NativeDense::keep_unquantized_ple_key(const std::string& pack_dir, std::set
     return true;
 }
 
-// STRATA_HC_Q8 without a bf16 copy: the two dequantization scratches (one bf16 matrix each) of `hc_bf16_view`, per device,
+// NOSTROMA_HC_Q8 without a bf16 copy: the two dequantization scratches (one bf16 matrix each) of `hc_bf16_view`, per device,
 // allocated by `load` - never on first use, so a graph capture cannot meet the allocation
 static void* g_hc_scratch[64][2][2] = {};     // [device][class][slot]
 static cudaEvent_t g_hc_ev[64][2] = {};        // [device][slot]: the prompt path's last reader of the slot
@@ -311,7 +311,7 @@ void NativeDense::release() {
         for (auto& cl : dev)
             for (void*& b : cl)
                 if (b != nullptr && std::find(weights_.begin(), weights_.end(), b) != weights_.end()) b = nullptr;
-    for (const void* p : packed_keys_) strata::kernels::native_q8_0_packed_unregister(p);
+    for (const void* p : packed_keys_) nostroma::kernels::native_q8_0_packed_unregister(p);
     if (scratch_) cudaFree(scratch_);
     for (void* p : weights_) cudaFree(p);
     scratch_ = nullptr;
@@ -350,13 +350,13 @@ bool NativeDense::load(const std::vector<std::string>& shards, WeightTable& tabl
         std::set<uint64_t> split_numbers;
         bool have_architecture = false;
         for (const auto& path : shards) {
-            strata::GgufFile gguf(path);
+            nostroma::GgufFile gguf(path);
             const auto* count = gguf.get("split.count");
             const auto* number = gguf.get("split.no");
             const auto* tensors = gguf.get("split.tensors.count");
             if (gguf.get("general.architecture") && (!number || number->u == 0)) {
                 // splitter may copy general.architecture into every shard (Huihui abliterated re-split)
-                err = strata::check_engine_architecture(gguf);
+                err = nostroma::check_engine_architecture(gguf);
                 if (!err.empty()) return false;
                 have_architecture = true;
                 if (count && number && tensors && number->u == 0 && count->u > 1) {
@@ -384,7 +384,7 @@ bool NativeDense::load(const std::vector<std::string>& shards, WeightTable& tabl
             for (const auto& tensor : gguf.tensors()) {
                 int block_elements = 0, block_bytes = 0;
                 uint64_t elements = 1;
-                if (tensor.shape.empty() || !strata::block_geometry(tensor.type, block_elements, block_bytes) ||
+                if (tensor.shape.empty() || !nostroma::block_geometry(tensor.type, block_elements, block_bytes) ||
                     tensor.shape[0] % (uint64_t) block_elements != 0) {
                     err = "native dense: invalid block geometry " + tensor.name; return false;
                 }
@@ -408,8 +408,8 @@ bool NativeDense::load(const std::vector<std::string>& shards, WeightTable& tabl
                 }
                 // the uploads below read these: ask for them now so the reads overlap
                 if (eligible(tensor, include_ple_key) && !outside(tensor.name) &&
-                    strata::kernels::native_mmvq_supported(tensor.type))
-                    strata::platform::advise_willneed(gguf.tensor_data(tensor), bytes);
+                    nostroma::kernels::native_mmvq_supported(tensor.type))
+                    nostroma::platform::advise_willneed(gguf.tensor_data(tensor), bytes);
             }
             for (const auto& tensor : gguf.tensors()) {
                 if (!eligible(tensor, include_ple_key) || outside(tensor.name)) continue;
@@ -441,7 +441,7 @@ bool NativeDense::load(const std::vector<std::string>& shards, WeightTable& tabl
                     pending.push_back(Pending{&ref, 8, (uint64_t) q8.size(), std::move(data), DevicePtr()});
                     continue;
                 }
-                if (!strata::kernels::native_mmvq_supported(tensor.type)) continue;
+                if (!nostroma::kernels::native_mmvq_supported(tensor.type)) continue;
                 // #326: the pack keeps an unquantized (--compat-bf16) key, which the PLE reads from the arena
                 if (tensor.name == "blk.1.ple_key.weight" && !ref.quantized()) continue;
                 if (!ref.quantized() || tensor.shape.size() != 2 ||
@@ -449,7 +449,7 @@ bool NativeDense::load(const std::vector<std::string>& shards, WeightTable& tabl
                     tensor.shape[0] != (uint64_t) ref.ne0 || tensor.shape[1] != (uint64_t) ref.ne1) {
                     err = "native dense: incompatible matrix " + tensor.name; return false;
                 }
-                const auto bytes = strata::kernels::native_mmvq_weight_bytes(
+                const auto bytes = nostroma::kernels::native_mmvq_weight_bytes(
                     tensor.type, (int) ref.ne0, (int) ref.ne1);
                 void* allocation = nullptr;
                 auto status = cudaMalloc(&allocation, bytes);
@@ -469,14 +469,14 @@ bool NativeDense::load(const std::vector<std::string>& shards, WeightTable& tabl
                         per_layer[(size_t) layer] += bytes;
                     }
                 }
-                // STRATA_Q8_PACKED=1: a second, packed copy of an eligible Q8_0 matrix for the decode MMVQ (the GGUF
+                // NOSTROMA_Q8_PACKED=1: a second, packed copy of an eligible Q8_0 matrix for the decode MMVQ (the GGUF
                 // copy stays: the prompt path's GEMMs read it).
                 DevicePtr packed;
                 if (tensor.type == 8 && tensor.name != "blk.1.ple_key.weight" &&   // the PLE has its own kernel
-                    strata::kernels::native_q8_0_packed_enabled() &&
-                    strata::kernels::native_q8_0_packed_eligible((int) ref.ne0, (int) ref.ne1)) {
+                    nostroma::kernels::native_q8_0_packed_enabled() &&
+                    nostroma::kernels::native_q8_0_packed_eligible((int) ref.ne0, (int) ref.ne1)) {
                     std::vector<uint8_t> host(bytes);
-                    strata::kernels::native_q8_0_pack_host(gguf.tensor_data(tensor), host.data(), (int) ref.ne0,
+                    nostroma::kernels::native_q8_0_pack_host(gguf.tensor_data(tensor), host.data(), (int) ref.ne0,
                                                            (int) ref.ne1);
                     void* packed_allocation = nullptr;
                     auto packed_status = cudaMalloc(&packed_allocation, bytes);
@@ -488,28 +488,28 @@ bool NativeDense::load(const std::vector<std::string>& shards, WeightTable& tabl
                         return false;
                     }
                 }
-                if (strata::core::manifest::enabled()) {   // STRATA_MANIFEST: the dense formats as held, and the packed copies
-                    strata::core::manifest::instance().tensors("dense", strata::ggml_type_name((uint32_t) tensor.type), 1, bytes);
-                    if (packed) strata::core::manifest::instance().tensors("dense_packed_copy", "Q8_0", 1, bytes);
+                if (nostroma::core::manifest::enabled()) {   // NOSTROMA_MANIFEST: the dense formats as held, and the packed copies
+                    nostroma::core::manifest::instance().tensors("dense", nostroma::ggml_type_name((uint32_t) tensor.type), 1, bytes);
+                    if (packed) nostroma::core::manifest::instance().tensors("dense_packed_copy", "Q8_0", 1, bytes);
                 }
                 pending.push_back(Pending{&ref, (int) tensor.type, bytes, std::move(data), std::move(packed)});
             }
-            if (strata::core::manifest::enabled()) {
-                const char* v = strata::env("NOSTROMA_HC_Q8");
-                strata::core::manifest::instance().path("dense", "hc_q8", hc_q8_env(),
-                    hc_q8_env() ? (v != nullptr && v[0] == '1' ? "STRATA_HC_Q8=1" : "architecture default (gfx12 / gfx1151 HIP)")
-                                : (v != nullptr && v[0] != '\0' && std::strcmp(v, "auto") != 0 ? "STRATA_HC_Q8 turned it off"
+            if (nostroma::core::manifest::enabled()) {
+                const char* v = nostroma::env("NOSTROMA_HC_Q8");
+                nostroma::core::manifest::instance().path("dense", "hc_q8", hc_q8_env(),
+                    hc_q8_env() ? (v != nullptr && v[0] == '1' ? "NOSTROMA_HC_Q8=1" : "architecture default (gfx12 / gfx1151 HIP)")
+                                : (v != nullptr && v[0] != '\0' && std::strcmp(v, "auto") != 0 ? "NOSTROMA_HC_Q8 turned it off"
                                                                                                : "off by default on this backend"));
             }
             if (hc_q8_env())
                 for (const auto& tensor : gguf.tensors()) {
                     // S25: the F32 inject rows hold BF16-exact values: the read takes the pack's BF16 rows unless
-                    // STRATA_HC_Q8_INJECT=1 asks for a Q8_0 copy
+                    // NOSTROMA_HC_Q8_INJECT=1 asks for a Q8_0 copy
                     const bool f32_inject = hc_q8_inject_env() && tensor.type == 0 && tensor.name.ends_with("_inject.weight");
                     if ((tensor.type != 8 && !f32_inject) || !hc_q8_name(tensor.name) || tensor.shape.size() != 2) continue;
                     // a trimmed layer split: another stage's layers are never read here, so their rows are not copied (the upload
                     // loop above and the bf16 pack path below already filter this way; PR #3559, havok2-htwo).
-                    // STRATA_HC_Q8_ALL_STAGES=1 copies them as before.
+                    // NOSTROMA_HC_Q8_ALL_STAGES=1 copies them as before.
                     if (hc_q8_stage_local() && (outside(tensor.name) || !in_range(tensor.name))) {
                         hc_q8_skipped_bytes += (uint64_t) tensor.shape[0] / 32 * 34 * (uint64_t) tensor.shape[1];
                         ++hc_q8_skipped;
@@ -519,7 +519,7 @@ bool NativeDense::load(const std::vector<std::string>& shards, WeightTable& tabl
                     if (found == table.table_.end() || found->second.hc_q8 != nullptr) continue;
                     auto& ref = found->second;
                     if (tensor.shape[0] != (uint64_t) ref.ne0 || tensor.shape[1] != (uint64_t) ref.ne1 || ref.ne0 % 32 != 0) {
-                        err = "native dense (STRATA_HC_Q8): incompatible matrix " + tensor.name; return false;
+                        err = "native dense (NOSTROMA_HC_Q8): incompatible matrix " + tensor.name; return false;
                     }
                     const uint64_t bytes = (uint64_t) ref.ne0 / 32 * 34 * (uint64_t) ref.ne1;
                     void* p = nullptr;
@@ -528,13 +528,13 @@ bool NativeDense::load(const std::vector<std::string>& shards, WeightTable& tabl
                     if (cudaMalloc(&p, bytes) != cudaSuccess ||
                         cudaMemcpy(p, f32_inject ? (const void*) q8.data() : gguf.tensor_data(tensor), bytes,
                                    cudaMemcpyHostToDevice) != cudaSuccess) {
-                        err = "native dense (STRATA_HC_Q8) upload " + tensor.name; return false;
+                        err = "native dense (NOSTROMA_HC_Q8) upload " + tensor.name; return false;
                     }
                     ref.hc_q8 = p;
                     weights_.push_back(p);
                     hc_q8_bytes += bytes;
                     allocated += alloc_bytes(bytes);
-                    strata::core::manifest::instance().tensors("dense_hc_q8_copy", f32_inject ? "F32->Q8_0" : "Q8_0", 1, bytes);
+                    nostroma::core::manifest::instance().tensors("dense_hc_q8_copy", f32_inject ? "F32->Q8_0" : "Q8_0", 1, bytes);
                 }
         }
         if (hc_q8_env()) {
@@ -549,21 +549,21 @@ bool NativeDense::load(const std::vector<std::string>& shards, WeightTable& tabl
                 const bool skipped = ref.data == nullptr;
                 if (skipped && ref.resident) continue;
                 if (ref.ne0 % 32 != 0 || ref.elements != ref.ne0 * ref.ne1 || (!skipped && ref.bytes != (uint64_t) ref.elements * 2)) {
-                    err = "native dense (STRATA_HC_Q8): " + name + " is not a bf16 matrix"; return false;
+                    err = "native dense (NOSTROMA_HC_Q8): " + name + " is not a bf16 matrix"; return false;
                 }
                 const uint64_t nb = (uint64_t) ref.elements / 32, bytes = nb * 34;
                 void* p = nullptr;
-                if (cudaMalloc(&p, bytes) != cudaSuccess) { err = "native dense (STRATA_HC_Q8) alloc " + name; return false; }
+                if (cudaMalloc(&p, bytes) != cudaSuccess) { err = "native dense (NOSTROMA_HC_Q8) alloc " + name; return false; }
                 weights_.push_back(p);
                 if (skipped) {
                     std::vector<uint16_t> host;
                     if (!table.read_bf16_host(name, host, err)) return false;
                     const std::vector<uint8_t> q8 = q8_0_of_bf16(host.data(), (uint64_t) host.size());
                     if (cudaMemcpy(p, q8.data(), bytes, cudaMemcpyHostToDevice) != cudaSuccess) {
-                        err = "native dense (STRATA_HC_Q8) upload " + name; return false;
+                        err = "native dense (NOSTROMA_HC_Q8) upload " + name; return false;
                     }
                 } else {
-                    strata::kernels::fused_gr_quantize_q8_0((const uint16_t*) ref.data, (uint8_t*) p, (int64_t) nb, nullptr);
+                    nostroma::kernels::fused_gr_quantize_q8_0((const uint16_t*) ref.data, (uint8_t*) p, (int64_t) nb, nullptr);
                 }
                 ref.hc_q8 = p;
                 hc_q8_bytes += bytes;
@@ -571,7 +571,7 @@ bool NativeDense::load(const std::vector<std::string>& shards, WeightTable& tabl
                 ++made;
             }
             if (made && (cudaGetLastError() != cudaSuccess || cudaDeviceSynchronize() != cudaSuccess)) {
-                err = "native dense (STRATA_HC_Q8): quantizing the projections failed"; return false;
+                err = "native dense (NOSTROMA_HC_Q8): quantizing the projections failed"; return false;
             }
         }
         if (hc_q8_env()) {   // the scratches of hc_bf16_view (rows without a bf16 copy), here and not on first use
@@ -583,19 +583,19 @@ bool NativeDense::load(const std::vector<std::string>& shards, WeightTable& tabl
                 for (int c = 0; c < 2; ++c)
                     for (int i = 0; i < 2; ++i) {
                         void* b = nullptr;
-                        if (cudaMalloc(&b, (size_t) elems * 2) != cudaSuccess) { err = "native dense (STRATA_HC_Q8): scratch alloc"; return false; }
+                        if (cudaMalloc(&b, (size_t) elems * 2) != cudaSuccess) { err = "native dense (NOSTROMA_HC_Q8): scratch alloc"; return false; }
                         weights_.push_back(b);
                         g_hc_scratch[dev][c][i] = b;
                     }
                 for (int i = 0; i < 2; ++i)
                     if (g_hc_ev[dev][i] == nullptr && cudaEventCreateWithFlags(&g_hc_ev[dev][i], cudaEventDisableTiming) != cudaSuccess) {
-                        err = "native dense (STRATA_HC_Q8): scratch event"; return false;
+                        err = "native dense (NOSTROMA_HC_Q8): scratch event"; return false;
                     }
             }
         }
         if (pending.empty()) { err = "native dense: no supported GDN/QSA matrices in supplied shards"; return false; }
         void* allocation = nullptr;
-        const auto status = cudaMalloc(&allocation, strata::kernels::native_q8_1_bytes(max_in));
+        const auto status = cudaMalloc(&allocation, nostroma::kernels::native_q8_1_bytes(max_in));
         DevicePtr scratch(allocation);
         if (status != cudaSuccess) { err = std::string("native dense scratch: ") + cudaGetErrorString(status); return false; }        // All checks and allocations finish before publishing any reference.
         weights_.reserve(pending.size());
@@ -606,7 +606,7 @@ bool NativeDense::load(const std::vector<std::string>& shards, WeightTable& tabl
             item.ref->native_type = item.type;
             item.ref->native_q8_1 = scratch.get();
             if (item.packed) {
-                strata::kernels::native_q8_0_packed_register(item.data.get(), item.packed.get(), (int) item.ref->ne0,
+                nostroma::kernels::native_q8_0_packed_register(item.data.get(), item.packed.get(), (int) item.ref->ne0,
                                                              (int) item.ref->ne1);
                 packed_keys_.push_back(item.data.get());
                 packed_bytes += item.bytes;
@@ -616,16 +616,16 @@ bool NativeDense::load(const std::vector<std::string>& shards, WeightTable& tabl
             weights_.push_back(item.data.release());
         }
         if (packed_count)
-            std::fprintf(stderr, "native dense: STRATA_Q8_PACKED=1 packed %zu Q8_0 matrices for decode (+%.1f MiB)\n",
+            std::fprintf(stderr, "native dense: NOSTROMA_Q8_PACKED=1 packed %zu Q8_0 matrices for decode (+%.1f MiB)\n",
                          packed_count, packed_bytes / 1048576.0);
         scratch_ = scratch.release();
         bytes_ = total + hc_q8_bytes;
         layer_bytes_ = std::move(per_layer);
         allocated_ = allocated;
-        if (hc_q8_skipped != 0 && strata::core::manifest::enabled())   // STRATA_MANIFEST: what the stage filter did not copy
-            strata::core::manifest::instance().tensors("dense_hc_q8_out_of_stage_not_copied", "Q8_0", hc_q8_skipped, hc_q8_skipped_bytes);
+        if (hc_q8_skipped != 0 && nostroma::core::manifest::enabled())   // NOSTROMA_MANIFEST: what the stage filter did not copy
+            nostroma::core::manifest::instance().tensors("dense_hc_q8_out_of_stage_not_copied", "Q8_0", hc_q8_skipped, hc_q8_skipped_bytes);
         if (hc_q8_env())
-            std::fprintf(stderr, "strata: STRATA_HC_Q8=1: %.2f GiB of Q8_0 hyper-connection projections for the verify read\n",
+            std::fprintf(stderr, "nostroma: NOSTROMA_HC_Q8=1: %.2f GiB of Q8_0 hyper-connection projections for the verify read\n",
                          (double) hc_q8_bytes / 1073741824.0);
         return true;
     } catch (const std::exception& error) {
@@ -636,7 +636,7 @@ bool NativeDense::load(const std::vector<std::string>& shards, WeightTable& tabl
 bool NativeDense::gguf_carries_q8_hc(const std::vector<std::string>& shards) {
     try {
         for (const auto& path : shards) {
-            const strata::GgufFile g(path);
+            const nostroma::GgufFile g(path);
             for (const auto& tensor : g.tensors())
                 if (tensor.type == 8 && tensor.shape.size() == 2 && hc_q8_name(tensor.name) && !tensor.name.ends_with("_inject.weight")) return true;
         }
@@ -645,11 +645,11 @@ bool NativeDense::gguf_carries_q8_hc(const std::vector<std::string>& shards) {
 }
 
 bool NativeDense::apply_hc_q8_default(const std::vector<std::string>& shards) {
-    if (strata::env("NOSTROMA_HC_Q8") != nullptr || !gguf_carries_q8_hc(shards)) return false;
+    if (nostroma::env("NOSTROMA_HC_Q8") != nullptr || !gguf_carries_q8_hc(shards)) return false;
 #if defined(_WIN32)
-    _putenv_s("STRATA_HC_Q8", "1");
+    _putenv_s("NOSTROMA_HC_Q8", "1");
 #else
-    setenv("STRATA_HC_Q8", "1", 0);
+    setenv("NOSTROMA_HC_Q8", "1", 0);
 #endif
     return true;
 }
@@ -680,7 +680,7 @@ const uint16_t* NativeDense::hc_bf16_view(const WeightRef& w, void* stream, int 
     if (buf == nullptr) return nullptr;
     // the prompt path: the scratch may still be read by a GEMM another stream enqueued (batch serving: several slots' prompts)
     if (cls == 0 && g_hc_ev_set[dev][slot]) cudaStreamWaitEvent((cudaStream_t) stream, g_hc_ev[dev][slot], 0);
-    strata::kernels::fused_gr_dequant_q8_0((const uint8_t*) w.hc_q8, (uint16_t*) buf, w.elements / 32, stream);
+    nostroma::kernels::fused_gr_dequant_q8_0((const uint8_t*) w.hc_q8, (uint16_t*) buf, w.elements / 32, stream);
     return (const uint16_t*) buf;
 }
 
@@ -690,4 +690,4 @@ void NativeDense::hc_bf16_release(void* stream, int slot, int cls) {
     cudaEventRecord(g_hc_ev[dev][slot], (cudaStream_t) stream);
     g_hc_ev_set[dev][slot] = true;
 }
-} // namespace strata::core
+} // namespace nostroma::core

@@ -2,7 +2,7 @@
 
 Measured 2026-10-06 using the isolated patched v0.1.40 IQ2_XS/8K/INT8KV/MTP4
 profile, with the retained model/driver/512 batch/3072 MiB reserve/four workers.
-Exact 20/2185 raw input IDs are from maxfridbe/Strata_B70 at
+Exact 20/2185 raw input IDs are from maxfridbe/Nostroma_B70 at
 79ad9d5aff716292602895b19860c7661bacc5ed, sycl/bench/v1. Our qualified native
 serving protocol is used with those fixtures; this is not an unmodified
 sycl/benchy.sh run. See [method and reproduction](METHOD.md) and
@@ -11,7 +11,7 @@ sycl/benchy.sh run. See [method and reproduction](METHOD.md) and
 Three fresh native engine processes each run the long fixture first, then the
 short fixture, both greedy with 256 outputs, followed by an excluded exact
 canary. Startup is excluded; the first long decode includes native graph capture.
-OS page cache remains warm/retained, prompt reuse/adaptation off. STRATA_TRACE=1
+OS page cache remains warm/retained, prompt reuse/adaptation off. NOSTROMA_TRACE=1
 provides numeric path lines; no GPU profiler or device-event instrumentation.
 All six measured outputs match their qualified reference token hashes,
 and all repetitions match each other. All three native shutdowns exit0.

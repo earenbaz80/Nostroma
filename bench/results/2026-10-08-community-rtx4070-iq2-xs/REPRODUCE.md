@@ -7,11 +7,11 @@ tokens, 1,024 generated tokens; median **48.23 accepted decode tok/s** (E4/S24).
 This is a **reproduction package**, not a claim that any 4070 gets 48.23 tok/s.
 Workload content, disk/PCIe characteristics, runtime cache state, compiler
 toolchain, and the 20 GiB resident-memory policy can affect performance.
-The reference engine is a modified Adrian-derived build, **not stock Strata**.
+The reference engine is a modified Adrian-derived build, **not stock Nostroma**.
 
 ## 1. Exact source code (published, full source tree)
 
-Source: [Hcl192088/Strata, pinned IQ2 benchmark engine snapshot](https://github.com/Hcl192088/Strata/tree/benchmark-iq2-source-9ec3806)
+Source: [Hcl192088/Nostroma, pinned IQ2 benchmark engine snapshot](https://github.com/Hcl192088/Nostroma/tree/benchmark-iq2-source-9ec3806)
 
 Immutable source commit:
 
@@ -20,8 +20,8 @@ Immutable source commit:
 ```
 
 A full GitHub archive is also available from
-`https://github.com/Hcl192088/Strata/archive/9ec3806058cf32ab27a55e4377daf7cf0d087dec.zip`.
-The commit is from the [AdrianBM96/Strata3060](https://github.com/AdrianBM96/Strata3060)
+`https://github.com/Hcl192088/Nostroma/archive/9ec3806058cf32ab27a55e4377daf7cf0d087dec.zip`.
+The commit is from the [AdrianBM96/Nostroma3060](https://github.com/AdrianBM96/Nostroma3060)
 line. The source branch above is a **verbatim tree pinned to that historical
 commit**, not a reconstruction based on latest upstream and not a cherry-pick.
 It is deliberately kept separate from this benchmark-data PR, to avoid
@@ -30,8 +30,8 @@ improperly presenting Adrian's engine modifications as new upstream patches.
 On Windows PowerShell:
 
 ```powershell
-git clone --single-branch --branch benchmark-iq2-source-9ec3806 https://github.com/Hcl192088/Strata.git .\strata-iq2-source
-cd .\strata-iq2-source
+git clone --single-branch --branch benchmark-iq2-source-9ec3806 https://github.com/Hcl192088/Nostroma.git .\nostroma-iq2-source
+cd .\nostroma-iq2-source
 git rev-parse HEAD
 # Must print 9ec3806058cf32ab27a55e4377daf7cf0d087dec.
 ```
@@ -67,12 +67,12 @@ not captured sufficiently to promise identical executable bytes.
 ## 3. Prepare a *local* expert profile and prompt
 
 The original benchmark used `--expert-profile profiles/learned-heart.bin`.
-**This is a Strata expert-cache profile, not an external trained model that
+**This is a Nostroma expert-cache profile, not an external trained model that
 every tester needs to download.** The pinned source includes two ways to
 create your own profile:
 
 1. **Built-in learning (preferred for a representative workload):** start
-   `strata --serve` with an existing `--expert-profile`, the adaptive tier
+   `nostroma --serve` with an existing `--expert-profile`, the adaptive tier
    enabled (`--adapt-every 4 --adapt-swaps 24`), and
    `--expert-profile-save <path>`. Interact with the server using your
    usual workload; it writes its learned ranking periodically (default ten
@@ -102,11 +102,11 @@ necessary for an independent performance experiment.
 network call and without publishing its contents:
 
 ```powershell
-$Src = "D:\strata-iq2-source"
-$Data = "D:\strata-iq2-data"
+$Src = "D:\nostroma-iq2-source"
+$Data = "D:\nostroma-iq2-data"
 $Shard1 = "$Data\models\IQ2_XS\Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00001-of-00002.gguf"
 $Profile = "$Src\data\expert-profile.bin"
-$Prompt = "D:\strata-iq2-runs\my-prompt.tokens"
+$Prompt = "D:\nostroma-iq2-runs\my-prompt.tokens"
 
 py -3 .\make_local_prompt.py --source-root $Src --gguf $Shard1 --text "D:\my-document.txt" --out $Prompt
 ```
@@ -129,7 +129,7 @@ Use the exact source commit, model and core launch settings, and your own
 length-matched workload.
 
 ```powershell
-$Exe = "$Src\engine\strata.exe"
+$Exe = "$Src\engine\nostroma.exe"
 
 # Verify matching model/MTP/pack files and the exact source checkout.
 # --allow-binary-mismatch explicitly permits a different binary from recompiling
@@ -141,7 +141,7 @@ py -3 .\reproduce.py check --data-root $Data --engine $Exe --source-root $Src `
 # This is a five-run comparable workload, NOT the original prompt replay.
 py -3 .\reproduce.py run --data-root $Data --engine $Exe --source-root $Src `
   --profile $Profile --prompt-file $Prompt --allow-binary-mismatch `
-  --runs 5 --out "D:\strata-iq2-runs\repeat01"
+  --runs 5 --out "D:\nostroma-iq2-runs\repeat01"
 ```
 
 The full-hash `check` should be a separate preflight; the `run` command

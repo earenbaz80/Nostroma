@@ -321,8 +321,8 @@ static inline float unit_combine(thread const float* q, float4 sc, thread const 
     return sc.x * (s0 + s1) + sc.y * (s2 + s3) - (sc.z * xsum[0] + sc.w * xsum[1]);
 }
 
-#ifdef STRATA_METAL_F16   // window.cpp compiles it in only under STRATA_METAL_F16=1
-// ---- the fp16 window path (opt-in, STRATA_METAL_F16): the same decode into half, the window's x as a half plane, the
+#ifdef NOSTROMA_METAL_F16   // window.cpp compiles it in only under NOSTROMA_METAL_F16=1
+// ---- the fp16 window path (opt-in, NOSTROMA_METAL_F16): the same decode into half, the window's x as a half plane, the
 // products of a half unit (16 weights, 8 for Q2_0) summed in half, the scales and the sum across units in float.
 // Unguarded: a product or a half unit's sum past 65504 is inf (IQ4_XS from |x| ~516, Q6_K ~1040, Q5_K ~2113, Q2_0
 // ~21835; up to 8x lower for same-sign runs), and |x| below ~2^-6 (2^-8 kinds) or ~2^-8 (Q2_0's 4^-3) is subnormal.
@@ -544,4 +544,4 @@ template <> struct X16<T_Q2_0R> {
         xsum[0] = xsum[1] = 0.0f;
     }
 };
-#endif   // STRATA_METAL_F16
+#endif   // NOSTROMA_METAL_F16

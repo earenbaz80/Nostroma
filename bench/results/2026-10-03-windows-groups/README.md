@@ -24,7 +24,7 @@ The final build at `d828e8e2cea24908f9d24597e987257ed293acc1` removed the earlie
 Build each source revision using `tools/hip/build_windows.bat` with the toolchain/flags in `build-metadata.json`. Install and verify the model as described in the original release report. Copy the matching config to a local file and update its absolute executable, model, tokenizer, profile, library and log paths. Start one loopback server at a time from the repository root:
 
 ```powershell
-python serve/server.py --engine strata --config path/to/local-config.json --port 8081
+python serve/server.py --engine nostroma --config path/to/local-config.json --port 8081
 ```
 
 Once it is ready, run the standard-library-only harness, keeping each configuration's output separate:

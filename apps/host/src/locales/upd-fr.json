@@ -1,5 +1,5 @@
 {
- "upd01": "Pour mettre à jour le moteur, Strata doit arrêter le modèle chargé : {0}.",
+ "upd01": "Pour mettre à jour le moteur, Nostroma doit arrêter le modèle chargé : {0}.",
  "upd02": "Le nouveau moteur est d’abord téléchargé pendant que le modèle continue de répondre. Ensuite le modèle s’arrête (les réponses en cours se terminent d’abord), le moteur est mis à jour, et vous pouvez redémarrer le modèle avec les mêmes réglages. Vos modèles et réglages sont conservés.",
  "upd03": "Arrêter et mettre à jour",
  "upd04": "Préparation du nouveau moteur. {0} continue de fonctionner jusqu’à ce qu’il soit prêt.",

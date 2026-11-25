@@ -1,6 +1,6 @@
 /**
  * The first workspace is never the app's own folder, and any workspace can be renamed (a display name; the path stays).
- * A real host process with a scratch user profile; no STRATA_WORKSPACE, started inside the host folder like the installed app.
+ * A real host process with a scratch user profile; no NOSTROMA_WORKSPACE, started inside the host folder like the installed app.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -16,8 +16,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 async function start(t, { user, home }) {
   const port = await freePort();
-  const env = { ...process.env, STRATA_HOME: home, STRATA_PORT: String(port), USERPROFILE: user, HOME: user, STRATA_REAL_ENGINE: '0', STRATA_COMPONENTS_DIR: join(home, 'components') };
-  delete env.STRATA_WORKSPACE;
+  const env = { ...process.env, NOSTROMA_HOME: home, NOSTROMA_PORT: String(port), USERPROFILE: user, HOME: user, NOSTROMA_REAL_ENGINE: '0', NOSTROMA_COMPONENTS_DIR: join(home, 'components') };
+  delete env.NOSTROMA_WORKSPACE;
   const child = spawn(process.execPath, [join(HOST_DIR, 'server', 'index.mjs')], { cwd: HOST_DIR, env, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
   let log = ''; child.stdout.on('data', d => { log += d; }); child.stderr.on('data', d => { log += d; });
   t.after(async () => {
@@ -35,7 +35,7 @@ async function start(t, { user, home }) {
   return { call };
 }
 
-const scratch = () => { const dir = mkdtempSync(join(tmpdir(), 'strata-ws-')); const user = join(dir, 'user'); const home = join(dir, 'home'); mkdirSync(user, { recursive: true }); mkdirSync(home, { recursive: true }); return { dir, user, home }; };
+const scratch = () => { const dir = mkdtempSync(join(tmpdir(), 'nostroma-ws-')); const user = join(dir, 'user'); const home = join(dir, 'home'); mkdirSync(user, { recursive: true }); mkdirSync(home, { recursive: true }); return { dir, user, home }; };
 
 test('item 6: with nothing chosen the first workspace is Documents\\Nostroma, never the app folder', async t => {
   const s = scratch(); t.after(() => rmSync(s.dir, { recursive: true, force: true }));

@@ -59,13 +59,13 @@ def engine(**kw):
 
 
 def doc(**members) -> dict:
-    d = {"schema_version": 1, "feed": "strata-updates", "channel": "stable", "sequence": 1, "generated_at": "2026-11-06T00:00:00Z", "expires_at": None}
+    d = {"schema_version": 1, "feed": "nostroma-updates", "channel": "stable", "sequence": 1, "generated_at": "2026-11-06T00:00:00Z", "expires_at": None}
     d.update(members)
     return d
 
 
 def parse(d) -> feedmod.Feed:
-    return feedmod.parse(json.dumps(d).encode(), source="x/strata-feed.json", key_id="k")
+    return feedmod.parse(json.dumps(d).encode(), source="x/nostroma-feed.json", key_id="k")
 
 
 def pubkeys(key: dict) -> dict:
@@ -129,7 +129,7 @@ class Parsing(unittest.TestCase):
         slash["quants"][0]["files"][0]["name"] = "../x.gguf"
         bad["a file name with a slash"] = slash
         good = model(id="qwen4-fine")
-        with self.assertLogs("strata.feed", level="WARNING") as logs:
+        with self.assertLogs("nostroma.feed", level="WARNING") as logs:
             f = parse(doc(models={"packages": [*bad.values(), good]}, engine={"packages": [engine()]}))
         self.assertEqual([m.id for m in f.models], ["qwen4-fine"])
         self.assertEqual(len(f.models_dropped), len(bad), f.models_dropped)
@@ -200,15 +200,15 @@ class Signed(unittest.TestCase):
         self.key = signing.generate_key()
         self.trusted = pubkeys(self.key)
         self.components = self.root / "components"
-        self.old_env = os.environ.get("STRATA_COMPONENTS_DIR")
-        os.environ["STRATA_COMPONENTS_DIR"] = str(self.components)
+        self.old_env = os.environ.get("NOSTROMA_COMPONENTS_DIR")
+        os.environ["NOSTROMA_COMPONENTS_DIR"] = str(self.components)
         self.addCleanup(self._restore)
 
     def _restore(self):
         if self.old_env is None:
-            os.environ.pop("STRATA_COMPONENTS_DIR", None)
+            os.environ.pop("NOSTROMA_COMPONENTS_DIR", None)
         else:
-            os.environ["STRATA_COMPONENTS_DIR"] = self.old_env
+            os.environ["NOSTROMA_COMPONENTS_DIR"] = self.old_env
 
     def feed(self, name: str, sequence: int, models=None, **extra) -> str:
         """A signed feed folder; returns its path."""
@@ -263,8 +263,8 @@ class Signed(unittest.TestCase):
         self.assertFalse(self.components.exists())
 
     def test_the_switch_turns_it_off(self):
-        os.environ["STRATA_FEED_MODELS"] = "0"
-        self.addCleanup(os.environ.pop, "STRATA_FEED_MODELS", None)
+        os.environ["NOSTROMA_FEED_MODELS"] = "0"
+        self.addCleanup(os.environ.pop, "NOSTROMA_FEED_MODELS", None)
         self.assertEqual(feed_models.load(self.feed("f1", 5, [model()]), trusted=self.trusted).via, "none")
         self.assertFalse(self.components.exists())
 

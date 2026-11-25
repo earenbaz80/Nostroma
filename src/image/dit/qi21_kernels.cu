@@ -4,26 +4,26 @@
 // the timestep sinusoid, SiLU, GELU and txt_in's RMSNorm, written as ggml's CUDA kernels compute them (same formulas,
 // float maths); their reductions are fixed-order, so a run gives the same bytes every time.
 #include "qi21_kernels.hpp"
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 
 #if defined(__HIP__) || defined(__HIPCC__) || defined(__HIP_PLATFORM_AMD__)
 #define QI_HIP 1
-#include "strata/hip_compat/cuda_runtime.h"
-#include "strata/hip_compat/cuda_fp16.h"
-#include "strata/hip_compat/intrinsics.hpp"
+#include "nostroma/hip_compat/cuda_runtime.h"
+#include "nostroma/hip_compat/cuda_fp16.h"
+#include "nostroma/hip_compat/intrinsics.hpp"
 #else
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
 #endif
 
-#include "strata/kernels/f16_bits.hpp"
+#include "nostroma/kernels/f16_bits.hpp"
 
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
 
-namespace strata::image::qi21 {
+namespace nostroma::image::qi21 {
 namespace {
 
 constexpr int QI_D = 128;
@@ -31,7 +31,7 @@ constexpr int QI_D = 128;
 // an output element: float as computed, or f16 bits rounded from that float by f16_from_f32 (round to nearest even),
 // the rounding dit_gemm's conversion pass applies, so an f16 store gives the bytes the conversion gave
 __device__ __forceinline__ void qi_put(float* p, size_t i, float v) { p[i] = v; }
-__device__ __forceinline__ void qi_put(uint16_t* p, size_t i, float v) { p[i] = strata::kernels::f16_from_f32(v); }
+__device__ __forceinline__ void qi_put(uint16_t* p, size_t i, float v) { p[i] = nostroma::kernels::f16_from_f32(v); }
 
 __device__ __forceinline__ float qi_block_sum(float v, float* red) {
     // blockDim.x is a multiple of 32 and <= 1024
@@ -589,10 +589,10 @@ int has_fast_attn(int device) {
     const char* arch = prop.gcnArchName;
     for (const char* p : {"gfx1100", "gfx1101", "gfx1102", "gfx1103", "gfx1150", "gfx1151", "gfx1152"})
         if (std::strncmp(arch, p, 7) == 0) return 1;
-    const char* g12 = strata::env("NOSTROMA_QI_GFX12_ATTN");
+    const char* g12 = nostroma::env("NOSTROMA_QI_GFX12_ATTN");
     const bool rdna4 = std::strncmp(arch, "gfx1200", 7) == 0 || std::strncmp(arch, "gfx1201", 7) == 0;
     // gfx1200 / gfx1201: on by default (R9700: 8 steps 27.75 s -> 6.93 s at 1024, pictures 54 dB from the exact-attention ones);
-    // STRATA_QI_GFX12_ATTN=0 turns it off
+    // NOSTROMA_QI_GFX12_ATTN=0 turns it off
     return rdna4 && !(g12 && g12[0] == '0') ? 1 : 0;
 #else
     return prop.major >= 8 ? 1 : 0;
@@ -655,4 +655,4 @@ int rms_norm_w1(void* stream, const float* x, const float* w, float* out, int T,
     return launched();
 }
 
-}  // namespace strata::image::qi21
+}  // namespace nostroma::image::qi21

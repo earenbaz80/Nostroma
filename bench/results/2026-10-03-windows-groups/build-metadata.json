@@ -5,7 +5,7 @@
   "rocm": "10.2.0a20260930",
   "architecture": "gfx1030",
   "compiler": "Clang 24.0.0",
-  "build": "Release; STRATA_PORTABLE=ON; STRATA_NATIVE_EXPERTS=ON; STRATA_PREFILL_MMQ=ON",
+  "build": "Release; NOSTROMA_PORTABLE=ON; NOSTROMA_NATIVE_EXPERTS=ON; NOSTROMA_PREFILL_MMQ=ON",
   "ggml_commit": "3cf03257f219afbe7334045ff7c6a06ac68c627d",
   "cache_argument": 2500,
   "effective_slots": 3245,

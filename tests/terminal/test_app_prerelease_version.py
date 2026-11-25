@@ -17,7 +17,7 @@ class AppPrereleaseVersionTests(unittest.TestCase):
         import json
         from tests.terminal import update_fixture as fx
         key = fx.make_key()
-        doc = {"schema_version": 1, "feed": "strata-updates", "channel": "stable", "sequence": 1, "generated_at": "2026-10-19T00:00:00Z", "expires_at": None,
+        doc = {"schema_version": 1, "feed": "nostroma-updates", "channel": "stable", "sequence": 1, "generated_at": "2026-10-19T00:00:00Z", "expires_at": None,
                "app": {"version": "0.2.0-beta", "notes": "", "pub_date": "2026-10-19T00:00:00Z",
                        "platforms": {"windows-x86_64": {"url": "a.exe", "signature": "s", "sha256": "a" * 64, "size": 1}}}}
         from nostroma_control import signing

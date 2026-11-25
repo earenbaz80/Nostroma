@@ -55,14 +55,14 @@ import http.client
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-STRATA = HERE.parents[1]
+NOSTROMA = HERE.parents[1]
 PROFILE_PATCH = HERE / "profile" / "cordis.patch.yml"
 #: A TEST-ONLY overlay, applied after the product patch. It disables the session-title model
 #: request, which a scripted worker cannot absorb: the worker replays one script per request, so
 #: an extra request shifts every later reply and the run looks like a model that chose not to
 #: call a tool. The product profile must keep answering title requests, so the row lives here.
 SCRIPTED_OVERLAY = HERE / "profile" / "scripted-worker.cordis.patch.yml"
-PYTHON = os.environ.get("STRATA_PYTHON", sys.executable)
+PYTHON = os.environ.get("NOSTROMA_PYTHON", sys.executable)
 
 #: The bash call the scripted worker emits. It appends exactly one line, so counting the lines counts
 #: the executions -- a replayed tool would leave two.
@@ -416,7 +416,7 @@ def start_worker(scripts: list[str], port: int, log_path: Path,
     for script in scripts:
         argv += ["--script", script]
     handle = log_path.open("wb")
-    return subprocess.Popen(argv, cwd=str(STRATA), stdout=handle, stderr=subprocess.STDOUT)
+    return subprocess.Popen(argv, cwd=str(NOSTROMA), stdout=handle, stderr=subprocess.STDOUT)
 
 
 def worker_port_in_use(port: int) -> bool:
@@ -774,7 +774,7 @@ def main() -> int:
         if shutil.which(tool) is None:
             raise SystemExit(f"{tool} is required to read the durable session")
 
-    tmp = Path(tempfile.mkdtemp(prefix="strata-tool-flow-"))
+    tmp = Path(tempfile.mkdtemp(prefix="nostroma-tool-flow-"))
     print(f"working in {tmp}")
     results: dict = {}
     try:

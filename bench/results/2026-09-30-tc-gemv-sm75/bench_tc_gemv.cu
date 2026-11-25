@@ -1,5 +1,5 @@
 // bench_tc_gemv.cu - ISOLATED benchmark: BF16 GEMV baseline vs Tensor Core (mma.m16n8k8, BF16->FP16) on sm_75.
-// Nothing in the engine changes. Shapes are the REAL Strata decode GEMVs (BF16 weights, n_in = n_embd = 2560):
+// Nothing in the engine changes. Shapes are the REAL Nostroma decode GEMVs (BF16 weights, n_in = n_embd = 2560):
 //   ssm_alpha / ssm_beta   [2560, 48]   project_bf16(split=true)  -> bf16_gemv_split(TPR=32) -> warp kernel
 //   indexer.k_proj         [2560, 128]  project_bf16(split=false) -> bf16_gemv -> warp kernel
 //   indexer.q_proj / ffn_gate_inp / mlp.gate [2560, 512]  warp / split(TPR=32) -> warp kernel

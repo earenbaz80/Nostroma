@@ -55,7 +55,7 @@ OFFLINE_ENV: dict[str, str] = {
     "HTTPS_PROXY": "",
     "http_proxy": "",
     "https_proxy": "",
-    "STRATA_OFFLINE": "1",
+    "NOSTROMA_OFFLINE": "1",
 }
 
 #: Schemes that are local by construction and therefore always allowed.

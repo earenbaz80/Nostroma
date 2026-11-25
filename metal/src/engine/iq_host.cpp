@@ -1,7 +1,7 @@
 // metal/src/engine/iq_host.cpp - the host-side helpers of src/kernels/cuda/iq_kernels.cu the shared host code reads
 // (format tables, row sizes, the native expert blob layout).  The kernels themselves are not ported: on Metal the
 // decode window runs mac-kern's chain (metal/src/engine/window.cpp).  Copied from iq_kernels.cu; keep in step.
-#include "strata/kernels/iq_kernels.hpp"
+#include "nostroma/kernels/iq_kernels.hpp"
 
 #define GGML_COMMON_DECL_CPP
 #include "ggml-common.h"
@@ -10,7 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 // agentionai's trellis types (Gyro): TQ2_T (144), TQK6 (145), TQK7 (146); 128 weights a block
 bool is_tq(int t) { return t == 144 || t == 145 || t == 146; }
@@ -18,12 +18,12 @@ bool is_iq(int t) {
     return t == 16 || t == 17 || t == 18 || t == 20 || t == 21 || t == 22 || t == 23 || t == 29 || t == 42 || t == 11 ||
            t == 12 || t == 13 || t == 14 || t == 7 || t == 6 || t == 2 || t == 3 || t == 8;   // 14: Q6_K (Unsloth's Q5/Q6 gate/up)
 }
-// values per block of the types the grouped expert kernels take (0 = none): STRATA_GU_FMTS / STRATA_D_FMTS
+// values per block of the types the grouped expert kernels take (0 = none): NOSTROMA_GU_FMTS / NOSTROMA_D_FMTS
 int gu_qk(int t) {
     switch (t) {
         case 16: case 17: case 18: case 21: case 22: case 23: case 29: case 12: case 13: case 14: return 256;
         case 42: return 64;
-        case 144: case 145: return 128;   // TQ2_T / TQK6 gate/up (the CUDA engine's STRATA_GU_FMTS)
+        case 144: case 145: return 128;   // TQ2_T / TQK6 gate/up (the CUDA engine's NOSTROMA_GU_FMTS)
         case 8: return 32;   // Q8_0 (the UD-Q5/Q6_K_XL packs); Q5_0 / Q4_0 / Q4_1 gate/up have no Metal kernel (moe.metal GU_SET)
         default: return 0;
     }
@@ -96,4 +96,4 @@ size_t native_expert_scratch_bytes(int64_t cap, int64_t n_ff) {
     return 3 * ((f + 255) & ~(size_t) 255) + (((size_t) cap * (size_t) (n_ff / 32) * sizeof(block_q8_1) + 255) & ~(size_t) 255);
 }
 
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels

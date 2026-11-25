@@ -5,14 +5,14 @@
 // (a) float reference: ggml's own dequantizer (`to_float`) and a float SwiGLU expert, (b) the CPU path
 // (ggml-cpu vec_dot with its quantized activations), (c) the GPU path (`native_expert_grouped`, q8_1
 // activations).  (b) and (c) each differ from (a) by their activation rounding only (a few 1e-3 relative).
-#include "strata/artifact/gguf_reader.hpp"
-#include "strata/kernels/cpu/native_expert.hpp"
-#include "strata/kernels/cpu/expert.hpp"
-#include "strata/kernels/cpu/iq_avx512.hpp"
-#include "strata/kernels/cpu/iq_avx2.hpp"
-#include "strata/kernels/cpu/expert_layout.hpp"
+#include "nostroma/artifact/gguf_reader.hpp"
+#include "nostroma/kernels/cpu/native_expert.hpp"
+#include "nostroma/kernels/cpu/expert.hpp"
+#include "nostroma/kernels/cpu/iq_avx512.hpp"
+#include "nostroma/kernels/cpu/iq_avx2.hpp"
+#include "nostroma/kernels/cpu/expert_layout.hpp"
 #include "ggml-cpu.h"
-#include "strata/kernels/iq_kernels.hpp"
+#include "nostroma/kernels/iq_kernels.hpp"
 
 #include "ggml.h"
 
@@ -29,7 +29,7 @@
 #include <string>
 #include <vector>
 
-namespace cpu = strata::kernels::cpu;
+namespace cpu = nostroma::kernels::cpu;
 
 // Round 0214: --synthetic GU/DOWN ... : random weights quantized by ggml (ggml type names, e.g. iq2_xs/q5_0) in place of real
 // rows, as the CUDA/HIP tree's native_expert_parity does; the checks below are the same.
@@ -75,8 +75,8 @@ int main(int argc, char** argv) {
     setvbuf(stdout, nullptr, _IONBF, 0);   // keep the trail on a crash
     if (argc < 2) { std::fprintf(stderr, "usage: native_expert_parity <shard1.gguf> [layer ...] | --synthetic GU/DOWN ...\n"); return 2; }
     const bool synthetic = std::string(argv[1]) == "--synthetic";
-    std::unique_ptr<strata::GgufFile> gguf_p;
-    if (!synthetic) gguf_p.reset(new strata::GgufFile(argv[1]));
+    std::unique_ptr<nostroma::GgufFile> gguf_p;
+    if (!synthetic) gguf_p.reset(new nostroma::GgufFile(argv[1]));
     std::vector<int> layers;
     std::vector<std::string> pair_names;
     for (int i = 2; i < argc; ++i) {
@@ -100,15 +100,15 @@ int main(int argc, char** argv) {
             const int gu = slash == std::string::npos ? -1 : type_of(arg.substr(0, slash));
             const int dn = slash == std::string::npos ? -1 : type_of(arg.substr(slash + 1));
             if (gu < 0 || dn < 0 || !cpu::native_fmt(gu, dn, H, FF, f, err) ||
-                !strata::kernels::native_expert_supported(gu, dn, H, FF)) {
+                !nostroma::kernels::native_expert_supported(gu, dn, H, FF)) {
                 std::printf("%s: %s\n", arg.c_str(), err.empty() ? "not a pair the GPU expert kernels take" : err.c_str());
                 ++failures;
                 continue;
             }
             blob = synthetic_blob(f, l, H, FF);
         } else {
-            strata::GgufFile& gguf = *gguf_p;
-            const strata::TensorInfo* t[3] = {};
+            nostroma::GgufFile& gguf = *gguf_p;
+            const nostroma::TensorInfo* t[3] = {};
             const char* roles[3] = {"gate", "up", "down"};
             for (const auto& ti : gguf.tensors())
                 for (int r = 0; r < 3; ++r)
@@ -278,7 +278,7 @@ int main(int argc, char** argv) {
         }
         // (c) the GPU: one group holding the NT entries
         {
-            const auto L = strata::kernels::native_expert_layout(f.gu_type, f.d_type, H, FF);
+            const auto L = nostroma::kernels::native_expert_layout(f.gu_type, f.d_type, H, FF);
             void *dblob, *dx, *dxq, *dscr;
             float* dout;
             unsigned long long* dptr;
@@ -286,7 +286,7 @@ int main(int argc, char** argv) {
             dblob = (decltype(dblob)) sycl::malloc_device(blob.size(), *s);
             dx = (decltype(dx)) sycl::malloc_device(x.size() * 4, *s);
             dxq = (decltype(dxq)) sycl::malloc_device((size_t) NT * H / 32 * 36, *s);
-            dscr = (decltype(dscr)) sycl::malloc_device(strata::kernels::native_expert_scratch_bytes(NT, FF), *s);
+            dscr = (decltype(dscr)) sycl::malloc_device(nostroma::kernels::native_expert_scratch_bytes(NT, FF), *s);
             dout = (decltype(dout)) sycl::malloc_device((size_t) NT * H * 4, *s);
             dptr = (decltype(dptr)) sycl::malloc_device(8, *s);
             dstart = (decltype(dstart)) sycl::malloc_device(8, *s);
@@ -302,8 +302,8 @@ int main(int argc, char** argv) {
             s->memcpy(dn, &one, 4).wait();
             s->memcpy(ddst, idx, NT * 4).wait();
             s->memcpy(dtok, idx, NT * 4).wait();
-            strata::kernels::quantize_q8_1_rows((const float*) dx, NT, H, dxq, s);
-            strata::kernels::native_expert_grouped(L, dptr, dstart, dn, ddst, dtok, 1, NT, dxq, dscr, dout, s);
+            nostroma::kernels::quantize_q8_1_rows((const float*) dx, NT, H, dxq, s);
+            nostroma::kernels::native_expert_grouped(L, dptr, dstart, dn, ddst, dtok, 1, NT, dxq, dscr, dout, s);
             s->wait();
             s->memcpy(got_g.data(), dout, got_g.size() * 4).wait();
             if (std::getenv("NATIVE_BENCH") != nullptr) {   // SYCL port: one layer's worth of hits, timed
@@ -324,7 +324,7 @@ int main(int argc, char** argv) {
                 int32_t* bn = sycl::malloc_device<int32_t>(1, *s);
                 int32_t* bdst = sycl::malloc_device<int32_t>((size_t) NE, *s);
                 int32_t* btok = sycl::malloc_device<int32_t>((size_t) NE, *s);
-                void* bscr = sycl::malloc_device(strata::kernels::native_expert_scratch_bytes(NE, FF), *s);
+                void* bscr = sycl::malloc_device(nostroma::kernels::native_expert_scratch_bytes(NE, FF), *s);
                 float* bout = sycl::malloc_device<float>((size_t) NE * H, *s);
                 const int32_t gn = G;
                 s->memcpy(bptr, ptrs.data(), (size_t) G * 8).wait();
@@ -332,11 +332,11 @@ int main(int argc, char** argv) {
                 s->memcpy(bn, &gn, 4).wait();
                 s->memcpy(bdst, dst.data(), (size_t) NE * 4).wait();
                 s->memcpy(btok, tokv.data(), (size_t) NE * 4).wait();
-                strata::kernels::native_expert_grouped(L, bptr, bstart, bn, bdst, btok, G, NE, dxq, bscr, bout, s);
+                nostroma::kernels::native_expert_grouped(L, bptr, bstart, bn, bdst, btok, G, NE, dxq, bscr, bout, s);
                 s->wait();
                 const auto b0 = std::chrono::steady_clock::now();
                 for (int i = 0; i < iters; ++i)
-                    strata::kernels::native_expert_grouped(L, bptr, bstart, bn, bdst, btok, G, NE, dxq, bscr, bout, s);
+                    nostroma::kernels::native_expert_grouped(L, bptr, bstart, bn, bdst, btok, G, NE, dxq, bscr, bout, s);
                 s->wait();
                 const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - b0).count() / iters;
                 std::printf("          GPU grouped: %d experts x %d entries: %.3f ms per layer call  (%.1f GB/s of expert bytes)\n",

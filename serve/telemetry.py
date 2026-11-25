@@ -557,7 +557,7 @@ class Telemetry:
         win_amd = None
         if gpu_name is None and amd and os.name == "nt":
             # #1587: no readings for an AMD card on Windows yet, but its name (and VRAM size) are in the registry, so the
-            # dashboard and strata_bench do not call the run "CPU only".  The class order is taken as HIP's order.
+            # dashboard and nostroma_bench do not call the run "CPU only".  The class order is taken as HIP's order.
             cards = windows_amd_cards()
             win_amd = [cards[i] for i in idx if 0 <= i < len(cards)] or cards[:1]
             gpu_name = " + ".join(c["name"] for c in win_amd) if win_amd else None
@@ -659,7 +659,7 @@ class Telemetry:
                 s = self.sample()
             except Exception as e:                    # noqa: BLE001 - a monitor must outlive its source
                 if not complained:                    # once, not once a second
-                    print(f"[strata] metrics: a sample failed ({e}); the sampler keeps trying", flush=True)
+                    print(f"[nostroma] metrics: a sample failed ({e}); the sampler keeps trying", flush=True)
                     complained = True
                 self._stop.wait(1.0)
                 continue

@@ -46,13 +46,13 @@ class Config(unittest.TestCase):
             check_cfg({"args": []}, spec2)
 
     def test_role_cfg(self):
-        cfg = {"gpu": [0, 1], "args": ["--x"], "log": "/l/strata.log", "hip_ordinal": 1, "gpu_roles": {"0": "main"},
+        cfg = {"gpu": [0, 1], "args": ["--x"], "log": "/l/nostroma.log", "hip_ordinal": 1, "gpu_roles": {"0": "main"},
                "expert_profile_save": "/p/prof.bin",
                "split_serve": {"prefill_gpu": 2, "decode_gpu": 3, "decode_args": ["--expert-cache", "auto"]}}
         spec = split_spec(cfg)
         p, d = role_cfg(cfg, spec, "prefill"), role_cfg(cfg, spec, "decode")
         self.assertEqual((p["gpu"], d["gpu"]), (2, 3))
-        self.assertEqual((p["log"], d["log"]), ("/l/strata.prefill.log", "/l/strata.decode.log"))
+        self.assertEqual((p["log"], d["log"]), ("/l/nostroma.prefill.log", "/l/nostroma.decode.log"))
         self.assertEqual(p["args"], ["--x"])
         self.assertEqual(d["args"], ["--x", "--expert-cache", "auto"])
         self.assertEqual(d["expert_profile_save"], "/p/prof.decode.bin")
@@ -81,7 +81,7 @@ class Config(unittest.TestCase):
 
 
 class FakeEngine:
-    """The part of StrataEngine the SplitEngine uses.  `session` is the token list its session holds (a file is a json-free
+    """The part of NostromaEngine the SplitEngine uses.  `session` is the token list its session holds (a file is a json-free
     list in a dict keyed by path, shared between the two fakes)."""
     files = {}
 

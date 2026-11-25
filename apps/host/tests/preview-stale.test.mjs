@@ -125,7 +125,7 @@ test('no loop: a file that changes every second is one load per change, not one 
 });
 
 test('the host sends the file version: it moves when the file is rewritten', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'strata-prev-'));
+  const dir = mkdtempSync(join(tmpdir(), 'nostroma-prev-'));
   writeFileSync(join(dir, 'n.md'), '# Version One\n');
   const a = previewFile(dir, 'n.md', 's');
   writeFileSync(join(dir, 'n.md'), '# Version Two\n');

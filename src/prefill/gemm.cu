@@ -1,14 +1,14 @@
-// src/prefill/gemm.cu - see include/strata/prefill/gemm.hpp.
-#include "strata/prefill/gemm.hpp"
-#include "strata/env.hpp"
-#include "strata/kernels/dequant_bf16.hpp"
-#include "strata/core/arch_defaults.hpp"   // prompt_f16_resolve (inline)
-#if defined(STRATA_PREFILL_MMQ) && defined(__HIPCC__)
-#include "strata/prefill/mmq_ids_margin.hpp"
-#include "strata/prefill/moe_mmq.hpp"
+// src/prefill/gemm.cu - see include/nostroma/prefill/gemm.hpp.
+#include "nostroma/prefill/gemm.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kernels/dequant_bf16.hpp"
+#include "nostroma/core/arch_defaults.hpp"   // prompt_f16_resolve (inline)
+#if defined(NOSTROMA_PREFILL_MMQ) && defined(__HIPCC__)
+#include "nostroma/prefill/mmq_ids_margin.hpp"
+#include "nostroma/prefill/moe_mmq.hpp"
 #endif
 
-#ifdef STRATA_USE_HIP
+#ifdef NOSTROMA_USE_HIP
 #include "wmma_gemm.h"
 #endif
 
@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <atomic>
 
-#if defined(__HIPCC__) && defined(STRATA_HIPBLASLT_AVAILABLE)
+#if defined(__HIPCC__) && defined(NOSTROMA_HIPBLASLT_AVAILABLE)
 // The HIP compatibility shim maps CUDA shuffle spellings to Nostroma helpers.
 // hipBLASLt's public headers declare native HIP shuffle functions, so keep
 // those declarations from being macro-expanded in this translation unit.
@@ -39,7 +39,7 @@
 #include <cstring>
 #include <memory>
 
-#if defined(__HIPCC__) && defined(STRATA_HIPBLASLT_AVAILABLE)
+#if defined(__HIPCC__) && defined(NOSTROMA_HIPBLASLT_AVAILABLE)
 #include "hipblaslt_tuning.hpp"
 #if defined(_WIN32)
 #ifndef NOMINMAX
@@ -59,9 +59,9 @@
 #include <set>
 #include <tuple>
 #endif
-#if defined(__HIPCC__) && defined(STRATA_ROCBLAS_AVAILABLE)
+#if defined(__HIPCC__) && defined(NOSTROMA_ROCBLAS_AVAILABLE)
 #include "rocblas_tuning.hpp"
-#include "strata/core/amd_community.hpp"
+#include "nostroma/core/amd_community.hpp"
 #include <hip/hip_runtime_api.h>
 #include <rocblas/rocblas.h>
 #include <filesystem>
@@ -75,10 +75,10 @@
 #include <hip/hip_fp16.h>
 #endif
 
-namespace strata::prefill {
+namespace nostroma::prefill {
 namespace {
 #if defined(__HIPCC__)
-// STRATA_F16_RANGE (gemm_set_f16_range): the largest |value| and the count beyond 65504 / non-finite, for the BF16
+// NOSTROMA_F16_RANGE (gemm_set_f16_range): the largest |value| and the count beyond 65504 / non-finite, for the BF16
 // weights converted to FP16 (slot 0, bf16_to_f16_rows) and the FP16 GEMM outputs widened (slot 1, widen_rows_f16 -
 // an output rocBLAS wrote as FP16 is Inf there, not saturated).  As the activation counter in kernels.cu.
 __device__ int g_f16_range_on_g = 0;
@@ -93,7 +93,7 @@ __device__ __forceinline__ void f16_range_note_g(int k, float f) {
 // Y's rows, written by an FP16-out GEMM as FP16 at the start of each FP32 row (ldc = 2 ldy halves), widened in place.
 // Float c overwrites halves 2c and 2c+1, so a row is walked from its end in blocks: a block's halves are read into
 // registers, the block syncs, then writes its floats - which only cover halves of blocks already read.
-// STRATA_DBG_NAN: the FP16 outputs that are not finite (an FP32-accumulated sum past 65504 becomes inf in FP16).
+// NOSTROMA_DBG_NAN: the FP16 outputs that are not finite (an FP32-accumulated sum past 65504 becomes inf in FP16).
 __device__ unsigned long long g_f16_nonfinite = 0;
 __global__ void widen_rows_f16(float* __restrict__ Y, int64_t n, int64_t ldy, int count_nonfinite) {
     float* y = Y + (int64_t) blockIdx.x * ldy;
@@ -169,9 +169,9 @@ void absorb_hipblas_sticky(const char* what) {
     std::fprintf(stderr, "prefill gemm: %s left %s\n", what, hipGetErrorString(sticky));
     std::exit(1);
 }
-#define STRATA_ABSORB_HIPBLAS_STICKY(what) absorb_hipblas_sticky(what)
+#define NOSTROMA_ABSORB_HIPBLAS_STICKY(what) absorb_hipblas_sticky(what)
 #else
-#define STRATA_ABSORB_HIPBLAS_STICKY(what) ((void) 0)
+#define NOSTROMA_ABSORB_HIPBLAS_STICKY(what) ((void) 0)
 #endif
 
 // A setup call whose failure the engine survives (the handle keeps its defaults), as before #240 - but said.
@@ -179,9 +179,9 @@ void note(cublasStatus_t s, const char* what) {
     if (s != CUBLAS_STATUS_SUCCESS) std::fprintf(stderr, "prefill gemm: %s: cuBLAS status %d (continuing)\n", what, (int) s);
 }
 
-#if defined(__HIPCC__) && defined(STRATA_HIPBLASLT_AVAILABLE)
+#if defined(__HIPCC__) && defined(NOSTROMA_HIPBLASLT_AVAILABLE)
 struct HipLtCallKey {
-    strata::prefill::hipblaslt::InputType type;
+    nostroma::prefill::hipblaslt::InputType type;
     int t;
     int n;
     int k;
@@ -204,20 +204,20 @@ struct HipLtState {
     hipblasLtHandle_t handle = nullptr;
     void* workspace = nullptr;
     size_t workspace_bytes = 0;
-    strata::prefill::hipblaslt::TuningTable table;
+    nostroma::prefill::hipblaslt::TuningTable table;
     std::map<HipLtCallKey, HipLtCachedAlgo> cache;
     uint64_t lt_launches = 0;
     uint64_t fallbacks = 0;
-    std::set<std::tuple<strata::prefill::hipblaslt::InputType, int, int, int, int>> fallback_shapes;
+    std::set<std::tuple<nostroma::prefill::hipblaslt::InputType, int, int, int, int>> fallback_shapes;
 
     ~HipLtState() {
-        if (strata::env("NOSTROMA_HIPBLASLT_VERBOSE")) {
+        if (nostroma::env("NOSTROMA_HIPBLASLT_VERBOSE")) {
             std::fprintf(stderr, "prefill gemm: hipBLASLt summary launches=%llu fallbacks=%llu unique_fallback_shapes=%zu\n",
                          (unsigned long long) lt_launches, (unsigned long long) fallbacks, fallback_shapes.size());
             for (const auto& shape : fallback_shapes) {
                 const auto type = std::get<0>(shape);
                 std::fprintf(stderr, "prefill gemm: fallback shape dtype=%s T=%d N=%d K=%d ldy=%d\n",
-                             type == strata::prefill::hipblaslt::InputType::bf16 ? "bf16" : "f16",
+                             type == nostroma::prefill::hipblaslt::InputType::bf16 ? "bf16" : "f16",
                              std::get<1>(shape), std::get<2>(shape), std::get<3>(shape), std::get<4>(shape));
             }
         }
@@ -257,7 +257,7 @@ struct HipLtDescriptors {
 
 // The engine package's own tuning folder (<engine folder>/tuning), for a start that did not come through the launcher (a hand-made
 // config, a CLI run): without a table the prompt GEMMs fall back to plain hipBLAS and a Strix Halo reads prompts at half speed
-// (340 against 690 tok/s, IQ3_S 4K).  The launcher sets STRATA_HIPBLASLT_TUNING itself; this is the same table found by the engine.
+// (340 against 690 tok/s, IQ3_S 4K).  The launcher sets NOSTROMA_HIPBLASLT_TUNING itself; this is the same table found by the engine.
 std::string own_tuning_dir() {
 #if defined(_WIN32)
     char p[4096] = {};
@@ -276,10 +276,10 @@ std::string own_tuning_dir() {
 
 std::unique_ptr<HipLtState> create_hipblaslt_state(void* workspace, size_t workspace_bytes) {
     std::string path_own;
-    const char* path = strata::env("NOSTROMA_HIPBLASLT_TUNING");
+    const char* path = nostroma::env("NOSTROMA_HIPBLASLT_TUNING");
     bool from_package = false, table_forced = false;
     if (!path || !*path) {
-        const char* sw = strata::env("NOSTROMA_HIPBLASLT_TABLE");     // the launcher's switch (nostroma_control/hipblaslt_tuning.py): off / on / auto
+        const char* sw = nostroma::env("NOSTROMA_HIPBLASLT_TABLE");     // the launcher's switch (nostroma_control/hipblaslt_tuning.py): off / on / auto
         std::string low = sw != nullptr ? sw : "";                   // trimmed and lower case, as the launcher reads it
         while (!low.empty() && std::isspace((unsigned char) low.back())) low.pop_back();
         while (!low.empty() && std::isspace((unsigned char) low.front())) low.erase(low.begin());
@@ -319,7 +319,7 @@ std::unique_ptr<HipLtState> create_hipblaslt_state(void* workspace, size_t works
     if (from_package) {
         // Unset or "auto": only Strix Halo (gfx1151) takes the packaged table by itself, the owner's decision of 2026-10-19 (the same
         // rule as AUTO_ARCHS in nostroma_control/hipblaslt_tuning.py): on other cards the table changes the answers' last digits for ~1%
-        // (gfx1201), so they take it with STRATA_HIPBLASLT_TABLE=on only.
+        // (gfx1201), so they take it with NOSTROMA_HIPBLASLT_TABLE=on only.
         if (!table_forced && arch != "gfx1151") return nullptr;
         const std::string dir = own_tuning_dir();
         if (dir.empty()) return nullptr;
@@ -339,7 +339,7 @@ std::unique_ptr<HipLtState> create_hipblaslt_state(void* workspace, size_t works
     return state;
 }
 
-HipLtCachedAlgo resolve_hipblaslt_algo(HipLtState& state, strata::prefill::hipblaslt::InputType type, int t,
+HipLtCachedAlgo resolve_hipblaslt_algo(HipLtState& state, nostroma::prefill::hipblaslt::InputType type, int t,
                                        int n, int k, int ldy, float beta) {
     uint32_t beta_bits = 0;
     static_assert(sizeof(beta_bits) == sizeof(beta));
@@ -349,18 +349,18 @@ HipLtCachedAlgo resolve_hipblaslt_algo(HipLtState& state, strata::prefill::hipbl
     if (cached != state.cache.end()) return cached->second;
 
     HipLtCachedAlgo resolved;
-    const bool verbose = strata::env("NOSTROMA_HIPBLASLT_VERBOSE") != nullptr;
+    const bool verbose = nostroma::env("NOSTROMA_HIPBLASLT_VERBOSE") != nullptr;
     const auto* row = state.table.closest(type, n, k, ldy, t);
     if (!row) {
         if (verbose) {
             std::fprintf(stderr, "prefill gemm: Lt fallback; no calibration for dtype=%s T=%d N=%d K=%d ldy=%d\n",
-                         type == strata::prefill::hipblaslt::InputType::bf16 ? "bf16" : "f16", t, n, k, ldy);
+                         type == nostroma::prefill::hipblaslt::InputType::bf16 ? "bf16" : "f16", t, n, k, ldy);
         }
         return state.cache.emplace(key, resolved).first->second;
     }
 
     HipLtDescriptors desc;
-    const hipDataType input_type = type == strata::prefill::hipblaslt::InputType::bf16 ? HIP_R_16BF : HIP_R_16F;
+    const hipDataType input_type = type == nostroma::prefill::hipblaslt::InputType::bf16 ? HIP_R_16BF : HIP_R_16F;
     if (!desc.init(input_type, t, n, k, ldy)) {
         return state.cache.emplace(key, resolved).first->second;
     }
@@ -395,14 +395,14 @@ HipLtCachedAlgo resolve_hipblaslt_algo(HipLtState& state, strata::prefill::hipbl
     if (verbose) {
         std::fprintf(stderr,
                      "prefill gemm: Lt solution=%d dtype=%s T=%d N=%d K=%d ldy=%d beta=%.9g workspace=%zu\n",
-                     row->solution_id, type == strata::prefill::hipblaslt::InputType::bf16 ? "bf16" : "f16", t, n,
+                     row->solution_id, type == nostroma::prefill::hipblaslt::InputType::bf16 ? "bf16" : "f16", t, n,
                      k, ldy, beta, required_workspace);
     }
     return state.cache.emplace(key, resolved).first->second;
 }
 
 // the hipBLASLt solution index the tuning table gives this call (-1: none / unsupported)
-int hipblaslt_solution_for(void* opaque_state, strata::prefill::hipblaslt::InputType type, int64_t t, int64_t n, int64_t k,
+int hipblaslt_solution_for(void* opaque_state, nostroma::prefill::hipblaslt::InputType type, int64_t t, int64_t n, int64_t k,
                            int64_t ldy, float beta) {
     auto* state = static_cast<HipLtState*>(opaque_state);
     if (!state || t <= 0 || n <= 0 || k <= 0 || t > INT_MAX || n > INT_MAX || k > INT_MAX || ldy > INT_MAX || ldy < n) return -1;
@@ -412,7 +412,7 @@ int hipblaslt_solution_for(void* opaque_state, strata::prefill::hipblaslt::Input
     return hipblaslt_ext::getIndexFromAlgo(algo);
 }
 
-bool try_hipblaslt(void* opaque_state, strata::prefill::hipblaslt::InputType type, const uint16_t* x,
+bool try_hipblaslt(void* opaque_state, nostroma::prefill::hipblaslt::InputType type, const uint16_t* x,
                    const uint16_t* w, float* y, int64_t t, int64_t n, int64_t k, int64_t ldy, float beta,
                    void* stream, int64_t ldx = 0) {
     auto* state = static_cast<HipLtState*>(opaque_state);
@@ -429,7 +429,7 @@ bool try_hipblaslt(void* opaque_state, strata::prefill::hipblaslt::InputType typ
     if (resolved.workspace_bytes > state->workspace_bytes) {
         ++state->fallbacks;
         state->fallback_shapes.emplace(type, (int) t, (int) n, (int) k, (int) ldy);
-        if (strata::env("NOSTROMA_HIPBLASLT_VERBOSE")) {
+        if (nostroma::env("NOSTROMA_HIPBLASLT_VERBOSE")) {
             std::fprintf(stderr, "prefill gemm: Lt fallback; solution needs %zu workspace bytes, have %zu\n",
                          resolved.workspace_bytes, state->workspace_bytes);
         }
@@ -437,7 +437,7 @@ bool try_hipblaslt(void* opaque_state, strata::prefill::hipblaslt::InputType typ
     }
 
     HipLtDescriptors desc;
-    const hipDataType input_type = type == strata::prefill::hipblaslt::InputType::bf16 ? HIP_R_16BF : HIP_R_16F;
+    const hipDataType input_type = type == nostroma::prefill::hipblaslt::InputType::bf16 ? HIP_R_16BF : HIP_R_16F;
     if (!desc.init(input_type, (int) t, (int) n, (int) k, (int) ldy, (int) ldx)) return false;
     const float alpha = 1.0f;
     const hipblasStatus_t status = hipblasLtMatmul(state->handle, desc.op, &alpha, w, desc.a, x, desc.b, &beta, y,
@@ -464,20 +464,20 @@ bool try_hipblaslt(void* opaque_state, strata::prefill::hipblaslt::InputType typ
 }
 #endif
 
-#if defined(__HIPCC__) && defined(STRATA_ROCBLAS_AVAILABLE)
-// The rocBLAS solution table of f16_inplace (STRATA_ROCBLAS_TUNING: a table file, or a directory holding
+#if defined(__HIPCC__) && defined(NOSTROMA_ROCBLAS_AVAILABLE)
+// The rocBLAS solution table of f16_inplace (NOSTROMA_ROCBLAS_TUNING: a table file, or a directory holding
 // <arch>-rocblas-<version>.txt for this card and rocBLAS build; src/prefill/rocblas_tuning.hpp).  rocBLAS's own
 // pick for some shapes is up to 6x slower than the best kernel it holds for them (gfx1030: tools/hip/tune_rocblas.cpp).
 struct RocBlasState {
     rocblas_handle handle = nullptr;
-    strata::prefill::rocblas_tuning::Table table;
+    nostroma::prefill::rocblas_tuning::Table table;
     struct Pick { bool tuned = false; int solution = 0; int refusals = 0; };
     std::map<std::tuple<int, int, int, int>, Pick> cache;   // (T, N, K, ldy) -> the solution to run, or the default
     uint64_t tuned_launches = 0;
     uint64_t fallbacks = 0;
 
     ~RocBlasState() {
-        if (strata::env("NOSTROMA_ROCBLAS_VERBOSE")) {
+        if (nostroma::env("NOSTROMA_ROCBLAS_VERBOSE")) {
             std::fprintf(stderr, "prefill gemm: rocBLAS tuning summary tuned_launches=%llu fallbacks=%llu\n",
                          (unsigned long long) tuned_launches, (unsigned long long) fallbacks);
         }
@@ -486,7 +486,7 @@ struct RocBlasState {
 };
 
 std::unique_ptr<RocBlasState> create_rocblas_state(void* stream) {
-    const char* path = strata::env("NOSTROMA_ROCBLAS_TUNING");
+    const char* path = nostroma::env("NOSTROMA_ROCBLAS_TUNING");
     if (!path || !*path) return nullptr;
     auto state = std::make_unique<RocBlasState>();
     if (rocblas_create_handle(&state->handle) != rocblas_status_success) {
@@ -515,9 +515,9 @@ std::unique_ptr<RocBlasState> create_rocblas_state(void* stream) {
         while (!tag.empty() && tag.back() == '.') tag.pop_back();
         file /= arch + "-rocblas-" + tag + ".txt";
     }
-    // The community-made tables (strata/core/amd_community.hpp) load only with STRATA_AMD_COMMUNITY_TUNING on (the default).
-    if (!strata::amd_community::rocblas_table_allowed(arch, version)) {
-        std::fprintf(stderr, "prefill gemm: the rocBLAS table for %s / %s is community-made and STRATA_AMD_COMMUNITY_TUNING=0; "
+    // The community-made tables (nostroma/core/amd_community.hpp) load only with NOSTROMA_AMD_COMMUNITY_TUNING on (the default).
+    if (!nostroma::amd_community::rocblas_table_allowed(arch, version)) {
+        std::fprintf(stderr, "prefill gemm: the rocBLAS table for %s / %s is community-made and NOSTROMA_AMD_COMMUNITY_TUNING=0; "
                              "rocBLAS's default kernels run\n", arch.c_str(), version);
         return nullptr;
     }
@@ -562,7 +562,7 @@ bool try_rocblas_f16o(void* opaque_state, const uint16_t* X, const uint16_t* W, 
             pick.tuned = true;
             pick.solution = row->solution;
         }
-        if (strata::env("NOSTROMA_ROCBLAS_VERBOSE")) {
+        if (nostroma::env("NOSTROMA_ROCBLAS_VERBOSE")) {
             if (pick.tuned)
                 std::fprintf(stderr, "prefill gemm: rocBLAS solution %d for T=%lld N=%lld K=%lld ldy=%lld\n",
                              pick.solution, (long long) T, (long long) N, (long long) K, (long long) ldy);
@@ -592,7 +592,7 @@ bool try_rocblas_f16o(void* opaque_state, const uint16_t* X, const uint16_t* W, 
                              "three times; the default kernel runs for this shape\n", it->second.solution, (int) status,
                      (long long) T, (long long) N, (long long) K, (long long) ldy);
         it->second.tuned = false;
-    } else if (strata::env("NOSTROMA_ROCBLAS_VERBOSE")) {
+    } else if (nostroma::env("NOSTROMA_ROCBLAS_VERBOSE")) {
         std::fprintf(stderr, "prefill gemm: rocBLAS solution %d refused (status %d) for T=%lld N=%lld K=%lld ldy=%lld; "
                              "the default kernel this time\n", it->second.solution, (int) status, (long long) T,
                      (long long) N, (long long) K, (long long) ldy);
@@ -610,10 +610,10 @@ bool prompt_f16() {
     int dev = 0;
     if (hipGetDevice(&dev) != hipSuccess || dev < 0 || dev >= kMaxDev) { (void) hipGetLastError(); return false; }
     if (const int8_t c = cached[dev].load(std::memory_order_relaxed)) return c == 2;
-    // Opt-in (#835): STRATA_HIP_PROMPT_F16=1 turns it on.  It changes the prompt path's numbers (an FP16 rounding of
+    // Opt-in (#835): NOSTROMA_HIP_PROMPT_F16=1 turns it on.  It changes the prompt path's numbers (an FP16 rounding of
     // each 16-bit GEMM's output), so a card gets it unasked only where it was measured against the FP16 path's level: the Radeon 780M
-    // (gfx1103, integrated, Linux; strata::core::prompt_f16_resolve), where =0 is the way back.  On gfx103x it is ~2x faster, so we say so once.
-    const char* e = strata::env("NOSTROMA_HIP_PROMPT_F16");
+    // (gfx1103, integrated, Linux; nostroma::core::prompt_f16_resolve), where =0 is the way back.  On gfx103x it is ~2x faster, so we say so once.
+    const char* e = nostroma::env("NOSTROMA_HIP_PROMPT_F16");
     hipDeviceProp_t p{};
     if (hipGetDeviceProperties(&p, dev) != hipSuccess) { (void) hipGetLastError(); p.gcnArchName[0] = 0; p.integrated = 0; }
 #if defined(_WIN32)
@@ -621,12 +621,12 @@ bool prompt_f16() {
 #else
     constexpr bool kWin = false;
 #endif
-    const bool on = strata::core::prompt_f16_resolve(e, p.gcnArchName, p.integrated != 0, kWin);
-    if (on && e != nullptr) std::fprintf(stderr, "strata prefill: HIP device %d%s%s - STRATA_HIP_PROMPT_F16=1: the prompt's 16-bit GEMMs run FP16 in and out "
+    const bool on = nostroma::core::prompt_f16_resolve(e, p.gcnArchName, p.integrated != 0, kWin);
+    if (on && e != nullptr) std::fprintf(stderr, "nostroma prefill: HIP device %d%s%s - NOSTROMA_HIP_PROMPT_F16=1: the prompt's 16-bit GEMMs run FP16 in and out "
                                  "(rocBLAS is tuned only for that on gfx103x; not bit-identical to the default)%s",
                          dev, p.gcnArchName[0] ? " " : "", p.gcnArchName, "\n");
     else if (e == nullptr && std::strncmp(p.gcnArchName, "gfx103", 6) == 0)
-        std::fprintf(stderr, "strata prefill: HIP device %d %s - tip: STRATA_HIP_PROMPT_F16=1 reads long prompts about 2x faster here "
+        std::fprintf(stderr, "nostroma prefill: HIP device %d %s - tip: NOSTROMA_HIP_PROMPT_F16=1 reads long prompts about 2x faster here "
                              "(FP16 prompt GEMMs, rocBLAS is tuned only for FP16 on gfx103x; the numbers differ slightly, see docs/AMD_HIP.md)%s",
                      dev, p.gcnArchName, "\n");
     cached[dev].store(on ? 2 : 1, std::memory_order_relaxed);
@@ -637,7 +637,7 @@ bool prompt_f16() {
 }
 
 // A padded X (ldx > K) no kernel took: its rows copied to a contiguous FP16 buffer of stride K.  Grown, never shrunk
-// (one buffer per Gemm; a padded X only arrives from STRATA_PF_PAD's producers).  One 2-D copy: the same values, and
+// (one buffer per Gemm; a padded X only arrives from NOSTROMA_PF_PAD's producers).  One 2-D copy: the same values, and
 // the ordinary paths below then read them exactly as if the producer had written them unpadded.
 const uint16_t* Gemm::unpad_x(const uint16_t* X, int64_t T, int64_t K, int64_t ldx) {
     if (X == nullptr || T <= 0 || K <= 0 || ldx <= K) return nullptr;
@@ -662,7 +662,7 @@ bool gemm_dequant_side() {
 #if defined(__HIPCC__)
     return false;
 #else
-    static const bool on = [] { const char* v = strata::env("NOSTROMA_DEQUANT_SIDE"); return v && v[0] == '1'; }();
+    static const bool on = [] { const char* v = nostroma::env("NOSTROMA_DEQUANT_SIDE"); return v && v[0] == '1'; }();
     return on;
 #endif
 }
@@ -674,14 +674,14 @@ Gemm::~Gemm() {
     for (void* e : side_free_)
         if (e) (void) cudaEventDestroy((cudaEvent_t) e);
     if (side_stream_) (void) cudaStreamDestroy((cudaStream_t) side_stream_);
-#if defined(STRATA_PREFILL_MMQ) && defined(__HIPCC__)
-    delete static_cast<strata::prefill::mmq::Context*>(mmq_ctx_);
+#if defined(NOSTROMA_PREFILL_MMQ) && defined(__HIPCC__)
+    delete static_cast<nostroma::prefill::mmq::Context*>(mmq_ctx_);
     if (mmq_buf_) cudaFree(mmq_buf_);
 #endif
-#if defined(__HIPCC__) && defined(STRATA_HIPBLASLT_AVAILABLE)
+#if defined(__HIPCC__) && defined(NOSTROMA_HIPBLASLT_AVAILABLE)
     delete static_cast<HipLtState*>(hipblaslt_state_);
 #endif
-#if defined(__HIPCC__) && defined(STRATA_ROCBLAS_AVAILABLE)
+#if defined(__HIPCC__) && defined(NOSTROMA_ROCBLAS_AVAILABLE)
     delete static_cast<RocBlasState*>(rocblas_state_);
 #endif
     if (handle_) cublasDestroy((cublasHandle_t) handle_);
@@ -710,10 +710,10 @@ bool Gemm::init_external(void* stream, uint16_t* scratch, int64_t scratch_elems,
     note(cublasSetMathMode(h, CUBLAS_DEFAULT_MATH), "cublasSetMathMode");
     scratch_ = scratch;
     scratch_elems_ = scratch_elems;
-#if defined(__HIPCC__) && defined(STRATA_HIPBLASLT_AVAILABLE)
+#if defined(__HIPCC__) && defined(NOSTROMA_HIPBLASLT_AVAILABLE)
     hipblaslt_state_ = create_hipblaslt_state(workspace_, ws_bytes).release();
 #endif
-#if defined(__HIPCC__) && defined(STRATA_ROCBLAS_AVAILABLE)
+#if defined(__HIPCC__) && defined(NOSTROMA_ROCBLAS_AVAILABLE)
     rocblas_state_ = create_rocblas_state(stream).release();
 #endif
     return true;
@@ -724,7 +724,7 @@ void Gemm::rebind(uint16_t* scratch, int64_t scratch_elems, void* workspace, siz
     scratch_elems_ = scratch_elems;
     workspace_ = workspace;
     cublasSetWorkspace((cublasHandle_t) handle_, workspace_, ws_bytes);
-#if defined(__HIPCC__) && defined(STRATA_HIPBLASLT_AVAILABLE)
+#if defined(__HIPCC__) && defined(NOSTROMA_HIPBLASLT_AVAILABLE)
     if (hipblaslt_state_) {
         auto* state = static_cast<HipLtState*>(hipblaslt_state_);
         state->workspace = workspace_;
@@ -783,10 +783,10 @@ bool Gemm::init(void* stream, int64_t scratch_elems, std::string& err) {
     }
     note(cublasSetWorkspace(h, workspace_, ws), "cublasSetWorkspace");
     note(cublasSetMathMode(h, CUBLAS_DEFAULT_MATH), "cublasSetMathMode");
-#if defined(__HIPCC__) && defined(STRATA_HIPBLASLT_AVAILABLE)
+#if defined(__HIPCC__) && defined(NOSTROMA_HIPBLASLT_AVAILABLE)
     hipblaslt_state_ = create_hipblaslt_state(workspace_, ws).release();
 #endif
-#if defined(__HIPCC__) && defined(STRATA_ROCBLAS_AVAILABLE)
+#if defined(__HIPCC__) && defined(NOSTROMA_ROCBLAS_AVAILABLE)
     rocblas_state_ = create_rocblas_state(stream).release();
 #endif
     if (scratch_elems > 0) {
@@ -808,10 +808,10 @@ bool Gemm::init(void* stream, int64_t scratch_elems, std::string& err) {
 // activations sit there.  With the FP16 path, the weight is converted once per call and the activations in row
 // slices, into the instance's own buffers, and the product runs as the FP16 GEMM (fp32 accumulate) on the tensor
 // cores.  Finite values beyond FP16's range are clamped to +-65504 (#540) instead of becoming Inf.  A beta = 1
-// product (STRATA_PREFILL_BF16X2's remainder, ~2^-9 of the original, deep in FP16's subnormal band) keeps cuBLAS.
-//   Default: on for compute capability 7.0 - 7.4 (Volta: only the experimental STRATA_EXPERIMENTAL_SM60 build runs
+// product (NOSTROMA_PREFILL_BF16X2's remainder, ~2^-9 of the original, deep in FP16's subnormal band) keeps cuBLAS.
+//   Default: on for compute capability 7.0 - 7.4 (Volta: only the experimental NOSTROMA_EXPERIMENTAL_SM60 build runs
 //   there), OFF for 7.5 (RTX 20 in the ready-made engine: the sums round differently, so it is opt-in until it has
-//   been gated).  STRATA_BF16_TC=1 / =0 turns it on / off on any 7.x card (=2, a test mode: on any card).
+//   been gated).  NOSTROMA_BF16_TC=1 / =0 turns it on / off on any 7.x card (=2, a test mode: on any card).
 // Pascal (6.x) has no tensor cores and cuBLAS has no BF16 GEMM for it (#395, measured NOT_SUPPORTED on a P40): both
 // operands are widened to fp32 by an exact shift and the product is cublasSgemm with the same fp32 accumulator.
 namespace {
@@ -828,7 +828,7 @@ void bf16_to_f16(const uint16_t* in, uint16_t* out, int64_t n, cudaStream_t st) 
     if (n <= 0) return;
     bf16_to_f16_kernel<<<(unsigned) ((n + 255) / 256), 256, 0, st>>>(in, reinterpret_cast<__half*>(out), n);
 }
-#if defined(STRATA_EXPERIMENTAL_SM60)   // Pascal runs only the experimental build
+#if defined(NOSTROMA_EXPERIMENTAL_SM60)   // Pascal runs only the experimental build
 __global__ void bf16_to_f32_kernel(const uint16_t* __restrict__ in, float* __restrict__ out, int64_t n) {
     const int64_t i = (int64_t) blockIdx.x * blockDim.x + threadIdx.x;
     if (i < n) out[i] = __uint_as_float((uint32_t) in[i] << 16);
@@ -860,7 +860,7 @@ int current_cc() {
 // 0: cuBLAS's BF16 GEMM, 1: through FP16 (tensor cores), 2: through FP32 (Pascal)
 int bf16_path() {
     static const int forced = [] {
-        const char* v = strata::env("NOSTROMA_BF16_TC");
+        const char* v = nostroma::env("NOSTROMA_BF16_TC");
         return v != nullptr && v[0] != '\0' ? std::atoi(v) : -1;
     }();
     const int cc = current_cc();
@@ -881,8 +881,8 @@ bool grow(uint16_t*& p, int64_t& have, int64_t want) {   // `have`, `want`: 2-by
 }
 constexpr int64_t kXSliceElems = 16ll << 20;   // 32 MiB of FP16 activations per slice (64 MiB as fp32)
 
-#if defined(STRATA_EXPERIMENTAL_SM60)
-// ---- Pascal, opt-in (STRATA_DENSE_F32=1): the dense projections' FP16-operand GEMMs as cublasSgemm ----------------
+#if defined(NOSTROMA_EXPERIMENTAL_SM60)
+// ---- Pascal, opt-in (NOSTROMA_DENSE_F32=1): the dense projections' FP16-operand GEMMs as cublasSgemm ----------------
 // Measured on a Tesla P40 (sm_61) with cuBLAS 12.4.5.8 (bench/results/2026-10-12-p40-sm61-kernels).  For FP16
 // operands with FP32 sums cuBLAS has two Maxwell kernels there, maxwell_sgemm_fp16_64x64 and _32x128, and picks the
 // slow one for most chunk sizes: the 10240 x 2560 qkv projection runs at 7.6 TFLOPS for T 7030-7040 and at 4.3 from
@@ -905,10 +905,10 @@ void f16_to_f32(const uint16_t* in, float* out, int64_t n, cudaStream_t st) {
     if (n <= 0) return;
     f16_to_f32_kernel<<<(unsigned) ((n + 255) / 256), 256, 0, st>>>(in, out, n);
 }
-int g_dense_f32 = -1;   // gemm_set_dense_f32 (the parity test: 0 / 1 on any card); -1 = STRATA_DENSE_F32
+int g_dense_f32 = -1;   // gemm_set_dense_f32 (the parity test: 0 / 1 on any card); -1 = NOSTROMA_DENSE_F32
 bool dense_f32_on() {
     static const bool env = [] {
-        const char* v = strata::env("NOSTROMA_DENSE_F32");
+        const char* v = nostroma::env("NOSTROMA_DENSE_F32");
         return v != nullptr && std::atoi(v) != 0;
     }();
     if (g_dense_f32 >= 0) return g_dense_f32 != 0;
@@ -930,32 +930,32 @@ int64_t dense_f32_min_t(int64_t N, int64_t K) {
 #endif
 }  // namespace
 #endif
-#if !defined(__HIPCC__) && defined(STRATA_EXPERIMENTAL_SM60)
+#if !defined(__HIPCC__) && defined(NOSTROMA_EXPERIMENTAL_SM60)
 void gemm_set_dense_f32(int mode) { g_dense_f32 = mode; }
 #else
 void gemm_set_dense_f32(int) {}
 #endif
 bool Gemm::bf16_hcd_exact(const uint16_t* X, int64_t ldx, const uint16_t* W, float* Y, int64_t T, int64_t N, int64_t K) {
-#if defined(__HIPCC__) && defined(STRATA_HIPBLASLT_AVAILABLE)
+#if defined(__HIPCC__) && defined(NOSTROMA_HIPBLASLT_AVAILABLE)
     static std::atomic<bool> told{false};
     if (!hipblaslt_state_ || N != 320 || K != 10240 || T < 1) {
         if (N == 320 && K == 10240 && !told.exchange(true))
-            std::fprintf(stderr, "strata: STRATA_HCD_EXACT: no hipBLASLt tuning table is loaded, so the exact kernel has nothing to match: "
+            std::fprintf(stderr, "nostroma: NOSTROMA_HCD_EXACT: no hipBLASLt tuning table is loaded, so the exact kernel has nothing to match: "
                                  "the hyper-connection down projection stays on hipBLAS\n");
         return false;
     }
     // The kernel copies hipBLASLt solution 1176 / 1177's summation order, which is only true of the library build the
     // table was calibrated with: take it only when the table makes hipBLASLt pick one of those two for this T.
-    const int id = hipblaslt_solution_for(hipblaslt_state_, strata::prefill::hipblaslt::InputType::bf16, T, N, K, N, 0.0f);
+    const int id = hipblaslt_solution_for(hipblaslt_state_, nostroma::prefill::hipblaslt::InputType::bf16, T, N, K, N, 0.0f);
     if (id != 1176 && id != 1177) {
         if (T >= 4096 && !told.exchange(true))   // (a short chunk may legitimately get another solution: not worth a line)
-            std::fprintf(stderr, "strata: STRATA_HCD_EXACT: the tuning table gives the hyper-connection down projection (N 320, K 10240) "
+            std::fprintf(stderr, "nostroma: NOSTROMA_HCD_EXACT: the tuning table gives the hyper-connection down projection (N 320, K 10240) "
                                  "solution %d at T %lld, not 1176 / 1177: hipBLASLt runs it (a changed table or library; "
                                  "tools/hip/gfx1151-hipblaslt-100401.txt is the one measured)\n",
                          id, (long long) T);
         return false;
     }
-    return strata_pf_hcdown_exact_bf16(X, ldx, W, Y, T, N, K, stream_);
+    return nostroma_pf_hcdown_exact_bf16(X, ldx, W, Y, T, N, K, stream_);
 #else
     (void) X; (void) ldx; (void) W; (void) Y; (void) T; (void) N; (void) K;
     return false;
@@ -974,7 +974,7 @@ bool Gemm::bf16_hcd_exact(const uint16_t* X, int64_t ldx, const uint16_t* W, flo
 // same up to summation order.  The weight is widened once per call, the activations in slices of up to 128 MiB of
 // FP32 (an 8,192-token chunk at K = 2560 is one slice).  Small N (< 64: routers, gates) keeps the native call:
 // there the widening costs more than the GEMM gains.  If the FP32 buffers cannot be allocated, the native call runs.
-//   OPT-IN here: STRATA_RDNA2_SGEMM=1 turns it on for gfx103x devices (other cards keep the native call, also in a
+//   OPT-IN here: NOSTROMA_RDNA2_SGEMM=1 turns it on for gfx103x devices (other cards keep the native call, also in a
 //   mixed layer split); =all turns it on for every AMD card (A/B arms, tests); unset or 0 is the native path.  The
 //   author ran it as the gfx103x default (RX 6800 343 -> 534 tok/s); it is not bit-identical to the native call.
 namespace {
@@ -995,7 +995,7 @@ void rdna2_widen(const uint16_t* in, float* out, int64_t n, bool bf16, cudaStrea
 // whether this GEMM runs as an SGEMM (see above)
 bool rdna2_sgemm_on(int64_t N) {
     static const int mode = [] {   // 0 off (unset), 1 gfx103x devices, 2 every AMD device
-        const char* v = strata::env("NOSTROMA_RDNA2_SGEMM");
+        const char* v = nostroma::env("NOSTROMA_RDNA2_SGEMM");
         if (v == nullptr || v[0] == '\0') return 0;
         if (std::strcmp(v, "all") == 0) return 2;
         return std::atoi(v) > 0 ? 1 : 0;
@@ -1054,7 +1054,7 @@ bool Gemm::rdna2_sgemm(const uint16_t* X, const uint16_t* W, float* Y, int64_t T
 #endif
 
 bool Gemm::bf16_converts_x() const {
-#if defined(__HIPCC__) || defined(STRATA_EXPERIMENTAL_SM60)
+#if defined(__HIPCC__) || defined(NOSTROMA_EXPERIMENTAL_SM60)
     return false;
 #else
     return bf16_path() == 1;
@@ -1069,13 +1069,13 @@ void Gemm::bf16(const uint16_t* X, const uint16_t* W, float* Y, int64_t T, int64
     if (T <= 0 || N <= 0) return;
     if (ldy <= 0) ldy = N;
     if (ldx <= K) ldx = 0;
-#ifdef STRATA_USE_HIP
-    // #313 (opt-in STRATA_WMMA_GEMM=1; STRATA_WMMA_BF16=0 excludes bf16): RDNA3 / RDNA3.5 WMMA dense GEMM, before
+#ifdef NOSTROMA_USE_HIP
+    // #313 (opt-in NOSTROMA_WMMA_GEMM=1; NOSTROMA_WMMA_BF16=0 excludes bf16): RDNA3 / RDNA3.5 WMMA dense GEMM, before
     // hipBLASLt; it returns false for shapes it does not take (and off gfx11) and this falls through
-    static const bool wmma_on = [] { const char* v = strata::env("NOSTROMA_WMMA_GEMM"); return v && v[0] != 0 && v[0] != '0'; }();
-    static const bool bf16_on = [] { const char* v = strata::env("NOSTROMA_WMMA_BF16"); return !v || (v[0] != 0 && v[0] != '0'); }();
+    static const bool wmma_on = [] { const char* v = nostroma::env("NOSTROMA_WMMA_GEMM"); return v && v[0] != 0 && v[0] != '0'; }();
+    static const bool bf16_on = [] { const char* v = nostroma::env("NOSTROMA_WMMA_BF16"); return !v || (v[0] != 0 && v[0] != '0'); }();
     if (wmma_on && bf16_on && ldx == 0 && T >= 16 && (beta == 0.0f || beta == 1.0f) &&
-        strata_wmma_gemm_bf16(X, W, Y, T, N, K, ldy, beta, stream_)) {
+        nostroma_wmma_gemm_bf16(X, W, Y, T, N, K, ldy, beta, stream_)) {
         return;
     }
 #endif
@@ -1094,19 +1094,19 @@ void Gemm::bf16(const uint16_t* X, const uint16_t* W, float* Y, int64_t T, int64
     }
 #endif
     const float alpha = 1.0f;
-#if defined(__HIPCC__) && defined(STRATA_HIPBLASLT_AVAILABLE)
-    if (try_hipblaslt(hipblaslt_state_, strata::prefill::hipblaslt::InputType::bf16, X, W, Y, T, N, K, ldy,
+#if defined(__HIPCC__) && defined(NOSTROMA_HIPBLASLT_AVAILABLE)
+    if (try_hipblaslt(hipblaslt_state_, nostroma::prefill::hipblaslt::InputType::bf16, X, W, Y, T, N, K, ldy,
                       beta, stream_, ldx)) {
-        STRATA_ABSORB_HIPBLAS_STICKY("hipBLASLt bf16");
+        NOSTROMA_ABSORB_HIPBLAS_STICKY("hipBLASLt bf16");
         return;
     }
 #endif
 #if defined(__HIPCC__)
-    // a padded X (STRATA_PF_PAD, ldx > K) keeps the native call: the widening copies contiguous rows
+    // a padded X (NOSTROMA_PF_PAD, ldx > K) keeps the native call: the widening copies contiguous rows
     if (ldx == 0 && rdna2_sgemm(X, W, Y, T, N, K, ldy, beta, true)) return;
 #endif
 #if !defined(__HIPCC__)
-#if defined(STRATA_EXPERIMENTAL_SM60)
+#if defined(NOSTROMA_EXPERIMENTAL_SM60)
     constexpr bool kPascalPath = true;
 #else
     constexpr bool kPascalPath = false;
@@ -1139,7 +1139,7 @@ void Gemm::bf16(const uint16_t* X, const uint16_t* W, float* Y, int64_t T, int64
             for (int64_t n0 = 0; n0 < N; n0 += w_rows) {
                 const int64_t nn = std::min<int64_t>(w_rows, N - n0);
                 if (path == 2) {
-#if defined(STRATA_EXPERIMENTAL_SM60)
+#if defined(NOSTROMA_EXPERIMENTAL_SM60)
                     float* const wf = reinterpret_cast<float*>(tc_w_);
                     float* const xf = reinterpret_cast<float*>(tc_x_);
                     bf16_to_f32(W + n0 * K, wf, nn * K, (cudaStream_t) stream_);
@@ -1189,21 +1189,21 @@ void Gemm::bf16(const uint16_t* X, const uint16_t* W, float* Y, int64_t T, int64
                     CUDA_R_16BF, (int) K, X, CUDA_R_16BF, (int) (ldx ? ldx : K), &beta, Y, CUDA_R_32F, (int) ldy,
                     CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT),
        "cublasGemmEx");
-    STRATA_ABSORB_HIPBLAS_STICKY("cublasGemmEx");
+    NOSTROMA_ABSORB_HIPBLAS_STICKY("cublasGemmEx");
 }
 
 void Gemm::f16(const uint16_t* X, const uint16_t* W, float* Y, int64_t T, int64_t N, int64_t K, int64_t ldy,
                float beta) {
     if (T <= 0 || N <= 0) return;
     if (ldy <= 0) ldy = N;
-#ifdef STRATA_USE_HIP
-    // #313 (opt-in STRATA_WMMA_GEMM=1): RDNA3 / RDNA3.5 WMMA dense GEMM, before hipBLASLt (falls through when false)
-    static const bool wmma_on = [] { const char* v = strata::env("NOSTROMA_WMMA_GEMM"); return v && v[0] != 0 && v[0] != '0'; }();
-    static const bool pf_on = [] { const char* v = strata::env("NOSTROMA_PF_GEMM"); return v && v[0] == '1'; }();
-    static const int64_t pf_min_t = [] { const char* v = strata::env("NOSTROMA_PF_SWITCH_MIN_T"); return v ? (int64_t) std::atoll(v) : (int64_t) 0; }();
-    if (pf_on && T >= pf_min_t && strata_pf_gemm_f16(X, W, Y, T, N, K, ldy, beta, stream_)) return;   // S23: opt-in
+#ifdef NOSTROMA_USE_HIP
+    // #313 (opt-in NOSTROMA_WMMA_GEMM=1): RDNA3 / RDNA3.5 WMMA dense GEMM, before hipBLASLt (falls through when false)
+    static const bool wmma_on = [] { const char* v = nostroma::env("NOSTROMA_WMMA_GEMM"); return v && v[0] != 0 && v[0] != '0'; }();
+    static const bool pf_on = [] { const char* v = nostroma::env("NOSTROMA_PF_GEMM"); return v && v[0] == '1'; }();
+    static const int64_t pf_min_t = [] { const char* v = nostroma::env("NOSTROMA_PF_SWITCH_MIN_T"); return v ? (int64_t) std::atoll(v) : (int64_t) 0; }();
+    if (pf_on && T >= pf_min_t && nostroma_pf_gemm_f16(X, W, Y, T, N, K, ldy, beta, stream_)) return;   // S23: opt-in
     if (wmma_on && T >= 16 && (beta == 0.0f || beta == 1.0f) &&
-        strata_wmma_gemm_f16(X, W, Y, T, N, K, ldy, beta, stream_)) {
+        nostroma_wmma_gemm_f16(X, W, Y, T, N, K, ldy, beta, stream_)) {
         return;
     }
 #endif
@@ -1211,15 +1211,15 @@ void Gemm::f16(const uint16_t* X, const uint16_t* W, float* Y, int64_t T, int64_
     if (f16_io_ && beta == 0.0f) { f16_inplace(X, W, Y, T, N, K, ldy); return; }
 #endif
     const float alpha = 1.0f;
-#if defined(__HIPCC__) && defined(STRATA_HIPBLASLT_AVAILABLE)
-    if (try_hipblaslt(hipblaslt_state_, strata::prefill::hipblaslt::InputType::f16, X, W, Y, T, N, K, ldy,
+#if defined(__HIPCC__) && defined(NOSTROMA_HIPBLASLT_AVAILABLE)
+    if (try_hipblaslt(hipblaslt_state_, nostroma::prefill::hipblaslt::InputType::f16, X, W, Y, T, N, K, ldy,
                       beta, stream_)) {
-        STRATA_ABSORB_HIPBLAS_STICKY("hipBLASLt f16");
+        NOSTROMA_ABSORB_HIPBLAS_STICKY("hipBLASLt f16");
         return;
     }
 #endif
-#if !defined(__HIPCC__) && defined(STRATA_EXPERIMENTAL_SM60)
-    // Pascal, STRATA_DENSE_F32=1: cublasSgemm on FP32 copies (dense_f32_on above: where it is bitwise the FP16 call)
+#if !defined(__HIPCC__) && defined(NOSTROMA_EXPERIMENTAL_SM60)
+    // Pascal, NOSTROMA_DENSE_F32=1: cublasSgemm on FP32 copies (dense_f32_on above: where it is bitwise the FP16 call)
     if (const int64_t min_t = beta == 0.0f ? dense_f32_min_t(N, K) : 0; min_t > 0 && T >= min_t && dense_f32_on()) {
         const int64_t n_sl = (T * K + kXSliceElems - 1) / kXSliceElems;   // even slices of at most 64 MiB as fp32
         const int64_t x_rows = (T + n_sl - 1) / n_sl;
@@ -1230,7 +1230,7 @@ void Gemm::f16(const uint16_t* X, const uint16_t* W, float* Y, int64_t T, int64_
             if (!said) {
                 said = true;
                 std::fprintf(stderr, "prefill gemm: the dense projections' FP16 GEMMs run as cublasSgemm on FP32 copies "
-                                     "(STRATA_DENSE_F32=1; gemm_f32_parity checks the bits against this cuBLAS)\n");
+                                     "(NOSTROMA_DENSE_F32=1; gemm_f32_parity checks the bits against this cuBLAS)\n");
             }
             float* const wf = reinterpret_cast<float*>(tc_w_);
             float* const xf = reinterpret_cast<float*>(tc_x_);
@@ -1240,7 +1240,7 @@ void Gemm::f16(const uint16_t* X, const uint16_t* W, float* Y, int64_t T, int64_
                 f16_to_f32(X + t0 * K, xf, n * K, (cudaStream_t) stream_);
                 ck(cublasSgemm((cublasHandle_t) handle_, CUBLAS_OP_T, CUBLAS_OP_N, (int) N, (int) n, (int) K, &alpha, wf, (int) K,
                                xf, (int) K, &beta, Y + t0 * ldy, (int) ldy),
-                   "cublasSgemm (FP16 operands, STRATA_DENSE_F32)");
+                   "cublasSgemm (FP16 operands, NOSTROMA_DENSE_F32)");
             }
             return;
         }
@@ -1276,16 +1276,16 @@ void Gemm::f16(const uint16_t* X, const uint16_t* W, float* Y, int64_t T, int64_
                     CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT),
        "cublasGemmEx f16");
 #endif
-    STRATA_ABSORB_HIPBLAS_STICKY("cublasGemmEx f16");
+    NOSTROMA_ABSORB_HIPBLAS_STICKY("cublasGemmEx f16");
 }
 
-#if defined(STRATA_PREFILL_MMQ) && defined(__HIPCC__)
+#if defined(NOSTROMA_PREFILL_MMQ) && defined(__HIPCC__)
 bool Gemm::native_mmq(const uint16_t* X, int type, const void* W, float* Y, int64_t T, int64_t N, int64_t K,
                       int64_t ldy) {
-    namespace mmq = strata::prefill::mmq;
+    namespace mmq = nostroma::prefill::mmq;
     constexpr int64_t kRows = 1024, kMaxK = 8192;
     static const bool enabled = [] {
-        const char* e = strata::env("NOSTROMA_DENSE_MMQ");
+        const char* e = nostroma::env("NOSTROMA_DENSE_MMQ");
         return e && e[0] == '1';
     }();
     if (!enabled || mmq_failed_ || !mmq::built() || !mmq::fits(type, N)) return false;
@@ -1317,7 +1317,7 @@ bool Gemm::native_mmq(const uint16_t* X, int type, const void* W, float* Y, int6
         }
         mmq_ctx_ = new mmq::Context();
         mmq::iota((int32_t*) ((uint8_t*) mmq_buf_ + ident_off), (int64_t) ids_rows, stream_);
-        std::fprintf(stderr, "prefill gemm: dense MMQ on (STRATA_DENSE_MMQ=1)\n");
+        std::fprintf(stderr, "prefill gemm: dense MMQ on (NOSTROMA_DENSE_MMQ=1)\n");
     }
     void* xq = mmq_buf_;
     const int32_t* ident = (const int32_t*) ((uint8_t*) mmq_buf_ + ident_off);
@@ -1353,7 +1353,7 @@ void Gemm::f16_inplace(const uint16_t* X, const uint16_t* W, float* Y, int64_t T
 #if defined(__HIPCC__)
     const float one = 1.0f, zero = 0.0f;
     bool done = false;
-#if defined(STRATA_ROCBLAS_AVAILABLE)
+#if defined(NOSTROMA_ROCBLAS_AVAILABLE)
     done = try_rocblas_f16o(rocblas_state_, X, W, Y, T, N, K, ldy);   // the table's kernel for this shape, if any
 #endif
     if (!done) {
@@ -1362,13 +1362,13 @@ void Gemm::f16_inplace(const uint16_t* X, const uint16_t* W, float* Y, int64_t T
                         CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT),
            "cublasGemmEx f16 out");
     }
-    static const bool dbg_nan = strata::env("NOSTROMA_DBG_NAN") != nullptr;
+    static const bool dbg_nan = nostroma::env("NOSTROMA_DBG_NAN") != nullptr;
     widen_rows_f16<<<(unsigned) T, 256, 0, (cudaStream_t) stream_>>>(Y, N, ldy, dbg_nan ? 1 : 0);
     if (dbg_nan) {   // debug only: a sync per GEMM
         unsigned long long bad = 0, zero_count = 0;
         (void) hipStreamSynchronize((hipStream_t) stream_);
         if (hipMemcpyFromSymbol(&bad, HIP_SYMBOL(g_f16_nonfinite), sizeof bad) == hipSuccess && bad != 0) {
-            std::fprintf(stderr, "strata prefill: STRATA_DBG_NAN: %llu non-finite FP16 GEMM outputs (T=%lld N=%lld K=%lld; FP16 ends at 65504)%s",
+            std::fprintf(stderr, "nostroma prefill: NOSTROMA_DBG_NAN: %llu non-finite FP16 GEMM outputs (T=%lld N=%lld K=%lld; FP16 ends at 65504)%s",
                          bad, (long long) T, (long long) N, (long long) K, "\n");
             (void) hipMemcpyToSymbol(HIP_SYMBOL(g_f16_nonfinite), &zero_count, sizeof zero_count);
         }
@@ -1380,40 +1380,40 @@ void Gemm::f16_inplace(const uint16_t* X, const uint16_t* W, float* Y, int64_t T
 
 void Gemm::native(const uint16_t* X, int ggml_type, const void* W_blocks, float* Y, int64_t T, int64_t N, int64_t K,
                   int64_t ldy, float beta, int64_t ldx) {
-#ifdef STRATA_USE_HIP
-    // S23 (opt-in STRATA_PF_PAD=1, with STRATA_PF_GEMM=1 on chunks of STRATA_PF_SWITCH_MIN_T+ tokens): the weight
+#ifdef NOSTROMA_USE_HIP
+    // S23 (opt-in NOSTROMA_PF_PAD=1, with NOSTROMA_PF_GEMM=1 on chunks of NOSTROMA_PF_SWITCH_MIN_T+ tokens): the weight
     // dequantized into the scratch with row stride K + 64 halves, so no 4 KB-multiple stride camps on the memory
     // channels (gemm_probe8: K 6144 19 -> 29 TFLOPS from W alone, 35 with X padded too).  Bitwise the same products.
-    static const bool pad_on = [] { const char* v = strata::env("NOSTROMA_PF_PAD"); return v && v[0] == '1'; }();
-    static const bool pf_on = [] { const char* v = strata::env("NOSTROMA_PF_GEMM"); return v && v[0] == '1'; }();
-    static const int64_t pf_min_t = [] { const char* v = strata::env("NOSTROMA_PF_SWITCH_MIN_T"); return v ? (int64_t) std::atoll(v) : (int64_t) 0; }();
-    // (strata_pf_padded_gemm_available(): the CURRENT device runs the padded gfx11 product.  On a gfx1151 + gfx1201 split the process-wide switch
+    static const bool pad_on = [] { const char* v = nostroma::env("NOSTROMA_PF_PAD"); return v && v[0] == '1'; }();
+    static const bool pf_on = [] { const char* v = nostroma::env("NOSTROMA_PF_GEMM"); return v && v[0] == '1'; }();
+    static const int64_t pf_min_t = [] { const char* v = nostroma::env("NOSTROMA_PF_SWITCH_MIN_T"); return v ? (int64_t) std::atoll(v) : (int64_t) 0; }();
+    // (nostroma_pf_padded_gemm_available(): the CURRENT device runs the padded gfx11 product.  On a gfx1151 + gfx1201 split the process-wide switch
     // is on for both stages; the gfx12 stage would dequantize the weight padded, find no product, and do it again unpadded below.)
     if (pad_on && pf_on && T >= pf_min_t && T >= 64 && N >= 512 && K % 32 == 0 && N * (K + 64) <= scratch_elems_ &&
-        strata_pf_padded_gemm_available()) {
+        nostroma_pf_padded_gemm_available()) {
         const int64_t ldw = K + 64;
-        if (strata::kernels::dequant_f16_ld(ggml_type, W_blocks, 0, N, K, ldw, scratch_, stream_) &&
-            strata_pf_gemm_f16_ld(X, ldx > 0 ? ldx : K, scratch_, ldw, Y, T, N, K, ldy, beta, stream_)) {
+        if (nostroma::kernels::dequant_f16_ld(ggml_type, W_blocks, 0, N, K, ldw, scratch_, stream_) &&
+            nostroma_pf_gemm_f16_ld(X, ldx > 0 ? ldx : K, scratch_, ldw, Y, T, N, K, ldy, beta, stream_)) {
             return;
         }
     }
 #endif
     if (ldx > 0 && ldx != K) {
-#ifdef STRATA_USE_HIP
+#ifdef NOSTROMA_USE_HIP
         // X arrived padded but the weight cannot be (an i-quant without a strided dequant, or the scratch is too
         // small for N x (K + 64)): the weight unpadded, X read at its stride - the same products, the same bits
         const int64_t rows = scratch_elems_ / K;
-        bool ok = rows > 0 && strata_pf_padded_gemm_available();
+        bool ok = rows > 0 && nostroma_pf_padded_gemm_available();
         if (ldy <= 0) ldy = N;
         for (int64_t r0 = 0; ok && r0 < N; r0 += rows) {
             const int64_t n = (N - r0 < rows) ? N - r0 : rows;
-            strata::kernels::dequant_f16(ggml_type, W_blocks, r0, n, K, scratch_, stream_);
-            ok = strata_pf_gemm_f16_ld(X, ldx, scratch_, K, Y + r0, T, n, K, ldy, beta, stream_);
+            nostroma::kernels::dequant_f16(ggml_type, W_blocks, r0, n, K, scratch_, stream_);
+            ok = nostroma_pf_gemm_f16_ld(X, ldx, scratch_, K, Y + r0, T, n, K, ldy, beta, stream_);
         }
         if (ok) return;
 #endif
-        // Nothing took a padded X: the padded product is the gfx11 matrix cores' (STRATA_PF_PAD asks
-        // strata_pf_padded_gemm_available() before padding now, so this is a stale producer or another card's
+        // Nothing took a padded X: the padded product is the gfx11 matrix cores' (NOSTROMA_PF_PAD asks
+        // nostroma_pf_padded_gemm_available() before padding now, so this is a stale producer or another card's
         // activation).  Copy the rows unpadded and run the ordinary paths - the same products, the same bits - rather
         // than ending the engine.
         const uint16_t* Xu = unpad_x(X, T, K, ldx);
@@ -1425,21 +1425,21 @@ void Gemm::native(const uint16_t* X, int ggml_type, const void* W_blocks, float*
                              "copied unpadded (no device memory)\n", (long long) ldx, (long long) K);
         std::exit(1);
     }
-#if defined(STRATA_PREFILL_MMQ) && defined(__HIPCC__)
+#if defined(NOSTROMA_PREFILL_MMQ) && defined(__HIPCC__)
     if (beta == 0.0f && (ldx == 0 || ldx == K) && native_mmq(X, ggml_type, W_blocks, Y, T, N, K, ldy)) return;
 #endif
-#ifndef STRATA_USE_HIP
+#ifndef NOSTROMA_USE_HIP
     // The FP16 weight kept on the device after its first dequant.  NOT bit-exact against the uncached sliced form on every
-    // card (see the default below): off unless STRATA_PF_W16_CACHE_MIB is set.  When on it is sized by the card, never by the user.  It takes only VRAM nobody else holds: a weight is
+    // card (see the default below): off unless NOSTROMA_PF_W16_CACHE_MIB is set.  When on it is sized by the card, never by the user.  It takes only VRAM nobody else holds: a weight is
     // cached while the card keeps kW16AutoReserve free afterwards (the MTP prompt capture, the batch windows and a long
     // prompt's buffers are allocated later, out of that room; a replica with 309 MiB free ran out of memory at 14K tokens),
     // so a card whose expert cache fills it caches nothing and a card with room (all experts resident) caches what the
-    // prompt path uses (~6 GB for Qwen3.8).  STRATA_PF_W16_CACHE_MIB=N is an explicit budget (2 GiB kept free, as before),
+    // prompt path uses (~6 GB for Qwen3.8).  NOSTROMA_PF_W16_CACHE_MIB=N is an explicit budget (2 GiB kept free, as before),
     // =0 turns it off.
     if (w16_budget_ < 0) {
-        const char* v = strata::env("NOSTROMA_PF_W16_CACHE_MIB");
+        const char* v = nostroma::env("NOSTROMA_PF_W16_CACHE_MIB");
         if (v != nullptr && std::strcmp(v, "auto") == 0) {
-            // STRATA_PF_W16_CACHE_MIB=auto (tester switch, round0212 item 7): the automatic sizing - weights are cached while the card
+            // NOSTROMA_PF_W16_CACHE_MIB=auto (tester switch, round0212 item 7): the automatic sizing - weights are cached while the card
             // keeps kW16AutoReserve free afterwards, so a card whose expert cache fills it caches nothing.  Not bit-exact (see below),
             // so it is not the default until the owner says yes.
             w16_budget_ = 16ll << 30;
@@ -1467,7 +1467,7 @@ void Gemm::native(const uint16_t* X, int ggml_type, const void* W_blocks, float*
             size_t fb = 0, tb = 0;
             if (cudaMemGetInfo(&fb, &tb) == cudaSuccess && fb > (size_t) bytes + (size_t) w16_reserve_ &&
                 cudaMalloc((void**) &cw, (size_t) bytes) == cudaSuccess) {
-                strata::kernels::dequant_f16(ggml_type, W_blocks, 0, N, K, cw, stream_);
+                nostroma::kernels::dequant_f16(ggml_type, W_blocks, 0, N, K, cw, stream_);
                 w16_.push_back({W_blocks, ggml_type, N, K, cw});
                 w16_used_ += bytes;
             } else {
@@ -1475,7 +1475,7 @@ void Gemm::native(const uint16_t* X, int ggml_type, const void* W_blocks, float*
                 cw = nullptr;
                 if (w16_budget_ > 0 && !w16_logged_) {
                     w16_logged_ = true;
-                    std::fprintf(stderr, "strata prefill: FP16 weight cache %lld MiB (the card keeps %lld MiB free; STRATA_PF_W16_CACHE_MIB=0 turns it off)\n",
+                    std::fprintf(stderr, "nostroma prefill: FP16 weight cache %lld MiB (the card keeps %lld MiB free; NOSTROMA_PF_W16_CACHE_MIB=0 turns it off)\n",
                                  (long long) (w16_used_ >> 20), (long long) (w16_reserve_ >> 20));
                 }
                 w16_budget_ = w16_used_ > 0 ? w16_used_ : 0;   // out of room: stop trying
@@ -1494,7 +1494,7 @@ void Gemm::native(const uint16_t* X, int ggml_type, const void* W_blocks, float*
         if (ldy <= 0) ldy = N;
         for (int64_t r0 = 0; r0 < N; r0 += rows) {
             const int64_t n = (N - r0 < rows) ? N - r0 : rows;
-            strata::kernels::dequant_f16(ggml_type, W_blocks, r0, n, K, scratch_, stream_);
+            nostroma::kernels::dequant_f16(ggml_type, W_blocks, r0, n, K, scratch_, stream_);
             f16(X, scratch_, Y + r0, T, n, K, ldy, beta);
         }
         // the side stream's next dequant into scratch_ waits for these slices' reads and writes of it
@@ -1502,14 +1502,14 @@ void Gemm::native(const uint16_t* X, int ggml_type, const void* W_blocks, float*
         return;
     }
     if (side_scratch_) {
-        // STRATA_DEQUANT_SIDE: the dequant on the side stream, into the scratch the compute stream read last but one.
+        // NOSTROMA_DEQUANT_SIDE: the dequant on the side stream, into the scratch the compute stream read last but one.
         // free[cur] -> dequant -> ready[cur] -> GEMM -> free[cur] orders the dequant after the GEMM that last read
         // this scratch and the GEMM after the dequant that filled it, so every read and write of a scratch is where
         // the serial form had it - the same kernels, the same bits - and the dequant runs while the kernels queued
         // ahead of this GEMM do.
         uint16_t* const s = side_cur_ == 0 ? scratch_ : side_scratch_;
         (void) cudaStreamWaitEvent((cudaStream_t) side_stream_, (cudaEvent_t) side_free_[side_cur_], 0);
-        strata::kernels::dequant_f16(ggml_type, W_blocks, 0, N, K, s, side_stream_);
+        nostroma::kernels::dequant_f16(ggml_type, W_blocks, 0, N, K, s, side_stream_);
         (void) cudaEventRecord((cudaEvent_t) side_ready_[side_cur_], (cudaStream_t) side_stream_);
         (void) cudaStreamWaitEvent((cudaStream_t) stream_, (cudaEvent_t) side_ready_[side_cur_], 0);
         f16(X, s, Y, T, N, K, ldy, beta);
@@ -1517,8 +1517,8 @@ void Gemm::native(const uint16_t* X, int ggml_type, const void* W_blocks, float*
         side_cur_ ^= 1;
         return;
     }
-    strata::kernels::dequant_f16(ggml_type, W_blocks, 0, N, K, scratch_, stream_);
+    nostroma::kernels::dequant_f16(ggml_type, W_blocks, 0, N, K, scratch_, stream_);
     f16(X, scratch_, Y, T, N, K, ldy, beta);
 }
 
-}  // namespace strata::prefill
+}  // namespace nostroma::prefill

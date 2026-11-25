@@ -1,5 +1,5 @@
 {
-  "exe": "/work/stock/build-hip/strata",
+  "exe": "/work/stock/build-hip/nostroma",
   "args": [
     "--pack",
     "/m/packs/iq3_s",

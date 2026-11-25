@@ -10,9 +10,9 @@ machine, one size, three runs per configuration; the V100 sits on a PCIe 3.0 x4 
   display (~0.9 GB in use). Default power limits (250 W / 200 W). CPU: i7-13700KF (24 threads, AVX2). RAM: **16 GB DDR5**
   (15 GiB visible). Model files on a SATA SSD (Samsung 870 EVO 500 GB).
 - Ubuntu 24.04.4 LTS, kernel 7.0.0-30-generic, NVIDIA driver 580.173.02, CUDA 12.9 toolkit.
-- Strata main at 6f32ec0, engine 0.1.39, built by setup.sh from source with `--cuda 12` for both cards:
+- Nostroma main at 6f32ec0, engine 0.1.39, built by setup.sh from source with `--cuda 12` for both cards:
   `engine-cuda12/BUILD.json` `"archs": [70, 89]`. One local change in `serve/frontend.py` (PR #819), not used by these runs.
-- Strata's PCIe probe at start: 18.6 GB/s to the 4070, 3.3 GB/s to the V100.
+- Nostroma's PCIe probe at start: 18.6 GB/s to the 4070, 3.3 GB/s to the V100.
 - No other GPU work; the server was started directly (`run-iq2_xs.sh`, port 8080).
 
 ## Model and configuration
@@ -27,7 +27,7 @@ machine, one size, three runs per configuration; the V100 sits on a PCIe 3.0 x4 
 - Auto split, 4070 first (`"gpu": [0, 1]`): **K=11** -- 4070 layers 0-10, V100 layers 11-47; 23,459 profiled pairs; 455 MiB free.
 
 ```text
-./setup.sh --setup --yes --family qwen --model IQ2_XS --gpus 1,0 --cuda 12 --vision no --data-dir /mnt/steam/Strata-data --no-start
+./setup.sh --setup --yes --family qwen --model IQ2_XS --gpus 1,0 --cuda 12 --vision no --data-dir /mnt/steam/Nostroma-data --no-start
 engine args: --pack .../packs/iq2_xs --native ...-00001-of-00002.gguf --ple-gguf ...-00002-of-00002.gguf
   --expert-profile data/expert-profile.bin --expert-cache auto --prefill auto --spec 4 --spec-min-p 0.5
   --mtp .../mtp/rt --max-context 131072 --kv int8 --mmap-experts --remote-expert-opt

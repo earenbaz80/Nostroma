@@ -1,4 +1,4 @@
-// route_resident_parity - the warp-parallel STRATA_ROUTE_RESIDENT swap against a scalar reference of the same
+// route_resident_parity - the warp-parallel NOSTROMA_ROUTE_RESIDENT swap against a scalar reference of the same
 // semantics, bit for bit.
 //
 // route_resident_k is one warp per token: lane j scans experts j, j + 32, ... and the warp reduces the best
@@ -13,8 +13,8 @@
 // softmax bits, are the same function in both.
 //
 // Run: route_resident_parity   (ctest: route_resident_parity; GPU, synthetic, no model)
-#include "strata/kernels/native_router.hpp"
-#include "strata/env.hpp"
+#include "nostroma/kernels/native_router.hpp"
+#include "nostroma/env.hpp"
 
 #include <cuda_runtime.h>
 
@@ -180,7 +180,7 @@ int main() {
         ck(cudaMemcpy(d_ids_par, ids.data(), ids.size() * 4, cudaMemcpyHostToDevice), "up ids par");
         ck(cudaMemcpy(d_w_par, sentinel.data(), sentinel.size() * 4, cudaMemcpyHostToDevice), "up w par");
         ck(cudaMemset(d_stats, 0, 4 * sizeof(unsigned long long)), "zero stats");
-        strata::kernels::native_route_resident(d_logits, d_ids_par, d_w_par, d_res, n_tok, margin, lo, hi,
+        nostroma::kernels::native_route_resident(d_logits, d_ids_par, d_w_par, d_res, n_tok, margin, lo, hi,
                                                d_stats, (void*) stream);
         ck(cudaStreamSynchronize(stream), "sync par");
         unsigned long long st_par[4] = {0, 0, 0, 0};
@@ -216,7 +216,7 @@ int main() {
             std::printf("  case %3d  n_tok %d  margin %.2f  ranks [%d,%d]  ties %d  ids %s  weights %s (%d ulp)  stats %s\n",
                         c, n_tok, margin, lo, hi, (int) tie_heavy, ids_same ? "same" : "*** DIFFER ***",
                         w_same ? "same" : "*** DIFFER ***", w_ulp, st_same ? "same" : "*** DIFFER ***");
-            if (strata::env("NOSTROMA_PARITY_DUMP") && dumped < 2) {
+            if (nostroma::env("NOSTROMA_PARITY_DUMP") && dumped < 2) {
                 ++dumped;
                 for (int t = 0; t < n_tok; ++t) {
                     std::printf("    token %d  ids in ", t);

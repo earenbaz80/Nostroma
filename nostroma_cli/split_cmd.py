@@ -29,7 +29,7 @@ def run(a) -> int:
         if machine:
             print(json.dumps({"schema_version": 1, "ok": False, "error": {"code": "split_engine_failed", "message": message}}, ensure_ascii=False))
         else:
-            print(f"strata: {message}", file=sys.stderr)
+            print(f"nostroma: {message}", file=sys.stderr)
         return 5
 
     try:
@@ -40,7 +40,7 @@ def run(a) -> int:
         return fail(f"The run config could not be read ({type(exc).__name__}).")
     from nostroma_control import split_engine as SE
     work = json.loads(json.dumps(cfg))                       # a copy: apply_run_config rewrites it in place
-    decision, line, warn = SE.apply_run_config(work, allow_untested=os.environ.get("NOSTROMA_SPLIT_ALLOW_UNTESTED", os.environ.get("STRATA_SPLIT_ALLOW_UNTESTED")) == "1")
+    decision, line, warn = SE.apply_run_config(work, allow_untested=os.environ.get("NOSTROMA_SPLIT_ALLOW_UNTESTED", os.environ.get("NOSTROMA_SPLIT_ALLOW_UNTESTED")) == "1")
     wrote = None
     if decision.use_split and a.out:
         out = Path(a.out)

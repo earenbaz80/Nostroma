@@ -49,7 +49,7 @@ class SmallPacks(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.synth = _load("t_pack_sel", "tools/test_dflash2_pack.py")
-        cls.packer = _load("strata_dflash2_pack_sel", "tools/dflash2_pack.py")
+        cls.packer = _load("nostroma_dflash2_pack_sel", "tools/dflash2_pack.py")
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -219,7 +219,7 @@ class TheTrueGraphicsMemory(unittest.TestCase):
         self.assertEqual(drafting.vram_gb(self.data, None), 0.89, "an engine that is not known: the larger figure")
         self.assertEqual(drafting.vram_gb(None, self.new), 0.72, "no data folder yet: the pack will be the Q4_0 one")
 
-    def test_a_q8_pack_of_an_earlier_strata_is_never_converted_so_the_figure_stays(self):
+    def test_a_q8_pack_of_an_earlier_nostroma_is_never_converted_so_the_figure_stays(self):
         self.pack(drafting.LEGACY_PACK_NAME)
         self.assertEqual(drafting.vram_gb(self.data, self.new), 0.89)
         self.pack(drafting.PACK_NAME)                                        # the Q4_0 pack beside it wins (pack_path): the converted figure

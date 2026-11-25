@@ -1,4 +1,4 @@
-// prefill_ws_parity_test - the weight-stationary expert products of PR #3752 (STRATA_MMQ_WS, GP100) against the per-group
+// prefill_ws_parity_test - the weight-stationary expert products of PR #3752 (NOSTROMA_MMQ_WS, GP100) against the per-group
 // MMQ they replace, byte for byte, on random experts (GPU, synthetic data, no model).
 //
 // A layer of E resident experts (random gate/up [1280 x 2560] and down [2560 x 640] blocks with sane fp16 scales, laid out
@@ -8,16 +8,16 @@
 // swiglu + quantize, then down), i.e. what Prefill does per 16-expert group; the candidate is ws::gate_up, ONE
 // mmq::swiglu_quant over all rows and ws::down.  Compared: GU (floats), Hq (the q8_1 bytes) and Dm (floats) of every row.
 // The down is also run alone on the reference Hq, so a difference points at the product. For the IQ4_NL down the run
-// repeats with STRATA_WS_FAST on (ws::set_fast(1)); the same Dm is required.
+// repeats with NOSTROMA_WS_FAST on (ws::set_fast(1)); the same Dm is required.
 //
 // The kernels were written for GP100 (the integer sums are exact, the float epilogue follows MMQ's sm_60 SASS), so the
 // verdict is only given on a compute capability 6.0 card; on another card the kernels are run too (ws::set_mode(1))
-// and the counts printed for information, with exit 77.  Needs the CUDA build with STRATA_EXPERIMENTAL_SM60.
+// and the counts printed for information, with exit 77.  Needs the CUDA build with NOSTROMA_EXPERIMENTAL_SM60.
 //
 //   prefill_ws_parity_test [--device N] [--any]    exit 0: all identical (cc 6.0); 77: other card; 1: a difference
-#include "strata/prefill/mmq_ids_margin.hpp"
-#include "strata/prefill/moe_mmq.hpp"
-#include "strata/prefill/moe_ws.hpp"
+#include "nostroma/prefill/mmq_ids_margin.hpp"
+#include "nostroma/prefill/moe_mmq.hpp"
+#include "nostroma/prefill/moe_ws.hpp"
 
 #include "ggml.h"
 
@@ -36,8 +36,8 @@
 #include <vector>
 
 namespace {
-namespace mmq = strata::prefill::mmq;
-namespace ws = strata::prefill::ws;
+namespace mmq = nostroma::prefill::mmq;
+namespace ws = nostroma::prefill::ws;
 
 void ck(cudaError_t e, const char* what) {
     if (e != cudaSuccess) throw std::runtime_error(std::string(what) + ": " + cudaGetErrorString(e));
@@ -199,7 +199,7 @@ Result run_case(ggml_type gt, ggml_type dt, const std::vector<int32_t>& cnt, uin
     if (test_fast) {
         const auto dmf = ddm_fast.down<uint8_t>(dmn);
         r.dm_fast = count_diff(dmr, dmf, dmn);
-        r.fast_vs_default = count_diff(dmc, dmf, dmn);   // STRATA_WS_FAST: the same bits as the default kernel, on any card
+        r.fast_vs_default = count_diff(dmc, dmf, dmn);   // NOSTROMA_WS_FAST: the same bits as the default kernel, on any card
     }
     return r;
 }
@@ -266,12 +266,12 @@ int main(int argc, char** argv) {
                 }
             }
         if (!gp100) {   // no verdict on this card: the float epilogue of its MMQ is not the one the kernels follow
-            std::printf("prefill_ws_parity_test (information, %s): %d cases (%d declined), STRATA_WS_FAST vs default: %zu differing bytes, "
+            std::printf("prefill_ws_parity_test (information, %s): %d cases (%d declined), NOSTROMA_WS_FAST vs default: %zu differing bytes, "
                         "largest GU / down-alone error against this card's MMQ %.2e of the largest value -> %s\n", prop.name, cases, declined,
                         total_fast, worst_err, total_fast == 0 && worst_err < 1e-5 && declined < cases ? "consistent" : "INCONSISTENT");
             return total_fast == 0 && worst_err < 1e-5 && declined < cases ? 77 : 1;
         }
-        std::printf("prefill_ws_parity_test: %d cases (%d declined), %zu differing bytes, STRATA_WS_FAST vs default %zu -> %s\n", cases,
+        std::printf("prefill_ws_parity_test: %d cases (%d declined), %zu differing bytes, NOSTROMA_WS_FAST vs default %zu -> %s\n", cases,
                     declined, total_diff, total_fast, total_diff == 0 && total_fast == 0 && declined < cases ? "PASS" : "FAIL");
         return total_diff == 0 && total_fast == 0 && declined < cases ? 0 : 1;
     } catch (const std::exception& e) {

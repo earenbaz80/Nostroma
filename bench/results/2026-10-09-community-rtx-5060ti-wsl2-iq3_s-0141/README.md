@@ -24,7 +24,7 @@ stack rather than native Linux.
   (kernel 6.18.40.1-microsoft-standard-WSL2), Ubuntu 24.04.2 LTS.
   Driver 616.92, nvidia-smi 615.71.08, CUDA UMD 13.4; CUDA toolkit 13.0
   for the build.
-- Strata commit fb58e0db (v0.1.41), source build via wsl-build.py
+- Nostroma commit fb58e0db (v0.1.41), source build via wsl-build.py
   (135/135 objects); engine 0.1.41 (src 62eb4907c92a8cb7).
 - Background workloads: none; the server had been idle (last request
   more than 10 hours earlier).
@@ -35,7 +35,7 @@ stack rather than native Linux.
   (3.50 bpw). Shard sizes: 54,817,524,224 B + 28,800,138,432 B;
   mmproj BF16 907,543,008 B. Repository revision was not recorded at
   download time. Vision encoder disabled.
-- Custom pack: Strata-data/packs/iq3_s (dense 1.5 GB), MTP rt/ runtime,
+- Custom pack: Nostroma-data/packs/iq3_s (dense 1.5 GB), MTP rt/ runtime,
   24576-pair expert profile; prepared with
   `setup.py --setup --family qwen --model IQ3_S --experimental-speed-projection on`.
 - Context 131072; KV int8; expert cache auto (3627 slots, 6.94 GiB VRAM,
@@ -48,7 +48,7 @@ stack rather than native Linux.
 - No manual pool-worker, VRAM-reserve, or calibration tuning.
 
 ```text
-serve/server.py --engine strata --config strata-iq3_s.json --port 8083
+serve/server.py --engine nostroma --config nostroma-iq3_s.json --port 8083
   --host 0.0.0.0 --gpu 1 --fit-max-tokens --api-key <redacted>
 ```
 
@@ -73,7 +73,7 @@ card as "GPU 0: NVIDIA GeForce RTX 5060 Ti".
   G generated in Z ms (W tok/s)`); client-side wall clock is also listed
   and includes ~2-4 s of HTTP/python overhead versus the engine sums.
 - Engine 0.1.41 caveat: prompt chunks under 1024 tokens partly run on
-  the CPU (`STRATA_PREFILL_CPU_SHARE` default), so the 47-48-token prompt
+  the CPU (`NOSTROMA_PREFILL_CPU_SHARE` default), so the 47-48-token prompt
   reads below carry that caveat; long prompts and decode are unaffected.
 - Memory: nvidia-smi plus a `/metrics` snapshot after the runs
   (`metrics-stock.json`).

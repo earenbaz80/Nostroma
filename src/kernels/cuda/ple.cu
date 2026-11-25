@@ -1,6 +1,6 @@
 // src/kernels/cuda/ple.cu - P2.S4: the PLE block's GPU half.
 //
-// See include/strata/kernels/ple.hpp for the structure and for the `normalized`-is-the-conv-input finding.
+// See include/nostroma/kernels/ple.hpp for the structure and for the `normalized`-is-the-conv-input finding.
 //
 // The legacy arithmetic below follows the captured CPU ggml graph
 // (`bench/micro/ple_in.bin` / `ple_out.bin`, produced by `ple_layer_xcheck.cpp`):
@@ -13,14 +13,14 @@
 //
 // The opt-in native BF16 path replaces only ple_value with the pinned CUDA single-token BF16/F32 MMVF.
 // A separate opt-in native postops path follows the pinned CUDA arithmetic after both projections.
-#include "strata/kernels/ple.hpp"
-#include "strata/kernels/bf16_gemv.hpp"
-#include "strata/kernels/f16_bits.hpp"
-#include "strata/kernels/ngram.hpp"
-#include "strata/kernels/quantize_act.hpp"
-#include "strata/kernels/s2_gemv_q8.hpp"
-#include "strata/kernels/native_mmvq.hpp"
-#include "strata/kernels/native_ple_postops.hpp"
+#include "nostroma/kernels/ple.hpp"
+#include "nostroma/kernels/bf16_gemv.hpp"
+#include "nostroma/kernels/f16_bits.hpp"
+#include "nostroma/kernels/ngram.hpp"
+#include "nostroma/kernels/quantize_act.hpp"
+#include "nostroma/kernels/s2_gemv_q8.hpp"
+#include "nostroma/kernels/native_mmvq.hpp"
+#include "nostroma/kernels/native_ple_postops.hpp"
 
 #include <cuda_runtime.h>
 #include <cuda_fp16.h>
@@ -31,7 +31,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 
 constexpr int THREADS = 256;
@@ -410,4 +410,4 @@ void ple_iq4nl_dequant(const uint8_t* raw, int64_t rows, float* out, void* strea
     ple_iq4nl_dequant_kernel<<<(unsigned) ((n + 255) / 256), 256, 0, (cudaStream_t) stream>>>(raw, n, out);
 }
 
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels

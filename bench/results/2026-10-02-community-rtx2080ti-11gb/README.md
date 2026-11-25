@@ -1,6 +1,6 @@
 # Community benchmark on RTX 2080 Ti 11 GB
 
-Measured on 2026-10-02 by [homeofe](https://github.com/homeofe). This tests Strata
+Measured on 2026-10-02 by [homeofe](https://github.com/homeofe). This tests Nostroma
 engine 0.1.33 (source build, CUDA 12.0, sm_75) with Qwen3.8-Flash-Next IQ3_S at a
 **262,144-token context** on an 11 GB Turing card, a 24-core Zen 2 CPU and 128 GB of
 DDR4-2133. It is a single-GPU, low-VRAM configuration: KV streaming (32,768 cells
@@ -35,7 +35,7 @@ for overlap with other traffic (see Method), and none overlapped.
   Plus 1 TB NVMe drives.
 - **OS:** Ubuntu 24.04.4 LTS, kernel 6.8.0-139-generic, NVIDIA driver 595.84 (CUDA
   13.2 driver API).
-- **Strata:**
+- **Nostroma:**
   - Engine 0.1.33, built from source on this PC with CUDA 12.0 (nvcc 12.0.140), GCC
     13.3.0, arch 75 ([BUILD.json](BUILD.json)).
   - The server runs `main` at `aeb35be` (tag `v0.1.33` plus one HIP-only commit)
@@ -46,7 +46,7 @@ for overlap with other traffic (see Method), and none overlapped.
   - Python 3.12.3 (the install's venv).
 - **Background workloads:**
   - Docker, an OpenClaw agent gateway and other services ran on the CPU.
-  - The OpenClaw agent sends requests to this same Strata server from time to time.
+  - The OpenClaw agent sends requests to this same Nostroma server from time to time.
   - No other process used the GPU; the systemd unit stops the PC's other GPU model
     services when it starts.
 
@@ -62,7 +62,7 @@ for overlap with other traffic (see Method), and none overlapped.
 - Native pack `packs/iq3_s` prepared by setup (`tools/iq_pack.py`); MTP draft layer
   `mtp/rt` from setup; the bundled `data/expert-profile.bin`. No calibration, no
   custom profile, no control vectors.
-- **Vision:** `strata-vision` on the CPU (`"gpu": false`, 24 threads, at most 1,024
+- **Vision:** `nostroma-vision` on the CPU (`"gpu": false`, 24 threads, at most 1,024
   image tokens). The engine binary was built with GPU vision support; the config
   moves the encoder to the CPU by hand (see the encoder note below).
 - **Context and memory:**
@@ -79,13 +79,13 @@ for overlap with other traffic (see Method), and none overlapped.
   loaded throughout; every run checked `/health` `loaded: true` first.
 
 Configuration with the API key removed and the install path replaced by `<workspace>`:
-[strata-iq3_s.json](strata-iq3_s.json). The launch, from the systemd user unit
+[nostroma-iq3_s.json](nostroma-iq3_s.json). The launch, from the systemd user unit
 (`LimitMEMLOCK=16867729408`), was:
 
 ```text
-.venv/bin/python serve/server.py --engine strata --config strata-iq3_s.json --port 8080
+.venv/bin/python serve/server.py --engine nostroma --config nostroma-iq3_s.json --port 8080
 # the engine command it starts (from the config):
-engine/strata --pack <data>/packs/iq3_s --native <data>/models/IQ3_S/...-00001-of-00002.gguf \
+engine/nostroma --pack <data>/packs/iq3_s --native <data>/models/IQ3_S/...-00001-of-00002.gguf \
   --ple-gguf <data>/models/IQ3_S/...-00002-of-00002.gguf --expert-profile data/expert-profile.bin \
   --expert-cache auto --prefill auto --spec 4 --spec-min-p 0.5 --mtp <data>/mtp/rt \
   --max-context 262144 --kv int8 --kv-resident 32768 --vision --vram-reserve-mib 700
@@ -97,20 +97,20 @@ to initialize CUDA`, comes from the CPU image encoder, which runs with CUDA hidd
 The relevant startup lines:
 
 ```text
-strata generate: KV streaming: 32768 of 262144 cells per QSA layer in VRAM, the K/V in 3.09 GiB of pinned RAM
-strata generate: loaded 46.84 GiB at 2.25 GiB/s
-strata generate: expert cache auto: 4.15 GiB free, 700 MiB reserved (+218 MiB for the draft head) -> 1313 slots
-strata generate: expert cache 1692 slots, 3.25 GiB of VRAM; policy is ... PROFILE, ranked by routing frequency, no eviction.
-strata serve: prompt chunk auto: 3072 tokens
-strata serve: the prompt path borrows 1361 CUDA0 cache slots (2.61 GiB)
-strata serve: 421 MiB of VRAM free with everything loaded
+nostroma generate: KV streaming: 32768 of 262144 cells per QSA layer in VRAM, the K/V in 3.09 GiB of pinned RAM
+nostroma generate: loaded 46.84 GiB at 2.25 GiB/s
+nostroma generate: expert cache auto: 4.15 GiB free, 700 MiB reserved (+218 MiB for the draft head) -> 1313 slots
+nostroma generate: expert cache 1692 slots, 3.25 GiB of VRAM; policy is ... PROFILE, ranked by routing frequency, no eviction.
+nostroma serve: prompt chunk auto: 3072 tokens
+nostroma serve: the prompt path borrows 1361 CUDA0 cache slots (2.61 GiB)
+nostroma serve: 421 MiB of VRAM free with everything loaded
 ```
 
 ## Method
 
 The scripts are in this folder. Run them with the install's Python, which provides
 `regex` for the tokenizer. Each script reads the API key at run time from
-`STRATA_API_KEY` or from `--key-config`; the key is never written.
+`NOSTROMA_API_KEY` or from `--key-config`; the key is never written.
 
 - [bench_server.py](bench_server.py): fresh-prompt and follow-up speed.
   - **Prompts:** the haystack from `tools/needle_bench.py` (this repository's docs
@@ -137,7 +137,7 @@ The scripts are in this folder. Run them with the install's Python, which provid
   number of red circles and blue squares. The answer must match `CODE; circles;
   squares` exactly.
 - [monitor.py](monitor.py): once per second, nvidia-smi memory/utilization/power,
-  `/proc/meminfo` and the RSS of `strata` and `strata-vision`, written to
+  `/proc/meminfo` and the RSS of `nostroma` and `nostroma-vision`, written to
   [data/telemetry.jsonl](data/telemetry.jsonl). It ran through all measurements.
 - [summarize.py](summarize.py): builds [runs.csv](runs.csv) and
   [summary.json](summary.json), including per-run memory peaks.
@@ -146,7 +146,7 @@ The scripts are in this folder. Run them with the install's Python, which provid
 - Before every request, the scripts wait until `GET /status` reports `busy: false,
   queued: 0` for 3 s.
 - After it, the run is discarded and repeated if `GET /metrics` counted more than
-  one finished request or the engine log gained more than one `strata serve:
+  one finished request or the engine log gained more than one `nostroma serve:
   prompt` line.
 - No run was discarded. Each JSON file records `totals_before` / `totals_after`.
 
@@ -177,7 +177,7 @@ The scripts are in this folder. Run them with the install's Python, which provid
 
 Per-run JSON in [data/](data/) holds the request hash, client timings, usage, the
 `/metrics` record, the parsed engine timing, the output text, and that request's
-engine and server log lines. Paths in these files are shortened to `<workspace>` (`common.py`, `STRATA_SCRUB_PREFIX`).
+engine and server log lines. Paths in these files are shortened to `<workspace>` (`common.py`, `NOSTROMA_SCRUB_PREFIX`).
 
 ## Results
 
@@ -210,11 +210,11 @@ from `decode expert cache hit rate` and `KV streaming: N% of block reads hit VRA
 The engine's lines for the long runs, as logged:
 
 ```text
-strata serve: prompt 128000 tokens = 0 reused + 128000 read in 225806 ms (566.9 tok/s), 400 generated in 11727 ms (34.1 tok/s), drafts accepted 195 of 350, 6 checkpoints
-strata serve: prompt 250000 tokens = 0 reused + 250000 read in 535798 ms (466.6 tok/s), 400 generated in 12571 ms (31.8 tok/s), drafts accepted 195 of 365, 6 checkpoints
-strata serve: decode expert cache hit rate: 54.9% (135616 hits / 247239 lookups)
-strata serve: KV streaming: 94.25% of 3561648 block reads hit VRAM, 824.9 MiB read from RAM
-strata serve: prompt 250463 tokens = 249993 reused + 470 read in 3556 ms (132.2 tok/s), 400 generated in 11568 ms (34.6 tok/s), drafts accepted 214 of 361, 6 checkpoints
+nostroma serve: prompt 128000 tokens = 0 reused + 128000 read in 225806 ms (566.9 tok/s), 400 generated in 11727 ms (34.1 tok/s), drafts accepted 195 of 350, 6 checkpoints
+nostroma serve: prompt 250000 tokens = 0 reused + 250000 read in 535798 ms (466.6 tok/s), 400 generated in 12571 ms (31.8 tok/s), drafts accepted 195 of 365, 6 checkpoints
+nostroma serve: decode expert cache hit rate: 54.9% (135616 hits / 247239 lookups)
+nostroma serve: KV streaming: 94.25% of 3561648 block reads hit VRAM, 824.9 MiB read from RAM
+nostroma serve: prompt 250463 tokens = 249993 reused + 470 read in 3556 ms (132.2 tok/s), 400 generated in 11568 ms (34.6 tok/s), drafts accepted 214 of 361, 6 checkpoints
 ```
 
 The complete lines for every request are in its JSON file. Per run:
@@ -232,9 +232,9 @@ the difference.
 - GPU: **10,525 MiB of 11,264 MiB** used, constant from the first to the last
   sample. The engine allocates everything at startup (`421 MiB of VRAM free with
   everything loaded`), and VRAM use does not grow with prompt length.
-- `strata` RSS: 52.3 GiB at 4K, rising to **52.9 GiB** at 128K and 250K. That
+- `nostroma` RSS: 52.3 GiB at 4K, rising to **52.9 GiB** at 128K and 250K. That
   includes the expert arena (`loaded 46.84 GiB`) and 3.09 GiB of pinned KV.
-  `strata-vision` RSS: about 1.0 GiB.
+  `nostroma-vision` RSS: about 1.0 GiB.
 - Host RAM used (`MemTotal - MemAvailable`, whole system): 62.7-65.6 GiB. The
   remaining RAM was mostly page cache (the PLE table is read from the mapped
   second GGUF shard).
@@ -250,7 +250,7 @@ the difference.
 | 3 | `JTT-57; 4; 3` | `JTT-57; 4; 3` | 441 | 3.39 s | 4.95 s | 1.56 s |
 
 All three are exact. Each image was new, so each was encoded fresh by
-`strata-vision` on 24 CPU threads. The encode estimate also contains HTTP and
+`nostroma-vision` on 24 CPU threads. The encode estimate also contains HTTP and
 tokenization time. The images are in [data/](data/).
 
 ### Recall: tools/needle_bench.py
@@ -277,7 +277,7 @@ the 128K and 250K speed runs were also found, by the follow-up turns
 ### Note: GPU image encoder vs CPU image encoder (earlier measurements, same day)
 
 Earlier on 2026-10-02, before this report, the same engine 0.1.33 build and model
-were run on this PC with `strata-vision` on the GPU. The resident GPU encoder takes
+were run on this PC with `nostroma-vision` on the GPU. The resident GPU encoder takes
 VRAM away from the engine on this 11 GB card, so `--prefill auto` chose smaller
 prompt chunks and the expert cache shrank. Fresh reads of 26K-33K-token prompts
 **fell to about 243 tok/s**. These numbers are earlier measurements, not repeated

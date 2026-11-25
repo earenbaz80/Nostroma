@@ -2,7 +2,7 @@
   "started": "2026-10-10 08:02:22",
   "url": "http://127.0.0.1:8080/v1/chat/completions",
   "model": "qwen3.8-flash-next-iq3_xxs",
-  "engine_log": "D:/Dev/Strata/strata-iq3_xxs.log",
+  "engine_log": "D:/Dev/Nostroma/nostroma-iq3_xxs.log",
   "cap_tokens": 256,
   "reps": 3,
   "speed": [

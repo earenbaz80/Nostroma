@@ -27,7 +27,7 @@
   ],
   "engine": {
     "version": "0.1.39",
-    "source": "release asset strata-windows-x64.zip",
+    "source": "release asset nostroma-windows-x64.zip",
     "asset_sha256_verified_at_install": true,
     "local_exe_sha256": "d4c3a51f60d7a35abab8ab335fb20a0ff325c508a1e59d14a15f22c0d64afd0c"
   },

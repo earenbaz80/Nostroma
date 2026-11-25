@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <string>
 
-using namespace strata::program::stage_reserve;
+using namespace nostroma::program::stage_reserve;
 
 namespace {
 int g_fail = 0;

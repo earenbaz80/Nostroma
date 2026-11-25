@@ -85,7 +85,7 @@ class CacheHintsMetrics(unittest.TestCase):
     def test_boundary_on_is_reported_from_the_engine_environment(self):
         svc = _Service()
         svc.engine = type("Engine", (), {"spawn": (None, [], None, None,
-                                                  {"STRATA_CACHE_MESSAGE_BOUNDARY": "1"}, False, None)})()
+                                                  {"NOSTROMA_CACHE_MESSAGE_BOUNDARY": "1"}, False, None)})()
         self.assertTrue(cache_boundary_on(svc))
         self.assertEqual(Service.cache_hints_view(svc)["boundary"], "on")
 

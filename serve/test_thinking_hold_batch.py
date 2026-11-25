@@ -63,7 +63,7 @@ class HoldBatchCase(FakeEngineCase):
             tp.FAKE_BATCH = old
 
     def run_pass(self, text, max_new, hold):
-        """One engine pass through generate (the real StrataEngine.generate -> generate_batched): -> (tokens, finish)"""
+        """One engine pass through generate (the real NostromaEngine.generate -> generate_batched): -> (tokens, finish)"""
         ids = list(text.encode())
         cancel = threading.Event()
         sampling = {HOLD_KEY: hold} if hold else {}

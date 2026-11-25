@@ -6,7 +6,7 @@ index 4e03dc8..48f5cf8 100644
      const core::ModelGeometry& g = *m.g;
      core::SessionState& ss = *m.ss;
      const auto t_start = Clock::now();
-+    const bool roofline = std::getenv("STRATA_PREFILL_ROOFLINE") != nullptr;
++    const bool roofline = std::getenv("NOSTROMA_PREFILL_ROOFLINE") != nullptr;
 +    uint64_t roof_bytes = 0, roof_unique_bytes = 0, roof_copies = 0, roof_unique = 0;
 +    std::vector<uint32_t> roof_counts(roofline ? (size_t) (g.n_layers * g.n_expert) : 0);
 +    // The serial issuer or the joined issuer thread owns this counter; peer copies are excluded.
@@ -51,7 +51,7 @@ index 4e03dc8..48f5cf8 100644
      }
      stats_.ms_total += ms_since(t_start);
 +    if (roofline) {
-+        std::fprintf(stderr, "strata prefill roofline: tokens %lld H2D_bytes %llu copies %llu unique_bytes %llu unique_experts %llu\n",
++        std::fprintf(stderr, "nostroma prefill roofline: tokens %lld H2D_bytes %llu copies %llu unique_bytes %llu unique_experts %llu\n",
 +                     (long long) n, (unsigned long long) roof_bytes, (unsigned long long) roof_copies,
 +                     (unsigned long long) roof_unique_bytes, (unsigned long long) roof_unique);
 +    }

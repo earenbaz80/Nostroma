@@ -11,7 +11,7 @@ import { HARNESS_BUDGET_PATCH, patchStagedHarnessBudget } from '../../desktop/sc
 const original = readFileSync(new URL('./fixtures/pi-ai-1.1.0-simple-options.js.fixture', import.meta.url), 'utf8').replaceAll('\r\n', '\n');
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 function staged(t, { source = original, manifest = { name: '@earendil-works/pi-ai', version: '1.1.0' } } = {}) {
-  const root = mkdtempSync(join(tmpdir(), 'strata-harness-budget-'));
+  const root = mkdtempSync(join(tmpdir(), 'nostroma-harness-budget-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const file = join(root, HARNESS_BUDGET_PATCH.file), packageFile = join(root, 'node_modules', '@earendil-works', 'pi-ai', 'package.json');
   mkdirSync(join(file, '..'), { recursive: true });
@@ -73,7 +73,7 @@ test('unknown and nonpositive context paths retain their previous behavior', t =
 test('patch provenance records its identity, exact dependency and before/after hashes', t => {
   const { file, packageFile, provenance } = patched(t);
   assert.equal(sha256(original), HARNESS_BUDGET_PATCH.beforeSha256);
-  assert.deepEqual(provenance, { id: 'strata-pi-ai-context-safety-v2', package: '@earendil-works/pi-ai', version: '1.1.0',
+  assert.deepEqual(provenance, { id: 'nostroma-pi-ai-context-safety-v2', package: '@earendil-works/pi-ai', version: '1.1.0',
     file: HARNESS_BUDGET_PATCH.file, beforeSha256: sha256(original), afterSha256: sha256(readFileSync(file)) });
   assert.notEqual(provenance.beforeSha256, provenance.afterSha256);
   assert.deepEqual(JSON.parse(readFileSync(packageFile, 'utf8')), { name: '@earendil-works/pi-ai', version: '1.1.0' });
@@ -116,9 +116,9 @@ test('staging refuses a module hardlinked to another copy', t => {
 });
 
 test('patching a disposable copy leaves the installed original hash unchanged', {
-  skip: !process.env.STRATA_TEST_PI_AI_DIR && 'STRATA_TEST_PI_AI_DIR is not set (the Harness AI package folder)',
+  skip: !process.env.NOSTROMA_TEST_PI_AI_DIR && 'NOSTROMA_TEST_PI_AI_DIR is not set (the Harness AI package folder)',
 }, t => {
-  const installed = join(process.env.STRATA_TEST_PI_AI_DIR, 'dist', 'api', 'simple-options.js');
+  const installed = join(process.env.NOSTROMA_TEST_PI_AI_DIR, 'dist', 'api', 'simple-options.js');
   const before = sha256(readFileSync(installed));
   assert.equal(before, HARNESS_BUDGET_PATCH.beforeSha256);
   const f = staged(t, { source: readFileSync(installed) }); patchStagedHarnessBudget(f.root);

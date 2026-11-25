@@ -35,8 +35,8 @@ const listeners = res => ['finish', 'close', 'error'].reduce((n, e) => n + res.l
 test('the interval is 15 s; a tester can shorten it; nonsense is the default', () => {
   assert.equal(BEAT_MS, 15_000);
   assert.equal(beatInterval({}), 15_000);
-  assert.equal(beatInterval({ STRATA_STREAM_BEAT_MS: '200' }), 200);
-  for (const bad of ['0', '-5', 'abc', '', '5', '999999', 'NaN']) assert.equal(beatInterval({ STRATA_STREAM_BEAT_MS: bad }), 15_000, bad);
+  assert.equal(beatInterval({ NOSTROMA_STREAM_BEAT_MS: '200' }), 200);
+  for (const bad of ['0', '-5', 'abc', '', '5', '999999', 'NaN']) assert.equal(beatInterval({ NOSTROMA_STREAM_BEAT_MS: bad }), 15_000, bad);
 });
 
 test('a 60-second silent tool wait carries a beat every 15 s, each a whole NDJSON line', t => {
@@ -103,17 +103,17 @@ const cleanup = dir => { try { rmSync(dir, { recursive: true, force: true, maxRe
 
 async function setup(t, beatMs) {
   const worker = await startScriptedWorker({ model: 'cloud-model' });
-  const home = mkdtempSync(join(tmpdir(), 'strata-beat-'));
+  const home = mkdtempSync(join(tmpdir(), 'nostroma-beat-'));
   const ws = join(home, 'workspace'); mkdirSync(ws, { recursive: true });
   const port = await freePort();
   const env = {
-    ...process.env, STRATA_HOME: home, STRATA_PORT: String(port), STRATA_WORKSPACE: ws, STRATA_REAL_ENGINE: '0',
-    STRATA_COMPONENTS_DIR: join(home, 'components'), STRATA_STREAM_BEAT_MS: String(beatMs),
-    STRATA_SETTINGS_FILE: join(home, 'app-settings.json'), LOCALAPPDATA: join(home, 'Local'), APPDATA: join(home, 'Roaming'),
+    ...process.env, NOSTROMA_HOME: home, NOSTROMA_PORT: String(port), NOSTROMA_WORKSPACE: ws, NOSTROMA_REAL_ENGINE: '0',
+    NOSTROMA_COMPONENTS_DIR: join(home, 'components'), NOSTROMA_STREAM_BEAT_MS: String(beatMs),
+    NOSTROMA_SETTINGS_FILE: join(home, 'app-settings.json'), LOCALAPPDATA: join(home, 'Local'), APPDATA: join(home, 'Roaming'),
     XDG_DATA_HOME: join(home, 'xdg-data'), XDG_STATE_HOME: join(home, 'xdg-state'), XDG_CONFIG_HOME: join(home, 'xdg-config'),
-    STRATA_SHARE_PORT: String(await freePort()), STRATA_TUNNEL_PORT: String(await freePort()),
+    NOSTROMA_SHARE_PORT: String(await freePort()), NOSTROMA_TUNNEL_PORT: String(await freePort()),
   };
-  delete env.STRATA_HARNESS_DIR;
+  delete env.NOSTROMA_HARNESS_DIR;
   const child = spawn(process.execPath, [HOST], { env, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
   let log = '';
   child.stdout.on('data', d => { log += d; }); child.stderr.on('data', d => { log += d; });

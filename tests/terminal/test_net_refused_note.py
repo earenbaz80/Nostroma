@@ -38,7 +38,7 @@ def note_in(folder: Path, clock=None) -> netpolicy.RefusalNote:
 
 class Base(unittest.TestCase):
     def setUp(self):
-        t = tempfile.TemporaryDirectory(prefix="strata-refused-")
+        t = tempfile.TemporaryDirectory(prefix="nostroma-refused-")
         self.addCleanup(t.cleanup)
         self.dir = Path(t.name)
         self.clock = Clock()
@@ -110,7 +110,7 @@ class TheNote(Base):
 class OpenUrl(Base):
     def test_a_refusal_is_noted_and_the_next_automatic_read_does_not_connect(self):
         with self.assertRaises(netpolicy.NetFailure) as cm:
-            netpolicy.open_url(refuse, "https://feed.example:443/strata-feed.json", refusals=self.note, automatic=True)
+            netpolicy.open_url(refuse, "https://feed.example:443/nostroma-feed.json", refusals=self.note, automatic=True)
         self.assertEqual(cm.exception.kind, "offline")
         self.assertTrue(self.note.refused_recently("feed.example:443"))
         calls = []
@@ -119,7 +119,7 @@ class OpenUrl(Base):
             calls.append(1)
             return b"answer"
         with self.assertRaises(netpolicy.NetFailure) as cm:
-            netpolicy.open_url(counting, "https://feed.example:443/strata-feed.json", refusals=self.note, automatic=True)
+            netpolicy.open_url(counting, "https://feed.example:443/nostroma-feed.json", refusals=self.note, automatic=True)
         self.assertEqual((cm.exception.kind, calls), ("offline", []), "the automatic read failed at once, without a connection")
         self.assertIn("could not connect", str(cm.exception), "the same offline words as a refusal")
 
@@ -130,10 +130,10 @@ class OpenUrl(Base):
         def answer(request, timeout):
             calls.append(1)
             return b"answer"
-        self.assertEqual(netpolicy.open_url(answer, "https://feed.example:443/strata-feed.json", refusals=self.note), b"answer")
+        self.assertEqual(netpolicy.open_url(answer, "https://feed.example:443/nostroma-feed.json", refusals=self.note), b"answer")
         self.assertEqual(calls, [1])
         self.assertFalse(self.note.refused_recently("feed.example:443"), "the first success removes the host")
-        self.assertEqual(netpolicy.open_url(answer, "https://feed.example:443/strata-feed.json", refusals=self.note, automatic=True), b"answer")
+        self.assertEqual(netpolicy.open_url(answer, "https://feed.example:443/nostroma-feed.json", refusals=self.note, automatic=True), b"answer")
 
     def test_an_http_answer_also_removes_the_host(self):
         import urllib.error
@@ -166,7 +166,7 @@ class OpenUrl(Base):
 
 class RealSocket(Base):
     def test_a_refused_loopback_port_costs_its_wait_once_then_nothing(self):
-        url = f"http://127.0.0.1:{refused_port()}/strata-feed.json"
+        url = f"http://127.0.0.1:{refused_port()}/nostroma-feed.json"
         with mock.patch.object(netpolicy, "REFUSALS", self.note):
             t0 = time.monotonic()
             with self.assertRaises(transfer.Unreachable):

@@ -1,5 +1,5 @@
 // metal/src/engine/dflash2.inc - the DFlash2 drafter for Qwen3.8-Flash-Next on the Metal window (included at the end of window.cpp, inside
-// namespace strata::metal_engine, like prompt_chain.inc).
+// namespace nostroma::metal_engine, like prompt_chain.inc).
 //
 // The engine's other backends run core::Dflash2Drafter (src/core/dflash2.cpp: CUDA graphs over native_q8_0_mmvq).  The Metal engine has its own
 // decode window, so the same class is implemented here with the same public API (generate.cpp's `--draft dflash2 --draft-model PACK` loop is
@@ -28,14 +28,14 @@ bool Window::taps_enable(const std::vector<int>& layers, std::string& err) {
         tap_slot_[layers[i]] = (int) i;
     }
     {
-        const strata_metal::MslLib L = strata_metal::lib_dflash2(engine_msl_dir());
+        const nostroma_metal::MslLib L = nostroma_metal::lib_dflash2(engine_msl_dir());
         ldf2_ = cx_->compile(L.files, L.prelude);
     }
     tap_layers_ = layers;
     tap_dec_ = cx_->alloc((size_t) MAXT * layers.size() * N * 4);
     wcache_.clear();   // the windows encoded so far have no tap dispatches
     taps_on_ = true;
-    std::fprintf(stderr, "strata metal: DFlash2 taps on (%zu layers)\n", layers.size());
+    std::fprintf(stderr, "nostroma metal: DFlash2 taps on (%zu layers)\n", layers.size());
     return true;
 }
 
@@ -81,12 +81,12 @@ struct Window::Df2 {
     mtl::Buffer xh;                             // half copy of the activation a matrix kernel reads (df2_f16)
     // lineage row log (df2_log_rows): the half hidden_norm row of every context position, slot = position % ring; one buffer per parked lineage
     mtl::Buffer rowlog;
-    struct Stash { std::vector<int32_t> hist; int64_t hi = 0, floor = 0; mtl::Buffer log; uint64_t used = 0; std::vector<uint8_t> chk; };   // chk: STRATA_DF2_CHECK_REBUILD=1 keeps the ring bytes of the stashed lineage
+    struct Stash { std::vector<int32_t> hist; int64_t hi = 0, floor = 0; mtl::Buffer log; uint64_t used = 0; std::vector<uint8_t> chk; };   // chk: NOSTROMA_DF2_CHECK_REBUILD=1 keeps the ring bytes of the stashed lineage
     std::vector<Stash> stash;
     uint64_t stash_tick = 0;
     int stash_max = 4;
     int64_t rebuilt_rows = 0, rebuilds = 0;
-    bool fuse_h = true;                         // the producers write the half operand themselves (STRATA_DF2_FUSE_H=0: df2_f16 dispatches)
+    bool fuse_h = true;                         // the producers write the half operand themselves (NOSTROMA_DF2_FUSE_H=0: df2_f16 dispatches)
     int64_t floor = 0;                          // first ring position that belongs to the current request (a restarted lineage)
     int ndraft = DF2_DRAFTS;                    // DF-04: candidates the head, top-k and selector work on (the verify prefix)
     mtl::Buffer pack, wq;                       // pack: the f32 / bf16 tensors; wq: the Q8_0 matrices repacked (int8 [rows][K], then half [rows][K / 32])
@@ -98,7 +98,7 @@ struct Window::Df2 {
     std::vector<int> taps;
     // the head over the draft vocabulary
     int64_t nd = 0;
-    const mtl::Buffer* head_buf = nullptr;   // STRATA_DF2_HEAD=native: the target's own rows (Q6_K ...) through the engine's GEMV
+    const mtl::Buffer* head_buf = nullptr;   // NOSTROMA_DF2_HEAD=native: the target's own rows (Q6_K ...) through the engine's GEMV
     gguf::Tensor head_t;
     mtl::Buffer own_head, vmap, hq, hsc;     // hq / hsc: the draft head requantized to Q8_0 (int8 [nd][2560], half [nd][80])
     bool head_q8 = true;
@@ -115,7 +115,7 @@ struct Window::Df2 {
     uint64_t bytes = 0;
     double gpu_ms = 0;
     int64_t rounds = 0, steady = 0;
-    // STRATA_DF2_DUMP=<file> [STRATA_DF2_DUMP_ROUND=n]: the context rows the drafter was given and its answer at round n, for tools/dflash2/check_metal_dump.py
+    // NOSTROMA_DF2_DUMP=<file> [NOSTROMA_DF2_DUMP_ROUND=n]: the context rows the drafter was given and its answer at round n, for tools/dflash2/check_metal_dump.py
     std::string dump_path;
     int dump_round = 3;
     std::vector<float> dump_taps, dump_anchor_emb;
@@ -276,7 +276,7 @@ bool Window::df2_load_pack(std::string& err) {
     std::fclose(f);
     d.bytes += d.wq.bytes + d.pack.bytes;
     d.loaded = true;
-    std::fprintf(stderr, "strata metal: DFlash2 pack %s: %.0f MiB of matrices repacked, %.0f MiB of the rest, in %.0f ms\n", d.path.c_str(),
+    std::fprintf(stderr, "nostroma metal: DFlash2 pack %s: %.0f MiB of matrices repacked, %.0f MiB of the rest, in %.0f ms\n", d.path.c_str(),
                  d.wq.bytes / 1048576.0, d.pack.bytes / 1048576.0, now_ms() - t0);
     return true;
 }
@@ -290,7 +290,7 @@ bool Window::df2_bind(const std::string& vocab_file, std::string& err) {
     {   // the text nostroma_control/drafting.py looks for in the program to know that this engine reads a pack whose selector tables are Q4_0 rows
         const auto cb = d.ten.find("candidate_selector.predecessor_codebook");
         if (cb != d.ten.end() && cb->second.type == ref::Q4_0)
-            std::fprintf(stderr, "strata metal: DFlash2 selector codebooks: Q4_0 rows (about 174 MiB less than bf16)\n");
+            std::fprintf(stderr, "nostroma metal: DFlash2 selector codebooks: Q4_0 rows (about 174 MiB less than bf16)\n");
     }
     const double t0 = now_ms();
     auto A = [&](size_t bytes) { d.bytes += bytes; return cx_->alloc(bytes); };
@@ -305,8 +305,8 @@ bool Window::df2_bind(const std::string& vocab_file, std::string& err) {
     }
     if (vocab.empty() && vocab_file != "full") vocab = dvocab_;   // the MTP's list (may be empty: the whole head)
     if (vocab.empty() && vocab_file != "full") {   // no MTP loaded (--draft-fallback none) and no <mtp>/rt/draft_vocab.bin: the repository's list, as the MTP's loader falls back to
-        std::string vp = std::getenv("STRATA_METAL_DRAFT_VOCAB") ? std::getenv("STRATA_METAL_DRAFT_VOCAB")
-                                                                  : strata_metal::resource(nullptr, "data", STRATA_METAL_DATA_DEFAULT) + "/draft_vocab.bin";
+        std::string vp = std::getenv("NOSTROMA_METAL_DRAFT_VOCAB") ? std::getenv("NOSTROMA_METAL_DRAFT_VOCAB")
+                                                                  : nostroma_metal::resource(nullptr, "data", NOSTROMA_METAL_DATA_DEFAULT) + "/draft_vocab.bin";
         if (vp != "full")
             if (std::FILE* vf = std::fopen(vp.c_str(), "rb")) {
                 int32_t id;
@@ -316,9 +316,9 @@ bool Window::df2_bind(const std::string& vocab_file, std::string& err) {
     }
     const gguf::Tensor& out_t = T("output.weight");
     {
-        const char* hm = std::getenv("STRATA_DF2_HEAD");
+        const char* hm = std::getenv("NOSTROMA_DF2_HEAD");
         d.head_q8 = !(hm && std::string(hm) == "native");
-        // STRATA_DF2_HEAD=native: the target's own head, whole (the community drafter's): no draft vocabulary, no gathered copy, the engine's GEMV on the target's rows
+        // NOSTROMA_DF2_HEAD=native: the target's own head, whole (the community drafter's): no draft vocabulary, no gathered copy, the engine's GEMV on the target's rows
         if (!d.head_q8) vocab.clear();
     }
     d.nd = vocab.empty() ? n_vocab_ : (int64_t) vocab.size();
@@ -327,7 +327,7 @@ bool Window::df2_bind(const std::string& vocab_file, std::string& err) {
     if (!vocab.empty()) std::memcpy(d.vmap.ptr, vocab.data(), 4 * vocab.size());
     if (d.head_q8) {
         // the head rows of the draft vocabulary requantized to Q8_0 (the target's Q6_K / ... rows dequantized first) in df2_mm's layout: 3x fewer
-        // cycles per round than the engine's GEMV on the Q6_K rows (STRATA_DF2_HEAD=native keeps those).  The logits differ by the Q8_0 rounding.
+        // cycles per round than the engine's GEMV on the Q6_K rows (NOSTROMA_DF2_HEAD=native keeps those).  The logits differ by the Q8_0 rounding.
         const size_t rb = ref::row_bytes(out_t.type, N);
         const uint64_t nrow = (uint64_t) d.nd, nb = N / 32;
         const uint64_t nrt = (nrow + 7) / 8;
@@ -404,12 +404,12 @@ bool Window::df2_bind(const std::string& vocab_file, std::string& err) {
     d.outbuf = A(4 * 32);
     auto act = [&](int n) { Act x; x.n = n; x.b = A(4 * ((size_t) 4 * MAXT * n + (size_t) MAXT * n / 16)); return x; };
     d.A_fn = act(N);
-    if (const char* e = std::getenv("STRATA_DF2_DUMP")) { d.dump_path = e; if (const char* r = std::getenv("STRATA_DF2_DUMP_ROUND")) d.dump_round = std::atoi(r); }
-    if (const char* lm = std::getenv("STRATA_DF2_LOG_MIB")) d.stash_max = std::atoi(lm) / 10; else d.stash_max = 4;   // ~10.6 MiB a lineage
+    if (const char* e = std::getenv("NOSTROMA_DF2_DUMP")) { d.dump_path = e; if (const char* r = std::getenv("NOSTROMA_DF2_DUMP_ROUND")) d.dump_round = std::atoi(r); }
+    if (const char* lm = std::getenv("NOSTROMA_DF2_LOG_MIB")) d.stash_max = std::atoi(lm) / 10; else d.stash_max = 4;   // ~10.6 MiB a lineage
     d.rowlog = A((size_t) DF2_RING * N * 2);
-    { const char* fe = std::getenv("STRATA_DF2_FUSE_H"); d.fuse_h = !(fe && fe[0] == '0'); }
+    { const char* fe = std::getenv("NOSTROMA_DF2_FUSE_H"); d.fuse_h = !(fe && fe[0] == '0'); }
     d.bound = true;
-    std::fprintf(stderr, "strata metal: DFlash2 drafter ready (%.0f MiB: pack %.0f, %lld-token draft head %s), in %.0f ms\n", d.bytes / 1048576.0,
+    std::fprintf(stderr, "nostroma metal: DFlash2 drafter ready (%.0f MiB: pack %.0f, %lld-token draft head %s), in %.0f ms\n", d.bytes / 1048576.0,
                  (d.wq.bytes + d.pack.bytes) / 1048576.0, (long long) d.nd, d.head_q8 ? (d.use_map ? "as Q8_0" : "as Q8_0, the whole head") : "native", now_ms() - t0);
     return true;
 }
@@ -436,7 +436,7 @@ void Window::df2_mm(std::vector<mtl::Dispatch>& ds, const mtl::Buffer& qs, size_
     mtl::Dispatch dd;
     static const std::pair<int, int> RS = [] {
         int r = 2, s = 8;
-        if (const char* e = std::getenv("STRATA_DF2_MM")) std::sscanf(e, "%d,%d", &r, &s);   // rows per simdgroup, simdgroups per threadgroup
+        if (const char* e = std::getenv("NOSTROMA_DF2_MM")) std::sscanf(e, "%d,%d", &r, &s);   // rows per simdgroup, simdgroups per threadgroup
         return std::make_pair(r, s);
     }();
     const int R = RS.first, SGN = RS.second;
@@ -669,7 +669,7 @@ void Window::df2_block_list(std::vector<mtl::Dispatch>& ds) {
         mtl::Dispatch sd;
         {   // the selector's tables: BF16 rows (the incoai pack) or Q4_0 rows (the community GGUF: 8 blocks of 18 bytes a row)
             const gguf::Tensor& cbt = d.ten.at("candidate_selector.predecessor_codebook");
-            if (cbt.type != d.ten.at("candidate_selector.successor_codebook").type) { std::fprintf(stderr, "strata metal: DFlash2: the two selector tables differ in type\n"); }
+            if (cbt.type != d.ten.at("candidate_selector.successor_codebook").type) { std::fprintf(stderr, "nostroma metal: DFlash2: the two selector tables differ in type\n"); }
             const bool cb4 = cbt.type == ref::Q4_0;
             sd.p = P(ldf2_, cb4 ? "df2_select_q4" : "df2_select", {}, cb4 ? "df2_select_q4" : "df2_select");
         }
@@ -701,14 +701,14 @@ bool Window::df2_context(const mtl::Buffer& taps, size_t taps_off, int64_t n, in
         }
         const double tg0 = now_ms();
         cx_->run_graph(ds);
-        static const bool st2 = std::getenv("STRATA_DF2_STATS") != nullptr;
-        if (st2 && nb > 16) std::fprintf(stderr, "strata metal: DFlash2 context graph of %d rows: %zu dispatches, built in %.1f ms, run %.1f ms\n", nb, ds.size(), tg0 - tc0, now_ms() - tg0);
+        static const bool st2 = std::getenv("NOSTROMA_DF2_STATS") != nullptr;
+        if (st2 && nb > 16) std::fprintf(stderr, "nostroma metal: DFlash2 context graph of %d rows: %zu dispatches, built in %.1f ms, run %.1f ms\n", nb, ds.size(), tg0 - tc0, now_ms() - tg0);
     }
     if (!d.dump_path.empty()) df2_dump_rows(taps, taps_off, n, pos0);
     return true;
 }
 
-// STRATA_DF2_DUMP: keep the rows the drafter is fed (positions must run 0, 1, 2 ... without a gap) and write them with the answer of one round
+// NOSTROMA_DF2_DUMP: keep the rows the drafter is fed (positions must run 0, 1, 2 ... without a gap) and write them with the answer of one round
 void Window::df2_dump_rows(const mtl::Buffer& taps, size_t taps_off, int64_t n, int64_t pos0) {
     Df2& d = *df2_;
     if (pos0 != d.dump_next) { d.dump_ok = false; return; }
@@ -720,9 +720,9 @@ void Window::df2_dump_rows(const mtl::Buffer& taps, size_t taps_off, int64_t n, 
 
 void Window::df2_dump_write(int64_t s, int32_t anchor) {
     Df2& d = *df2_;
-    if (!d.dump_ok || d.dump_next != s) { std::fprintf(stderr, "strata metal: STRATA_DF2_DUMP: the context rows are not 0..%lld, nothing written\n", (long long) s); return; }
+    if (!d.dump_ok || d.dump_next != s) { std::fprintf(stderr, "nostroma metal: NOSTROMA_DF2_DUMP: the context rows are not 0..%lld, nothing written\n", (long long) s); return; }
     std::FILE* f = std::fopen(d.dump_path.c_str(), "wb");
-    if (!f) { std::fprintf(stderr, "strata metal: cannot write %s\n", d.dump_path.c_str()); return; }
+    if (!f) { std::fprintf(stderr, "nostroma metal: cannot write %s\n", d.dump_path.c_str()); return; }
     const int32_t hdr[8] = {0x32465344, 1, (int32_t) s, anchor, (int32_t) d.nd, (int32_t) d.taps.size(), N, d.mask_token};
     std::fwrite(hdr, 4, 8, f);
     std::fwrite(d.dump_taps.data(), 4, d.dump_taps.size(), f);
@@ -736,7 +736,7 @@ void Window::df2_dump_write(int64_t s, int32_t anchor) {
     std::fwrite(d.vmap.ptr, 4, d.use_map ? (size_t) d.nd : 0, f);
     std::fwrite(d.logits.ptr, 4, (size_t) DF2_DRAFTS * (size_t) d.nd, f);
     std::fclose(f);
-    std::fprintf(stderr, "strata metal: STRATA_DF2_DUMP: %lld context rows and the answer of round %lld written to %s\n", (long long) s, (long long) d.rounds, d.dump_path.c_str());
+    std::fprintf(stderr, "nostroma metal: NOSTROMA_DF2_DUMP: %lld context rows and the answer of round %lld written to %s\n", (long long) s, (long long) d.rounds, d.dump_path.c_str());
 }
 
 bool Window::df2_draft(int n_new, int64_t pos0, int32_t anchor, int32_t* drafts, float* probs, std::string& err) {
@@ -783,10 +783,10 @@ bool Window::df2_draft(int n_new, int64_t pos0, int32_t anchor, int32_t* drafts,
     const double wall = now_ms() - tr;
     d.gpu_ms += 1000.0 * g;
     if (d.rounds >= 1 && d.last_build_ms == 0) { d.run_ms += wall; d.host_ms += now_ms() - t0 - wall; ++d.steady; }
-    static const bool prof = std::getenv("STRATA_DF2_PROF") != nullptr;
-    static const bool stats = std::getenv("STRATA_DF2_STATS") != nullptr;   // serve leaves through exit(): a periodic line instead of the destructor's
+    static const bool prof = std::getenv("NOSTROMA_DF2_PROF") != nullptr;
+    static const bool stats = std::getenv("NOSTROMA_DF2_STATS") != nullptr;   // serve leaves through exit(): a periodic line instead of the destructor's
     if (stats && d.steady > 0 && d.steady % 150 == 0)
-        std::fprintf(stderr, "strata metal: DFlash2 stats after %lld rounds: GPU %.2f ms/round, run_graph %.2f ms, host before the graph %.2f ms\n", (long long) d.steady,
+        std::fprintf(stderr, "nostroma metal: DFlash2 stats after %lld rounds: GPU %.2f ms/round, run_graph %.2f ms, host before the graph %.2f ms\n", (long long) d.steady,
                      d.gpu_ms / (double) d.rounds, d.run_ms / (double) d.steady, d.host_ms / (double) d.steady);
     if (prof && d.rounds == 10) df2_prof(d.list[n_new]);
     for (int i = 0; i < DF2_DRAFTS; ++i) {
@@ -800,7 +800,7 @@ bool Window::df2_draft(int n_new, int64_t pos0, int32_t anchor, int32_t* drafts,
 }
 
 
-// STRATA_DF2_PROF=1 (measurement): once, at the 10th round, the GPU time of each kernel class of the round alone (each class's dispatches run by themselves)
+// NOSTROMA_DF2_PROF=1 (measurement): once, at the 10th round, the GPU time of each kernel class of the round alone (each class's dispatches run by themselves)
 void Window::df2_prof(const std::vector<mtl::Dispatch>& ds) {
     Df2& d = *df2_;
     std::map<uint64_t, std::string> tname;
@@ -838,13 +838,13 @@ void Window::df2_prof(const std::vector<mtl::Dispatch>& ds) {
         rows.push_back({m, c + " x" + std::to_string(v.size())});
     }
     std::sort(rows.rbegin(), rows.rend());
-    std::fprintf(stderr, "strata metal df2 prof: round of %zu dispatches, GPU %.3f ms; classes alone (serialized) sum %.3f ms:\n", ds.size(), all, sum);
-    for (const auto& [m, c] : rows) std::fprintf(stderr, "strata metal df2 prof: %8.3f ms %5.1f%%  %s\n", m, 100.0 * m / sum, c.c_str());
+    std::fprintf(stderr, "nostroma metal df2 prof: round of %zu dispatches, GPU %.3f ms; classes alone (serialized) sum %.3f ms:\n", ds.size(), all, sum);
+    for (const auto& [m, c] : rows) std::fprintf(stderr, "nostroma metal df2 prof: %8.3f ms %5.1f%%  %s\n", m, 100.0 * m / sum, c.c_str());
 }
 
 void Window::df2_free() {
     if (df2_ && df2_->rounds > 0)
-        std::fprintf(stderr, "strata metal: DFlash2 %lld rounds: GPU %.2f ms/round, run_graph %.2f ms (steady, %lld rounds), host before %.2f ms, lists and pipelines built once: %.0f ms\n",
+        std::fprintf(stderr, "nostroma metal: DFlash2 %lld rounds: GPU %.2f ms/round, run_graph %.2f ms (steady, %lld rounds), host before %.2f ms, lists and pipelines built once: %.0f ms\n",
                      (long long) df2_->rounds, df2_->gpu_ms / (double) df2_->rounds, df2_->steady ? df2_->run_ms / (double) df2_->steady : 0.0,
                      (long long) df2_->steady, df2_->steady ? df2_->host_ms / (double) df2_->steady : 0.0, df2_->build_ms);
     delete df2_;
@@ -884,7 +884,7 @@ int64_t Window::df2_restore_lineage(const std::vector<int32_t>& cur_hist, int64_
     if (cur_hi > 0 && !cur_hist.empty()) {
         Df2::Stash s;
         s.hist = cur_hist; s.hi = cur_hi; s.floor = d.floor; s.log = d.rowlog; s.used = ++d.stash_tick;
-        static const bool chk = std::getenv("STRATA_DF2_CHECK_REBUILD") != nullptr;
+        static const bool chk = std::getenv("NOSTROMA_DF2_CHECK_REBUILD") != nullptr;
         if (chk) {   // test: a copy of the ring (all layers, K then V) to compare the rebuilt rows against
             const size_t one = (size_t) DF2_RING * 1024 * 4;
             s.chk.resize(one * 2 * (size_t) d.L);
@@ -902,9 +902,9 @@ int64_t Window::df2_restore_lineage(const std::vector<int32_t>& cur_hist, int64_
     for (size_t i = 0; i < d.stash.size(); ++i) {
         const Df2::Stash& s = d.stash[i];
         int64_t k0 = 0;
-        { static const bool stv = std::getenv("STRATA_DF2_STATS") != nullptr;
+        { static const bool stv = std::getenv("NOSTROMA_DF2_STATS") != nullptr;
           if (stv) { while (k0 < resume && k0 < (int64_t) s.hist.size() && s.hist[(size_t) k0] == ids[k0]) ++k0;
-                     std::fprintf(stderr, "strata metal: DFlash2 stash %zu: hi %lld, history %zu tokens, floor %lld, common prefix with the request %lld of %lld (window start %lld)%s", i, (long long) s.hi, s.hist.size(), (long long) s.floor, (long long) k0, (long long) resume, (long long) lo, "\n"); } }
+                     std::fprintf(stderr, "nostroma metal: DFlash2 stash %zu: hi %lld, history %zu tokens, floor %lld, common prefix with the request %lld of %lld (window start %lld)%s", i, (long long) s.hi, s.hist.size(), (long long) s.floor, (long long) k0, (long long) resume, (long long) lo, "\n"); } }
         if (s.hi + 256 < resume || (int64_t) s.hist.size() < resume || s.hi - DF2_RING > lo) continue;   // (the last few committed rows of a finished request never got a context row: a gap of up to 256 at the end is accepted)   // not covered / rows overwritten
         int64_t k = 0;
         while (k < resume && s.hist[(size_t) k] == ids[k]) ++k;
@@ -971,18 +971,18 @@ int64_t Window::df2_restore_lineage(const std::vector<int32_t>& cur_hist, int64_
                         if (bad <= 3) {
                             double md = 0, mv = 0; const float* rf = (const float*) (ref + off); const float* gf = (const float*) (got + off);
                             for (int i = 0; i < 1024; ++i) { md = std::max(md, (double) std::fabs(rf[i] - gf[i])); mv = std::max(mv, (double) std::fabs(rf[i])); }
-                            std::fprintf(stderr, "strata metal: rebuild check: layer %d %s position %lld: max |diff| %.3g, max |orig| %.3g, first values orig %.4f %.4f rebuilt %.4f %.4f%s", l, kv ? "V" : "K", (long long) q, md, mv, rf[0], rf[1], gf[0], gf[1], "\n");
+                            std::fprintf(stderr, "nostroma metal: rebuild check: layer %d %s position %lld: max |diff| %.3g, max |orig| %.3g, first values orig %.4f %.4f rebuilt %.4f %.4f%s", l, kv ? "V" : "K", (long long) q, md, mv, rf[0], rf[1], gf[0], gf[1], "\n");
                         }
                     }
                 }
             }
-        std::fprintf(stderr, "strata metal: DFlash2 rebuild check: %lld of %lld ring rows (K/V x layers x positions) differ from the original update%s", (long long) bad, (long long) tot, "\n");
+        std::fprintf(stderr, "nostroma metal: DFlash2 rebuild check: %lld of %lld ring rows (K/V x layers x positions) differ from the original update%s", (long long) bad, (long long) tot, "\n");
     }
     d.floor = from;
     d.rebuilt_rows += r_end - from;
     ++d.rebuilds;
-    static const bool st = std::getenv("STRATA_DF2_STATS") != nullptr;
-    if (st) std::fprintf(stderr, "strata metal: DFlash2 lineage restored from the row log: %lld rows [%lld, %lld) rebuilt in %.1f ms (%zu lineages stashed)\n",
+    static const bool st = std::getenv("NOSTROMA_DF2_STATS") != nullptr;
+    if (st) std::fprintf(stderr, "nostroma metal: DFlash2 lineage restored from the row log: %lld rows [%lld, %lld) rebuilt in %.1f ms (%zu lineages stashed)\n",
                          (long long) (r_end - from), (long long) from, (long long) r_end, now_ms() - t0, d.stash.size());
     (void) err;
     return r_end - from;
@@ -1031,11 +1031,11 @@ bool Window::df2_context_ptr(const float* taps, int64_t n, int64_t pos0, std::st
     return df2_context(df2_stage_, 0, n, pos0, err);
 }
 
-}  // namespace strata::metal_engine
+}  // namespace nostroma::metal_engine
 
-// ---- core::Dflash2Drafter on Metal: the class of include/strata/core/dflash2.hpp, backed by the Window above.  load() reads the pack's index (the
+// ---- core::Dflash2Drafter on Metal: the class of include/nostroma/core/dflash2.hpp, backed by the Window above.  load() reads the pack's index (the
 // tap layers are asked before the window exists); bind() brings the pack and the draft head to the GPU once the window is up.
-namespace strata::core {
+namespace nostroma::core {
 
 namespace {
 std::string g_df2_pack_path;
@@ -1049,7 +1049,7 @@ bool Dflash2Drafter::load(const std::string& pack_path, int device, std::string&
     std::map<std::string, gguf::Tensor> ten;
     std::map<std::string, std::string> cfg;
     uint64_t total = 0, data_off = 0;
-    if (!strata::metal_engine::df2_read_index(pack_path, taps, ten, total, data_off, cfg, err)) return false;
+    if (!nostroma::metal_engine::df2_read_index(pack_path, taps, ten, total, data_off, cfg, err)) return false;
     taps_ = taps;
     if (cfg.count("mask_token")) mask_token_ = std::atoi(cfg["mask_token"].c_str());
     g_df2_pack_path = pack_path;
@@ -1057,7 +1057,7 @@ bool Dflash2Drafter::load(const std::string& pack_path, int device, std::string&
 }
 
 bool Dflash2Drafter::bind(const WeightTable&, const NativeHead*, const std::string& vocab_file, std::string& err, int /*head_device: one card on Metal*/) {
-    strata::metal_engine::Window* w = strata::metal_engine::g_window;
+    nostroma::metal_engine::Window* w = nostroma::metal_engine::g_window;
     if (w == nullptr) { err = "dflash2: the Metal decode window is not up"; return false; }
     if (bound_) return true;
     if (!w->df2_ensure(g_df2_pack_path, err) || !w->df2_bind(vocab_file, err)) return false;
@@ -1072,7 +1072,7 @@ bool Dflash2Drafter::bind_raw(EmbedFn, const void*, int, int64_t, const std::vec
 }
 
 bool Dflash2Drafter::context(const float* taps, int64_t n, int64_t pos0, std::string& err) {
-    strata::metal_engine::Window* w = strata::metal_engine::g_window;
+    nostroma::metal_engine::Window* w = nostroma::metal_engine::g_window;
     if (w == nullptr) { err = "dflash2: not bound"; return false; }
     if (!bound_) {   // the prompt's taps arrive before bind() (CUDA loads the weights in load()): bring the pack up now, over the MTP's draft vocabulary
         if (!w->df2_ensure(g_df2_pack_path, err) || !w->df2_bind("", err)) return false;
@@ -1086,7 +1086,7 @@ bool Dflash2Drafter::context(const float* taps, int64_t n, int64_t pos0, std::st
 }
 
 bool Dflash2Drafter::draft(const float* taps, int n_new, int64_t pos0, int32_t anchor, int32_t* drafts, float* probs, std::string& err) {
-    strata::metal_engine::Window* w = strata::metal_engine::g_window;
+    nostroma::metal_engine::Window* w = nostroma::metal_engine::g_window;
     if (w == nullptr || !bound_) { err = "dflash2: not bound"; return false; }
     if (taps != nullptr && taps != w->tap_dec_ptr()) { err = "dflash2: the taps are not the window's"; return false; }
     const auto t0 = std::chrono::steady_clock::now();
@@ -1100,7 +1100,7 @@ bool Dflash2Drafter::draft(const float* taps, int n_new, int64_t pos0, int32_t a
 }
 
 bool Dflash2Drafter::prepare(const float*, std::string& err) {
-    strata::metal_engine::Window* w = strata::metal_engine::g_window;
+    nostroma::metal_engine::Window* w = nostroma::metal_engine::g_window;
     if (w == nullptr || !bound_) { err = "dflash2: not bound"; return false; }
     return w->df2_prepare(err);
 }
@@ -1108,7 +1108,7 @@ bool Dflash2Drafter::prepare(const float*, std::string& err) {
 void Dflash2Drafter::set_max_drafts(int n) {
     n = std::max(1, std::min(n, (int) kDrafts));
     ndraft_ = n;
-    if (strata::metal_engine::Window* w = strata::metal_engine::g_window) w->df2_set_cap(n);
+    if (nostroma::metal_engine::Window* w = nostroma::metal_engine::g_window) w->df2_set_cap(n);
 }
 
 // Serve: the same bookkeeping as the CUDA drafter (src/core/dflash2.cpp).  The ring has no slot tags here: a lineage change moves a floor instead,
@@ -1124,13 +1124,13 @@ bool Dflash2Drafter::begin_request(const int32_t* ids, int64_t n, int64_t resume
         // another conversation's state was restored under this one: its lineage is stashed with its row log, and the stashed lineage that matches the
         // reused prefix (if any) is swapped back in and its ring rows rebuilt (the Metal twin of the row log of the CUDA drafter)
         std::string rerr;
-        if (strata::metal_engine::Window* w = strata::metal_engine::g_window)
+        if (nostroma::metal_engine::Window* w = nostroma::metal_engine::g_window)
             rebuilt = w->df2_restore_lineage(cur_.hist, ring_hi_, ids, resume, rerr) > 0;
         ++epoch_;
         ring_hi_ = rebuilt ? resume : 0;
     }
     if (rebuilt) { if (cold) *cold = false; cur_.hist.assign(ids, ids + n); return true; }   // (the whole prompt: its rows reach the ring through the tap callback, which carries no tokens)
-    if (strata::metal_engine::Window* w = strata::metal_engine::g_window)
+    if (nostroma::metal_engine::Window* w = nostroma::metal_engine::g_window)
         // The ring's valid rows are [floor, ring_hi): a restarted lineage (stale) has no rows below `resume`; a request that goes on from the
         // same history keeps the floor of its conversation (it is lowered when the request restarts earlier, never left high for a shorter prompt)
         w->df2_set_floor(stale ? resume : std::min<int64_t>(w->df2_floor(), resume));
@@ -1172,6 +1172,6 @@ bool Dflash2Drafter::debug_rows(std::vector<float>& rows, std::string& err) {
     return false;
 }
 
-}  // namespace strata::core
+}  // namespace nostroma::core
 
-namespace strata::metal_engine {
+namespace nostroma::metal_engine {

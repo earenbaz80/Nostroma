@@ -1,7 +1,7 @@
-// home_cpus_test: the widest CPU set a thread of the engine takes (include/strata/platform/home_cpus.hpp).  Without a home
+// home_cpus_test: the widest CPU set a thread of the engine takes (include/nostroma/platform/home_cpus.hpp).  Without a home
 // set a thread that widens gets every CPU the process may use (as before); with one it stays inside it, also when it
 // started on a single CPU (the host's, inherited).  No GPU.
-#include "strata/platform/home_cpus.hpp"
+#include "nostroma/platform/home_cpus.hpp"
 
 #include <cstdio>
 #include <string>
@@ -44,36 +44,36 @@ int main() {
         return 0;
     }
     {   // no home: the old behaviour, every CPU the process may use
-        const cpu_set_t h = strata::platform::home_mask();
+        const cpu_set_t h = nostroma::platform::home_mask();
         expect(CPU_COUNT(&h) == CPU_SETSIZE, "no home: the mask is every CPU number");
         std::vector<int> got;
         std::thread t([&] {
             pin_one(start.front());
-            strata::platform::widen_to_home();
+            nostroma::platform::widen_to_home();
             got = mine();
         });
         t.join();
         expect(got == start, "no home: a pinned thread widens back to all the process's CPUs");
     }
     const std::vector<int> half(start.begin(), start.begin() + (long) (start.size() / 2));
-    strata::platform::set_home_cpus({});   // empty: nothing changes
+    nostroma::platform::set_home_cpus({});   // empty: nothing changes
     {
-        const cpu_set_t h = strata::platform::home_mask();
+        const cpu_set_t h = nostroma::platform::home_mask();
         expect(CPU_COUNT(&h) == CPU_SETSIZE, "empty home list: still every CPU number");
     }
-    strata::platform::set_home_cpus(half);
+    nostroma::platform::set_home_cpus(half);
     {
         std::vector<int> got;
         std::thread t([&] {
             pin_one(start.front());
-            strata::platform::widen_to_home();
+            nostroma::platform::widen_to_home();
             got = mine();
         });
         t.join();
         expect(got == half, "home set: a pinned thread widens to the home CPUs only");
         std::vector<int> got2;
         std::thread u([&] {   // a thread that runs on every CPU of the process widens DOWN to the home set too
-            strata::platform::widen_to_home();
+            nostroma::platform::widen_to_home();
             got2 = mine();
         });
         u.join();
@@ -81,8 +81,8 @@ int main() {
     }
     expect(mine() == start, "the calling thread is not moved by set_home_cpus");
 #else
-    strata::platform::set_home_cpus({0});
-    strata::platform::widen_to_home();
+    nostroma::platform::set_home_cpus({0});
+    nostroma::platform::widen_to_home();
     std::printf("home_cpus_test: not Linux, nothing to check\n");
 #endif
     if (g_fail != 0) {

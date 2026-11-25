@@ -1,7 +1,7 @@
 # Community benchmark: RTX 5090, Ryzen 9 7950X, 1M-context agent workload
 
 Measured on 2026-10-02 by [gravitomagnetic](https://github.com/gravitomagnetic),
-on a Linux desktop. This tests Strata 0.1.31 with Qwen3.8-Flash-Next IQ3_S at a
+on a Linux desktop. This tests Nostroma 0.1.31 with Qwen3.8-Flash-Next IQ3_S at a
 1,048,576-token context limit (YaRN scaling, factor 4), under a workload chosen
 to resemble agentic use: long repeated system-style prompts, streaming
 completions with reasoning enabled, and immediate prefix-reuse repeats.
@@ -49,7 +49,7 @@ The upstream HF revision for these files was not pinned at download time and
 is not recorded here; the byte sizes and SHA-256 hashes above are the
 authoritative identity for reproduction.
 
-Run configuration (full JSON: [strata-iq3_s.json](strata-iq3_s.json)):
+Run configuration (full JSON: [nostroma-iq3_s.json](nostroma-iq3_s.json)):
 
 - Context 1,048,572 tokens via `--max-context 1048576 --rope-scaling yarn
   --rope-scale 4` (HF card recommends YaRN factor 4 for 1M; native 262,144).
@@ -144,7 +144,7 @@ throughput columns come from the engine's own timings and are unaffected.
 
 The finding that survives is still relevant to agent workloads: at 1M
 context, one in-flight 200k+ prefill blocks every other session for
-~60 s. Multi-agent or interactive-plus-batch use of a single Strata
+~60 s. Multi-agent or interactive-plus-batch use of a single Nostroma
 server needs either request scheduling (prefill chunk yielding) or
 separate instances.
 
@@ -162,6 +162,6 @@ reads — provided the checkpoint tax of Note A is amortized or removed.
 - Recall at these depths was not tested here; the repo's
   `tools/needle_bench.py` is the appropriate follow-up.
 - The desktop ran its normal background services; the GPU was dedicated to
-  Strata and its vision helper.
+  Nostroma and its vision helper.
 - Reasoning tokens are counted in decode throughput (`predicted_n` includes
   them, as reported by the server).

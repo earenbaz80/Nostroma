@@ -3,7 +3,7 @@ compiles sd-cli for the backend (setup.py's build_image_engine), downloads and c
 writes the "images" section into a run config (or prints it).  setup.py --images qwen-image does the same inside
 the normal setup; this is the way to add it without running the whole setup again.
 
-    python tools/image/install.py --config strata-q2_0.json                 (backend and size picked for this PC)
+    python tools/image/install.py --config nostroma-q2_0.json                 (backend and size picked for this PC)
     python tools/image/install.py --backend vulkan --quant Q8_0 --models-dir ~/models --print
     python tools/image/install.py --backend hip --arch gfx1103 --build-only
 
@@ -48,7 +48,7 @@ def main(argv=None) -> int:
     ap.add_argument("--quant", choices=QI.QUANTS)
     ap.add_argument("--gpu-gb", type=float, help="the GPU memory the quant is picked for (default: detected)")
     ap.add_argument("--models-dir", help="where the model files go (default: the data folder's models)")
-    ap.add_argument("--config", help="a run config (strata-<model>.json) to write the \"images\" section into")
+    ap.add_argument("--config", help="a run config (nostroma-<model>.json) to write the \"images\" section into")
     ap.add_argument("--gpu-policy", choices=["auto", "keep", "shrink", "unload"], default="auto")
     ap.add_argument("--gpu", type=int, help="the GPU's number for the image job (default: the backend's first)")
     ap.add_argument("--native", choices=["on", "off"], default="off",

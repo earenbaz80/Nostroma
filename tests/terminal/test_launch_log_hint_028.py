@@ -50,7 +50,7 @@ class LogHint(unittest.TestCase):
             text, nxt = R.explain_engine_exit({"state": "failed", "error": "server_exited"}, self.config(h, log))
             self.assertNotIn(str(log), nxt)
             self.assertIn("did not get as far as writing its log", nxt)
-            log.write_text("[strata] out of memory\n", encoding="utf-8")
+            log.write_text("[nostroma] out of memory\n", encoding="utf-8")
             text, nxt = R.explain_engine_exit({"state": "failed", "error": "server_exited"}, self.config(h, log))
             self.assertIn(f"The engine's log: {log}", nxt)
 

@@ -1,5 +1,5 @@
-#include "strata/core/conversation_file.hpp"
-#include "strata/env.hpp"
+#include "nostroma/core/conversation_file.hpp"
+#include "nostroma/env.hpp"
 
 #include <algorithm>
 #include <bit>
@@ -42,7 +42,7 @@ static_assert(std::endian::native == std::endian::little, "session files (format
 static_assert(std::numeric_limits<float>::is_iec559 && std::numeric_limits<double>::is_iec559,
               "session files (format v1) need IEEE-754 floats");
 
-namespace strata::core {
+namespace nostroma::core {
 namespace {
 constexpr char kMagic[8] = {'S', 'T', 'R', 'S', 'E', 'S', 'S', '\x01'};
 constexpr char kEnd[8] = {'S', 'T', 'R', 'S', 'E', 'N', 'D', '\x01'};
@@ -79,7 +79,7 @@ uint64_t load64(const uint8_t* p) { uint64_t v; std::memcpy(&v, p, 8); return v;
 
 // ---- file I/O in aligned 16 MiB blocks.  Linux: O_DIRECT when the filesystem takes it (no page cache, so a
 // 1.2 GB session neither evicts other files nor is charged to the engine's memory cgroup), buffered I/O otherwise
-// (tmpfs, a filesystem that refuses an aligned direct transfer, or STRATA_SESSION_BUFFERED=1).  Windows and other
+// (tmpfs, a filesystem that refuses an aligned direct transfer, or NOSTROMA_SESSION_BUFFERED=1).  Windows and other
 // systems: ordinary buffered I/O, same blocks.
 constexpr size_t kAlign = 4096, kBlock = 16u << 20;
 #ifdef _WIN32
@@ -338,7 +338,7 @@ bool free_space(const std::string& path, uint64_t& out) {
 #endif
 
 bool buffered_forced() {
-    const char* e = strata::env("NOSTROMA_SESSION_BUFFERED");
+    const char* e = nostroma::env("NOSTROMA_SESSION_BUFFERED");
     return e != nullptr && e[0] == '1';
 }
 
@@ -1254,4 +1254,4 @@ bool session_file_read(const std::string& path, const SessionFileIdentity& id, S
     return ok;
 }
 
-} // namespace strata::core
+} // namespace nostroma::core

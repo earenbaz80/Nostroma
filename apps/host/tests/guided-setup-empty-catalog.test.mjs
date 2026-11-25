@@ -31,7 +31,7 @@ const stubs={
 let dir,mod;
 async function load(){
  if(mod)return mod;
- dir=mkdtempSync(join(tmpdir(),'strata-gs-'));
+ dir=mkdtempSync(join(tmpdir(),'nostroma-gs-'));
  const stubPlugin={name:'stubs',setup(b){
   b.onResolve({filter:/\/lib\/(native|store|client|router|kept-state)$/},args=>({path:args.path.split('/').pop(),namespace:'stub'}));
   b.onLoad({filter:/.*/,namespace:'stub'},args=>({contents:stubs[args.path],loader:'js',resolveDir:root}));
@@ -86,7 +86,7 @@ test('GuidedSetup lists the real catalog when it has one',async()=>{
 
 const failedJob=(id,model,family)=>({id,kind:'install',model,family,state:'error',
  startedAt:'2026-01-01T00:00:00.000Z',summary:'Previous preparation failed',
- error:'Data_dir C:\\Users\\Example\\.strata\\models: a new data folder must be named Nostroma',result:null});
+ error:'Data_dir C:\\Users\\Example\\.nostroma\\models: a new data folder must be named Nostroma',result:null});
 async function renderModelJobs(jobs,kept={}){
  const m=await load();
  const size=(id,model)=>({id,model,download_gb:50,ram_needed_gb:48,experts_gb:30,about:'',on_this_pc:'fits',installed:false});

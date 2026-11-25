@@ -61,7 +61,7 @@ def build(bundle: Path) -> dict:
     if bundle.exists() or manifest_path(bundle).exists():
         raise FileExistsError("bundle or manifest already exists; choose a new output path")
     bundle.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix=".strata-monitor-build-", dir=bundle.parent) as directory:
+    with tempfile.TemporaryDirectory(prefix=".nostroma-monitor-build-", dir=bundle.parent) as directory:
         stage = Path(directory) / "source"
         stage.mkdir()
         (stage / "__main__.py").write_bytes(BOOTSTRAP)
@@ -78,7 +78,7 @@ def build(bundle: Path) -> dict:
             if set(names) != set((*MEMBERS, "nostroma_cli/")) or len(names) != len(MEMBERS) + 1:
                 raise ValueError("bundle member list changed during build")
             files = {name: digest(archive.read(name)) for name in MEMBERS}
-        report = {"schema_version": 6, "kind": "strata-monitor-bundle",
+        report = {"schema_version": 6, "kind": "nostroma-monitor-bundle",
                   "bundle": bundle.name, "sha256": digest(temp_bundle.read_bytes()),
                   "files": files, "interactive_dependency": "textual==8.2.8",
                   "compatibility": COMPATIBILITY, "license": "MIT", "license_file": LICENSE_NOTICE,
@@ -101,7 +101,7 @@ def verify(bundle: Path) -> dict:
     report = json.loads(manifest_path(bundle).read_text())
     if (not isinstance(report, dict) or type(report.get("schema_version")) is not int or
             report["schema_version"] not in (1, 2, 3, 4, 5, 6) or
-            report.get("kind") != "strata-monitor-bundle" or
+            report.get("kind") != "nostroma-monitor-bundle" or
             report.get("publisher_signature") is not None or
             report.get("bundle") != bundle.name or report.get("sha256") != digest(bundle.read_bytes())):
         raise ValueError("bundle manifest or SHA-256 mismatch")
@@ -163,7 +163,7 @@ def _installed(target: Path) -> tuple[Path, dict]:
 
 
 def _stage_copy(bundle: Path, report: dict, target: Path) -> Path:
-    stage = Path(tempfile.mkdtemp(prefix=".strata-monitor-install-", dir=target.parent))
+    stage = Path(tempfile.mkdtemp(prefix=".nostroma-monitor-install-", dir=target.parent))
     try:
         staged_bundle = stage / bundle.name
         shutil.copyfile(bundle, staged_bundle, follow_symlinks=False)
@@ -264,7 +264,7 @@ def rollback(target: Path, *, plan: bool = False,
         return result
     if if_active_sha256 != active["sha256"] or if_rollback_sha256 != prior["sha256"]:
         raise ValueError("monitor rollback digests changed or are missing; preview again")
-    swap = Path(tempfile.mkdtemp(prefix=".strata-monitor-swap-", dir=target.parent))
+    swap = Path(tempfile.mkdtemp(prefix=".nostroma-monitor-swap-", dir=target.parent))
     if os.name == "nt":
         # os.rename onto an existing directory fails on Windows (POSIX replaces an empty one):
         # keep only the unique name mkdtemp reserved.

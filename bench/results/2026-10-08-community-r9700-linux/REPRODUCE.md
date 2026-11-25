@@ -33,12 +33,12 @@ unpacked tree. The original build used CMake 3.31.10 and Python 3.12.
 ```sh
 cmake -S "$r9700_source" -B "$r9700_source/build-r9700" \
   -DCMAKE_BUILD_TYPE=Release \
-  -DSTRATA_ENABLE_HIP=ON -DSTRATA_ENABLE_CUDA=OFF \
+  -DNOSTROMA_ENABLE_HIP=ON -DNOSTROMA_ENABLE_CUDA=OFF \
   -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
-  -DSTRATA_PREFILL_MMQ=ON -DSTRATA_BUILD_TESTS=ON \
-  -DSTRATA_GGML_DIR="$r9700_ggml" \
+  -DNOSTROMA_PREFILL_MMQ=ON -DNOSTROMA_BUILD_TESTS=ON \
+  -DNOSTROMA_GGML_DIR="$r9700_ggml" \
   -DPython3_EXECUTABLE="$(command -v python3)"
-cmake --build "$r9700_source/build-r9700" --target strata strata-device -j8
+cmake --build "$r9700_source/build-r9700" --target nostroma nostroma-device -j8
 ```
 
 The Python environment needs the reconstructed tree's root `requirements.txt` dependencies.
@@ -79,10 +79,10 @@ r9700_run="$(mktemp -d /tmp/r9700-speed.XXXXXX)"
 python3 "$r9700_report/configure.py" \
   --template "$r9700_report/current-speed/iq3_s-config.json" \
   --source "$r9700_source" --assets "$r9700_assets" \
-  --exe "$r9700_source/build-r9700/strata" --out "$r9700_run/config.json"
+  --exe "$r9700_source/build-r9700/nostroma" --out "$r9700_run/config.json"
 gzip -dc "$r9700_report/current-speed/fixtures.json.gz" > "$r9700_run/fixtures.json"
 python3 "$r9700_source/tools/hip/r9700/single_gpu.py" \
-  --device-binary "$r9700_source/build-r9700/strata-device" \
+  --device-binary "$r9700_source/build-r9700/nostroma-device" \
   --config "$r9700_run/config.json" --record "$r9700_run/launch.json" \
   --cpu-nodes 0,1 --preferred-node 1 run -- \
   python3 "$r9700_source/tools/hip/r9700/bench_engine.py" \
@@ -136,5 +136,5 @@ python3 "$r9700_report/verify_report.py" --check-sources --extract /tmp/r9700-re
 ```
 
 Historical diagnostics and HTTP regression scripts/results are available in the
-[original full archive](https://github.com/zihaomu/Strata/tree/17006083063b4443458f6f0b3f5c8325cf9cca2a/bench/results/2026-10-08-community-r9700-linux).
+[original full archive](https://github.com/zihaomu/Nostroma/tree/17006083063b4443458f6f0b3f5c8325cf9cca2a/bench/results/2026-10-08-community-r9700-linux).
 They are outside this report's performance reproduction commands.

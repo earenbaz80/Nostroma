@@ -49,7 +49,7 @@
     "sha256": "316b46f3a2dbd68c900f43136ab9449f9dcc3725dfd8c794847c204bc161e113",
     "verification": "sealed size, mtime, inode and root ownership rechecked"
   },
-  "${STRATA_ROOT}/data/expert-profile.bin": {
+  "${NOSTROMA_ROOT}/data/expert-profile.bin": {
     "bytes": 196632,
     "sha256": "8f59b4aa8873209dff11c11e37bcda9529a1335b724a1afeea37bf6388975baf",
     "verification": "sealed size, mtime, inode and root ownership rechecked"

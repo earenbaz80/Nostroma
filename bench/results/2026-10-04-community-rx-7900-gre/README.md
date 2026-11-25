@@ -32,12 +32,12 @@ other hardware.
   hipBLASLt 1.2.2 (100202). The repository tuning table
   `tools/hip/gfx1100-hipblaslt-100202.txt` was active for every arm; the engine
   logged "hipBLASLt tuning enabled (26 rows, gfx1100, version 100202)".
-- Strata commit `99f3dbd`, engine 0.1.38, local source build in `build-hip`:
-  Release, `STRATA_PREFILL_MMQ=ON`. No calibration and no experimental speed
+- Nostroma commit `99f3dbd`, engine 0.1.38, local source build in `build-hip`:
+  Release, `NOSTROMA_PREFILL_MMQ=ON`. No calibration and no experimental speed
   projection were used.
 - GPU power limits and clocks were neither set nor measured. Background work on
   the same machine during the measurements: this agent session (opencode, not
-  served by Strata) and the desktop compositor. No other inference server ran.
+  served by Nostroma) and the desktop compositor. No other inference server ran.
 
 ## Model and configuration
 
@@ -46,13 +46,13 @@ GGUF files, the expert profile and the model name. Everything else is identical:
 
 ```text
 --expert-cache auto --prefill auto --spec 5 --spec-min-p 0.5
---mtp /home/jason/Projects/Strata-data/mtp/rt
+--mtp /home/jason/Projects/Nostroma-data/mtp/rt
 --max-context 65536 --kv int8 --kv-resident 32768 --vram-reserve-mib 3072
 ```
 
 Server settings: `backend: hip`, `draft_vocab: en`, `fit_max_tokens: true`,
-loopback port 8080, environment `STRATA_HIPBLASLT_TUNING` (table above) and
-`STRATA_ADAPT_NOWAIT=1`. Requests used temperature 0, top-k 1, top-p 1, min-p 0,
+loopback port 8080, environment `NOSTROMA_HIPBLASLT_TUNING` (table above) and
+`NOSTROMA_ADAPT_NOWAIT=1`. Requests used temperature 0, top-k 1, top-p 1, min-p 0,
 seed 42, `reasoning_effort: none` and a 128-token output cap. No vision encoder
 was loaded and low-RAM mode was off.
 
@@ -89,7 +89,7 @@ Notes on the choices:
   Coder pack uses `data/expert-profile-coder.bin` (12,288 ranked pairs); the two
   Flash-Next arms use `data/expert-profile.bin` (24,576 ranked pairs).
 - The MTP draft vocabulary is the English one and the draft weights come from
-  `Strata-data/mtp/rt` for all three arms.
+  `Nostroma-data/mtp/rt` for all three arms.
 - The engine asked for 2 MiB hugepages for the host expert arena and could not get
   them (`vm.nr_hugepages=0`), so the arena used 4 KB pages. That was true for
   every arm and is a property of this machine's configuration.

@@ -4,7 +4,7 @@
   "engine": {
    "url": "http://<host-ip>:8081",
    "model": "qwen3.8-flash-next-iq3_s",
-   "health": "{\"status\": \"ok\", \"max_context\": 524288, \"model\": \"qwen3.8-flash-next-iq3_s\", \"images\": true, \"api_key\": true, \"loaded\": true, \"service\": \"strata\"}"
+   "health": "{\"status\": \"ok\", \"max_context\": 524288, \"model\": \"qwen3.8-flash-next-iq3_s\", \"images\": true, \"api_key\": true, \"loaded\": true, \"service\": \"nostroma\"}"
   },
   "host": {
    "uname": "Linux <hostname> 7.0.0-30-generic #30-Ubuntu SMP PREEMPT_DYNAMIC Fri Jul 31 18:22:54 UTC 2026 x86_64 GNU/Linux",

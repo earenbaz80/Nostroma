@@ -1,11 +1,11 @@
-// src/prefill/lm_kernels_parity.cu - the two kernels of the layer-major prompt path (STRATA_PREFILL_LAYER_MAJOR=1,
+// src/prefill/lm_kernels_parity.cu - the two kernels of the layer-major prompt path (NOSTROMA_PREFILL_LAYER_MAJOR=1,
 // #3976 / #1670) against a host reference, on synthetic data of the model's width (N = 2560): no model, a few MiB.
 //   moe_shared_init   acc[t, :] = shared[t, :] * sigmoid(sg[t])      (the device sigmoid is __expf: within 1e-5 relative)
 //   moe_scatter_add   acc[u_tok[u], :] += sum_{j in [u_off[u], u_off[u+1])} u_w[j] * Dm[u_rows[j], :], in that j order,
 //                     one block per token and no atomics: the same bits as the host's fmaf chain, and the same bits on a
 //                     second launch (deterministic)
 // Exit 0 pass, 1 fail, 77 no CUDA device (ctest SKIP_RETURN_CODE).
-#include "strata/prefill/kernels.hpp"
+#include "nostroma/prefill/kernels.hpp"
 
 #include <cuda_runtime.h>
 
@@ -47,7 +47,7 @@ void check_shared_init(int64_t T, std::mt19937& g) {
     up(d_sh, shared);
     up(d_sg, sg);
     cudaMemset(d_acc, 0xff, shared.size() * 4);
-    strata::prefill::moe_shared_init(d_sh, d_sg, d_acc, T, nullptr);
+    nostroma::prefill::moe_shared_init(d_sh, d_sg, d_acc, T, nullptr);
     ck(cudaDeviceSynchronize(), "sync");
     ck(cudaMemcpy(got.data(), d_acc, got.size() * 4, cudaMemcpyDeviceToHost), "download");
     double worst = 0;
@@ -121,7 +121,7 @@ void check_scatter(int64_t tokens, int64_t rows, int max_per_tok, uint32_t seed)
     std::vector<float> got1(acc0.size()), got2(acc0.size());
     for (int run = 0; run < 2; ++run) {
         up(d_acc, acc0);
-        strata::prefill::moe_scatter_add(d_Dm, d_ut, d_uo, d_ur, d_w, nu, d_acc, nullptr);
+        nostroma::prefill::moe_scatter_add(d_Dm, d_ut, d_uo, d_ur, d_w, nu, d_acc, nullptr);
         ck(cudaDeviceSynchronize(), "sync");
         ck(cudaMemcpy((run ? got2 : got1).data(), d_acc, acc0.size() * 4, cudaMemcpyDeviceToHost), "download");
     }

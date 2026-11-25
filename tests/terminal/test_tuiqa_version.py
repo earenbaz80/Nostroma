@@ -28,7 +28,7 @@ class ProductVersion(unittest.TestCase):
         self.assertEqual(as_tuple(nostroma_cli.PRODUCT_VERSION)[:2], as_tuple(m.group(1))[:2])
 
     def test_dash_dash_version_leads_with_it_and_keeps_the_build_number(self):
-        out = subprocess.run([sys.executable, str(ROOT / "strata.py"), "--version"], capture_output=True, text=True, check=True).stdout
+        out = subprocess.run([sys.executable, str(ROOT / "nostroma.py"), "--version"], capture_output=True, text=True, check=True).stdout
         self.assertTrue(out.startswith(f"nostroma {nostroma_cli.PRODUCT_VERSION} (build {nostroma_cli.version()};"), out)
         self.assertIn(sys.executable, out)                                  # the packaging smoke test reads the interpreter back from this line
 

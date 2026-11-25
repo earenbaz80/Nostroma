@@ -22,12 +22,12 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 #: The engine stub: the strings drafting.engine_form / engine_reads_selector_q4 look for in the program file (a current engine carries them).
-ENGINE_STUB = (b"STRATA ENGINE STUB (config snapshot)\n--mtp-draft-vocab FILE (or --mtp DIR\n--draft-fallback\n"
+ENGINE_STUB = (b"NOSTROMA ENGINE STUB (config snapshot)\n--mtp-draft-vocab FILE (or --mtp DIR\n--draft-fallback\n"
                b"--spec 2 or more and --mtp DIR (for DIR/draft_vocab.bin)\nselector codebooks: Q4_0 rows\n")
 
 #: Environment variables a developer or CI may have set that would leak into a start; the world starts from a clean list.
-CLEAR = ("STRATA_SETTINGS_FILE", "STRATA_CONNECTION_DIR", "CUDA_VISIBLE_DEVICES", "HIP_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES", "STRATA_API_KEY",
-         "STRATA_ENGINE_BACKEND", "STRATA_DFLASH2_TUNED_URL", "STRATA_UPDATE_FEED", "STRATA_NO_ACQUIRE", "STRATA_COMPONENTS_DIR")
+CLEAR = ("NOSTROMA_SETTINGS_FILE", "NOSTROMA_CONNECTION_DIR", "CUDA_VISIBLE_DEVICES", "HIP_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES", "NOSTROMA_API_KEY",
+         "NOSTROMA_ENGINE_BACKEND", "NOSTROMA_DFLASH2_TUNED_URL", "NOSTROMA_UPDATE_FEED", "NOSTROMA_NO_ACQUIRE", "NOSTROMA_COMPONENTS_DIR")
 
 
 def context_for(machine: Machine, model_set: ModelSet) -> int:
@@ -42,7 +42,7 @@ class World:
     def __init__(self, machine: Machine, mset: ModelSet, root: Path | None = None):
         self._tmp = None
         if root is None:
-            self._tmp = tempfile.TemporaryDirectory(prefix="strata-snap-")
+            self._tmp = tempfile.TemporaryDirectory(prefix="nostroma-snap-")
             root = Path(self._tmp.name)
         self.machine, self.mset, self.root = machine, mset, Path(root).resolve()
         r = self.root
@@ -52,18 +52,18 @@ class World:
         self.pack = self.data / "packs" / mset.key
         self.mtp = self.data / "mtp" / "rt"
         self.gguf_dir = self.models / mset.model
-        self.exe = self.engine_dir / "strata"
+        self.exe = self.engine_dir / "nostroma"
         self.tag = ({"qwen": "", "unsloth": "unsloth-"}[mset.family] + mset.model).lower()
-        self.config_path = self.install / f"strata-{self.tag}.json"
+        self.config_path = self.install / f"nostroma-{self.tag}.json"
         self.env = {
             "HOME": str(self.home), "USERPROFILE": str(self.home),
             "APPDATA": str(r / "roaming"), "LOCALAPPDATA": str(r / "local"),
             "XDG_CONFIG_HOME": str(r / "xdg-config"), "XDG_STATE_HOME": str(r / "state"), "XDG_DATA_HOME": str(r / "xdg-data"),
-            "STRATA_PROFILE_DIR": str(r / "config" / "profiles"), "STRATA_PRESET_DIR": str(r / "config" / "presets"),
-            "STRATA_LAUNCH_PRESET_DIR": str(r / "config" / "launch-presets"),
-            "STRATA_INSTALL_DIR": str(self.install), "STRATA_RUNTIME_DIR": str(r / "runtime"),
+            "NOSTROMA_PROFILE_DIR": str(r / "config" / "profiles"), "NOSTROMA_PRESET_DIR": str(r / "config" / "presets"),
+            "NOSTROMA_LAUNCH_PRESET_DIR": str(r / "config" / "launch-presets"),
+            "NOSTROMA_INSTALL_DIR": str(self.install), "NOSTROMA_RUNTIME_DIR": str(r / "runtime"),
             "TMPDIR": str(r / "tmp"), "TEMP": str(r / "tmp"), "TMP": str(r / "tmp"),
-            "STRATA_SETTINGS_FILE": str(r / "settings.json"),
+            "NOSTROMA_SETTINGS_FILE": str(r / "settings.json"),
         }
         self.fetches: list[dict] = []          # what the drafter fetch was asked for (see patches)
 
@@ -122,7 +122,7 @@ class World:
         if s.family == "unsloth":
             args += ["--resident-budget-gib", "24" if m.ram_gb < 100 else "48"]
         cfg = {"exe": str(self.exe), "args": args, "cwd": str(ROOT), "tokenizer": str(self.pack / "tokenizer"),
-               "model_name": s.model_name, "log": str(self.install / f"strata-{self.tag}.log"), "lib_dirs": [], "port": 8080}
+               "model_name": s.model_name, "log": str(self.install / f"nostroma-{self.tag}.log"), "lib_dirs": [], "port": 8080}
         if m.backend in ("hip", "metal", "sycl"):
             cfg["backend"] = m.backend
         if m.cards > 1:

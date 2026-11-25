@@ -28,13 +28,13 @@ STUB = """#!/bin/sh
 # a stand-in for cmake: `cmake --build DIR ...` prints what ninja prints and exits with STUB_RC; any other call does nothing
 case "$1" in
   --build)
-    echo "[1/2] Building CXX object CMakeFiles/strata.dir/main.cpp.o"
+    echo "[1/2] Building CXX object CMakeFiles/nostroma.dir/main.cpp.o"
     if [ "${STUB_RC:-0}" != 0 ]; then
-      echo "FAILED: [code=1] CMakeFiles/strata.dir/main.cpp.o"
+      echo "FAILED: [code=1] CMakeFiles/nostroma.dir/main.cpp.o"
       echo "main.cpp:1:21: error: 'x' was not declared in this scope"
       echo "ninja: build stopped: cannot make progress due to previous errors."
     else
-      echo "[2/2] Linking CXX executable strata"
+      echo "[2/2] Linking CXX executable nostroma"
     fi
     exit "${STUB_RC:-0}" ;;
 esac
@@ -54,7 +54,7 @@ class BuildScriptStatus(unittest.TestCase):
             (bindir / "cmake").chmod(0o755)
             env = dict(os.environ, PATH=sh_path(bindir) + os.pathsep + os.environ["PATH"], STUB_RC=str(rc), REPO=sh_path(ROOT),
                        BUILD_DIR=sh_path(build), AOT="", I8_ESIMD="OFF")
-            done = subprocess.run([BASH, sh_path(SCRIPT), "strata"], capture_output=True, text=True, env=env, timeout=120)
+            done = subprocess.run([BASH, sh_path(SCRIPT), "nostroma"], capture_output=True, text=True, env=env, timeout=120)
             return done
 
     def test_a_good_build_exits_zero(self):

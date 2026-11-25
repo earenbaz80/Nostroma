@@ -418,8 +418,8 @@ def _enable_privilege(name: str) -> bool:
 def user_roots() -> list[Path]:
     """The folders that are the user's own per-user data: a file inside one may be repaired by that user."""
     roots: list[Path] = []
-    for key in ("APPDATA", "LOCALAPPDATA", "STRATA_HOME", "STRATA_PROFILE_DIR", "STRATA_INSTALL_DIR", "STRATA_RUNTIME_DIR",
-                "STRATA_STATE_DIR"):
+    for key in ("APPDATA", "LOCALAPPDATA", "NOSTROMA_HOME", "NOSTROMA_PROFILE_DIR", "NOSTROMA_INSTALL_DIR", "NOSTROMA_RUNTIME_DIR",
+                "NOSTROMA_STATE_DIR"):
         value = os.environ.get(key)
         if value:
             roots.append(Path(value))
@@ -507,14 +507,14 @@ _SKIP_SUFFIXES = (".gguf", ".part", ".bin", ".safetensors", ".zip", ".exe", ".dl
 
 
 def known_roots() -> list[Path]:
-    """Nostroma's per-user data folders: APPDATA/Strata, LOCALAPPDATA/Strata and ~/.strata (plus the STRATA_* overrides)."""
+    """Nostroma's per-user data folders: APPDATA/Nostroma, LOCALAPPDATA/Nostroma and ~/.nostroma (plus the NOSTROMA_* overrides)."""
     roots: list[Path] = []
-    for key, sub in (("APPDATA", "Strata"), ("LOCALAPPDATA", "Strata")):
+    for key, sub in (("APPDATA", "Nostroma"), ("LOCALAPPDATA", "Nostroma")):
         value = os.environ.get(key)
         if value:
             roots.append(Path(value) / sub)
-    roots.append(Path.home() / ".strata")
-    for key in ("STRATA_HOME", "STRATA_PROFILE_DIR", "STRATA_RUNTIME_DIR", "STRATA_STATE_DIR", "STRATA_INSTALL_DIR"):
+    roots.append(Path.home() / ".nostroma")
+    for key in ("NOSTROMA_HOME", "NOSTROMA_PROFILE_DIR", "NOSTROMA_RUNTIME_DIR", "NOSTROMA_STATE_DIR", "NOSTROMA_INSTALL_DIR"):
         value = os.environ.get(key)
         if value:
             roots.append(Path(value))

@@ -23,8 +23,8 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include "strata/kernels/native_gdn.hpp"
-#include "strata/core/geometry.hpp"
+#include "nostroma/kernels/native_gdn.hpp"
+#include "nostroma/core/geometry.hpp"
 #include <cuda_runtime.h>
 #include <atomic>
 #include <cmath>
@@ -32,11 +32,11 @@
 #include <cstdint>
 #include <stdexcept>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 std::atomic<bool> enabled{false};
 constexpr int S = 128;
-static_assert(S == strata::core::kCompiledGeometry.ssm_state_size, "native_gdn is compiled for core/geometry.hpp");
+static_assert(S == nostroma::core::kCompiledGeometry.ssm_state_size, "native_gdn is compiled for core/geometry.hpp");
 
 __device__ __forceinline__ float warp_sum(float value) {
 #pragma unroll
@@ -121,4 +121,4 @@ void native_gdn_step(float* state, const float* q, const float* k, const float* 
     const auto error = cudaGetLastError();
     if (error != cudaSuccess) throw std::runtime_error(cudaGetErrorString(error));
 }
-} // namespace strata::kernels
+} // namespace nostroma::kernels

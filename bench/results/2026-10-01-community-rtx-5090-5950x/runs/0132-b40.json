@@ -1,7 +1,7 @@
 {
   "label": "ud-q4kxl-0132-b40",
-  "build_info": "Strata 0.1.32",
-  "model_path": "E:\\strata-data\\models-unsloth\\UD-Q4_K_XL\\Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf",
+  "build_info": "Nostroma 0.1.32",
+  "model_path": "E:\\nostroma-data\\models-unsloth\\UD-Q4_K_XL\\Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf",
   "n_ctx": 32768,
   "max_tokens": 256,
   "sampling": "temperature 0, seed 42, cache_prompt false",

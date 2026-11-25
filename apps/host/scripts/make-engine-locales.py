@@ -26,11 +26,11 @@ add("Switch to an older engine to test something, then switch back to the newest
     "Troque para um motor mais antigo para testar algo e depois volte ao mais recente. A atualização para a versão mais recente fica em «Sobre».",
     "이전 엔진으로 바꿔 테스트한 뒤 다시 최신 엔진으로 돌아올 수 있습니다. 최신 버전으로의 업데이트는 '정보'에서 합니다.",
     "Passez à un moteur plus ancien pour tester quelque chose, puis revenez au plus récent. La mise à jour vers la dernière version se trouve dans « À propos ».")
-add("Engines can be switched and deleted in the installed Strata app.",
-    "可以在已安装的 Strata 应用中切换和删除引擎。", "エンジンの切り替えと削除は、インストール済みの Strata アプリで行えます。",
-    "Engines lassen sich in der installierten Strata-App wechseln und löschen.", "Los motores se pueden cambiar y eliminar en la aplicación Strata instalada.",
-    "Переключать и удалять движки можно в установленном приложении Strata.", "Os motores podem ser trocados e excluídos no aplicativo Strata instalado.",
-    "엔진 전환과 삭제는 설치된 Strata 앱에서 할 수 있습니다.", "Les moteurs peuvent être changés et supprimés dans l'application Strata installée.")
+add("Engines can be switched and deleted in the installed Nostroma app.",
+    "可以在已安装的 Nostroma 应用中切换和删除引擎。", "エンジンの切り替えと削除は、インストール済みの Nostroma アプリで行えます。",
+    "Engines lassen sich in der installierten Nostroma-App wechseln und löschen.", "Los motores se pueden cambiar y eliminar en la aplicación Nostroma instalada.",
+    "Переключать и удалять движки можно в установленном приложении Nostroma.", "Os motores podem ser trocados e excluídos no aplicativo Nostroma instalado.",
+    "엔진 전환과 삭제는 설치된 Nostroma 앱에서 할 수 있습니다.", "Les moteurs peuvent être changés et supprimés dans l'application Nostroma installée.")
 add("The installed engines couldn't be read. Try again in a moment.",
     "无法读取已安装的引擎。请稍后重试。", "インストール済みのエンジンを読み取れませんでした。しばらくしてからもう一度お試しください。",
     "Die installierten Engines konnten nicht gelesen werden. Versuche es gleich noch einmal.", "No se pudieron leer los motores instalados. Inténtalo de nuevo en un momento.",
@@ -98,14 +98,14 @@ add("The newest engine can be downloaded again with Install engine.",
     "Die neueste Engine lässt sich mit „Engine installieren“ erneut herunterladen.", "El motor más reciente se puede volver a descargar con «Instalar el motor».",
     "Новейший движок можно снова скачать с помощью «Установить движок».", "O motor mais recente pode ser baixado de novo com «Instalar o motor».",
     "최신 엔진은 '엔진 설치'로 다시 내려받을 수 있습니다.", "Le moteur le plus récent peut être retéléchargé avec « Installer le moteur ».")
-add("Strata can only download the newest engine, so a deleted older engine can't be brought back.",
-    "Strata 只能下载最新的引擎，所以删除后无法找回较旧的引擎。", "Strata がダウンロードできるのは最新のエンジンだけなので、削除した古いエンジンは元に戻せません。",
-    "Strata kann nur die neueste Engine herunterladen. Eine gelöschte ältere Engine lässt sich deshalb nicht wiederherstellen.",
-    "Strata solo puede descargar el motor más reciente, así que un motor anterior eliminado no se puede recuperar.",
-    "Strata может скачать только новейший движок, поэтому удалённый старый движок вернуть нельзя.",
-    "O Strata só pode baixar o motor mais recente, então um motor antigo excluído não pode ser recuperado.",
-    "Strata는 최신 엔진만 내려받을 수 있으므로, 삭제한 이전 엔진은 되돌릴 수 없습니다.",
-    "Strata ne peut télécharger que le moteur le plus récent : un ancien moteur supprimé ne peut donc pas être récupéré.")
+add("Nostroma can only download the newest engine, so a deleted older engine can't be brought back.",
+    "Nostroma 只能下载最新的引擎，所以删除后无法找回较旧的引擎。", "Nostroma がダウンロードできるのは最新のエンジンだけなので、削除した古いエンジンは元に戻せません。",
+    "Nostroma kann nur die neueste Engine herunterladen. Eine gelöschte ältere Engine lässt sich deshalb nicht wiederherstellen.",
+    "Nostroma solo puede descargar el motor más reciente, así que un motor anterior eliminado no se puede recuperar.",
+    "Nostroma может скачать только новейший движок, поэтому удалённый старый движок вернуть нельзя.",
+    "O Nostroma só pode baixar o motor mais recente, então um motor antigo excluído não pode ser recuperado.",
+    "Nostroma는 최신 엔진만 내려받을 수 있으므로, 삭제한 이전 엔진은 되돌릴 수 없습니다.",
+    "Nostroma ne peut télécharger que le moteur le plus récent : un ancien moteur supprimé ne peut donc pas être récupéré.")
 
 # ---- why an engine cannot be used on this computer
 add("This engine was made for a different operating system.",
@@ -117,9 +117,9 @@ add("This engine was made for a different kind of graphics card than this comput
     "Diese Engine wurde für eine andere Art von Grafikkarte gebaut als die in diesem Computer.", "Este motor se creó para un tipo de tarjeta gráfica distinto del de este equipo.",
     "Этот движок создан для другого типа видеокарты, чем в этом компьютере.", "Este motor foi feito para um tipo de placa de vídeo diferente da deste computador.",
     "이 엔진은 이 컴퓨터와 다른 종류의 그래픽 카드용입니다.", "Ce moteur a été conçu pour un autre type de carte graphique que celle de cet ordinateur.")
-add("This engine needs Strata {0} or newer.",
-    "此引擎需要 Strata {0} 或更新版本。", "このエンジンには Strata {0} 以降が必要です。", "Diese Engine braucht Strata {0} oder neuer.", "Este motor necesita Strata {0} o posterior.",
-    "Для этого движка нужна Strata {0} или новее.", "Este motor precisa do Strata {0} ou mais recente.", "이 엔진에는 Strata {0} 이상이 필요합니다.", "Ce moteur nécessite Strata {0} ou plus récent.")
+add("This engine needs Nostroma {0} or newer.",
+    "此引擎需要 Nostroma {0} 或更新版本。", "このエンジンには Nostroma {0} 以降が必要です。", "Diese Engine braucht Nostroma {0} oder neuer.", "Este motor necesita Nostroma {0} o posterior.",
+    "Для этого движка нужна Nostroma {0} или новее.", "Este motor precisa do Nostroma {0} ou mais recente.", "이 엔진에는 Nostroma {0} 이상이 필요합니다.", "Ce moteur nécessite Nostroma {0} ou plus récent.")
 add("This engine doesn't support this computer's graphics card.",
     "此引擎不支持这台电脑的显卡。", "このエンジンは、このコンピューターのグラフィックスカードに対応していません。", "Diese Engine unterstützt die Grafikkarte dieses Computers nicht.",
     "Este motor no admite la tarjeta gráfica de este equipo.", "Этот движок не поддерживает видеокарту этого компьютера.", "Este motor não oferece suporte à placa de vídeo deste computador.",
@@ -142,24 +142,24 @@ add("This engine's description is missing or damaged, so it can't be started.",
 
 # ---- no engine for this computer (Settings > Engine installs it) and an engine that is too old (Settings > About updates
 # it, since the Engine panel only installs, switches and deletes): the model still downloads either way
-add("Strata didn’t recognise an engine for this computer. The model will download, but it may not run until the right engine is installed (Settings → Engine).",
-    "Strata 未能识别这台电脑的引擎。模型会下载，但在安装合适的引擎之前可能无法运行（设置 → 引擎）。",
-    "Strata はこのコンピューター用のエンジンを認識できませんでした。モデルはダウンロードされますが、合ったエンジンをインストールするまで動かない可能性があります（設定 → エンジン）。",
-    "Strata hat für diesen Computer keine Engine erkannt. Das Modell wird heruntergeladen, läuft aber möglicherweise erst, wenn die passende Engine installiert ist (Einstellungen → Engine).",
-    "Strata no reconoció ningún motor para este equipo. El modelo se descargará, pero puede que no funcione hasta que se instale el motor adecuado (Ajustes → Motor).",
-    "Strata не распознала движок для этого компьютера. Модель скачается, но может не запуститься, пока не установлен подходящий движок (Настройки → Движок).",
-    "O Strata não reconheceu um motor para este computador. O modelo será baixado, mas pode não funcionar até que o motor certo seja instalado (Configurações → Mecanismo).",
-    "Strata가 이 컴퓨터용 엔진을 인식하지 못했습니다. 모델은 내려받지만, 알맞은 엔진이 설치되기 전에는 실행되지 않을 수 있습니다(설정 → 엔진).",
-    "Strata n’a pas reconnu de moteur pour cet ordinateur. Le modèle sera téléchargé, mais il risque de ne pas fonctionner tant que le bon moteur n’est pas installé (Réglages → Moteur).")
-add("Strata didn’t recognise an engine for this computer. The model is downloaded, but it can’t run until the right engine is installed. Open Settings → Engine.",
-    "Strata 未能识别这台电脑的引擎。模型已下载，但在安装合适的引擎之前无法运行。请打开 设置 → 引擎。",
-    "Strata はこのコンピューター用のエンジンを認識できませんでした。モデルはダウンロード済みですが、合ったエンジンをインストールするまで動きません。設定 → エンジン を開いてください。",
-    "Strata hat für diesen Computer keine Engine erkannt. Das Modell ist heruntergeladen, läuft aber erst, wenn die passende Engine installiert ist. Öffne Einstellungen → Engine.",
-    "Strata no reconoció ningún motor para este equipo. El modelo está descargado, pero no puede funcionar hasta que se instale el motor adecuado. Abre Ajustes → Motor.",
-    "Strata не распознала движок для этого компьютера. Модель скачана, но не запустится, пока не установлен подходящий движок. Откройте Настройки → Движок.",
-    "O Strata não reconheceu um motor para este computador. O modelo foi baixado, mas não pode funcionar até que o motor certo seja instalado. Abra Configurações → Mecanismo.",
-    "Strata가 이 컴퓨터용 엔진을 인식하지 못했습니다. 모델은 내려받았지만, 알맞은 엔진이 설치되기 전에는 실행할 수 없습니다. 설정 → 엔진을 여세요.",
-    "Strata n’a pas reconnu de moteur pour cet ordinateur. Le modèle est téléchargé, mais il ne peut pas fonctionner tant que le bon moteur n’est pas installé. Ouvrez Réglages → Moteur.")
+add("Nostroma didn’t recognise an engine for this computer. The model will download, but it may not run until the right engine is installed (Settings → Engine).",
+    "Nostroma 未能识别这台电脑的引擎。模型会下载，但在安装合适的引擎之前可能无法运行（设置 → 引擎）。",
+    "Nostroma はこのコンピューター用のエンジンを認識できませんでした。モデルはダウンロードされますが、合ったエンジンをインストールするまで動かない可能性があります（設定 → エンジン）。",
+    "Nostroma hat für diesen Computer keine Engine erkannt. Das Modell wird heruntergeladen, läuft aber möglicherweise erst, wenn die passende Engine installiert ist (Einstellungen → Engine).",
+    "Nostroma no reconoció ningún motor para este equipo. El modelo se descargará, pero puede que no funcione hasta que se instale el motor adecuado (Ajustes → Motor).",
+    "Nostroma не распознала движок для этого компьютера. Модель скачается, но может не запуститься, пока не установлен подходящий движок (Настройки → Движок).",
+    "O Nostroma não reconheceu um motor para este computador. O modelo será baixado, mas pode não funcionar até que o motor certo seja instalado (Configurações → Mecanismo).",
+    "Nostroma가 이 컴퓨터용 엔진을 인식하지 못했습니다. 모델은 내려받지만, 알맞은 엔진이 설치되기 전에는 실행되지 않을 수 있습니다(설정 → 엔진).",
+    "Nostroma n’a pas reconnu de moteur pour cet ordinateur. Le modèle sera téléchargé, mais il risque de ne pas fonctionner tant que le bon moteur n’est pas installé (Réglages → Moteur).")
+add("Nostroma didn’t recognise an engine for this computer. The model is downloaded, but it can’t run until the right engine is installed. Open Settings → Engine.",
+    "Nostroma 未能识别这台电脑的引擎。模型已下载，但在安装合适的引擎之前无法运行。请打开 设置 → 引擎。",
+    "Nostroma はこのコンピューター用のエンジンを認識できませんでした。モデルはダウンロード済みですが、合ったエンジンをインストールするまで動きません。設定 → エンジン を開いてください。",
+    "Nostroma hat für diesen Computer keine Engine erkannt. Das Modell ist heruntergeladen, läuft aber erst, wenn die passende Engine installiert ist. Öffne Einstellungen → Engine.",
+    "Nostroma no reconoció ningún motor para este equipo. El modelo está descargado, pero no puede funcionar hasta que se instale el motor adecuado. Abre Ajustes → Motor.",
+    "Nostroma не распознала движок для этого компьютера. Модель скачана, но не запустится, пока не установлен подходящий движок. Откройте Настройки → Движок.",
+    "O Nostroma não reconheceu um motor para este computador. O modelo foi baixado, mas não pode funcionar até que o motor certo seja instalado. Abra Configurações → Mecanismo.",
+    "Nostroma가 이 컴퓨터용 엔진을 인식하지 못했습니다. 모델은 내려받았지만, 알맞은 엔진이 설치되기 전에는 실행할 수 없습니다. 설정 → 엔진을 여세요.",
+    "Nostroma n’a pas reconnu de moteur pour cet ordinateur. Le modèle est téléchargé, mais il ne peut pas fonctionner tant que le bon moteur n’est pas installé. Ouvrez Réglages → Moteur.")
 add("Update the engine (Settings → About), then try again.",
     "请更新引擎（设置 → 关于），然后重试。", "エンジンを更新して（設定 → 情報）、もう一度お試しください。", "Aktualisiere die Engine (Einstellungen → Über) und versuche es dann erneut.",
     "Actualiza el motor (Ajustes → Acerca de) y vuelve a intentarlo.", "Обновите движок (Настройки → О программе) и попробуйте снова.", "Atualize o motor (Configurações → Sobre) e tente novamente.",
@@ -207,7 +207,7 @@ add("A newer engine is already on this computer. Update switches to it; nothing 
     "이 컴퓨터에 이미 더 새로운 엔진이 있습니다. 업데이트하면 그 엔진으로 전환되며, 내려받는 것은 없습니다.", "Cet ordinateur a déjà un moteur plus récent. La mise à jour bascule dessus ; rien n'est téléchargé.")
 # ---- the Use dialog of a Qwen4 model shape's engine (owner 11-09: {0} is the group's title, the model's own name; {1} the engine's version). Only the first
 # sentence is new: the two after it ("Your models and settings stay as they are. You can switch back at any time.") are the existing translations, taken from the
-# Strata engine's Use sentence below so they read exactly the same in every language.
+# Nostroma engine's Use sentence below so they read exactly the same in every language.
 _SHAPE_FIRST = dict(en="{0} runs on engine {1} from its next start.",
                     zh="{0} 将从下次启动起使用引擎 {1}。", ja="{0} は次回の起動からエンジン {1} で動作します。",
                     de="{0} läuft ab dem nächsten Start mit Engine {1}.", es="{0} funcionará con el motor {1} a partir de su próximo inicio.",

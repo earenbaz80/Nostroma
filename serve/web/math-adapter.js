@@ -17,7 +17,7 @@
       css.href = "web/vendor/katex/dist/katex.min.css";
       const loaded = new Promise((resolve, reject) => { css.onload = resolve; css.onerror = reject; });
       document.head.append(css);
-      await Promise.all([loaded, root.katex ? Promise.resolve() : root.StrataMath.script("web/vendor/katex/dist/katex.min.js")]);
+      await Promise.all([loaded, root.katex ? Promise.resolve() : root.NostromaMath.script("web/vendor/katex/dist/katex.min.js")]);
       css.dataset.katexReady = "1";
     },
     async render(source, {display, signal}) {
@@ -29,6 +29,6 @@
       } catch (_) { return {ok: false, reason: "invalid"}; }
     },
   };
-  root.StrataMathAdapter = adapter;
+  root.NostromaMathAdapter = adapter;
   if (typeof module !== "undefined" && module.exports) module.exports = adapter;
 })(typeof globalThis !== "undefined" ? globalThis : this);

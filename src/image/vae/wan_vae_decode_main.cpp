@@ -1,6 +1,6 @@
 // src/image/vae/wan_vae_decode_main.cpp - test program for Nostroma's VAE decoder (OWN-5 gate harness).
 //
-//   strata-vae-decode <vae.safetensors> <latent.bin> <out.f32> [--dump DIR] [--repeat N] [--device D] [--stream on|off] [--band-rows N] [--threads N] [--stats FILE]
+//   nostroma-vae-decode <vae.safetensors> <latent.bin> <out.f32> [--dump DIR] [--repeat N] [--device D] [--stream on|off] [--band-rows N] [--threads N] [--stats FILE]
 //
 // latent.bin: the diffusion-space latent as run_set.py --dump writes it (float32 planar [64][h][w], latent.shape beside
 // it says "w h 64 1"); it is denormalized like sd.cpp's decode_first_stage does, then decoded.  out.f32: float32
@@ -12,7 +12,7 @@
 // --stream off: the one-pass reference decode (the product always uses the row bands; same bytes, more memory).
 // --repeat N decodes N times and checks that every run gives the same bytes (run to run), printing each time.
 // Prints one line per run: "decode <ms> ms, peak <MiB> MiB (weights+work <MiB>)".
-#include "strata/image/wan_vae.hpp"
+#include "nostroma/image/wan_vae.hpp"
 
 #include <chrono>
 #include <cstdio>
@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 
-using namespace strata::image;
+using namespace nostroma::image;
 
 static bool read_file(const std::string& p, std::vector<float>& v, size_t n) {
     FILE* f = std::fopen(p.c_str(), "rb");
@@ -35,7 +35,7 @@ static bool read_file(const std::string& p, std::vector<float>& v, size_t n) {
 
 int main(int argc, char** argv) {
     if (argc < 4) {
-        std::fprintf(stderr, "usage: strata-vae-decode <vae.safetensors> <latent.bin> <out.f32> [--dump DIR] [--repeat N] [--device D]\n");
+        std::fprintf(stderr, "usage: nostroma-vae-decode <vae.safetensors> <latent.bin> <out.f32> [--dump DIR] [--repeat N] [--device D]\n");
         return 2;
     }
     std::string vae = argv[1], lat = argv[2], outp = argv[3], dump_dir, stats_path;

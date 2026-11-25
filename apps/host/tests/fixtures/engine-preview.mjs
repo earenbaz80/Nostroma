@@ -1,5 +1,5 @@
 /**
- * UI preview only (STRATA_UI_PREVIEW=1): several installed engines for Settings > Engine and an engine update for About, kept in memory.
+ * UI preview only (NOSTROMA_UI_PREVIEW=1): several installed engines for Settings > Engine and an engine update for About, kept in memory.
  * The demo host refuses mutations and simulates the hardware, so this answers the same routes the real host has (/api/engines, /api/engines/use,
  * /api/engines/remove, /api/updates/check, the update-engine job) with believable behaviour: switching changes what is in use, the engine in use
  * cannot be deleted, a switch while a model is loaded answers with the same plain sentence, an update makes the new engine the one in use.
@@ -13,7 +13,7 @@ function engine(family, version, bytes, extra = {}) {
   const folder = `${version}-windows-x86_64-${backend}${variant ? `-${variant}` : ''}`;
   return { family, folder, version, backend, platform: 'windows-x86_64', variant, bytes, signed: true, fits: true, why_not: null, why_code: null, why_args: [],
     active: false, newest: false, pinned: false, running: false, can_use: true, can_delete: true, delete_blocked: null, blocked_code: null,
-    build_id: `preview-${version}`, path: `C:\\Users\\you\\AppData\\Local\\Strata\\components\\engine\\${folder}`, ...extra };
+    build_id: `preview-${version}`, path: `C:\\Users\\you\\AppData\\Local\\Nostroma\\components\\engine\\${folder}`, ...extra };
 }
 
 export function createEnginePreview(native) {
@@ -79,7 +79,7 @@ export function createEnginePreview(native) {
         const newer = inUse && inUse.localeCompare(latest, undefined, { numeric: true }) < 0 && !qwen.some(e => e.version === latest);
         return json({
           checkedAt: new Date().toISOString(),
-          strata: { installedVersion: '0.2.9', status: 'current', message: 'Nostroma is up to date.', canInstall: false },
+          nostroma: { installedVersion: '0.2.9', status: 'current', message: 'Nostroma is up to date.', canInstall: false },
           engine: newer ? { installedVersion: inUse, latestVersion: latest, status: 'available', message: 'A new engine is available (1,030 MB).', canInstall: true }
             : { installedVersion: inUse, status: 'current', message: 'The engine is up to date.', canInstall: false },
         }), true;

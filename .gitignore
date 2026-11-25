@@ -34,12 +34,12 @@ td.log
 /mtp/
 /run-*.bat
 /run-*.sh
-/strata-*.json
-/strata-*.log
-/build-strata.bat
-/build-strata-cuda12.bat
+/nostroma-*.json
+/nostroma-*.log
+/build-nostroma.bat
+/build-nostroma-cuda12.bat
 /build-cuda12/
-/.strata-mcp/
+/.nostroma-mcp/
 
 # image encoder (setup.py --vision): build output and the generated build script
 build-vision*/
@@ -86,7 +86,7 @@ node_modules/
 # the pruned DeepSeek Harness (MIT) is built by apps/desktop/scripts/stage-harness.mjs
 /apps/desktop/src-tauri/resources/harness/*
 !/apps/desktop/src-tauri/resources/harness/.gitignore
-# screenshots and checkpoints from the Mac rebuild live outside git (StrataSplit\evidence-archive)
+# screenshots and checkpoints from the Mac rebuild live outside git (NostromaSplit\evidence-archive)
 /apps/host/docs/evidence/
 /apps/host/docs/checkpoints/
 

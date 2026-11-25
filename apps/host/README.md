@@ -23,7 +23,7 @@ is real: no engine is started, no model is loaded, no files outside its temporar
 | --- | --- |
 | `npm run build` | Builds the interface into `dist/`. |
 | `npm run typecheck` | `tsc --noEmit`. |
-| `npm test` | The host and interface tests (`tests/*.test.mjs`, `node --test`). They write to scratch copies of the per-user folders, never to your own profile. A test that hangs fails after 10 minutes (`STRATA_TEST_TIMEOUT_MS`). |
+| `npm test` | The host and interface tests (`tests/*.test.mjs`, `node --test`). They write to scratch copies of the per-user folders, never to your own profile. A test that hangs fails after 10 minutes (`NOSTROMA_TEST_TIMEOUT_MS`). |
 | `npm run dev` | The source host (port 8791) and the Vite dev server (port 5199) together; Vite proxies `/api` to the host. |
 | `npm run serve` | The host with the built `dist/` (run `npm run build` first). |
 | `npm run check` | Typecheck plus the interface audits (`audit`, `contrast`, `measure`, `luminance`). |
@@ -31,7 +31,7 @@ is real: no engine is started, no model is loaded, no files outside its temporar
 ## Preview, source host and packaged Control
 
 - **Simulated preview** (`npm run preview:ui`): fixtures only. Use it to look at screens.
-- **Source host** (`npm run dev`, `npm run serve`): the real host code from this checkout. Without `STRATA_REAL_ENGINE=1` it
+- **Source host** (`npm run dev`, `npm run serve`): the real host code from this checkout. Without `NOSTROMA_REAL_ENGINE=1` it
   runs a clearly labelled example engine; with it, the host looks for a Nostroma installation as a source checkout does.
   Loading a real model needs an engine and model files; none of the commands above do that.
 - **Packaged app**: the installer ships the host next to Nostroma Control (Python plus `nostroma_control`), which does installs,

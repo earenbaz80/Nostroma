@@ -8,7 +8,7 @@ from pathlib import Path
 import threading
 import time
 
-from bench_engine import save, load_tokenizer, ChatTemplate, StrataEngine, child_env, gpu_fdinfo
+from bench_engine import save, load_tokenizer, ChatTemplate, NostromaEngine, child_env, gpu_fdinfo
 from resource_sampler import ResourceSampler
 from single_gpu import ISOLATION, validate_config
 
@@ -42,7 +42,7 @@ def main():
     for increment in args.increments:
         # A fixed, coherent assistant turn makes every arm consume the same followup IDs even when
         # generated outputs differ. This is a performance fixture, not a task-quality score.
-        marker = "STRATA_INCREMENTAL_RECORDS_MARKER"
+        marker = "NOSTROMA_INCREMENTAL_RECORDS_MARKER"
         prompt = "Each record contains an ID, a color, and an integer value. Validation must reject duplicates.<|im_end|>\n"
         prompt += tpl.render([{"role": "user", "content": f"Followup {increment}. Additional records:\n" + marker +
                               "\nNow explain how to reject duplicate IDs and invalid integers."}], enable_thinking=False)
@@ -73,7 +73,7 @@ def main():
     env = child_env(cfg)
     if any(env.get(k) != v for k, v in ISOLATION.items()):
         raise ValueError("child environment changed GPU isolation")
-    engine = StrataEngine(cfg["exe"], flags, cwd=cfg["cwd"], log=str(args.out / "engine.log"), env=env)
+    engine = NostromaEngine(cfg["exe"], flags, cwd=cfg["cwd"], log=str(args.out / "engine.log"), env=env)
     manifest.update(engine_info=dict(engine.info), pid=engine.proc.pid)
     sampler = ResourceSampler(engine.proc.pid)
     sampling = {"temperature": 0, "top_k": 1, "top_p": 1, "min_p": 0, "seed": 42}

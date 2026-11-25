@@ -41,7 +41,7 @@ def main():
     data_url = "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode()
 
     body = json.dumps({
-        "model": "strata",
+        "model": "nostroma",
         "messages": [{"role": "user", "content": [
             {"type": "text", "text": QUESTION},
             {"type": "image_url", "image_url": {"url": data_url}},

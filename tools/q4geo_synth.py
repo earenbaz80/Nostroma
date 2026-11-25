@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Synthetic qwen4exp GGUF files with random weights, at any shape, in the per-tensor type mix of an Unsloth UD file.
 
-Why: the engine is compiled for one model shape (include/strata/core/geometry.hpp).  To check that a build for another shape
+Why: the engine is compiled for one model shape (include/nostroma/core/geometry.hpp).  To check that a build for another shape
 loads and runs, there has to be a file of that shape.  The writer in gguf_writer.py holds every tensor in memory and knows
 only F32, F16 and Q2_0; this one streams, and writes the types the UD files use (Q8_0, Q4_K, Q5_K, Q6_K, Q5_0, Q5_1, IQ4_NL,
 IQ4_XS, IQ3_S, BF16, F32).  The weights are random bytes with the scale fields of every block set to a fixed small number, so
@@ -15,7 +15,7 @@ the dequantized values stay in a few hundredths and the activations stay finite;
 The layout (tensor names and shapes) is core/family_layout.hpp's for qwen4exp.  The PLE / n-gram tables of Flash-Next are NOT
 written (their hash constants are compiled in and the table is 28 GB): run the engine with --no-ple on these files.
 
-The geometry header written by --header is what -DSTRATA_GEOMETRY_FILE=<path> takes.
+The geometry header written by --header is what -DNOSTROMA_GEOMETRY_FILE=<path> takes.
 """
 from __future__ import annotations
 
@@ -367,8 +367,8 @@ def write_gguf(path: pathlib.Path, s: dict, vocab: int, recipe: str, seed: int, 
 # ------------------------------------------------------------------ geometry header
 def header_text(s: dict, label: str, source: str) -> str:
     f = FLASH
-    lines = [f"// {label}: written by tools/q4geo_synth.py from {source}.", "// Take it with -DSTRATA_GEOMETRY_FILE=<this file>.",
-             "#pragma once", "", "namespace strata::core {", "",
+    lines = [f"// {label}: written by tools/q4geo_synth.py from {source}.", "// Take it with -DNOSTROMA_GEOMETRY_FILE=<this file>.",
+             "#pragma once", "", "namespace nostroma::core {", "",
              f'inline constexpr const char* kGeometryName = "{label}";',
              "inline constexpr ModelGeometry kCompiledGeometry = [] {", "    ModelGeometry g;"]
     m = [("n_embd", "n_embd"), ("n_layers", "n_layers"), ("qsa_interval", "qsa_interval"), ("n_head", "n_head"),
@@ -380,7 +380,7 @@ def header_text(s: dict, label: str, source: str) -> str:
         lines.append(f"    g.{c} = {s[k]};")
     lines += ["    g.n_ff_shexp = g.n_ff;",
               "    g.ssm_conv_channels = 2 * g.ssm_state_size * g.ssm_k_heads + g.ssm_state_size * g.ssm_v_heads;",
-              "    g.ssm_value_dim = g.ssm_state_size * g.ssm_v_heads;", "    return g;", "}();", "", "}  // namespace strata::core", ""]
+              "    g.ssm_value_dim = g.ssm_state_size * g.ssm_v_heads;", "    return g;", "}();", "", "}  // namespace nostroma::core", ""]
     return "\n".join(lines)
 
 

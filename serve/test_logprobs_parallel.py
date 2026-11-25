@@ -1,6 +1,6 @@
 """Logprobs with "parallel" (batch slots): python -m unittest serve.test_logprobs_parallel.
 
-The fake engine of serve/test_parallel.py behind the real StrataEngine and Service, writing an LP line after each
+The fake engine of serve/test_parallel.py behind the real NostromaEngine and Service, writing an LP line after each
 T line when the GEN / BGEN line asks for logprobs.  A typed decision (max_tokens 1) is read on the control lines
 (an admission: BGEN, one T, DONE, BADM 0) and gets its logprobs; longer replies are refused with a 400, since the
 slot's BT lines carry none.

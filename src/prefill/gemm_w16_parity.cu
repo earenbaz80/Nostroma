@@ -1,4 +1,4 @@
-// src/prefill/gemm_w16_parity.cu - the FP16 weight cache (STRATA_PF_W16_CACHE_MIB) against the uncached Gemm::native, bitwise
+// src/prefill/gemm_w16_parity.cu - the FP16 weight cache (NOSTROMA_PF_W16_CACHE_MIB) against the uncached Gemm::native, bitwise
 // (GPU, synthetic weights, no model).
 //
 // gemm_dequant_side_parity runs Gemm::native twice, with the cache and without the side-stream scratch, and its scratch (10.5 M elements) is
@@ -6,11 +6,11 @@
 // two different cuBLAS calls that need not round alike.  The engine's scratch is GEMM_SCRATCH = 32 M elements (src/prefill/prefill.cpp) and every
 // dense projection of Qwen3.8-Flash-Next (the largest is attn_q, 12288 x 2560 = 31.5 M) fits it, so in the engine the cached and the uncached
 // forms are the same GEMM on the same FP16 values.  This test runs exactly that: the engine's scratch size, the engine's dense shapes and types
-// (Q8_0 on IQ3_S, Q4_K / Q5_K / Q6_K on the Unsloth sets), several token counts, with the cache off (STRATA_PF_W16_CACHE_MIB=0) and on
+// (Q8_0 on IQ3_S, Q4_K / Q5_K / Q6_K on the Unsloth sets), several token counts, with the cache off (NOSTROMA_PF_W16_CACHE_MIB=0) and on
 // ("auto"), each cached weight used twice.  Every output must be identical bit for bit.  A weight larger than the scratch (the 248320 x 2560
 // output head) is reported separately and is NOT part of the verdict: it never goes through Gemm::native in the prompt path.
 // Exit 77 without a CUDA device.
-#include "strata/prefill/gemm.hpp"
+#include "nostroma/prefill/gemm.hpp"
 
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
@@ -98,8 +98,8 @@ int main() {
         for (const int64_t T : Ts) {
             std::vector<uint8_t> out[2];
             for (int on = 0; on < 2; ++on) {
-                setenv("STRATA_PF_W16_CACHE_MIB", on ? "auto" : "0", 1);
-                strata::prefill::Gemm gemm;          // a fresh one reads the variable at its first native()
+                setenv("NOSTROMA_PF_W16_CACHE_MIB", on ? "auto" : "0", 1);
+                nostroma::prefill::Gemm gemm;          // a fresh one reads the variable at its first native()
                 std::string err;
                 if (!gemm.init(st, scratch_elems, err)) { std::printf("FAIL: %s\n", err.c_str()); return 1; }
                 cudaMemset(Y[on], 0xff, (size_t) T * max_n * 4);

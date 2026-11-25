@@ -23,7 +23,7 @@ const BODY = "Nostroma's chat storage is full, so the newest changes to {0} chat
 const BUTTON = 'Copy unsaved chats';
 
 test('the notice exists in all nine languages, with the placeholder kept', () => {
-  const brand = (t) => String(t).replace(/\bStrata\b/g, 'Nostroma');   // the catalogues keep upstream's wording; i18n.ts swaps it on the way out
+  const brand = (t) => String(t).replace(/\bNostroma\b/g, 'Nostroma');   // the catalogues keep upstream's wording; i18n.ts swaps it on the way out
   for (const lang of ['en', 'zh', 'ja', 'de', 'es', 'ru', 'pt', 'ko', 'fr']) {
     const file = JSON.parse(readFileSync(here(`../src/locales/sav-${lang}.json`), 'utf8'));
     assert.deepEqual(Object.keys(file), ['sav01', 'sav02', 'sav03'], lang);
@@ -45,7 +45,7 @@ test('the catalog finds the notice: the German page shows it in German, with the
 });
 
 test('a full disk raises the notice once with a working copy button; offline raises nothing; saving by itself takes the notice away', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'strata-notice-'));
+  const dir = mkdtempSync(join(tmpdir(), 'nostroma-notice-'));
   let full = false;
   const chatStore = createChatStore({ dir, io: { ...realIo, async writeFile(path, data) { if (full) throw Object.assign(new Error('no space left on device'), { code: 'ENOSPC' }); return realIo.writeFile(path, data); } } });
   const fake = installFakeHostFetch(chatStore);

@@ -13,23 +13,23 @@
 // relative L1 error 3e-2 of (a).  (c) runs twice, with the kernels that decode a weight part once for all entries and
 // with the per-entry ones: those two are bitwise equal to each other.
 // (d) the GPU dequantizers of the prompt path and the embedding against `to_float` (Q8_0: bit for bit).
-// The synthetic mode and (d) follow eddoursul/Strata 8029fa9.
-#include "strata/artifact/gguf_reader.hpp"
-#include "strata/env.hpp"
-#include "strata/kernels/cpu/native_expert.hpp"
-#include "strata/kernels/cpu/expert.hpp"
-#include "strata/kernels/cpu/iq_avx512.hpp"
-#include "strata/kernels/cpu/iq_avx2.hpp"
-#include "strata/kernels/cpu/kq_avx2.hpp"
-#include "strata/kernels/cpu/expert_layout.hpp"
-#include "strata/kernels/cpu/hadamard.hpp"
-#include "strata/kernels/cpu/tq_cpu.hpp"
+// The synthetic mode and (d) follow eddoursul/Nostroma 8029fa9.
+#include "nostroma/artifact/gguf_reader.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kernels/cpu/native_expert.hpp"
+#include "nostroma/kernels/cpu/expert.hpp"
+#include "nostroma/kernels/cpu/iq_avx512.hpp"
+#include "nostroma/kernels/cpu/iq_avx2.hpp"
+#include "nostroma/kernels/cpu/kq_avx2.hpp"
+#include "nostroma/kernels/cpu/expert_layout.hpp"
+#include "nostroma/kernels/cpu/hadamard.hpp"
+#include "nostroma/kernels/cpu/tq_cpu.hpp"
 #include "ggml-cpu.h"
-#include "strata/kernels/iq_kernels.hpp"
-#include "strata/kernels/ngram.hpp"
-#include "strata/kernels/native_mmvq.hpp"
-#include "strata/core/native_dense.hpp"
-#include "strata/core/expert_source.hpp"
+#include "nostroma/kernels/iq_kernels.hpp"
+#include "nostroma/kernels/ngram.hpp"
+#include "nostroma/kernels/native_mmvq.hpp"
+#include "nostroma/core/native_dense.hpp"
+#include "nostroma/core/expert_source.hpp"
 
 #include <fstream>
 #include <set>
@@ -50,7 +50,7 @@
 #include <string>
 #include <vector>
 
-namespace cpu = strata::kernels::cpu;
+namespace cpu = nostroma::kernels::cpu;
 
 static double rel(const std::vector<float>& a, const std::vector<float>& b) {
     double n = 0, d = 0;
@@ -372,8 +372,8 @@ int check_blob(const cpu::NativeFmt& f, const std::vector<uint8_t>& blob, int se
     }
     // (c) the GPU: one group holding the NT entries
     {
-        auto L = strata::kernels::native_expert_layout(f.gu_type, f.d_type, H, FF);
-        if (f.had_d) { L.had_block = f.had_block; L.d_signs = strata::kernels::hadamard_device_signs(f.d_signs, (int) FF); }
+        auto L = nostroma::kernels::native_expert_layout(f.gu_type, f.d_type, H, FF);
+        if (f.had_d) { L.had_block = f.had_block; L.d_signs = nostroma::kernels::hadamard_device_signs(f.d_signs, (int) FF); }
         void *dblob, *dx, *dxq, *dscr;
         float* dout;
         unsigned long long* dptr;
@@ -381,7 +381,7 @@ int check_blob(const cpu::NativeFmt& f, const std::vector<uint8_t>& blob, int se
         cudaMalloc(&dblob, blob.size());
         cudaMalloc(&dx, x.size() * 4);
         cudaMalloc(&dxq, (size_t) NT * H / 32 * 36);
-        cudaMalloc(&dscr, strata::kernels::native_expert_scratch_bytes(NT, FF));
+        cudaMalloc(&dscr, nostroma::kernels::native_expert_scratch_bytes(NT, FF));
         cudaMalloc((void**) &dout, (size_t) NT * H * 4);
         cudaMalloc((void**) &dptr, 8);
         cudaMalloc((void**) &dstart, 8);
@@ -398,8 +398,8 @@ int check_blob(const cpu::NativeFmt& f, const std::vector<uint8_t>& blob, int se
         cudaMemcpy(ddst, idx, NT * 4, cudaMemcpyHostToDevice);
         cudaMemcpy(dtok, idx, NT * 4, cudaMemcpyHostToDevice);
         if (f.had_gu) {   // APR: the GPU rotation of x (in place here), then its floats against the CPU's
-            strata::kernels::hadamard_rows((const float*) dx, (float*) dx, NT, H, f.had_block,
-                                           strata::kernels::hadamard_device_signs(f.gu_signs, (int) H), s);
+            nostroma::kernels::hadamard_rows((const float*) dx, (float*) dx, NT, H, f.had_block,
+                                           nostroma::kernels::hadamard_device_signs(f.gu_signs, (int) H), s);
             std::vector<float> gx(x.size());
             cudaStreamSynchronize(s);
             cudaMemcpy(gx.data(), dx, gx.size() * 4, cudaMemcpyDeviceToHost);
@@ -413,8 +413,8 @@ int check_blob(const cpu::NativeFmt& f, const std::vector<uint8_t>& blob, int se
             uint16_t* dxh = nullptr;
             cudaMalloc((void**) &dxh, xh.size() * 2);
             cudaMemcpy(dxh, xh.data(), xh.size() * 2, cudaMemcpyHostToDevice);
-            strata::kernels::hadamard_rows_f16(dxh, NT, H, f.had_block,
-                                               strata::kernels::hadamard_device_signs(f.gu_signs, (int) H), s);
+            nostroma::kernels::hadamard_rows_f16(dxh, NT, H, f.had_block,
+                                               nostroma::kernels::hadamard_device_signs(f.gu_signs, (int) H), s);
             cudaStreamSynchronize(s);
             cudaMemcpy(xh_out.data(), dxh, xh.size() * 2, cudaMemcpyDeviceToHost);
             cudaFree(dxh);
@@ -423,16 +423,16 @@ int check_blob(const cpu::NativeFmt& f, const std::vector<uint8_t>& blob, int se
             std::printf("          gpu hadamard_rows_f16 vs cpu float rotation: rel %.2e\n", rel(xf, xr));
             if (!(rel(xf, xr) < 2e-3)) ++failures;
         }
-        strata::kernels::quantize_q8_1_rows((const float*) dx, NT, H, dxq, s);
-        strata::kernels::native_expert_grouped(L, dptr, dstart, dn, ddst, dtok, 1, NT, dxq, dscr, dout, s);
+        nostroma::kernels::quantize_q8_1_rows((const float*) dx, NT, H, dxq, s);
+        nostroma::kernels::native_expert_grouped(L, dptr, dstart, dn, ddst, dtok, 1, NT, dxq, dscr, dout, s);
         cudaStreamSynchronize(s);
         cudaMemcpy(got_g.data(), dout, got_g.size() * 4, cudaMemcpyDeviceToHost);
         {   // round 0214: the launches before the group stride (v1) against the same float reference: which of the two is right when they differ
             std::vector<float> v1_g(got_g.size());
-            strata::kernels::native_grouped_set_v1(true);
+            nostroma::kernels::native_grouped_set_v1(true);
             cudaMemset(dout, 0xFF, got_g.size() * 4);
-            strata::kernels::native_expert_grouped(L, dptr, dstart, dn, ddst, dtok, 1, NT, dxq, dscr, dout, s);
-            strata::kernels::native_grouped_set_v1(false);
+            nostroma::kernels::native_expert_grouped(L, dptr, dstart, dn, ddst, dtok, 1, NT, dxq, dscr, dout, s);
+            nostroma::kernels::native_grouped_set_v1(false);
             cudaStreamSynchronize(s);
             cudaMemcpy(v1_g.data(), dout, v1_g.size() * 4, cudaMemcpyDeviceToHost);
             size_t nd = 0;
@@ -443,10 +443,10 @@ int check_blob(const cpu::NativeFmt& f, const std::vector<uint8_t>& blob, int se
         {   // the kernels that decode a weight part once for the NT entries, bitwise vs the per-entry ones (#242;
             // the formats without a decode-once split take the per-entry kernels either way)
             std::vector<float> old_g(got_g.size());
-            const bool was = strata::kernels::iq_old_kernels();
-            strata::kernels::iq_set_old_kernels(!was);
-            strata::kernels::native_expert_grouped(L, dptr, dstart, dn, ddst, dtok, 1, NT, dxq, dscr, dout, s);
-            strata::kernels::iq_set_old_kernels(was);
+            const bool was = nostroma::kernels::iq_old_kernels();
+            nostroma::kernels::iq_set_old_kernels(!was);
+            nostroma::kernels::native_expert_grouped(L, dptr, dstart, dn, ddst, dtok, 1, NT, dxq, dscr, dout, s);
+            nostroma::kernels::iq_set_old_kernels(was);
             cudaStreamSynchronize(s);
             cudaMemcpy(old_g.data(), dout, old_g.size() * 4, cudaMemcpyDeviceToHost);
             const bool same = std::memcmp(old_g.data(), got_g.data(), got_g.size() * 4) == 0;
@@ -472,8 +472,8 @@ int check_blob(const cpu::NativeFmt& f, const std::vector<uint8_t>& blob, int se
                 {(const uint8_t*) dblob, f.gu_type, &G}, {(const uint8_t*) dblob + f.up_off, f.gu_type, &U},
                 {(const uint8_t*) dblob + f.down_off, f.d_type, &D}};
             for (const auto& m : mats) {
-                strata::kernels::iq_dequant_f32(m.type, m.src, FF * H, dq, s);
-                strata::kernels::iq_dequant_f16(m.type, m.src, FF * H, dh, s);
+                nostroma::kernels::iq_dequant_f32(m.type, m.src, FF * H, dq, s);
+                nostroma::kernels::iq_dequant_f16(m.type, m.src, FF * H, dh, s);
                 cudaStreamSynchronize(s);
                 cudaMemcpy(got_dq.data(), dq, got_dq.size() * 4, cudaMemcpyDeviceToHost);
                 cudaMemcpy(got_h.data(), dh, got_h.size() * 2, cudaMemcpyDeviceToHost);
@@ -488,7 +488,7 @@ int check_blob(const cpu::NativeFmt& f, const std::vector<uint8_t>& blob, int se
                 }
             }
             // the gate matrix as an embedding table of FF rows of H values
-            strata::kernels::iq_embed_rows(f.gu_type, dblob, f.gu_row, dtk, FF, H, dq, s);
+            nostroma::kernels::iq_embed_rows(f.gu_type, dblob, f.gu_row, dtk, FF, H, dq, s);
             cudaStreamSynchronize(s);
             cudaMemcpy(got_dq.data(), dq, got_dq.size() * 4, cudaMemcpyDeviceToHost);
             size_t emb_differ = 0;
@@ -520,7 +520,7 @@ int check_blob(const cpu::NativeFmt& f, const std::vector<uint8_t>& blob, int se
 // every call reads cold weights.  Prints microseconds per native_expert_grouped call and the weight GB/s it implies.
 void bench_decode(const cpu::NativeFmt& f, const std::vector<uint8_t>& blob, const std::string& label, cudaStream_t s) {
     constexpr int POOL = 64, TOP = 10, ITERS = 200;
-    auto L = strata::kernels::native_expert_layout(f.gu_type, f.d_type, H, FF);
+    auto L = nostroma::kernels::native_expert_layout(f.gu_type, f.d_type, H, FF);
     uint8_t* dpool = nullptr;
     if (cudaMalloc((void**) &dpool, (size_t) POOL * blob.size()) != cudaSuccess) { std::printf("%s: bench: no memory\n", label.c_str()); return; }
     for (int i = 0; i < POOL; ++i) cudaMemcpy(dpool + (size_t) i * blob.size(), blob.data(), blob.size(), cudaMemcpyHostToDevice);
@@ -534,7 +534,7 @@ void bench_decode(const cpu::NativeFmt& f, const std::vector<uint8_t>& blob, con
     int32_t *dstart, *dn, *ddst, *dtok;
     cudaMalloc((void**) &dx, x.size() * 4);
     cudaMalloc(&dxq, (size_t) TOP * H / 32 * 36);
-    cudaMalloc(&dscr, strata::kernels::native_expert_scratch_bytes(TOP, FF));
+    cudaMalloc(&dscr, nostroma::kernels::native_expert_scratch_bytes(TOP, FF));
     cudaMalloc((void**) &dout, (size_t) TOP * H * 4);
     cudaMalloc((void**) &dptr, TOP * 8);
     cudaMalloc((void**) &dstart, (TOP + 1) * 4);
@@ -549,7 +549,7 @@ void bench_decode(const cpu::NativeFmt& f, const std::vector<uint8_t>& blob, con
     cudaMemcpy(dn, &n, 4, cudaMemcpyHostToDevice);
     cudaMemcpy(ddst, idx, sizeof idx, cudaMemcpyHostToDevice);
     cudaMemcpy(dtok, idx, sizeof idx, cudaMemcpyHostToDevice);
-    strata::kernels::quantize_q8_1_rows(dx, TOP, H, dxq, s);
+    nostroma::kernels::quantize_q8_1_rows(dx, TOP, H, dxq, s);
     std::vector<std::vector<unsigned long long>> sets;   // the pointer sets, one per pool position
     for (int k = 0; k < POOL; ++k) {
         std::vector<unsigned long long> v(TOP);
@@ -563,7 +563,7 @@ void bench_decode(const cpu::NativeFmt& f, const std::vector<uint8_t>& blob, con
     for (int rep = 0; rep < 7; ++rep) {
         for (int i = 0; i < 20; ++i) {   // warm up
             cudaMemcpyAsync(dptr, sets[i % POOL].data(), TOP * 8, cudaMemcpyHostToDevice, s);
-            strata::kernels::native_expert_grouped(L, dptr, dstart, dn, ddst, dtok, TOP, TOP, dxq, dscr, dout, s);
+            nostroma::kernels::native_expert_grouped(L, dptr, dstart, dn, ddst, dtok, TOP, TOP, dxq, dscr, dout, s);
         }
         cudaStreamSynchronize(s);
         float ms = 0.f;
@@ -571,7 +571,7 @@ void bench_decode(const cpu::NativeFmt& f, const std::vector<uint8_t>& blob, con
         for (int i = 0; i < ITERS; ++i) {   // each call timed on its own so the pointer upload stays out of it
             cudaMemcpyAsync(dptr, sets[(i * 7) % POOL].data(), TOP * 8, cudaMemcpyHostToDevice, s);
             cudaEventRecord(e0, s);
-            strata::kernels::native_expert_grouped(L, dptr, dstart, dn, ddst, dtok, TOP, TOP, dxq, dscr, dout, s);
+            nostroma::kernels::native_expert_grouped(L, dptr, dstart, dn, ddst, dtok, TOP, TOP, dxq, dscr, dout, s);
             cudaEventRecord(e1, s);
             cudaEventSynchronize(e1);
             cudaEventElapsedTime(&ms, e0, e1);
@@ -658,8 +658,8 @@ int check_q5_1_min(cudaStream_t s) {
     cudaMalloc((void**) &dy, rows * 4);
     cudaMemcpy(dw, wq.data(), wq.size(), cudaMemcpyHostToDevice);
     cudaMemcpy(dx, x.data(), n * 4, cudaMemcpyHostToDevice);
-    strata::kernels::quantize_q8_1_rows((const float*) dx, 1, n, dxq, s);
-    strata::kernels::iq_mmvq(GGML_TYPE_Q5_1, dw, dxq, dy, n, rows, 1, s);
+    nostroma::kernels::quantize_q8_1_rows((const float*) dx, 1, n, dxq, s);
+    nostroma::kernels::iq_mmvq(GGML_TYPE_Q5_1, dw, dxq, dy, n, rows, 1, s);
     cudaStreamSynchronize(s);
     std::vector<float> gpu(rows);
     std::vector<uint8_t> xq((size_t) n / 32 * 36);
@@ -701,8 +701,8 @@ int check_bf16_embd(cudaStream_t s) {
     constexpr int kBf16 = 30;
     const int64_t H = 2560, V = 61, NT = 97;
     int failures = 0;
-    if (!strata::kernels::embed_type_supported(kBf16) || strata::kernels::iq_supported(kBf16) ||
-        strata::kernels::iq_row_bytes(kBf16, H) != (size_t) H * 2) {
+    if (!nostroma::kernels::embed_type_supported(kBf16) || nostroma::kernels::iq_supported(kBf16) ||
+        nostroma::kernels::iq_row_bytes(kBf16, H) != (size_t) H * 2) {
         std::printf("bf16 embedding: type support / row bytes wrong\n");
         return 1;
     }
@@ -724,7 +724,7 @@ int check_bf16_embd(cudaStream_t s) {
     cudaMemcpy(dtok, tok.data(), tok.size() * 4, cudaMemcpyHostToDevice);
     auto widen = [](uint16_t b) { const uint32_t u = (uint32_t) b << 16; float f; std::memcpy(&f, &u, 4); return f; };
     std::vector<float> got((size_t) (out_rows * H));
-    strata::kernels::iq_embed_rows(kBf16, dt, (size_t) H * 2, dtok, NT, H, dout, s);
+    nostroma::kernels::iq_embed_rows(kBf16, dt, (size_t) H * 2, dtok, NT, H, dout, s);
     cudaStreamSynchronize(s);
     cudaMemcpy(got.data(), dout, (size_t) (NT * H) * 4, cudaMemcpyDeviceToHost);
     size_t rows_differ = 0;
@@ -733,7 +733,7 @@ int check_bf16_embd(cudaStream_t s) {
             const float want = widen(table[(size_t) (tok[(size_t) r] * H + d)]);
             if (std::memcmp(&got[(size_t) (r * H + d)], &want, 4) != 0) { ++rows_differ; break; }
         }
-    strata::kernels::iq_dequant_f32(kBf16, dt, V * H, dout, s);
+    nostroma::kernels::iq_dequant_f32(kBf16, dt, V * H, dout, s);
     cudaStreamSynchronize(s);
     cudaMemcpy(got.data(), dout, table.size() * 4, cudaMemcpyDeviceToHost);
     size_t values_differ = 0;
@@ -751,14 +751,14 @@ int check_bf16_embd(cudaStream_t s) {
 // APR: a GGUF's token_embd as the engine gathers it (iq_embed_rows, any embed_type_supported type: Gyro-S's Q6_K),
 // `n` random rows against ggml's to_float, bit for bit; then iq_dequant_f32 of one row
 int check_gguf_embd(const char* path, int n, cudaStream_t s) {
-    const strata::GgufModel model(strata::gguf_split_paths(path));
+    const nostroma::GgufModel model(nostroma::gguf_split_paths(path));
     size_t at = 0;
-    const strata::TensorInfo* t = model.find("token_embd.weight", &at);
+    const nostroma::TensorInfo* t = model.find("token_embd.weight", &at);
     if (!t || t->shape.size() != 2 || t->shape[0] != (uint64_t) H) { std::printf("%s: no token_embd [2560, V]\n", path); return 1; }
     const int type = (int) t->type;
     const int64_t V = (int64_t) t->shape[1];
-    if (!strata::kernels::embed_type_supported(type)) { std::printf("token_embd type %d: no GPU dequantizer\n", type); return 1; }
-    const size_t rb = strata::kernels::iq_row_bytes(type, H);
+    if (!nostroma::kernels::embed_type_supported(type)) { std::printf("token_embd type %d: no GPU dequantizer\n", type); return 1; }
+    const size_t rb = nostroma::kernels::iq_row_bytes(type, H);
     if (rb != ggml_row_size((ggml_type) type, H)) { std::printf("row bytes %zu != ggml %zu\n", rb, ggml_row_size((ggml_type) type, H)); return 1; }
     const uint8_t* table = model.shard(at).tensor_data(*t);
     std::mt19937 rng(17);
@@ -776,7 +776,7 @@ int check_gguf_embd(const char* path, int n, cudaStream_t s) {
     cudaMalloc((void**) &dout, (size_t) n * H * 4);
     cudaMemcpy(dt, small.data(), small.size(), cudaMemcpyHostToDevice);
     cudaMemcpy(dtok, idx.data(), (size_t) n * 4, cudaMemcpyHostToDevice);
-    strata::kernels::iq_embed_rows(type, dt, rb, dtok, n, H, dout, s);
+    nostroma::kernels::iq_embed_rows(type, dt, rb, dtok, n, H, dout, s);
     cudaStreamSynchronize(s);
     std::vector<float> got((size_t) n * H), want((size_t) H);
     cudaMemcpy(got.data(), dout, got.size() * 4, cudaMemcpyDeviceToHost);
@@ -789,7 +789,7 @@ int check_gguf_embd(const char* path, int n, cudaStream_t s) {
         values_differ += d;
         rows_differ += d != 0;
     }
-    strata::kernels::iq_dequant_f32(type, dt, H, dout, s);
+    nostroma::kernels::iq_dequant_f32(type, dt, H, dout, s);
     cudaStreamSynchronize(s);
     cudaMemcpy(got.data(), dout, (size_t) H * 4, cudaMemcpyDeviceToHost);
     tr->to_float(small.data(), want.data(), H);
@@ -804,9 +804,9 @@ int check_gguf_embd(const char* path, int n, cudaStream_t s) {
 // APR: a GGUF's PLE table through PleTable (the engine's reader; mapped and direct SSD I/O), `n` random rows of 16
 // heads against ggml's to_float of the same bytes, bit for bit (Gyro-M's Q8_0 table; IQ4_NL for the others)
 int check_gguf_ple(const char* path, int n) {
-    const strata::GgufModel model(strata::gguf_split_paths(path));
+    const nostroma::GgufModel model(nostroma::gguf_split_paths(path));
     size_t at = 0;
-    const strata::TensorInfo* t = model.find("per_layer_token_embd.weight", &at);
+    const nostroma::TensorInfo* t = model.find("per_layer_token_embd.weight", &at);
     if (!t) { std::printf("%s: no per_layer_token_embd.weight\n", path); return 1; }
     const std::string shard = model.shard(at).path();
     const uint8_t* table = model.shard(at).tensor_data(*t);
@@ -819,12 +819,12 @@ int check_gguf_ple(const char* path, int n) {
     for (auto& v : r16) v = (uint32_t) (rng() % rows);
     r16[0] = 0; r16.back() = (uint32_t) (rows - 1);
     int failures = 0;
-    for (const auto mode : {strata::kernels::PleIo::Mmap, strata::kernels::PleIo::Direct}) {
-        strata::kernels::PleTable ple;
-        strata::kernels::PleIoOptions io;
+    for (const auto mode : {nostroma::kernels::PleIo::Mmap, nostroma::kernels::PleIo::Direct}) {
+        nostroma::kernels::PleTable ple;
+        nostroma::kernels::PleIoOptions io;
         io.mode = mode;
         std::string err;
-        if (!ple.open(shard, err, io)) { std::printf("PleTable open (%s): %s\n", mode == strata::kernels::PleIo::Direct ? "direct" : "mmap", err.c_str()); ++failures; continue; }
+        if (!ple.open(shard, err, io)) { std::printf("PleTable open (%s): %s\n", mode == nostroma::kernels::PleIo::Direct ? "direct" : "mmap", err.c_str()); ++failures; continue; }
         std::vector<float> got(r16.size() * 160), want(160);
         if (!ple.gather_batch(r16.data(), (size_t) n, got.data(), err)) { std::printf("gather_batch: %s\n", err.c_str()); ++failures; continue; }
         size_t rows_differ = 0;
@@ -834,7 +834,7 @@ int check_gguf_ple(const char* path, int n) {
         }
         std::printf("%s PLE table (%s via PleTable as %s, %s I/O): %zu random rows, %zu differ from ggml to_float\n",
                     path, ggml_type_name((ggml_type) type), ple.format(),
-                    mode == strata::kernels::PleIo::Direct ? "direct" : "mmap", r16.size(), rows_differ);
+                    mode == nostroma::kernels::PleIo::Direct ? "direct" : "mmap", r16.size(), rows_differ);
         if (rows_differ) ++failures;
     }
     return failures;
@@ -855,19 +855,19 @@ int check_load(const char* pack, const char* gguf) {
     for (int64_t l = 0; l < (int64_t) lay.fmt.size(); ++l) {
         const auto& f = lay.fmt[(size_t) l];
         folded += f.had_gu && f.had_d;
-        if (!strata::kernels::native_expert_supported(f.gu_type, f.d_type, f.n_embd, f.n_ff))
+        if (!nostroma::kernels::native_expert_supported(f.gu_type, f.d_type, f.n_embd, f.n_ff))
             fail("layer " + std::to_string(l) + ": no GPU expert kernels for " + std::to_string(f.gu_type) + "/" +
                  std::to_string(f.d_type));
     }
     std::printf("  experts: native_experts.txt v%d, %zu layers (%s/%s ...), %.2f GiB; hadamard block %d, %d layers folded\n",
                 lay.version, lay.fmt.size(), ggml_type_name((ggml_type) lay.fmt[0].gu_type),
                 ggml_type_name((ggml_type) lay.fmt[0].d_type), lay.total / 1073741824.0, hs.block, folded);
-    if (!strata::core::check_experts_gguf(gguf, lay, err)) fail("check_experts_gguf: " + err);
+    if (!nostroma::core::check_experts_gguf(gguf, lay, err)) fail("check_experts_gguf: " + err);
     else std::printf("  check_experts_gguf: ok\n");
-    const std::vector<std::string> shards = strata::gguf_split_paths(gguf);
+    const std::vector<std::string> shards = nostroma::gguf_split_paths(gguf);
     std::set<std::string> served;
-    if (!strata::core::NativeDense::served_names(shards, true, served, err)) fail("served_names: " + err);
-    const strata::GgufModel model(shards);
+    if (!nostroma::core::NativeDense::served_names(shards, true, served, err)) fail("served_names: " + err);
+    const nostroma::GgufModel model(shards);
     std::ifstream idx(std::string(pack) + "/index.txt");
     std::string line;
     int from_gguf = 0, ok_rows = 0;
@@ -879,11 +879,11 @@ int check_load(const char* pack, const char* gguf) {
         if (kind != "0") continue;                   // a dense.bin row
         ++from_gguf;
         size_t at = 0;
-        const strata::TensorInfo* t = model.find(name, &at);
+        const nostroma::TensorInfo* t = model.find(name, &at);
         if (!t) { fail(name + ": not in the GGUF"); continue; }
         bool ok = served.count(name) > 0;
-        if (name == "token_embd.weight") ok = strata::kernels::embed_type_supported((int) t->type);
-        if (name == "output.weight") ok = strata::kernels::native_mmvq_supported((int) t->type);
+        if (name == "token_embd.weight") ok = nostroma::kernels::embed_type_supported((int) t->type);
+        if (name == "output.weight") ok = nostroma::kernels::native_mmvq_supported((int) t->type);
         if (!ok) fail(name + " (" + t->type_name() + "): served from the GGUF but no kernel takes it");
         else ++ok_rows;
     }
@@ -891,8 +891,8 @@ int check_load(const char* pack, const char* gguf) {
                 from_gguf, ok_rows, model.find("token_embd.weight")->type_name(), model.find("output.weight")->type_name());
     size_t pat = 0;
     if (model.find("per_layer_token_embd.weight", &pat)) {
-        strata::kernels::PleTable ple;
-        strata::kernels::PleIoOptions io;   // the engine's default: direct SSD reads
+        nostroma::kernels::PleTable ple;
+        nostroma::kernels::PleIoOptions io;   // the engine's default: direct SSD reads
         if (!ple.open(model.shard(pat).path(), err, io)) fail("PleTable: " + err);
         else std::printf("  PLE table: %s, %llu rows, direct I/O: ok\n", ple.format(), (unsigned long long) ple.rows());
     }
@@ -904,7 +904,7 @@ int check_load(const char* pack, const char* gguf) {
 int main(int argc, char** argv) {
     setvbuf(stdout, nullptr, _IONBF, 0);   // keep the trail on a crash
     // ggml-cpu's dots read the fp16 -> fp32 table that ggml_cpu_init() fills, and until it runs every vec_dot returns 0.
-    // The CPU pool no longer calls it (STRATA_OWN_CPU_QUANT, the default), so this test, whose reference is ggml's own
+    // The CPU pool no longer calls it (NOSTROMA_OWN_CPU_QUANT, the default), so this test, whose reference is ggml's own
     // vec_dot, starts it itself; without it all the CPU legs below compare against zeros.
     ggml_cpu_init();
     if (const char* e = std::getenv("Q4KQ_PARITY_EMBD")) H = std::atoll(e);
@@ -921,11 +921,11 @@ int main(int argc, char** argv) {
         return 2;
     }
     // #152's width check tests the opt-in rule (the multi-token kernels from one token on)
-    if (strata::env("NOSTROMA_IQ_MT_MIN") == nullptr) {
+    if (nostroma::env("NOSTROMA_IQ_MT_MIN") == nullptr) {
 #ifdef _WIN32
-        _putenv_s("STRATA_IQ_MT_MIN", "1");
+        _putenv_s("NOSTROMA_IQ_MT_MIN", "1");
 #else
-        setenv("STRATA_IQ_MT_MIN", "1", 1);
+        setenv("NOSTROMA_IQ_MT_MIN", "1", 1);
 #endif
     }
     int failures = 0;
@@ -962,15 +962,15 @@ int main(int argc, char** argv) {
             std::string err;
             // The synthetic check quantizes the blob with ggml and compares against ggml's to_float.  An upstream
             // ggml (the MMQ overlay) has no traits for the trellis types (they sit above GGML_TYPE_COUNT), so the
-            // check needs a ggml that carries them (a build with -DSTRATA_GGML_DIR=<the agention llama.cpp>): skip it
+            // check needs a ggml that carries them (a build with -DNOSTROMA_GGML_DIR=<the agention llama.cpp>): skip it
             // here with a message instead of reading past the type table.
             if (gu >= (int) GGML_TYPE_COUNT || dn >= (int) GGML_TYPE_COUNT) {   // (ggml_type_name of an id past the table is not a null pointer: it reads past it)
-                std::printf("%s: skipped (this ggml has no trellis type traits: the check needs STRATA_GGML_DIR=<a "
+                std::printf("%s: skipped (this ggml has no trellis type traits: the check needs NOSTROMA_GGML_DIR=<a "
                             "llama.cpp with the trellis types>)\n", arg.c_str());
                 continue;
             }
             if (gu < 0 || dn < 0 || !cpu::native_fmt(gu, dn, H, FF, f, err) ||
-                !strata::kernels::native_expert_supported(gu, dn, H, FF)) {
+                !nostroma::kernels::native_expert_supported(gu, dn, H, FF)) {
                 std::printf("%s: %s\n", arg.c_str(), err.empty() ? "not a pair the GPU expert kernels take" : err.c_str());
                 ++failures;
                 continue;
@@ -986,12 +986,12 @@ int main(int argc, char** argv) {
             if (bench) bench_decode(f, blob, arg, s);
         }
     } else {
-        const strata::GgufModel model(strata::gguf_split_paths(argv[1]));
+        const nostroma::GgufModel model(nostroma::gguf_split_paths(argv[1]));
         std::vector<int> layers;
         for (int i = 2; i < argc; ++i) layers.push_back(std::atoi(argv[i]));
         if (layers.empty()) layers = {0, 1, 2, 3, 20, 47};
         for (int l : layers) {
-            const strata::TensorInfo* t[3] = {};
+            const nostroma::TensorInfo* t[3] = {};
             const uint8_t* data[3] = {};
             const char* roles[3] = {"gate", "up", "down"};
             for (int r = 0; r < 3; ++r) {   // each role from the shard that holds it

@@ -40,7 +40,7 @@ ALLOWED_SETTINGS = {"--pcie-frac", "--spec-min-p", "--pool-workers",
 
 def _full_folder(name: str):
     """`setup` and `tools.calibrate` belong to a full Nostroma folder; the Terminal archive carries neither (it never
-    installs or builds). Use them when they are importable, or when STRATA_INSTALL_DIR names a folder that has both;
+    installs or builds). Use them when they are importable, or when NOSTROMA_INSTALL_DIR names a folder that has both;
     otherwise refuse in words instead of a traceback."""
     import importlib
     import sys
@@ -48,7 +48,7 @@ def _full_folder(name: str):
         return importlib.import_module(name)
     except ImportError:
         pass
-    raw = os.environ.get("NOSTROMA_INSTALL_DIR", os.environ.get("STRATA_INSTALL_DIR"))
+    raw = os.environ.get("NOSTROMA_INSTALL_DIR", os.environ.get("NOSTROMA_INSTALL_DIR"))
     if raw:
         folder = Path(raw).expanduser()
         if (folder / "setup.py").is_file() and (folder / "tools" / "calibrate.py").is_file():
@@ -60,19 +60,19 @@ def _full_folder(name: str):
                 pass
     raise ProfileError(
         "engine calibrate needs a full Nostroma folder (setup.py and tools/calibrate.py); this terminal archive has "
-        "neither. Set STRATA_INSTALL_DIR to such a folder, or use `nostroma tune run --mode api` to tune from the "
+        "neither. Set NOSTROMA_INSTALL_DIR to such a folder, or use `nostroma tune run --mode api` to tune from the "
         "archive", 5) from None
 
 
 def _tools_available() -> bool:
-    """False in the Terminal archive without STRATA_INSTALL_DIR: `--measure` would be refused (see `_full_folder`)."""
+    """False in the Terminal archive without NOSTROMA_INSTALL_DIR: `--measure` would be refused (see `_full_folder`)."""
     import importlib.util
     try:
         if importlib.util.find_spec("setup") and importlib.util.find_spec("tools.calibrate"):
             return True
     except (ImportError, ValueError):
         pass
-    raw = os.environ.get("NOSTROMA_INSTALL_DIR", os.environ.get("STRATA_INSTALL_DIR"))
+    raw = os.environ.get("NOSTROMA_INSTALL_DIR", os.environ.get("NOSTROMA_INSTALL_DIR"))
     if raw:
         folder = Path(raw).expanduser()
         return (folder / "setup.py").is_file() and (folder / "tools" / "calibrate.py").is_file()
@@ -319,7 +319,7 @@ def _measure_locked(ref: str, path: Path, profile: dict | None, revision: str | 
         unchanged = path == end_path and identity == _identity(end_path, end_cfg, end_profile, end_revision)
     except ProfileError:
         unchanged = False
-    report = {"schema_version": 1, "kind": "strata.engine.calibration", "suite": SUITE,
+    report = {"schema_version": 1, "kind": "nostroma.engine.calibration", "suite": SUITE,
               "report_id": uuid.uuid4().hex, "created_at": time.time(), "source_config": str(path),
               "identity": identity, "applicable": unchanged, "settings": settings,
               "measurements": result["report"]}
@@ -347,7 +347,7 @@ def load_report(path: Path) -> dict:
         raise ProfileError(f"cannot read calibration report ({type(exc).__name__})", 5) from None
     if not isinstance(report, dict) or type(report.get("schema_version")) is not int or \
             report["schema_version"] != 1 or \
-            report.get("kind") != "strata.engine.calibration" or report.get("suite") != SUITE or \
+            report.get("kind") != "nostroma.engine.calibration" or report.get("suite") != SUITE or \
             not isinstance(report.get("identity"), dict) or not isinstance(report.get("measurements"), dict) or \
             not isinstance(report.get("source_config"), str) or \
             type(report.get("created_at")) not in (int, float) or \
@@ -387,8 +387,8 @@ def review(ref: str, report_path: Path) -> dict:
 
 def _smoke(cfg: dict, source_path: Path) -> int:
     """Start the candidate and require at least one generated token before writing it."""
-    import strata_tokenizer as st
-    from serve.server import StrataEngine, child_env, engine_args
+    import nostroma_tokenizer as st
+    from serve.server import NostromaEngine, child_env, engine_args
     cal = _full_folder("tools.calibrate")
     tokdir = _resolved(cfg["tokenizer"], cfg, source_path)
     vocab = json.loads((tokdir / "vocab.json").read_text(encoding="utf-8"))
@@ -397,7 +397,7 @@ def _smoke(cfg: dict, source_path: Path) -> int:
         tokens[index] = token
     tok = st.Tokenizer(tokens, (tokdir / "merges.txt").read_text(encoding="utf-8").split("\n"),
                        json.loads((tokdir / "token_type.json").read_text(encoding="utf-8")))
-    engine = StrataEngine(str(_resolved(cfg["exe"], cfg, source_path)), engine_args(cfg),
+    engine = NostromaEngine(str(_resolved(cfg["exe"], cfg, source_path)), engine_args(cfg),
                           cwd=cfg.get("cwd"), log=cfg.get("log"), env=child_env(cfg))
     try:
         ids = cal.chat_ids(tok, "Say OK.")
@@ -454,7 +454,7 @@ def _settings_candidate(hardware_key: str, result: dict) -> tuple[Path, bytes | 
 
 
 def _backup_directory(path: Path, *, create: bool = False) -> Path:
-    directory = path.parent / ".strata-calibration-backups"
+    directory = path.parent / ".nostroma-calibration-backups"
     try:
         if create:
             _private_mkdir(directory, exist_ok=True)
@@ -499,7 +499,7 @@ def _load_application(path: Path, report: dict) -> dict:
                      "settings_path", "before_settings_sha256", "after_settings_sha256"}
     if not isinstance(data, dict) or set(data) != expected_keys or \
             type(data.get("schema_version")) is not int or data["schema_version"] != 1 or \
-            data.get("kind") != "strata.engine.calibration.application" or \
+            data.get("kind") != "nostroma.engine.calibration.application" or \
             data.get("report_id") != report["report_id"] or \
             data.get("report_body_sha256") != report["body_sha256"] or \
             data.get("source_config") != str(path) or \
@@ -578,7 +578,7 @@ def _apply_locked(ref: str, path: Path, profile: dict | None, revision: str | No
     backup, settings_backup_path, manifest = _application_paths(path, report["report_id"], create=True)
     if any(item.exists() or item.is_symlink() for item in (backup, settings_backup_path, manifest)):
         raise ProfileError("calibration result already has application records; measure again", 6)
-    application = {"schema_version": 1, "kind": "strata.engine.calibration.application",
+    application = {"schema_version": 1, "kind": "nostroma.engine.calibration.application",
                    "report_id": report["report_id"], "report_body_sha256": report["body_sha256"],
                    "source_config": str(path), "profile_revision": revision,
                    "before_config_sha256": _sha256(source), "after_config_sha256": _sha256(candidate_bytes),

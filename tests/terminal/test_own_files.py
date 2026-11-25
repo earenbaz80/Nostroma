@@ -54,7 +54,7 @@ IQ3XXS = ["Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-0000%d-of-00002.gguf" % i for i in
 
 class Base(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory(prefix="strata-own-")
+        self.tmp = tempfile.TemporaryDirectory(prefix="nostroma-own-")
         self.addCleanup(self.tmp.cleanup)
         self.base = Path(self.tmp.name)
 
@@ -149,7 +149,7 @@ class Links(Base):
     def test_run_configs_keep_the_no_link_rule(self):
         cfg = self.base / "real.json"
         cfg.write_text("{}")
-        link = self.base / "strata-x.json"
+        link = self.base / "nostroma-x.json"
         try:
             os.symlink(cfg, link)
         except (OSError, NotImplementedError):
@@ -184,7 +184,7 @@ class Folders(Base):
         self.assertEqual(plan["candidate_selection"]["model"], "Q2_0")
         self.assertEqual(plan["file_count"], 2)
 
-    def test_strata_draft_layer_beside_a_model_is_not_a_second_model(self):
+    def test_nostroma_draft_layer_beside_a_model_is_not_a_second_model(self):
         # #4693: "the folder holds 2 models" for a model and the mtp-q2_0.gguf beside it
         folder = self.base / "own"
         folder.mkdir(parents=True)
@@ -221,7 +221,7 @@ class Folders(Base):
         self.assertEqual(plan["model_dir"], str(folder))
 
     def test_a_folder_above_the_model_folder_is_searched(self):
-        data = self.base / "Strata-data"
+        data = self.base / "Nostroma-data"
         self.gsq(data / "models" / "q2_0", Q2, "Q2_0")
         (data / "packs").mkdir()
         for start in (data, data / "models"):
@@ -275,7 +275,7 @@ class Launcher(Base):
         return Runner(S.LaunchSettings(**kw), catalog=Catalog(hardware=HW_12))
 
     def test_a_folder_above_the_model_is_resolved_to_the_model_folder(self):
-        data = self.base / "Strata-data"
+        data = self.base / "Nostroma-data"
         self.gsq(data / "models" / "q2_0", Q2, "Q2_0")
         r = self.runner(model_path=str(data))
         r.resolve_own_files()
@@ -341,7 +341,7 @@ class Table(unittest.TestCase):
     def test_every_size_setup_installs_is_in_the_table(self):
         """Setup can install it from --gguf-dir, so the checker in front of it must know it too (0.2.0 knew 7 of 10)."""
         import importlib.util
-        spec = importlib.util.spec_from_file_location("strata_setup_for_test", models.ROOT / "setup.py")
+        spec = importlib.util.spec_from_file_location("nostroma_setup_for_test", models.ROOT / "setup.py")
         setup = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(setup)
         table = json.loads((models.ROOT / "data" / "gguf_fingerprints.json").read_text(encoding="utf-8"))

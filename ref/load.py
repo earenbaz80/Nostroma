@@ -37,8 +37,8 @@ GEOM = {"F32": (1, 4), "F16": (1, 2), "BF16": (1, 2),
 def _dequant_flat(type_name: str, raw: np.ndarray) -> np.ndarray:
     """One dequantization dispatch, shared by tensor()/expert()/rows().
 
-    Q2_0 is this project's own decoder (tools/gguf_writer.py); everything else goes through tools/strata_quants.py, which
-    tools/test_strata_gguf.py proves bit-identical to llama.cpp's gguf-py, the reference this project validates its C++ against.  Keeping one dispatch means a type added in one path cannot be forgotten in another.
+    Q2_0 is this project's own decoder (tools/gguf_writer.py); everything else goes through tools/nostroma_quants.py, which
+    tools/test_nostroma_gguf.py proves bit-identical to llama.cpp's gguf-py, the reference this project validates its C++ against.  Keeping one dispatch means a type added in one path cannot be forgotten in another.
     """
     if type_name == "Q2_0":
         return dequantize_q2_0(raw.tobytes())
@@ -48,8 +48,8 @@ def _dequant_flat(type_name: str, raw: np.ndarray) -> np.ndarray:
         return raw.view(np.float32)
     if type_name == "F16":
         return raw.view(np.float16).astype(np.float32)
-    import strata_quants
-    return strata_quants.dequantize(raw, type_name).astype(np.float32)
+    import nostroma_quants
+    return nostroma_quants.dequantize(raw, type_name).astype(np.float32)
 
 
 def _bf16_to_f32(raw: np.ndarray) -> np.ndarray:

@@ -1,5 +1,5 @@
 {
-  "source": "lm-server /root/tune/summary.jsonl (copy: codebox ~/saved-2026-10-08/summary.jsonl), rows by tag; p25k/p51k/p104k are tok/s of our own read script (/root/read96.py), n values each; solo and c2 are /opt/strata-bmtp-tools/ab.py medians (n = number of values)",
+  "source": "lm-server /root/tune/summary.jsonl (copy: codebox ~/saved-2026-10-08/summary.jsonl), rows by tag; p25k/p51k/p104k are tok/s of our own read script (/root/read96.py), n values each; solo and c2 are /opt/nostroma-bmtp-tools/ab.py medians (n = number of values)",
   "rows": {
     "base": {
       "solo": 76.7,
@@ -155,10 +155,10 @@
   "tags": {
     "base": "start of day: merged upstream build, --prefill auto (8192 chunks)",
     "base2": "same configuration as base, a later restart",
-    "w2direct": "the pre-merge binary (strata-w2) with --ple-io direct",
+    "w2direct": "the pre-merge binary (nostroma-w2) with --ple-io direct",
     "pauto16": "--prefill auto:16384 (engine log: 'prompt chunk auto: 16384 tokens, a 96-slot ring')",
-    "pr384": "--prefill auto:16384 with STRATA_PREFILL_RING=384 (log: 'a 384-slot ring')",
-    "pr384eq": "the same plus STRATA_PREFILL_EQUAL=1",
+    "pr384": "--prefill auto:16384 with NOSTROMA_PREFILL_RING=384 (log: 'a 384-slot ring')",
+    "pr384eq": "the same plus NOSTROMA_PREFILL_EQUAL=1",
     "pr384eq32": "the same as pr384eq with --prefill auto:32768"
   }
 }

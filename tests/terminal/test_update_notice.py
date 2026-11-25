@@ -129,7 +129,7 @@ class DailyCheck(UpdaterCase):
         self.assertFalse(self.attempt_file().exists())
 
     def test_it_never_runs_in_a_process_that_forbids_acquiring(self):
-        with mock.patch.dict(os.environ, {"STRATA_NO_ACQUIRE": "1"}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_NO_ACQUIRE": "1"}):
             self.assertIsNone(engine_update.start_daily_check(root=self.components))
 
     def test_an_attempt_that_cannot_be_remembered_is_not_made(self):
@@ -177,13 +177,13 @@ class Offline(UpdaterCase):
         self.assertEqual(self.archive_requests(), [])
 
     def test_nothing_listens(self):
-        self.run_check("http://127.0.0.1:9/strata-feed.json")
+        self.run_check("http://127.0.0.1:9/nostroma-feed.json")
 
     def test_dns_is_blocked(self):
-        self.run_check("https://strata-feed.invalid/strata-feed.json")
+        self.run_check("https://nostroma-feed.invalid/nostroma-feed.json")
 
     def test_a_proxy_that_refuses(self):
-        self.run_check("https://example.invalid/strata-feed.json",
+        self.run_check("https://example.invalid/nostroma-feed.json",
                        env={"HTTPS_PROXY": "http://127.0.0.1:9", "https_proxy": "http://127.0.0.1:9", "HTTP_PROXY": "http://127.0.0.1:9"})
 
     def test_a_captive_portal_that_answers_junk(self):
@@ -191,7 +191,7 @@ class Offline(UpdaterCase):
         threading.Thread(target=server.serve_forever, daemon=True).start()
         self.addCleanup(server.server_close)
         self.addCleanup(server.shutdown)
-        self.run_check(f"http://127.0.0.1:{server.server_address[1]}/strata-feed.json")
+        self.run_check(f"http://127.0.0.1:{server.server_address[1]}/nostroma-feed.json")
 
     def test_a_connection_that_never_answers(self):
         hang = socket.socket()
@@ -199,7 +199,7 @@ class Offline(UpdaterCase):
         hang.listen(5)
         self.addCleanup(hang.close)
         started = time.monotonic()
-        self.run_check(f"http://127.0.0.1:{hang.getsockname()[1]}/strata-feed.json", join=60.0)
+        self.run_check(f"http://127.0.0.1:{hang.getsockname()[1]}/nostroma-feed.json", join=60.0)
         self.assertLess(time.monotonic() - started, 30, "the short timeout ended it")
 
     def test_a_second_try_the_same_day_makes_no_request_at_all(self):
@@ -211,7 +211,7 @@ class Offline(UpdaterCase):
         original = Portal.do_GET
         Portal.do_GET = lambda handler: (seen.append(handler.path), original(handler))[1]
         self.addCleanup(setattr, Portal, "do_GET", original)
-        feed = f"http://127.0.0.1:{server.server_address[1]}/strata-feed.json"
+        feed = f"http://127.0.0.1:{server.server_address[1]}/nostroma-feed.json"
         self.run_check(feed)
         first = len(seen)
         self.assertGreater(first, 0)
@@ -291,7 +291,7 @@ class Monitor(unittest.TestCase):
         hang.listen(5)
         self.addCleanup(hang.close)
         with tempfile_home() as home:
-            env = {"STRATA_COMPONENTS_DIR": home, "STRATA_UPDATE_FEED": f"http://127.0.0.1:{hang.getsockname()[1]}/strata-feed.json"}
+            env = {"NOSTROMA_COMPONENTS_DIR": home, "NOSTROMA_UPDATE_FEED": f"http://127.0.0.1:{hang.getsockname()[1]}/nostroma-feed.json"}
             with mock.patch.dict(os.environ, env):
                 started = time.monotonic()
 
@@ -353,7 +353,7 @@ def tempfile_home():
     import tempfile
     # A check the app started in the background may still hold .updates/update.lock when the case ends (a file in use cannot be deleted on
     # Windows); the folder is scratch, so a leftover is not a failure of the case.
-    with tempfile.TemporaryDirectory(prefix="strata-notice-", ignore_cleanup_errors=True) as d:
+    with tempfile.TemporaryDirectory(prefix="nostroma-notice-", ignore_cleanup_errors=True) as d:
         yield d
 
 

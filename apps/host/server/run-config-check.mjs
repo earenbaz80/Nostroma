@@ -1,6 +1,6 @@
 /**
- * The run config of a model (strata-<model>.json in the installation folder) is the text file a power user can edit by hand:
- * every engine option goes in "args", every STRATA_* environment flag in "env", the rest are named keys. Changes apply the next
+ * The run config of a model (nostroma-<model>.json in the installation folder) is the text file a power user can edit by hand:
+ * every engine option goes in "args", every NOSTROMA_* environment flag in "env", the rest are named keys. Changes apply the next
  * time the model starts. This checks the file BEFORE the model starts and says what is wrong in plain words, with the line, so a
  * typo is never a start that just fails.
  *
@@ -91,7 +91,7 @@ export function checkRunConfig(text, { known = KNOWN_KEYS } = {}) {
       if (!Array.isArray(value) || value.some(v => typeof v !== 'string')) add('error', 'args-type', key, {}, '"args" must be a list of quoted text entries, for example ["--ple-io", "mmap"]. Numbers need quotes too.');
       else if (value.some(v => ['--host', '--port', '--api-key'].includes(v))) add('warning', 'args-managed', key, {}, 'Nostroma manages the network address, port and API key itself, so --host, --port and --api-key in "args" are not honoured.');
     } else if (key === 'env') {
-      if (!value || typeof value !== 'object' || Array.isArray(value)) add('error', 'env-type', key, {}, '"env" must be an object of names with quoted text values, for example { "STRATA_X": "1" }.');
+      if (!value || typeof value !== 'object' || Array.isArray(value)) add('error', 'env-type', key, {}, '"env" must be an object of names with quoted text values, for example { "NOSTROMA_X": "1" }.');
       else for (const [name, v] of Object.entries(value)) {
         if (typeof v !== 'string') add('error', 'env-value', key, { name }, `"env" entry ${name} must be quoted text, for example "1", not ${show(v)}.`);
       }

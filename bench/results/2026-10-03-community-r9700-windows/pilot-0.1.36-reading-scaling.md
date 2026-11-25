@@ -1,6 +1,6 @@
-# Strata R9700 / Windows 11 — file-read scaling (measured, from strata-iq2_xs.log deltas)
+# Nostroma R9700 / Windows 11 — file-read scaling (measured, from nostroma-iq2_xs.log deltas)
 
-Counter: `strata serve: expert tiers: ... since the start RAM <n> blobs, files <n> blobs <MB> MB read (the GGUF in place)`
+Counter: `nostroma serve: expert tiers: ... since the start RAM <n> blobs, files <n> blobs <MB> MB read (the GGUF in place)`
 Deltas between consecutive requests inside the SAME engine session.
 
 | prompt tokens | new tokens read | file MB read this request | MB per new token |
@@ -22,5 +22,5 @@ Deltas between consecutive requests inside the SAME engine session.
 - Per-request fixed overhead ≈ 4.4 s (linear fit a=4.4 s, marginal rate ≈ 1,300 tok/s; a naive fit including the cold-start outlier gives a=12.4 s).
 
 ## Cold-start evidence
-`strata generate: resident RAM mode: 6.95 GiB of experts in RAM (page-locked), 19403 in the GPU cache`
+`nostroma generate: resident RAM mode: 6.95 GiB of experts in RAM (page-locked), 19403 in the GPU cache`
 `FileExpertSource: mapped pinned cache complement ready: resident 6.95 GiB, pinned 6.95 GiB` (identical with --resident-budget-gib 16 and 30)

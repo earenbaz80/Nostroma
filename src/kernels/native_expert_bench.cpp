@@ -5,20 +5,20 @@
 //     build/native_expert_bench --nibble <shard.gguf> <layer[,layer...]> [--t 1,2,3,4,5,6] [--share 0,50] [--plans 200]
 //                               [--trials 7] [--mode -1|0] [--variant -1|0|1]
 //
-// Modes are STRATA_EXP_MODE values.  A group is one expert (distinct blobs, ~2 MB each, so G >= 8 does not fit
+// Modes are NOSTROMA_EXP_MODE values.  A group is one expert (distinct blobs, ~2 MB each, so G >= 8 does not fit
 // in L2); its entries read distinct tokens of an 8-token window.  The output must be bitwise equal to the
 // reference mode's: the verify window's text depends on it.
 //
-// --nibble (STRATA_EXPERT_NIBBLE, strata/core/expert_nibble.hpp): the layer's 512 experts as GGUF blobs (P, the
+// --nibble (NOSTROMA_EXPERT_NIBBLE, nostroma/core/expert_nibble.hpp): the layer's 512 experts as GGUF blobs (P, the
 // production kernels) and as 4-bit slots made by the engine's transcoder (N: native_expert_layout_nib); the verify
 // window's whole expert step (gate/up + SwiGLU/q8_1 + down) and its gate/up phase alone, per (T, sharing) over
 // `--plans` top-10 routings (0% or 50% of a token's experts shared with the previous token's), every plan's out rows
 // compared byte for byte first; interleaved trials, medians.  `--mode`: both arms' layout (-1 the card's default, a
 // GP100's mode 8; 0 the CUDA layout); `--variant`: the 4-bit gate/up kernel (-1 per format, 0 S, 1 P).
-#include "strata/artifact/gguf_reader.hpp"
-#include "strata/core/expert_nibble.hpp"
-#include "strata/kernels/cpu/native_expert.hpp"
-#include "strata/kernels/iq_kernels.hpp"
+#include "nostroma/artifact/gguf_reader.hpp"
+#include "nostroma/core/expert_nibble.hpp"
+#include "nostroma/kernels/cpu/native_expert.hpp"
+#include "nostroma/kernels/iq_kernels.hpp"
 
 #include "ggml.h"
 
@@ -37,8 +37,8 @@
 #include <string>
 #include <vector>
 
-namespace cpu = strata::kernels::cpu;
-namespace K = strata::kernels;
+namespace cpu = nostroma::kernels::cpu;
+namespace K = nostroma::kernels;
 
 int nibble_main(int argc, char** argv);
 
@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "usage: native_expert_bench <shard1.gguf> <layer[,layer]> <groups> <tokens> <ref mode> <mode> [iters]\n");
         return 2;
     }
-    strata::GgufFile gguf(argv[1]);
+    nostroma::GgufFile gguf(argv[1]);
     std::vector<int> layers;
     {
         std::stringstream ss(argv[2]);
@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
     cudaEventCreate(&e0);
     cudaEventCreate(&e1);
     for (int l : layers) {
-        const strata::TensorInfo* t[3] = {};
+        const nostroma::TensorInfo* t[3] = {};
         const char* roles[3] = {"gate", "up", "down"};
         for (const auto& ti : gguf.tensors())
             for (int r = 0; r < 3; ++r)
@@ -192,10 +192,10 @@ int main(int argc, char** argv) {
 }
 
 // ------------------------------------------------------------------------------------------------ --nibble
-#if STRATA_EXPERT_NIBBLE_BUILT
+#if NOSTROMA_EXPERT_NIBBLE_BUILT
 namespace {
 
-namespace nib = strata::core::nibble;
+namespace nib = nostroma::core::nibble;
 
 #define NB_CK(x)                                                                                                    \
     do {                                                                                                            \
@@ -320,9 +320,9 @@ int nibble_main(int argc, char** argv) {
             return 2;
         }
     }
-    std::unique_ptr<strata::GgufModel> model;
+    std::unique_ptr<nostroma::GgufModel> model;
     try {
-        model = std::make_unique<strata::GgufModel>(strata::GgufModel::open(shard));
+        model = std::make_unique<nostroma::GgufModel>(nostroma::GgufModel::open(shard));
     } catch (const std::exception& ex) {
         std::fprintf(stderr, "native_expert_bench: %s\n", ex.what());
         return 2;
@@ -359,7 +359,7 @@ int nibble_main(int argc, char** argv) {
     K::quantize_q8_1_rows((const float*) dx, kTokMax, H, dxq, s);
     for (int l : layers) {
         const char* roles[3] = { "gate", "up", "down" };
-        const strata::TensorInfo* t[3] = {};
+        const nostroma::TensorInfo* t[3] = {};
         size_t sh[3] = {};
         for (int r = 0; r < 3; ++r) t[r] = model->find("blk." + std::to_string(l) + ".ffn_" + roles[r] + "_exps.weight", &sh[r]);
         if (!t[0] || !t[1] || !t[2]) {
@@ -590,7 +590,7 @@ int nibble_main(int argc, char** argv) {
 }
 #else
 int nibble_main(int, char**) {
-    std::fprintf(stderr, "native_expert_bench --nibble: no 4-bit kernels in this build (STRATA_EXPERIMENTAL_SM60, CUDA)\n");
+    std::fprintf(stderr, "native_expert_bench --nibble: no 4-bit kernels in this build (NOSTROMA_EXPERIMENTAL_SM60, CUDA)\n");
     return 2;
 }
 #endif

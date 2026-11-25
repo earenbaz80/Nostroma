@@ -54,7 +54,7 @@
   // markdown(text, format): format() is the page's Markdown, run on the text with every formula swapped for a placeholder
   // word, then each word becomes <span class="chat-math" data-math="..."> holding the escaped source until it is drawn.
   function markdown(text, format) {
-    let prefix = "STRATAMATHPLACEHOLDER"; while (text.includes(prefix)) prefix += "X";
+    let prefix = "NOSTROMAMATHPLACEHOLDER"; while (text.includes(prefix)) prefix += "X";
     const slots = [];
     const protectedText = split(text).map((p) => {
       if (p.source === undefined && !p.incomplete) return p.raw;
@@ -85,7 +85,7 @@
     const task = queue.then(async () => {
       if (epoch !== current || cache.get(key) !== task) return {ok: false, reason: "unavailable"};
       try {
-        const adapter = root.StrataMathAdapter;
+        const adapter = root.NostromaMathAdapter;
         if (!adapter) return {ok: false, reason: "unavailable"};
         initialization ||= Promise.race([adapter.initialize(), new Promise((_, reject) =>
           setTimeout(() => reject(new Error("Math initialization timed out")), 10000))]);
@@ -137,6 +137,6 @@
     });
   }
   const api = {split, markdown, hydrate, reset, script, result};
-  root.StrataMath = api;
+  root.NostromaMath = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

@@ -1,4 +1,4 @@
-// tests/cuda/prefill_iq4_w4a8_test.cu - the opt-in IQ4 W4A8 expert kernel (STRATA_IQ4_W4A8, moe_iq4_w4a8.cu) against
+// tests/cuda/prefill_iq4_w4a8_test.cu - the opt-in IQ4 W4A8 expert kernel (NOSTROMA_IQ4_W4A8, moe_iq4_w4a8.cu) against
 // the MMQ path it replaces, bit for bit.
 //
 //     prefill_iq4_w4a8_test          4,096-token layer-chunks (a few seconds)
@@ -9,14 +9,14 @@
 // activation array (absolute bounds), down [2560 x 640] IQ4_NL on each group's own q8_1 rows (group-local bounds) - the
 // Product fields prefill.cpp passes.  Synthetic weights of the right format (valid f16 block scales) and activations of
 // row-varying magnitude, all from a hash of the index.  Three routings (uniform, log-normal sigma 1 and 2: many experts
-// with a few rows, a few with hundreds) and two weight layouts (group buffers; with -DSTRATA_MMQ_TAB=ON also the pointer
-// table, each expert in its own slot with a guard, as STRATA_MMQ_DIRECT reads them).  Every output word of
+// with a few rows, a few with hundreds) and two weight layouts (group buffers; with -DNOSTROMA_MMQ_TAB=ON also the pointer
+// table, each expert in its own slot with a guard, as NOSTROMA_MMQ_DIRECT reads them).  Every output word of
 // mmq::Context::run and of run_iq4_w4a8 (MMQ where it declines a product) must be equal, and the kernel must have run
 // some products of both types.  Exit 0: identical; 1: a difference; 77: no CUDA device, or a GPU the kernel does not
 // run on (it covers sm_80..sm_88; elsewhere it declines every product and MMQ runs as before).
-#include "strata/prefill/moe_iq4_w4a8.hpp"
-#include "strata/prefill/mmq_ids_margin.hpp"
-#include "strata/prefill/moe_mmq.hpp"
+#include "nostroma/prefill/moe_iq4_w4a8.hpp"
+#include "nostroma/prefill/mmq_ids_margin.hpp"
+#include "nostroma/prefill/moe_mmq.hpp"
 
 #include "ggml.h"
 
@@ -32,7 +32,7 @@
 #include <string>
 #include <vector>
 
-namespace mmq = strata::prefill::mmq;
+namespace mmq = nostroma::prefill::mmq;
 
 namespace {
 

@@ -5,7 +5,7 @@ On 2026-10-03, a before/after run compared Nostroma on Windows 11 Pro (build 10.
 processor groups of 64 logical processors each, but one NUMA node spanning both groups. The original pool code
 encoded each CPU as `group * 64 + processor`, then used `SetThreadAffinityMask` with `cpu & 63`. That discarded the
 group number, so CPUs from both groups aliased to the same group-relative masks. The experimental group-aware build
-at [source commit fba17b6](https://github.com/Yasei-no-otoko/Strata/commit/fba17b6ec6e50104aa194443eaee17728db14135)
+at [source commit fba17b6](https://github.com/Yasei-no-otoko/Nostroma/commit/fba17b6ec6e50104aa194443eaee17728db14135)
 uses group-aware thread affinity and preserves group identity when pinning workers and the session host.
 
 The standard automatic worker count remains 63 on this 3990X. No hardware-specific worker cap or default-selection

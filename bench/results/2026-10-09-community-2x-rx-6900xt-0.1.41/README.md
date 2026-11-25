@@ -1,4 +1,4 @@
-# Community benchmark: 2x AMD Radeon RX 6900 XT 16 GB (gfx1030), Ryzen 5 5600X, 128 GB RAM - Strata 0.1.41: one card, layer split, expert helper, and the decode window
+# Community benchmark: 2x AMD Radeon RX 6900 XT 16 GB (gfx1030), Ryzen 5 5600X, 128 GB RAM - Nostroma 0.1.41: one card, layer split, expert helper, and the decode window
 
 Measured on 2026-10-08/09 on the same Linux desktop as the [2026-10-05](../2026-10-05-community-2x-rx-6900xt/README.md)
 and [2026-10-06 (0.1.40.1)](../2026-10-06-community-2x-rx-6900xt-0.1.40.1/README.md) reports. It covers the three ways
@@ -6,7 +6,7 @@ the two cards can be used - one card alone, the layer split (this machine's prod
 as an expert helper - and asks three questions:
 
 1. What does **0.1.41 as released** do on this card family against 0.1.40.1 - stock, and with the two gfx103x switches
-   it ships (`STRATA_HIP_PROMPT_F16=1 STRATA_SH_STREAM=1`)?
+   it ships (`NOSTROMA_HIP_PROMPT_F16=1 NOSTROMA_SH_STREAM=1`)?
 2. What do the **three open gfx103x pull requests** (#1149, #1151, #1167), plus a per-device rocBLAS solution cache and
    a modified llama.cpp ggml for the expert MMQ, add on top of 0.1.41?
 3. Can the **decode** be moved by configuration alone? The 0.1.40.1 report left decode at 62-75 tok/s in every arm.
@@ -20,7 +20,7 @@ The short answer: stock 0.1.41 reads prompts 4-6% faster than stock 0.1.40.1 on 
 
 The adaptive expert swaps were on (the default) in every arm. GFXOFF stayed at the kernel's default; instead of the
 debugfs knob used in the 0.1.40.1 report, the two-card arms that read 128K prompts ran with the engine's own
-`STRATA_HIP_ADAPT_KERNEL_COPY=1` (in 0.1.41; the adaptive swaps copy with a kernel instead of SDMA, which on this
+`NOSTROMA_HIP_ADAPT_KERNEL_COPY=1` (in 0.1.41; the adaptive swaps copy with a kernel instead of SDMA, which on this
 machine removes the #884 stall at no measurable cost - the `split-stock` and `split-stock-kc` rows below are the A/B).
 
 ## Hardware and software
@@ -36,18 +36,18 @@ Unchanged from the 0.1.40.1 report except the engine:
 - **OS and runtime:** Ubuntu 26.04, kernel 7.0.0-38-generic with its own amdgpu driver, ROCm 10.0.0 (HIP 7.15, rocBLAS
   5.6.0.8d1ae90e). hipBLASLt ships no gfx1030 kernels; the plain rocBLAS path runs.
 - **Source, stock:** [earenbaz80/Nostroma](https://github.com/earenbaz80/Nostroma) `main` at `fb58e0db` (engine 0.1.41,
-  2026-10-08), ggml from llama.cpp at the pinned `3cf03257f` (`STRATA_GGML_DIR` pointed at a checkout of that commit;
+  2026-10-08), ggml from llama.cpp at the pinned `3cf03257f` (`NOSTROMA_GGML_DIR` pointed at a checkout of that commit;
   the FetchContent default fetches the same one). Built with
-  `-DCMAKE_BUILD_TYPE=Release -DSTRATA_ENABLE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1030 -DSTRATA_PREFILL_MMQ=ON`.
+  `-DCMAKE_BUILD_TYPE=Release -DNOSTROMA_ENABLE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1030 -DNOSTROMA_PREFILL_MMQ=ON`.
 - **Source, "PRs":** `fb58e0db` with the open pull requests #1149 (FP16 prompt route: tests and the
-  `STRATA_F16_RANGE` counter), #1151 (the QSA block scores on rocBLAS SGEMM, `STRATA_SELECT_SGEMM=1`) and #1167 (a
-  rocBLAS solution table for the FP16 prompt GEMMs, `STRATA_ROCBLAS_TUNING`) rebased on top, plus two local commits
-  that keep the rocBLAS solutions in a per-device cache file (`STRATA_TUNING_CACHE`; the solution is measured once on
+  `NOSTROMA_F16_RANGE` counter), #1151 (the QSA block scores on rocBLAS SGEMM, `NOSTROMA_SELECT_SGEMM=1`) and #1167 (a
+  rocBLAS solution table for the FP16 prompt GEMMs, `NOSTROMA_ROCBLAS_TUNING`) rebased on top, plus two local commits
+  that keep the rocBLAS solutions in a per-device cache file (`NOSTROMA_TUNING_CACHE`; the solution is measured once on
   the card and read back on later starts, so it no longer depends on the start-up heuristic). Same build options,
-  plus `-DSTRATA_GGML_DIR` pointing at llama.cpp `159c651f5` with six RDNA2 MMQ patches (wider tiles, 24-bit scale
+  plus `-DNOSTROMA_GGML_DIR` pointing at llama.cpp `159c651f5` with six RDNA2 MMQ patches (wider tiles, 24-bit scale
   multiplies, Q8_K-style activations, VOP3P dot-chain heads; the patches, build flags and their own measurements are in
   [Vop3p/dual-6900xt-flash-next-tuning](https://github.com/Vop3p/dual-6900xt-flash-next-tuning/tree/main/patches/llama.cpp)).
-  Strata takes its expert prompt GEMMs from that MMQ; on 0.1.40.2 the ggml change alone was +1.5% at a 32K prompt with
+  Nostroma takes its expert prompt GEMMs from that MMQ; on 0.1.40.2 the ggml change alone was +1.5% at a 32K prompt with
   byte-identical output. The PR commits and the ggml change were not separated again here.
 - **Other load:** nothing else used the GPUs (telemetry); an idle llama-swap router, a home-automation stack and the
   LACT fan daemon kept running on the CPU. No builds during the runs.
@@ -68,28 +68,28 @@ and 25-47 on the second in every arm** (6,176 + 4,829 expert slots).
 | arm | tree | environment | prompt lengths |
 | --- | --- | --- | --- |
 | `single-stock` | stock | none (one card, PCI 0f; GFXOFF default) | 4K, 32K, 128K |
-| `single-sw` | stock | `STRATA_HIP_PROMPT_F16=1 STRATA_SH_STREAM=1` | 4K, 32K, 128K |
+| `single-sw` | stock | `NOSTROMA_HIP_PROMPT_F16=1 NOSTROMA_SH_STREAM=1` | 4K, 32K, 128K |
 | `single-prs` | PRs | the production environment (as `split-prs-kc` below, without kernel-copy) | 4K, 32K, 128K |
-| `helper-stock` | stock | `STRATA_HIP_ADAPT_KERNEL_COPY=1`; the other card as expert helper (`--expert-cache-device1 auto --remote-expert-opt`, probed PCIe share 0.39) | 4K, 32K, 128K |
+| `helper-stock` | stock | `NOSTROMA_HIP_ADAPT_KERNEL_COPY=1`; the other card as expert helper (`--expert-cache-device1 auto --remote-expert-opt`, probed PCIe share 0.39) | 4K, 32K, 128K |
 | `helper-sw` | stock | the two switches + kernel-copy, helper as above | 4K, 32K, 128K |
 | `helper-prs` | PRs | the production environment + kernel-copy, helper as above | 4K, 32K, 128K |
 | `split-stock` | stock | none | 4K, 32K (128K left out: at the GFXOFF default a stock split stalled on its first 128K request in the 0.1.40.1 report, #884) |
-| `split-stock-kc` | stock | `STRATA_HIP_ADAPT_KERNEL_COPY=1` | 4K, 32K, 128K |
-| `split-sw-kc` | stock | `STRATA_HIP_PROMPT_F16=1 STRATA_SH_STREAM=1 STRATA_HIP_ADAPT_KERNEL_COPY=1` | 4K, 32K, 128K |
-| `split-prs-kc` | PRs | the three above + `STRATA_ROCBLAS_TUNING=/work/prs/tools/hip STRATA_TUNING_CACHE=~/.cache/strata STRATA_SELECT_SGEMM=1 STRATA_SELECT_SGEMM_VERBOSE=1 STRATA_IO_THREADS=128 STRATA_PREFILL_CPU_SHARE=auto` (this machine's production environment) | 4K, 32K, 128K |
+| `split-stock-kc` | stock | `NOSTROMA_HIP_ADAPT_KERNEL_COPY=1` | 4K, 32K, 128K |
+| `split-sw-kc` | stock | `NOSTROMA_HIP_PROMPT_F16=1 NOSTROMA_SH_STREAM=1 NOSTROMA_HIP_ADAPT_KERNEL_COPY=1` | 4K, 32K, 128K |
+| `split-prs-kc` | PRs | the three above + `NOSTROMA_ROCBLAS_TUNING=/work/prs/tools/hip NOSTROMA_TUNING_CACHE=~/.cache/nostroma NOSTROMA_SELECT_SGEMM=1 NOSTROMA_SELECT_SGEMM_VERBOSE=1 NOSTROMA_IO_THREADS=128 NOSTROMA_PREFILL_CPU_SHARE=auto` (this machine's production environment) | 4K, 32K, 128K |
 | `split-prs-kc-dec` | PRs | as `split-prs-kc`, with `--spec 3 --spec-min-p 0.7 --pipeline-windows 2` | 4K, 32K, 128K |
 
 The engine's log confirms each switch (`engine.log` was kept locally; the lines are quoted in `BUILD.txt`'s folder):
-`STRATA_HIP_PROMPT_F16=1: the prompt's 16-bit GEMMs run FP16 in and out` once per card, `prefill gemm: rocBLAS tuning
+`NOSTROMA_HIP_PROMPT_F16=1: the prompt's 16-bit GEMMs run FP16 in and out` once per card, `prefill gemm: rocBLAS tuning
 enabled (112 rows, 76 with a solution, gfx1030, mp 40, rocBLAS 5.6.0.8d1ae90e)`, `qsa select: SGEMM reach<=... solution
-... from .../gfx1030-mp40-rocblas-5.6.0.8d1ae90e-select.txt`, `STRATA_HIP_ADAPT_KERNEL_COPY=1: adaptive swaps copy with
+... from .../gfx1030-mp40-rocblas-5.6.0.8d1ae90e-select.txt`, `NOSTROMA_HIP_ADAPT_KERNEL_COPY=1: adaptive swaps copy with
 a kernel, not SDMA (#884)`, and for the last arm the pipeline-windows line.
 
 ## Method
 
 [benchmark.py](benchmark.py) is the script of the earlier reports (the RTX 5090 report's, unchanged): deterministic
-synthetic Python filler with a different nonce near the start of each request, counted with Strata's tokenizer. Every
-arm started its own server (`serve/server.py --engine strata --config <config.json> --port 8089` from its tree) and
+synthetic Python filler with a different nonce near the start of each request, counted with Nostroma's tokenizer. Every
+arm started its own server (`serve/server.py --engine nostroma --config <config.json> --port 8089` from its tree) and
 ran `benchmark.py --targets 4096,32768,128000 --runs 2` (two runs per length, serial, increasing length, after one
 excluded warm-up). All speed requests read their whole prompt (zero reused tokens) and generated 256 tokens to the
 output cap. Prompt throughput is freshly read tokens / `prompt_ms`, decode throughput the engine's `decode_tok_s`;
@@ -124,7 +124,7 @@ stalled.
 | PRs + ggml | 32,768 | 1,173.6 [1,171.9-1,175.3] | 50.9 [48.8-53.0] | 27.97 [27.93-28.01] | 32.98 [32.81-33.14] |
 | PRs + ggml | 128,000 | 1,146.6 [1,146.2-1,147.0] | 49.8 [49.8-49.9] | 111.73 [111.69-111.77] | 116.83 [116.79-116.87] |
 
-### One card with the other as expert helper, `STRATA_HIP_ADAPT_KERNEL_COPY=1`
+### One card with the other as expert helper, `NOSTROMA_HIP_ADAPT_KERNEL_COPY=1`
 
 | | Prompt tokens | Prompt tok/s | Decode tok/s | TTFT seconds | Total seconds |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -165,7 +165,7 @@ What the table shows:
   switches), so part of what the pull requests added on 0.1.40.1 is in the 0.1.41 release now. Decode 69 / 75 / 68.
 - **The pull requests + ggml**: 968 / 1,714 / 2,029, the same as on 0.1.40.1 (968 / 1,685 / 2,003); +16 / +6 / +11%
   over the switches on 0.1.41. The remaining gap at 4K is #1167 (the GDN projection shapes), at 128K #1151 and the MMQ.
-- **`STRATA_HIP_ADAPT_KERNEL_COPY=1`** costs nothing measurable (464 / 767 → 461 / 767; decode 62.6 / 65.0 → 61.5 /
+- **`NOSTROMA_HIP_ADAPT_KERNEL_COPY=1`** costs nothing measurable (464 / 767 → 461 / 767; decode 62.6 / 65.0 → 61.5 /
   65.1) and the stock split read its 128K prompts without a stall at the GFXOFF default, which it did not in the
   0.1.40.1 report.
 - **Decode**: the engine version and the pull requests leave it at 61-75 tok/s, as in the two earlier reports. `--spec 3 --spec-min-p 0.7 --pipeline-windows 2` on the PRs tree: 64.7 → 77.2 at 4K, 68.8 → 82.3 at 32K, 68.3 → 75.7 at 128K (+19 / +20 / +11%), prompt speed unchanged (±0.7%), draft acceptance 83% instead of 68% (`results.json`, `drafts_accepted / drafts_offered`). Measured on 2026-10-08 as well with the vision encoder loaded (three server starts, two runs each at 4K and 32K): 66 → 73-77 and 74 → 80-83. Each knob alone had been neutral or worse on this machine (`--pipeline-windows 2` with the default draft +1-6%; `--spec 3 --spec-min-p 0.7` without it flat to -3%; a 16-point spec × min-p grid at `--pipeline-windows 1` found 4 / 0.5 best): the shorter draft is accepted almost whole, so the speculative second window hits. See the limitations for what it does to reproducibility.
@@ -202,7 +202,7 @@ accepted). Throughput numbers only; the session's content is not part of this re
 ## Stalls, memory, power
 
 - Zero stalls in the five arms (`stall report` / `timed out at layer` / `no progress for` in each `engine.log`: 0),
-  including the 128K requests of the stock tree with `STRATA_HIP_ADAPT_KERNEL_COPY=1`. The GFXOFF knob read 1 (the
+  including the 128K requests of the stock tree with `NOSTROMA_HIP_ADAPT_KERNEL_COPY=1`. The GFXOFF knob read 1 (the
   default) at every start.
 - VRAM peak 15.9-16.1 GiB on both cards (`mem_info_vram_used` at the end of each arm: 16,011-16,094 MiB on the first
   card, 15,887-15,930 on the second).

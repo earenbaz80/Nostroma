@@ -8,10 +8,10 @@ import { join } from 'node:path';
  * The starter list (real-model-catalog.mjs) names five files by repository and file name with no hash. With the real engine on, nothing
  * may download from it. REAL is read when the module loads, and node --test runs each file in its own process, so this file sets it first.
  */
-const home = mkdtempSync(join(tmpdir(), 'strata-list-'));
-process.env.STRATA_HOME = home;
-process.env.STRATA_MODELS_DIR = join(home, 'models');
-process.env.STRATA_REAL_ENGINE = '1';
+const home = mkdtempSync(join(tmpdir(), 'nostroma-list-'));
+process.env.NOSTROMA_HOME = home;
+process.env.NOSTROMA_MODELS_DIR = join(home, 'models');
+process.env.NOSTROMA_REAL_ENGINE = '1';
 const calls = [];
 const realFetch = globalThis.fetch;
 globalThis.fetch = (...args) => { calls.push(String(args[0])); return Promise.reject(new Error('no network in this test')); };

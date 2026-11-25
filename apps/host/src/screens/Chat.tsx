@@ -110,7 +110,7 @@ export function ChatScreen() {
             void sendMessage(next);
     }, [streaming, parked?.length, session?.id, activeId]);
     const [draft, setDraft] = useState('');
-    const draftKey = `strata.chat-draft.${session?.id ?? 'new'}`;
+    const draftKey = `nostroma.chat-draft.${session?.id ?? 'new'}`;
     useEffect(() => {
         setDraft(sessionStorage.getItem(draftKey) ?? '');
         if (session && session.id !== activeId)
@@ -563,8 +563,8 @@ function useSlashCommands(clear: () => void, setDraft: (value: string) => void):
         { id: 'plan', label: '/plan', hint: 'Have the assistant write a plan first; nothing runs until you approve it', icon: 'check', run: () => setDraft('/plan ') },
         { id: 'research', label: '/research', hint: 'Search the web, read the pages and answer with sources', icon: 'search', run: () => setDraft('/research ') },
         { id: 'loop', label: '/loop', hint: 'Repeat a message every few minutes while this chat is open', icon: 'refresh', run: () => setDraft('/loop 10m ') },
-        { id: 'website', label: '/website', hint: 'Open a website in the preview sidebar', icon: 'link', run: () => { clear(); window.dispatchEvent(new Event('strata:open-website')); } },
-        { id: 'preview', label: '/preview', hint: 'Open a local file in the preview sidebar', icon: 'file', run: () => { clear(); window.dispatchEvent(new Event('strata:open-preview')); } },
+        { id: 'website', label: '/website', hint: 'Open a website in the preview sidebar', icon: 'link', run: () => { clear(); window.dispatchEvent(new Event('nostroma:open-website')); } },
+        { id: 'preview', label: '/preview', hint: 'Open a local file in the preview sidebar', icon: 'file', run: () => { clear(); window.dispatchEvent(new Event('nostroma:open-preview')); } },
         ...(demo ? [{ id: 'subagents', label: '/subagents', hint: 'Preview subagent statistics', icon: 'experts' as const, run: () => { clear(); createSubagentExample(); } }] : []),
         ...getSlashCommands().map(command => ({ ...command, run: () => { clear(); command.run(); } }))
     ];

@@ -7,9 +7,9 @@
 // conv projections, q/k/v, norm + rope, windowed attention over the ring, o, conv + rms, gate/up, swiglu, down) + the head over the draft vocabulary
 // (nd rows, Q8_0 rows through the engine's native_mmvq) + top-16 + the candidate selector.  The weights are random bytes in the pack's real sizes
 // (tools/dflash2_pack.py --q4_0: 268 MB of Q4_0 matrices + 254 MB of bf16 selector codebooks); the embedding is a small table gather.
-#include "strata/kernels/dflash2.hpp"
-#include "strata/kernels/native_mmvq.hpp"
-#include "strata/sycl_queue.hpp"
+#include "nostroma/kernels/dflash2.hpp"
+#include "nostroma/kernels/native_mmvq.hpp"
+#include "nostroma/sycl_queue.hpp"
 
 #include <sycl/sycl.hpp>
 #include <dpct/dpct.hpp>
@@ -25,7 +25,7 @@
 #include <thread>
 #include <vector>
 
-using namespace strata::kernels;
+using namespace nostroma::kernels;
 namespace sx = sycl::ext::oneapi::experimental;
 
 namespace {
@@ -144,8 +144,8 @@ void build(Drafter& D) {
     }
     D.emb_tab = make_f32((size_t) 64 * N, 1.0f);
     D.d_meta = dev<int32_t>(32 + 2048);   // 32 ints, then the rope tables
-    D.h_meta = (int32_t*) strata::host_malloc_polled((32 + 2048) * 4, *Q);   // 32 ints, then the rope tables of the 16 rows (host-computed: no device FP64)
-    D.h_out = (int32_t*) strata::host_malloc_polled(64 * 4, *Q);
+    D.h_meta = (int32_t*) nostroma::host_malloc_polled((32 + 2048) * 4, *Q);   // 32 ints, then the rope tables of the 16 rows (host-computed: no device FP64)
+    D.h_out = (int32_t*) nostroma::host_malloc_polled(64 * 4, *Q);
     std::memset(D.h_meta, 0, (32 + 2048) * 4); std::memset(D.h_out, 0, 256);
     D.h_prob = (float*) D.h_out + 16;
     D.d_out = dev<int32_t>(64); Q->memset(D.d_out, 0, 256).wait();
@@ -612,7 +612,7 @@ template <class F> double time_us(F&& f, int iters) {
 }
 
 int run_gemm_bench() {
-    if (envi("DF2B_HOSTALLOC", 0) == 1) (void) strata::host_malloc_polled(4096, *Q);   // uncached host memory (zeMemAllocHost), as the engine's doorbells
+    if (envi("DF2B_HOSTALLOC", 0) == 1) (void) nostroma::host_malloc_polled(4096, *Q);   // uncached host memory (zeMemAllocHost), as the engine's doorbells
     if (envi("DF2B_HOSTALLOC", 0) == 2) (void) sycl::malloc_host(4096, *Q);
     if (envi("DF2B_BIGALLOC_MB", 0)) { void* bp = sycl::malloc_device((size_t) envi("DF2B_BIGALLOC_MB", 0) << 20, *Q); Q->memset(bp, 1, (size_t) envi("DF2B_BIGALLOC_MB", 0) << 20).wait(); }   // touched
     for (int i = 0; i < envi("DF2B_NALLOC", 0); ++i) (void) sycl::malloc_device(4096 + 64 * i, *Q);
@@ -625,7 +625,7 @@ int run_gemm_bench() {
         if (ps.find("cb") != std::string::npos) { std::vector<uint16_t> cb((size_t) VOCAB * RANK, 0x3c00); uint16_t* d = dev<uint16_t>(cb.size()); up(d, cb); }
         if (ps.find("ring") != std::string::npos) for (int l = 0; l < 10; ++l) (void) make_f32((size_t) RING * NKV * HD, 2.f);
         if (ps.find("layers") != std::string::npos) for (int l = 0; l < 5; ++l) { make_mat(I, N); make_mat(I, N); make_mat(N, I); make_mat(4096, N); }
-        if (ps.find("host") != std::string::npos) { (void) strata::host_malloc_polled(128, *Q); (void) strata::host_malloc_polled(256, *Q); }
+        if (ps.find("host") != std::string::npos) { (void) nostroma::host_malloc_polled(128, *Q); (void) nostroma::host_malloc_polled(256, *Q); }
         Q->wait();
     }
     std::printf("device: %s\n", Q->get_device().get_info<sycl::info::device::name>().c_str());
@@ -808,7 +808,7 @@ int run_poison2() {
     };
     const int mode = envi("DF2B_P2", 0);
     probe("nothing");
-    int32_t* hp = (int32_t*) strata::host_malloc_polled(4096, *Q);   // uncached host
+    int32_t* hp = (int32_t*) nostroma::host_malloc_polled(4096, *Q);   // uncached host
     int32_t* hc = (int32_t*) sycl::malloc_host(4096, *Q);             // cached host
     int32_t* sh = (int32_t*) sycl::malloc_shared(4096, *Q);
     int32_t* dv = dev<int32_t>(1024);

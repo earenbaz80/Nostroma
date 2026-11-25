@@ -1,6 +1,6 @@
-#include "strata/core/conversation_snapshot.hpp"
-#include "strata/env.hpp"
-#include "strata/kernels/kv_q4.hpp"
+#include "nostroma/core/conversation_snapshot.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kernels/kv_q4.hpp"
 #include "conversation_checked.hpp"
 #include "conversation_copy.hpp"
 #include "conversation_trace.hpp"
@@ -16,7 +16,7 @@
 #include <memory>
 #include <mutex>
 
-namespace strata::core {
+namespace nostroma::core {
 namespace {
 struct Layout {
     int format;
@@ -25,7 +25,7 @@ struct Layout {
 };
 
 bool valid_extent(const QsaState& st, int64_t upto, std::string& error) {
-    const int64_t page = strata::kernels::qsa_real_shapes().page_size;
+    const int64_t page = nostroma::kernels::qsa_real_shapes().page_size;
     if (upto < 0 || upto > st.max_cells || upto > std::numeric_limits<int64_t>::max() - (page - 1)) {
         error = "conversation snapshot: invalid K/V extent";
         return false;
@@ -39,7 +39,7 @@ bool layout(const QsaState& st, const ModelGeometry& g, int64_t upto, bool index
         error = "conversation snapshot: hybrid K8V4 cannot be a ring and needs distinct format flags";
         return false;
     }
-    const auto s = strata::kernels::qsa_real_shapes();
+    const auto s = nostroma::kernels::qsa_real_shapes();
     const bool int8_keys = st.kv_int8 || st.kv_hybrid;
     if (g.n_head_kv <= 0 || g.head_dim <= 0 || g.head_dim > INT32_MAX || g.idx_key_dim <= 0 ||
         (st.kv_q4 && g.head_dim % 32) || (int8_keys && !st.kv_q4 && g.head_dim % 64)) {
@@ -47,13 +47,13 @@ bool layout(const QsaState& st, const ModelGeometry& g, int64_t upto, bool index
         return false;
     }
     const int64_t cells = ((upto + s.page_size - 1) / s.page_size) * s.page_size;
-    const size_t per = st.kv_q4 ? (size_t) strata::kernels::kv_q4_bytes_per_head((int) g.head_dim)
+    const size_t per = st.kv_q4 ? (size_t) nostroma::kernels::kv_q4_bytes_per_head((int) g.head_dim)
                               : (size_t) g.head_dim * (int8_keys ? 1 : 2);
     // Include the moving spare row, not only completed blocks. The checkpoint
     // restore reconstructs that row when rewinding to an earlier prefix.
     const int64_t pooled = index && upto > 0 ? upto / s.idx_block + 1 : 0;
     // Format 3 identifies snapshot K8V4 only; never pass it to the block movers.  Rotated INT8 K/V (#293,
-    // STRATA_KV_ROT=1) is another format too (+16): its bytes mean nothing to a state that does not rotate, so a
+    // NOSTROMA_KV_ROT=1) is another format too (+16): its bytes mean nothing to a state that does not rotate, so a
     // snapshot or prompt checkpoint taken with the rotation never restores into one without it, nor the reverse.
     // (Q4_0 is always rotated: nothing to tell apart; without the rotation the format is the one it always was.)
     const int rotated = st.kv_rot && !st.kv_q4 && !st.kv_hybrid ? 16 : 0;
@@ -70,7 +70,7 @@ bool layout(const QsaState& st, const ModelGeometry& g, int64_t upto, bool index
     l.value_scales = l.scales;
     if (st.kv_hybrid) {
         if (!product(l.value_data, {(uint64_t) cells, (uint64_t) g.n_head_kv,
-                                   (uint64_t) strata::kernels::kv_q4_bytes_per_head((int) g.head_dim)})) {
+                                   (uint64_t) nostroma::kernels::kv_q4_bytes_per_head((int) g.head_dim)})) {
             error = "conversation snapshot: hybrid V byte count overflow";
             return false;
         }
@@ -117,7 +117,7 @@ bool valid(const QsaState& st, const Layout& l, int64_t upto, std::string& error
     return true;
 }
 
-// STRATA_PARK_VRAM_MIB=N (with STRATA_PARK_ASYNC): a park also keeps the whole K/V of its image in VRAM, in a slot
+// NOSTROMA_PARK_VRAM_MIB=N (with NOSTROMA_PARK_ASYNC): a park also keeps the whole K/V of its image in VRAM, in a slot
 // of its own, while the slots' total stays within N MiB; a restore of that image copies from the slot device to
 // device (~1 ms) instead of from the host buffers over PCIe, and needs no wait for the background copy.  A slot is
 // released with the image or its K/V layers (their tokens), or all at once under VRAM pressure
@@ -138,13 +138,13 @@ struct VramKv {
 VramKv& vram_kv() { static VramKv v; return v; }
 size_t park_vram_budget() {
     static const size_t b = [] {
-        const char* v = strata::env("NOSTROMA_PARK_VRAM_MIB");
+        const char* v = nostroma::env("NOSTROMA_PARK_VRAM_MIB");
         const long long mib = v != nullptr ? std::atoll(v) : 0;
         return mib > 0 ? (size_t) mib << 20 : (size_t) 0;
     }();
     return b;
 }
-bool park_trace() { static const bool on = strata::env("NOSTROMA_PARK_TRACE") != nullptr; return on; }
+bool park_trace() { static const bool on = nostroma::env("NOSTROMA_PARK_TRACE") != nullptr; return on; }
 void vram_kv_free(VramKvSlot& s) {
     int cur = s.dev;
     (void) cudaGetDevice(&cur);
@@ -225,21 +225,21 @@ struct ParkAsync {
     cudaStream_t stream = nullptr;
     int dev = -1;
     bool active = false;
-    VramKvSlot* slot = nullptr;   // STRATA_PARK_VRAM_MIB: the begun park's slot (the stage is not used then)
+    VramKvSlot* slot = nullptr;   // NOSTROMA_PARK_VRAM_MIB: the begun park's slot (the stage is not used then)
     uint64_t slot_tag = 0;        // its tag, kept past launch for the image's and its layers' tokens
 };
 ParkAsync& park_async() { static ParkAsync a; return a; }
 constexpr size_t kParkPiece = (size_t) 4 << 20;
 bool park_async_on() {
-#if defined(STRATA_USE_HIP) || defined(STRATA_HIP_GFX906) || defined(STRATA_GPU_METAL)
+#if defined(NOSTROMA_USE_HIP) || defined(NOSTROMA_HIP_GFX906) || defined(NOSTROMA_GPU_METAL)
     return false;
 #else
-    static const bool on = [] { const char* v = strata::env("NOSTROMA_PARK_ASYNC"); return v != nullptr && v[0] == '1'; }();
+    static const bool on = [] { const char* v = nostroma::env("NOSTROMA_PARK_ASYNC"); return v != nullptr && v[0] == '1'; }();
     return on;
 #endif
 }
 bool on_device(const void* p) {
-#if defined(STRATA_USE_HIP) || defined(STRATA_HIP_GFX906) || defined(STRATA_GPU_METAL)
+#if defined(NOSTROMA_USE_HIP) || defined(NOSTROMA_HIP_GFX906) || defined(NOSTROMA_GPU_METAL)
     (void) p;   // (no pointer-attribute query in the shims: the slot takes no part, as when the query fails)
     return false;
 #else
@@ -248,12 +248,12 @@ bool on_device(const void* p) {
     return at.type == cudaMemoryTypeDevice;
 #endif
 }
-// STRATA_PARK_TRACE: where conversation_kv_save's time goes since the park's begin (ms): the pointer-attribute
+// NOSTROMA_PARK_TRACE: where conversation_kv_save's time goes since the park's begin (ms): the pointer-attribute
 // queries, the host buffer resizes and the copies (into the stage, or the synchronous ones).  Read by the park trace.
 struct KvSaveTrace { double attrs = 0, resize = 0, copy = 0; long resize_faults = 0; };
 KvSaveTrace& kv_save_trace() { static KvSaveTrace t; return t; }
 bool park_trace_on() {
-    static const bool on = strata::env("NOSTROMA_PARK_TRACE") != nullptr;
+    static const bool on = nostroma::env("NOSTROMA_PARK_TRACE") != nullptr;
     return on;
 }
 
@@ -312,15 +312,15 @@ bool conversation_kv_save(ConversationKv& image, const QsaState& st, const Model
     const auto src = pools(st);
     const std::array<size_t,5> sizes = {l.data, l.value_data, l.scales, l.value_scales, l.pooled};
     const std::array<ConversationBuffer*,5> dst = {&image.k, &image.v, &image.k_scale, &image.v_scale, &image.pooled};
-    // STRATA_PARK_VRAM_MIB: this layer's parts go into the park's slot under a fresh tag (0: no slot this park)
+    // NOSTROMA_PARK_VRAM_MIB: this layer's parts go into the park's slot under a fresh tag (0: no slot this park)
     image.dev_tag = park_async().slot != nullptr ? vram_kv().next_tag++ : 0;
     for (size_t i = 0; i < dst.size(); ++i) {
         // Recopy the partial page and the indexer's moving spare row. Completed
         // pages/rows strictly before the first rewritten token remain identical.
-        const size_t keep = i == 4 ? (index ? size_t(unchanged_tokens / strata::kernels::qsa_real_shapes().idx_block) * g.idx_key_dim * 4 : 0)
+        const size_t keep = i == 4 ? (index ? size_t(unchanged_tokens / nostroma::kernels::qsa_real_shapes().idx_block) * g.idx_key_dim * 4 : 0)
                                   : l.cells ? (sizes[i] / size_t(l.cells)) * size_t(whole_cells) : 0;
         if (keep > dst[i]->size()) { error = "conversation snapshot: missing reusable prefix"; return false; }
-        {   // STRATA_PARK_VRAM_MIB: with a slot, the whole part goes device to device into it (a restore of this image
+        {   // NOSTROMA_PARK_VRAM_MIB: with a slot, the whole part goes device to device into it (a restore of this image
             // reads it from there) and the host buffer gets only the bytes past the kept prefix, read from the slot on
             // the background thread; a part the slot cannot take is copied synchronously - never through the stage,
             // whose offsets launch would read from the slot
@@ -350,7 +350,7 @@ bool conversation_kv_save(ConversationKv& image, const QsaState& st, const Model
                 continue;
             }
         }
-        // STRATA_PARK_ASYNC: device bytes go to the VRAM stage now and into the buffer on the background thread
+        // NOSTROMA_PARK_ASYNC: device bytes go to the VRAM stage now and into the buffer on the background thread
         ParkAsync& a = park_async();
         const bool trace = park_trace_on();
         auto tick = [trace] { return trace ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{}; };
@@ -410,12 +410,12 @@ namespace {
 // After the authoritative pools were rewritten: the VRAM slots of a streamed state still hold the outgoing
 // conversation, so resolve must refill them before any attention reads (shared by restore and direct copy).
 bool refresh_residency(const QsaState& st, const ModelGeometry& g, int64_t upto, std::string& error) {
-    if (st.kv_mode == 1) strata::kernels::kv_stream_reset(st.map, nullptr);
+    if (st.kv_mode == 1) nostroma::kernels::kv_stream_reset(st.map, nullptr);
     if (st.kv_mode == 2 && upto > 0) {
-        auto shapes = strata::kernels::qsa_real_shapes();
+        auto shapes = nostroma::kernels::qsa_real_shapes();
         shapes.n_head_kv = g.n_head_kv; shapes.head_dim = g.head_dim;
         const int64_t end = (upto + shapes.page_size - 1) / shapes.page_size;
-        strata::kernels::kv_ring_restore(qsa_attn_pools(st), st.host, qsa_kv_format(st),
+        nostroma::kernels::kv_ring_restore(qsa_attn_pools(st), st.host, qsa_kv_format(st),
                                         std::max<int64_t>(0, end - st.n_slots), end, st.n_slots, shapes, nullptr);
     }
     const auto status = cudaGetLastError();
@@ -458,7 +458,7 @@ bool conversation_kv_copy(const QsaState& from, const QsaState& to, const ModelG
 
 bool conversation_kv_restore(const ConversationKv& image, const QsaState& st, const ModelGeometry& g,
                              int64_t upto, bool index, std::string& error) {
-    // STRATA_PARK_VRAM_MIB: from the image's VRAM slot when it holds every part (no host buffer is read: no join)
+    // NOSTROMA_PARK_VRAM_MIB: from the image's VRAM slot when it holds every part (no host buffer is read: no join)
     const VramKvSlot* slot = vram_kv_find(image.dev_tag);
     if (slot == nullptr) conversation_park_join();
     if (!conversation_kv_validate(image, st, g, upto, index, error)) return false;
@@ -481,7 +481,7 @@ bool conversation_kv_restore(const ConversationKv& image, const QsaState& st, co
 
 bool conversation_kv_restore_prefix(const ConversationKv& image, const QsaState& st, const ModelGeometry& g,
                                     int64_t captured, int64_t upto, bool index, std::string& error) {
-    const VramKvSlot* slot = vram_kv_find(image.dev_tag);   // (STRATA_PARK_VRAM_MIB, as in conversation_kv_restore)
+    const VramKvSlot* slot = vram_kv_find(image.dev_tag);   // (NOSTROMA_PARK_VRAM_MIB, as in conversation_kv_restore)
     if (slot == nullptr) conversation_park_join();
     if (upto < 0 || upto > captured) {
         error = "conversation snapshot: prefix beyond the captured K/V";
@@ -495,7 +495,7 @@ bool conversation_kv_restore_prefix(const ConversationKv& image, const QsaState&
     for (size_t i = 0; i < src.size(); ++i)
         if (sizes[i] > src[i]->size()) { error = "conversation snapshot: prefix beyond the K/V payload"; return false; }
     const auto dst = pools(st);
-    // STRATA_PARK_VRAM_MIB: the prefix is the leading bytes of each part in the slot too
+    // NOSTROMA_PARK_VRAM_MIB: the prefix is the leading bytes of each part in the slot too
     std::array<size_t,5> off{};
     if (slot != nullptr && !vram_kv_locate(*slot, image.dev_tag, sizes, off)) { slot = nullptr; conversation_park_join(); }
     if (slot != nullptr) {
@@ -587,7 +587,7 @@ void conversation_park_join() {
     std::lock_guard<std::mutex> lk(a.mu);
     if (a.pending.valid()) {
         const cudaError_t e = a.pending.get();
-        if (e != cudaSuccess) std::fprintf(stderr, "strata: STRATA_PARK_ASYNC: a parked K/V copy failed (%s)\n", cudaGetErrorString(e));
+        if (e != cudaSuccess) std::fprintf(stderr, "nostroma: NOSTROMA_PARK_ASYNC: a parked K/V copy failed (%s)\n", cudaGetErrorString(e));
     }
 }
 
@@ -610,16 +610,16 @@ bool conversation_park_async_begin(size_t need) {
     if (!park_async_on() || need == 0) return false;
     int dev = 0;
     if (cudaGetDevice(&dev) != cudaSuccess) { (void) cudaGetLastError(); return false; }
-    // STRATA_PARK_VRAM_MIB: a slot of the whole K/V instead of the stage, while the budget allows - taken before the
+    // NOSTROMA_PARK_VRAM_MIB: a slot of the whole K/V instead of the stage, while the budget allows - taken before the
     // stage would be re-allocated, so a growing conversation's park pays no cudaFree (a device sync) when it gets one
     const char* why = "";
     a.slot = vram_kv_take(need, dev, why);
     a.slot_tag = a.slot != nullptr ? a.slot->tag : 0;
     if (park_trace() && park_vram_budget() != 0) {
         if (a.slot != nullptr)
-            std::fprintf(stderr, "strata parktrace: kv slot %zu MB tag %llu\n", need >> 20, (unsigned long long) a.slot_tag);
+            std::fprintf(stderr, "nostroma parktrace: kv slot %zu MB tag %llu\n", need >> 20, (unsigned long long) a.slot_tag);
         else
-            std::fprintf(stderr, "strata parktrace: kv slot: none (%s)\n", why);
+            std::fprintf(stderr, "nostroma parktrace: kv slot: none (%s)\n", why);
     }
     if (a.stage != nullptr && ((a.slot == nullptr && a.cap < need) || a.dev != dev)) {
         const int cur = dev;
@@ -641,10 +641,10 @@ bool conversation_park_async_begin(size_t need) {
         if (a.stream) (void) cudaStreamDestroy(a.stream);
         a.stream = nullptr; a.host[0] = a.host[1] = nullptr;
         (void) cudaGetLastError();
-        if (a.slot != nullptr) { vram_kv_release(*a.slot); a.slot = nullptr; a.slot_tag = 0; }   // (STRATA_PARK_VRAM_MIB)
+        if (a.slot != nullptr) { vram_kv_release(*a.slot); a.slot = nullptr; a.slot_tag = 0; }   // (NOSTROMA_PARK_VRAM_MIB)
         return false;
     }
-    if (a.slot != nullptr) {   // STRATA_PARK_VRAM_MIB: the slot stands in for the stage this park
+    if (a.slot != nullptr) {   // NOSTROMA_PARK_VRAM_MIB: the slot stands in for the stage this park
         a.active = true;
         return true;
     }
@@ -673,7 +673,7 @@ void conversation_park_async_abandon() {
     cudaStream_t s = nullptr;
     if (conversation_detail::private_stream(s) == cudaSuccess) (void) cudaStreamSynchronize(s);   // nothing reads the stage after
     (void) cudaGetLastError();
-    if (a.slot != nullptr) { vram_kv_release(*a.slot); a.slot = nullptr; a.slot_tag = 0; }   // (STRATA_PARK_VRAM_MIB)
+    if (a.slot != nullptr) { vram_kv_release(*a.slot); a.slot = nullptr; a.slot_tag = 0; }   // (NOSTROMA_PARK_VRAM_MIB)
 }
 
 bool conversation_park_async_launch(std::string& error) {
@@ -685,11 +685,11 @@ bool conversation_park_async_launch(std::string& error) {
     if (e == cudaSuccess) e = cudaStreamSynchronize(s);   // the device-to-device copies into the stage
     if (e != cudaSuccess) {
         a.items.clear();
-        if (a.slot != nullptr) { vram_kv_release(*a.slot); a.slot = nullptr; a.slot_tag = 0; }   // (STRATA_PARK_VRAM_MIB)
+        if (a.slot != nullptr) { vram_kv_release(*a.slot); a.slot = nullptr; a.slot_tag = 0; }   // (NOSTROMA_PARK_VRAM_MIB)
         error = std::string("conversation snapshot stage: ") + cudaGetErrorString(e);
         return false;
     }
-    // STRATA_PARK_VRAM_MIB: the host copies read the slot; it stays until the image and its K/V layers go (their tokens)
+    // NOSTROMA_PARK_VRAM_MIB: the host copies read the slot; it stays until the image and its K/V layers go (their tokens)
     const uint8_t* stage = a.slot != nullptr ? static_cast<const uint8_t*>(a.slot->p) : a.stage;
     a.slot = nullptr;
     if (a.items.empty()) return true;
@@ -769,8 +769,8 @@ void conversation_park_join_for(const SavedConversation& image) {
     size_t hits = 0;
     for (const auto& k : image.kv) hits += vram_kv_find(k.dev_tag) != nullptr ? 1 : 0;
     if (park_trace() && park_vram_budget() != 0)
-        std::fprintf(stderr, "strata parktrace: kv restore: %zu of %zu layers from the slot\n", hits, image.kv.size());
+        std::fprintf(stderr, "nostroma parktrace: kv restore: %zu of %zu layers from the slot\n", hits, image.kv.size());
     if (hits < image.kv.size()) conversation_park_join();
 }
 
-} // namespace strata::core
+} // namespace nostroma::core

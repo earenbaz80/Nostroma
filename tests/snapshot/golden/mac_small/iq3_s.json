@@ -26,7 +26,7 @@
     "<ROOT>/data"
    ],
    "config_file": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "args": [
      "--pack",
      "<ROOT>/data/packs/iq3_s",
@@ -65,7 +65,7 @@
     "args_written": "=args"
    },
    "engine": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "argv": [
      "--pack",
      "<ROOT>/data/packs/iq3_s",
@@ -125,7 +125,7 @@
     }
    ],
    "config_file": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "args": [
      "--pack",
      "<ROOT>/data/packs/iq3_s",
@@ -153,7 +153,7 @@
     "cwd": "<REPO>",
     "tokenizer": "<ROOT>/data/packs/iq3_s/tokenizer",
     "model_name": "qwen3.8-flash-next-iq3_s",
-    "log": "<ROOT>/install/strata-iq3_s.log",
+    "log": "<ROOT>/install/nostroma-iq3_s.log",
     "lib_dirs": [],
     "port": 18500,
     "backend": "metal",
@@ -168,7 +168,7 @@
     "engine_ready_s": 946
    },
    "engine": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "argv": [
      "--pack",
      "<ROOT>/data/packs/iq3_s",
@@ -228,7 +228,7 @@
     }
    ],
    "config_file": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "args": [
      "--pack",
      "<ROOT>/data/packs/iq3_s",
@@ -256,7 +256,7 @@
     "cwd": "<REPO>",
     "tokenizer": "<ROOT>/data/packs/iq3_s/tokenizer",
     "model_name": "qwen3.8-flash-next-iq3_s",
-    "log": "<ROOT>/install/strata-iq3_s.log",
+    "log": "<ROOT>/install/nostroma-iq3_s.log",
     "lib_dirs": [],
     "port": 18500,
     "backend": "metal",
@@ -272,7 +272,7 @@
     "engine_ready_s": 946
    },
    "engine": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "argv": [
      "--pack",
      "<ROOT>/data/packs/iq3_s",

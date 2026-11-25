@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Serial, fresh-prompt Strata benchmark — adapted for the Radeon Pro VII (gfx906), no container.
+"""Serial, fresh-prompt Nostroma benchmark — adapted for the Radeon Pro VII (gfx906), no container.
 
 Same harness as bench/results/2026-10-04-community-mi50/benchmark_mi50.py (itself
 bench/results/2026-09-30-community-rtx-5090/benchmark.py); the only changes are the
 default paths and port: the engine and the pack sit in a normal checkout on this
 host, not in a container, and the server listens on 8080 without an API key.
-Runs on the HOST (imports strata_tokenizer and serve.frontend from --root).
+Runs on the HOST (imports nostroma_tokenizer and serve.frontend from --root).
 """
 import argparse
 import hashlib
@@ -19,18 +19,18 @@ from pathlib import Path
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--root", type=Path, default=Path("/home/user/Strata"))
-    parser.add_argument("--pack", type=Path, default=Path("/home/user/Strata-data/packs/iq2_xs"))
+    parser.add_argument("--root", type=Path, default=Path("/home/user/Nostroma"))
+    parser.add_argument("--pack", type=Path, default=Path("/home/user/Nostroma-data/packs/iq2_xs"))
     parser.add_argument("--url", default="http://127.0.0.1:8080")
     parser.add_argument("--api-key", default="")
     parser.add_argument("--out", type=Path,
-                        default=Path("/home/user/Strata/bench/results/2026-10-09-community-radeon-pro-vii-16gb"))
+                        default=Path("/home/user/Nostroma/bench/results/2026-10-09-community-radeon-pro-vii-16gb"))
     parser.add_argument("--targets", default="4096,32768")
     parser.add_argument("--runs", type=int, default=3)
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     sys.path[:0] = [str(args.root), str(args.root / "tools")]
-    from strata_tokenizer import Tokenizer
+    from nostroma_tokenizer import Tokenizer
     from serve.frontend import ChatTemplate, openai_to_messages
 
     auth = {"Content-Type": "application/json"}
@@ -55,7 +55,7 @@ def main():
     rows = []
 
     def request(content, maximum=256):
-        return {"model": "strata", "messages": [{"role": "user", "content": content}],
+        return {"model": "nostroma", "messages": [{"role": "user", "content": content}],
                 "temperature": 0, "reasoning_effort": "none", "max_tokens": maximum,
                 "stream": True, "stream_options": {"include_usage": True}}
 

@@ -16,8 +16,8 @@
  "engine_prompt_tps": 2871.1,
  "engine_decode_tps": 85.9,
  "log_lines": [
-  "strata serve: prompt 28314 tokens = 0 reused + 28314 read in 9862 ms (2871.1 tok/s), 256 generated in 2981 ms (85.9 tok/s), drafts accepted 143 of 193, 2 checkpoints",
-  "strata serve: decode expert cache hit rate: 100.0% (147360 hits / 147360 lookups)"
+  "nostroma serve: prompt 28314 tokens = 0 reused + 28314 read in 9862 ms (2871.1 tok/s), 256 generated in 2981 ms (85.9 tok/s), drafts accepted 143 of 193, 2 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 100.0% (147360 hits / 147360 lookups)"
  ],
  "answer_head": "Looking at the last file above, `docs/AMD_HIP_PERFORMANCE.md`, it documents the performance evidence and correctness limits for the experimental AMD HIP backend targeting gfx1100 (RX 7900 XTX). It records:\n\n- The exact build/runtime configuration used for the benchmark (env vars, CLI flags, model pa",
  "metrics_after": {

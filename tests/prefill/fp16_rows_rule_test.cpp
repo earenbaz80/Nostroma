@@ -1,9 +1,9 @@
-// fp16_rows_rule (include/strata/prefill/fp16_rows_rule.hpp): the tokens the FP16 expert path's buffers are sized for.  No GPU, no model.
+// fp16_rows_rule (include/nostroma/prefill/fp16_rows_rule.hpp): the tokens the FP16 expert path's buffers are sized for.  No GPU, no model.
 #include <cstdio>
 
-#include "strata/prefill/fp16_rows_rule.hpp"
+#include "nostroma/prefill/fp16_rows_rule.hpp"
 
-using strata::prefill::fp16_buf_tokens;
+using nostroma::prefill::fp16_buf_tokens;
 
 static int failed = 0;
 #define CHECK(x) do { if (!(x)) { std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #x); ++failed; } } while (0)
@@ -18,10 +18,10 @@ int main() {
     CHECK(fp16_buf_tokens(1023, true, floor) == 1023);
     CHECK(fp16_buf_tokens(512, true, floor) == 512);
     CHECK(fp16_buf_tokens(1, true, floor) == 1);
-    // a different floor (STRATA_PREFILL_STREAM_MIN, the CPU share's limit)
+    // a different floor (NOSTROMA_PREFILL_STREAM_MIN, the CPU share's limit)
     CHECK(fp16_buf_tokens(8192, true, 2048) == 2047);
     CHECK(fp16_buf_tokens(2000, true, 2048) == 2000);
-    // no fused layout (the Tesla P100: FP16 from the floor up; STRATA_PF_FUSED=0; a card the fused kernels do not cover): the full chunk at every size
+    // no fused layout (the Tesla P100: FP16 from the floor up; NOSTROMA_PF_FUSED=0; a card the fused kernels do not cover): the full chunk at every size
     CHECK(fp16_buf_tokens(8192, false, floor) == 8192);
     CHECK(fp16_buf_tokens(2048, false, floor) == 2048);
     CHECK(fp16_buf_tokens(1024, false, floor) == 1024);

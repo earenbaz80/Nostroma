@@ -67,7 +67,7 @@ test('a child that leads no group of its own is still ended, alone, as before', 
 });
 
 test('a custom command that runs out of time takes the programs it started with it', { skip: isWin && 'POSIX shell' }, async () => {
-  const marker = join(tmpdir(), `strata-cc-${process.pid}.pid`);
+  const marker = join(tmpdir(), `nostroma-cc-${process.pid}.pid`);
   rmSync(marker, { force: true });
   // The limit is far above what the shell needs to start and write its marker, so a slow machine cannot end the command before it did.
   const result = await runCommand({ command: `sleep 120 & echo $! > ${marker}; wait`, timeoutSec: 8 });
@@ -82,7 +82,7 @@ test('ending a child that never started leaves the caller and its process group 
   // A program that fails to start a child and ends it before the "error" event arrives, the way a Stop can meet a job whose Python is missing.
   // It leads a group of its own, so if the signal reaches its group it dies by SIGTERM and the test fails; this process is never in the line of fire.
   const body = `import { spawn } from 'node:child_process'; import { endTree, endTreeThenKill } from ${JSON.stringify(new URL('../server/process-tree.mjs', import.meta.url).href)};
-    const c = spawn('strata-no-such-program-xyz', [], { stdio: 'ignore' }); c.on('error', () => {}); endTree(c); endTreeThenKill(c, 10); setTimeout(() => console.log('survived'), 300);`;
+    const c = spawn('nostroma-no-such-program-xyz', [], { stdio: 'ignore' }); c.on('error', () => {}); endTree(c); endTreeThenKill(c, 10); setTimeout(() => console.log('survived'), 300);`;
   const child = spawn(process.execPath, ['--input-type=module', '-e', body], { detached: true, stdio: ['ignore', 'pipe', 'ignore'] });
   let out = ''; child.stdout.on('data', b => { out += b; });
   const code = await new Promise(resolve => child.on('close', (c, s) => resolve(s ?? c)));

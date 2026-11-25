@@ -144,15 +144,15 @@ class Rule(unittest.TestCase):
 
 class Config(unittest.TestCase):
     def base(self):
-        return {"exe": "engine/strata", "args": ["--pack", "p", "--native", "m.gguf", "--layer-split", "auto"], "cwd": "/x",
-                "tokenizer": "tok", "port": 8080, "model_name": "m", "log": "l.log", "gpu": [0, 1], "env": {"STRATA_X": "1"},
+        return {"exe": "engine/nostroma", "args": ["--pack", "p", "--native", "m.gguf", "--layer-split", "auto"], "cwd": "/x",
+                "tokenizer": "tok", "port": 8080, "model_name": "m", "log": "l.log", "gpu": [0, 1], "env": {"NOSTROMA_X": "1"},
                 "layer_split": "auto"}
 
     def test_split_config_keeps_the_front_end_and_the_fallback(self):
         d = decide()
-        cfg = S.split_config(self.base(), d, exe="/e/strata-split-2", native="/m/shard1.gguf", mtp_dir="/d/mtp/rt",
+        cfg = S.split_config(self.base(), d, exe="/e/nostroma-split-2", native="/m/shard1.gguf", mtp_dir="/d/mtp/rt",
                              draft_vocab="/d/draft_vocab_en.bin", context=131072, lanes=6, vision=True)
-        self.assertEqual(cfg["exe"], "/e/strata-split-2")
+        self.assertEqual(cfg["exe"], "/e/nostroma-split-2")
         self.assertEqual(cfg["tokenizer"], "tok")
         self.assertEqual(cfg["port"], 8080)
         self.assertEqual(cfg["gpu"], [0, 1])
@@ -160,10 +160,10 @@ class Config(unittest.TestCase):
         self.assertEqual(cfg["args"][cfg["args"].index("--batch") + 1], "6")
         self.assertEqual(cfg["env"]["FNX_ARENA"], "0")
         self.assertEqual(cfg["env"]["FNX_EXPERT_RAM_GIB"], "off")
-        self.assertEqual(cfg["env"]["STRATA_X"], "1")
+        self.assertEqual(cfg["env"]["NOSTROMA_X"], "1")
         self.assertNotIn("layer_split", cfg)
         fb = cfg["split_fallback"]
-        self.assertEqual(fb["exe"], "engine/strata")
+        self.assertEqual(fb["exe"], "engine/nostroma")
         self.assertEqual(fb["args"], self.base()["args"])
         self.assertEqual(fb["layer_split"], "auto")
         self.assertEqual(self.base()["args"], ["--pack", "p", "--native", "m.gguf", "--layer-split", "auto"])   # the base is not changed
@@ -179,11 +179,11 @@ class Apply(unittest.TestCase):
     def cfg(self, tmp):
         (Path(tmp) / "data").mkdir(exist_ok=True)
         (Path(tmp) / "data" / "draft_vocab_en.bin").write_bytes(b"x")
-        return {"exe": "component:strata-engine", "args": ["--pack", "p", "--native", "/m/a-00001-of-00004.gguf", "--mtp", "/d/mtp/rt",
+        return {"exe": "component:nostroma-engine", "args": ["--pack", "p", "--native", "/m/a-00001-of-00004.gguf", "--mtp", "/d/mtp/rt",
                                                            "--max-context", "131072", "--layer-split", "auto"],
                 "cwd": tmp, "tokenizer": "tok", "port": 8080, "gpu": [0, 1], "env": {}, "split_engine": True}
 
-    def run_apply(self, cfg, *, cards_=None, avail=80.0, model=None, exe="/e/strata-split-2", **kw):
+    def run_apply(self, cfg, *, cards_=None, avail=80.0, model=None, exe="/e/nostroma-split-2", **kw):
         return S.apply_to_config(cfg, exe_for_cards=lambda n, cc=None: exe, system=kw.pop("system", "linux"), probe=lambda idx: cards_ or cards(),
                                  ram=lambda: (125.0, avail), scan=lambda path: model or udq4(), **kw)
 
@@ -194,10 +194,10 @@ class Apply(unittest.TestCase):
             cfg = self.cfg(tmp)
             d = self.run_apply(cfg)
             self.assertTrue(d.use_split, d.reasons)
-            self.assertEqual(cfg["exe"], "/e/strata-split-2")
+            self.assertEqual(cfg["exe"], "/e/nostroma-split-2")
             self.assertEqual(cfg["args"][cfg["args"].index("--native") + 1], "/m/a-00001-of-00004.gguf")
             self.assertEqual(cfg["args"][cfg["args"].index("--max-context") + 1], "131072")
-            self.assertEqual(cfg["split_fallback"]["exe"], "component:strata-engine")
+            self.assertEqual(cfg["split_fallback"]["exe"], "component:nostroma-engine")
             self.assertEqual(cfg["tokenizer"], "tok")
 
     def test_every_refusal_leaves_the_config_alone(self):
@@ -230,10 +230,10 @@ class Apply(unittest.TestCase):
         self.assertEqual(S.mode({}, {}), "auto")
         for raw, want in ((True, "on"), (False, "off"), ("on", "on"), ("off", "off"), ("auto", "auto"), ("OFF", "off"), ("nonsense", "auto"), (None, "auto")):
             self.assertEqual(S.mode({"split_engine": raw}, {}), want, raw)
-        self.assertEqual(S.mode({"split_engine": "on"}, {"STRATA_SPLIT_ENGINE": "0"}), "off")     # the environment wins (testers)
-        self.assertEqual(S.mode({"split_engine": "off"}, {"STRATA_SPLIT_ENGINE": "1"}), "on")
-        self.assertEqual(S.mode({}, {"STRATA_SPLIT_ENGINE": "off"}), "off")
-        self.assertEqual(S.mode({"split_engine": "off"}, {"STRATA_SPLIT_ENGINE": ""}), "off")      # an empty variable is no variable
+        self.assertEqual(S.mode({"split_engine": "on"}, {"NOSTROMA_SPLIT_ENGINE": "0"}), "off")     # the environment wins (testers)
+        self.assertEqual(S.mode({"split_engine": "off"}, {"NOSTROMA_SPLIT_ENGINE": "1"}), "on")
+        self.assertEqual(S.mode({}, {"NOSTROMA_SPLIT_ENGINE": "off"}), "off")
+        self.assertEqual(S.mode({"split_engine": "off"}, {"NOSTROMA_SPLIT_ENGINE": ""}), "off")      # an empty variable is no variable
         self.assertTrue(S.wanted({}, {}))
         self.assertFalse(S.wanted({"split_engine": "off"}, {}))
 
@@ -247,7 +247,7 @@ class Apply(unittest.TestCase):
             d = self.run_apply(cfg)
             self.assertTrue(d.use_split, d.reasons)
             self.assertFalse(d.quiet)
-            self.assertEqual(cfg["exe"], "/e/strata-split-2")
+            self.assertEqual(cfg["exe"], "/e/nostroma-split-2")
             for kw in (dict(cards_=cards(1)), dict(avail=20.0), dict(exe=None), dict(system="windows"), dict(model=udq4(routed_types={"Q6_K": 48})),
                        dict(cards_=cards(3)), dict(cards_=cards(2, cc=89))):
                 cfg = self.cfg(tmp)
@@ -303,7 +303,7 @@ class Apply(unittest.TestCase):
         """A split engine program that carries (or lacks) the text of `--draft dflash2`, and a data folder with (or without) the DFlash2 pack."""
         from nostroma_control import drafting
 
-        exe = Path(tmp) / "strata-split-2"
+        exe = Path(tmp) / "nostroma-split-2"
         exe.write_bytes(b"\0--draft dflash2 needs --native, --draft-model PACK and --draft-vocab FILE\0" if taking else b"\0--native and --mtp are required\0")
         data = Path(tmp) / "models"
         if pack:
@@ -371,7 +371,7 @@ class Apply(unittest.TestCase):
                 self.assertIn(why, d.reasons[0], kw)
                 self.assertEqual(cfg, before, "a refusal leaves the config alone: the layer split starts with DFlash2")
         self.assertFalse(S.exe_takes_dflash2(None))
-        self.assertFalse(S.exe_takes_dflash2("/no/such/strata-split-2"))
+        self.assertFalse(S.exe_takes_dflash2("/no/such/nostroma-split-2"))
 
     def test_expected_follows_the_same_rule(self):
         for chosen, mode, want in (("dflash2", "on", True), ("dflash2", "auto", False), ("dflash2", None, False), ("mtp", "on", True), ("auto", "on", True), ("off", "on", False)):
@@ -419,7 +419,7 @@ class Apply(unittest.TestCase):
 
         def exe_for(n, cc=None):
             seen.append((n, cc))
-            return "/e/strata-split-2-sm120"
+            return "/e/nostroma-split-2-sm120"
 
         with tempfile.TemporaryDirectory() as tmp:
             cfg = self.cfg(tmp)
@@ -427,7 +427,7 @@ class Apply(unittest.TestCase):
                                   ram=lambda: (125.0, 80.0), scan=lambda path: udq4())
             self.assertTrue(d.use_split, d.reasons)
             self.assertEqual(seen, [(2, 120)])
-            self.assertEqual(cfg["exe"], "/e/strata-split-2-sm120")
+            self.assertEqual(cfg["exe"], "/e/nostroma-split-2-sm120")
 
 
 class AmdDefault(unittest.TestCase):
@@ -448,7 +448,7 @@ class AmdDefault(unittest.TestCase):
         def exe_for(n, cc=None, arch=None):
             if seen is not None:
                 seen.append((n, cc, arch))
-            return f"/e/strata-split-{n}-{arch}" if arch else None
+            return f"/e/nostroma-split-{n}-{arch}" if arch else None
 
         return S.apply_to_config(cfg, exe_for_cards=exe_for, system="linux", probe=lambda i: cards(4, **self.R9700), ram=lambda: (125.0, 80.0),
                                  scan=lambda path: udq4(routed_bytes=int(71.7 * GIB)), **kw)
@@ -464,7 +464,7 @@ class AmdDefault(unittest.TestCase):
             d = self.run_amd(cfg, seen)
             self.assertTrue(d.use_split, d.reasons)
             self.assertEqual(seen, [(4, 0, "gfx1201")])
-            self.assertEqual(cfg["exe"], "/e/strata-split-4-gfx1201")
+            self.assertEqual(cfg["exe"], "/e/nostroma-split-4-gfx1201")
 
     def test_amd_default_lanes_are_eight_and_a_number_the_person_chose_stays(self):
         import tempfile
@@ -490,11 +490,11 @@ class AmdDefault(unittest.TestCase):
             cfg = self.amd(tmp)
             del cfg["split_engine"]
             before = dict(cfg)
-            d = S.apply_to_config(cfg, exe_for_cards=lambda n_, cc=None, arch=None: "/e/strata-split-4-amd", system="linux", probe=lambda i: cards(4, **self.R9700),
+            d = S.apply_to_config(cfg, exe_for_cards=lambda n_, cc=None, arch=None: "/e/nostroma-split-4-amd", system="linux", probe=lambda i: cards(4, **self.R9700),
                                   ram=lambda: (125.0, 80.0), scan=lambda path: udq4(**iq3s))
             self.assertTrue(d.use_split, d.reasons)
             cfg = self.amd(tmp, split_engine="on")
-            d = S.apply_to_config(cfg, exe_for_cards=lambda n_, cc=None, arch=None: "/e/strata-split-4-amd", system="linux", probe=lambda i: cards(4, **self.R9700),
+            d = S.apply_to_config(cfg, exe_for_cards=lambda n_, cc=None, arch=None: "/e/nostroma-split-4-amd", system="linux", probe=lambda i: cards(4, **self.R9700),
                                   ram=lambda: (125.0, 80.0), scan=lambda path: udq4(**iq3s))
             self.assertTrue(d.use_split, d.reasons)
 
@@ -507,16 +507,16 @@ class AmdDefault(unittest.TestCase):
                 cfg = self.amd(tmp)
                 del cfg["split_engine"]
                 before = dict(cfg)
-                d = S.apply_to_config(cfg, exe_for_cards=lambda n_, cc=None, arch=None: f"/e/strata-split-{n_}-amd", system="linux",
+                d = S.apply_to_config(cfg, exe_for_cards=lambda n_, cc=None, arch=None: f"/e/nostroma-split-{n_}-amd", system="linux",
                                       probe=lambda i: cards(n, **self.R9700), ram=lambda: (125.0, 80.0), scan=lambda path: udq4(routed_bytes=int(30 * GIB)))
                 self.assertFalse(d.use_split)
                 self.assertTrue(d.quiet)
                 self.assertEqual(cfg, before)
                 cfg = self.amd(tmp, split_engine="on")
-                d = S.apply_to_config(cfg, exe_for_cards=lambda n_, cc=None, arch=None: f"/e/strata-split-{n_}-amd", system="linux",
+                d = S.apply_to_config(cfg, exe_for_cards=lambda n_, cc=None, arch=None: f"/e/nostroma-split-{n_}-amd", system="linux",
                                       probe=lambda i: cards(n, **self.R9700), ram=lambda: (125.0, 80.0), scan=lambda path: udq4(routed_bytes=int(30 * GIB)))
                 self.assertTrue(d.use_split, (n, d.reasons))
-                self.assertEqual(cfg["exe"], f"/e/strata-split-{n}-amd")
+                self.assertEqual(cfg["exe"], f"/e/nostroma-split-{n}-amd")
 
     def test_the_card_count_constant_limits_auto_but_not_on(self):
         import tempfile
@@ -528,7 +528,7 @@ class AmdDefault(unittest.TestCase):
                 for n, auto_runs in ((3, False), (4, True)):
                     cfg = self.amd(tmp)
                     del cfg["split_engine"]
-                    d = S.apply_to_config(cfg, exe_for_cards=lambda n_, cc=None, arch=None: f"/e/strata-split-{n_}-amd", system="linux",
+                    d = S.apply_to_config(cfg, exe_for_cards=lambda n_, cc=None, arch=None: f"/e/nostroma-split-{n_}-amd", system="linux",
                                           probe=lambda i: cards(n, **{**self.R9700}), ram=lambda: (125.0, 80.0),
                                           scan=lambda path: udq4(routed_bytes=int(40 * GIB)))
                     self.assertEqual(d.use_split, auto_runs, (n, d.reasons))
@@ -553,12 +553,12 @@ class AmdDefault(unittest.TestCase):
                 elif how == "preset":
                     cfg["split_engine"] = False
                 else:
-                    os.environ["STRATA_SPLIT_ENGINE"] = "0"
+                    os.environ["NOSTROMA_SPLIT_ENGINE"] = "0"
                 before = dict(cfg)
                 try:
                     d = self.run_amd(cfg)
                 finally:
-                    os.environ.pop("STRATA_SPLIT_ENGINE", None)
+                    os.environ.pop("NOSTROMA_SPLIT_ENGINE", None)
                 self.assertFalse(d.use_split)
                 self.assertTrue(d.quiet)
                 self.assertEqual(cfg, before)                              # the layer split's config, untouched
@@ -573,7 +573,7 @@ class AmdDefault(unittest.TestCase):
 
                 def exe_for(n, cc=None, arch_=None):
                     seen.append((n, arch_))
-                    return f"/e/strata-split-{n}-amd"
+                    return f"/e/nostroma-split-{n}-amd"
 
                 d = S.apply_to_config(cfg, exe_for_cards=exe_for, system="linux", probe=lambda i: cards(4, **{**self.R9700, "arch": arch}),
                                       ram=lambda: (125.0, 80.0), scan=lambda path: udq4())
@@ -581,7 +581,7 @@ class AmdDefault(unittest.TestCase):
                 self.assertEqual(d.untested, [f"card architecture {arch}"])
                 self.assertIn("not tested", d.line)
                 self.assertEqual(seen, [(4, arch)])
-                self.assertEqual(cfg["exe"], "/e/strata-split-4-amd")
+                self.assertEqual(cfg["exe"], "/e/nostroma-split-4-amd")
                 # the same card in auto: the layer split, silently
                 cfg = self.amd(tmp)
                 del cfg["split_engine"]
@@ -628,9 +628,9 @@ class AmdDefault(unittest.TestCase):
                 self.assertEqual(d.cards, 4)
                 self.assertEqual(d.untested, [])                           # four R9700 have been run
                 self.assertEqual(seen, [(4, 0, "gfx1201")])
-                self.assertEqual(cfg["exe"], "/e/strata-split-4-gfx1201")
+                self.assertEqual(cfg["exe"], "/e/nostroma-split-4-gfx1201")
                 self.assertEqual(cfg["drafting"], "mtp")
-                self.assertEqual(cfg["split_fallback"]["exe"], "component:strata-engine")
+                self.assertEqual(cfg["split_fallback"]["exe"], "component:nostroma-engine")
 
     def test_on_without_the_gfx1201_binary_says_so_and_off_is_off(self):
         import tempfile
@@ -641,7 +641,7 @@ class AmdDefault(unittest.TestCase):
                                   ram=lambda: (125.0, 80.0), scan=lambda path: udq4())
             self.assertFalse(d.use_split)
             self.assertFalse(d.quiet)
-            self.assertIn("strata-split-4-gfx1201", d.line)
+            self.assertIn("nostroma-split-4-gfx1201", d.line)
             cfg = self.amd(tmp, split_engine="off")
             before = dict(cfg)
             self.assertFalse(self.run_amd(cfg).use_split)
@@ -700,7 +700,7 @@ class HipArchSources(unittest.TestCase):
             self.assertIn(arch, cmake)
         build = (ROOT / "packaging" / "build_split_hip.sh").read_text(encoding="utf-8")
         self.assertIn("gfx1201;gfx1200;gfx11-generic", build)
-        self.assertIn("strata-split-$n-amd", build)
+        self.assertIn("nostroma-split-$n-amd", build)
         self.assertRegex(build, r"NEEDED\.\*rccl")                          # RCCL is dlopen'ed, never linked
         model = self.text("src/model.cpp")
         for arch in ("gfx1201", "gfx1200", "gfx1100", "gfx1101", "gfx1102", "gfx1103"):
@@ -780,7 +780,7 @@ class NoPeerAccess(unittest.TestCase):
 
 
 class LaunchManifest(unittest.TestCase):
-    """P0.1 (lite): STRATA_MANIFEST=<file> records the engine choice and why in <file>.launch.json. Off unless set; the same launch gives the same text;
+    """P0.1 (lite): NOSTROMA_MANIFEST=<file> records the engine choice and why in <file>.launch.json. Off unless set; the same launch gives the same text;
     the AMD auto rule is recorded condition by condition, so a two- or three-card setup is not read as the four-card one."""
 
     R9700 = dict(name="AMD Radeon AI PRO R9700", vram_mib=32624, cc=0, vendor="amd", arch="gfx1201")
@@ -800,7 +800,7 @@ class LaunchManifest(unittest.TestCase):
         d = self.decided(4)
         with tempfile.TemporaryDirectory() as tmp:
             self.assertFalse(S.record_launch_manifest(d, "auto", environ={}))
-            self.assertFalse(S.record_launch_manifest(d, "auto", environ={"STRATA_MANIFEST": ""}))
+            self.assertFalse(S.record_launch_manifest(d, "auto", environ={"NOSTROMA_MANIFEST": ""}))
             self.assertEqual(list(Path(tmp).iterdir()), [])
 
     def test_four_gfx1201_with_the_iq3_s_set_is_recognised(self):
@@ -811,7 +811,7 @@ class LaunchManifest(unittest.TestCase):
         self.assertTrue(d.use_split, d.reasons)
         with tempfile.TemporaryDirectory() as tmp:
             target = str(Path(tmp) / "m.json")
-            self.assertTrue(S.record_launch_manifest(d, "auto", environ={"STRATA_MANIFEST": target}))
+            self.assertTrue(S.record_launch_manifest(d, "auto", environ={"NOSTROMA_MANIFEST": target}))
             doc = json.loads(Path(target + ".launch.json").read_text(encoding="utf-8"))
         launch = doc["launch"]
         self.assertEqual((launch["engine"], launch["cards"], launch["card_arch"]), ("all-cards-split", 4, "gfx1201"))
@@ -839,13 +839,13 @@ class LaunchManifest(unittest.TestCase):
             texts = []
             for name in ("a", "b"):
                 target = str(Path(tmp) / name)
-                S.record_launch_manifest(self.decided(4), "auto", environ={"STRATA_MANIFEST": target})
+                S.record_launch_manifest(self.decided(4), "auto", environ={"NOSTROMA_MANIFEST": target})
                 texts.append(Path(target + ".launch.json").read_text(encoding="utf-8"))
             self.assertEqual(texts[0], texts[1])
             self.assertFalse(list(Path(tmp).glob("*.tmp")))
 
     def test_an_unwritable_target_never_stops_a_start(self):
-        self.assertFalse(S.record_launch_manifest(self.decided(4), "auto", environ={"STRATA_MANIFEST": "/no/such/dir/m.json"}))
+        self.assertFalse(S.record_launch_manifest(self.decided(4), "auto", environ={"NOSTROMA_MANIFEST": "/no/such/dir/m.json"}))
 
 
 if __name__ == "__main__":

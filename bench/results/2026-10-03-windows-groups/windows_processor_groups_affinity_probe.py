@@ -196,7 +196,7 @@ def main():
                       "result": legacy_test(1, reps[1], True)})
     result = {
         "probe": "windows_processor_groups_affinity_probe.py",
-        "safety": "Separate helper process. Affinity modified only on its own short-lived Python test threads; no Strata/model/server/process affinity was queried or changed.",
+        "safety": "Separate helper process. Affinity modified only on its own short-lived Python test threads; no Nostroma/model/server/process affinity was queried or changed.",
         "timestamp_local": time.strftime("%Y-%m-%d %H:%M:%S %Z"),
         "os": {"platform": platform.platform(), "version": platform.version(), "python": sys.version,
               "pointer_bits": C.sizeof(C.c_void_p) * 8, "processor_count": os.cpu_count()},

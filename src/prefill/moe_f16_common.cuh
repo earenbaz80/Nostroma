@@ -1,4 +1,4 @@
-// src/prefill/moe_f16_common.cuh - the parts the gfx11 F16 prompt-expert kernels share (STRATA_PF_F16=1): the
+// src/prefill/moe_f16_common.cuh - the parts the gfx11 F16 prompt-expert kernels share (NOSTROMA_PF_F16=1): the
 // switch, the work item's width, the int8 activations staged as F16, the WMMA over the token tiles and the two
 // epilogues.  moe_f16_kq.cu (the K-quant kernels) and moe_fused_iq.cu (the other native formats) include it.
 //
@@ -28,22 +28,22 @@
 #pragma once
 
 #include <cstdint>
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 #include <cstdlib>
 
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
 
-#include "strata/prefill/moe_fused.hpp"
+#include "nostroma/prefill/moe_fused.hpp"
 
 #if defined(__HIPCC__) && (defined(__gfx1100__) || defined(__gfx1101__) || defined(__gfx1102__) || \
                            defined(__gfx1150__) || defined(__gfx1151__))
-#define STRATA_F16_DEVICE 1
+#define NOSTROMA_F16_DEVICE 1
 #else
-#define STRATA_F16_DEVICE 0
+#define NOSTROMA_F16_DEVICE 0
 #endif
 
-namespace strata::prefill::fused::f16 {
+namespace nostroma::prefill::fused::f16 {
 
 constexpr int AB = 80;           // activation / H bytes per 64 values: 64 codes, {d0, d1}, {sum0, sum1}
 constexpr int THREADS = 256;
@@ -53,10 +53,10 @@ static_assert(kMoeFF % 64 == 0 && kMoeEmbd % ROWS == 0, "the F16 expert kernels:
 constexpr int GU_NFB = kMoeFF / 64, D_NFB = kMoeEmbd / ROWS;   // work items per tile: 64 features, 128 output rows
 constexpr int GU_ACT_LD = kMoeEmbd / 64 * AB, H_LD = kMoeFF / 64 * AB;   // bytes per activation / H row
 
-/// STRATA_PF_F16=1 (on top of STRATA_PF_FUSED=1): the covered formats take the F16 kernels on gfx11.
+/// NOSTROMA_PF_F16=1 (on top of NOSTROMA_PF_FUSED=1): the covered formats take the F16 kernels on gfx11.
 inline bool requested() {
     static const bool on = [] {
-        const char* v = strata::env("NOSTROMA_PF_F16");
+        const char* v = nostroma::env("NOSTROMA_PF_F16");
         return v != nullptr && v[0] == '1';
     }();
     return on;
@@ -65,10 +65,10 @@ inline bool requested() {
 /// Two tiles a work item when an expert has a tile's rows or more on average.  gfx1151, Q4_K, top 10 over 512
 /// experts, one 128-expert launch, ms (64 / 128): 1024 tokens 1.22 / 1.28, 2048 1.51 / 1.64, 4096 2.73 / 2.48, 8192
 /// 4.76 / 4.59, 16384 9.19 / 8.46; Q5_1 down 2048 1.02 / 1.04, 4096 1.61 / 1.48, 16384 5.29 / 4.83.
-/// STRATA_PF_F16_BN=64|128 forces one.
+/// NOSTROMA_PF_F16_BN=64|128 forces one.
 inline int pick_bn(int64_t n, int n_expert) {
     static const int forced = [] {
-        const char* v = strata::env("NOSTROMA_PF_F16_BN");
+        const char* v = nostroma::env("NOSTROMA_PF_F16_BN");
         const int t = v ? std::atoi(v) : 0;
         return t == kTileRows || t == 2 * kTileRows ? t : 0;
     }();
@@ -80,7 +80,7 @@ using v16h = __attribute__((__vector_size__(16 * sizeof(_Float16)))) _Float16;
 using v8f = __attribute__((__vector_size__(8 * sizeof(float)))) float;
 
 __device__ __forceinline__ v8f wmma_f16(v16h a, v16h b, v8f c) {
-#if STRATA_F16_DEVICE
+#if NOSTROMA_F16_DEVICE
     return __builtin_amdgcn_wmma_f32_16x16x16_f16_w32(a, b, c);
 #else
     __builtin_trap();
@@ -229,7 +229,7 @@ __device__ __forceinline__ void gu_epilogue(const v8f (&acc)[BN / 16], uint8_t* 
 
 /// Down epilogue (`lds` at least D_EPI_BYTES, free): each wave's 16 x 16 tile through LDS ([token][row]), then 16
 /// consecutive FP32 rows per routed row into dm [routed row][kMoeEmbd].
-/// D16 (STRATA_PF_DM16): the rows go out as FP16 (saturated at +-65504, kMoeEmbd halves a row, two neighbouring columns in one 4-byte store from the even lane)
+/// D16 (NOSTROMA_PF_DM16): the rows go out as FP16 (saturated at +-65504, kMoeEmbd halves a row, two neighbouring columns in one 4-byte store from the even lane)
 /// for moe_combine16 - half the bytes written here and read there.
 template <int BN, bool D16 = false>
 __device__ __forceinline__ void down_epilogue(const v8f (&acc)[BN / 16], uint8_t* lds, int tid, int live_tiles, int nrows, int row0,
@@ -260,4 +260,4 @@ __device__ __forceinline__ void down_epilogue(const v8f (&acc)[BN / 16], uint8_t
     }
 }
 
-}  // namespace strata::prefill::fused::f16
+}  // namespace nostroma::prefill::fused::f16

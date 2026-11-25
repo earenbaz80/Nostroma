@@ -1,18 +1,18 @@
 // src/core/expert_cache.cpp - R4's slot storage and residency table.  Read the header first.
-#include "strata/core/expert_cache.hpp"
-#include "strata/env.hpp"
-#include "strata/core/expert_cache_refuse.hpp"
+#include "nostroma/core/expert_cache.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/core/expert_cache_refuse.hpp"
 
 // #533's segmented cache uses CUDA's virtual memory management (cuMem*): not on HIP, neither the RDNA backend nor
-// the gfx906 compat build (PR #638), which compiles this file as HIP without STRATA_USE_HIP
-#if defined(STRATA_USE_HIP) || defined(STRATA_HIP_GFX906) || defined(STRATA_GPU_METAL)
-#define STRATA_EC_NO_VMM 1
+// the gfx906 compat build (PR #638), which compiles this file as HIP without NOSTROMA_USE_HIP
+#if defined(NOSTROMA_USE_HIP) || defined(NOSTROMA_HIP_GFX906) || defined(NOSTROMA_GPU_METAL)
+#define NOSTROMA_EC_NO_VMM 1
 #endif
 
 #include <thread>
 #include <mutex>
 #include <cuda_runtime.h>
-#if !defined(STRATA_EC_NO_VMM)
+#if !defined(NOSTROMA_EC_NO_VMM)
 #include <cuda.h>   // #533: the virtual memory management types (the functions come through the runtime's entry points)
 #endif
 
@@ -25,7 +25,7 @@
 #include <cstring>
 
 // (not in a SYCL build: its CUDA names are a compatibility layer without the PCI ids NVML is matched by)
-#if defined(_WIN32) && !defined(STRATA_EC_NO_VMM) && !defined(SYCL_LANGUAGE_VERSION)
+#if defined(_WIN32) && !defined(NOSTROMA_EC_NO_VMM) && !defined(SYCL_LANGUAGE_VERSION)
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -33,15 +33,15 @@
 #define NOMINMAX
 #endif
 #include <windows.h>
-#define STRATA_EC_NVML_FREE 1
+#define NOSTROMA_EC_NVML_FREE 1
 #endif
 
-namespace strata::core {
+namespace nostroma::core {
 
-#if defined(STRATA_EC_NVML_FREE)
+#if defined(NOSTROMA_EC_NVML_FREE)
 namespace {
 
-// STRATA_VRAM_FREE=device (opt-in, Windows + NVIDIA).  Under WDDM cudaMemGetInfo answers for THIS process: memory
+// NOSTROMA_VRAM_FREE=device (opt-in, Windows + NVIDIA).  Under WDDM cudaMemGetInfo answers for THIS process: memory
 // another process holds on the card (the image encoder, a browser, another engine) is not in its free figure.
 // Measured on an RTX 5090, driver 610.88: with 6 GiB written by another process, cudaMemGetInfo in a second process
 // still read 30,994 MiB free where NVML read 24,348.  NVML (nvml.dll, installed with every driver) counts the whole
@@ -84,10 +84,10 @@ bool nvml_device_free(size_t& out) {
 #endif
 
 namespace {
-// STRATA_EXPERT_NIBBLE: a write into a sealed cache (see ExpertCache::seal).  Says which call and stops: the slots hold
+// NOSTROMA_EXPERT_NIBBLE: a write into a sealed cache (see ExpertCache::seal).  Says which call and stops: the slots hold
 // 4-bit codes the GGUF bytes would overwrite, or a GGUF expert where a 4-bit one is expected - a wrong reply, not an error.
 [[noreturn]] void sealed_write(const char* call, int32_t slot) {
-    std::fprintf(stderr, "strata: STRATA_EXPERT_NIBBLE: ExpertCache::%s(slot %d) after the cache was sealed - a GGUF "
+    std::fprintf(stderr, "nostroma: NOSTROMA_EXPERT_NIBBLE: ExpertCache::%s(slot %d) after the cache was sealed - a GGUF "
                          "blob would be written into the 4-bit expert slots: stopping\n", call, (int) slot);
     std::fflush(stderr);
     std::abort();
@@ -109,11 +109,11 @@ size_t device_free_bytes() {
         if (said.exchange((int) e) != (int) e)
             // the error's text and number: cudaGetErrorName is not in every build's runtime layer (the Mac's
             // metal_compat, the HIP shim)
-            std::fprintf(stderr, "strata: the free graphics memory could not be read (%s, error %d); the expert cache "
+            std::fprintf(stderr, "nostroma: the free graphics memory could not be read (%s, error %d); the expert cache "
                                  "counts it as none free, so it may start with no GPU slots. If this repeats, restart "
                                  "the computer.\n", cudaGetErrorString(e), (int) e);
     }
-#if defined(__linux__) && !defined(STRATA_HIP_GFX906)   // (the gfx906 compat layer has no cudaDevAttrIntegrated; that GPU is discrete)
+#if defined(__linux__) && !defined(NOSTROMA_HIP_GFX906)   // (the gfx906 compat layer has no cudaDevAttrIntegrated; that GPU is discrete)
     // per device: a box can mix an integrated GPU (an APU) with a discrete one, and the answer is the CURRENT device's
     static std::atomic<int> uma_cache[64];   // 0 unknown, 1 integrated (unified memory), 2 discrete
     bool unified_memory = false;
@@ -135,14 +135,14 @@ size_t device_free_bytes() {
             while (std::fgets(line, sizeof line, m))
                 if (std::sscanf(line, "MemAvailable: %llu kB", &kb) == 1) break;
             std::fclose(m);
-            // STRATA_UMA_HEADROOM_GIB: a whole number of GiB, 0..1024; anything else keeps the default 6 (said once)
+            // NOSTROMA_UMA_HEADROOM_GIB: a whole number of GiB, 0..1024; anything else keeps the default 6 (said once)
             static const long gib = [] {
-                const char* h = strata::env("NOSTROMA_UMA_HEADROOM_GIB");
+                const char* h = nostroma::env("NOSTROMA_UMA_HEADROOM_GIB");
                 if (h == nullptr) return 6L;
                 char* end = nullptr;
                 const long v = std::strtol(h, &end, 10);
                 if (end != h && *end == '\0' && v >= 0 && v <= 1024) return v;
-                std::fprintf(stderr, "strata: STRATA_UMA_HEADROOM_GIB=%s is not a whole number of GiB (0-1024): using 6\n", h);
+                std::fprintf(stderr, "nostroma: NOSTROMA_UMA_HEADROOM_GIB=%s is not a whole number of GiB (0-1024): using 6\n", h);
                 return 6L;
             }();
             const unsigned long long head = (unsigned long long) gib << 30;
@@ -151,9 +151,9 @@ size_t device_free_bytes() {
         }
     }
 #endif
-#if defined(STRATA_EC_NVML_FREE)
+#if defined(NOSTROMA_EC_NVML_FREE)
     static const bool device_wide = [] {
-        const char* v = strata::env("NOSTROMA_VRAM_FREE");
+        const char* v = nostroma::env("NOSTROMA_VRAM_FREE");
         return v != nullptr && std::strcmp(v, "device") == 0;
     }();
     if (device_wide) {
@@ -162,11 +162,11 @@ size_t device_free_bytes() {
         static std::atomic<bool> said{false};
         if (!said.exchange(true)) {
             if (got)
-                std::fprintf(stderr, "strata generate: STRATA_VRAM_FREE=device: free VRAM is read for the whole card "
+                std::fprintf(stderr, "nostroma generate: NOSTROMA_VRAM_FREE=device: free VRAM is read for the whole card "
                                      "(NVML: %lld MiB now; CUDA's figure for this process alone: %lld MiB)\n",
                              (long long) (nvml_b >> 20), (long long) (free_b >> 20));
             else
-                std::fprintf(stderr, "strata generate: STRATA_VRAM_FREE=device: NVML did not answer (nvml.dll); free "
+                std::fprintf(stderr, "nostroma generate: NOSTROMA_VRAM_FREE=device: NVML did not answer (nvml.dll); free "
                                      "VRAM stays CUDA's figure for this process\n");
         }
         if (got) free_b = std::min(free_b, nvml_b);
@@ -317,14 +317,14 @@ bool write_expert_profile(const std::string& path, int64_t n_layers, int64_t n_e
 
 ExpertCache::~ExpertCache() { close(); }
 
-namespace ec_test {   // strata/core/expert_cache_refuse.hpp: tests only, null in the engine
+namespace ec_test {   // nostroma/core/expert_cache_refuse.hpp: tests only, null in the engine
 bool (*refuse_segment_call)(const char* call, int64_t seg) = nullptr;
 }  // namespace ec_test
 
 // ---- #533: the segmented arena (--vram-elastic).  The driver API's virtual memory functions, looked up through the
 // runtime (no link against the driver library): one address range for the whole arena, backed by physical segments,
 // and the tail's segments unmapped / mapped again later.  Nothing here runs unless a segment size was set.
-#if !defined(STRATA_EC_NO_VMM)
+#if !defined(NOSTROMA_EC_NO_VMM)
 namespace {
 struct Vmm {
     CUresult (CUDAAPI* device_get)(CUdevice*, int) = nullptr;
@@ -402,7 +402,7 @@ bool map_segment(const Vmm& v, int dev, CUdeviceptr va, size_t bytes, unsigned l
 }  // namespace
 #endif
 
-#if !defined(STRATA_EC_NO_VMM)
+#if !defined(NOSTROMA_EC_NO_VMM)
 // the driver and this GPU offer the virtual memory functions the segmented arena needs (the check open_segmented makes first)
 static bool segmented_supported() {
     const Vmm& v = vmm();
@@ -414,7 +414,7 @@ static bool segmented_supported() {
 #endif
 
 bool ExpertCache::open_segmented(uint64_t want, std::string& err) {
-#if defined(STRATA_EC_NO_VMM)
+#if defined(NOSTROMA_EC_NO_VMM)
     (void) want;
     err = "ExpertCache: --vram-elastic (a segmented expert cache) is CUDA-only for now";
     return false;
@@ -467,7 +467,7 @@ bool ExpertCache::open_segmented(uint64_t want, std::string& err) {
 }
 
 void ExpertCache::release_segmented() {
-#if !defined(STRATA_EC_NO_VMM)
+#if !defined(NOSTROMA_EC_NO_VMM)
     const Vmm& v = vmm();
     if (base_ != nullptr) cudaDeviceSynchronize();
     const CUdeviceptr va = reinterpret_cast<CUdeviceptr>(base_);
@@ -506,7 +506,7 @@ bool ExpertCache::shrink(int64_t keep_bytes, std::string& err) {
         err = "the expert cache is not segmented (the engine needs --vram-elastic)";
         return false;
     }
-#if defined(STRATA_EC_NO_VMM)
+#if defined(NOSTROMA_EC_NO_VMM)
     (void) keep_bytes;
     return false;
 #else
@@ -547,7 +547,7 @@ bool ExpertCache::grow(int64_t want_bytes, std::string& err) {
         err = "the expert cache is not segmented (the engine needs --vram-elastic)";
         return false;
     }
-#if defined(STRATA_EC_NO_VMM)
+#if defined(NOSTROMA_EC_NO_VMM)
     (void) want_bytes;
     return false;
 #else
@@ -581,7 +581,7 @@ bool ExpertCache::grow(int64_t want_bytes, std::string& err) {
 #endif
 }
 
-#if defined(STRATA_USE_HIP)
+#if defined(NOSTROMA_USE_HIP)
 bool ExpertCache::ensure_blocking_staging(std::size_t bytes, std::string& err) {
     if (bytes <= blocking_staging_bytes_) return true;
     void* next = nullptr;
@@ -639,7 +639,7 @@ bool ExpertCache::open(int64_t n_slots, int64_t n_layers, int64_t n_expert, int6
         }
     }
 
-#if !defined(STRATA_EC_NO_VMM)
+#if !defined(NOSTROMA_EC_NO_VMM)
     if (seg_req_ > 0 && !segmented_supported()) {   // a driver without them: one block, the engine starts all the same
         std::fprintf(stderr, "ExpertCache: --vram-elastic is off: the driver or this GPU offers no virtual memory management; "
                              "the cache is one block\n");
@@ -682,7 +682,7 @@ bool ExpertCache::open(int64_t n_slots, int64_t n_layers, int64_t n_expert, int6
     n_layers_ = n_layers;
     n_expert_ = n_expert;
     blob_ = blob_bytes;
-#if defined(STRATA_USE_HIP)
+#if defined(NOSTROMA_USE_HIP)
     if (!ensure_blocking_staging((std::size_t) blob_, err)) {
         close();
         return false;
@@ -709,7 +709,7 @@ bool ExpertCache::open_sized(const std::vector<int64_t>& slot_bytes, int64_t n_l
     std::vector<uint64_t> off(slot_bytes.size() + 1, 0);
     for (size_t i = 0; i < slot_bytes.size(); ++i) {
         // 256-byte aligned slots, so every blob starts where the kernels' vector loads expect it (and the
-        // STRATA_MMQ_DIRECT guard after each blob, 0 by default)
+        // NOSTROMA_MMQ_DIRECT guard after each blob, 0 by default)
         off[i + 1] = off[i] + (uint64_t) slot_stride(slot_bytes[i], guard_req_);
         mx = slot_bytes[i] > mx ? slot_bytes[i] : mx;
     }
@@ -720,7 +720,7 @@ bool ExpertCache::open_sized(const std::vector<int64_t>& slot_bytes, int64_t n_l
     blob_ = mx;
     off_ = std::move(off);
     guard_ = guard_req_;
-#if defined(STRATA_USE_HIP)
+#if defined(NOSTROMA_USE_HIP)
     if (!ensure_blocking_staging((std::size_t) blob_, err)) {
         close();
         return false;
@@ -738,7 +738,7 @@ bool ExpertCache::open_sized(const std::vector<int64_t>& slot_bytes, int64_t n_l
 }
 
 void ExpertCache::close() {
-#if defined(STRATA_USE_HIP)
+#if defined(NOSTROMA_USE_HIP)
     if (blocking_staging_) (void) cudaFreeHost(blocking_staging_);
     blocking_staging_ = nullptr;
     blocking_staging_bytes_ = 0;
@@ -784,7 +784,7 @@ int32_t ExpertCache::slot_of(int64_t layer, int64_t expert) const {
 }
 
 int32_t ExpertCache::admit(int64_t layer, int64_t expert) {
-    if (sealed_) return kNotResident;   // STRATA_EXPERT_NIBBLE: nothing is admitted (and so filled) after the startup fill
+    if (sealed_) return kNotResident;   // NOSTROMA_EXPERT_NIBBLE: nothing is admitted (and so filled) after the startup fill
     if (layer < 0 || layer >= n_layers_ || expert < 0 || expert >= n_expert_) return kNotResident;
     const size_t at = (size_t) (layer * n_expert_ + expert);
     if (residency_[at] != kNotResident) return residency_[at];
@@ -851,7 +851,7 @@ bool ExpertCache::fill_slot_blocking(int32_t slot, const uint8_t* host_blob, std
         err = "ExpertCache::fill_slot_blocking: the host blob is null";
         return false;
     }
-#if defined(STRATA_USE_HIP)
+#if defined(NOSTROMA_USE_HIP)
     // Bound HIP's pageable-source staging to one expert instead of repeatedly
     // registering regions of the mmap. The blocking copy completes before reuse.
     if (!blocking_staging_ || n > blocking_staging_bytes_) {
@@ -952,4 +952,4 @@ bool ExpertCache::verify_slot(int32_t slot, const uint8_t* host_blob, std::strin
     return true;
 }
 
-}  // namespace strata::core
+}  // namespace nostroma::core

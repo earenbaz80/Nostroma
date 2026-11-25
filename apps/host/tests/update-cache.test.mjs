@@ -12,7 +12,7 @@ const { readUpdateCache, saveUpdateCache, clearUpdateCache } = await load('updat
 
 const store = new Map();
 globalThis.localStorage = { getItem: k => store.get(k) ?? null, setItem: (k, v) => void store.set(k, String(v)), removeItem: k => void store.delete(k) };
-const result = (status = 'available') => ({ checkedAt: '2026-10-19T10:00:00Z', strata: { status: 'current', message: 'ok' }, engine: { status, message: 'x' } });
+const result = (status = 'available') => ({ checkedAt: '2026-10-19T10:00:00Z', nostroma: { status: 'current', message: 'ok' }, engine: { status, message: 'x' } });
 
 test('a saved check is read back for the same installed versions', () => {
   clearUpdateCache();
@@ -36,7 +36,7 @@ test('a new Control version, or a version that is not known yet, hides the old r
 });
 
 test('unreadable or blocked storage is harmless', () => {
-  store.set('strata.update-check.v1', '{not json');
+  store.set('nostroma.update-check.v1', '{not json');
   assert.equal(readUpdateCache({}), null);
   const saved = globalThis.localStorage;
   globalThis.localStorage = { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); }, removeItem() { throw new Error('blocked'); } };

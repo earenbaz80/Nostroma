@@ -76,7 +76,7 @@ class OtherGenerator(unittest.TestCase):
         with mock.patch.object(setup, "ensure_build_tools", return_value=("cmake", "ninja")), \
                 mock.patch.object(setup.acquisition, "require"), mock.patch.object(setup, "WIN", False), \
                 mock.patch.object(setup, "run", fake_run), contextlib.redirect_stdout(io.StringIO()):
-            setup.cmake_build(self.root, folder, "strata", [], None, "")
+            setup.cmake_build(self.root, folder, "nostroma", [], None, "")
         configure = seen[0]
         self.assertIn("Ninja", configure[0])
         self.assertFalse(configure[1], "the old cache was gone when cmake was asked to configure")

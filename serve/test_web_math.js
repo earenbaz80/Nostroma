@@ -68,8 +68,8 @@ const cases = {
     assert.equal(text, "a $x$ and \\(y\\)", "strings are values, but the function must also not need a copy");
     assert.ok(!/\$x\$|\\\(y\\\)/.test(seen[0]), "the Markdown step sees placeholders, not formulas");
     // a message that contains the placeholder word itself is not confused
-    const html = math.markdown("STRATAMATHPLACEHOLDER0END and $x$", (t) => t);
-    assert.ok(html.startsWith("STRATAMATHPLACEHOLDER0END and <span"), html);
+    const html = math.markdown("NOSTROMAMATHPLACEHOLDER0END and $x$", (t) => t);
+    assert.ok(html.startsWith("NOSTROMAMATHPLACEHOLDER0END and <span"), html);
   },
   async hydrate_with_a_stub_adapter() {
     const calls = [];
@@ -79,7 +79,7 @@ const cases = {
     }
     const box = (slots) => ({querySelectorAll: () => slots, contains: (s) => slots.includes(s)});
     const mk = (tag) => ({tag, cloneNode() { return {tag, cloned: true}; }});
-    globalThis.StrataMathAdapter = {
+    globalThis.NostromaMathAdapter = {
       async initialize() { calls.push("init"); },
       async render(source, {display}) {
         calls.push("render " + source);
@@ -104,7 +104,7 @@ const cases = {
     // an answer that was replaced while a formula was drawn does not get the old drawing
     const old = new Slot("slow", false);
     const stale = box([old]);
-    globalThis.StrataMathAdapter.render = async (s) => { await new Promise((r) => setTimeout(r, 15)); return {ok: true, element: mk(s)}; };
+    globalThis.NostromaMathAdapter.render = async (s) => { await new Promise((r) => setTimeout(r, 15)); return {ok: true, element: mk(s)}; };
     math.hydrate(stale);
     math.hydrate(box([])); // a different container is a different generation; the same container is bumped below
     stale._mathGeneration++;
@@ -112,11 +112,11 @@ const cases = {
     assert.equal(old.children.length, 0, "stale generation ignored");
     // a formula over 16 KiB is not drawn, and no adapter means source text
     assert.deepEqual(await math.result("x".repeat(20000), false), {ok: false, reason: "limit"});
-    math.reset(); delete globalThis.StrataMathAdapter;
+    math.reset(); delete globalThis.NostromaMathAdapter;
     assert.deepEqual(await math.result("y", false), {ok: false, reason: "unavailable"});
-    math.reset(); globalThis.StrataMathAdapter = {initialize: async () => { throw new Error("no engine"); }, render: async () => ({ok: true})};
+    math.reset(); globalThis.NostromaMathAdapter = {initialize: async () => { throw new Error("no engine"); }, render: async () => ({ok: true})};
     assert.deepEqual(await math.result("z", false), {ok: false, reason: "unavailable"}, "an engine that cannot start leaves the source");
-    delete globalThis.StrataMathAdapter;
+    delete globalThis.NostromaMathAdapter;
   },
   katex_options_are_the_safe_ones() {
     const {OPTIONS} = require(path.join(web, "math-adapter.js"));

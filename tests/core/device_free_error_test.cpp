@@ -2,7 +2,7 @@
 // said.  Here the query fails for a known reason - no device is visible (CUDA_VISIBLE_DEVICES=-1, set before the first
 // CUDA call) - and the engine must say that error (its text) on stderr, still answering 0 free.  No GPU is needed; it
 // exits 77 (skipped) when a device is visible after all.
-#include "strata/core/expert_cache.hpp"
+#include "nostroma/core/expert_cache.hpp"
 
 #include <cuda_runtime.h>
 
@@ -31,7 +31,7 @@ int main() {
     std::fflush(stderr);
     const int saved = dup(fileno(stderr));
     if (saved < 0 || !std::freopen(path, "w", stderr)) { std::printf("FAIL: could not redirect stderr\n"); return 1; }
-    const size_t free_b = strata::core::device_free_bytes();
+    const size_t free_b = nostroma::core::device_free_bytes();
     std::fflush(stderr);
     dup2(saved, fileno(stderr));
     std::string said;

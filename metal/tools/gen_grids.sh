@@ -1,10 +1,10 @@
 #!/bin/bash
 # ggml declares its tables with GGML_TABLE_BEGIN(type, name, size) ... GGML_TABLE_END(); parse that form.
 set -u
-cd "$HOME/strata-mac/dsv41" || exit 1
+cd "$HOME/nostroma-mac/dsv41" || exit 1
 python3 - <<'PY'
 import re, os
-s = open("third_party/strata-ggml/strata-quant-common.h").read()   # the text moved here; third_party/ggml/ggml-common.h forwards to it
+s = open("third_party/nostroma-ggml/nostroma-quant-common.h").read()   # the text moved here; third_party/ggml/ggml-common.h forwards to it
 out = ['''// metal/src/engine/msl/ggml_grids.h - ggml's i-quant grid tables, for the MSL expert kernels.
 //
 // Generated from third_party/ggml/ggml-common.h (pinned 3cf03257f): the CUDA and Metal kernels must use bit-identical tables,

@@ -1,4 +1,4 @@
-// src/kernels/cpu/nvfp4_avx2.cpp - see include/strata/kernels/cpu/nvfp4_avx2.hpp.
+// src/kernels/cpu/nvfp4_avx2.cpp - see include/nostroma/kernels/cpu/nvfp4_avx2.hpp.
 //
 // Per 64-value block, once: its E2M1 values in element order as two 32-byte registers (ggml's reordering: sub-block
 // s keeps value j in the low nibble of qs[8 s + j] and value j + 8 in the high one), their magnitudes, and the four
@@ -7,8 +7,8 @@
 // ue4m3(d[s]) * d_q8, and hsum_float_8's order sums the lanes.
 //
 // Needs AVX2, FMA and F16C - what cpu_avx2_ok() checks before anything here is called.
-#include "strata/kernels/cpu/nvfp4_avx2.hpp"
-#include "strata/env.hpp"
+#include "nostroma/kernels/cpu/nvfp4_avx2.hpp"
+#include "nostroma/env.hpp"
 
 #define GGML_COMMON_DECL_CPP
 #define GGML_COMMON_IMPL_CPP
@@ -20,7 +20,7 @@
 #include <cstdlib>
 #include <cstring>
 
-namespace strata::kernels::cpu {
+namespace nostroma::kernels::cpu {
 namespace {
 
 // A compile-time table, not a constructor: this file is compiled for a wide ISA, and a namespace-scope object with a
@@ -45,11 +45,11 @@ struct Ue4m3Table {   // ggml_ue4m3_to_fp32 (ggml-impl.h): halved for the double
 };
 constexpr Ue4m3Table kUe4m3;
 
-// software prefetch distance in bytes (STRATA_NVFP4_PREFETCH, 0 = off), as the AVX-512 rows
+// software prefetch distance in bytes (NOSTROMA_NVFP4_PREFETCH, 0 = off), as the AVX-512 rows
 // (read on first use, behind the CPU check: a static initialiser here would run on every CPU, see above)
 inline int prefetch_distance() {
     static const int v = [] {
-        const char* e = strata::env("NOSTROMA_NVFP4_PREFETCH");
+        const char* e = nostroma::env("NOSTROMA_NVFP4_PREFETCH");
         return e ? std::atoi(e) : 2048;
     }();
     return v;
@@ -197,4 +197,4 @@ void nvfp4_256_rows(const uint8_t* w, size_t row_bytes, int n, const void* const
     });
 }
 
-}  // namespace strata::kernels::cpu
+}  // namespace nostroma::kernels::cpu

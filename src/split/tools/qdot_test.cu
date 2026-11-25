@@ -1,4 +1,4 @@
-// The split engine's decode dots (src/qdot.cuh) against llama.cpp's own (ggml-cuda vecdotq.cuh, the vendored third_party/strata-ggml pin) on random
+// The split engine's decode dots (src/qdot.cuh) against llama.cpp's own (ggml-cuda vecdotq.cuh, the vendored third_party/nostroma-ggml pin) on random
 // blocks: every one of the 11 formats the engine runs, every block of a random matrix, every (kbx, iqs) the decode kernels call with; the floats must
 // be bit for bit the same. Prints one line per format and exits 1 on any difference.
 //   split_qdot_test [blocks per format]      (CUDA: built with the split; HIP: the same sources with -DFNX_HIP=1 GGML_USE_HIP=1)

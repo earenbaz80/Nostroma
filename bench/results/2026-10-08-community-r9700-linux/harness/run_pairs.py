@@ -85,10 +85,10 @@ def main():
         validate_config(cfg)
         configs[arm] = {"path": str(path.resolve()), "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
                         "binary_sha256": hashlib.sha256(Path(cfg["exe"]).read_bytes()).hexdigest(), "config": cfg}
-        if any(k in cfg["env"] for k in ("STRATA_STATE_HASH", "STRATA_STATE_HASH_GDN", "STRATA_DUMP_FIRST_LOGITS",
-                                        "STRATA_TRACE", "STRATA_PREFILL_LAYER_HASH_T", "STRATA_PREFILL_GEMM_CAPTURE",
-                                        "STRATA_PREFILL_TIMING", "STRATA_DECODE_TIMING", "STRATA_IO_STATS",
-                                        "STRATA_HIPBLASLT_VERBOSE", "ROCBLAS_LAYER", "HIPBLASLT_LOG_LEVEL")):
+        if any(k in cfg["env"] for k in ("NOSTROMA_STATE_HASH", "NOSTROMA_STATE_HASH_GDN", "NOSTROMA_DUMP_FIRST_LOGITS",
+                                        "NOSTROMA_TRACE", "NOSTROMA_PREFILL_LAYER_HASH_T", "NOSTROMA_PREFILL_GEMM_CAPTURE",
+                                        "NOSTROMA_PREFILL_TIMING", "NOSTROMA_DECODE_TIMING", "NOSTROMA_IO_STATS",
+                                        "NOSTROMA_HIPBLASLT_VERBOSE", "ROCBLAS_LAYER", "HIPBLASLT_LOG_LEVEL")):
             raise ValueError("performance config contains diagnostic instrumentation")
     for key in ("args", "tokenizer", "cwd", "lib_dirs", "r9700_numa"):
         if configs["baseline"]["config"].get(key) != configs["candidate"]["config"].get(key):
@@ -112,7 +112,7 @@ def main():
             runner = "bench_engine.py" if args.mode == "fresh" else "bench_incremental.py"
             extra = ["--shape-warmups", "1"] if args.mode == "fresh" else ["--increments", *map(str, args.increments)]
             cmd = [sys.executable, str(ROOT / "tools/hip/r9700/single_gpu.py"),
-                   "--device-binary", str(Path(cfg["exe"]).with_name("strata-device")),
+                   "--device-binary", str(Path(cfg["exe"]).with_name("nostroma-device")),
                    "--config", c["path"], "--record", str((args.out / f"{name}-launch.json").resolve()),
                    "--cpu-nodes", numa["cpu_nodes"], "--preferred-node", str(numa["preferred_node"]), "run", "--",
                    sys.executable, str(ROOT / "tools/hip/r9700" / runner), "--config", c["path"],

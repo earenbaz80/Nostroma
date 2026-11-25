@@ -10,13 +10,13 @@
 // Measured on Zen 5 (cycles per block, one token, AVX2): ~48 with this scheme; computing the states with byte
 // shuffles instead (VPSHUFB / VPSRLVD per 8 states) and moving them to GPRs or through memory was slower (60-80),
 // and ggml-cpu's AVX2 vec_dot for these types (agentionai llama.cpp, the same state table) takes about 2.3x as long.
-#include "strata/kernels/cpu/tq_cpu.hpp"
+#include "nostroma/kernels/cpu/tq_cpu.hpp"
 
 #include "tq_states.hpp"
 
 #include <immintrin.h>
 
-namespace strata::kernels::cpu::tq_detail {
+namespace nostroma::kernels::cpu::tq_detail {
 namespace {
 
 // four state-table rows (8 bytes each) into one YMM: a load and three broadcast loads blended in.  Broadcast loads
@@ -157,4 +157,4 @@ void tq_rows_avx2(int kb, const int16_t* table, const uint8_t* w, size_t row_byt
     else rows_t<7>(table, w, row_bytes, n, a, nt, out, r0, r1);
 }
 
-}  // namespace strata::kernels::cpu::tq_detail
+}  // namespace nostroma::kernels::cpu::tq_detail

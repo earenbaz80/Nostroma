@@ -130,7 +130,7 @@ class GpuFitRule(unittest.TestCase):
 
 
 class GpuFitInTheModelList(unittest.TestCase):
-    """The app reads the options from the model list (tools/strata_mcp.py model_table): the same rule, nothing duplicated in the UI."""
+    """The app reads the options from the model list (tools/nostroma_mcp.py model_table): the same rule, nothing duplicated in the UI."""
 
     def setUp(self):
         from tests.terminal.launch_support import Home
@@ -139,7 +139,7 @@ class GpuFitInTheModelList(unittest.TestCase):
 
     def sizes(self, hw):
         from tests.terminal.launch_support import catalog
-        table = catalog(hw).strata.model_table(hw)
+        table = catalog(hw).nostroma.model_table(hw)
         return {s["model"]: s for f in table for s in f["sizes"]}
 
     def test_two_cards_give_options_on_every_model(self):

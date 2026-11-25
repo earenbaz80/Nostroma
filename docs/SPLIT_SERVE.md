@@ -28,7 +28,7 @@ without the option. Only a long new part goes to the prefill engine.
 
 ## Turning it on
 
-In the run config (`strata-<model>.json`), next to the other keys:
+In the run config (`nostroma-<model>.json`), next to the other keys:
 
 ```json
 {
@@ -120,9 +120,9 @@ Where the time goes:
 | the same | IQ3_S, 2x RTX A6000 | 4,096 | 64 | tokens equal, state fingerprints equal |
 | the same | IQ3_S, 2x RTX A6000 | 16,384 | 128 | tokens equal, state fingerprints equal |
 
-"State fingerprint" is the engine's `STRATA_STATE_HASH`: the whole session (running state, K/V of every layer, the draft layer's K/V) hashed after
+"State fingerprint" is the engine's `NOSTROMA_STATE_HASH`: the whole session (running state, K/V of every layer, the draft layer's K/V) hashed after
 the request. The fingerprint of the prefill engine's session also equals the decode engine's right after the restore. The check ran with
-`--adapt-swaps 0 --pcie-frac 0 STRATA_IQ_MT_MIN=1`, the settings under which two fresh single engines already give the same answer
+`--adapt-swaps 0 --pcie-frac 0 NOSTROMA_IQ_MT_MIN=1`, the settings under which two fresh single engines already give the same answer
 (without them the engine is not always deterministic from run to run, with or without this option). The tool is `tools/split_serve_check.py exact`.
 
 On two alike cards, split serving does not pay for one request at a time. It can pay when one card is clearly better at reading
@@ -156,7 +156,7 @@ they would not if `prefill_args`/`decode_args` changed them:
 
 - the model files (sampled by size and first and last MiB) and the engine version;
 - the backend (CUDA or HIP): **no cross-backend restore**;
-- `--kv`, `--max-context`, `--kv-resident`, `--mtp-window`, `STRATA_KV_ROT`, the resolved rope settings, a loaded control vector;
+- `--kv`, `--max-context`, `--kv-resident`, `--mtp-window`, `NOSTROMA_KV_ROT`, the resolved rope settings, a loaded control vector;
 - the arithmetic switches that change the computed state (the engine lists them in the file's fingerprint).
 
 These may differ between the two engines: the expert cache size, `--prefill` chunk, sampling, drafting depth, the expert tier.
@@ -184,7 +184,7 @@ built or measured here:
 
 - *The session file must be allowed across backends.* Today the file's fingerprint contains the backend (`cuda` or `hip`) and the
   arithmetic switches that differ per card family, so a restore is refused. A cross-backend mode has to compare only what defines the
-  bytes: model files, engine version, `--kv`, `--max-context`, `--kv-resident`, `--mtp-window`, the rope settings, `STRATA_KV_ROT`. The K/V,
+  bytes: model files, engine version, `--kv`, `--max-context`, `--kv-resident`, `--mtp-window`, the rope settings, `NOSTROMA_KV_ROT`. The K/V,
   running-state and draft-layer layouts come from one source tree, but nobody has checked that the bytes are interchangeable on both
   backends.
 - *A byte check is no longer possible.* The two backends do not compute the same bits, so the proof is not a state fingerprint. It
@@ -215,4 +215,4 @@ alike cards. This version runs one request at a time. Overlapping needs the serv
 decode queue), and the decode engine to take a restore between two of its own requests, which the session file already allows.
 
 Credit: the idea, the hand-built router and the first measurements are @MarcoTool's (issue #4000, repository
-`MarcoTool/PDHyperMix-Strata-MI50`).
+`MarcoTool/PDHyperMix-Nostroma-MI50`).

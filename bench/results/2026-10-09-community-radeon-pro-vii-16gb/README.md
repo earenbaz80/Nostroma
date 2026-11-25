@@ -1,6 +1,6 @@
 # Community benchmark: AMD Radeon Pro VII 16 GB (gfx906), Xeon E5-2666 v3
 
-Measured on 2026-10-09 by the machine's owner (host `R7-SERVER`), on Linux. This tests Strata
+Measured on 2026-10-09 by the machine's owner (host `R7-SERVER`), on Linux. This tests Nostroma
 **0.1.40.4** (mainline) and **0.1.41** (`fb58e0d`) with the original Flash-Next **IQ2_XS**, one GPU
 (the Radeon Pro VII — a 16 GB Vega 20 card of the same family as the MI50), at the **131,072-token
 context** with KV streaming. The engine was built on the host with the **distribution's own ROCm 6.2**
@@ -41,7 +41,7 @@ expert-cache numbers in the Results section explain.
   the host. The card has no display attached; a separate NVIDIA GT 710 drives the monitor.
 - Source commits `6674a0065fb96bacde33e3eb10f91a1df86f95f2` (0.1.40.4) and
   `fb58e0dbc8399662c0e47c76578c6e878b14f6cf` (0.1.41), built for **gfx906** with
-  `-DSTRATA_HIP_GFX906=ON`. Both tags pin the same llama.cpp commit
+  `-DNOSTROMA_HIP_GFX906=ON`. Both tags pin the same llama.cpp commit
   (`3cf03257f219afbe7334045ff7c6a06ac68c627d`).
 
 ## Model and configuration
@@ -51,7 +51,7 @@ quantization as the 2026-10-04 MI50 32 GB report, for direct comparison). Both s
 the repository's published LFS oids — see [model-sha256.txt](model-sha256.txt) and
 [provenance.json](provenance.json).
 
-The run configuration ([strata-iq2_xs.json](strata-iq2_xs.json)) carries the MI50 32 GB report's
+The run configuration ([nostroma-iq2_xs.json](nostroma-iq2_xs.json)) carries the MI50 32 GB report's
 `args` array item for item, with only the paths and the server's host/port changed (`api_key` dropped,
 `backend` and `gpu` added): `--prefill 2048 --max-context 131072 --kv int8 --kv-resident 32768
 --spec 3 --spec-min-p 0.9 --vram-reserve-mib 1024`, `--expert-cache auto`, MTP draft layer, and
@@ -68,7 +68,7 @@ python3 benchmark_rpv.py --targets 4096,32768,128000 --runs 3 --out .
 ```
 
 The script generates deterministic synthetic Python functions, adds a different nonce near the start
-of each request, counts the complete rendered chat prompt with Strata's tokenizer, adjusts the filler
+of each request, counts the complete rendered chat prompt with Nostroma's tokenizer, adjusts the filler
 to the target and verifies the count against the server afterwards. One warm-up request was excluded.
 Three runs at each length ran serially in increasing-length order on the same loaded engine, with the
 expert cache kept between requests. All measured speed requests processed their entire prompt:
@@ -92,7 +92,7 @@ sweep that the tables below use as the canonical numbers (`-first-sweep` files h
 engine, three runs per length, increasing length, one discarded warm-up request. `reused` is 0 in every
 row of every sweep.
 
-**Strata 0.1.40.4** (canonical = second sweep; first sweep in parentheses where it differs)
+**Nostroma 0.1.40.4** (canonical = second sweep; first sweep in parentheses where it differs)
 
 | Actual prompt tokens | Reused | Generated | Runs | Prompt tok/s median [min-max] | Decode tok/s median [min-max] | TTFT s median [min-max] | Total s median [min-max] |
 | ---: | ---: | ---: | ---: | --- | --- | --- | --- |
@@ -112,7 +112,7 @@ First sweep of 0.1.40.4, same engine and config, back to back with the one above
 The 4K and 32K numbers reproduce within 1%; **the 128K prompt throughput is 10% lower in the second
 sweep (317 → 284 tok/s)**, and the per-second telemetry explains why: the GPU is hot by then (see below).
 
-**Strata 0.1.41** (`fb58e0d`)
+**Nostroma 0.1.41** (`fb58e0d`)
 
 | Actual prompt tokens | Reused | Generated | Runs | Prompt tok/s median [min-max] | Decode tok/s median [min-max] | TTFT s median [min-max] | Total s median [min-max] |
 | ---: | ---: | ---: | ---: | --- | --- | --- | --- |
@@ -185,7 +185,7 @@ Two things worth a maintainer's eye:
   about other GPUs, other quantizations, or real chat traffic.
 - **Not evaluated:** long outputs, sampled (non-greedy) decoding, thinking mode, tool calling,
   concurrent requests, sustained thermal soak, multi-GPU layer splits, and vision.
-- **The card is a gfx906 (Vega 20) part**, an experimental architecture for Strata: no vendor
+- **The card is a gfx906 (Vega 20) part**, an experimental architecture for Nostroma: no vendor
   tuning tables, and its expert cache holds 7,245 of the model's 12,288 experts (see "Where the
   16 GB card's decode goes" above).
 - **Not a supported configuration**: the build carries host patches for ROCm 6.2 (see BUILD.json).

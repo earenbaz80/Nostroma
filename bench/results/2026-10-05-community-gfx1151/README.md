@@ -1,7 +1,7 @@
 # Community report: Radeon 8060S (gfx1151), Ryzen AI Max+ 395
 
 Measured on 2026-10-04 and 2026-10-05 on the same Radeon 8060S / Ryzen AI Max+ 395 system with 128 GB of unified
-memory. The first session compared Strata HIP with llama.cpp Vulkan in interactive Q2_0 and UD-IQ4_XS chats. The
+memory. The first session compared Nostroma HIP with llama.cpp Vulkan in interactive Q2_0 and UD-IQ4_XS chats. The
 second used matched synthetic prompts to isolate the gfx1151 hipBLASLt tuning table, dense MMQ and shared-expert
 decode stream. The controlled run's main result is **250.91 to 528.91 prompt tok/s (2.11x)** from the tuning table;
 the shared-expert stream raised matched decode from 45.63 to 46.77 tok/s (2.5%).
@@ -15,7 +15,7 @@ request records and the detailed calculation are in [prefill-ab.md](prefill-ab.m
 - AMD Ryzen AI Max+ 395 with Radeon 8060S (`gfx1151`, RDNA 3.5), 16 cores / 32 threads and AVX-512.
 - 128 GB LPDDR5X unified memory; the GPU reported a 116.0 GiB shared GTT pool. This is not independent VRAM.
 - CachyOS Linux, kernel 7.2.9; the kernel's amdgpu driver.
-- Strata 0.1.39, built locally for `gfx1151` with HIP runtime `7.17.26392-0000000` and hipBLASLt 1.5.0. The
+- Nostroma 0.1.39, built locally for `gfx1151` with HIP runtime `7.17.26392-0000000` and hipBLASLt 1.5.0. The
   interactive session used the initial enablement build; [BUILD-interactive.json](BUILD-interactive.json) records
   its generated build metadata.
 - The controlled session used source revision `a68d0b7fd88c206d55c2ca1d3c2811300b07bd14`: PR #895's gfx1151
@@ -24,13 +24,13 @@ request records and the detailed calculation are in [prefill-ab.md](prefill-ab.m
 
 ## Configurations
 
-The exact generated server configurations are [strata-q2_0.json](strata-q2_0.json) and
-[strata-unsloth-ud-iq4_xs.json](strata-unsloth-ud-iq4_xs.json). They preserve the measured directory layout as an
+The exact generated server configurations are [nostroma-q2_0.json](nostroma-q2_0.json) and
+[nostroma-unsloth-ud-iq4_xs.json](nostroma-unsloth-ud-iq4_xs.json). They preserve the measured directory layout as an
 audit record, but replace the account name with `$USER`. JSON does not expand that placeholder, so these files are
 not portable templates. The Q2_0 file was saved after its vision limit was raised from the measured 300 tokens to
 512. That setting does not affect the text-only observations.
 
-| | Strata | llama.cpp |
+| | Nostroma | llama.cpp |
 |---|---|---|
 | GPU backend | HIP, `gfx1151` | Vulkan |
 | target layers | all | all (`-ngl 99`, `-ngld 99`) |
@@ -38,9 +38,9 @@ not portable templates. The Q2_0 file was saved after its vision limit was raise
 | MTP | `--spec 4 --spec-min-p 0.5`; prompt lookup can extend the verification window to 6 | Q8_0 MTP, 1-3 drafts, probability floor 0.0 |
 | KV/context, Q2_0 | int8, 32K resident of 131K | 65K context; llama.cpp KV setting not recorded |
 | KV/context, UD-IQ4_XS | int8, 32K resident of 65K | 65K context; llama.cpp KV setting not recorded |
-| Strata version | engine 0.1.39 | - |
+| Nostroma version | engine 0.1.39 | - |
 
-Both interactive Strata runs cached all 24,576 routed experts in the shared GPU pool: 31.64 GiB for Q2_0 and 55.43
+Both interactive Nostroma runs cached all 24,576 routed experts in the shared GPU pool: 31.64 GiB for Q2_0 and 55.43
 GiB for UD-IQ4_XS. The latter therefore did not read experts from SSD while answering, despite using the model
 shards in place. These interactive runs predate the gfx1151 tuning table and used plain hipBLAS for dense prompt
 projections. The controlled Q2_0 run below measures that table separately.
@@ -51,7 +51,7 @@ Model: [Qwen3.8-Flash-Next-GSQ-RCO-Q2_0](https://huggingface.co/ISTA-DASLab/Qwen
 
 ### Long matching prompts
 
-| Prompt | Strata HIP | llama.cpp Vulkan | Strata difference |
+| Prompt | Nostroma HIP | llama.cpp Vulkan | Nostroma difference |
 |---|---:|---:|---:|
 | Long reasoning answer | 1,921 tokens at 47.8 tok/s | 1,545 tokens at 35.23 tok/s | +35.7% |
 | Following long answer | 3,401 tokens at 46.3 tok/s | 3,359 tokens at 37.74 tok/s | +22.7% |
@@ -63,18 +63,18 @@ different reasoning behavior and were short enough for draft acceptance and star
 
 | Backend | Requests | Output tokens | Decode time | Weighted decode rate | MTP drafts accepted |
 |---|---:|---:|---:|---:|---:|
-| Strata HIP | 5 | 5,552 | 118.236 s | 46.96 tok/s | 3,169 / 4,684 (67.7%) |
+| Nostroma HIP | 5 | 5,552 | 118.236 s | 46.96 tok/s | 3,169 / 4,684 (67.7%) |
 | llama.cpp Vulkan | 6 | 5,540 | 147.197 s | 37.64 tok/s | 3,320 / 6,678 (49.7%) |
 
 The session totals happen to contain almost the same number of output tokens, but llama.cpp has one extra short
-request and the generated text is not identical. Treat the resulting 24.8% Strata lead as an observed workload
+request and the generated text is not identical. Treat the resulting 24.8% Nostroma lead as an observed workload
 result, not a kernel-only benchmark.
 
 ## Unsloth UD-IQ4_XS
 
 Model: [Qwen3.8-Flash-Next-UD-IQ4_XS](https://huggingface.co/unsloth/Qwen3.8-Flash-Next-GGUF), three shards. Both servers used a 65,536-token context.
 
-| Prompt order | Strata HIP | llama.cpp Vulkan | Strata difference |
+| Prompt order | Nostroma HIP | llama.cpp Vulkan | Nostroma difference |
 |---:|---:|---:|---:|
 | 1 | 52 tokens at 44.3 tok/s | 93 tokens at 38.87 tok/s | +14.0% |
 | 2 | 266 tokens at 42.2 tok/s | 209 tokens at 34.24 tok/s | +23.2% |
@@ -86,16 +86,16 @@ The two sustained runs are effectively tied at about 35-36 tok/s. Across the com
 
 | Backend | Output tokens | Decode time | Weighted decode rate | MTP drafts accepted |
 |---|---:|---:|---:|---:|
-| Strata HIP | 3,670 | 100.784 s | 36.41 tok/s | 2,126 / 3,283 (64.8%) |
+| Nostroma HIP | 3,670 | 100.784 s | 36.41 tok/s | 2,126 / 3,283 (64.8%) |
 | llama.cpp Vulkan | 3,009 | 82.673 s | 36.40 tok/s | 1,912 / 3,300 (57.9%) |
 
-Strata's first prompt read 63 tokens at 75.5 tok/s. Its cached follow-ups read 18-32 new tokens at 63.8-70.7 tok/s.
+Nostroma's first prompt read 63 tokens at 75.5 tok/s. Its cached follow-ups read 18-32 new tokens at 63.8-70.7 tok/s.
 llama.cpp's first request reported 381 prompt tokens at 215.6 tok/s; its cached follow-ups read 19-30 new tokens at
 45.3-67.7 tok/s. The first prompt counts differ too much for a direct prompt-speed comparison.
 
 ## Vision
 
-Both Strata models used the CPU vision encoder with 16 threads and a limit of 300 image tokens. The projectors from
+Both Nostroma models used the CPU vision encoder with 16 threads and a limit of 300 image tokens. The projectors from
 the ISTA Q2_0 folder and the Unsloth download have different metadata but byte-identical tensor payloads; encoding
 the same image produced byte-identical embeddings. The direct encoder test made 299 tokens on a 23 x 13 grid in
 2.43-2.45 seconds.
@@ -121,20 +121,20 @@ was about 16 seconds; the separate CPU image-encoding step is not included. Beca
 
 ## Where the MTP effect appears
 
-Strata records MTP in three places:
+Nostroma records MTP in three places:
 
-- Startup says `strata mtp: draft layer loaded` and `strata verify: window up to 6 tokens`.
-- Every completed request in `strata-<model>.log` says `drafts accepted A of B`.
+- Startup says `nostroma mtp: draft layer loaded` and `nostroma verify: window up to 6 tokens`.
+- Every completed request in `nostroma-<model>.log` says `drafts accepted A of B`.
 - The OpenAI response's `timings` object exposes the same counters as `draft_n_accepted` and `draft_n`.
 
 An accepted draft lets the target model commit another output token from the same verification window. Higher
-acceptance normally raises throughput. For example, the two long UD-IQ4_XS Strata requests accepted 521/881
+acceptance normally raises throughput. For example, the two long UD-IQ4_XS Nostroma requests accepted 521/881
 (59.1%) and 1,283/1,966 (65.3%) drafts and ran at 34.6 and 36.1 tok/s respectively. Content and context also changed,
 so this is consistent with an MTP gain but does not isolate it.
 
 The acceptance counters are utilization figures, not a direct speedup measurement. Quantifying the MTP effect
 requires a controlled A/B with identical input tokens and output tokens: one normal speculative run and one plain
-decode run without the MTP layer. The interactive Strata server currently requires MTP, so that control should use
+decode run without the MTP layer. The interactive Nostroma server currently requires MTP, so that control should use
 the engine's non-server generation/benchmark path rather than comparing unrelated server replies.
 
 ## Controlled Q2_0 A/B
@@ -168,5 +168,5 @@ whose generated prefixes differ are retained as evidence but are not used for th
 
 - Decode rates above use each engine's own decode clock, excluding prompt processing and model loading.
 - Short responses vary substantially with MTP acceptance; the sustained runs are more representative.
-- Strata's current UD-IQ4_XS compatibility pack converts 195 Q8_0 hyper-connection tensors to BF16. Speed is not a
+- Nostroma's current UD-IQ4_XS compatibility pack converts 195 Q8_0 hyper-connection tensors to BF16. Speed is not a
   quality or fidelity measurement.

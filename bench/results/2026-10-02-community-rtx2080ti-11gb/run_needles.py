@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run the repository's unchanged tools/needle_bench.py against the live server and keep the engine's log lines.
 
-The key is read at run time (STRATA_API_KEY or --key-config) and handed to needle_bench.py on its command line
+The key is read at run time (NOSTROMA_API_KEY or --key-config) and handed to needle_bench.py on its command line
 (local process only, never saved). Waits for an idle server first; afterwards GET /metrics must have counted exactly
 one finished request per needle case, or someone else's request ran in between and the output says so.
 

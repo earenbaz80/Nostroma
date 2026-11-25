@@ -1,5 +1,5 @@
 // tools/vision/own/test_cpu_kernels.cpp - every kernel tier of the CPU tower (the ones this CPU runs) against double-precision references, odd sizes and tails
-// included, and the fork-join team (every task of every run exactly once).   strata-vision-own-cpu-test
+// included, and the fork-join team (every task of every run exactly once).   nostroma-vision-own-cpu-test
 #include "cpu_kernels.h"
 #include "cpu_team.h"
 #include "vit_cpu.h"
@@ -14,7 +14,7 @@
 #include <random>
 #include <vector>
 
-using namespace strata_vit;
+using namespace nostroma_vit;
 
 static int g_fail = 0;
 static void check(bool ok, const char* what, const char* tier, double worst, double tol) {
@@ -273,7 +273,7 @@ static void test_team() {
 }
 
 // the CPU tower's rounding default: none for every weight type (BF16 included since 11-14: code4217.png token 47 0.627 -> 1.000 against float32);
-// STRATA_VIT_REF_ROUND=1 rounds to the weight's 16-bit type, float32 / Q8_0-expanded never round
+// NOSTROMA_VIT_REF_ROUND=1 rounds to the weight's 16-bit type, float32 / Q8_0-expanded never round
 static void test_round_choice() {
     struct Case { int kind; const char* env; int want; };
     const Case cs[] = {{1, nullptr, 0}, {2, nullptr, 0}, {0, nullptr, 0}, {1, "0", 0}, {2, "1", 2}, {1, "1", 1}, {2, "0", 0}, {0, "1", 0}, {1, "", 0}, {2, "", 0}};
@@ -282,7 +282,7 @@ static void test_round_choice() {
     check(ok, "rounding default per weight type and its override", "-", 0, 0);
 }
 
-// the GPU reader's F16 kind (vit_f16.h): which BF16 values F16 holds, the error of the others, the activation clamp and STRATA_VIT_BF16_AS_F16
+// the GPU reader's F16 kind (vit_f16.h): which BF16 values F16 holds, the error of the others, the activation clamp and NOSTROMA_VIT_BF16_AS_F16
 static float bf16_value(uint16_t b) { const uint32_t u = (uint32_t) b << 16; float f; std::memcpy(&f, &u, 4); return f; }
 static void test_f16_kind() {
     // named cases: 1.0, -1.0, 2^-14, 2^-17 with all mantissa bits, 2^-18 with the lowest bit (not) and the second lowest (yes), 2^-24, 2^-25,
@@ -336,7 +336,7 @@ static void test_f16_kind() {
     check(f16_clamp(big) == 65504.0f && f16_clamp(-big) == -65504.0f && f16_clamp(inf) == 65504.0f && f16_clamp(-inf) == -65504.0f &&
           f16_clamp(65504.0f) == 65504.0f && f16_clamp(-1.5f) == -1.5f && f16_clamp(0.0f) == 0.0f && std::isnan(f16_clamp(std::nanf(""))),
           "F16 kind: activation clamp to +-65,504", "-", 0, 0);
-    // STRATA_VIT_BF16_AS_F16: unset = the card's default; 0 / empty / not a number = as stored; 2 = F16 inputs; any other number = the BF16-rounded kind
+    // NOSTROMA_VIT_BF16_AS_F16: unset = the card's default; 0 / empty / not a number = as stored; 2 = F16 inputs; any other number = the BF16-rounded kind
     struct M { const char* env; int dflt; int want; };
     const M ms[] = {{nullptr, BF16_TO_F16, BF16_TO_F16}, {nullptr, BF16_ROUNDED, BF16_ROUNDED}, {"0", BF16_TO_F16, BF16_STORED}, {"0", BF16_ROUNDED, BF16_STORED},
                     {"", BF16_TO_F16, BF16_STORED}, {"x", BF16_TO_F16, BF16_STORED}, {"1", BF16_TO_F16, BF16_ROUNDED}, {"1", BF16_ROUNDED, BF16_ROUNDED},
@@ -344,7 +344,7 @@ static void test_f16_kind() {
                     {" 2", BF16_STORED, BF16_TO_F16}, {"12", BF16_TO_F16, BF16_ROUNDED}};
     bool mok = true;
     for (const M& c : ms) if (vit_gpu_bf16_mode(c.env, c.dflt) != c.want) { mok = false; std::printf("  env '%s' default %d: %d, want %d\n", c.env ? c.env : "(unset)", c.dflt, vit_gpu_bf16_mode(c.env, c.dflt), c.want); }
-    check(mok, "F16 kind: STRATA_VIT_BF16_AS_F16 values", "-", 0, 0);
+    check(mok, "F16 kind: NOSTROMA_VIT_BF16_AS_F16 values", "-", 0, 0);
 }
 
 int main(int argc, char** argv) {
@@ -357,7 +357,7 @@ int main(int argc, char** argv) {
     const quant::Caps& c = quant::caps();
     std::printf("cpu: sse41 %d avx %d avx2 %d fma %d f16c %d avx512 %d; best tier %s\n", c.sse41, c.avx, c.avx2, c.fma, c.f16c, c.avx512,
                 quant::isa_name(quant::best_isa()));
-    // every tier this CPU runs, capped by STRATA_FORCE_ISA as in the tower (an emulated older CPU never reaches a wider tier); NEON on Arm
+    // every tier this CPU runs, capped by NOSTROMA_FORCE_ISA as in the tower (an emulated older CPU never reaches a wider tier); NEON on Arm
     const int cap = (int) quant::best_isa();
     std::vector<const CpuOps*> tiers = {&cpu_ops_scalar()};
     if (cap >= (int) quant::Isa::Sse41 && cap != (int) quant::Isa::Neon && quant::isa_ok(quant::Isa::Sse41)) tiers.push_back(&cpu_ops_sse41());

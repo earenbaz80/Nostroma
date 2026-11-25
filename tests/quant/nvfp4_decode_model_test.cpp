@@ -1,5 +1,5 @@
 // tests/quant/nvfp4_decode_model_test.cpp - the CPU model of the fused prompt kernels' NVFP4 weight decode (src/prefill/moe_fused_iq.cu: load_unit /
-// convert<T_NVFP4>, ue4m3_half) against the engine's own CPU dequantizer (strata::quant, which is ggml's dequantize_row_nvfp4), no GPU, no ggml.
+// convert<T_NVFP4>, ue4m3_half) against the engine's own CPU dequantizer (nostroma::quant, which is ggml's dequantize_row_nvfp4), no GPU, no ggml.
 //
 // The kernels turn a 36-byte block {uint8 d[4] (UE4M3, one per 16 values); uint8 qs[32] (E2M1 codes, split-half inside each 16-value group: byte j
 // of a group holds value j in its low and value 8 + j in its high nibble)} into, per 32-value sub-block ib (0, 1): eight 32-bit words of int8 (natural
@@ -7,7 +7,7 @@
 // halved.  The weight is s * q, exact in FP32.  This file holds the same decode written from the format's definition (not from the kernel's bit
 // tricks) and checks, for every scale byte and every code and for seeded random blocks, that
 //   - the kernel's scale construction (the bit form of ue4m3_half, copied here word for word) equals the definition for all 256 bytes,
-//   - model value s * q equals strata::quant::dequant_row (bit for bit),
+//   - model value s * q equals nostroma::quant::dequant_row (bit for bit),
 //   - the int8 sums the mma forms stay inside 2^22 (the MAGIC-bias trick of the kernels needs |sum q a| < 2^22): worst case 16 * 12 * 127 per scale group.
 // The GPU side of the same statement (the real kernel code against ggml's own dequantizer) is tests/cuda/prefill_decode_golden.cu.
 #include <cmath>
@@ -16,10 +16,10 @@
 #include <cstring>
 #include <vector>
 
-#include "strata/quant/dequant.hpp"
-#include "strata/quant/types.hpp"
+#include "nostroma/quant/dequant.hpp"
+#include "nostroma/quant/types.hpp"
 
-namespace sq = strata::quant;
+namespace sq = nostroma::quant;
 
 static int g_fail = 0;
 #define CHECK(c, ...)                                  \

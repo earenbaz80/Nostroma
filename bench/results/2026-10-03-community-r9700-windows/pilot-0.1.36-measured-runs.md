@@ -1,4 +1,4 @@
-# Strata R9700 / Windows 11 - all measured requests
+# Nostroma R9700 / Windows 11 - all measured requests
 
 | context | reused | new read | prefill tok/s | read time | generated | decode tok/s |
 |---|---|---|---|---|---|---|

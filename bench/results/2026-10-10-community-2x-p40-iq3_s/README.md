@@ -9,7 +9,7 @@ that we know of; extends #1028 (IQ2_XS on the same pair) and the 2×P100 IQ3_S r
 - Single machine over; nothing else running.
 
 ## Engine / config
-- Strata engine **0.1.41** (repo fb58e0d), CUDA 12 source build (`setup.sh --cuda 12`, sm_61
+- Nostroma engine **0.1.41** (repo fb58e0d), CUDA 12 source build (`setup.sh --cuda 12`, sm_61
   experimental path), Linux.
 - `--expert-cache auto --prefill auto --spec 4 --mtp --max-context 131072 --kv int8
   --kv-resident 32768 --vision --vram-reserve-mib 700 --pcie-frac 0.34 --spec-min-p 0.70`,

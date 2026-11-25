@@ -24,9 +24,9 @@ PLAN = expand_paths(json.loads((ROOT / 'plan.json').read_text()))
 CASE = next(c for c in PLAN['cases'] if c['label'] == sys.argv[1])
 source = Path(PLAN['client_source'])
 sys.path[:0] = [str(source), str(source / 'tools')]
-from serve.server import StrataEngine
+from serve.server import NostromaEngine
 from serve.frontend import ChatTemplate
-from strata_tokenizer import Tokenizer
+from nostroma_tokenizer import Tokenizer
 
 model = PLAN['models'][CASE['model']]
 tokenizer = Tokenizer.from_gguf(model['native'])
@@ -97,17 +97,17 @@ try:
             del args[at:at + 2]
     if CASE['model'] == 'q8':
         args += ['--resident-budget-gib', '56']
-    env = {k: v for k, v in os.environ.items() if not k.startswith(('STRATA_', 'MULTI_CONCURRENCY'))}
+    env = {k: v for k, v in os.environ.items() if not k.startswith(('NOSTROMA_', 'MULTI_CONCURRENCY'))}
     if CASE['model'] == 'q8' and CASE['build'] != 'stock':
-        env['STRATA_EXCHANGE_ROTATE'] = '1'
+        env['NOSTROMA_EXCHANGE_ROTATE'] = '1'
         args += ['--adapt-async', '1']
     binary = PLAN['engines'][CASE['build']]
     with Path(binary).open('rb') as f:
         report['engine_sha256'] = hashlib.file_digest(f, 'sha256').hexdigest()
-    report.update(args=args, environment={k: v for k, v in env.items() if k.startswith('STRATA_')})
+    report.update(args=args, environment={k: v for k, v in env.items() if k.startswith('NOSTROMA_')})
     save()
     start = time.monotonic()
-    engine = StrataEngine(binary, args, str(source), str(OUT / 'engine.log'), env)
+    engine = NostromaEngine(binary, args, str(source), str(OUT / 'engine.log'), env)
     report.update(startup_seconds=time.monotonic() - start, engine_info=engine.info)
     save()
     simple = tokenizer.encode(render('Write only a Python code block defining triangular(n). Use the formula n*(n+1)//2. No imports, function calls, tests, or explanation.'), parse_special=True)

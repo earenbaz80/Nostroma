@@ -130,8 +130,8 @@ export function logs(limit = 200) {
 
 /**
  * The app host starts no inference process of its own: models run on the Nostroma engine (native control). This used to look for a llama.cpp
- * `llama-server` (STRATA_LLAMA_SERVER, <models>/../engine, /opt/homebrew/bin, /usr/local/bin, PATH) and start it; a packaged app with
- * STRATA_REAL_ENGINE=1 did so for an imported GGUF, also at start-up (0.2.14). start() now refuses, and nothing in this file spawns a process.
+ * `llama-server` (NOSTROMA_LLAMA_SERVER, <models>/../engine, /opt/homebrew/bin, /usr/local/bin, PATH) and start it; a packaged app with
+ * NOSTROMA_REAL_ENGINE=1 did so for an imported GGUF, also at start-up (0.2.14). start() now refuses, and nothing in this file spawns a process.
  */
 export async function start() {
   state.status = 'error';

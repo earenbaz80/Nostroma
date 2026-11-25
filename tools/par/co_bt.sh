@@ -2,12 +2,12 @@
 # co_bt.sh ROOT OUT [N] - batch_test arms, dumps compared: A/A2 layer-major alone (noise), B layer-major co-read, C the usual chunk-major read
 R=$1; O=$2; N=${3:-4}; mkdir -p $O
 PY=/data/external/niko/t027/venv/bin/python
-export STRATA_ROUTE_TAIL_SKIP=0 STRATA_PREFILL_CPU_SHARE=0 STRATA_CRASH_BT=$O/crash.txt
+export NOSTROMA_ROUTE_TAIL_SKIP=0 NOSTROMA_PREFILL_CPU_SHARE=0 NOSTROMA_CRASH_BT=$O/crash.txt
 CFG=$R/res/co/cog_on-cfg.json
 for arm in A A2 B C; do
   EXTRA=""; [ $arm = B ] && EXTRA="--co"
-  if [ $arm = C ]; then unset STRATA_PREFILL_LM_FORCE; else export STRATA_PREFILL_LM_FORCE=1; fi
-  STRATA_DUMP_FIRST_LOGITS=$O/lg-$arm BATCH_TEST_LOG=$O/engine-$arm.log $PY $R/h/tools/batch_test.py --exe $R/h/b86/strata --config $CFG --batch $N --n $N --max-new 96 --pad 900 --skip-solo --dump $O/dump-$arm.json $EXTRA > $O/bt-$arm.out 2>&1
+  if [ $arm = C ]; then unset NOSTROMA_PREFILL_LM_FORCE; else export NOSTROMA_PREFILL_LM_FORCE=1; fi
+  NOSTROMA_DUMP_FIRST_LOGITS=$O/lg-$arm BATCH_TEST_LOG=$O/engine-$arm.log $PY $R/h/tools/batch_test.py --exe $R/h/b86/nostroma --config $CFG --batch $N --n $N --max-new 96 --pad 900 --skip-solo --dump $O/dump-$arm.json $EXTRA > $O/bt-$arm.out 2>&1
   echo "== $arm rc=$?"; grep -E "batch: [0-9]+ slots|co-read:" $O/bt-$arm.out $O/engine-$arm.log | cut -c1-240 | head -4
 done
 $PY - <<PY

@@ -2,20 +2,20 @@
 // the checksum contracts of all three publish variants over repeated rings.
 #include <sycl/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "strata/sycl_queue.hpp"
-#include "strata/kernels/elementwise.hpp"
+#include "nostroma/sycl_queue.hpp"
+#include "nostroma/kernels/elementwise.hpp"
 #include <cstdio>
 #include <cstring>
 #include <vector>
 
 int main() {
-    auto& q = *strata::q_of(nullptr);
-    using namespace strata::kernels;
+    auto& q = *nostroma::q_of(nullptr);
+    using namespace nostroma::kernels;
     constexpr int capacity = 2560, k = 10, experts = 64;
-    auto* hx = (float*)strata::host_malloc_polled((capacity + 4)*sizeof(float), q);
-    auto* hi = (int32_t*)strata::host_malloc_polled(k*sizeof(int32_t), q);
-    auto* hw = (float*)strata::host_malloc_polled(k*sizeof(float), q);
-    auto* seq = (uint32_t*)strata::host_malloc_polled(64, q);
+    auto* hx = (float*)nostroma::host_malloc_polled((capacity + 4)*sizeof(float), q);
+    auto* hi = (int32_t*)nostroma::host_malloc_polled(k*sizeof(int32_t), q);
+    auto* hw = (float*)nostroma::host_malloc_polled(k*sizeof(float), q);
+    auto* seq = (uint32_t*)nostroma::host_malloc_polled(64, q);
     auto* dx = sycl::malloc_device<float>(capacity, q);
     auto* di = sycl::malloc_device<int32_t>(k, q);
     auto* dw = sycl::malloc_device<float>(k, q);
@@ -54,7 +54,7 @@ int main() {
     q.memcpy(copied.data(), dx, capacity*sizeof(float)).wait();
     if (std::memcmp(copied.data(), x.data(), capacity*sizeof(float))) ++failed;
     for (void* p : {static_cast<void*>(hx), static_cast<void*>(hi), static_cast<void*>(hw), static_cast<void*>(seq)})
-        strata::host_free_polled(p, q);
+        nostroma::host_free_polled(p, q);
     for (void* p : {static_cast<void*>(dx), static_cast<void*>(di), static_cast<void*>(dw), static_cast<void*>(dr)}) sycl::free(p, q);
     std::printf("paired payload and mapped read: %d failures\n", failed);
     return failed != 0;

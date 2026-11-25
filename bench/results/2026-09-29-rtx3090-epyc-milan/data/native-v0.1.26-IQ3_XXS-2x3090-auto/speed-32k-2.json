@@ -16,8 +16,8 @@
  "engine_prompt_tps": 1185.2,
  "engine_decode_tps": 96.7,
  "log_lines": [
-  "strata serve: prompt 31633 tokens = 0 reused + 31633 read in 26691 ms (1185.2 tok/s), 256 generated in 2648 ms (96.7 tok/s), drafts accepted 160 of 214, 2 checkpoints",
-  "strata serve: decode expert cache hit rate: 99.1% (147426 hits / 148799 lookups)"
+  "nostroma serve: prompt 31633 tokens = 0 reused + 31633 read in 26691 ms (1185.2 tok/s), 256 generated in 2648 ms (96.7 tok/s), drafts accepted 160 of 214, 2 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 99.1% (147426 hits / 148799 lookups)"
  ],
  "answer_head": "I cannot analyze the last file because the provided repository content is truncated. The `docs/DETAILS.md` file cuts off mid-sentence in the \"Using it\" section (`...if y`), and no subsequent files are shown.\n\nHowever, I can analyze the **`chat.py`** file, which is the last *complete* file provided i",
  "metrics_after": {

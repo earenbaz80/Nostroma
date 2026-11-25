@@ -15,15 +15,15 @@ from unittest import mock
 
 from nostroma_control import updater
 
-LOADER = "./strata: error while loading shared libraries: libatomic.so.1: cannot open shared object file: No such file or directory"
+LOADER = "./nostroma: error while loading shared libraries: libatomic.so.1: cannot open shared object file: No such file or directory"
 
 
 def make_engine(folder: Path, body_posix: str, body_nt: str) -> Path:
     if os.name == "nt":
-        path = folder / "strata.cmd"
+        path = folder / "nostroma.cmd"
         path.write_text("@echo off\r\n" + body_nt, encoding="utf-8")
     else:
-        path = folder / "strata"
+        path = folder / "nostroma"
         path.write_text("#!/bin/sh\n" + body_posix, encoding="utf-8")
         path.chmod(path.stat().st_mode | stat.S_IXUSR)
     return path

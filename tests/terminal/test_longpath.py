@@ -19,7 +19,7 @@ from nostroma_control import engine_component as ec, longpath, updater
 DATA = json.loads((Path(__file__).parent / "data" / "windows_package_paths.json").read_text(encoding="utf-8"))
 LIMIT = longpath.PLAIN_LIMIT
 USER = "u" * 20
-COMPONENTS = PureWindowsPath(rf"C:\Users\{USER}\AppData\Local\Strata\components")      # what components_dir() gives on Windows
+COMPONENTS = PureWindowsPath(rf"C:\Users\{USER}\AppData\Local\Nostroma\components")      # what components_dir() gives on Windows
 LEGACY_STAGE = COMPONENTS / ".updates" / "staging" / ("0123456789ab")                    # what 0.2.1 used
 NEW_STAGE = COMPONENTS / updater.STAGE_DIR / "0123"
 WINDOWS = os.name == "nt"
@@ -78,13 +78,13 @@ class Messages(unittest.TestCase):
         name = "C:\\" + "\\".join(["d" * 60] * 5) + "\\file.dat"
         words = longpath.file_words(FileNotFoundError(2, "No such file or directory", name))
         self.assertIn("longer than Windows allows", words)
-        self.assertIn("STRATA_COMPONENTS_DIR", words)
+        self.assertIn("NOSTROMA_COMPONENTS_DIR", words)
         self.assertIn(name, words)
 
     @unittest.skipUnless(WINDOWS, "the limit is a Windows one")
     def test_no_warning_for_a_short_folder_and_one_for_a_deep_one(self):
-        self.assertIsNone(longpath.warning_for(Path(r"C:\Strata\engine\0.1.46-windows-x86_64-hip-rdna3"), 150))
-        deep = Path("C:/Users/" + USER + "/AppData/Local/Strata/components/engine/0.1.46-windows-x86_64-hip-rx9070/" + "q" * 30)
+        self.assertIsNone(longpath.warning_for(Path(r"C:\Nostroma\engine\0.1.46-windows-x86_64-hip-rdna3"), 150))
+        deep = Path("C:/Users/" + USER + "/AppData/Local/Nostroma/components/engine/0.1.46-windows-x86_64-hip-rx9070/" + "q" * 30)
         words = longpath.warning_for(deep, 150)
         self.assertIn("long paths", words)
         self.assertIn("carries on", words)
@@ -93,7 +93,7 @@ class Messages(unittest.TestCase):
 @unittest.skipUnless(WINDOWS, "extended-length paths are a Windows thing")
 class DeepFolders(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="strata-lp-")
+        self.temp = tempfile.TemporaryDirectory(prefix="nostroma-lp-")
         self.addCleanup(lambda: __import__("shutil").rmtree(longpath.long_path(self.temp.name), ignore_errors=True))
         self.deep = Path(self.temp.name) / ("p" * 120) / ("q" * 120)
 
@@ -157,7 +157,7 @@ class DeepFolders(unittest.TestCase):
 
 class StagingFolder(unittest.TestCase):
     def test_new_stage_is_short_and_sweeps_old_staging(self):
-        with tempfile.TemporaryDirectory(prefix="strata-stage-") as tmp:
+        with tempfile.TemporaryDirectory(prefix="nostroma-stage-") as tmp:
             root = Path(tmp)
             old = root / ".updates" / "staging" / "abc"
             old.mkdir(parents=True)

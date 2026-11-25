@@ -25,7 +25,7 @@ class ControlVersionTest(unittest.TestCase):
 
     def test_a_first_run_that_times_out_is_tried_once_more_with_more_time(self):
         ctx, said = self.ctx()
-        good = SimpleNamespace(returncode=0, stdout="strata 0.2.2\n")
+        good = SimpleNamespace(returncode=0, stdout="nostroma 0.2.2\n")
         calls = []
 
         def fake(cmd, **kw):
@@ -34,7 +34,7 @@ class ControlVersionTest(unittest.TestCase):
                 raise subprocess.TimeoutExpired(cmd, kw["timeout"])
             return good
         with mock.patch.object(updater.subprocess, "run", fake):
-            done = updater._control_version("py", Path("strata.py"), Path("."), ctx, "0.2.2")
+            done = updater._control_version("py", Path("nostroma.py"), Path("."), ctx, "0.2.2")
         self.assertIs(done, good)
         self.assertEqual(calls, list(updater.CONTROL_VERSION_TIMEOUTS))
         self.assertGreater(calls[0], 120)
@@ -44,7 +44,7 @@ class ControlVersionTest(unittest.TestCase):
         ctx, _ = self.ctx()
         with mock.patch.object(updater.subprocess, "run", side_effect=subprocess.TimeoutExpired("x", 1)):
             with self.assertRaises(updater.TestStartFailed):
-                updater._control_version("py", Path("strata.py"), Path("."), ctx, "0.2.2")
+                updater._control_version("py", Path("nostroma.py"), Path("."), ctx, "0.2.2")
 
 
 class BusyCardTest(test_updater.UpdaterCase):
@@ -76,11 +76,11 @@ class BusyCardTest(test_updater.UpdaterCase):
 
 class HandoverPreRelease(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="strata-rc-")
+        self.temp = tempfile.TemporaryDirectory(prefix="nostroma-rc-")
         self.addCleanup(self.temp.cleanup)
         self.comp = Path(self.temp.name) / "components"
         self.comp.mkdir()
-        self.env = {"STRATA_COMPONENTS_DIR": str(self.comp)}
+        self.env = {"NOSTROMA_COMPONENTS_DIR": str(self.comp)}
 
     def target(self, running):
         return handover.find_target(running, self.env)
@@ -121,7 +121,7 @@ class ClockTest(unittest.TestCase):
 
     def load(self, **guards):
         payload, sig = signed(document(expires_at="2026-10-01T00:00:00Z"), self.key)
-        return feedmod.verify_and_parse(payload, sig, source="/feeds/strata-feed.json", trusted=self.trusted, **guards)
+        return feedmod.verify_and_parse(payload, sig, source="/feeds/nostroma-feed.json", trusted=self.trusted, **guards)
 
     def test_the_server_clock_proves_the_pc_clock_wrong(self):
         pc = dt.datetime(2027, 3, 1, tzinfo=dt.timezone.utc)
@@ -148,7 +148,7 @@ class ClockTest(unittest.TestCase):
         err = urllib.error.URLError("[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed")
         with mock.patch.object(transfer._opener, "open", side_effect=err):
             with self.assertRaisesRegex(transfer.TransferError, "date and time"):
-                transfer.read_small("https://example.org/strata-feed.json")
+                transfer.read_small("https://example.org/nostroma-feed.json")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 {
- "upd01": "Um die Engine zu aktualisieren, muss Strata das geladene Modell anhalten: {0}.",
+ "upd01": "Um die Engine zu aktualisieren, muss Nostroma das geladene Modell anhalten: {0}.",
  "upd02": "Zuerst wird die neue Engine heruntergeladen, während das Modell weiter antwortet. Danach hält das Modell an (laufende Antworten werden zuerst beendet), die Engine wird aktualisiert, und Sie können das Modell mit denselben Einstellungen wieder starten. Ihre Modelle und Einstellungen bleiben erhalten.",
  "upd03": "Anhalten und aktualisieren",
  "upd04": "Die neue Engine wird vorbereitet. {0} arbeitet weiter, bis sie bereit ist.",

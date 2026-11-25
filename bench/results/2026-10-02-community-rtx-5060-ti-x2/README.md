@@ -1,6 +1,6 @@
 # Community benchmark: 2x RTX 5060 Ti (16 GB), Xeon E5-2690 v4
 
-Measured on 2026-10-02 by R6DJO. This tests Strata 0.1.35 with the original
+Measured on 2026-10-02 by R6DJO. This tests Nostroma 0.1.35 with the original
 Flash-Next GSQ-RCO IQ3_XXS, two GPUs with an automatic layer split, and a
 262,144-token context limit.
 
@@ -43,9 +43,9 @@ revision was not recorded; file names and sizes are in
 - `IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00002-of-00002.gguf`
 
 Vision encoder: none (`images: false`). Custom pack
-(`Strata-data/packs/iq3_xxs`) and an expert profile
+(`Nostroma-data/packs/iq3_xxs`) and an expert profile
 (`data/expert-profile.bin`, from a previous `--calibrate` on this machine);
-the MTP draft head is the released one (`Strata-data/mtp/rt`).
+the MTP draft head is the released one (`Nostroma-data/mtp/rt`).
 
 - Context limit 262,144; KV int8 with a 32,768-token resident window.
 - Expert cache auto (`expert_slots` 12,475; 20,533 MiB), prefill auto.
@@ -56,15 +56,15 @@ the MTP draft head is the released one (`Strata-data/mtp/rt`).
   in the launch command below. No experimental speed projection.
 
 ```text
-<strata-dir>/.venv/bin/python <strata-dir>/serve/server.py \
-  --engine strata --config <strata-dir>/strata-iq3_xxs.json \
+<nostroma-dir>/.venv/bin/python <nostroma-dir>/serve/server.py \
+  --engine nostroma --config <nostroma-dir>/nostroma-iq3_xxs.json \
   --port 31000 --host 0.0.0.0
-# config strata-iq3_xxs.json passes to the engine:
+# config nostroma-iq3_xxs.json passes to the engine:
 #   --pack .../packs/iq3_xxs --native <shard 1> --ple-gguf <shard 2>
 #   --expert-profile data/expert-profile.bin --expert-cache auto --prefill auto
 #   --spec 4 --mtp .../mtp/rt --max-context 262144 --kv int8 --kv-resident 32768
 #   --pcie-frac 0.20 --spec-min-p 0.70 --prompt-cache-every 4096 --layer-split auto
-# (the full JSON, with local paths, is in strata-iq3_xxs.json)
+# (the full JSON, with local paths, is in nostroma-iq3_xxs.json)
 ```
 
 ## Method

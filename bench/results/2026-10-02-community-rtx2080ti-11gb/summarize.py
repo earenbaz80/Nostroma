@@ -35,7 +35,7 @@ def peaks(tel, t0, t1):
     gpu = [int(r["gpu"].split(",")[0]) for r in sel]
     host = [(r["memory"]["MemTotal_KiB"] - r["memory"]["MemAvailable_KiB"]) / 2**20 for r in sel]
     swap = [(r["memory"]["SwapTotal_KiB"] - r["memory"]["SwapFree_KiB"]) / 2**20 for r in sel]
-    rss = [r.get("rss_KiB", {}).get("strata", 0) / 2**20 for r in sel]
+    rss = [r.get("rss_KiB", {}).get("nostroma", 0) / 2**20 for r in sel]
     return {"samples": len(sel), "gpu_mem_used_mib_max": max(gpu), "host_used_gib_max": round(max(host), 2),
             "swap_used_gib_max": round(max(swap), 2), "engine_rss_gib_max": round(max(rss), 2)}
 

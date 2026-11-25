@@ -5,8 +5,8 @@
 // the PLE block after layer 0 (GEMMs + msl/ple.metal), every row's final residual (the drafter's prompt rows), the
 // window's history parity, RoPE table and pending fold.  No head: the last prompt token runs as a decode window.
 //
-// The 8-row-window prompt path stays as the fallback: STRATA_METAL_PROMPT=window, and prompts shorter than
-// STRATA_METAL_PROMPT_MIN rows (default 32).  STRATA_METAL_PROMPT_CHUNK = C (default 2048).  The kernel variants
+// The 8-row-window prompt path stays as the fallback: NOSTROMA_METAL_PROMPT=window, and prompts shorter than
+// NOSTROMA_METAL_PROMPT_MIN rows (default 32).  NOSTROMA_METAL_PROMPT_CHUNK = C (default 2048).  The kernel variants
 // follow prompt_chain's defaults: matrix-unit register operands where the GPU has the M5's right-input layout
 // (COOP_K4, function constant 7), else the older expert and attention kernels (the M4).
 
@@ -51,7 +51,7 @@ bool Window::pc_setup(int C) {
     if (b.C >= C) return true;
     const double t0 = now_ms();
     if (b.C == 0) {
-        using namespace strata_metal;
+        using namespace nostroma_metal;
         auto cc = [&](const MslLib& L) { return cx_->compile(L.files, L.prelude); };
         b.lib = cc(lib_prompt(kq_down_prelude(f_)));
         b.lgdn = cc(lib_prompt_gdn());
@@ -64,14 +64,14 @@ bool Window::pc_setup(int C) {
     const size_t MT = (size_t) C;
     const int MB = (int) max_cells_ / 4 + 2;
     // the expert GEMM tiles (prompt_chain's defaults): v3 gate/up 16,32,32,4 and down 16,64,32,2 with the M5 layout, else v2.
-    // STRATA_PROMPT_GU / STRATA_PROMPT_DN = TM,TN,TK,SG override them (test tooling; TM = the plan's tile height, the same for both)
+    // NOSTROMA_PROMPT_GU / NOSTROMA_PROMPT_DN = TM,TN,TK,SG override them (test tooling; TM = the plan's tile height, the same for both)
     b.gu3[0] = 16; b.gu3[1] = 32; b.gu3[2] = 32; b.gu3[3] = 4;
     b.dn3[0] = 16; b.dn3[1] = 64; b.dn3[2] = 32; b.dn3[3] = 2;
-    if (const char* e = std::getenv("STRATA_PROMPT_GU")) std::sscanf(e, "%d,%d,%d,%d", &b.gu3[0], &b.gu3[1], &b.gu3[2], &b.gu3[3]);
-    if (const char* e = std::getenv("STRATA_PROMPT_DN")) std::sscanf(e, "%d,%d,%d,%d", &b.dn3[0], &b.dn3[1], &b.dn3[2], &b.dn3[3]);
+    if (const char* e = std::getenv("NOSTROMA_PROMPT_GU")) std::sscanf(e, "%d,%d,%d,%d", &b.gu3[0], &b.gu3[1], &b.gu3[2], &b.gu3[3]);
+    if (const char* e = std::getenv("NOSTROMA_PROMPT_DN")) std::sscanf(e, "%d,%d,%d,%d", &b.dn3[0], &b.dn3[1], &b.dn3[2], &b.dn3[3]);
     if (!b.v3e) { b.gu3[0] = b.dn3[0] = PC_TM; }
     b.tm = b.gu3[0];
-    if (b.v3e) {   // STRATA_PROMPT_V6=MS (default 4, 0 = off): ragged tiles, groups of MS (2..4) 16-row subtiles of one expert share the weight decode
+    if (b.v3e) {   // NOSTROMA_PROMPT_V6=MS (default 4, 0 = off): ragged tiles, groups of MS (2..4) 16-row subtiles of one expert share the weight decode
         // the ragged-tile kernels exist for these expert types only (every layer's must be one of them)
         auto gu_ok = [](int t) { return t == ref::Q4_K || t == ref::Q5_K || t == ref::Q6_K || t == ref::Q8_0 || t == ref::IQ3_XXS ||
                                         t == ref::IQ2_S || t == ref::IQ4_XS || t == ref::IQ3_S || t == ref::IQ2_XS || t == ref::IQ2_XXS; };
@@ -82,15 +82,15 @@ bool Window::pc_setup(int C) {
             const std::string bl = "blk." + std::to_string(l) + ".";
             types_ok = gu_ok(T(bl + "ffn_gate_exps.weight").type) && gu_ok(T(bl + "ffn_up_exps.weight").type) && dn_ok(T(bl + "ffn_down_exps.weight").type);
         }
-        const char* e6 = std::getenv("STRATA_PROMPT_V6");
-        const int ms = types_ok ? (e6 ? std::atoi(e6) : 4) : 0;   // on by default (STRATA_PROMPT_V6=0 off, 2..4 = the group size)
+        const char* e6 = std::getenv("NOSTROMA_PROMPT_V6");
+        const int ms = types_ok ? (e6 ? std::atoi(e6) : 4) : 0;   // on by default (NOSTROMA_PROMPT_V6=0 off, 2..4 = the group size)
         if (ms >= 2) {
             b.v6 = true; b.ms = std::min(ms, 4); b.tm = 16; b.gu3[0] = b.dn3[0] = 16;
-            if (!std::getenv("STRATA_PROMPT_GU")) { b.gu3[1] = 16; b.gu3[2] = 32; b.gu3[3] = 4; }   // measured (moe_mm_parity, T 2048): the accumulators of MS subtiles x gate/up need the narrow tile
-            if (!std::getenv("STRATA_PROMPT_DN")) { b.dn3[1] = 32; b.dn3[2] = 32; b.dn3[3] = 4; }
+            if (!std::getenv("NOSTROMA_PROMPT_GU")) { b.gu3[1] = 16; b.gu3[2] = 32; b.gu3[3] = 4; }   // measured (moe_mm_parity, T 2048): the accumulators of MS subtiles x gate/up need the narrow tile
+            if (!std::getenv("NOSTROMA_PROMPT_DN")) { b.dn3[1] = 32; b.dn3[2] = 32; b.dn3[3] = 4; }
         }
     }
-    if (b.dn3[0] != b.tm) { std::fprintf(stderr, "strata metal: STRATA_PROMPT_GU/DN tile heights differ: using %d for both\n", b.tm); b.dn3[0] = b.tm; }
+    if (b.dn3[0] != b.tm) { std::fprintf(stderr, "nostroma metal: NOSTROMA_PROMPT_GU/DN tile heights differ: using %d for both\n", b.tm); b.dn3[0] = b.tm; }
     b.maxrows = (int) MT * TOPK + nexp_ * b.tm;
     const int nblk_max = ((int) MT * TOPK + 1023) / 1024;
     auto F32 = [&](size_t n) { return cx_->alloc(4 * n); };
@@ -135,13 +135,13 @@ bool Window::pc_setup(int C) {
     b.Wpk = F16((size_t) G_HCD * N); b.Wpv = F16((size_t) N * N);
     b.meta.as<uint32_t>()[2] = b.v3e ? NFF / (b.gu3[1] * b.gu3[3]) : NFF / 64;
     b.meta.as<uint32_t>()[5] = b.v3e ? N / (b.dn3[1] * b.dn3[3]) : N / 64;
-    std::fprintf(stderr, "strata metal: prompt kernels (mac-kern's prompt chain) for chunks of %d rows, %s, ready in %.0f ms\n",
+    std::fprintf(stderr, "nostroma metal: prompt kernels (mac-kern's prompt chain) for chunks of %d rows, %s, ready in %.0f ms\n",
                  C, b.k4 ? "matrix-unit register operands (COOP_K4)" : "the older expert / attention kernels (no M5 layout)",
                  now_ms() - t0);
     return true;
 }
 
-// STRATA_PROMPT_KPROF: the per-dispatch GPU times of one chunk (see pc_chunk).  The table (all profiled chunks summed) is
+// NOSTROMA_PROMPT_KPROF: the per-dispatch GPU times of one chunk (see pc_chunk).  The table (all profiled chunks summed) is
 // rewritten after every chunk to the file named by the variable's value (stderr if it is not a path): the engine may leave
 // without running atexit handlers.
 void Window::pc_kprof(const std::vector<mtl::Dispatch>& ds, int nT, int64_t pos0) {
@@ -174,7 +174,7 @@ void Window::pc_kprof(const std::vector<mtl::Dispatch>& ds, int nT, int64_t pos0
     }
     const double g0 = now_ms();
     const double gg = cx_->run(ds);
-    const char* path = std::getenv("STRATA_PROMPT_KPROF");
+    const char* path = std::getenv("NOSTROMA_PROMPT_KPROF");
     FILE* f = path != nullptr && path[0] == '/' ? std::fopen(path, "w") : stderr;
     if (f == nullptr) f = stderr;
     double tot = 0;
@@ -203,12 +203,12 @@ bool Window::pc_host_rows(const int64_t* tokens, int nT, int64_t pos0, const int
             ref::dequant(te.type, (const uint8_t*) W_.ptr + te.offset + (size_t) tokens[t] * rb, out.emb.data() + (size_t) t * N, N);
     out.ms_emb = now_ms() - t0;
     if (ple_on_) {
-        strata::core::SessionState& ss = *ss_;
-        std::vector<uint32_t> rows((size_t) nT * strata::kernels::PLE_N_HEADS);
+        nostroma::core::SessionState& ss = *ss_;
+        std::vector<uint32_t> rows((size_t) nT * nostroma::kernels::PLE_N_HEADS);
         int32_t prev[2] = {prev_in[0], prev_in[1]};
         for (int t = 0; t < nT; ++t) {
             const int32_t tk = (int32_t) tokens[t];
-            strata::kernels::ngram_rows(&tk, prev, 1, ss.ple.consts, rows.data() + (size_t) t * strata::kernels::PLE_N_HEADS);
+            nostroma::kernels::ngram_rows(&tk, prev, 1, ss.ple.consts, rows.data() + (size_t) t * nostroma::kernels::PLE_N_HEADS);
             prev[0] = prev[1];
             prev[1] = tk;
         }
@@ -223,7 +223,7 @@ bool Window::pc_host_rows(const int64_t* tokens, int nT, int64_t pos0, const int
 // following chunk of the same prompt, whose host rows are computed on a thread while this chunk runs on the GPU.
 bool Window::pc_chunk(const int64_t* tokens, int nT, int64_t pos0, std::string& err, const int64_t* next_tokens, int next_nT) {
     PromptBufs& b = pb_;
-    strata::core::SessionState& ss = *ss_;
+    nostroma::core::SessionState& ss = *ss_;
     const double th0 = now_ms();
     // ---- the rows: the embedding into every stream; the PLE table rows
     PcHost cur;
@@ -401,7 +401,7 @@ bool Window::pc_chunk(const int64_t* tokens, int nT, int64_t pos0, std::string& 
                                           mtl::Arg::B(b.part), mtl::Arg::V(a)},
                   PC_QCHUNKS, G_QKV, 256, nT);
             }
-            static const bool mergeh = [] { const char* e = std::getenv("STRATA_PROMPT_MERGEH"); return !(e && std::string(e) == "0"); }();
+            static const bool mergeh = [] { const char* e = std::getenv("NOSTROMA_PROMPT_MERGEH"); return !(e && std::string(e) == "0"); }();
             if (mergeh) {   // the merge writes the fp16 operand directly (bitwise the same halves)
                 D(P_(b.lqsa, "qsa_merge_h"), {mtl::Arg::B(b.part), mtl::Arg::B(b.qfull), mtl::Arg::B(b.xqh), mtl::Arg::V(a)}, G_QH, nT, 256);
             } else {
@@ -501,7 +501,7 @@ bool Window::pc_chunk(const int64_t* tokens, int nT, int64_t pos0, std::string& 
             dq(T("blk.1.ple_value.weight"), b.Wpv);
             gemm(b.pembh, b.Wpk, b.pkey, nT, G_HCD, N);
             gemm(b.pembh, b.Wpv, b.pval, nT, N, N);
-            struct PleArgs { uint32_t n_embd, hc; float eps; } pa2{N, HC, strata::kernels::NG_RMS_EPS};
+            struct PleArgs { uint32_t n_embd, hc; float eps; } pa2{N, HC, nostroma::kernels::NG_RMS_EPS};
             auto off = [&](const char* n) { return T(n).offset; };
             D(P(lple_, "ple_gnorm", {}, "ple_gnorm"), {mtl::Arg::B(b.pkey), mtl::Arg::B(W_, off("blk.1.ple_norm_key.weight")),
                                                        mtl::Arg::B(b.keyn), mtl::Arg::V(pa2)}, HC, nT, 256);
@@ -521,11 +521,11 @@ bool Window::pc_chunk(const int64_t* tokens, int nT, int64_t pos0, std::string& 
         D(P_(b.lib, "gr_norm"), {mtl::Arg::B(b.R), mtl::Arg::B(b.bo), mtl::Arg::B(b.inj[cur_inj]),
                                 mtl::Arg::B(W_, T("output_hc_norm.weight").offset), mtl::Arg::B(b.xn), mtl::Arg::V(a)}, HC, nT, 256);
     }
-    // STRATA_PROMPT_KPROF=1 (test tooling): every dispatch alone in its own command buffer, its GPU time kept per kernel and
+    // NOSTROMA_PROMPT_KPROF=1 (test tooling): every dispatch alone in its own command buffer, its GPU time kept per kernel and
     // shape, a table at exit.  The chunk then runs once more as a whole, so the GDN state is advanced twice: profiling only.
-    static const bool kprof = std::getenv("STRATA_PROMPT_KPROF") != nullptr;
+    static const bool kprof = std::getenv("NOSTROMA_PROMPT_KPROF") != nullptr;
     if (kprof && nT >= 1024) pc_kprof(ds, nT, pos0);
-    static const bool hostpipe = [] { const char* e = std::getenv("STRATA_METAL_PROMPT_HOSTPIPE"); return !(e && std::string(e) == "0"); }();
+    static const bool hostpipe = [] { const char* e = std::getenv("NOSTROMA_METAL_PROMPT_HOSTPIPE"); return !(e && std::string(e) == "0"); }();
     if (hostpipe && next_tokens != nullptr && next_nT > 0 && g_embd_rows == nullptr) {
         const int32_t pv[2] = {nT >= 2 ? (int32_t) tokens[nT - 2] : ss.ple_prev[1], (int32_t) tokens[nT - 1]};
         const int64_t npos = pos0 + nT;
@@ -541,7 +541,7 @@ bool Window::pc_chunk(const int64_t* tokens, int nT, int64_t pos0, std::string& 
     hp_ = 1 - hp_;
     // the host side of the commit: the PLE history (the last 9 normalized rows) and the n-gram context
     if (ple_on_) {
-        using namespace strata::kernels;
+        using namespace nostroma::kernels;
         const float* nw = b.normW.as<float>();
         float* hist = pleHist_.as<float>();
         for (int c = 0; c < NG_HC_DIM; ++c) {
@@ -566,7 +566,7 @@ bool Window::pc_chunk(const int64_t* tokens, int nT, int64_t pos0, std::string& 
 bool Window::prompt(const int64_t* tokens, int64_t n, int64_t pos0,
                     const std::function<bool(const float*, int64_t, int64_t, std::string&)>& on_chunk, std::string& err) {
     static const int C = [] {
-        const char* e = std::getenv("STRATA_METAL_PROMPT_CHUNK");
+        const char* e = std::getenv("NOSTROMA_METAL_PROMPT_CHUNK");
         return std::max(64, std::min(8192, e ? std::atoi(e) : 2048));
     }();
     if (!pc_setup((int) std::min<int64_t>(C, std::max<int64_t>(n, 64)))) { err = "metal prompt: setup failed"; return false; }
@@ -588,8 +588,8 @@ bool Window::prompt(const int64_t* tokens, int64_t n, int64_t pos0,
             if (!ok) return false;
         }
     }
-    if (std::getenv("STRATA_METAL_TRACE") || std::getenv("STRATA_METAL_PROFILE"))
-        std::fprintf(stderr, "strata metal: prompt %lld tokens in %.1f ms (GPU %.1f ms, host rows %.1f ms [+%.1f ms beside the GPU; embeddings %.1f, PLE %.1f], drafter rows %.1f ms) "
+    if (std::getenv("NOSTROMA_METAL_TRACE") || std::getenv("NOSTROMA_METAL_PROFILE"))
+        std::fprintf(stderr, "nostroma metal: prompt %lld tokens in %.1f ms (GPU %.1f ms, host rows %.1f ms [+%.1f ms beside the GPU; embeddings %.1f, PLE %.1f], drafter rows %.1f ms) "
                              "-> %.1f tok/s\n", (long long) n, now_ms() - t0, pb_.gpu_ms, pb_.host_ms, pb_.hidden_ms, pb_.emb_ms, pb_.ple_ms, pb_.mtp_ms,
                      1000.0 * (double) n / (now_ms() - t0));
     return true;

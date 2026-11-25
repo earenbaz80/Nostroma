@@ -60,12 +60,12 @@ class FolderRules(unittest.TestCase):
 
         with mock.patch("builtins.open", spy):
             self.assertTrue(folders._can_write(self.base))
-        self.assertTrue(any(".strata-write-test-" in s for s in seen))
+        self.assertTrue(any(".nostroma-write-test-" in s for s in seen))
         self.assertEqual(os.listdir(self.base), [])
 
     @unittest.skipUnless(os.name == "nt", "Windows system folders")
     def test_system_folders_are_refused(self):
-        for p in (r"C:\Windows\System32", r"C:\Windows", r"C:\Program Files\Strata", r"C:\Program Files (x86)\x"):
+        for p in (r"C:\Windows\System32", r"C:\Windows", r"C:\Program Files\Nostroma", r"C:\Program Files (x86)\x"):
             with self.subTest(p=p):
                 what, nxt = folders.problem(p)
                 self.assertIn("system folder", what)
@@ -180,12 +180,12 @@ class SetupGuard(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.base = Path(self.tmp.name)
-        self.root = self.base / "Strata"
+        self.root = self.base / "Nostroma"
         self.root.mkdir()
         env = mock.patch.dict(os.environ, {"APPDATA": str(self.base / "appdata"), "XDG_CONFIG_HOME": str(self.base / "appdata")})
         env.start()
         self.addCleanup(env.stop)
-        os.environ.pop("STRATA_SETTINGS_FILE", None)
+        os.environ.pop("NOSTROMA_SETTINGS_FILE", None)
         for patcher in (mock.patch.object(setup, "ROOT", self.root), mock.patch.object(setup, "_CONTROL_HOME", None)):
             patcher.start()
             self.addCleanup(patcher.stop)

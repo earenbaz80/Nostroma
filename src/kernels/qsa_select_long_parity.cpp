@@ -1,10 +1,10 @@
-// src/kernels/qsa_select_long_parity.cpp - STRATA_SELECT_LONG's decode select (PR #3820): qsa_block_scores_long
+// src/kernels/qsa_select_long_parity.cpp - NOSTROMA_SELECT_LONG's decode select (PR #3820): qsa_block_scores_long
 // (block_scores_dx_kernel) and qsa_block_topk_long (the multi-CTA top-k) against qsa_block_scores and qsa_block_topk,
 // bit for bit (GPU, synthetic data, no model).
 //
-// Needs the CUDA build with STRATA_EXPERIMENTAL_SM60 (elsewhere the _long calls forward to the plain ones and there is
-// nothing to compare; the test skips with 77) and STRATA_SCORES_DX=1 STRATA_TOPK_MULTI=1 in the environment, which make
-// the new kernels run on any card (on compute capability 6.x they are the default).  STRATA_TOPK_MULTI_N=<n> fixes the
+// Needs the CUDA build with NOSTROMA_EXPERIMENTAL_SM60 (elsewhere the _long calls forward to the plain ones and there is
+// nothing to compare; the test skips with 77) and NOSTROMA_SCORES_DX=1 NOSTROMA_TOPK_MULTI=1 in the environment, which make
+// the new kernels run on any card (on compute capability 6.x they are the default).  NOSTROMA_TOPK_MULTI_N=<n> fixes the
 // CTAs per query (the ctest "n3" case), otherwise one per 2,048 blocks of capacity.
 //
 //   scores: random pooled keys, queries and a dead key; nq 1..8 queries with their own n_bid (a decode window's
@@ -18,9 +18,9 @@
 //           kernels ran; a forwarded call would leave it untouched).
 //
 //   qsa_select_long_parity [--device N]     exit 0: all cases identical; 77: no GPU or a build without the kernels
-#include "strata/kernels/qsa.hpp"
-#include "strata/env.hpp"
-#include "strata/kernels/qsa_select.hpp"
+#include "nostroma/kernels/qsa.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kernels/qsa_select.hpp"
 
 #include <cuda_runtime.h>
 
@@ -33,7 +33,7 @@
 #include <random>
 #include <vector>
 
-namespace k = strata::kernels;
+namespace k = nostroma::kernels;
 
 namespace {
 void ck(cudaError_t e, const char* what) {
@@ -176,20 +176,20 @@ int main(int argc, char** argv) {
     }
     ck(cudaSetDevice(device), "cudaSetDevice");
     if (k::qsa_topk_multi_scratch_ints(1) <= 0) {
-        std::puts("SKIP: this build has no multi-CTA select (CUDA with STRATA_EXPERIMENTAL_SM60)");
+        std::puts("SKIP: this build has no multi-CTA select (CUDA with NOSTROMA_EXPERIMENTAL_SM60)");
         return 77;
     }
-    const char* dx = strata::env("NOSTROMA_SCORES_DX");
-    const char* mt = strata::env("NOSTROMA_TOPK_MULTI");
+    const char* dx = nostroma::env("NOSTROMA_SCORES_DX");
+    const char* mt = nostroma::env("NOSTROMA_TOPK_MULTI");
     if (dx == nullptr || dx[0] != '1' || mt == nullptr || mt[0] != '1') {
-        std::fprintf(stderr, "qsa_select_long_parity: set STRATA_SCORES_DX=1 and STRATA_TOPK_MULTI=1 (the kernels are "
+        std::fprintf(stderr, "qsa_select_long_parity: set NOSTROMA_SCORES_DX=1 and NOSTROMA_TOPK_MULTI=1 (the kernels are "
                              "otherwise default only on compute capability 6.x)\n");
         return 2;
     }
     cudaDeviceProp prop{};
     ck(cudaGetDeviceProperties(&prop, device), "cudaGetDeviceProperties");
-    std::printf("qsa_select_long_parity on device %d (%s, %d.%d), STRATA_TOPK_MULTI_N=%s\n", device, prop.name, prop.major,
-                prop.minor, strata::env("NOSTROMA_TOPK_MULTI_N") ? strata::env("NOSTROMA_TOPK_MULTI_N") : "(per capacity)");
+    std::printf("qsa_select_long_parity on device %d (%s, %d.%d), NOSTROMA_TOPK_MULTI_N=%s\n", device, prop.name, prop.major,
+                prop.minor, nostroma::env("NOSTROMA_TOPK_MULTI_N") ? nostroma::env("NOSTROMA_TOPK_MULTI_N") : "(per capacity)");
 
     const k::QsaShapes s = k::qsa_real_shapes();
     std::mt19937 rng(20261026u);

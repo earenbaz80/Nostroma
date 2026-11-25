@@ -1,8 +1,8 @@
-# Strata SYCL port - development image for the Intel Arc path.
+# Nostroma SYCL port - development image for the Intel Arc path.
 # It runs as root on purpose: this is an interactive toolbox (oneAPI, dpct, ninja, the CUDA headers dpct parses), not a service -
 # no port, no /data, nothing to serve, and nothing published: no release ships it and no user is told to run it. The build commands
 # in docs/INTEL.md run it with -u $(id -u):$(id -g), so what they write in build-sycl/ stays yours, and the engine serves from an
-# image built on this one through sycl/serve/strata-sycl.sh, which runs as your account too. Root is only what lets you apt-get
+# image built on this one through sycl/serve/nostroma-sycl.sh, which runs as your account too. Root is only what lets you apt-get
 # install or clone into /opt inside a throwaway shell.
 # audit: root-ok — caja de herramientas interactiva, no se publica, se usa con -u $(id -u):$(id -g) (docs/INTEL.md)
 # Base: the llama.cpp SYCL image already on the box (oneAPI 2026.1 compiler, MKL, Level Zero for Xe2).

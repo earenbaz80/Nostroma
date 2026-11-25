@@ -135,7 +135,7 @@ test('4d: picture reading is on unless the person turned it off (no saved choice
     await f.control.refresh(true);
     const first = () => f.control.state().installed.models.find(m => m.model === 'iq2_xs');
     assert.equal(first().visionEnabled, undefined, 'a model never loaded and never turned off');
-    const path = join(f.repo, 'strata-iq2_xs.json');
+    const path = join(f.repo, 'nostroma-iq2_xs.json');
     const cfg = JSON.parse(readFileSync(path, 'utf8'));
     writeFileSync(path, JSON.stringify({ ...cfg, ui_vision_enabled: false }));
     await f.control.refresh(true);

@@ -6,13 +6,13 @@
 //            (src/prefill/prefill.cpp, "const int q = (int) (j % DQ); if (lay.native) { ... iq_dequant_gu_f16 ... m.gemm.f16 ... swiglu_interleaved ...
 //            m.gemm.f16 }"), with the engine's two-slot dequantize ring (DQ = 2) and its Gemm set up as Prefill::init sets it (init_external with the
 //            32 MiB workspace, set_f16_io(prompt_f16()), set_act_f16).  Nothing of that sequence is re-implemented here: every call is the library's.
-//   FP16+FR  the same with the few-row experts (fewrows.hpp, STRATA_PF_FEWROWS; the engine's default on a Tesla P100) on the quantized grouped kernels:
+//   FP16+FR  the same with the few-row experts (fewrows.hpp, NOSTROMA_PF_FEWROWS; the engine's default on a Tesla P100) on the quantized grouped kernels:
 //            an expert with 1..kFewRows rows runs fewrows_record + native_expert_grouped on the GGUF blob instead of the dequantize and the two GEMMs
 //            (prefill.cpp, "if (fr_env) { ... fewrows_takes(...) ... fewrows_record ... native_expert_grouped(...) }")
 //   GRP      the whole layer in one native_expert_grouped call (the grouped decode-family kernels on q8_1 activations): what the Qwen3.6 engine
 //            (q36_engine.cu) runs for a layer with neither fused kernels nor MMQ, and what the verify window uses.  Off unless --grouped or --shape=q36.
-//   FUSED    Strata's own fused int8 kernels (moe_fused_iq.hpp experts_native; at the Qwen3.6 shape the copy moe_fused_iq_q36.cu's experts_native_ext)
-//            where the card has them for the pair.  The opt-in switches that select them (STRATA_PF_FUSED=1, _KQ, _Q50, _Q8D, _Q8GU, _Q6K) are set
+//   FUSED    Nostroma's own fused int8 kernels (moe_fused_iq.hpp experts_native; at the Qwen3.6 shape the copy moe_fused_iq_q36.cu's experts_native_ext)
+//            where the card has them for the pair.  The opt-in switches that select them (NOSTROMA_PF_FUSED=1, _KQ, _Q50, _Q8D, _Q8GU, _Q6K) are set
 //            when not already set, so the column shows what the kernels do, not what the engine picks by default on this card.
 // No model file is read.  Every path's output is hashed (FNV-1a over the bits, in pair order) and a sample of pairs (default 96) is compared with a
 // CPU FP32 reference (ggml's own to_float of the weights, FP32 activations, double sums): rel RMS and worst row.
@@ -26,23 +26,23 @@
 //
 // What it does not capture of a real run: expert streaming (every expert is resident here), the engine's chunking of a long prompt (one chunk of T tokens),
 // attention / GDN / dense layers, the drafter, the KV cache, and the host-side planning between layers.
-// (a HIP build compiles this file as plain C++ against the compat headers: STRATA_USE_HIP comes with strata_hip_runtime, __HIPCC__ only in .cu / HIP-language files)
-#if defined(__HIPCC__) || defined(STRATA_USE_HIP)
+// (a HIP build compiles this file as plain C++ against the compat headers: NOSTROMA_USE_HIP comes with nostroma_hip_runtime, __HIPCC__ only in .cu / HIP-language files)
+#if defined(__HIPCC__) || defined(NOSTROMA_USE_HIP)
 #define FB_HIP 1
 #endif
-#include "strata/kernels/iq_kernels.hpp"
-#include "strata/prefill/fewrows.hpp"
-#include "strata/prefill/gemm.hpp"
-#include "strata/prefill/kernels.hpp"
-#include "strata/prefill/mmq_ids_margin.hpp"
-#include "strata/prefill/moe_fused_iq.hpp"
-#include "strata/prefill/moe_mmq.hpp"
+#include "nostroma/kernels/iq_kernels.hpp"
+#include "nostroma/prefill/fewrows.hpp"
+#include "nostroma/prefill/gemm.hpp"
+#include "nostroma/prefill/kernels.hpp"
+#include "nostroma/prefill/mmq_ids_margin.hpp"
+#include "nostroma/prefill/moe_fused_iq.hpp"
+#include "nostroma/prefill/moe_mmq.hpp"
 #if !defined(FB_HIP)
-#include "strata/prefill/moe_fused_q36.hpp"
+#include "nostroma/prefill/moe_fused_q36.hpp"
 #endif
 
 #include "ggml.h"
-#include "strata/quant/types.hpp"
+#include "nostroma/quant/types.hpp"
 #include "../prefill/bench_blob_layout.hpp"
 
 #include <cuda_runtime.h>
@@ -65,10 +65,10 @@
 #include <vector>
 
 namespace {
-namespace mmq = strata::prefill::mmq;
-namespace fused = strata::prefill::fused;
-namespace kern = strata::kernels;
-namespace pf = strata::prefill;
+namespace mmq = nostroma::prefill::mmq;
+namespace fused = nostroma::prefill::fused;
+namespace kern = nostroma::kernels;
+namespace pf = nostroma::prefill;
 
 constexpr int GROUP = 16;   // MMQ's expert group (prefill.cpp MMQ_GROUP)
 constexpr int DQ = 2;       // the engine's dequantized-expert ring (prefill.cpp DQ)
@@ -418,11 +418,11 @@ struct GrpPath {
     }
 };
 
-static void set_i8_tm(int tm) {   // research: STRATA_I8_TM for the next native_expert_i8 calls (0 = unset: the call's own choice)
+static void set_i8_tm(int tm) {   // research: NOSTROMA_I8_TM for the next native_expert_i8 calls (0 = unset: the call's own choice)
 #if defined(_WIN32)
-    _putenv_s("STRATA_I8_TM", tm > 0 ? std::to_string(tm).c_str() : "");
+    _putenv_s("NOSTROMA_I8_TM", tm > 0 ? std::to_string(tm).c_str() : "");
 #else
-    if (tm > 0) setenv("STRATA_I8_TM", std::to_string(tm).c_str(), 1); else unsetenv("STRATA_I8_TM");
+    if (tm > 0) setenv("NOSTROMA_I8_TM", std::to_string(tm).c_str(), 1); else unsetenv("NOSTROMA_I8_TM");
 #endif
 }
 
@@ -460,7 +460,7 @@ struct FusedFlash {
     }
 };
 #if !defined(FB_HIP)
-namespace fq = strata::prefill::fused_q36;
+namespace fq = nostroma::prefill::fused_q36;
 struct FusedQ36 {
     using Batch = fq::Batch;
     using Geom = fq::NativeGeom;
@@ -589,14 +589,14 @@ struct Opts {
     Shape shape{2560, 640, 512, 10, "flash"};
     std::vector<int> tokens = {2048, 4096, 8192, 20000};
     std::vector<std::string> only;
-    std::vector<int> i8_tms;   // --i8-tm=2,3,4: one extra I8 column per tile-row count (STRATA_I8_TM set around each run)
+    std::vector<int> i8_tms;   // --i8-tm=2,3,4: one extra I8 column per tile-row count (NOSTROMA_I8_TM set around each run)
     bool dense = false, tokens_set = false, all = false, list = false, grouped = false, i8 = false, no_grp = false, no_mmq = false, no_fused = false, no_fp16 = false, no_ref = false, quick = false;
     int repeats = 7, sample = 96, experts = 0;
     float warm_ms = 1000.0f;
     double skew = 0;
     unsigned seed = 1360;
     std::string dense_type = "Q8_0";
-    // --real=DIR --real-pack=native_experts.txt --real-gguf=SHARD.gguf [--real-layers=0,1,...]: real rows (the engine's STRATA_DUMP_MOE_INPUT=DIR/moe STRATA_DUMP_MOE_LAYER=all files DIR/moe.L<l>:
+    // --real=DIR --real-pack=native_experts.txt --real-gguf=SHARD.gguf [--real-layers=0,1,...]: real rows (the engine's NOSTROMA_DUMP_MOE_INPUT=DIR/moe NOSTROMA_DUMP_MOE_LAYER=all files DIR/moe.L<l>:
     // a layer's MoE input and routing) through that layer's real experts (read from the GGUF at the offsets of the pack's native_experts.txt), one cell per layer, the pair taken from the pack's types
     std::string real_dir, real_pack, real_gguf;
     std::vector<int> real_layers;
@@ -659,7 +659,7 @@ const std::vector<Pair>& all_pairs() {
         // Qwen3.6's K-quant downs (n_ff 512 is a whole number of 256-value blocks)
         {GGML_TYPE_Q4_K, GGML_TYPE_Q5_K, "Q4_K / Q5_K"},         {GGML_TYPE_Q4_K, GGML_TYPE_Q6_K, "Q4_K / Q6_K"},
         {GGML_TYPE_Q5_K, GGML_TYPE_Q6_K, "Q5_K / Q6_K"},
-        // NVFP4 (ModelOpt packs: Strata's GPTQ pack, NVIDIA's): NVFP4 gate/up and down, the blob's tail = the per-expert scales
+        // NVFP4 (ModelOpt packs: Nostroma's GPTQ pack, NVIDIA's): NVFP4 gate/up and down, the blob's tail = the per-expert scales
         {GGML_TYPE_NVFP4, GGML_TYPE_NVFP4, "NVFP4 / NVFP4"}};
     return pairs;
 }
@@ -681,17 +681,17 @@ void run_cell(const Pair& p, const Shape& s, int T, const Opts& o, const Card& c
     cudaMemGetInfo(&free0, &tot);
 
     // blobs at the engine's stride (a whole number of blocks of both formats), identical but for one quant byte of the gate matrix's first row:
-    // strata::bench_blob::perturb_offset skips every byte that carries scale bits in the gate/up type's block (fixed offsets 4..19 reached block 1's
+    // nostroma::bench_blob::perturb_offset skips every byte that carries scale bits in the gate/up type's block (fixed offsets 4..19 reached block 1's
     // fp16 scale on Q2_0's 18-byte blocks and gave some experts scales of +-12,992 or NaN)
-    strata::bench_blob::BlockLayout gu_lay;
-    if (!real && !strata::bench_blob::layout_of((int) p.gu, gu_lay)) {
+    nostroma::bench_blob::BlockLayout gu_lay;
+    if (!real && !nostroma::bench_blob::layout_of((int) p.gu, gu_lay)) {
         std::printf("   %s: no block layout for gate/up type %d in bench_blob_layout.hpp: pair skipped\n", p.name, (int) p.gu);
         return;
     }
-    // checked against the engine's own type table (strata::quant::type_info), not ggml's: a build without MMQ links no ggml for this
-    const strata::quant::TypeInfo* gu_ti = real ? nullptr : strata::quant::type_info((int) p.gu);
-    if (!real && (gu_ti == nullptr || gu_lay.bytes != (int) gu_ti->bytes || gu_lay.values != gu_ti->blck || strata::bench_blob::perturb_offset(gu_lay, 15) >= geo.gu_row)) {
-        std::fprintf(stderr, "bench_blob_layout.hpp: type %d has %d bytes / %d values per block there, strata::quant::type_info says %zu / %d\n", (int) p.gu,
+    // checked against the engine's own type table (nostroma::quant::type_info), not ggml's: a build without MMQ links no ggml for this
+    const nostroma::quant::TypeInfo* gu_ti = real ? nullptr : nostroma::quant::type_info((int) p.gu);
+    if (!real && (gu_ti == nullptr || gu_lay.bytes != (int) gu_ti->bytes || gu_lay.values != gu_ti->blck || nostroma::bench_blob::perturb_offset(gu_lay, 15) >= geo.gu_row)) {
+        std::fprintf(stderr, "bench_blob_layout.hpp: type %d has %d bytes / %d values per block there, nostroma::quant::type_info says %zu / %d\n", (int) p.gu,
                      gu_lay.bytes, gu_lay.values, gu_ti ? gu_ti->bytes : (size_t) 0, gu_ti ? gu_ti->blck : 0);
         std::exit(1);
     }
@@ -705,7 +705,7 @@ void run_cell(const Pair& p, const Shape& s, int T, const Opts& o, const Card& c
     auto blob_bytes = [&](int e) -> std::vector<uint8_t> {
         if (real) { std::vector<uint8_t> rb = real->blob[(size_t) e]; rb.resize(geo.bytes, 0); return rb; }   // (an expert no row routes to is not loaded: zeros)
         std::vector<uint8_t> b = base;
-        b[strata::bench_blob::perturb_offset(gu_lay, e)] ^= (uint8_t) e;
+        b[nostroma::bench_blob::perturb_offset(gu_lay, e)] ^= (uint8_t) e;
         return b;
     };
     for (int e = 0; e < E; ++e) {
@@ -963,8 +963,8 @@ constexpr bool FB_HIP_ON = true;
 constexpr bool FB_HIP_ON = false;
 #endif
 // ---------------------------------------------------------------------------------------------------------------------------------------------
-// --dense: the engine's dense prompt GEMMs (projections) through strata::prefill::Gemm with FP16 io off and on.  "On" is Gemm::set_f16_io(true), what
-// STRATA_HIP_PROMPT_F16=1 (prompt_f16(), src/prefill/gemm.cu) sets on a HIP card: bf16() then takes the FP16 image of the activations and native() / bf16()
+// --dense: the engine's dense prompt GEMMs (projections) through nostroma::prefill::Gemm with FP16 io off and on.  "On" is Gemm::set_f16_io(true), what
+// NOSTROMA_HIP_PROMPT_F16=1 (prompt_f16(), src/prefill/gemm.cu) sets on a HIP card: bf16() then takes the FP16 image of the activations and native() / bf16()
 // run the GEMM with FP16 out (widened in place).  On CUDA set_f16_io has no effect (the engine never turns it on there): both columns are the same code, which
 // makes the ratio the run-to-run noise floor.  The shapes are Flash-Next's (the compiled geometry's), (T, N, K) as the engine's call sites pass them:
 //   prefill.cpp (a269d4c82)   gdn_qkv native :4393   gdn_gate native :4401   gdn_out native :4424   alpha/beta bf16 :4402-4403   qsa_k/v native :4445-4446
@@ -979,7 +979,7 @@ struct DenseShape {
     const char* site;
 };
 std::vector<DenseShape> dense_shapes() {
-    const auto& g = strata::core::kCompiledGeometry;
+    const auto& g = nostroma::core::kCompiledGeometry;
     const int64_t Nn = g.n_embd, D = g.hc * g.n_embd, LR = g.hc_lr, C = g.ssm_conv_channels, ZV = g.ssm_value_dim, QW = g.n_head * g.head_dim,
                   KV = g.n_head_kv * g.head_dim, IQW = g.idx_q_heads * g.idx_key_dim;
     const int nl = (int) g.n_layers, nq = (int) g.n_qsa_layers(), ng = (int) g.n_gdn_layers();
@@ -1153,7 +1153,7 @@ std::vector<PackRow> read_pack(const std::string& path) {
     return v;
 }
 
-// the dump of STRATA_DUMP_MOE_INPUT (one file per layer: {T, N, K} int64, T x N floats, T x K expert ids) and the layer's experts (the ones some row routes to) from the GGUF
+// the dump of NOSTROMA_DUMP_MOE_INPUT (one file per layer: {T, N, K} int64, T x N floats, T x K expert ids) and the layer's experts (the ones some row routes to) from the GGUF
 RealLayer load_real(const Opts& o, const PackRow& pr, const Pair& p, const Shape& s) {
     RealLayer rl;
     rl.layer = pr.layer;
@@ -1246,13 +1246,13 @@ int main(int argc, char** argv) {
             return 0;
         }
         // the opt-in switches that select the fused kernels and MMQ's K-quant library (the engine reads them; unset ones are set here, set ones are kept)
-        defenv("STRATA_PF_FUSED", "1");
-        defenv("STRATA_PF_FUSED_KQ", "1");
-        defenv("STRATA_PF_FUSED_Q50", "1");
-        defenv("STRATA_PF_FUSED_Q8D", "1");
-        defenv("STRATA_PF_FUSED_Q8GU", "1");
-        defenv("STRATA_PF_FUSED_Q6K", "1");
-        defenv("STRATA_MMQ_KQ", "1");
+        defenv("NOSTROMA_PF_FUSED", "1");
+        defenv("NOSTROMA_PF_FUSED_KQ", "1");
+        defenv("NOSTROMA_PF_FUSED_Q50", "1");
+        defenv("NOSTROMA_PF_FUSED_Q8D", "1");
+        defenv("NOSTROMA_PF_FUSED_Q8GU", "1");
+        defenv("NOSTROMA_PF_FUSED_Q6K", "1");
+        defenv("NOSTROMA_MMQ_KQ", "1");
 
         int n = 0;
         if (cudaGetDeviceCount(&n) != cudaSuccess || n == 0) { std::printf("no GPU device: skipped\n"); return 77; }
@@ -1274,15 +1274,15 @@ int main(int argc, char** argv) {
         const Shape s0 = o.shape;
         // the FP16 path's swiglu_interleaved and the few-row record are written for the compiled geometry (prefill.cpp is, too): any other shape has no FP16 column
         const bool fp16_shape_ok = s0.N == (int) fused::kMoeEmbd && s0.FF == (int) fused::kMoeFF;
-        // fewrows.hpp's default: off unless STRATA_PF_FEWROWS, except on the Tesla P100 (cc 6.0) where gp100_prompt_default.hpp turns it on with the FP16 path
-        const char* few_env = std::getenv("STRATA_PF_FEWROWS");
+        // fewrows.hpp's default: off unless NOSTROMA_PF_FEWROWS, except on the Tesla P100 (cc 6.0) where gp100_prompt_default.hpp turns it on with the FP16 path
+        const char* few_env = std::getenv("NOSTROMA_PF_FEWROWS");
         const bool fewrows_dflt = pf::fewrows_switch(few_env, card.major == 6 && card.minor == 0);
         std::printf("prefill_expert_paths_bench: %s (%s), %.1f GiB (%.1f free), device 0 of %d\n", card.name.c_str(), card.arch.c_str(), (double) card.total / 1073741824.0,
                     (double) fr_free / 1073741824.0, n);
         std::printf("  shape %s: n_embd %d, n_ff %d, %d experts, top %d; compiled geometry %d x %d (FP16 column %s); MMQ in this build: %s; fused kernels for an IQ3_XXS / IQ4_NL layer here: %s\n",
                     s0.name.c_str(), s0.N, s0.FF, s0.E, s0.K, (int) fused::kMoeEmbd, (int) fused::kMoeFF, fp16_shape_ok ? "on" : "off: this shape is not the compiled one",
                     mmq::built() ? "yes" : "no", (fused::native_supported(GGML_TYPE_IQ3_XXS, GGML_TYPE_IQ4_NL) ? "yes" : "no"));
-        std::printf("  few-row experts (<= %d rows) on the quantized kernels by default here: %s (STRATA_PF_FEWROWS=%s); routing %s; repeats %d after %.0f ms warm-up\n", pf::kFewRows,
+        std::printf("  few-row experts (<= %d rows) on the quantized kernels by default here: %s (NOSTROMA_PF_FEWROWS=%s); routing %s; repeats %d after %.0f ms warm-up\n", pf::kFewRows,
                     fewrows_dflt ? "yes" : "no", few_env ? few_env : "unset", o.skew > 0 ? "Zipf" : "uniform", o.repeats, (double) o.warm_ms);
 
         cudaStream_t st = nullptr;
@@ -1309,8 +1309,8 @@ int main(int argc, char** argv) {
             if (!o.tokens_set) o.tokens = {2048, 8192, 20000};
             if (o.quick) { o.tokens = {512}; if (o.only.size() == 1 && o.only[0] == "IQ3_XXS / IQ4_NL") o.only.clear(); }   // (--quick put its expert pair in --only)
             const bool dflt_on = pf::prompt_f16();
-            std::printf("  dense mode: Flash-Next (compiled geometry) projection GEMMs, native weights %s; FP16 io off = Gemm as the engine runs it by default, on = Gemm::set_f16_io(true) (STRATA_HIP_PROMPT_F16=1);\n"
-                        "  prompt_f16() here: %s (the engine turns it on only when STRATA_HIP_PROMPT_F16=1 on a HIP card); effect of set_f16_io on this build: %s\n",
+            std::printf("  dense mode: Flash-Next (compiled geometry) projection GEMMs, native weights %s; FP16 io off = Gemm as the engine runs it by default, on = Gemm::set_f16_io(true) (NOSTROMA_HIP_PROMPT_F16=1);\n"
+                        "  prompt_f16() here: %s (the engine turns it on only when NOSTROMA_HIP_PROMPT_F16=1 on a HIP card); effect of set_f16_io on this build: %s\n",
                         ggml_type_name(nt), dflt_on ? "on" : "off", FB_HIP_ON ? "yes (HIP)" : "none (CUDA: both columns are the same code, the ratio is the noise floor)");
             const std::vector<DenseShape> ds = dense_shapes();
             for (int T : o.tokens) {

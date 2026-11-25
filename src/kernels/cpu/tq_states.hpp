@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <cstring>
 
-namespace strata::kernels::cpu::tq_detail {
+namespace nostroma::kernels::cpu::tq_detail {
 
 inline constexpr uint32_t kTqStateMask = 0x7fffu;
 
@@ -105,4 +105,4 @@ inline uint16_t tq_ld16(const uint8_t* p) {
     return v;
 }
 
-}  // namespace strata::kernels::cpu::tq_detail
+}  // namespace nostroma::kernels::cpu::tq_detail

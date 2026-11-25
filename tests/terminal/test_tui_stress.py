@@ -15,7 +15,7 @@ class StatusLogsDiscoveryTests(unittest.TestCase):
 
     def _run(self, *argv):
         info = {"running": True, "url": "http://127.0.0.1:8080", "key": "k-launch"}
-        env = {k: v for k, v in os.environ.items() if k not in ("STRATA_URL", "STRATA_CONNECTION")}
+        env = {k: v for k, v in os.environ.items() if k not in ("NOSTROMA_URL", "NOSTROMA_CONNECTION")}
         out = io.StringIO()
         with mock.patch.dict(os.environ, env, clear=True), \
              mock.patch("nostroma_cli.launch.cmd.launch_info", return_value=info), \
@@ -56,9 +56,9 @@ class KeptKeyTests(unittest.TestCase):
 
     def test_key_of_the_launch_config_is_kept(self):
         from nostroma_cli.launch import access
-        self._write("sk-strata-AAA")
+        self._write("sk-nostroma-AAA")
         with mock.patch("nostroma_control.profiles.load", return_value=({"source_config": self.cfg}, "r")):
-            self.assertEqual(access.kept_key("gyro-s 32K"), "sk-strata-AAA")
+            self.assertEqual(access.kept_key("gyro-s 32K"), "sk-nostroma-AAA")
 
     def test_no_key_and_none_are_not_kept(self):
         from nostroma_cli.launch import access
@@ -68,19 +68,19 @@ class KeptKeyTests(unittest.TestCase):
 
     def test_newest_launch_config_is_the_fallback(self):
         from nostroma_cli.launch import access
-        self._write("sk-strata-BBB")
+        self._write("sk-nostroma-BBB")
         rows = [{"id": "launch-other", "source_config": self.cfg}, {"id": "other", "source_config": "x"}]
         with mock.patch("nostroma_control.profiles.load", side_effect=Exception("none")),              mock.patch("nostroma_cli.launch.store.load", return_value=None),              mock.patch("nostroma_control.profiles.list_profiles", return_value=rows):
-            self.assertEqual(access.kept_key("gyro-s 64K"), "sk-strata-BBB")
+            self.assertEqual(access.kept_key("gyro-s 64K"), "sk-nostroma-BBB")
 
     def test_apply_defaults_reuses_the_key_and_new_key_is_a_different_step(self):
         from nostroma_cli.launch import cmd, settings as S
         from tests.terminal.launch_support import HW_12, Home, catalog
         s = S.LaunchSettings(family="qwen", model="IQ3_XXS")
         s.access = "lan"
-        with Home(), mock.patch("nostroma_cli.launch.access.kept_key", return_value="sk-strata-KEPT"):
+        with Home(), mock.patch("nostroma_cli.launch.access.kept_key", return_value="sk-nostroma-KEPT"):
             s2, notes = cmd.apply_defaults(s, catalog(HW_12))
-        self.assertEqual(s2.api_key, "sk-strata-KEPT")
+        self.assertEqual(s2.api_key, "sk-nostroma-KEPT")
         self.assertFalse(any("A new API key was made" in n.line() for n in notes))
 
 

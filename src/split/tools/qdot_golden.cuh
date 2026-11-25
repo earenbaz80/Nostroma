@@ -182,7 +182,7 @@ template <class Fn> bool for_each_format(Fn&& fn) {
 inline const char* kHeader =
     "# src/split/tools/qdot_golden.txt - reference digests of the split engine's decode dots (src/split/src/qdot.cuh); checked by split_qdot_golden\n"
     "# (src/split/tools/qdot_golden.cu), written by split_qdot_test --write-golden (src/split/tools/qdot_test.cu), which writes only when every dot\n"
-    "# of qdot.cuh is bit for bit ggml-cuda's vec_dot_*_q8_1 (vecdotq.cuh, third_party/strata-ggml, llama.cpp pin 3cf03257f219afbe7334045ff7c6a06ac68c627d)\n"
+    "# of qdot.cuh is bit for bit ggml-cuda's vec_dot_*_q8_1 (vecdotq.cuh, third_party/nostroma-ggml, llama.cpp pin 3cf03257f219afbe7334045ff7c6a06ac68c627d)\n"
     "# on the same inputs.  Inputs: fixed seeds per format (qdot_golden.cuh make_inputs); a group = 4096 dots in the decode kernels' call order.\n"
     "# Line: <family> <format> <group> <dots> <input digest> <output digest> [% reason]; digests FNV-1a 64 (inputs: weight bytes then q8_1 blocks of\n"
     "# the format; outputs: the group's float bits).  Family cuda: every group (written with nvcc --use_fast_math, the split's flags).  Another\n"

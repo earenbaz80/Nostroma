@@ -37,7 +37,7 @@ PROFILE_PATCH = HERE / "profile" / "cordis.patch.yml"
 DEFAULT_DSH = "/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh"
 DEFAULT_PYTHON = REPO.parent / "python311" / "bin" / "python"
 
-WORKSPACE_MARKER = "strata-bridge-e2e"
+WORKSPACE_MARKER = "nostroma-bridge-e2e"
 PROMPT = "Say hello in exactly five words."
 
 

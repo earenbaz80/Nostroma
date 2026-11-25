@@ -16,10 +16,10 @@
  "engine_prompt_tps": 1784.6,
  "engine_decode_tps": 63.0,
  "log_lines": [
-  "strata serve: prompt 232183 tokens = 0 reused + 232183 read in 130101 ms (1784.6 tok/s), 256 generated in 4061 ms (63.0 tok/s), drafts accepted 150 of 240, 6 checkpoints",
-  "strata serve: decode expert cache hit rate: 93.7% (149829 hits / 159942 lookups)"
+  "nostroma serve: prompt 232183 tokens = 0 reused + 232183 read in 130101 ms (1784.6 tok/s), 256 generated in 4061 ms (63.0 tok/s), drafts accepted 150 of 240, 6 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 93.7% (149829 hits / 159942 lookups)"
  ],
- "answer_head": "The last file is `serve/server.py` (the listing is truncated at the very end, in the `main()` function where it assigns `svc.gpu_index`).\n\n## What it does\n\nIt is the HTTP API layer of Strata: a pure-Python bridge between OpenAI/Anthropic-style clients and the C++ engine. Concretely:\n\n- **Engine adap",
+ "answer_head": "The last file is `serve/server.py` (the listing is truncated at the very end, in the `main()` function where it assigns `svc.gpu_index`).\n\n## What it does\n\nIt is the HTTP API layer of Nostroma: a pure-Python bridge between OpenAI/Anthropic-style clients and the C++ engine. Concretely:\n\n- **Engine adap",
  "metrics_after": {
   "engine": {
    "model": "qwen3.8-flash-next-iq3_xxs",

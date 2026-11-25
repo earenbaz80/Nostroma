@@ -21,7 +21,7 @@ curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/earenbaz80/Nos
 nostroma launch
 ```
 
-`install.sh` unpacks the Terminal into `~/.local/share/strata` (no administrator rights) and checks the release's signed feed. `nostroma launch`
+`install.sh` unpacks the Terminal into `~/.local/share/nostroma` (no administrator rights) and checks the release's signed feed. `nostroma launch`
 fetches the `linux-aarch64` engine package, shows what each model needs, downloads the one you choose and starts it. Pick Qwen3.8-Flash-Next
 IQ3_S (84 GB download) or the NVFP4 pack. The engine package needs glibc 2.39 or newer
 (Ubuntu 24.04, DGX OS 7) and NVIDIA driver 580.65 or newer.
@@ -61,7 +61,7 @@ cp -r out-spark/engine ./engine
 ```
 
 About 3 minutes for the engine (the first run also fetches llama.cpp at the
-pinned commit). `out-spark/engine/` holds `nostroma`, `strata-vision`, `libstrata_kq.so`, the CUDA libraries and a `BUILD.json`.
+pinned commit). `out-spark/engine/` holds `nostroma`, `nostroma-vision`, `libnostroma_kq.so`, the CUDA libraries and a `BUILD.json`.
 `BUILD_VISION=0` leaves the picture reader out. `packaging/build_cuda_linux_aarch64.sh` runs this build and makes the engine package
 for the feed ([packaging/README.md](../packaging/README.md)). A model on a Q2_0 pack cannot run: its CPU kernels need AVX-512.
 
@@ -85,7 +85,7 @@ decode, against 1,252 and 39 without. Leave it on the SSD (setup does).
 
 Measured on the release-candidate engine package of 0.2.7.1 with `tools/dgx_bench.py`: fresh 4K, 16K and 32K prompts at temperature 0, 256-token
 answers, 64K context, the model's own run config, four samples a cell in two blocks (on, off, off, on), medians. "Table off" is
-`STRATA_SM121_PERF=0`. One Spark, 27 October 2026; the figures move a few percent between sessions.
+`NOSTROMA_SM121_PERF=0`. One Spark, 27 October 2026; the figures move a few percent between sessions.
 
 | Model | Table | Prompt tok/s (4K / 16K / 32K) | Decode tok/s (4K / 16K / 32K) |
 |---|---|---|---|
@@ -105,32 +105,32 @@ slots), and none failed or hung.
 
 ## The six speed defaults of this part
 
-On a GB10 the engine switches on six settings that were measured here, and prints them at every start. `STRATA_SM121_PERF=0` (or
-`STRATA_DEFAULTS=026`, which gives back everything 0.2.7.1 changed) turns the whole set off; a switch you set yourself is kept.
+On a GB10 the engine switches on six settings that were measured here, and prints them at every start. `NOSTROMA_SM121_PERF=0` (or
+`NOSTROMA_DEFAULTS=026`, which gives back everything 0.2.7.1 changed) turns the whole set off; a switch you set yourself is kept.
 
 | Switch | What it does | Measured on this Spark |
 |---|---|---|
-| `STRATA_PF_FUSED=1` | the fused IQ prompt kernels | IQ3_S prompt +10 to 27% |
-| `STRATA_PF_FUSED_KQ=1` | the same fused prompt kernels for the K-quant experts of Unsloth's UD-Q4_K_XL files (Q4_K or Q5_K gate/up, Q5_1 or Q8_0 down), instead of llama.cpp's MMQ; `STRATA_PF_FUSED_KQ=0` gives them back | UD-Q4_K_XL prompt 1.10x at 2K, 1.26x at 4K, 1.18x at 8K, 1.53x at 20K (median of 10 paired runs; single runs scatter between 0.5x and 2x) |
-| `STRATA_PREFILL_NVFP4=w4a4` | NVFP4 prompt matrix product with FP4 activations | NVFP4 prompt +16% |
-| `STRATA_HC_UPMIX=1` | the hyper-connection read's up projection and mix in one kernel | decode +5.4% |
-| `STRATA_SIDE_MIXER=2` | input-only QSA/GDN work on branches of the verify graph | fixed-work IQ3_S decode +6.7% (30 October) |
-| `STRATA_SPEC_COST=1` | the draft window follows what a draft costs | decode +4.7% |
+| `NOSTROMA_PF_FUSED=1` | the fused IQ prompt kernels | IQ3_S prompt +10 to 27% |
+| `NOSTROMA_PF_FUSED_KQ=1` | the same fused prompt kernels for the K-quant experts of Unsloth's UD-Q4_K_XL files (Q4_K or Q5_K gate/up, Q5_1 or Q8_0 down), instead of llama.cpp's MMQ; `NOSTROMA_PF_FUSED_KQ=0` gives them back | UD-Q4_K_XL prompt 1.10x at 2K, 1.26x at 4K, 1.18x at 8K, 1.53x at 20K (median of 10 paired runs; single runs scatter between 0.5x and 2x) |
+| `NOSTROMA_PREFILL_NVFP4=w4a4` | NVFP4 prompt matrix product with FP4 activations | NVFP4 prompt +16% |
+| `NOSTROMA_HC_UPMIX=1` | the hyper-connection read's up projection and mix in one kernel | decode +5.4% |
+| `NOSTROMA_SIDE_MIXER=2` | input-only QSA/GDN work on branches of the verify graph | fixed-work IQ3_S decode +6.7% (30 October) |
+| `NOSTROMA_SPEC_COST=1` | the draft window follows what a draft costs | decode +4.7% |
 
 **What the first three switches do to the answers.** The fused prompt path and the FP4 activations round differently from the paths they replace,
 and the other three do not touch the text (the fused hyper-connection read gives bit-identical logits; the side mixer changes only graph scheduling;
 the cost-aware window only chooses
 which drafts to try, and the target checks every draft). 24 short greedy prompts gave 24 identical answers on IQ3_S and on NVFP4. On
-24 long prompts (1.5K to 24K tokens, the first-token logits compared with the switches off, `STRATA_DUMP_FIRST_LOGITS`) the distribution
+24 long prompts (1.5K to 24K tokens, the first-token logits compared with the switches off, `NOSTROMA_DUMP_FIRST_LOGITS`) the distribution
 does move: IQ3_S mean KL 0.019 (largest 0.082), NVFP4 0.032 (largest 0.126); the most likely token changed on 2 of 24 prompts for each, in
 IQ3_S's case a near tie both times (0.20 against 0.20, 0.15 against 0.14); and a 24-token greedy answer stayed the same on 1 of 6 prompts. Two runs
 of the same setting gave identical logits, so the difference is the switches, not noise. All of the IQ3_S difference comes from the fused
-prompt path, and all of the NVFP4 difference from `w4a4`. On the 61-task quality suite (long-document retrieval, extraction of up to 72 exact rows, summaries, code, JSON, agent loops with tools), run through the server with the switches on and off: IQ3_S passed 56 tasks on and 51 off, NVFP4 56 on and 52 off. Retrieval found all 63 facts in every run, and no agent loop made an invalid tool call. The extraction facts were equal on IQ3_S (621 of 642 both ways); on NVFP4 one 40-row register lost a row with the switches on (616 against 621 of 642). One summary in each model gained or lost a flagged name or figure. Answers differ in wording on 21 of 61 tasks (IQ3_S) and 25 of 61 (NVFP4), and the wins and losses go both ways, so read the suite as "no loss we could measure", not as an improvement. The same setting run twice gave identical answers, so every difference comes from the switches. If you want the answers of 0.2.7, set `STRATA_SM121_PERF=0`: you keep the other
+prompt path, and all of the NVFP4 difference from `w4a4`. On the 61-task quality suite (long-document retrieval, extraction of up to 72 exact rows, summaries, code, JSON, agent loops with tools), run through the server with the switches on and off: IQ3_S passed 56 tasks on and 51 off, NVFP4 56 on and 52 off. Retrieval found all 63 facts in every run, and no agent loop made an invalid tool call. The extraction facts were equal on IQ3_S (621 of 642 both ways); on NVFP4 one 40-row register lost a row with the switches on (616 against 621 of 642). One summary in each model gained or lost a flagged name or figure. Answers differ in wording on 21 of 61 tasks (IQ3_S) and 25 of 61 (NVFP4), and the wins and losses go both ways, so read the suite as "no loss we could measure", not as an improvement. The same setting run twice gave identical answers, so every difference comes from the switches. If you want the answers of 0.2.7, set `NOSTROMA_SM121_PERF=0`: you keep the other
 Spark settings and lose the prompt speed-up. For the K-quant switch (UD-Q4_K_XL, 48 prompts of 2K and 4K tokens, 256 forced tokens each) the forced-token KL against the FP16 prompt path's text is 0.895 times that of MMQ (interval 0.81 to 0.99; the most likely token agrees with the FP16 path in 96.3% of positions against 95.7%), and the same text came out twice, byte for byte, on both sides.
 
 With `"parallel": 4` (the default) the original four-switch set adds up: 32 clients at 2,000-token prompts read 41.3 tok/s with those four on
 and 35.7 with all four off. The side mixer was not part of that check. At `"parallel": 8` the two original decode switches cost about 3.5%
-each; set `STRATA_HC_UPMIX=0 STRATA_SPEC_COST=0` there.
+each; set `NOSTROMA_HC_UPMIX=0 NOSTROMA_SPEC_COST=0` there.
 
 ## What this does not cover
 

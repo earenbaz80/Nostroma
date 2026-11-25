@@ -46,5 +46,5 @@
     "kv_resident_cells": 32768,
     "context_note": "128K context with KV streaming (--kv-resident 32768): 32K cells per QSA layer resident in VRAM, the full K/V in pinned RAM."
   },
-  "note": "Measured community run of Strata on the AMD MI50 (gfx906). One GPU, IQ2_XS, 128K context. Fresh-prompt serial benchmark; see README for method and limits."
+  "note": "Measured community run of Nostroma on the AMD MI50 (gfx906). One GPU, IQ2_XS, 128K context. Fresh-prompt serial benchmark; see README for method and limits."
 }

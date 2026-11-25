@@ -1,25 +1,25 @@
-// A770 port: grouped FP16 XMX GEMM for the prompt path's experts (STRATA_PF_XMX=1).
+// A770 port: grouped FP16 XMX GEMM for the prompt path's experts (NOSTROMA_PF_XMX=1).
 // Y[r][n] = sum_k X[r][k] * W_e[n][k] for each expert e of a group, its rows r in [row0 + off[e], row0 + off[e+1]).
 // One launch per group instead of one oneMKL call per expert.  joint_matrix 8x8x16 (DG2), SLM-tiled, 256 GRF.
 // Measured standalone on the A770 (64 experts, gamma-distributed rows, vs per-expert oneMKL): down 6.1x at mean 40
 // rows, 2.8x at 160, 1.75x at 320; gate/up 3.0x / 1.46x / 0.79x (oneMKL wins above ~250 rows: the caller picks).
 #include <sycl/sycl.hpp>
-#include "strata/env.hpp"
-#include "strata/kprof.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kprof.hpp"
 #include <sycl/ext/oneapi/matrix/matrix.hpp>
 #include <sycl/ext/intel/experimental/grf_size_properties.hpp>
 #include <cstdlib>
 #include <cstdio>
-#include "strata/sycl_queue.hpp"
-#include "strata/prefill/xmx_moe.hpp"
+#include "nostroma/sycl_queue.hpp"
+#include "nostroma/prefill/xmx_moe.hpp"
 
-namespace strata::prefill::xmx {
+namespace nostroma::prefill::xmx {
 namespace {
 using half = sycl::half;
 namespace jm = sycl::ext::oneapi::experimental::matrix;
 // Sub-group width = the XMX tile's N: 8 on Alchemist (DG2, joint_matrix 8x8x16), 16 on Xe2 (Battlemage, 8x16x16; the
-// CMake switch STRATA_XMX_SG16 for an AOT bmg / lnl build).  A build has one shape: the other is not valid there.
-#ifdef STRATA_XMX_SG16
+// CMake switch NOSTROMA_XMX_SG16 for an AOT bmg / lnl build).  A build has one shape: the other is not valid there.
+#ifdef NOSTROMA_XMX_SG16
 constexpr int kSgW = 16;
 #else
 constexpr int kSgW = 8;
@@ -44,9 +44,9 @@ void launch(sycl::queue& q, const half* X, float* Y, const Grp& gp, int ntiles, 
     constexpr int BM = C::BM, BN = C::BN, KS = C::KS, WG = C::WG, SG = C::SG;
     constexpr int LDA = KS + 8, LDB = KS + 8;
     const int nb = N / BN;
-#ifndef STRATA_NO_DG2_XMX
+#ifndef NOSTROMA_NO_DG2_XMX
     constexpr int TN = kSgW;
-    strata::kprof::kp(&q, __FILE__, __func__, __LINE__)->submit([&](sycl::handler& h) {
+    nostroma::kprof::kp(&q, __FILE__, __func__, __LINE__)->submit([&](sycl::handler& h) {
         sycl::local_accessor<half, 1> sa(BM * LDA, h), sb(BN * LDB, h);
         auto props = sycl::ext::oneapi::experimental::properties{sycl::ext::intel::experimental::grf_size<256>};
         h.parallel_for<Name>(sycl::nd_range<2>({(size_t) ntiles, (size_t) nb * WG}, {1, (size_t) WG}), props,
@@ -121,13 +121,13 @@ void launch(sycl::queue& q, const half* X, float* Y, const Grp& gp, int ntiles, 
     });
 #else
     (void) q; (void) X; (void) Y; (void) gp; (void) ntiles; (void) N; (void) K;
-    std::fprintf(stderr, "grouped XMX: the 8x8x16 / sub-group 8 kernel is not built for this device (STRATA_NO_DG2_XMX)\n");
+    std::fprintf(stderr, "grouped XMX: the 8x8x16 / sub-group 8 kernel is not built for this device (NOSTROMA_NO_DG2_XMX)\n");
     std::exit(1);
 #endif
 }
 
 class k_small; class k_big;
-#ifdef STRATA_XMX_SG16
+#ifdef NOSTROMA_XMX_SG16
 using Small = Cfg<2, 4, 4, 2, 32>;   // 64 x 128 tile: few rows per expert (8 sub-groups of 16)
 using Big = Cfg<4, 2, 4, 4, 32>;     // 128 x 128 tile
 #else
@@ -148,23 +148,23 @@ int fill(Grp& gp, const int32_t* cnt, int n) {
 }  // namespace
 
 int mode() {
-    // The kernels are joint_matrix 8x8x16 on sub-group 8 (DG2, Arc A-series) or, in a STRATA_XMX_SG16 build, 8x16x16 on
+    // The kernels are joint_matrix 8x8x16 on sub-group 8 (DG2, Arc A-series) or, in a NOSTROMA_XMX_SG16 build, 8x16x16 on
     // sub-group 16 (Xe2, Battlemage).
     static const int v = [] {
-        const char* e = strata::env("NOSTROMA_PF_XMX");
+        const char* e = nostroma::env("NOSTROMA_PF_XMX");
         // 0.1.48 (owner approved 2026-10-18): mode 2 (the fused grouped XMX launch) is the default on Arc Alchemist (A-series): A750 prompts +30..39% (4K), +32..35% (1-2K tokens),
         // first-token KL 0.002 against a 0.0005 floor, HumanEval / reasoning / agent / CJK / needles inside the run-to-run spread; Battlemage is
-        // 7-11% slower with it, so it stays off there.  STRATA_PF_XMX=0 turns it off, 1 is the dequantize + grouped XMX variant.
-        const bool alchemist = strata::intel_gpu_gen(strata::q_of(nullptr)->get_device()) == strata::IntelGpuGen::Alchemist;
+        // 7-11% slower with it, so it stays off there.  NOSTROMA_PF_XMX=0 turns it off, 1 is the dequantize + grouped XMX variant.
+        const bool alchemist = nostroma::intel_gpu_gen(nostroma::q_of(nullptr)->get_device()) == nostroma::IntelGpuGen::Alchemist;
         const int want = e ? std::atoi(e) : alchemist ? 2 : 0;
         if (want == 0) return 0;
-#ifdef STRATA_NO_DG2_XMX
-        std::fprintf(stderr, "STRATA_PF_XMX ignored: this build is AOT for a device without the sub-group 8 XMX kernels\n");
+#ifdef NOSTROMA_NO_DG2_XMX
+        std::fprintf(stderr, "NOSTROMA_PF_XMX ignored: this build is AOT for a device without the sub-group 8 XMX kernels\n");
         return 0;
 #else
-#ifndef STRATA_XMX_SG16
-        if (strata::intel_gpu_gen(strata::q_of(nullptr)->get_device()) == strata::IntelGpuGen::Battlemage) {
-            std::fprintf(stderr, "STRATA_PF_XMX ignored: this build has the sub-group 8 / 8x8x16 kernels (Arc A-series); Battlemage needs the AOT bmg build\n");
+#ifndef NOSTROMA_XMX_SG16
+        if (nostroma::intel_gpu_gen(nostroma::q_of(nullptr)->get_device()) == nostroma::IntelGpuGen::Battlemage) {
+            std::fprintf(stderr, "NOSTROMA_PF_XMX ignored: this build has the sub-group 8 / 8x8x16 kernels (Arc A-series); Battlemage needs the AOT bmg build\n");
             return 0;
         }
 #endif
@@ -176,14 +176,14 @@ int mode() {
 bool enabled() { return mode() != 0; }
 
 int gu_max_mean() {
-    static const int v = [] { const char* e = strata::env("NOSTROMA_PF_XMX_GU_MAX"); return e ? std::atoi(e) : 250; }();
+    static const int v = [] { const char* e = nostroma::env("NOSTROMA_PF_XMX_GU_MAX"); return e ? std::atoi(e) : 250; }();
     return v;
 }
 
 void grouped_f16(const uint16_t* X, const uint16_t* const* W, const int32_t* cnt, int n, float* Y, int N, int K,
                  void* stream) {
     if (n <= 0) return;
-    sycl::queue& q = *strata::q_of(stream);
+    sycl::queue& q = *nostroma::q_of(stream);
     Grp gp{};
     int64_t tot = 0;
     for (int i = 0; i < n; ++i) { gp.w[i] = reinterpret_cast<const half*>(W[i]); tot += cnt[i]; }
@@ -197,4 +197,4 @@ void grouped_f16(const uint16_t* X, const uint16_t* const* W, const int32_t* cnt
         launch<Big, k_big>(q, Xh, Y, gp, nt, N, K);
     }
 }
-}  // namespace strata::prefill::xmx
+}  // namespace nostroma::prefill::xmx

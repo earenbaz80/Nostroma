@@ -1,5 +1,5 @@
---- pristine-0.1.40.4/include/strata/hip_compat/cublas_v2.h	2026-10-08 13:23:15.000000000 +0800
-+++ /home/user/Strata/.bench/0.1.40.4/include/strata/hip_compat/cublas_v2.h	2026-10-09 20:39:39.768455736 +0800
+--- pristine-0.1.40.4/include/nostroma/hip_compat/cublas_v2.h	2026-10-08 13:23:15.000000000 +0800
++++ /home/user/Nostroma/.bench/0.1.40.4/include/nostroma/hip_compat/cublas_v2.h	2026-10-09 20:39:39.768455736 +0800
 @@ -1,4 +1,10 @@
  #pragma once
 +// 本地补丁（社区基准报告）：ROCm 6.2 的 hipBLAS 2.2 要定义 HIPBLAS_V2 才暴露新版

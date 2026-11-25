@@ -1,8 +1,8 @@
-// tools/vision/own/own_main.cpp - strata-vision-own: the picture reader on our own tower alone (no ggml, no llama.cpp, no mtmd).
+// tools/vision/own/own_main.cpp - nostroma-vision-own: the picture reader on our own tower alone (no ggml, no llama.cpp, no mtmd).
 //
-//   strata-vision-own --mmproj <mmproj.gguf> [--gpu] [--threads N] [--max-tokens N] [--min-tokens N]    (--model and --tower are accepted and ignored)
-// The same protocol as strata-vision (see own_reader.h).  It builds in seconds on a Linux box, which is what the tower's CPU / CUDA / HIP checks use;
-// the shipped program is still strata-vision, which carries this reader as `--tower own`.
+//   nostroma-vision-own --mmproj <mmproj.gguf> [--gpu] [--threads N] [--max-tokens N] [--min-tokens N]    (--model and --tower are accepted and ignored)
+// The same protocol as nostroma-vision (see own_reader.h).  It builds in seconds on a Linux box, which is what the tower's CPU / CUDA / HIP checks use;
+// the shipped program is still nostroma-vision, which carries this reader as `--tower own`.
 #include "own_reader.h"
 
 #include <cstdio>
@@ -11,7 +11,7 @@
 #include <string>
 
 int main(int argc, char** argv) {
-    strata_vit::OwnReaderOptions o;
+    nostroma_vit::OwnReaderOptions o;
     bool gpu_hidden = true;
     for (int i = 1; i < argc; ++i) {
         const std::string a = argv[i];
@@ -25,11 +25,11 @@ int main(int argc, char** argv) {
         else if (a == "--max-tokens") o.max_tokens = std::atoi(next().c_str());
         else if (a == "--min-tokens") o.min_tokens = std::atoi(next().c_str());
         else if (a == "--model" || a == "--tower" || a == "--flash-attn") next();
-        else if (a == "--version") { std::printf("strata-vision-own\n"); return 0; }
+        else if (a == "--version") { std::printf("nostroma-vision-own\n"); return 0; }
         else { std::fprintf(stderr, "unknown argument %s\n", a.c_str()); return 2; }
     }
-    if (o.mmproj.empty()) { std::fprintf(stderr, "usage: strata-vision-own --mmproj <mmproj.gguf> [--gpu] [--threads N] [--max-tokens N] [--min-tokens N]\n"); return 2; }
-    if (gpu_hidden) {   // on the CPU the GPU stays unseen (as strata-vision does)
+    if (o.mmproj.empty()) { std::fprintf(stderr, "usage: nostroma-vision-own --mmproj <mmproj.gguf> [--gpu] [--threads N] [--max-tokens N] [--min-tokens N]\n"); return 2; }
+    if (gpu_hidden) {   // on the CPU the GPU stays unseen (as nostroma-vision does)
 #ifdef _WIN32
         _putenv_s("CUDA_VISIBLE_DEVICES", "-1");
         _putenv_s("HIP_VISIBLE_DEVICES", "-1");
@@ -38,5 +38,5 @@ int main(int argc, char** argv) {
         setenv("HIP_VISIBLE_DEVICES", "-1", 1);
 #endif
     }
-    return strata_vit::own_reader_run(o);
+    return nostroma_vit::own_reader_run(o);
 }

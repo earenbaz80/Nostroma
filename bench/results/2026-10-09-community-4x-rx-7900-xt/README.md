@@ -1,8 +1,8 @@
 # Community benchmark on 4x AMD Radeon RX 7900 XT
 
-Measured on 2026-10-09 by Cass (ubt26, a 4-card ROCm test rig). Strata 0.1.41, ISTA-DASLab Flash-Next GSQ-RCO
+Measured on 2026-10-09 by Cass (ubt26, a 4-card ROCm test rig). Nostroma 0.1.41, ISTA-DASLab Flash-Next GSQ-RCO
 IQ3_S, 262,144-token context, layer split across all four cards. Two arms on the same machine, image, model and
-prompts, differing only in five documented opt-in environment switches: **opt-ins off** (Strata defaults for those
+prompts, differing only in five documented opt-in environment switches: **opt-ins off** (Nostroma defaults for those
 switches) and **opt-ins on** (this machine's run profile). Each arm: fresh engine process, one cold first request,
 two warm-ups, then three runs each at 4,096 / 32,768 / 128,000 prompt tokens with a 256-token cap and reasoning
 off, plus six needle-in-a-haystack recall checks. Main limitations: one model on one box; no coding-quality check
@@ -19,8 +19,8 @@ beyond recall; four cards on an asymmetric Gen3 PCIe layout (below).
 - Power caps (hwmon `power1_cap`): 304 W, 324 W, 304 W on the three switch-attached cards; the chipset-attached
   card reads 0 W (max 324 W), so its effective limit is unknown
 - OS: Linux, kernel 7.0.0-34-generic; ROCm 10.0.0 inside the runner container (TheRock gfx110X build)
-- Strata: tag `v0.1.41` (`fb58e0d`), clean tree, built from source in a container: `-DSTRATA_ENABLE_HIP=ON
-  -DSTRATA_PREFILL_MMQ=ON -DSTRATA_MMQ_KQUANTS=ON`, `Release`, gfx1100
+- Nostroma: tag `v0.1.41` (`fb58e0d`), clean tree, built from source in a container: `-DNOSTROMA_ENABLE_HIP=ON
+  -DNOSTROMA_PREFILL_MMQ=ON -DNOSTROMA_MMQ_KQUANTS=ON`, `Release`, gfx1100
 - Background workloads: none from clients during the runs (the engine logs show only the benchmark's requests,
   one at a time); other GPU workloads were not sampled.
 
@@ -31,7 +31,7 @@ beyond recall; four cards on an asymmetric Gen3 PCIe layout (below).
 - GGUF files, sha256 checked against the Hub's LFS hashes (read with `O_DIRECT`):
   - `Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf`, 54,817,524,224 bytes, sha256 `4c1eb2ceb4915e1192f4f386021897bde56a97f40a0bb78bb86465e0f7d2aca3`, matches
   - `Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf`, 28,800,138,432 bytes, sha256 `316b46f3a2dbd68c900f43136ab9449f9dcc3725dfd8c794847c204bc161e113`, matches (`--ple-gguf`)
-- Strata pack `packs/iq3_s` (9 files, 1.5 GB; experts read in place from shard 1), MTP head `mtp/rt` (4 files,
+- Nostroma pack `packs/iq3_s` (9 files, 1.5 GB; experts read in place from shard 1), MTP head `mtp/rt` (4 files,
   787 MB), expert profile `data/expert-profile.bin` as shipped in `v0.1.41` (sha256 `8f59b4aa…`). Manifest
   sha256 (per-file sha256 list, sorted by path): pack `d0293e9b…`, MTP `6425cce0…`. The exact pack and MTP
   preparation commands were not recorded.
@@ -41,26 +41,26 @@ beyond recall; four cards on an asymmetric Gen3 PCIe layout (below).
 
 ```text
 engine args (both arms, credentials: none)
---pack /mnt/spare/build/strata-data/packs/iq3_s --native <shard-1 GGUF> --ple-gguf <shard-2 GGUF>
+--pack /mnt/spare/build/nostroma-data/packs/iq3_s --native <shard-1 GGUF> --ple-gguf <shard-2 GGUF>
 --expert-profile data/expert-profile.bin --expert-cache auto --prefill auto
---spec 4 --spec-min-p 0.5 --mtp /mnt/spare/build/strata-data/mtp/rt --kv int8
+--spec 4 --spec-min-p 0.5 --mtp /mnt/spare/build/nostroma-data/mtp/rt --kv int8
 --resident-budget-gib 36 --remote-expert-opt --max-context 262144 --vision --vram-reserve-mib 700
-layer_split 12,24,36   gpu 0,1,2,3   env STRATA_HIPBLASLT_TUNING=tools/hip/gfx1100-hipblaslt-100401.txt
+layer_split 12,24,36   gpu 0,1,2,3   env NOSTROMA_HIPBLASLT_TUNING=tools/hip/gfx1100-hipblaslt-100401.txt
 
-opt-ins off: no further STRATA_* variables
-opt-ins on:  STRATA_SPLIT_OWN=1 STRATA_STAGE_TRIM=1 STRATA_PF_FUSED=1 STRATA_PF_GEMM=1 STRATA_PF_SWITCH_MIN_T=4096
+opt-ins off: no further NOSTROMA_* variables
+opt-ins on:  NOSTROMA_SPLIT_OWN=1 NOSTROMA_STAGE_TRIM=1 NOSTROMA_PF_FUSED=1 NOSTROMA_PF_GEMM=1 NOSTROMA_PF_SWITCH_MIN_T=4096
 ```
 
-The five switches are documented opt-ins. `STRATA_SPLIT_OWN=1` gives every card its own prompt buffers on a
-layer split; `STRATA_STAGE_TRIM=1` makes each card load only its own layers' dense weights (PR #639).
-`STRATA_PF_FUSED=1`, `STRATA_PF_GEMM=1` and `STRATA_PF_SWITCH_MIN_T=4096` put the prompt experts and FP16
+The five switches are documented opt-ins. `NOSTROMA_SPLIT_OWN=1` gives every card its own prompt buffers on a
+layer split; `NOSTROMA_STAGE_TRIM=1` makes each card load only its own layers' dense weights (PR #639).
+`NOSTROMA_PF_FUSED=1`, `NOSTROMA_PF_GEMM=1` and `NOSTROMA_PF_SWITCH_MIN_T=4096` put the prompt experts and FP16
 projections on the matrix cores, as listed in [`docs/STRIX_HALO.md`](../../../docs/STRIX_HALO.md). The container
 environment of each arm was read back with `docker inspect` to confirm which switches were set.
 
 ## Method
 
 - Scripts in this folder:
-  - [`gen.py`](gen.py) builds the prompts with Strata's own tokenizer (the pack's `tokenizer/`), in the runner's
+  - [`gen.py`](gen.py) builds the prompts with Nostroma's own tokenizer (the pack's `tokenizer/`), in the runner's
     Python. Text: this repository at `v0.1.41`, built the way `tools/needle_bench.py` builds its haystack. Each
     prompt is `Run id: <uuid>`, a slice of that text, and one question ("Summarize the material above…"). The slice
     is binary-searched so the server-side prompt (content plus the chat template's 12 tokens) hits the target.
@@ -81,7 +81,7 @@ environment of each arm was read back with `docker inspect` to confirm which swi
   (`finish_reason: length`). TTFT is client-side, from sending the request to the first streamed answer token,
   so it includes prompt processing. Model loading is excluded (fresh process to loaded: 52 s and 34 s).
 - Prompt and decode throughput are the engine's `prompt_per_second` and `predicted_per_second`; they agree with
-  the per-request `strata serve: prompt …` lines in the engine log excerpts
+  the per-request `nostroma serve: prompt …` lines in the engine log excerpts
   ([off](engine-optins-off.txt), [on](engine-optins-on.txt)).
 - Memory: VRAM per card from `rocm-smi` every second for the whole run ([`vram.jsonl`](vram.jsonl)); RAM from
   `/v1/status` after every request.

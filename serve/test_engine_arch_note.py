@@ -31,7 +31,7 @@ class ArchNote(unittest.TestCase):
         self.assertIsNone(server.engine_arch_note({"backend": "hip"}, CARDS, {"archs": [75]}))
         self.assertIsNone(server.engine_arch_note({"gpu": [0, 1]}, CARDS, {}))
         self.assertIsNone(server.engine_arch_note({"gpu": [0, 1]}, CARDS, {"archs": ["x"]}))
-        self.assertIsNone(server.engine_arch_note({"exe": "component:strata-engine"}))
+        self.assertIsNone(server.engine_arch_note({"exe": "component:nostroma-engine"}))
 
 
 if __name__ == "__main__":

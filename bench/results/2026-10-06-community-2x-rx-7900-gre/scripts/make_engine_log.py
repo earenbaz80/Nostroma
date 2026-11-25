@@ -25,7 +25,7 @@ KEEP = re.compile(
     r'expert cache|token graph|room for experts|prompt \d+ tokens =|'
     r'loads the dense weights|engine started|off:|WARNING|'
     r'session is up|KV streaming|GPU \d+:|decode expert cache hit|'
-    r'strata mtp|strata batch|batch window|batch windows|no progress|\bnan\b', re.I)
+    r'nostroma mtp|nostroma batch|batch window|batch windows|no progress|\bnan\b', re.I)
 
 ORDER = ['engine-interleave.log', 'engine-ab-pipeline-off.log',
          'engine-ab-stage-trim-off.log', 'engine-ab-resident.log',

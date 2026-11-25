@@ -35,15 +35,15 @@ class DataFolderChoice(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.base = Path(self.tmp.name)
-        self.root = self.base / "Strata"
+        self.root = self.base / "Nostroma"
         self.root.mkdir()
         self.old = self.base / "old-data"
         self.new = self.base / "new-data"
         env = mock.patch.dict(os.environ, {"APPDATA": str(self.base / "appdata"), "XDG_CONFIG_HOME": str(self.base / "appdata"),
-                                           "STRATA_SETTINGS_FILE": ""})
+                                           "NOSTROMA_SETTINGS_FILE": ""})
         env.start()
         self.addCleanup(env.stop)
-        os.environ.pop("STRATA_SETTINGS_FILE", None)
+        os.environ.pop("NOSTROMA_SETTINGS_FILE", None)
         for patcher in (mock.patch.object(setup, "ROOT", self.root), mock.patch.object(setup, "_CONTROL_HOME", None)):
             patcher.start()
             self.addCleanup(patcher.stop)
@@ -121,20 +121,20 @@ class DataFolderChoice(unittest.TestCase):
         self.assertEqual(elsewhere, [])
         self.assertEqual(Path(self.saved()["data_dir"]).resolve(), self.new.resolve())
 
-    def test_the_library_in_the_strata_folder_is_asked_about_too(self):
+    def test_the_library_in_the_nostroma_folder_is_asked_about_too(self):
         # no remembered data folder: the models sit next to the checkout (an old install)
         self.write_settings({})
         for d in ("models", "packs", "mtp"):
             shutil.rmtree(self.old / d)
-        mine = put(self.root / "Strata-data" / "models" / "Q2_0" / "w-00001-of-00001.gguf")
+        mine = put(self.root / "Nostroma-data" / "models" / "Q2_0" / "w-00001-of-00001.gguf")
         (dest, elsewhere), _ = self.call(str(self.new), yes=True)
         self.assertTrue(mine.is_file())
-        self.assertEqual([Path(e).resolve() for e in elsewhere], [(self.root / "Strata-data").resolve()])
+        self.assertEqual([Path(e).resolve() for e in elsewhere], [(self.root / "Nostroma-data").resolve()])
         self.assertNotIn("data_dir", self.saved())
 
     def test_no_data_dir_still_gathers_into_the_remembered_folder(self):
         # the data folder's own job (an earlier Nostroma folder's models) is not part of the --data-dir question
-        other = self.base / "Strata-old"
+        other = self.base / "Nostroma-old"
         other.mkdir()
         (other / "setup.py").write_text("# old\n")
         put(other / "models" / "Q2_0" / "extra.gguf")

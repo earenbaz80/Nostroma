@@ -3,14 +3,14 @@
 #include <cstdio>
 #include <initializer_list>
 
-#include "strata/prefill/loan_rules.hpp"
+#include "nostroma/prefill/loan_rules.hpp"
 
-using strata::prefill::loan_rules::walk_chunk;
-using strata::prefill::loan_rules::tail_need;
-using strata::prefill::loan_rules::tail_layout;
-using strata::prefill::loan_rules::segment_tail;
-using strata::prefill::loan_rules::reuse_ok;
-using strata::prefill::loan_rules::next_tail;
+using nostroma::prefill::loan_rules::walk_chunk;
+using nostroma::prefill::loan_rules::tail_need;
+using nostroma::prefill::loan_rules::tail_layout;
+using nostroma::prefill::loan_rules::segment_tail;
+using nostroma::prefill::loan_rules::reuse_ok;
+using nostroma::prefill::loan_rules::next_tail;
 
 static int failed = 0;
 #define CHECK(x) do { if (!(x)) { std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #x); ++failed; } } while (0)

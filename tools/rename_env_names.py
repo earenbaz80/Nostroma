@@ -1,13 +1,13 @@
-"""Move the engine's runtime settings from STRATA_* to NOSTROMA_*, keeping the old name as the fallback.
+"""Move the engine's runtime settings from NOSTROMA_* to NOSTROMA_*, keeping the old name as the fallback.
 
-Every setting the engine reads at run time was read as ``std::getenv("STRATA_<SETTING>")``. The product is Nostroma, so
-the name to write is ``NOSTROMA_<SETTING>``, and ``include/strata/env.hpp`` reads the old one when the new one is not
+Every setting the engine reads at run time was read as ``std::getenv("NOSTROMA_<SETTING>")``. The product is Nostroma, so
+the name to write is ``NOSTROMA_<SETTING>``, and ``include/nostroma/env.hpp`` reads the old one when the new one is not
 set. This script does the two mechanical steps and nothing else:
 
-  * ``std::getenv("STRATA_X")``  ->  ``strata::env("NOSTROMA_X")``
-  * adds ``#include "strata/env.hpp"`` to a file it changed, when the include is not already there
+  * ``std::getenv("NOSTROMA_X")``  ->  ``nostroma::env("NOSTROMA_X")``
+  * adds ``#include "nostroma/env.hpp"`` to a file it changed, when the include is not already there
 
-Compile-time switches (``#ifdef STRATA_METAL``, ``STRATA_USE_HIP``, ...) are left alone: the build defines them, so
+Compile-time switches (``#ifdef NOSTROMA_METAL``, ``NOSTROMA_USE_HIP``, ...) are left alone: the build defines them, so
 they have no runtime fallback.
 
     python tools/rename_env_names.py --check     # scan only; exit 1 while a read is left to rename
@@ -29,11 +29,11 @@ DIRECTORIES = ("src", "include", "metal", "sycl")
 #: std::getenv either, so it is only scanned.
 SUFFIXES = {".cpp", ".cc", ".cu", ".cuh", ".h", ".hpp", ".mm", ".metal"}
 
-READ_RE = re.compile(r'std::getenv\s*\(\s*"(STRATA_[A-Z0-9_]+)"\s*\)')
+READ_RE = re.compile(r'std::getenv\s*\(\s*"(NOSTROMA_[A-Z0-9_]+)"\s*\)')
 #: Two helpers take the setting's name and read it themselves (`src/core/verify.cpp`, `src/program/generate.cpp`). Their
-#: bodies go through strata::env, so only the name they are handed has to change.
-WRAPPED_RE = re.compile(r'((?:env_on|pipe_dbg_env)\s*\(\s*)"(STRATA_[A-Z0-9_]+)"')
-INCLUDE_LINE = '#include "strata/env.hpp"'
+#: bodies go through nostroma::env, so only the name they are handed has to change.
+WRAPPED_RE = re.compile(r'((?:env_on|pipe_dbg_env)\s*\(\s*)"(NOSTROMA_[A-Z0-9_]+)"')
+INCLUDE_LINE = '#include "nostroma/env.hpp"'
 INCLUDE_RE = re.compile(r'^\s*#\s*include\b')
 
 
@@ -50,18 +50,18 @@ def sources() -> list[Path]:
 
 
 def rewrite(text: str) -> tuple[str, int]:
-    """`text` with every runtime STRATA_ read renamed, and the count of reads that changed."""
+    """`text` with every runtime NOSTROMA_ read renamed, and the count of reads that changed."""
     changed = 0
 
     def one(match: re.Match[str]) -> str:
         nonlocal changed
         changed += 1
-        return 'strata::env("NOSTROMA_%s")' % match.group(1)[len("STRATA_"):]
+        return 'nostroma::env("NOSTROMA_%s")' % match.group(1)[len("NOSTROMA_"):]
 
     def wrapped(match: re.Match[str]) -> str:
         nonlocal changed
         changed += 1
-        return '%s"NOSTROMA_%s"' % (match.group(1), match.group(2)[len("STRATA_"):])
+        return '%s"NOSTROMA_%s"' % (match.group(1), match.group(2)[len("NOSTROMA_"):])
 
     text = READ_RE.sub(one, text)
     return WRAPPED_RE.sub(wrapped, text), changed
@@ -81,7 +81,7 @@ def with_include(text: str) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--check", action="store_true", help="report reads still named STRATA_; change nothing")
+    parser.add_argument("--check", action="store_true", help="report reads still named NOSTROMA_; change nothing")
     parser.add_argument("--dry-run", action="store_true", help="print the files that would change; change nothing")
     args = parser.parse_args(argv)
 
@@ -93,11 +93,11 @@ def main(argv: list[str] | None = None) -> int:
             if count:
                 left.append((path, count))
         if not left:
-            print("no runtime STRATA_ read is left")
+            print("no runtime NOSTROMA_ read is left")
             return 0
         for path, count in left:
             print("%s: %d" % (path.relative_to(ROOT), count))
-        print("%d file(s), %d read(s) still named STRATA_" % (len(left), sum(count for _, count in left)))
+        print("%d file(s), %d read(s) still named NOSTROMA_" % (len(left), sum(count for _, count in left)))
         return 1
 
     files = 0

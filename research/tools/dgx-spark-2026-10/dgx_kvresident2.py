@@ -13,7 +13,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-root = Path.home() / "workspace" / "strata-spark"
+root = Path.home() / "workspace" / "nostroma-spark"
 WORDS = ("river stone market lantern copper winter garden signal harbor needle orbit velvet canyon ember ledger quartz "
          "meadow anchor violet thunder cedar marble piston ribbon cobalt falcon glacier hollow ivory juniper kernel").split()
 
@@ -30,7 +30,7 @@ def run(cfg_name, tag, port=8091):
     cfg["log"] = f"/tmp/kvres2-{tag}.log"
     tmp = Path(f"/tmp/kvres2-{tag}.json")
     tmp.write_text(json.dumps(cfg, indent=1))
-    proc = subprocess.Popen([sys.executable, str(ROOT / "serve" / "server.py"), "--engine", "strata", "--config",
+    proc = subprocess.Popen([sys.executable, str(ROOT / "serve" / "server.py"), "--engine", "nostroma", "--config",
                              str(tmp), "--port", str(port)], cwd=str(ROOT),
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
@@ -64,7 +64,7 @@ def run(cfg_name, tag, port=8091):
             proc.kill()
 
 
-rows = [run("strata-iq3_s.json", "a"), run("strata-iq3s-kv64k.json", "b")]
+rows = [run("nostroma-iq3_s.json", "a"), run("nostroma-iq3s-kv64k.json", "b")]
 Path(sys.argv[1]).write_text(json.dumps(rows, indent=1))
 for r in rows:
     print(json.dumps(r))

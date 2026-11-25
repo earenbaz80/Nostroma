@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace strata_vit {
+namespace nostroma_vit {
 
 namespace {
 
@@ -121,4 +121,4 @@ bool vit_geometry_supported(const VitGeometry& g, std::string& why) {
     return true;
 }
 
-}  // namespace strata_vit
+}  // namespace nostroma_vit

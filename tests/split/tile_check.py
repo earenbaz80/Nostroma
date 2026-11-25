@@ -6,7 +6,7 @@
 
 For each line of the dump (tensor, loader type, rows, columns, expert): the f16 values the tile put in shared memory must equal gguf-py's
 dequantization of the file's expert, rounded once to f16 (a tile value may differ by one f16 step where the two compute the f32 product in
-another order). Strata's Q2_0 (type 42; the loader repacks it to Q4_0 blocks, type 2) is checked against (code - 1) * d read from the
+another order). Nostroma's Q2_0 (type 42; the loader repacks it to Q4_0 blocks, type 2) is checked against (code - 1) * d read from the
 file. Prints one line per tensor and expert; exit 1 on any miss.
 """
 import argparse
@@ -22,11 +22,11 @@ def main():
     ap.add_argument("model")
     ap.add_argument("outdir")
     ap.add_argument("dump")
-    ap.add_argument("--gguf-py", help="optional: a folder that holds llama.cpp's gguf package, to compare against it (default: tools/strata_gguf.py)")
+    ap.add_argument("--gguf-py", help="optional: a folder that holds llama.cpp's gguf package, to compare against it (default: tools/nostroma_gguf.py)")
     a = ap.parse_args()
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "tools"))
     if a.gguf_py:
-        os.environ["STRATA_GGUF_PY"] = a.gguf_py
+        os.environ["NOSTROMA_GGUF_PY"] = a.gguf_py
     from _paths import gguf_lib
     gguf = gguf_lib()
     quants = gguf.quants

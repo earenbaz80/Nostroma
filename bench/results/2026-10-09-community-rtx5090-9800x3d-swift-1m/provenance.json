@@ -1,7 +1,7 @@
 {
   "measured_on": "2026-10-09",
   "author": "mgeldi",
-  "strata_revision": "fb58e0dbc8399662c0e47c76578c6e878b14f6cf",
+  "nostroma_revision": "fb58e0dbc8399662c0e47c76578c6e878b14f6cf",
   "engine_version": "0.1.41",
   "engine_sha256": "2178194033499d78e23ac4b298b8f419cd6a350733a593297487b018105fc61f",
   "vision_sha256": "7366544d19b15490ba708c80e853af2bc13322d9da5c72668f55143a7593bdf4",

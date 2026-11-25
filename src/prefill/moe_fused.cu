@@ -1,4 +1,4 @@
-// src/prefill/moe_fused.cu - see include/strata/prefill/moe_fused.hpp (#136: the Q2_0 pack's prompt experts on
+// src/prefill/moe_fused.cu - see include/nostroma/prefill/moe_fused.hpp (#136: the Q2_0 pack's prompt experts on
 // Nostroma's own int8 tensor-core kernels, with the grouping on the GPU).
 //
 // The arithmetic.  A Q2_0 block is 64 weights w = d_w * (q - 1), q in 0..3, four codes per byte, weight j of a block
@@ -17,11 +17,11 @@
 // bytes - (word >> 2t) & 0x03030303 holds weights t, t+4, t+8, t+12 of a 16-weight word.  So the kernels use that order
 // for the k of a half-block: mma k index 16h + 4t + j stands for weight (and activation) 16h + t + 4j.  The
 // activations are stored in it (perm32), and a lane's two B registers (h = 0 and 1) are adjacent: one 8-byte load.
-#include "strata/prefill/moe_fused.hpp"
-#include "strata/env.hpp"
-#include "strata/prefill/pf_fused_override.hpp"
-#include "strata/kernels/gfx_arch.hpp"
-#include "strata/core/emulate.hpp"
+#include "nostroma/prefill/moe_fused.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/prefill/pf_fused_override.hpp"
+#include "nostroma/kernels/gfx_arch.hpp"
+#include "nostroma/core/emulate.hpp"
 
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
@@ -32,7 +32,7 @@
 #include <cstring>
 #include <mutex>
 
-namespace strata::prefill::fused {
+namespace nostroma::prefill::fused {
 namespace {
 
 void ck(cudaError_t e, const char* what) {
@@ -45,7 +45,7 @@ void ck(cudaError_t e, const char* what) {
 constexpr int AB = 80;                  // activation bytes per 64 values: 64 codes, then {d0, c0, d1, c1}
 constexpr int MAGIC = 0x4B400000;       // the bits of 1.5 * 2^23
 constexpr float MAGICF = 12582912.0f;
-// The Nostroma Q2_0 blob (moe_mmq.cu strata_q2_kernel, kernels.cu blob_dequant_kernel): gate/up codes [2 F][E / 4 B]
+// The Nostroma Q2_0 blob (moe_mmq.cu nostroma_q2_kernel, kernels.cu blob_dequant_kernel): gate/up codes [2 F][E / 4 B]
 // (rows interleaved: gate of feature f at row 2f, its up at 2f + 1), down codes [E][F / 4 B], gate/up scales
 // [2 F][E / 64] fp16, down scales [E][F / 64] fp16; E, F the compiled geometry's (Flash-Next 2560, 640: [1280][640 B],
 // [2560][160 B], [1280][40], [2560][10]).
@@ -226,7 +226,7 @@ __device__ __forceinline__ void mma_s8(int (&d)[4], const uint32_t (&a)[4], uint
         : "r"(a[0]), "r"(a[1]), "r"(a[2]), "r"(a[3]), "r"(b0), "r"(b1), "r"(0));
 }
 #elif defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 750
-// Turing (STRATA_PF_FUSED_SM75): no cp.async - the stages are filled by plain copies (the same bytes; the barriers
+// Turing (NOSTROMA_PF_FUSED_SM75): no cp.async - the stages are filled by plain copies (the same bytes; the barriers
 // around them stay) - and no m16n8k32 with s8 operands: it is four m8n8k16, rows g / g + 8 by k 0-15 / 16-31 (the
 // m16n8k32 fragments: a[0] / a[1] rows g / g + 8 at k 4 tig.., a[2] / a[3] the same at k 16 + 4 tig.., b0 / b1 the
 // two k halves).  The int32 sums are exact in any order: the same d as the sm_80 instruction.
@@ -426,9 +426,9 @@ expert_kernel(const Batch b, const Tables tb, const uint8_t* __restrict__ act, c
 // blocks (80 B) straight from global memory (L2: an expert's rows are read by every tile, a token's by every weight
 // block), one block ahead in registers; the work item's weight scales go to LDS once.
 #if defined(__gfx1100__) || defined(__gfx1101__) || defined(__gfx1102__) || defined(__gfx1103__) || defined(__gfx1150__) || defined(__gfx1151__)
-#define STRATA_FUSED_W11 1
+#define NOSTROMA_FUSED_W11 1
 #else
-#define STRATA_FUSED_W11 0
+#define NOSTROMA_FUSED_W11 0
 #endif
 typedef int w11_i4 __attribute__((ext_vector_type(4)));
 typedef int w11_i8 __attribute__((ext_vector_type(8)));
@@ -436,7 +436,7 @@ constexpr int W_ROWS = 128;                       // weight rows per work item (
 constexpr int W_THREADS = 256;                    // 8 waves: 4 along the weight rows (32 each) x 2 along the tile (32)
 
 __device__ __forceinline__ w11_i8 wmma_iu8(w11_i4 a, w11_i4 b, w11_i8 c) {
-#if STRATA_FUSED_W11
+#if NOSTROMA_FUSED_W11
     return __builtin_amdgcn_wmma_i32_16x16x16_iu8_w32(false, a, true, b, c, false);
 #else
     __builtin_trap();
@@ -448,7 +448,7 @@ template <bool GU>
 __global__ void __launch_bounds__(W_THREADS)
 expert_w11_kernel(const Batch b, const Tables tb, const uint8_t* __restrict__ act, const int32_t* __restrict__ src,
                   uint8_t* __restrict__ out, float* __restrict__ dm) {
-#if STRATA_FUSED_W11
+#if NOSTROMA_FUSED_W11
     constexpr int NKB = GU ? SC_GU : SC_D;            // 64-weight blocks along K
     constexpr int NFB = (GU ? GU_ROWS : D_ROWS) / W_ROWS;  // work items per tile
     static_assert(GU_ROWS % W_ROWS == 0 && D_ROWS % W_ROWS == 0, "the Nostroma Q2 gfx11 kernel: weight rows are whole work items of 128");
@@ -638,10 +638,10 @@ DevInfo g_dev[32];
 // WGP (two CUs, which these kernels use as one in the default WGP mode) as one multiprocessor, and the occupancy query
 // answers 1 block for these kernels where 2 run side by side - so the grid was half the GPU's room.  gfx1151 (20
 // WGPs), 8192 tokens x top 10, IQ3_S / IQ4_NL, one layer: 1 block per WGP 60.7 ms, 2 44.7, 3 49.9, 4 45.2 (the same
-// work items and arithmetic: the results do not change).  STRATA_PF_OCC=N sets the blocks per WGP (an experiment knob).
+// work items and arithmetic: the results do not change).  NOSTROMA_PF_OCC=N sets the blocks per WGP (an experiment knob).
 static int wgp_blocks(int occ) {
     static const int env = [] {
-        const char* v = strata::env("NOSTROMA_PF_OCC");
+        const char* v = nostroma::env("NOSTROMA_PF_OCC");
         return v != nullptr ? std::atoi(v) : 0;
     }();
     return env > 0 ? env : 2 * std::max(occ, 1);
@@ -654,7 +654,7 @@ const DevInfo& dev_info() {
     DevInfo& d = g_dev[dev & 31];
     if (d.done) return d;
     d.done = true;
-#if defined(STRATA_HIP_GFX906)
+#if defined(NOSTROMA_HIP_GFX906)
     // gfx906 reports compute capability 9.0 through HIP, but the mma.sync bodies above are CUDA sm_80+ only and
     // empty in a hipcc build: never available here (the prompt path keeps its own expert GEMMs)
     return d;
@@ -663,7 +663,7 @@ const DevInfo& dev_info() {
         cudaDeviceProp prop;
         cudaDeviceGetAttribute(&d.sms, cudaDevAttrMultiProcessorCount, dev);
         hipFuncAttributes fa{};
-        if (cudaGetDeviceProperties(&prop, dev) != cudaSuccess || !strata::kernels::gfx_arch_is_gfx11_wmma(prop.gcnArchName) ||
+        if (cudaGetDeviceProperties(&prop, dev) != cudaSuccess || !nostroma::kernels::gfx_arch_is_gfx11_wmma(prop.gcnArchName) ||
             hipFuncGetAttributes(&fa, reinterpret_cast<const void*>(expert_w11_kernel<true>)) != hipSuccess) {
             cudaGetLastError();
             return d;
@@ -680,9 +680,9 @@ const DevInfo& dev_info() {
     cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, dev);
     cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, dev);
     cudaDeviceGetAttribute(&d.sms, cudaDevAttrMultiProcessorCount, dev);
-    d.cc = 10 * strata::cc_major_of(major) + strata::cc_minor_of(minor);   // STRATA_EMULATE_CC counts (tests)
-    // Turing (sm_75): the same kernels with plain copies and m8n8k16 MMAs, opt-in (STRATA_PF_FUSED_SM75=1)
-    static const bool sm75 = [] { const char* v = strata::env("NOSTROMA_PF_FUSED_SM75"); return v != nullptr && v[0] == '1'; }();
+    d.cc = 10 * nostroma::cc_major_of(major) + nostroma::cc_minor_of(minor);   // NOSTROMA_EMULATE_CC counts (tests)
+    // Turing (sm_75): the same kernels with plain copies and m8n8k16 MMAs, opt-in (NOSTROMA_PF_FUSED_SM75=1)
+    static const bool sm75 = [] { const char* v = nostroma::env("NOSTROMA_PF_FUSED_SM75"); return v != nullptr && v[0] == '1'; }();
     if (d.cc < 75 || (d.cc < 80 && !sm75)) { d.cc = d.cc < 80 ? 0 : d.cc; return d; }
     // the device code of this card's arch must have the kernels (a build without an sm_75+ target has an empty body)
     cudaFuncAttributes fa{};
@@ -708,26 +708,26 @@ const DevInfo& dev_info() {
 bool built() { return true; }
 bool available() { return dev_info().cc >= 75; }
 // 0.1.36: on by default for the Q2_0 pack (+13-23% prompts on an RTX 5070; teacher-forced against the FP16 path as
-// close as MMQ at 8K and closer at 32K: phaseA-tests s18-tf); STRATA_PF_FUSED=0 keeps MMQ.  The native packs' kernels
-// (moe_fused_iq) stay opt-in: STRATA_PF_FUSED=1 (requested()).
+// close as MMQ at 8K and closer at 32K: phaseA-tests s18-tf); NOSTROMA_PF_FUSED=0 keeps MMQ.  The native packs' kernels
+// (moe_fused_iq) stay opt-in: NOSTROMA_PF_FUSED=1 (requested()).
 bool enabled() {
     static const bool env = [] {
-        const char* v = strata::env("NOSTROMA_PF_FUSED");
+        const char* v = nostroma::env("NOSTROMA_PF_FUSED");
 #if defined(__HIPCC__)
-        return v != nullptr && v[0] == '1';   // Aurora: the gfx11 WMMA kernels are opt-in (STRATA_PF_FUSED=1)
+        return v != nullptr && v[0] == '1';   // Aurora: the gfx11 WMMA kernels are opt-in (NOSTROMA_PF_FUSED=1)
 #else
         return v == nullptr || v[0] != '0';
 #endif
     }();
-    return env && available() && strata::prefill::pf_fused_override().load(std::memory_order_relaxed) != 0;
+    return env && available() && nostroma::prefill::pf_fused_override().load(std::memory_order_relaxed) != 0;
 }
 bool requested() {
     static const bool env = [] {
-        const char* v = strata::env("NOSTROMA_PF_FUSED");
+        const char* v = nostroma::env("NOSTROMA_PF_FUSED");
         return v != nullptr && v[0] == '1';
     }();
-    const int ov = strata::prefill::pf_fused_override().load(std::memory_order_relaxed);
-    return (env || ov == strata::prefill::kPfFusedKernelsOnly) && available() && ov != 0;   // (the small-card prompt path reads an unset variable as 1)
+    const int ov = nostroma::prefill::pf_fused_override().load(std::memory_order_relaxed);
+    return (env || ov == nostroma::prefill::kPfFusedKernelsOnly) && available() && ov != 0;   // (the small-card prompt path reads an unset variable as 1)
 }
 
 size_t act_bytes(int64_t rows, int64_t cols) { return (size_t) rows * (size_t) (cols / 64) * AB; }
@@ -792,4 +792,4 @@ void experts(const Batch& b, int n_expert, int64_t n, const void* scratch, const
     ck(cudaGetLastError(), "experts");
 }
 
-}  // namespace strata::prefill::fused
+}  // namespace nostroma::prefill::fused

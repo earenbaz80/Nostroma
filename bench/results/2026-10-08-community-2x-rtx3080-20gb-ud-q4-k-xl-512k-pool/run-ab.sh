@@ -7,8 +7,8 @@
 # Every request has its own prompt (a salt and the round are in it). ab.py reads the API key from a file, never prints it.
 cd /root/prbench
 date -u +"ab start %F %T UTC" > ab.log
-python3 -u /opt/strata-bmtp-tools/ab.py c2 12 '{}' '{}' > ab-c2.txt 2>&1
+python3 -u /opt/nostroma-bmtp-tools/ab.py c2 12 '{}' '{}' > ab-c2.txt 2>&1
 echo "c2 exit $?" >> ab.log
-python3 -u /opt/strata-bmtp-tools/ab.py solo 12 '{}' '{}' > ab-solo.txt 2>&1
+python3 -u /opt/nostroma-bmtp-tools/ab.py solo 12 '{}' '{}' > ab-solo.txt 2>&1
 echo "solo exit $?" >> ab.log
 date -u +"ab end %F %T UTC" >> ab.log

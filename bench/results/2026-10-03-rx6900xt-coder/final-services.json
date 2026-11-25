@@ -8,7 +8,7 @@
       "images": false,
       "api_key": false,
       "loaded": false,
-      "service": "strata"
+      "service": "nostroma"
     }
   },
   {
@@ -20,7 +20,7 @@
       "images": false,
       "api_key": false,
       "loaded": true,
-      "service": "strata"
+      "service": "nostroma"
     }
   },
   {
@@ -32,7 +32,7 @@
       "images": false,
       "api_key": false,
       "loaded": false,
-      "service": "strata"
+      "service": "nostroma"
     }
   }
 ]

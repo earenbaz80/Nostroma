@@ -30,16 +30,16 @@ WINDOWS = os.name == "nt"
 @unittest.skipUnless(os.name in ("posix", "nt"), "no qualified owner transport on this platform")
 class RuntimeTests(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="strata-runtime-test-")
+        self.temp = tempfile.TemporaryDirectory(prefix="nostroma-runtime-test-")
         self.addCleanup(self._remove_temp)
         self.root = Path(self.temp.name)
-        env = mock.patch.dict(os.environ, {"STRATA_PROFILE_DIR": str(self.root / "profiles"),
-                                       "STRATA_RUNTIME_DIR": str(self.root / "runtime")})
+        env = mock.patch.dict(os.environ, {"NOSTROMA_PROFILE_DIR": str(self.root / "profiles"),
+                                       "NOSTROMA_RUNTIME_DIR": str(self.root / "runtime")})
         env.start()
         self.addCleanup(env.stop)
-        previous_key = os.environ.pop("STRATA_API_KEY", None)
-        self.addCleanup(lambda: os.environ.__setitem__("STRATA_API_KEY", previous_key)
-                        if previous_key is not None else os.environ.pop("STRATA_API_KEY", None))
+        previous_key = os.environ.pop("NOSTROMA_API_KEY", None)
+        self.addCleanup(lambda: os.environ.__setitem__("NOSTROMA_API_KEY", previous_key)
+                        if previous_key is not None else os.environ.pop("NOSTROMA_API_KEY", None))
         engine = self.root / "engine.py"
         engine.write_text("#!" + sys.executable + "\nimport sys\nfrom pathlib import Path\n"
                           "if '--batch' in sys.argv: print('INFO batch_slots=2', flush=True)\n"
@@ -64,7 +64,7 @@ class RuntimeTests(unittest.TestCase):
             wrapper = self.root / "engine.cmd"
             wrapper.write_bytes(f'@echo off\r\n"{sys.executable}" "{engine}" %*\r\n'.encode())
             engine = wrapper
-        from tools.strata_tokenizer import BYTE_TO_UNICODE
+        from tools.nostroma_tokenizer import BYTE_TO_UNICODE
         tokenizer = self.root / "tokenizer"
         tokenizer.mkdir()
         tokens = [BYTE_TO_UNICODE[i] for i in range(256)] + [
@@ -147,9 +147,9 @@ class RuntimeTests(unittest.TestCase):
                                        capture_output=True, cwd=root, env=os.environ.copy(), timeout=15)
             return completed.returncode, json.loads(completed.stdout)
 
-        other = self.root / "strata-other.json"
+        other = self.root / "nostroma-other.json"
         other.write_text(self.config.read_text().replace('"fake"', '"other"'), encoding="utf-8")
-        with mock.patch.dict(os.environ, {"STRATA_INSTALL_DIR": str(self.root)}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_INSTALL_DIR": str(self.root)}):
             code, listed = send("models.installed", {})
             inspect_code, inspected = send("models.inspect", {"model_id": "other"})
         self.assertEqual(code, 0)
@@ -448,7 +448,7 @@ class RuntimeTests(unittest.TestCase):
                 stderr_path = self.root / f"serve-{expected_reason}-{'quiet' if quiet else 'normal'}.stderr"
                 with stderr_path.open("w+", encoding="utf-8") as diagnostics:
                     process = subprocess.Popen(
-                        [sys.executable, "strata.py", "serve", "--profile", "local", "--port", "0",
+                        [sys.executable, "nostroma.py", "serve", "--profile", "local", "--port", "0",
                          "--shutdown-timeout", "2", "--output", "jsonl", *(["--quiet"] if quiet else [])],
                         cwd=Path(__file__).resolve().parents[2], env=os.environ.copy(),
                         stdout=subprocess.PIPE, stderr=diagnostics, text=True, bufsize=1)
@@ -868,7 +868,7 @@ class RuntimeTests(unittest.TestCase):
             if key:
                 cfg["api_key"] = key
             self.config.write_text(json.dumps(cfg))
-            with mock.patch.dict(os.environ, {"STRATA_API_KEY": ""}):
+            with mock.patch.dict(os.environ, {"NOSTROMA_API_KEY": ""}):
                 plan, args = _launch_plan("local")
             self.assertEqual(plan["effective"]["host"], "0.0.0.0")
 
@@ -1282,7 +1282,7 @@ class RuntimeTests(unittest.TestCase):
         if WINDOWS:
             self.assertRegex(state["socket"], r"^tcp:127\.0\.0\.1:[1-9][0-9]*$")
         root = Path(__file__).resolve().parents[2]
-        done = subprocess.run([sys.executable, "strata.py", "runtime", "status", "--profile", "local",
+        done = subprocess.run([sys.executable, "nostroma.py", "runtime", "status", "--profile", "local",
                                "--output", "json"], cwd=root, env=os.environ.copy(), capture_output=True,
                               text=True, timeout=30)
         self.assertEqual(done.returncode, 0, done.stderr)
@@ -1342,7 +1342,7 @@ class RuntimeTests(unittest.TestCase):
                 mock.patch.object(runtime.winproc, "process_image", create=True) as image:
             image.return_value = r"C:\Windows\System32\svchost.exe"
             self.assertFalse(runtime._child_present(child))
-            image.return_value = r"C:\Users\a\AppData\Local\Strata\python\python.exe"
+            image.return_value = r"C:\Users\a\AppData\Local\Nostroma\python\python.exe"
             self.assertTrue(runtime._child_present(child))
             image.return_value = None                                    # unreadable: keep refusing, never guess
             self.assertTrue(runtime._child_present(child))
@@ -1418,14 +1418,14 @@ class RuntimeTests(unittest.TestCase):
         done = subprocess.run(["icacls", str(shared), "/grant", "*S-1-1-0:(OI)(CI)R"], capture_output=True)
         if done.returncode != 0:
             self.skipTest("icacls could not widen the test directory")
-        with mock.patch.dict(os.environ, {"STRATA_RUNTIME_DIR": str(shared)}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_RUNTIME_DIR": str(shared)}):
             # a folder that names Everyone is the user's own state folder: it is locked down once and used (never a stop)
             self.assertEqual(runtime.runtime_dir(), shared)
             self.assertTrue(private_files.is_unshared(shared))
         again = Path(self.temp.name) / "shared-runtime-2"
         again.mkdir()
         subprocess.run(["icacls", str(again), "/grant", "*S-1-1-0:(OI)(CI)R"], capture_output=True)
-        with mock.patch.dict(os.environ, {"STRATA_RUNTIME_DIR": str(again)}), \
+        with mock.patch.dict(os.environ, {"NOSTROMA_RUNTIME_DIR": str(again)}), \
                 mock.patch.object(private_files, "restrict_to_current_user"), \
                 mock.patch.object(private_files, "repair_access", return_value=False):
             # when the lock-down does not happen it still refuses, in plain words and naming who can open it
@@ -1502,12 +1502,12 @@ class StartWaitLimit(unittest.TestCase):
     def setUp(self):
         # A start writes an operation record before the engine runs, so these tests keep their records (and any profile
         # lookup) in a scratch folder rather than in the person's own state.
-        temp = tempfile.TemporaryDirectory(prefix="strata-start-wait-test-")
+        temp = tempfile.TemporaryDirectory(prefix="nostroma-start-wait-test-")
         self.addCleanup(temp.cleanup)
         root = Path(temp.name)
         (root / "profiles").mkdir()
-        env = mock.patch.dict(os.environ, {"STRATA_PROFILE_DIR": str(root / "profiles"),
-                                           "STRATA_RUNTIME_DIR": str(root / "runtime")})
+        env = mock.patch.dict(os.environ, {"NOSTROMA_PROFILE_DIR": str(root / "profiles"),
+                                           "NOSTROMA_RUNTIME_DIR": str(root / "runtime")})
         env.start()
         self.addCleanup(env.stop)
 

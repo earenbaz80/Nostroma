@@ -5,7 +5,7 @@ the experts that helper holds among the layer's misses and moved part of them - 
 - to the primary card over PCIe, where the primary computed them while the helper sat idle for them. The plan runs before
 `RemoteExperts::begin()` claims its rows, and `begin()` only takes the rows the plan left alone. #854 makes the plan treat
 a helper's experts as it treats the peer tier's: not a miss, never in the PCIe share. The numbers below are the engine's
-own `STRATA_DECODE_TIMING=1` report per request.
+own `NOSTROMA_DECODE_TIMING=1` report per request.
 
 ## Rig
 
@@ -14,11 +14,11 @@ own `STRATA_DECODE_TIMING=1` report per request.
   AVX2, no AVX-512; 5 expert-pool workers plus the host thread), 128 GB DDR4-3200.
 - Ubuntu 26.04, kernel 7.0.0-38-generic, ROCm 10.0.0 (HIP 7.15.26333).
 - Model: Qwen3.8-Flash-Next GSQ-RCO IQ3_S (2 shards, `--native`), MTP draft layer on, `--kv int8 --kv-resident 32768
-  --max-context 131072`. Configuration [strata-helper.json](strata-helper.json) (`/m` the model directory, `/work` the
+  --max-context 131072`. Configuration [nostroma-helper.json](nostroma-helper.json) (`/m` the model directory, `/work` the
   build; `HIP_VISIBLE_DEVICES=1,0` makes the card on PCI bus 0f the primary): `--expert-cache auto
   --expert-cache-device1 auto --remote-expert-opt --spec 4 --spec-min-p 0.5`. The primary's cache holds 4,861 experts
   (9.26 GiB), the helper 8,163 more (15.46 GiB); 24,576 experts in all.
-- Engines, all `-DSTRATA_ENABLE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1030 -DSTRATA_PREFILL_MMQ=ON`:
+- Engines, all `-DNOSTROMA_ENABLE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1030 -DNOSTROMA_PREFILL_MMQ=ON`:
   - *baseline*: `origin/main` at `6f32ec0` (0.1.39) with #835 (`6add1a7`; #835 changes the prompt path's GEMMs only,
     not the decode path measured here - its prompt tok/s are therefore higher than the fix's below);
   - *baseline, same base* (2026-10-05): `6f32ec0` unchanged;
@@ -28,7 +28,7 @@ own `STRATA_DECODE_TIMING=1` report per request.
 
 A fresh server per arm. Two requests of about 5,000 prompt tokens each (two offsets into one text), "Summarize the
 document above in about 300 words", sampled (temperature 1.0, top-p 0.95, top-k 20), up to 600 tokens; the engine's
-`strata decode timing` line per request. Milliseconds per verify window and its parts are the measure; tok/s also
+`nostroma decode timing` line per request. Milliseconds per verify window and its parts are the measure; tok/s also
 depends on how many drafts a sampled answer accepts and varies more.
 
 ## Results

@@ -9,7 +9,7 @@
 #include <cstring>
 #include <thread>
 
-namespace strata_vit {
+namespace nostroma_vit {
 
 namespace {
 
@@ -38,7 +38,7 @@ struct Layer {
 struct VitCpu::Impl {
     VitGeometry g;
     const CpuOps* ops = nullptr;
-    int act_round = 0;                  // STRATA_VIT_REF_ROUND: 0 none, 1 BF16, 2 F16 (the weight's type)
+    int act_round = 0;                  // NOSTROMA_VIT_REF_ROUND: 0 none, 1 BF16, 2 F16 (the weight's type)
     std::vector<float> patch_b, pos, post_w, post_b, mm0_b, mm2_b;
     Mat patch_w, mm0, mm2;
     std::vector<Layer> layers;
@@ -177,14 +177,14 @@ bool VitCpu::load(const Gguf& gg, const VitGeometry& g, std::string& err) {
             !m.read_f(gg, p + "ffn_up.bias", L.up_b, err) || !m.read_m(gg, p + "ffn_down.weight", L.down, err) || !m.read_f(gg, p + "ffn_down.bias", L.down_b, err))
             return false;
     }
-    m.act_round = vit_cpu_round_kind(m.layers.empty() ? 0 : m.layers[0].qkv.kind, std::getenv("STRATA_VIT_REF_ROUND"));
+    m.act_round = vit_cpu_round_kind(m.layers.empty() ? 0 : m.layers[0].qkv.kind, std::getenv("NOSTROMA_VIT_REF_ROUND"));
     return true;
 }
 
 int vit_cpu_round_kind(int weight_kind, const char* env) {
     // No rounding by default, for every weight type: the tower then follows the float32 reference (VitRef).  Until 11-14 BF16 weights (Qwen3.8) rounded
     // the matrix inputs to BF16 by default, which matched llama.cpp's reader on code4217.png (0.9997) but not float32: 16 pictures, 12,308 tokens, 45 under
-    // cosine 0.99 against VitRef with the rounding, 0 without (code4217 token 47: 0.627 -> 1.000).  STRATA_VIT_REF_ROUND=1 brings the rounding back.
+    // cosine 0.99 against VitRef with the rounding, 0 without (code4217 token 47: 0.627 -> 1.000).  NOSTROMA_VIT_REF_ROUND=1 brings the rounding back.
     // float32 or Q8_0-expanded matrices have no 16-bit type to round to.
     if (weight_kind != 1 && weight_kind != 2) return 0;
     if (env && *env) return std::atoi(env) != 0 ? weight_kind : 0;
@@ -201,8 +201,8 @@ bool VitCpu::encode(const PreparedImage& img, int threads, std::vector<float>& r
     int nth = threads > 0 ? threads : (int) std::max(1u, std::min(16u, std::thread::hardware_concurrency() / 2));
     if (!m.team || m.team_threads != nth) { m.team.reset(new Team(nth)); m.team_threads = nth; }
     const CpuOps& ops = *m.ops;
-    // STRATA_VIT_PROF=1 (a diagnostic, stderr only, off by default): the time of each stage (every stage ends with its team run, so no extra wait)
-    static const bool prof = std::getenv("STRATA_VIT_PROF") != nullptr;
+    // NOSTROMA_VIT_PROF=1 (a diagnostic, stderr only, off by default): the time of each stage (every stage ends with its team run, so no extra wait)
+    static const bool prof = std::getenv("NOSTROMA_VIT_PROF") != nullptr;
     double pt[12] = {0};
     auto pclock = [] { return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now().time_since_epoch()).count(); };
     double pmark = prof ? pclock() : 0.0;
@@ -288,9 +288,9 @@ bool VitCpu::encode(const PreparedImage& img, int threads, std::vector<float>& r
     const int OD = (HD + 15) / 16 * 16;
     // Attention layout (RESULTS-OWN-3V.md D2): V packed per head (VP[h][j][d], rows of HD floats) instead of read in place from the qkv rows (a 3,456-float
     // stride: one cache line used per row and key); and queries per task. Both change only addresses and the grouping of query rows (every query row's
-    // sums run in the same order), so the results are bit-identical.  STRATA_VIT_CPU_VPACK=0 / STRATA_VIT_CPU_QB=<multiple of 48>: diagnostics.
-    static const bool vpack = [] { const char* e = std::getenv("STRATA_VIT_CPU_VPACK"); return !(e && std::atoi(e) == 0); }();
-    static const int QB = [] { const char* e = std::getenv("STRATA_VIT_CPU_QB"); const int v = e ? std::atoi(e) : 0; return v >= kQB && v % kQB == 0 ? v : kQBDefault; }();
+    // sums run in the same order), so the results are bit-identical.  NOSTROMA_VIT_CPU_VPACK=0 / NOSTROMA_VIT_CPU_QB=<multiple of 48>: diagnostics.
+    static const bool vpack = [] { const char* e = std::getenv("NOSTROMA_VIT_CPU_VPACK"); return !(e && std::atoi(e) == 0); }();
+    static const int QB = [] { const char* e = std::getenv("NOSTROMA_VIT_CPU_QB"); const int v = e ? std::atoi(e) : 0; return v >= kQB && v % kQB == 0 ? v : kQBDefault; }();
     const int attn_tasks_q = (N + QB - 1) / QB;
     std::vector<float> VP(vpack ? (size_t) H * N * HD + slack : 0);
     std::vector<std::vector<float>> sscr((size_t) nth, std::vector<float>((size_t) QB * kTK + (size_t) QB * OD + 2 * QB));
@@ -402,4 +402,4 @@ bool VitCpu::encode(const PreparedImage& img, int threads, std::vector<float>& r
     return true;
 }
 
-}  // namespace strata_vit
+}  // namespace nostroma_vit

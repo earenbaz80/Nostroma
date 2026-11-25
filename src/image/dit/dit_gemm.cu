@@ -1,12 +1,12 @@
-// src/image/dit/dit_gemm.cu - see include/strata/image/dit_gemm.hpp.
-#include "strata/image/dit_gemm.hpp"
+// src/image/dit/dit_gemm.cu - see include/nostroma/image/dit_gemm.hpp.
+#include "nostroma/image/dit_gemm.hpp"
 
-#include "strata/image/te_dequant.hpp"
-#include "strata/kernels/f16_bits.hpp"
+#include "nostroma/image/te_dequant.hpp"
+#include "nostroma/kernels/f16_bits.hpp"
 
 #if defined(__HIP__) || defined(__HIPCC__) || defined(__HIP_PLATFORM_AMD__)
-#include "strata/hip_compat/cuda_runtime.h"
-#include "strata/hip_compat/cublas_v2.h"
+#include "nostroma/hip_compat/cuda_runtime.h"
+#include "nostroma/hip_compat/cublas_v2.h"
 #else
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
@@ -14,7 +14,7 @@
 
 #include <mutex>
 
-namespace strata::image {
+namespace nostroma::image {
 namespace {
 
 // rows of f32 (stride ldx) -> packed f16 rows, round to nearest even (f16_bits.hpp)
@@ -22,7 +22,7 @@ __global__ void rows_to_f16(const float* __restrict__ x, int64_t ldx, int64_t K,
     const int64_t total = n * K;
     for (int64_t i = (int64_t) blockIdx.x * blockDim.x + threadIdx.x; i < total; i += (int64_t) gridDim.x * blockDim.x) {
         const int64_t r = i / K, c = i % K;
-        out[i] = strata::kernels::f16_from_f32(x[r * ldx + c]);
+        out[i] = nostroma::kernels::f16_from_f32(x[r * ldx + c]);
     }
 }
 
@@ -129,4 +129,4 @@ void dit_gemm_release() {
     s.device = -1;
 }
 
-}  // namespace strata::image
+}  // namespace nostroma::image

@@ -1,5 +1,5 @@
-// adapt_async_default_test: the asynchronous adaptive tier as a measured choice (include/strata/core/adapt_async_default.hpp).
-#include "strata/core/adapt_async_default.hpp"
+// adapt_async_default_test: the asynchronous adaptive tier as a measured choice (include/nostroma/core/adapt_async_default.hpp).
+#include "nostroma/core/adapt_async_default.hpp"
 
 #include <cstdio>
 #include <cstring>
@@ -10,8 +10,8 @@ static int g_fail = 0;
         if (!(c)) { std::fprintf(stderr, "FAIL %s:%d  %s\n", __FILE__, __LINE__, #c); ++g_fail; } \
     } while (0)
 
-using strata::core::AdaptAsyncAuto;
-using strata::core::AdaptAsyncSelf;
+using nostroma::core::AdaptAsyncAuto;
+using nostroma::core::AdaptAsyncSelf;
 using Action = AdaptAsyncSelf::Action;
 using Phase = AdaptAsyncSelf::Phase;
 
@@ -40,23 +40,23 @@ static Action feed(AdaptAsyncSelf& s, int n, double ms, double wait, int tok) {
 int main() {
     const char* why = nullptr;
     // ---- where the engine may choose by measurement
-    CHECK(strata::core::adapt_async_self_decides(good(), &why));
-    { AdaptAsyncAuto a = good(); a.flag = 0; CHECK(!strata::core::adapt_async_self_decides(a, &why)); CHECK(why && std::strstr(why, "given")); }
-    { AdaptAsyncAuto a = good(); a.flag = 1; CHECK(!strata::core::adapt_async_self_decides(a)); }
-    { AdaptAsyncAuto a = good(); a.env = 0; CHECK(!strata::core::adapt_async_self_decides(a, &why)); CHECK(why && std::strstr(why, "STRATA_ADAPT_ASYNC")); }
-    { AdaptAsyncAuto a = good(); a.env = 1; CHECK(strata::core::adapt_async_self_decides(a)); }
-    { AdaptAsyncAuto a = good(); a.env = -1; CHECK(strata::core::adapt_async_self_decides(a)); }
-    { AdaptAsyncAuto a = good(); a.cuda = false; CHECK(!strata::core::adapt_async_self_decides(a)); }
-    { AdaptAsyncAuto a = good(); a.serve = false; CHECK(!strata::core::adapt_async_self_decides(a)); }
-    { AdaptAsyncAuto a = good(); a.adaptive = false; CHECK(!strata::core::adapt_async_self_decides(a)); }   // --adapt-every 100000 gates
-    { AdaptAsyncAuto a = good(); a.arena = false; CHECK(!strata::core::adapt_async_self_decides(a)); }
-    { AdaptAsyncAuto a = good(); a.multi_gpu = true; CHECK(!strata::core::adapt_async_self_decides(a)); }
-    { AdaptAsyncAuto a = good(); a.pipeline_windows = true; CHECK(!strata::core::adapt_async_self_decides(a)); }
-    { AdaptAsyncAuto a = good(); a.batch = true; CHECK(!strata::core::adapt_async_self_decides(a)); }
-    { AdaptAsyncAuto a = good(); a.peer = true; CHECK(!strata::core::adapt_async_self_decides(a)); }
-    { AdaptAsyncAuto a = good(); a.remote_opt = true; CHECK(!strata::core::adapt_async_self_decides(a)); }
-    { AdaptAsyncAuto a = good(); a.adapt_overlap = true; CHECK(!strata::core::adapt_async_self_decides(a)); }
-    CHECK(!strata::core::adapt_async_self_decides(AdaptAsyncAuto{}));
+    CHECK(nostroma::core::adapt_async_self_decides(good(), &why));
+    { AdaptAsyncAuto a = good(); a.flag = 0; CHECK(!nostroma::core::adapt_async_self_decides(a, &why)); CHECK(why && std::strstr(why, "given")); }
+    { AdaptAsyncAuto a = good(); a.flag = 1; CHECK(!nostroma::core::adapt_async_self_decides(a)); }
+    { AdaptAsyncAuto a = good(); a.env = 0; CHECK(!nostroma::core::adapt_async_self_decides(a, &why)); CHECK(why && std::strstr(why, "NOSTROMA_ADAPT_ASYNC")); }
+    { AdaptAsyncAuto a = good(); a.env = 1; CHECK(nostroma::core::adapt_async_self_decides(a)); }
+    { AdaptAsyncAuto a = good(); a.env = -1; CHECK(nostroma::core::adapt_async_self_decides(a)); }
+    { AdaptAsyncAuto a = good(); a.cuda = false; CHECK(!nostroma::core::adapt_async_self_decides(a)); }
+    { AdaptAsyncAuto a = good(); a.serve = false; CHECK(!nostroma::core::adapt_async_self_decides(a)); }
+    { AdaptAsyncAuto a = good(); a.adaptive = false; CHECK(!nostroma::core::adapt_async_self_decides(a)); }   // --adapt-every 100000 gates
+    { AdaptAsyncAuto a = good(); a.arena = false; CHECK(!nostroma::core::adapt_async_self_decides(a)); }
+    { AdaptAsyncAuto a = good(); a.multi_gpu = true; CHECK(!nostroma::core::adapt_async_self_decides(a)); }
+    { AdaptAsyncAuto a = good(); a.pipeline_windows = true; CHECK(!nostroma::core::adapt_async_self_decides(a)); }
+    { AdaptAsyncAuto a = good(); a.batch = true; CHECK(!nostroma::core::adapt_async_self_decides(a)); }
+    { AdaptAsyncAuto a = good(); a.peer = true; CHECK(!nostroma::core::adapt_async_self_decides(a)); }
+    { AdaptAsyncAuto a = good(); a.remote_opt = true; CHECK(!nostroma::core::adapt_async_self_decides(a)); }
+    { AdaptAsyncAuto a = good(); a.adapt_overlap = true; CHECK(!nostroma::core::adapt_async_self_decides(a)); }
+    CHECK(!nostroma::core::adapt_async_self_decides(AdaptAsyncAuto{}));
 
     // ---- the state machine
     {   // not armed: nothing happens

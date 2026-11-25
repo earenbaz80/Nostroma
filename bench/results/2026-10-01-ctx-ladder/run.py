@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Strata benchmark harness with pluggable model name.
+"""Nostroma benchmark harness with pluggable model name.
 
 For each configured --max-context, finds a chat content that lands the prompt
 near 92 % of capacity, runs:
@@ -32,7 +32,7 @@ CHAR_PER_TOKEN = 4.0
 PEER_WINDOW = 32
 
 FILLER = (
-    "Strata models a pagoda of experts and policies; during a long context "
+    "Nostroma models a pagoda of experts and policies; during a long context "
     "session the persistent graph speculatively drafts the next token while "
     "the verifier follows. The verifier commits the draft when the "
     "distributions agree, else resamples and re-aligns. On a workstation with "
@@ -328,7 +328,7 @@ def main():
     args = ap.parse_args()
 
     out = {
-        "engine": "Strata",
+        "engine": "Nostroma",
         "model_name": args.model,
         "host": "Shin-BlackMamba",
         "started_at_utc": int(time.time()),

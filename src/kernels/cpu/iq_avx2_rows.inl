@@ -1,17 +1,17 @@
 // src/kernels/cpu/iq_avx2_rows.inl - the row kernels of iq_avx2.cpp.  Not a header: iq_avx2.cpp includes it twice,
 //
-//   STRATA_ROWS_VNNI 0   the AVX2 forms (namespace plain);
-//   STRATA_ROWS_VNNI 1   the same loops with AVX-VNNI (namespace vnni, built with STRATA_AVXVNNI): vpdpwssd for each
+//   NOSTROMA_ROWS_VNNI 0   the AVX2 forms (namespace plain);
+//   NOSTROMA_ROWS_VNNI 1   the same loops with AVX-VNNI (namespace vnni, built with NOSTROMA_AVXVNNI): vpdpwssd for each
 //                        madd + add, vpdpbusd for maddubs + madd(ones).  Integer sums, so the same bits.
 //
-// Every function here is STRATA_ROWS_FN: nothing in the plain copy, GCC/Clang's target("avxvnni") in the VNNI copy, so
+// Every function here is NOSTROMA_ROWS_FN: nothing in the plain copy, GCC/Clang's target("avxvnni") in the VNNI copy, so
 // the AVX-VNNI intrinsics compile in these functions only and the plain copy stays AVX2 (-mavxvnni on the whole file
 // would let the compiler use the extension anywhere).  MSVC takes the intrinsics under /arch:AVX2.  The VNNI copy is
 // called only where cpu_avxvnni_ok().
 
 // acc + madd(p16, sc).  vpdpwssd is the madd and the add in one uop; both wrap the same way.
-STRATA_ROWS_FN inline __m256i madd_add(__m256i acc, __m256i p16, __m256i sc) {
-#if STRATA_ROWS_VNNI
+NOSTROMA_ROWS_FN inline __m256i madd_add(__m256i acc, __m256i p16, __m256i sc) {
+#if NOSTROMA_ROWS_VNNI
     return _mm256_dpwssd_avx_epi32(acc, p16, sc);
 #else
     return _mm256_add_epi32(acc, _mm256_madd_epi16(p16, sc));
@@ -20,25 +20,25 @@ STRATA_ROWS_FN inline __m256i madd_add(__m256i acc, __m256i p16, __m256i sc) {
 
 // Four u8 x s8 products per int32 lane.  vpdpbusd does not saturate where maddubs would, but maddubs cannot here: the
 // u8 side is an IQ4_NL |w| <= 127, so a pair is at most 2 * 127 * 128.
-STRATA_ROWS_FN inline __m256i dot4u(__m256i u8, __m256i s8) {
-#if STRATA_ROWS_VNNI
+NOSTROMA_ROWS_FN inline __m256i dot4u(__m256i u8, __m256i s8) {
+#if NOSTROMA_ROWS_VNNI
     return _mm256_dpbusd_avx_epi32(_mm256_setzero_si256(), u8, s8);
 #else
     return _mm256_madd_epi16(_mm256_maddubs_epi16(u8, s8), _mm256_set1_epi16(1));
 #endif
 }
 
-STRATA_ROWS_FN inline float ggml_hsum8(__m256 x) {
+NOSTROMA_ROWS_FN inline float ggml_hsum8(__m256 x) {
     __m128 s = _mm_add_ps(_mm256_extractf128_ps(x, 1), _mm256_castps256_ps128(x));
     s = _mm_add_ps(s, _mm_movehl_ps(s, s));
     s = _mm_add_ss(s, _mm_movehdup_ps(s));
     return _mm_cvtss_f32(s);
 }
 
-template <int NT, bool GGML = false> STRATA_ROWS_FN
+template <int NT, bool GGML = false> NOSTROMA_ROWS_FN
 inline void row_dot_iq2xs(const uint8_t* row, int nblocks, const block_q8_K* const* y, float* res);
 
-template <int TY> STRATA_ROWS_FN
+template <int TY> NOSTROMA_ROWS_FN
 inline float row_dot_ggml_one(const uint8_t* row, int nblocks, const block_q8_K* y) {
     if constexpr (TY == 17) {
         const block_q8_K* act[1] = {y};
@@ -68,7 +68,7 @@ inline float row_dot_ggml_one(const uint8_t* row, int nblocks, const block_q8_K*
     else return ggml_hsum8(accum);
 }
 
-template <int TY> STRATA_ROWS_FN
+template <int TY> NOSTROMA_ROWS_FN
 void gu_ggml_one(const uint8_t* blob, size_t gu_row, size_t up_off, int n, const block_q8_K* y, float* ff,
                  int r0, int r1) {
     for (int r = r0; r < r1; ++r) {
@@ -78,7 +78,7 @@ void gu_ggml_one(const uint8_t* blob, size_t gu_row, size_t up_off, int n, const
     }
 }
 
-template <int TY, int NT, bool EX = false> STRATA_ROWS_FN
+template <int TY, int NT, bool EX = false> NOSTROMA_ROWS_FN
 inline void row_dot(const uint8_t* row, int nblocks, const block_q8_K* const* y, float* res) {
     const int pf = prefetch_distance();
     __m256 accf[NT];
@@ -122,7 +122,7 @@ inline void row_dot(const uint8_t* row, int nblocks, const block_q8_K* const* y,
 // 32-byte load.  The 8 scale bytes become all 16 half-scales with ggml's unpack trick.  The grid lookups
 // stay scalar loads into set_epi64x (ggml does the same).  Every token still only pays a load, a sign,
 // a maddubs, a madd and an add per half, into alternating accumulators.
-template <int NT, bool GGML> STRATA_ROWS_FN
+template <int NT, bool GGML> NOSTROMA_ROWS_FN
 inline void row_dot_iq2xs(const uint8_t* row, int nblocks, const block_q8_K* const* y, float* res) {
     static const uint8_t bit_sel[32] = {
         1, 2, 4, 8, 16, 32, 64, (uint8_t) 0x80, 1, 2, 4, 8, 16, 32, 64, (uint8_t) 0x80,
@@ -220,7 +220,7 @@ inline void row_dot_iq2xs(const uint8_t* row, int nblocks, const block_q8_K* con
 //    non-BMI2 path branches on every bit).
 
 // the pair sums maddubs(1, q8) of every 32-value chunk of an activation: 16 int16 a chunk, 8 chunks a block
-STRATA_ROWS_FN inline void iq1m_pre_build(const block_q8_K* y, int nblocks, int16_t* p) {
+NOSTROMA_ROWS_FN inline void iq1m_pre_build(const block_q8_K* y, int nblocks, int16_t* p) {
     const __m256i one8 = _mm256_set1_epi8(1);
     for (int i = 0; i < nblocks; ++i)
         for (int c = 0; c < 8; ++c)
@@ -228,7 +228,7 @@ STRATA_ROWS_FN inline void iq1m_pre_build(const block_q8_K* y, int nblocks, int1
                                 _mm256_maddubs_epi16(one8, _mm256_loadu_si256((const __m256i*) (y[i].qs + 32 * c))));
 }
 
-template <int NT> STRATA_ROWS_FN
+template <int NT> NOSTROMA_ROWS_FN
 inline void row_dot_iq1m(const uint8_t* row, int nblocks, const block_q8_K* const* y, const int16_t* const* P, float* res) {
     const __m256i mask = _mm256_set1_epi16(0x7);
     const __m256i mone = _mm256_set1_epi16(1);
@@ -298,7 +298,7 @@ inline void row_dot_iq1m(const uint8_t* row, int nblocks, const block_q8_K* cons
     for (int t = 0; t < NT; ++t) res[t] = ggml_hsum8(acc1[t]) + 0.125f * ggml_hsum8(acc2[t]);
 }
 
-template <int TY, int NT, bool EX = false> STRATA_ROWS_FN
+template <int TY, int NT, bool EX = false> NOSTROMA_ROWS_FN
 inline void row_dot_any(const uint8_t* row, int nblocks, const block_q8_K* const* y, float* res,
                         const int16_t* const* aux = nullptr) {
     if constexpr (TY == 29) row_dot_iq1m<NT>(row, nblocks, y, aux, res);
@@ -306,7 +306,7 @@ inline void row_dot_any(const uint8_t* row, int nblocks, const block_q8_K* const
     else                    row_dot<TY, NT, EX>(row, nblocks, y, res);
 }
 
-template <int TY, int NT, bool EX> STRATA_ROWS_FN
+template <int TY, int NT, bool EX> NOSTROMA_ROWS_FN
 void gu_rows(const uint8_t* blob, size_t gu_row, size_t up_off, int n, const void* const* act, float* const* ff,
              int r0, int r1) {
     const block_q8_K* y[NT];
@@ -329,7 +329,7 @@ void gu_rows(const uint8_t* blob, size_t gu_row, size_t up_off, int n, const voi
     }
 }
 
-template <int TY, int NT, bool EX> STRATA_ROWS_FN
+template <int TY, int NT, bool EX> NOSTROMA_ROWS_FN
 void dot_rows(const uint8_t* w, size_t row_bytes, int n, const void* const* act, float* const* out, int r0, int r1) {
     const block_q8_K* y[NT];
     for (int t = 0; t < NT; ++t) y[t] = (const block_q8_K*) act[t];
@@ -358,7 +358,7 @@ void dot_rows(const uint8_t* w, size_t row_bytes, int n, const void* const* act,
 // A token costs, per 32 values, one maddubs, one madd and one add (the single-token form has a sign on top).
 constexpr int kWideTokens = 64;
 
-STRATA_ROWS_FN inline void wide_prep(const block_q8_K* y, int nb, uint8_t* u) {
+NOSTROMA_ROWS_FN inline void wide_prep(const block_q8_K* y, int nb, uint8_t* u) {
     const __m256i flip = _mm256_set1_epi8((char) 0x80);
     for (int i = 0; i < nb; ++i)
         for (int c = 0; c < 8; ++c)
@@ -366,17 +366,17 @@ STRATA_ROWS_FN inline void wide_prep(const block_q8_K* y, int nb, uint8_t* u) {
                                 _mm256_xor_si256(_mm256_loadu_si256((const __m256i*) (y[i].qs + 32 * c)), flip));
 }
 
-template <int TY> STRATA_ROWS_FN
+template <int TY> NOSTROMA_ROWS_FN
 void dot_rows_wide(const uint8_t* w, size_t row_bytes, int n, const void* const* act, int T, float* const* out, int r0, int r1) {
     // tokens in tiles of kTile and rows in groups of kRows: a tile's activation slice of one block (kTile * 256 B) and the group's
     // accumulators (kRows * kTile * 32 B) stay in L1 while the group's rows go past, the tile's whole activation in L2
-#ifndef STRATA_WIDE_TILE
-#define STRATA_WIDE_TILE 16
+#ifndef NOSTROMA_WIDE_TILE
+#define NOSTROMA_WIDE_TILE 16
 #endif
-#ifndef STRATA_WIDE_ROWS
-#define STRATA_WIDE_ROWS 8
+#ifndef NOSTROMA_WIDE_ROWS
+#define NOSTROMA_WIDE_ROWS 8
 #endif
-    constexpr int kTile = STRATA_WIDE_TILE, kRows = STRATA_WIDE_ROWS;
+    constexpr int kTile = NOSTROMA_WIDE_TILE, kRows = NOSTROMA_WIDE_ROWS;
     const int nb = n / QK_K;
     static thread_local std::vector<uint8_t> ubuf;
     static thread_local std::vector<float> accb;
@@ -434,9 +434,9 @@ void dot_rows_wide(const uint8_t* w, size_t row_bytes, int n, const void* const*
 
 // IQ1_M the same way: its grid bytes are already signed (-1, 0, 1), and the delta dot keeps the pair sums of the activation
 // (maddubs(1, q8), made once per tile).  Two float accumulators a (row, token), ggml's sum d*sumi1 and sum d*sumi2.
-STRATA_ROWS_FN
+NOSTROMA_ROWS_FN
 void dot_rows_wide_iq1m(const uint8_t* w, size_t row_bytes, int n, const void* const* act, int T, float* const* out, int r0, int r1) {
-    constexpr int kTile = STRATA_WIDE_TILE, kRows = STRATA_WIDE_ROWS;
+    constexpr int kTile = NOSTROMA_WIDE_TILE, kRows = NOSTROMA_WIDE_ROWS;
     const int nb = n / QK_K;
     static thread_local std::vector<uint8_t> ubuf;
     static thread_local std::vector<int16_t> pbuf;
@@ -532,7 +532,7 @@ void dot_rows_wide_iq1m(const uint8_t* w, size_t row_bytes, int n, const void* c
     }
 }
 
-template <int TY, bool EX> STRATA_ROWS_FN
+template <int TY, bool EX> NOSTROMA_ROWS_FN
 void gu_rows_nt(int nt, const uint8_t* blob, size_t gu_row, size_t up_off, int n, const void* const* act,
                 float* const* ff, int r0, int r1) {
     switch (nt) {
@@ -547,7 +547,7 @@ void gu_rows_nt(int nt, const uint8_t* blob, size_t gu_row, size_t up_off, int n
     }
 }
 
-template <int TY, bool EX> STRATA_ROWS_FN
+template <int TY, bool EX> NOSTROMA_ROWS_FN
 void dot_rows_nt(int nt, const uint8_t* w, size_t row_bytes, int n, const void* const* act, float* const* out, int r0,
                  int r1) {
     if constexpr (EX) {
@@ -574,7 +574,7 @@ void dot_rows_nt(int nt, const uint8_t* w, size_t row_bytes, int n, const void* 
 }
 
 // The decode of each format for a variant: the gathered one (kIq256Gather) for IQ3_XXS, IQ3_S and IQ2_S.
-template <bool G, bool EX = false> STRATA_ROWS_FN
+template <bool G, bool EX = false> NOSTROMA_ROWS_FN
 void gu_type(int type, int nt, const uint8_t* blob, size_t gu_row, size_t up_off, int n, const void* const* act,
              float* const* ff, int r0, int r1) {
     switch (type) {
@@ -589,7 +589,7 @@ void gu_type(int type, int nt, const uint8_t* blob, size_t gu_row, size_t up_off
     }
 }
 
-template <bool G, bool EX = false> STRATA_ROWS_FN
+template <bool G, bool EX = false> NOSTROMA_ROWS_FN
 void dot_type(int type, int nt, const uint8_t* w, size_t row_bytes, int n, const void* const* act, float* const* out,
               int r0, int r1) {
     switch (type) {
@@ -609,7 +609,7 @@ void dot_type(int type, int nt, const uint8_t* w, size_t row_bytes, int n, const
 // kvalues_iq4nl pshufb decode and the |w| half of the signed x signed product.  Here both are computed once
 // per block; every token then costs a sign, a maddubs, a madd and an fmadd.  The arithmetic is ggml's - only
 // the order of the float additions differs.
-template <int NT> STRATA_ROWS_FN
+template <int NT> NOSTROMA_ROWS_FN
 void iq4nl_rows(const uint8_t* w, size_t row_bytes, int n, const block_q8_0* const* y, float* const* out,
                 int r0, int r1) {
     const __m128i values = _mm_loadu_si128((const __m128i*) kvalues_iq4nl);
@@ -641,7 +641,7 @@ void iq4nl_rows(const uint8_t* w, size_t row_bytes, int n, const block_q8_0* con
     }
 }
 
-STRATA_ROWS_FN void iq4nl_nt(const uint8_t* w, size_t row_bytes, int n, const block_q8_0* const* y, int nt,
+NOSTROMA_ROWS_FN void iq4nl_nt(const uint8_t* w, size_t row_bytes, int n, const block_q8_0* const* y, int nt,
                              float* const* out, int r0, int r1) {
     switch (nt) {
         case 1: iq4nl_rows<1>(w, row_bytes, n, y, out, r0, r1); break;
@@ -655,5 +655,5 @@ STRATA_ROWS_FN void iq4nl_nt(const uint8_t* w, size_t row_bytes, int n, const bl
     }
 }
 
-#undef STRATA_ROWS_VNNI
-#undef STRATA_ROWS_FN
+#undef NOSTROMA_ROWS_VNNI
+#undef NOSTROMA_ROWS_FN

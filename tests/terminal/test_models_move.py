@@ -19,7 +19,7 @@ def sha(data: bytes) -> str:
 
 class MoveCase(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory(prefix="strata-move-")
+        self.tmp = tempfile.TemporaryDirectory(prefix="nostroma-move-")
         self.addCleanup(self.tmp.cleanup)
         self.base = Path(self.tmp.name)
         self.old = self.base / "old"
@@ -40,7 +40,7 @@ class MoveCase(unittest.TestCase):
         (self.old / "notes.txt").write_text("not a model file")        # Nostroma moves its own folders only
         self.install = self.base / "install"
         self.install.mkdir()
-        self.config = self.install / "strata-gyro-s.json"
+        self.config = self.install / "nostroma-gyro-s.json"
         self.config.write_text(json.dumps({"args": ["--native", str(self.old / "models/gyro-s/a.gguf"), "--pack", str(self.old / "packs/gyro-s")],
                                            "mtp": str(self.old / "mtp/rt")}))
         self.total = sum(len(v) for v in self.files.values())
@@ -307,9 +307,9 @@ class MoveTests(MoveCase):
             self.run_move()
         self.assertEqual(json.loads(self.config.read_text())["args"][1], str(self.old / "models/gone.gguf"))
 
-    @unittest.skipUnless(os.environ.get("STRATA_TEST_OTHER_VOLUME"), "set STRATA_TEST_OTHER_VOLUME to a folder on another volume (e.g. a subst or USB drive)")
+    @unittest.skipUnless(os.environ.get("NOSTROMA_TEST_OTHER_VOLUME"), "set NOSTROMA_TEST_OTHER_VOLUME to a folder on another volume (e.g. a subst or USB drive)")
     def test_a_real_second_volume(self):
-        other = Path(os.environ["STRATA_TEST_OTHER_VOLUME"]) / f"strata-move-{os.getpid()}"
+        other = Path(os.environ["NOSTROMA_TEST_OTHER_VOLUME"]) / f"nostroma-move-{os.getpid()}"
         self.addCleanup(shutil.rmtree, other, True)
         self.new = other
         summary, _ = self.run_move()

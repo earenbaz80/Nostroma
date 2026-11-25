@@ -11,8 +11,8 @@
 // to_float (relative error 1e-6), dequant_f16 and dequant_bf16 against the rounded to_float.
 // Shapes: the model's hidden width 2560 (attention, SSM and shared-expert inputs, the head) and 640 (the shared
 // expert's and the experts' FF width) for the formats with a block of 64 values or fewer.
-#include "strata/kernels/dequant_bf16.hpp"
-#include "strata/kernels/native_mmvq.hpp"
+#include "nostroma/kernels/dequant_bf16.hpp"
+#include "nostroma/kernels/native_mmvq.hpp"
 
 #include "ggml.h"
 
@@ -28,7 +28,7 @@
 #include <string>
 #include <vector>
 
-namespace k = strata::kernels;
+namespace k = nostroma::kernels;
 
 namespace {
 struct T { const char* name; ggml_type type; };

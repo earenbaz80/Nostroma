@@ -21,7 +21,7 @@ class LeftoverEngines(unittest.TestCase):
         with mock.patch.object(procs, "end_leftovers", return_value=leftovers or {"stuck": []}) as ends, \
                 mock.patch.object(procs, "end_orphans", return_value=orphans or []) as orph, \
                 mock.patch.dict("os.environ", env or {}, clear=False), contextlib.redirect_stdout(out):
-            server.end_leftover_engines("/x/strata")
+            server.end_leftover_engines("/x/nostroma")
         return out.getvalue(), ends, orph
 
     def test_the_wait_is_long_enough_for_a_big_engine(self):
@@ -42,14 +42,14 @@ class LeftoverEngines(unittest.TestCase):
         self.assertIn("wait until that process is gone", text)
 
     def test_keep_leftovers_leaves_them_alone(self):
-        _, ends, orph = self.run_it(env={"STRATA_KEEP_LEFTOVERS": "1"})
+        _, ends, orph = self.run_it(env={"NOSTROMA_KEEP_LEFTOVERS": "1"})
         ends.assert_not_called()
         orph.assert_not_called()
 
     def test_a_failed_check_never_stops_a_start(self):
         out = io.StringIO()
         with mock.patch.object(procs, "end_leftovers", side_effect=RuntimeError("x")), contextlib.redirect_stdout(out):
-            server.end_leftover_engines("/x/strata")
+            server.end_leftover_engines("/x/nostroma")
         self.assertIn("could not check", out.getvalue())
 
 

@@ -1,9 +1,9 @@
 // sycl/src/ngram/ple_reader.cpp - SYCL port: upstream src/ngram/ple_reader.cpp plus a per-gather timing trace
-// (STRATA_PLE_TRACE=1: where a decode round's PLE wait goes). See include/strata/ngram/ple_reader.hpp.
+// (NOSTROMA_PLE_TRACE=1: where a decode round's PLE wait goes). See include/nostroma/ngram/ple_reader.hpp.
 #include <cstdio>
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 #include <cstdlib>
-#include "strata/ngram/ple_reader.hpp"
+#include "nostroma/ngram/ple_reader.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -15,7 +15,7 @@
 #include <thread>
 #include <unordered_map>
 
-namespace strata::ngram {
+namespace nostroma::ngram {
 
 using platform::Completion;
 using platform::DirectFile;
@@ -95,7 +95,7 @@ struct TicketState {
     double t_issue = 0, t_first = 0, t_last = 0;
 };
 bool ple_trace() {
-    static const bool v = strata::env("NOSTROMA_PLE_TRACE") != nullptr;
+    static const bool v = nostroma::env("NOSTROMA_PLE_TRACE") != nullptr;
     return v;
 }
 
@@ -575,4 +575,4 @@ void PleReader::reset_stats() {
 uint64_t PleReader::cache_capacity() const { return impl_->cache.sets * WAYS; }
 uint64_t PleReader::cache_size() const { return impl_->cache.used; }
 
-}  // namespace strata::ngram
+}  // namespace nostroma::ngram

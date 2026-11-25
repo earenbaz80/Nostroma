@@ -6,7 +6,7 @@
 // The test parks three conversations, evicts the oldest (the one below the others) and reads the process RSS from
 // /proc/self/statm before and after.  Linux with glibc only; elsewhere it says SKIPPED.  It also prints what the
 // eviction costs in time.
-#include "strata/core/conversation_cache.hpp"
+#include "nostroma/core/conversation_cache.hpp"
 
 #include <chrono>
 #include <cstdio>
@@ -17,7 +17,7 @@
 #if defined(__linux__) && defined(__GLIBC__)
 #include <unistd.h>
 
-using namespace strata::core;
+using namespace nostroma::core;
 
 namespace {
 constexpr size_t MiB = size_t(1) << 20;

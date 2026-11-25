@@ -24,15 +24,15 @@ template <typename Use, int M, int N, int K, typename T, typename Layout = void>
     T x[M * N];
 };
 
-[[noreturn]] inline void strata_metal_wmma_missing(const char* what) {
-    std::fprintf(stderr, "strata metal: wmma::%s has no Metal implementation (simdgroup matrices are the equivalent)\n", what);
+[[noreturn]] inline void nostroma_metal_wmma_missing(const char* what) {
+    std::fprintf(stderr, "nostroma metal: wmma::%s has no Metal implementation (simdgroup matrices are the equivalent)\n", what);
     std::abort();
 }
 
-template <typename... A> inline void fill_fragment(A&&...) { strata_metal_wmma_missing("fill_fragment"); }
-template <typename... A> inline void load_matrix_sync(A&&...) { strata_metal_wmma_missing("load_matrix_sync"); }
-template <typename... A> inline void mma_sync(A&&...) { strata_metal_wmma_missing("mma_sync"); }   // variadic: the engine passes four fragments of different types
-template <typename... A> inline void store_matrix_sync(A&&...) { strata_metal_wmma_missing("store_matrix_sync"); }
+template <typename... A> inline void fill_fragment(A&&...) { nostroma_metal_wmma_missing("fill_fragment"); }
+template <typename... A> inline void load_matrix_sync(A&&...) { nostroma_metal_wmma_missing("load_matrix_sync"); }
+template <typename... A> inline void mma_sync(A&&...) { nostroma_metal_wmma_missing("mma_sync"); }   // variadic: the engine passes four fragments of different types
+template <typename... A> inline void store_matrix_sync(A&&...) { nostroma_metal_wmma_missing("store_matrix_sync"); }
 
 }   // namespace wmma
 }   // namespace nvcuda

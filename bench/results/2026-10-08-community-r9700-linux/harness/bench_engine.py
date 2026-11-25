@@ -15,7 +15,7 @@ from resource_sampler import ResourceSampler
 
 sys.path[:0] = [str(ROOT), str(ROOT / "tools")]
 from serve.frontend import ChatTemplate
-from serve.server import StrataEngine, child_env
+from serve.server import NostromaEngine, child_env
 from conversation_cache_parity import load_tokenizer, state_hashes
 
 
@@ -42,7 +42,7 @@ def make_fixtures(cfg, lengths):
     directory = Path(cfg["tokenizer"])
     tok = load_tokenizer(directory)
     tpl = ChatTemplate(directory / "chat_template.jinja")
-    marker = "STRATA_FIXTURE_DOCUMENT_MARKER"
+    marker = "NOSTROMA_FIXTURE_DOCUMENT_MARKER"
     template = tpl.render([{"role": "user", "content": "Read the following numbered records.\n" + marker
                            + "\nSummarize the record format, then write Python code to parse and validate it. "
                            "Explain duplicate IDs and invalid integers."}], enable_thinking=False)
@@ -112,7 +112,7 @@ def main():
                 "records": []}
     save(args.out / "results.json", manifest)
     start = time.perf_counter()
-    engine = StrataEngine(cfg["exe"], cfg["args"], cwd=cfg["cwd"],
+    engine = NostromaEngine(cfg["exe"], cfg["args"], cwd=cfg["cwd"],
                           log=str(args.out / "engine.log"), env=env)
     manifest.update(load_s=time.perf_counter() - start, engine_info=dict(engine.info), pid=engine.proc.pid)
     save(args.out / "results.json", manifest)
@@ -152,7 +152,7 @@ def main():
                       "wall_s": time.perf_counter() - begin, "ttft_s": first - begin if first else None,
                       "output_ids": output, "text": tok.decode(output), **engine.last}
             manifest["records"].append(record)
-            if env.get("STRATA_STATE_HASH") is not None:
+            if env.get("NOSTROMA_STATE_HASH") is not None:
                 hashes = state_hashes((args.out / "engine.log").read_text())
                 if len(hashes) != len(manifest["records"]):
                     save(args.out / "results.json", manifest)

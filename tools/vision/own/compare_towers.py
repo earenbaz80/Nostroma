@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Runs strata-vision twice (--tower A and --tower B, default mtmd and own) over the same pictures and compares the embeddings.
+"""Runs nostroma-vision twice (--tower A and --tower B, default mtmd and own) over the same pictures and compares the embeddings.
 
-    python compare_towers.py --helper <strata-vision> --compare <strata-vision-own-compare> --mmproj <mmproj.gguf> --model <text model .gguf>
+    python compare_towers.py --helper <nostroma-vision> --compare <nostroma-vision-own-compare> --mmproj <mmproj.gguf> --model <text model .gguf>
                              --out <dir> [--a mtmd] [--b own] [--gpu] [--threads N] [--max-tokens N] [--min-tokens N]
                              [--repeat K] [--env NAME=VALUE ...] <image> [<image> ...]
 
@@ -67,7 +67,7 @@ def main():
     ap.add_argument("--a", default="mtmd")
     ap.add_argument("--b", default="own")
     ap.add_argument("--a-dir", default="", help="A's embeddings from an earlier run: <dir>/<picture name>.sve (no reader is started for A)")
-    ap.add_argument("--helper-b", default="", help="another program for B (e.g. strata-vision-own); default: --helper")
+    ap.add_argument("--helper-b", default="", help="another program for B (e.g. nostroma-vision-own); default: --helper")
     ap.add_argument("--gpu", action="store_true", help="both readers on the GPU")
     ap.add_argument("--gpu-a", action="store_true")
     ap.add_argument("--gpu-b", action="store_true")

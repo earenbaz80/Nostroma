@@ -40,7 +40,7 @@ test('requests to one source are spaced 2.5 s or more apart, never in a burst', 
 
 test('the request looks like the page\'s own form post: browser headers, Referer, Origin, no hidden tricks', async () => {
   const w = world(() => page(DDG));
-  await w.search.search({ query: 'strata' });
+  await w.search.search({ query: 'nostroma' });
   const [c] = w.calls;
   assert.equal(c.method, 'POST');
   assert.match(c.headers['user-agent'], /Mozilla\/5\.0 .*Chrome\/\d+/);

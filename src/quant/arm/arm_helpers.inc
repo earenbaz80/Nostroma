@@ -1,8 +1,8 @@
 // arm_helpers.inc - the few ggml-cpu helpers the ported NEON code names (ggml/src/ggml-cpu/ggml-cpu-impl.h at 3cf03257f219afbe7334045ff7c6a06ac68c627d,
 // Copyright (c) 2023-2026 The ggml authors, MIT), in their aarch64 form.  Included inside the neon namespace by dot_neon.cpp and act_neon.cpp.
 
-#ifndef STRATA_ARM_HELPERS
-#define STRATA_ARM_HELPERS
+#ifndef NOSTROMA_ARM_HELPERS
+#define NOSTROMA_ARM_HELPERS
 
 #define ggml_vld1q_u32(w, x, y, z) { (w), (x), (y), (z) }
 

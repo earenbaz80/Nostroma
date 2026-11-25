@@ -13,8 +13,8 @@ published quantizer in gguf-py (it dequantizes only), so each block combines san
 (written at the layout's scale offsets, see SCALE_OFFSETS below) with seeded index/sub-scale bytes - the
 dequantized reference covers real codebook values either way, which is what the parity compares.
 
-Dependencies: python3 and numpy (the dequantizers are tools/strata_quants.py, proven bit-identical to llama.cpp's gguf-py by
-tools/test_strata_gguf.py; STRATA_GGUF_PY=<gguf-py folder> uses gguf-py's instead).  Q2_0 is this repository's own format
+Dependencies: python3 and numpy (the dequantizers are tools/nostroma_quants.py, proven bit-identical to llama.cpp's gguf-py by
+tools/test_nostroma_gguf.py; NOSTROMA_GGUF_PY=<gguf-py folder> uses gguf-py's instead).  Q2_0 is this repository's own format
 (GGML type 42): its codec comes from tools/gguf_writer.py.
 
 The kernel ids in the .bin headers are the repo's i-quant dispatch table (iq_kernels.cu is_iq /
@@ -35,7 +35,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 try:
     from _paths import gguf_lib
-    gguf = gguf_lib()                       # tools/strata_gguf.py (STRATA_GGUF_PY selects llama.cpp's gguf-py)
+    gguf = gguf_lib()                       # tools/nostroma_gguf.py (NOSTROMA_GGUF_PY selects llama.cpp's gguf-py)
     gguf_dequantize = gguf.quants.dequantize
     from gguf_writer import dequantize_q2_0, quantize_q2_0
 except ImportError as e:  # a missing numpy must be explicit, not a traceback

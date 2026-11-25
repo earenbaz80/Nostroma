@@ -2,17 +2,17 @@
 """force_check.py: the token-forcing check (round 0217), after SpecPilot (arXiv 2611.02501, Li et al., Apache-2.0, "token forcing").
 
 A candidate engine/build/setting is judged on a FIXED text: the engine scores prompt + continuation teacher-forced (every position's head logits come
-out of the verify windows with the head in FP32: STRATA_LOGPOS / STRATA_LOGPOS_TOPK, the prompt cache off), and the checker counts where the scorer's
+out of the verify windows with the head in FP32: NOSTROMA_LOGPOS / NOSTROMA_LOGPOS_TOPK, the prompt cache off), and the checker counts where the scorer's
 argmax is not the forced token.  Nothing here depends on a drafter; it serves any class N change (Q5_0 experts, tree verify, a new kernel ...).
 
   force_check.py gen   CFG SET.json --corpus held.jsonl [--kinds code,json] [--per-kind 4] [--offset 8] [--new 300] [--env K=V ...]
         one engine with CFG's normal decode flags; greedy continuations of the corpus prompts (rows with "ids") -> SET.json
   force_check.py score CFG SET.json OUT.tsv [--path decode|prompt] [--env K=V ...] [--arg "--flag v" ...]
         --path decode (default): one engine with CFG's own flags (drafter, spec windows, adaptive tiers ...), prompt cache off; every request decodes the
-        forced continuation: the verify windows take the forced token in place of the argmax (STRATA_FOLLOW), so drafts are accepted when they match it,
-        and the FP32 head logits of every valid row come out (STRATA_FOLLOW_LOGPOS, top-2).  --path prompt: the whole text is read as a prompt through the
-        windows (STRATA_LOGPOS, --short-read), no decode features.  OUT.tsv.meta.json = per item line ranges.
-        --env STRATA_FORCE_FAULT=7:0.3 is the test fault (adds 0.3 to every 7th token's logit in the scored rows).
+        forced continuation: the verify windows take the forced token in place of the argmax (NOSTROMA_FOLLOW), so drafts are accepted when they match it,
+        and the FP32 head logits of every valid row come out (NOSTROMA_FOLLOW_LOGPOS, top-2).  --path prompt: the whole text is read as a prompt through the
+        windows (NOSTROMA_LOGPOS, --short-read), no decode features.  OUT.tsv.meta.json = per item line ranges.
+        --env NOSTROMA_FORCE_FAULT=7:0.3 is the test fault (adds 0.3 to every 7th token's logit in the scored rows).
   force_check.py check --stock A.tsv B.tsv [...] --cand C.tsv [--delta D] [--json out.json]
         the two rules of the paper against the stock arms (>= 2 stock arms: the noise): exit 0 pass, 1 reject, 2 inconclusive
   force_check.py selftest      the statistics on synthetic rows (no engine)
@@ -73,7 +73,7 @@ class Engine:
     def __init__(self, cfg, args, env_extra, log):
         env = dict(os.environ)
         for k in list(env):
-            if k.startswith("STRATA_"):
+            if k.startswith("NOSTROMA_"):
                 env.pop(k)
         env.update(cfg.get("env", {}))
         env.update(env_extra)
@@ -188,19 +188,19 @@ def cmd_score(a):
     extra = [x for s in (a.arg or []) for x in s.split()]
     if a.path == "decode":
         # the real decode/verify windows (drafter, spec windows, adaptive tiers, whatever the config has) with the forced continuation standing in
-        # for the argmax (STRATA_FOLLOW, one line per request in decode order); rows come from STRATA_FOLLOW_LOGPOS
+        # for the argmax (NOSTROMA_FOLLOW, one line per request in decode order); rows come from NOSTROMA_FOLLOW_LOGPOS
         follow = str(out) + ".follow.txt"
         with open(follow, "w") as ff:
             for it in items:
                 ff.write(",".join(map(str, it["cont"])) + chr(10))
-        env.update({"STRATA_FOLLOW": follow, "STRATA_FOLLOW_LOGPOS": str(out), "STRATA_LOGPOS_TOPK": "2"})
+        env.update({"NOSTROMA_FOLLOW": follow, "NOSTROMA_FOLLOW_LOGPOS": str(out), "NOSTROMA_LOGPOS_TOPK": "2"})
         args = list(cfg["args"])
         if "--prompt-cache" in args:
             i = args.index("--prompt-cache")
             del args[i:i + 2]
         args += ["--prompt-cache", "0"] + extra
     else:
-        env.update({"STRATA_LOGPOS": str(out), "STRATA_LOGPOS_TOPK": "2", "STRATA_ROUTE_TAIL_SKIP": env.get("STRATA_ROUTE_TAIL_SKIP", "0")})
+        env.update({"NOSTROMA_LOGPOS": str(out), "NOSTROMA_LOGPOS_TOPK": "2", "NOSTROMA_ROUTE_TAIL_SKIP": env.get("NOSTROMA_ROUTE_TAIL_SKIP", "0")})
         args = scorer_args(cfg, total, extra)
     if mem_available_gb() < a.min_free_gb:
         raise SystemExit("only %.0f GB available (< %d): not starting an engine" % (mem_available_gb(), a.min_free_gb))
@@ -225,7 +225,7 @@ def cmd_score(a):
                 toks, f = eng.gen(ids, 1)
             n1 = nlines()
             if n1 - n0 < len(it["cont"]) // 2:
-                raise SystemExit("%s: only %d positions scored (the prompt took the batched path? raise --short-read; decode path: STRATA_FOLLOW not in this build?)" % (it["id"], n1 - n0))
+                raise SystemExit("%s: only %d positions scored (the prompt took the batched path? raise --short-read; decode path: NOSTROMA_FOLLOW not in this build?)" % (it["id"], n1 - n0))
             meta.append({"id": it["id"], "kind": it["kind"], "first_line": n0, "end_line": n1, "prompt_len": len(it["prompt"]), "ids": ids})
             print("%s: %d positions" % (it["id"], n1 - n0), flush=True)
     finally:
@@ -492,7 +492,7 @@ def main():
     g.add_argument("--kinds", default=""); g.add_argument("--per-kind", type=int, default=4); g.add_argument("--offset", type=int, default=8)
     g.add_argument("--new", type=int, default=300); g.add_argument("--env", action="append"); g.add_argument("--min-free-gb", type=int, default=20)
     s = sp.add_parser("score"); s.add_argument("config"); s.add_argument("set"); s.add_argument("out")
-    s.add_argument("--path", choices=["decode", "prompt"], default="decode", help="decode: the real verify windows with the forced tokens (STRATA_FOLLOW); prompt: the text read as a prompt (STRATA_LOGPOS)")
+    s.add_argument("--path", choices=["decode", "prompt"], default="decode", help="decode: the real verify windows with the forced tokens (NOSTROMA_FOLLOW); prompt: the text read as a prompt (NOSTROMA_LOGPOS)")
     s.add_argument("--env", action="append"); s.add_argument("--arg", action="append"); s.add_argument("--min-free-gb", type=int, default=20)
     c = sp.add_parser("check"); c.add_argument("--stock", nargs="+", required=True); c.add_argument("--cand", required=True)
     c.add_argument("--delta", type=float); c.add_argument("--json")

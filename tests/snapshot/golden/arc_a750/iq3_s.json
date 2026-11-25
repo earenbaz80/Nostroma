@@ -36,7 +36,7 @@
     "<ROOT>/data"
    ],
    "config_file": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "args": [
      "--pack",
      "<ROOT>/data/packs/iq3_s",
@@ -75,7 +75,7 @@
     "args_written": "=args"
    },
    "engine": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "argv": [
      "--pack",
      "<ROOT>/data/packs/iq3_s",
@@ -110,8 +110,8 @@
      "GGML_NO_BACKTRACE": "1"
     },
     "notes": [
-     "[strata] drafting: DFlash2 alone (--draft dflash2, --draft-conf 0.6)",
-     "[strata] drafting: draft vocabulary: draft_vocab.bin (the default)"
+     "[nostroma] drafting: DFlash2 alone (--draft dflash2, --draft-conf 0.6)",
+     "[nostroma] drafting: draft vocabulary: draft_vocab.bin (the default)"
     ]
    }
   },
@@ -171,7 +171,7 @@
     }
    ],
    "config_file": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "args": [
      "--pack",
      "<ROOT>/data/packs/iq3_s",
@@ -199,7 +199,7 @@
     "cwd": "<REPO>",
     "tokenizer": "<ROOT>/data/packs/iq3_s/tokenizer",
     "model_name": "qwen3.8-flash-next-iq3_s",
-    "log": "<ROOT>/install/strata-iq3_s.log",
+    "log": "<ROOT>/install/nostroma-iq3_s.log",
     "lib_dirs": [],
     "port": 18500,
     "backend": "sycl",
@@ -214,7 +214,7 @@
     "engine_ready_s": 946
    },
    "engine": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "argv": [
      "--pack",
      "<ROOT>/data/packs/iq3_s",
@@ -249,8 +249,8 @@
      "GGML_NO_BACKTRACE": "1"
     },
     "notes": [
-     "[strata] drafting: DFlash2 alone (--draft dflash2, --draft-conf 0.6)",
-     "[strata] drafting: draft vocabulary: draft_vocab.bin (the default)"
+     "[nostroma] drafting: DFlash2 alone (--draft dflash2, --draft-conf 0.6)",
+     "[nostroma] drafting: draft vocabulary: draft_vocab.bin (the default)"
     ]
    }
   },
@@ -294,7 +294,7 @@
     }
    ],
    "config_file": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "args": [
      "--pack",
      "<ROOT>/data/packs/iq3_s",
@@ -322,7 +322,7 @@
     "cwd": "<REPO>",
     "tokenizer": "<ROOT>/data/packs/iq3_s/tokenizer",
     "model_name": "qwen3.8-flash-next-iq3_s",
-    "log": "<ROOT>/install/strata-iq3_s.log",
+    "log": "<ROOT>/install/nostroma-iq3_s.log",
     "lib_dirs": [],
     "port": 18500,
     "backend": "sycl",
@@ -338,7 +338,7 @@
     "engine_ready_s": 946
    },
    "engine": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "argv": [
      "--pack",
      "<ROOT>/data/packs/iq3_s",
@@ -373,8 +373,8 @@
      "GGML_NO_BACKTRACE": "1"
     },
     "notes": [
-     "[strata] drafting: DFlash2 alone (--draft dflash2, --draft-conf 0.6)",
-     "[strata] drafting: draft vocabulary: draft_vocab.bin (the default)"
+     "[nostroma] drafting: DFlash2 alone (--draft dflash2, --draft-conf 0.6)",
+     "[nostroma] drafting: draft vocabulary: draft_vocab.bin (the default)"
     ]
    }
   }

@@ -24,8 +24,8 @@ const { chromium } = await import(pathToFileURL(join(host, 'node_modules/playwri
 const CHROME = process.env.CHROME ?? ['C:/Program Files/Google/Chrome/Application/chrome.exe', '/usr/bin/google-chrome'].find(existsSync);
 // the face the app sets, one variable file for both weights the pictures use
 const font = pathToFileURL(join(host, 'public/fonts/Exo2-Variable.woff2')).href;
-const lockup = readFileSync(join(host, 'public/brand/strata-lockup-light.svg'), 'utf8');
-const mark = readFileSync(join(host, 'public/brand/strata-mark-light.svg'), 'utf8');
+const lockup = readFileSync(join(host, 'public/brand/nostroma-lockup-light.svg'), 'utf8');
+const mark = readFileSync(join(host, 'public/brand/nostroma-mark-light.svg'), 'utf8');
 
 // the app's light tokens, from src/styles/nostroma-crt.css: amber paper under amber ink
 const SURFACE = '#fbf4e3', PAPER = '#f3e8d2', INK = '#2b1e0a', MUTED = '#6b5228', ACCENT = '#8f5200', LINE = '#d7c39b';
@@ -44,7 +44,7 @@ const pages = {
 };
 
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
-const work = join(tmpdir(), 'strata-installer-images'); mkdirSync(work, { recursive: true });
+const work = join(tmpdir(), 'nostroma-installer-images'); mkdirSync(work, { recursive: true });
 for (const [name, page] of Object.entries(pages)) {
   for (const scale of [1, 3]) {
     const file = join(work, `${name}.html`);

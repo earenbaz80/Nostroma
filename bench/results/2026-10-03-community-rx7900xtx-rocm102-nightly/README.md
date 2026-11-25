@@ -11,7 +11,7 @@ truncation on restart — the decode values below were captured at request time 
 
 - GPU: AMD Radeon RX 7900 XTX 24 GB (gfx1100, RDNA3); CPU: Ryzen 9 7900X (12C/24T); RAM: 96 GB DDR5; storage: NVMe ext4; PCIe Gen4 x16:
 - OS: Fedora 44 (kernel 7.2.7); driver: amdgpu (in-tree); ROCm: packaged 7.1.1 vs a ROCm 10.2 nightly SDK (`libamdhip64.so.7.17.26392`, verified loaded via /proc/PID/maps):
-- Strata: HIP source builds of the xyzzing integration line — engine 0.1.38 (`99f3dbd` base) for both stacks (one binary per ROCm stack):
+- Nostroma: HIP source builds of the xyzzing integration line — engine 0.1.38 (`99f3dbd` base) for both stacks (one binary per ROCm stack):
 - Background workloads: KDE/Wayland desktop + browser (the reason for the VRAM reserve below); no power limits:
 
 ## Model and configuration
@@ -22,11 +22,11 @@ truncation on restart — the decode values below were captured at request time 
 
 ```text
 # serve (identical args on both stacks; only ROCM_PATH/LD_LIBRARY_PATH differ)
-<venv python> serve/server.py --engine strata --config <cfg>.json --port <8081|8082> --host 127.0.0.1
+<venv python> serve/server.py --engine nostroma --config <cfg>.json --port <8081|8082> --host 127.0.0.1
 # cfg args: --pack packs/iq3_s --native <shard1> --ple-gguf <shard2> --mtp mtp/rt
 #   --expert-profile expert-profile.bin --expert-cache auto --spec 3 --kv int8 --kv-resident 32768
 #   --prefill 8192 --vram-reserve-mib 3072 --max-context 65536
-#   env: STRATA_PREFILL_RING=96 STRATA_GR_V3=1 STRATA_SELECT_WMMA=1 (see confound)
+#   env: NOSTROMA_PREFILL_RING=96 NOSTROMA_GR_V3=1 NOSTROMA_SELECT_WMMA=1 (see confound)
 # request: POST /v1/chat/completions {"messages":[{"role":"user","content":
 #   "Name the capital of France in one word."}],"max_tokens":200,"temperature":0}
 ```

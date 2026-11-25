@@ -1,6 +1,6 @@
 // (asserts stay on in a Release build: the test is its own check)
 #undef NDEBUG
-#include "strata/core/serve_stop_bound.hpp"
+#include "nostroma/core/serve_stop_bound.hpp"
 #include <algorithm>
 #include <cassert>
 #include <iostream>
@@ -20,7 +20,7 @@ int main() {
                     reference.push_back(outputs[i]);
                     if (outputs[i] == -1) break;
                 }
-                const int kept = strata::core::serve_stop_bound(accepted, remaining, outputs.data(),
+                const int kept = nostroma::core::serve_stop_bound(accepted, remaining, outputs.data(),
                                                                [](int t) { return t == -1; });
                 assert(kept > 0 && kept <= accepted && kept <= remaining);
                 assert(std::vector<int>(outputs.begin(), outputs.begin() + kept) == reference);
@@ -28,7 +28,7 @@ int main() {
                 assert(kept == static_cast<int>(reference.size()));
                 ++cases;
             }
-    assert(strata::core::serve_stop_bound(4, 0, static_cast<const int*>(nullptr), [](int) { return false; }) == 0);
+    assert(nostroma::core::serve_stop_bound(4, 0, static_cast<const int*>(nullptr), [](int) { return false; }) == 0);
     // GEN hold=N:ID: against the emission loop with the hold (stop after N emitted tokens unless ID came first; EOS and
     // max_new as before), for every window shape, start, hold, max_new and place of ID / EOS in the window
     int hold_cases = 0;
@@ -54,14 +54,14 @@ int main() {
                                 if (outputs[i] == ID) on = false;
                                 if (outputs[i] == -1) break;
                             }
-                            const int64_t rem = strata::core::serve_hold_remaining(accepted, produced, max_new, hold, ID,
+                            const int64_t rem = nostroma::core::serve_hold_remaining(accepted, produced, max_new, hold, ID,
                                                                                    outputs.data());
-                            const int kept = strata::core::serve_stop_bound(accepted, rem, outputs.data(),
+                            const int kept = nostroma::core::serve_stop_bound(accepted, rem, outputs.data(),
                                                                            [](int t) { return t == -1; });
                             assert(kept == static_cast<int>(reference.size()));
                             assert(std::vector<int>(outputs.begin(), outputs.begin() + kept) == reference);
                             // no hold: exactly the max_new bound
-                            assert(strata::core::serve_hold_remaining(accepted, produced, max_new, -1, ID, outputs.data()) ==
+                            assert(nostroma::core::serve_hold_remaining(accepted, produced, max_new, -1, ID, outputs.data()) ==
                                    max_new - produced);
                             ++hold_cases;
                         }
@@ -95,7 +95,7 @@ int main() {
                             }
                         }
                         // the slot: windows of widths[...] rows, the cap per window as generate.cpp has it
-                        strata::core::SlotHold h = strata::core::slot_hold_from(hold, ID, true);
+                        nostroma::core::SlotHold h = nostroma::core::slot_hold_from(hold, ID, true);
                         std::vector<int> got;
                         std::string fin;
                         int64_t produced = 0, committed_rows = 0;
@@ -103,7 +103,7 @@ int main() {
                             const int nrow = widths[w % 4];
                             int kp = 1;   // the proposals the target picked, in order (here: all of them), and nothing ended
                             while (kp < nrow && produced + kp < 14 && stream[produced + kp - 1] != -1 &&
-                                   produced + kp + 1 <= strata::core::slot_cap(max_new, h))
+                                   produced + kp + 1 <= nostroma::core::slot_cap(max_new, h))
                                 ++kp;
                             committed_rows += kp;
                             const int64_t base = produced;   // (the window's rows start here; `produced` counts on while they are emitted)
@@ -111,10 +111,10 @@ int main() {
                                 const int y = stream[base + j];
                                 got.push_back(y);
                                 ++produced;
-                                strata::core::slot_hold_emitted(h, y);
+                                nostroma::core::slot_hold_emitted(h, y);
                                 if (y == -1) fin = "stop";
                                 else if (produced >= max_new) fin = "length";
-                                else if (strata::core::slot_hold_reached(h, produced, max_new)) fin = "hold";
+                                else if (nostroma::core::slot_hold_reached(h, produced, max_new)) fin = "hold";
                                 if (!fin.empty()) break;
                             }
                         }
@@ -134,32 +134,32 @@ int main() {
                             for (int y : got) assert(y != ID);
                         }
                         // no hold: the hold helpers change nothing
-                        assert(strata::core::slot_cap(max_new, strata::core::SlotHold{}) == max_new);
+                        assert(nostroma::core::slot_cap(max_new, nostroma::core::SlotHold{}) == max_new);
                         ++slot_cases;
                     }
-    assert(!strata::core::slot_hold_from(5, -1, true).on && !strata::core::slot_hold_from(0, ID, true).on &&
-           !strata::core::slot_hold_from(5, ID, false).on && strata::core::slot_hold_from(5, ID, true).on);
+    assert(!nostroma::core::slot_hold_from(5, -1, true).on && !nostroma::core::slot_hold_from(0, ID, true).on &&
+           !nostroma::core::slot_hold_from(5, ID, false).on && nostroma::core::slot_hold_from(5, ID, true).on);
     std::cout << "SUMMARY slot hold cases=" << slot_cases << " passed\n";
     // on unless the variable is exactly "0" (every backend, since the bound left HIP-only)
-    assert(strata::core::serve_stop_bound_on(nullptr));
-    assert(strata::core::serve_stop_bound_on("1"));
-    assert(strata::core::serve_stop_bound_on(""));
-    assert(!strata::core::serve_stop_bound_on("0"));
+    assert(nostroma::core::serve_stop_bound_on(nullptr));
+    assert(nostroma::core::serve_stop_bound_on("1"));
+    assert(nostroma::core::serve_stop_bound_on(""));
+    assert(!nostroma::core::serve_stop_bound_on("0"));
     std::cout << "SUMMARY stop_bound cases=" << cases << " passed\n";
 
-    // ---- STRATA_SERVE_STOP_SKIP: a window that finishes after the server's STOP is dropped whole -----------------------
+    // ---- NOSTROMA_SERVE_STOP_SKIP: a window that finishes after the server's STOP is dropped whole -----------------------
     // the decision: only when enabled, STOP seen, not merged, not the request's first window, and the commit still undone
     int skip_cases = 0;
     for (int m = 0; m < 32; ++m) {
         const bool enabled = m & 1, stop = m & 2, merged = m & 4, first = m & 8, deferred = m & 16;
-        assert(strata::core::serve_skip_stopped_window(enabled, stop, merged, first, deferred) ==
+        assert(nostroma::core::serve_skip_stopped_window(enabled, stop, merged, first, deferred) ==
                (enabled && stop && !merged && !first && deferred));
         ++skip_cases;
     }
-    assert(strata::core::serve_stop_skip_on(nullptr));
-    assert(strata::core::serve_stop_skip_on("1"));
-    assert(strata::core::serve_stop_skip_on(""));
-    assert(!strata::core::serve_stop_skip_on("0"));
+    assert(nostroma::core::serve_stop_skip_on(nullptr));
+    assert(nostroma::core::serve_stop_skip_on("1"));
+    assert(nostroma::core::serve_stop_skip_on(""));
+    assert(!nostroma::core::serve_stop_skip_on("0"));
     // A ledger of the serial loop: windows of 1..6 rows; each window commits and prints its rows (bounded by the cap, as above) unless it is dropped;
     // STOP is seen from the end of window `stop_at` on (-1: never) and the loop breaks after the first window that saw it.
     // Properties: (1) no STOP, or the switch off: the ledger is the plain loop's; (2) the switch on and the stopped window eligible (not the
@@ -178,7 +178,7 @@ int main() {
                             for (int w = 0; w < 4 && emitted < cap; ++w) {
                                 const bool deferred = !(rows[w] == 1 && ((self_mask >> w) & 1));
                                 const bool stop_seen = stop_at >= 0 && w >= stop_at;
-                                if (strata::core::serve_skip_stopped_window(enabled, stop_seen, false, w == 0, deferred)) break;
+                                if (nostroma::core::serve_skip_stopped_window(enabled, stop_seen, false, w == 0, deferred)) break;
                                 const int b = std::min(rows[w], cap - emitted);
                                 committed += b;
                                 emitted += b;

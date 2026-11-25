@@ -39,7 +39,7 @@ class DefaultObjectAccess(unittest.TestCase):
     def test_adopting_user_defaults_preserves_child_identity(self):
         # Token defaults affect every subsequent object creation in this process.
         # Exercise them in a disposable helper, not in the test runner itself.
-        with tempfile.TemporaryDirectory(prefix="strata-default-access-") as folder:
+        with tempfile.TemporaryDirectory(prefix="nostroma-default-access-") as folder:
             env = dict(os.environ, LOCALAPPDATA=folder, PYTHONPATH=str(ROOT))
             result = subprocess.run(
                 [sys.executable, "-c", PROBE], cwd=ROOT, env=env,

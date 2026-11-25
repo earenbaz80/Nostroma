@@ -6,23 +6,23 @@
 #
 #   ./run-one-quant.sh coder-iq1_m | iq2_xs | iq3_xxs
 #
-# ROOT is this machine's Strata checkout; change it, and the absolute paths inside
+# ROOT is this machine's Nostroma checkout; change it, and the absolute paths inside
 # ../data/cfg-*.json, before running this elsewhere.
 set -u
-ROOT=/home/jason/Projects/Strata
+ROOT=/home/jason/Projects/Nostroma
 HERE=$(cd "$(dirname "$0")" && pwd)
 Q=$1
 OUT=${OUT:-$HERE/out}
 CFG=$HERE/../data/cfg-$Q.json
 LOG=$OUT/$Q.engine.log
 PY=$ROOT/.venv/bin/python
-. "$HOME/.local/opt/strata-env.sh"
+. "$HOME/.local/opt/nostroma-env.sh"
 
 MODEL=$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["model_name"])' "$CFG")
 
 stop_server() {
   pkill -f "[s]erve/server.py" 2>/dev/null
-  pkill -f "[e]ngine/strata --serve" 2>/dev/null
+  pkill -f "[e]ngine/nostroma --serve" 2>/dev/null
   sleep 5
 }
 
@@ -44,7 +44,7 @@ rm -f "$OUT/$Q-stop"
 for run in 1 2 3; do
   stop_server
   : > "$OUT/$Q-server-run$run.out"
-  nohup "$PY" "$ROOT/serve/server.py" --engine strata --config "$CFG" --port 8080 \
+  nohup "$PY" "$ROOT/serve/server.py" --engine nostroma --config "$CFG" --port 8080 \
     > "$OUT/$Q-server-run$run.out" 2>&1 &
   if ! wait_loaded; then
     echo "$Q run $run: server never reported loaded"

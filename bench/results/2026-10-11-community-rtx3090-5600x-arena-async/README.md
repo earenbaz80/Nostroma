@@ -9,10 +9,10 @@ experts in RAM, 30 GiB of it page-locked), 8,289 expert slots, `--expert-cache a
 --adapt-decay 0.97`, `draft_vocab fr`, a learned expert profile. Both arms are local builds of the same tree (VS 2022 17.14,
 CUDA 12.8, sm_86); `v0142` is the tag, `pr1_on` this branch with `--adapt-async 1`.
 
-**Method** (`strata_ab2.py`). `serve/server.py` on port 8080, a fresh server per arm and round, 2 warm-up requests not
+**Method** (`nostroma_ab2.py`). `serve/server.py` on port 8080, a fresh server per arm and round, 2 warm-up requests not
 counted. Cold: 12 distinct prompts (FR/EN, code, prose), each sent once per server with a fixed seed, temperature 0.7, top_p
 0.8, 256 tokens, thinking off; 2 rounds, order reversed in round 2; per-prompt mean over the rounds, paired ratio. Decode tok/s
-is the engine's `strata serve: prompt ... generated in ...` line. A prompt sent twice in a row runs ~25 % faster the second
+is the engine's `nostroma serve: prompt ... generated in ...` line. A prompt sent twice in a row runs ~25 % faster the second
 time (the tier has adapted to it), so no prompt is repeated within a server.
 
 ## Cold short prompts
@@ -25,7 +25,7 @@ time (the tier has adapted to it), so no prompt is repeated within a server.
 An earlier run the same day, same protocol, when the learned profile was younger (fewer cache hits, more swaps): 92.8 →
 98.7 tok/s, x1.11, 12/12 (`cold_earlier.jsonl`). The gain follows how much the tier swaps.
 
-`STRATA_DECODE_TIMING=1`, one cold prompt: blocking tier 25.9 ms/window of which ~3.2 ms outside verify + commit/emit + draft
+`NOSTROMA_DECODE_TIMING=1`, one cold prompt: blocking tier 25.9 ms/window of which ~3.2 ms outside verify + commit/emit + draft
 (#1863); with `--adapt-async 1` 21.6 ms/window, `adapt wait 0.41 join 0.00, 40.6 swaps/window`.
 
 ## After a long prompt (prompt read once, decode = mean of 3 seeded answers on the cached prefix)
@@ -40,7 +40,7 @@ left to swap. The prompt read is not touched.
 
 ## Default path
 
-Bit-exact mode (`STRATA_IQ_MT_MIN=1 --pcie-frac 0 --adapt-every 0`), greedy, 6 prompts, `--expert-cache auto` and again with
+Bit-exact mode (`NOSTROMA_IQ_MT_MIN=1 --pcie-frac 0 --adapt-every 0`), greedy, 6 prompts, `--expert-cache auto` and again with
 a fixed cache size: on the 5 prompts that v0.1.42 reproduces between two of its own fresh engines, this branch without
 `--adapt-async` gives the same answers byte for byte (sha256). The 6th prompt differs between two runs of v0.1.42 itself in
 that mode on this machine (`bitexact*.jsonl`).
@@ -51,4 +51,4 @@ that mode on this machine (`bitexact*.jsonl`).
 K/V grows land the round in flight first.
 
 Raw: `cold.jsonl` (this table, also holds a third arm from the other PR), `cold_earlier.jsonl`, `context.jsonl`,
-`bitexact.jsonl`, `bitexact_fixed_cache.jsonl`; harness `strata_ab2.py`.
+`bitexact.jsonl`, `bitexact_fixed_cache.jsonl`; harness `nostroma_ab2.py`.

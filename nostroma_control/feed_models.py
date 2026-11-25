@@ -9,7 +9,7 @@ same SHA-256 check after the download and the same ``.bad`` handling (setup.py `
 Rules:
 
 * With no ``models`` member in the feed (and no cached one) nothing here changes anything: no table is touched, nothing is written.
-* A model whose family the installed engine does not run (``strata --families``) is listed as not available on this engine and is never offered to install.
+* A model whose family the installed engine does not run (``nostroma --families``) is listed as not available on this engine and is never offered to install.
 * Offline, the models of the last feed that verified are shown (the signature is checked again when the cache is read).
 * A model that would clash with a built-in one (an id, a tag, a file name pinned to other bytes) is left out with a log line; a built-in model is never replaced.
 """
@@ -27,10 +27,10 @@ from pathlib import Path
 
 from nostroma_control import feed as feedmod, shape_engine
 
-_log = logging.getLogger("strata.feed")
+_log = logging.getLogger("nostroma.feed")
 
 CACHE_NAME = "feed-models.json"
-ENV_OFF = "STRATA_FEED_MODELS"             # "0": setup and the screens do not read or fetch the feed's model list (tests, a locked-down PC)
+ENV_OFF = "NOSTROMA_FEED_MODELS"             # "0": setup and the screens do not read or fetch the feed's model list (tests, a locked-down PC)
 FETCH_TIMEOUT = 5.0
 
 # ---- the words a person can see (agreed with the coordinator before they ship)
@@ -53,7 +53,7 @@ def unavailable_reason(family: str) -> str:
 # ---------------------------------------------------------------------------------------------------- the cache of the last verified list
 
 def cache_file(root: str | os.PathLike | None = None) -> Path:
-    """``<components>/.updates/feed-models.json``, beside the updater's state (STRATA_COMPONENTS_DIR moves both)."""
+    """``<components>/.updates/feed-models.json``, beside the updater's state (NOSTROMA_COMPONENTS_DIR moves both)."""
     from nostroma_control import engine_component, updater
     return updater.updates_dir(Path(root) if root else engine_component.components_dir()) / CACHE_NAME
 
@@ -202,7 +202,7 @@ def _taken_tags(setup) -> list[str]:
 
 
 def apply(setup, models, engine_families=None) -> Applied:
-    """Add the feed's models to setup's tables (``setup`` is the setup.py module). ``engine_families``: the set ``strata --families`` printed for the installed
+    """Add the feed's models to setup's tables (``setup`` is the setup.py module). ``engine_families``: the set ``nostroma --families`` printed for the installed
     engine, or None when no engine is installed to ask (then every installable family is offered and setup checks the engine when it installs, as for any model).
     Safe to call again with the same list: a model already added is skipped quietly. Built-in entries are never replaced."""
     result = Applied()

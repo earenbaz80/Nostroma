@@ -23,7 +23,7 @@ struct Job {
 };
 
 // the prompt path's expert jobs: up to PF_JOB rows of one expert (64: four 16-token tiles per job; 128: eight, the expert's weight tile is then
-// dequantized once for twice the tokens; a build option, STRATA_SPLIT_PF_JOB)
+// dequantized once for twice the tokens; a build option, NOSTROMA_SPLIT_PF_JOB)
 #ifndef FNX_PF_JOB
 #define FNX_PF_JOB 64
 #endif

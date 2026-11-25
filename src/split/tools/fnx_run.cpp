@@ -132,7 +132,7 @@ static int run_logits(fnx::Model& m, fnx::Engine& e, const char* prompt_path, co
         std::vector<std::array<int, 4>> recs;   // n, nx, ny, first row
         int32_t h[5];
         while (std::fread(h, 4, 5, f) == 5) {
-            if (h[0] != 0x31455653 || h[4] != fnx::N) { std::fprintf(stderr, "%s: not strata-vision records of width %d\n", sv, fnx::N); return 1; }
+            if (h[0] != 0x31455653 || h[4] != fnx::N) { std::fprintf(stderr, "%s: not nostroma-vision records of width %d\n", sv, fnx::N); return 1; }
             const size_t off = img_rows.size();
             img_rows.resize(off + (size_t) h[1] * fnx::N);
             if (std::fread(img_rows.data() + off, 4, (size_t) h[1] * fnx::N, f) != (size_t) h[1] * fnx::N) return 1;

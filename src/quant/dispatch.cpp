@@ -2,10 +2,10 @@
 #include <algorithm>
 
 #include "registry.hpp"
-#include "strata/quant/act.hpp"
-#include "strata/quant/dot.hpp"
+#include "nostroma/quant/act.hpp"
+#include "nostroma/quant/dot.hpp"
 
-namespace strata::quant {
+namespace nostroma::quant {
 namespace {
 
 template <typename K, typename T, int N>
@@ -26,10 +26,10 @@ constexpr int kMaxK = 16;
 int collect_dots(Type w, Arith a, const DotKernel** out, int cap) {
     const DotTable tables[] = {
         generic_dot_table(),
-#ifdef STRATA_QUANT_X86_TIERS
+#ifdef NOSTROMA_QUANT_X86_TIERS
         avx_dot_table(), avx2_dot_table(), avx512_dot_table(),
 #endif
-#ifdef STRATA_QUANT_ARM_TIERS
+#ifdef NOSTROMA_QUANT_ARM_TIERS
         neon_dot_table(),
 #endif
     };
@@ -39,10 +39,10 @@ int collect_dots(Type w, Arith a, const DotKernel** out, int cap) {
 int collect_acts(Type act, Arith a, const ActKernel** out, int cap) {
     const ActTable tables[] = {
         generic_act_table(),
-#ifdef STRATA_QUANT_X86_TIERS
+#ifdef NOSTROMA_QUANT_X86_TIERS
         avx_act_table(), avx2_act_table(),
 #endif
-#ifdef STRATA_QUANT_ARM_TIERS
+#ifdef NOSTROMA_QUANT_ARM_TIERS
         neon_act_table(),
 #endif
     };
@@ -73,4 +73,4 @@ const ActKernel* act_kernel(Type act, Arith a, Isa max_isa) noexcept {
 
 const ActKernel* act_kernel(Type act, Arith a) noexcept { return act_kernel(act, a, best_isa()); }
 
-}  // namespace strata::quant
+}  // namespace nostroma::quant

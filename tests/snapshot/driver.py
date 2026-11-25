@@ -140,10 +140,10 @@ def drive_app(world: World, which: str) -> dict:
     """The app's Load, in a Node process: the host's own createNativeControl with a fake Control for everything but the Drafting calls, which go through the
     real nostroma_control (python -m tests.snapshot.control_shim) on the same simulated machine.  Returns the run config the host wrote and the Python side's
     engine start for it."""
-    node = os.environ.get("STRATA_SNAPSHOT_NODE") or "node"
+    node = os.environ.get("NOSTROMA_SNAPSHOT_NODE") or "node"
     world_file = world.root / "world.json"
     world_file.write_text(json.dumps({"machine": world.machine.key, "set": world.mset.key, "root": str(world.root)}), encoding="utf-8")
-    env = {**os.environ, "STRATA_SNAPSHOT_PYTHON": sys.executable, "STRATA_SNAPSHOT_REPO": str(ROOT)}
+    env = {**os.environ, "NOSTROMA_SNAPSHOT_PYTHON": sys.executable, "NOSTROMA_SNAPSHOT_REPO": str(ROOT)}
     proc = subprocess.run([node, str(HERE / "app_driver.mjs"), str(world_file), which], cwd=str(ROOT), env=env, capture_output=True, text=True, timeout=240)
     last = [l for l in proc.stdout.splitlines() if l.startswith("SNAPSHOT-RESULT ")]
     if proc.returncode != 0 or not last:

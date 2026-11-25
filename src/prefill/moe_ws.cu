@@ -1,7 +1,7 @@
-// src/prefill/moe_ws.cu - see include/strata/prefill/moe_ws.hpp: which layers and products take the weight-stationary
+// src/prefill/moe_ws.cu - see include/nostroma/prefill/moe_ws.hpp: which layers and products take the weight-stationary
 // kernels (moe_ws_gu_iq2.cu, moe_ws_gu_iq3.cu, moe_ws_down.cu), their work tables and launches.
 #include "common.cuh"
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 #include "mmq.cuh"
 
 #include "moe_ws.cuh"
@@ -13,7 +13,7 @@
 #include <cstdlib>
 #include <vector>
 
-namespace strata::prefill::ws {
+namespace nostroma::prefill::ws {
 namespace {
 
 // ws / per-group MMQ (one 512-expert top-10 layer, lognormal counts sigma 0.5 and 1.0, the worse of the two; isolated
@@ -56,7 +56,7 @@ int mode() {
     const int o = g_mode_override.load(std::memory_order_relaxed);
     if (o >= 0) return o;
     static const int m = [] {
-        const char* e = strata::env("NOSTROMA_MMQ_WS");   // opt-in
+        const char* e = nostroma::env("NOSTROMA_MMQ_WS");   // opt-in
         if (e == nullptr || std::atoi(e) != 1) return 0;
         // GP100 (cc 6.0) only: tuned and checked there (any visible GPU that is not: off for all)
         int n = 0;
@@ -81,7 +81,7 @@ int fast() {
     const int o = g_fast_override.load(std::memory_order_relaxed);
     if (o >= 0) return o;
     static const int f = [] {
-        const char* e = strata::env("NOSTROMA_WS_FAST");   // opt-in
+        const char* e = nostroma::env("NOSTROMA_WS_FAST");   // opt-in
         return e != nullptr && std::atoi(e) == 1 ? 1 : 0;
     }();
     return f;
@@ -148,7 +148,7 @@ void down(const Layer& L, void* stream) {
             const bool f = fast() == 1;
             if (f) {   // once per process: the switch is on and the WS path runs
                 static const bool said = [] {
-                    std::fprintf(stderr, "strata prefill: STRATA_WS_FAST=1: the weight-stationary IQ4_NL down's 32-token "
+                    std::fprintf(stderr, "nostroma prefill: NOSTROMA_WS_FAST=1: the weight-stationary IQ4_NL down's 32-token "
                                          "tier with switched token pairs and transposed dy (the same Dm bits)\n");
                     return true;
                 }();
@@ -163,4 +163,4 @@ void down(const Layer& L, void* stream) {
     }
 }
 
-}  // namespace strata::prefill::ws
+}  // namespace nostroma::prefill::ws

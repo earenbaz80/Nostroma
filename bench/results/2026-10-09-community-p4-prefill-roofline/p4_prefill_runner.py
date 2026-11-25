@@ -1,18 +1,18 @@
 import json,os,re,subprocess,sys,threading,time,traceback
 from pathlib import Path
-ROOT=Path(os.environ.get('ROOF_ROOT','/home/bench/src/strata-pr1656-parent-p4-20261009'))
+ROOT=Path(os.environ.get('ROOF_ROOT','/home/bench/src/nostroma-pr1656-parent-p4-20261009'))
 OUT=Path(os.environ.get('ROOF_OUT','/home/bench/fleet-downloads/issue1670-p4-roofline'))
 OUT.mkdir(parents=True,exist_ok=True)
 sys.path[:0]=[str(ROOT),str(ROOT/'tools')]
-from serve.server import StrataEngine,child_env,engine_args
-from strata_tokenizer import Tokenizer
+from serve.server import NostromaEngine,child_env,engine_args
+from nostroma_tokenizer import Tokenizer
 from serve.frontend import ChatTemplate
 
 def save(data):
  p=OUT/'results.tmp';p.write_text(json.dumps(data,indent=2));p.replace(OUT/'results.json')
 
 cfg=json.loads(Path(os.environ['ROOF_CONFIG']).read_text())
-cfg.update(exe=str(ROOT/'build/strata'),cwd=str(ROOT),gpu=0,log=str(OUT/'engine.log'),model_name='qwen3.8-flash-next-gsq-rco-iq3_xxs')
+cfg.update(exe=str(ROOT/'build/nostroma'),cwd=str(ROOT),gpu=0,log=str(OUT/'engine.log'),model_name='qwen3.8-flash-next-gsq-rco-iq3_xxs')
 cfg.pop('layer_split',None)
 a=cfg['args']
 for flag in ['--shared-expert-arena','--pipeline-windows']:
@@ -20,9 +20,9 @@ for flag in ['--shared-expert-arena','--pipeline-windows']:
 if '--trim-stage-weights' in a:a.remove('--trim-stage-weights')
 for flag,value in {'--max-context':'16384','--kv-resident':'16384','--prefill':'512'}.items():a[a.index(flag)+1]=value
 if '--mmap-experts' not in a:a+=['--mmap-experts']
-cfg['env']={'STRATA_PREFILL_TIMING':'1','STRATA_IQ_MT_MIN':'1','OMP_NUM_THREADS':'1','OPENBLAS_NUM_THREADS':'1','STRATA_ATTN_MERGE_V2':'1'}
+cfg['env']={'NOSTROMA_PREFILL_TIMING':'1','NOSTROMA_IQ_MT_MIN':'1','OMP_NUM_THREADS':'1','OPENBLAS_NUM_THREADS':'1','NOSTROMA_ATTN_MERGE_V2':'1'}
 if os.environ.get('ROOF_CONTROL'):
- cfg['env'].update(STRATA_PREFILL_ROOFLINE='1',STRATA_PREFILL_CPU_SHARE='0')
+ cfg['env'].update(NOSTROMA_PREFILL_ROOFLINE='1',NOSTROMA_PREFILL_CPU_SHARE='0')
  if os.environ.get('ROOF_PREFILL'):
   a[a.index('--prefill')+1]=os.environ['ROOF_PREFILL']
 (OUT/'config.json').write_text(json.dumps(cfg,indent=2))
@@ -39,7 +39,7 @@ if os.environ.get('ROOF_CONTROL'):
 report={'config':cfg,'args':args,'prompts':prompts,'plan':plan,'runs':[],'complete':False,'commit':subprocess.check_output(['git','-C',str(ROOT),'rev-parse','HEAD'],text=True).strip()}
 engine=None
 try:
- save(report);engine=StrataEngine(cfg['exe'],args,cfg['cwd'],cfg['log'],env);report['engine_info']=engine.info;save(report)
+ save(report);engine=NostromaEngine(cfg['exe'],args,cfg['cwd'],cfg['log'],env);report['engine_info']=engine.info;save(report)
  for entry in plan:
   print('START',entry,flush=True);offset=Path(cfg['log']).stat().st_size;start=time.monotonic();tokens=[]
   timer=threading.Timer(900,engine.proc.kill);timer.start()

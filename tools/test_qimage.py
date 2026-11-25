@@ -116,7 +116,7 @@ class Build(unittest.TestCase):
             src = QI.unpack_source(d, z1, z2)
             self.assertEqual((src / "ggml" / "CMakeLists.txt").read_text(), "project(ggml)")
             self.assertTrue(QI.source_ok(src))
-            (src / ".strata-pin").write_text("0" * 40 + "\n" + QI.SD_GGML_COMMIT + "\n")
+            (src / ".nostroma-pin").write_text("0" * 40 + "\n" + QI.SD_GGML_COMMIT + "\n")
             self.assertFalse(QI.source_ok(src))          # another pin: unpacked again
 
     def test_build_is_skipped_when_the_stamp_matches(self):
@@ -147,7 +147,7 @@ class Config(unittest.TestCase):
 
     def test_images_no_drops_the_section(self):
         with tempfile.TemporaryDirectory() as d:
-            p = Path(d) / "strata-q2_0.json"
+            p = Path(d) / "nostroma-q2_0.json"
             p.write_text(json.dumps({"exe": "x", "images": {"exe": "sd-cli"}, "mine": 1}))
             quiet(setup.write_setup_config, p, {"exe": "y", "images": None})
             cfg = json.loads(p.read_text())
@@ -235,7 +235,7 @@ class Noise(unittest.TestCase):
                 h = QI.noise_hash()
                 self.assertRegex(h, r"^[0-9a-f]{16}$")
                 self.assertEqual(h, QI.noise_hash())
-                p = Path(d) / "strata_noise.hpp"
+                p = Path(d) / "nostroma_noise.hpp"
                 p.write_bytes(p.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))   # a Windows checkout: the same hash (the file may be CRLF already)
                 self.assertEqual(QI.noise_hash(), h)
                 p.write_bytes(p.read_bytes() + b"// edit\n")
@@ -244,7 +244,7 @@ class Noise(unittest.TestCase):
 
     def test_config(self):
         c = QI.image_config("cuda", "Q8_0", Path("/e/sd-cli"), Path("/m"), noise=True)
-        self.assertEqual(c["noise"], "strata")
+        self.assertEqual(c["noise"], "nostroma")
         self.assertNotIn("noise", QI.image_config("cuda", "Q8_0", Path("/e/sd-cli"), Path("/m")))
         from serve.images import ImageGen
         with tempfile.TemporaryDirectory() as d:
@@ -310,7 +310,7 @@ class VaeDecoder(unittest.TestCase):
         self.assertRegex(h, r"^[0-9a-f]{16}$")
         self.assertEqual(QI.vae_hash(), h)
         import importlib.util
-        spec = importlib.util.spec_from_file_location("strata_sdcpp_vae_apply_qtest", QI.VAE_DIR / "apply.py")
+        spec = importlib.util.spec_from_file_location("nostroma_sdcpp_vae_apply_qtest", QI.VAE_DIR / "apply.py")
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         with tempfile.TemporaryDirectory() as d:
@@ -327,7 +327,7 @@ class VaeDecoder(unittest.TestCase):
 
     def test_config(self):
         c = QI.image_config("cuda", "Q8_0", Path("/e/sd-cli"), Path("/m"), vae=True)
-        self.assertEqual(c["vae_decoder"], "strata")
+        self.assertEqual(c["vae_decoder"], "nostroma")
         self.assertTrue(c["vae"].endswith("qwen_image_2.1_vae_bf16.safetensors"))      # the file path is untouched
         self.assertNotIn("vae_decoder", QI.image_config("cuda", "Q8_0", Path("/e/sd-cli"), Path("/m")))
         self.assertNotIn("vae_decoder", QI.image_config("vulkan", "Q4_K_M", Path("/e/sd-cli"), Path("/m"), vae=True))
@@ -337,7 +337,7 @@ class VaeDecoder(unittest.TestCase):
 
     def test_flags(self):
         self.assertRegex((ROOT / "setup.py").read_text(encoding="utf-8"), re.escape('ap.add_argument("--image-vae"'))
-        self.assertIn('warn(f"Strata\'s own picture decoder runs with CUDA or ROCm only; image generation on {backend} keeps "\n'
+        self.assertIn('warn(f"Nostroma\'s own picture decoder runs with CUDA or ROCm only; image generation on {backend} keeps "\n'
                       '             "stable-diffusion.cpp\'s decoder")',
                       (ROOT / "setup.py").read_text(encoding="utf-8"))     # the owner's wording of 11-11
         self.assertRegex((ROOT / "tools" / "image" / "install.py").read_text(encoding="utf-8"),

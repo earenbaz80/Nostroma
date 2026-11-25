@@ -1,7 +1,7 @@
 # Community benchmark: RTX 5090 / 9800X3D, Swift IQ3_XXS, 1M context
 
 Measured on **2026-10-09** by [mgeldi](https://github.com/mgeldi).
-Unmodified Strata **0.1.41** native engine, one desktop GPU, a
+Unmodified Nostroma **0.1.41** native engine, one desktop GPU, a
 1,048,576-position YaRN context. This report compares prefill ceilings while
 also measuring decode, then verifies native disk SAVE/restart/RESTORE at up to
 1,000,000 occupied input tokens. A separate supplement measures an external
@@ -14,7 +14,7 @@ machine, but decode changes vary with mode and output. We retained `--prefill
 auto`. A 14.445 GiB million-token session restored in 6.107 s and continued
 with 1,000,166 reused tokens and only 51 freshly read tokens. These are local
 synthetic workloads, not general quality or a comparison against an older
-Strata version.
+Nostroma version.
 
 ## Hardware and software
 
@@ -32,7 +32,7 @@ Strata version.
 - OS: CachyOS Linux (rolling), kernel 7.2.9-2-cachyos; NVIDIA driver 615.78.08.
 - Source: [`fb58e0dbc8399662c0e47c76578c6e878b14f6cf`](https://github.com/earenbaz80/Nostroma/commit/fb58e0dbc8399662c0e47c76578c6e878b14f6cf),
   tag v0.1.41, engine 0.1.41. Local Release/CUDA **13.4.92**, native CPU build,
-  CUDA architecture 120, GPU `strata-vision`. No local native source patch.
+  CUDA architecture 120, GPU `nostroma-vision`. No local native source patch.
   Binary hashes and build metadata are in [provenance.json](provenance.json).
 
 ## Model and configuration
@@ -41,7 +41,7 @@ Strata version.
   revision `b22d729eae29b5796f76fb70f91aef549b9fc52c`, split **IQ3_XXS** GGUF.
   Both exact filenames, lengths and verified SHA-256 hashes are in provenance.
   GGUF hashes were verified on 2026-10-01; the same artifacts were retained.
-- Strata native pack `packs/swift-iq3_xxs`; PLE/native tensors from the first
+- Nostroma native pack `packs/swift-iq3_xxs`; PLE/native tensors from the first
   GGUF shard. The pack was prepared on the 0.1.31 installation and reused;
   it was not repacked for this measurement. Native packed weight hashes were
   not collected; source artifact identity and preparation are recorded.
@@ -64,16 +64,16 @@ Strata version.
   top-k 20, xhigh reasoning. Seed 1234. The frozen requests are authoritative
   for all remaining sampling fields and output caps.
 
-[strata-swift-1m.json](strata-swift-1m.json) is the actual base configuration,
-with paths replaced by placeholders. Replace `<STRATA_ROOT>`, `<MODEL_DATA>`
+[nostroma-swift-1m.json](nostroma-swift-1m.json) is the actual base configuration,
+with paths replaced by placeholders. Replace `<NOSTROMA_ROOT>`, `<MODEL_DATA>`
 and `<NVME_SLOT_DIR>` with absolute paths on your machine. Use a dedicated slot
-directory with sufficient disk space and a model already prepared for Strata.
+directory with sufficient disk space and a model already prepared for Nostroma.
 The exact native argument list is its `args` array; for each prefill arm only
 the value after `--prefill` changes. For GDN screen arms the only additional
-change is `STRATA_GDN_CHUNKED=1`.
+change is `NOSTROMA_GDN_CHUNKED=1`.
 
 ```text
-LD_LIBRARY_PATH=/opt/cuda/lib64 .venv/bin/python serve/server.py --engine strata --config <report>/strata-swift-1m.json --port 18089
+LD_LIBRARY_PATH=/opt/cuda/lib64 .venv/bin/python serve/server.py --engine nostroma --config <report>/nostroma-swift-1m.json --port 18089
 ```
 
 ## Method and replay
@@ -115,7 +115,7 @@ python3 replay.py --url http://127.0.0.1:18089 --suite confirmation --out replay
 `--suite screen` replays the initial screen's three requests; set the relevant
 prefill/GDN configuration externally. `--suite decode` replays all 78 grid
 requests in their original warmup/measurement order, including their native
-`strata_tune` PCIe/minimum-probability overrides. Those grid measurements require
+`nostroma_tune` PCIe/minimum-probability overrides. Those grid measurements require
 at least 99.9% prefix reuse and are decode-only; their tiny fresh-tail prompt
 rates are not fresh-prefill performance. The 12 points are PCIe fraction
 0.35/0.55/0.75/0.90 crossed with minimum probability 0.3/0.5/0.7, in
@@ -252,8 +252,8 @@ trial hit the harness's owned-process swap guard and is excluded.
 
 ## Supplement: external supervisor write-overlap experiment
 
-This is **custom Hermes orchestration**, not a shipped Strata concurrency or
-async-SAVE feature. Strata completes ordinary native SAVE into tmpfs first.
+This is **custom Hermes orchestration**, not a shipped Nostroma concurrency or
+async-SAVE feature. Nostroma completes ordinary native SAVE into tmpfs first.
 Only after the outgoing native process group releases host/GPU memory does
 the supervisor copy that immutable image to NVMe while NInfer 27B/262K loads
 on the same GPU. There are never two loaded model engines. The writer uses

@@ -170,21 +170,21 @@ class Decision(TempDir):
 class Apply(TempDir):
     def test_apply_says_so_once_and_leaves_the_table_to_the_engine(self):
         pkg = fake_package(self.root)
-        cfg = {"backend": "hip", "env": {"STRATA_RESIDENT_PIN": "0"}}
+        cfg = {"backend": "hip", "env": {"NOSTROMA_RESIDENT_PIN": "0"}}
         lines = []
         out = ht.apply(cfg, pkg, ["gfx1201"], environ=ON, say=lines.append)
         self.assertIs(out, cfg)                            # the engine finds tuning/ beside itself: no path in the config
         self.assertNotIn(ht.ENGINE_VAR, out["env"])
         self.assertEqual(len(lines), 1)
-        self.assertTrue(lines[0].startswith("[strata] hipBLASLt tuning table"))
+        self.assertTrue(lines[0].startswith("[nostroma] hipBLASLt tuning table"))
 
     def test_a_config_level_switch_reaches_the_engine_as_the_env_variable(self):
         pkg = fake_package(self.root)
         for value, word in ((False, "off"), (True, "on")):
-            cfg = {"backend": "hip", "hipblaslt_table": value, "env": {"STRATA_RESIDENT_PIN": "0"}}
+            cfg = {"backend": "hip", "hipblaslt_table": value, "env": {"NOSTROMA_RESIDENT_PIN": "0"}}
             out = ht.apply(cfg, pkg, ["gfx1201"], environ={}, say=lambda line: None)
             self.assertEqual(out["env"][ht.SWITCH], word)
-            self.assertEqual(out["env"]["STRATA_RESIDENT_PIN"], "0")
+            self.assertEqual(out["env"]["NOSTROMA_RESIDENT_PIN"], "0")
             self.assertNotIn(ht.SWITCH, cfg["env"])        # the caller's config is untouched
         # the shell's own switch, or a table the person named, is not overridden
         cfg = {"backend": "hip", "hipblaslt_table": False}
@@ -214,10 +214,10 @@ class Apply(TempDir):
     def test_the_server_start_applies_it_for_a_component_engine(self):
         from serve import server
         pkg = fake_package(self.root)
-        (pkg / "strata").write_text("x", encoding="utf-8")
-        cfg = {"exe": "component:strata-engine", "backend": "hip"}
+        (pkg / "nostroma").write_text("x", encoding="utf-8")
+        cfg = {"exe": "component:nostroma-engine", "backend": "hip"}
         out = io.StringIO()
-        with mock.patch.object(server.engine_component, "expand", return_value=str(pkg / "strata")), \
+        with mock.patch.object(server.engine_component, "expand", return_value=str(pkg / "nostroma")), \
                 mock.patch.object(ht, "present_archs", return_value=["gfx1201"]), \
                 mock.patch.dict(os.environ, {}, clear=False), contextlib.redirect_stdout(out):
             os.environ.pop(ht.SWITCH, None)
@@ -304,7 +304,7 @@ class PackagedAndHashed(TempDir):
     def stage(self, **kw):
         src = self.root / "src"
         src.mkdir()
-        (src / "strata").write_bytes(b"engine" * 100)
+        (src / "nostroma").write_bytes(b"engine" * 100)
         (src / "libamdhip64.so.7").write_bytes(b"hip" * 100)
         (src / "BUILD.json").write_text(json.dumps({"version": "0.2.1", **kw}), encoding="utf-8")
         return src
@@ -313,7 +313,7 @@ class PackagedAndHashed(TempDir):
         out = self.root / "out"
         out.mkdir(exist_ok=True)
         with mock.patch.object(package_engine, "_bundle_missing_libraries", return_value=[]):
-            return package_engine.build(src, "hip", "0.2.1", "linux-x86_64", out, entry="strata", archs=archs, build_id="t", tree=tree,
+            return package_engine.build(src, "hip", "0.2.1", "linux-x86_64", out, entry="nostroma", archs=archs, build_id="t", tree=tree,
                                         variant="rx9070")
 
     def test_the_tables_are_listed_and_hashed_in_the_manifest_even_without_tree(self):
@@ -344,11 +344,11 @@ class PackagedAndHashed(TempDir):
         other.mkdir()
         src2 = other / "src"
         src2.mkdir()
-        (src2 / "strata").write_bytes(b"e")
+        (src2 / "nostroma").write_bytes(b"e")
         (src2 / "BUILD.json").write_text(json.dumps({"hipblaslt_version": 100500}), encoding="utf-8")
         fake_table(src2 / "tuning", "gfx1100", 100500)
         with mock.patch.object(package_engine, "_bundle_missing_libraries", return_value=[]), self.assertRaises(SystemExit) as caught:
-            package_engine.build(src2, "hip", "0.2.1", "linux-x86_64", other / "out", entry="strata", archs=("gfx1201",), build_id="t")
+            package_engine.build(src2, "hip", "0.2.1", "linux-x86_64", other / "out", entry="nostroma", archs=("gfx1201",), build_id="t")
         self.assertIn("gfx1100", str(caught.exception))
 
     def test_a_cuda_package_needs_no_hipblaslt_version(self):
@@ -356,7 +356,7 @@ class PackagedAndHashed(TempDir):
         out = self.root / "out"
         out.mkdir()
         with mock.patch.object(package_engine, "_bundle_missing_libraries", return_value=[]):
-            package_engine.build(src, "cuda", "0.2.1", "linux-x86_64", out, entry="strata", archs=("sm_86",), build_id="t")
+            package_engine.build(src, "cuda", "0.2.1", "linux-x86_64", out, entry="nostroma", archs=("sm_86",), build_id="t")
 
 
 class SetupFindsThePackageTable(TempDir):

@@ -10,7 +10,7 @@ from pathlib import Path
 
 OWN = Path(__file__).resolve().parent / "vision" / "own"
 CU = OWN / "vit_gpu.cu"
-GUARD = "#if defined(__linux__) && !defined(STRATA_VIT_HIP)   // SPARK-CTX-RETRY"
+GUARD = "#if defined(__linux__) && !defined(NOSTROMA_VIT_HIP)   // SPARK-CTX-RETRY"
 
 
 def guarded_span(lines):

@@ -1,16 +1,16 @@
-// src/prefill/mmq_absent.cpp - see include/strata/prefill/moe_mmq.hpp.  P4-SPLIT: an engine built without llama.cpp's MMQ prompt kernels
-// (-DSTRATA_MMQ=OFF) keeps Nostroma's own (strata_pf_own: the fused experts and moe_helpers.cu); this file answers the MMQ half of the
+// src/prefill/mmq_absent.cpp - see include/nostroma/prefill/moe_mmq.hpp.  P4-SPLIT: an engine built without llama.cpp's MMQ prompt kernels
+// (-DNOSTROMA_MMQ=OFF) keeps Nostroma's own (nostroma_pf_own: the fused experts and moe_helpers.cu); this file answers the MMQ half of the
 // interface for it.  Every query says "no MMQ", so the prompt path never plans an MMQ product; the calls that would launch one cannot be
 // reached from there and stop the process with a plain message instead of leaving garbage in a buffer.
-#include "strata/prefill/moe_mmq.hpp"
+#include "nostroma/prefill/moe_mmq.hpp"
 
 #include <cstdio>
 #include <cstdlib>
 
-namespace strata::prefill::mmq {
+namespace nostroma::prefill::mmq {
 namespace {
 [[noreturn]] void absent(const char* what) {
-    std::fprintf(stderr, "strata: internal error: %s was called, but this engine was built without llama.cpp's MMQ prompt kernels\n", what);
+    std::fprintf(stderr, "nostroma: internal error: %s was called, but this engine was built without llama.cpp's MMQ prompt kernels\n", what);
     std::fflush(stderr);
     std::abort();
 }
@@ -44,4 +44,4 @@ int direct_mode() { return 0; }
 size_t direct_slot_guard() { return 0; }
 void prep_group(const GuardTab&, size_t, void*, void*, size_t, void*) { absent("mmq::prep_group"); }
 
-}  // namespace strata::prefill::mmq
+}  // namespace nostroma::prefill::mmq

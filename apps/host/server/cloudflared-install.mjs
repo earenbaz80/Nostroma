@@ -52,7 +52,7 @@ export function createConnectorInstaller({ directory, componentDirectory = null,
     const name = connectorAsset(platform, arch);
     await mkdir(directory, { recursive: true });
     const stage = await mkdtemp(join(directory, '.install-'));
-    const request = url => fetchImpl(url, { signal: AbortSignal.timeout(120000), headers: { 'user-agent': 'Strata-connector-setup', accept: 'application/vnd.github+json' } });
+    const request = url => fetchImpl(url, { signal: AbortSignal.timeout(120000), headers: { 'user-agent': 'Nostroma-connector-setup', accept: 'application/vnd.github+json' } });
     try {
       const metadata = await request(RELEASES);
       if (!metadata.ok) throw new Error('Cloudflare’s download service is unavailable. Try again in a moment.');

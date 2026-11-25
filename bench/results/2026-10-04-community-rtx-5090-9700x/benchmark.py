@@ -19,16 +19,16 @@ def get(url):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--root", type=Path, default=Path(r"D:\AI\Strata"))
-    parser.add_argument("--pack", type=Path, default=Path(r"D:\AI\Strata-data\packs\iq3_xxs"))
+    parser.add_argument("--root", type=Path, default=Path(r"D:\AI\Nostroma"))
+    parser.add_argument("--pack", type=Path, default=Path(r"D:\AI\Nostroma-data\packs\iq3_xxs"))
     parser.add_argument("--url", default="http://127.0.0.1:5310")
-    parser.add_argument("--out", type=Path, default=Path(r"D:\AI\Strata-data\community-bench-20261004"))
+    parser.add_argument("--out", type=Path, default=Path(r"D:\AI\Nostroma-data\community-bench-20261004"))
     parser.add_argument("--targets", default="4096,32768,128000")
     parser.add_argument("--runs", type=int, default=3)
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     sys.path[:0] = [str(args.root), str(args.root / "tools")]
-    from strata_tokenizer import Tokenizer
+    from nostroma_tokenizer import Tokenizer
     from serve.frontend import ChatTemplate, openai_to_messages
 
     directory = args.pack / "tokenizer"

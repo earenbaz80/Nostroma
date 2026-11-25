@@ -22,8 +22,8 @@ import run_all as R  # noqa: E402
 HERE = Path(__file__).parent
 ROOT = HERE.parent
 BASE_CFG = HERE / "base-iq2_xs.json"          # the configuration every arm starts from
-RT = Path(r"D:\Strata-data\mtp\rt")
-BUILD = Path(r"D:\Strata-build")
+RT = Path(r"D:\Nostroma-data\mtp\rt")
+BUILD = Path(r"D:\Nostroma-build")
 
 EN = ["Explain in detail how a hash map works: hashing, collisions, resizing, complexity. About 300 words.",
       "Describe how TCP establishes and closes a connection, and what each flag means. About 300 words.",
@@ -44,19 +44,19 @@ def set_arg(args, flag, value):
 
 
 def local_engine(name):
-    """exe + library folders of a local build (D:\\Strata-build\\dist-<name>, unpacked from its zip)."""
+    """exe + library folders of a local build (D:\\Nostroma-build\\dist-<name>, unpacked from its zip)."""
     d = BUILD / f"dist-{name}" / "engine"
-    return {"exe": str(d / "strata.exe"), "lib_dirs": [str(d / "rocm" / "bin")]}
+    return {"exe": str(d / "nostroma.exe"), "lib_dirs": [str(d / "rocm" / "bin")]}
 
 
 QUICK = "--quick" in sys.argv                  # decode only: no 8K / 30K prompt reads (an arm in ~2 min instead of ~4)
-QSETS = ("hard", "js", "sql", "regex")         # strata_eval2.py's suites an arm with "quality" runs
+QSETS = ("hard", "js", "sql", "regex")         # nostroma_eval2.py's suites an arm with "quality" runs
 V139 = {"engine": "139", "root": "src-139"}
 
 
 def v139s(env=None, **more):
-    """A 0.1.39 arm with STRATA_SH_STREAM=0, plus this arm's own environment and settings."""
-    return {**V139, **more, "env": {"STRATA_SH_STREAM": "0", **(env or {})}}
+    """A 0.1.39 arm with NOSTROMA_SH_STREAM=0, plus this arm's own environment and settings."""
+    return {**V139, **more, "env": {"NOSTROMA_SH_STREAM": "0", **(env or {})}}
 
 ARMS = {
     "base": {},
@@ -66,9 +66,9 @@ ARMS = {
     "en": {"draft_vocab": "draft_vocab_en.bin"},
     "prefill16k": {"args": {"--prefill": "auto:16384"}},
     # MMQ is already on by default (prefill.cpp mmq_plan), so the A/B is turning it off: the FP16 expert path.
-    # STRATA_PF_FUSED=1 is not an arm: on HIP the fused kernels fall back to MMQ (moe_fused.hpp).
-    "mmq0": {"env": {"STRATA_PREFILL_MMQ": "0"}},
-    "ring96": {"env": {"STRATA_PREFILL_RING": "96"}},
+    # NOSTROMA_PF_FUSED=1 is not an arm: on HIP the fused kernels fall back to MMQ (moe_fused.hpp).
+    "mmq0": {"env": {"NOSTROMA_PREFILL_MMQ": "0"}},
+    "ring96": {"env": {"NOSTROMA_PREFILL_RING": "96"}},
     "pcie30": {"args": {"--pcie-frac": "0.3"}},
     "pcie80": {"args": {"--pcie-frac": "0.8"}},
     "spec3": {"args": {"--spec": "3"}},
@@ -78,21 +78,21 @@ ARMS = {
     # local builds
     "build-base": {"engine": "base"},
     "build-prs": {"engine": "prs"},
-    "prs-pipeline": {"engine": "prs", "env": {"STRATA_POOL_PIPELINE": "1"}},
-    "prs-kvprefetch": {"engine": "prs", "env": {"STRATA_KV_PREFETCH": "1"}},
-    "prs-hcq8": {"engine": "prs", "env": {"STRATA_HC_Q8": "1"}},
+    "prs-pipeline": {"engine": "prs", "env": {"NOSTROMA_POOL_PIPELINE": "1"}},
+    "prs-kvprefetch": {"engine": "prs", "env": {"NOSTROMA_KV_PREFETCH": "1"}},
+    "prs-hcq8": {"engine": "prs", "env": {"NOSTROMA_HC_Q8": "1"}},
     "prs-16k": {"engine": "prs", "args": {"--prefill": "auto:16384"}},
     "prs-all": {"engine": "prs", "args": {"--prefill": "auto:16384"},
-                "env": {"STRATA_POOL_PIPELINE": "1", "STRATA_KV_PREFETCH": "1", "STRATA_HC_Q8": "1"}},
-    # 0.1.39 (released 2026-10-04): its engine built here for gfx1030 and its own server, from D:\Strata-build\src-139
+                "env": {"NOSTROMA_POOL_PIPELINE": "1", "NOSTROMA_KV_PREFETCH": "1", "NOSTROMA_HC_Q8": "1"}},
+    # 0.1.39 (released 2026-10-04): its engine built here for gfx1030 and its own server, from D:\Nostroma-build\src-139
     "v139": {**V139},
     # 0.1.39 decodes slower than 0.1.38 here: its new decode steps turned off one at a time (each is default on)
-    "v139-stage0": {**V139, "env": {"STRATA_IQ_STAGE_GRID": "0"}},          # i-quant grids not staged in shared memory
-    "v139-decbatch0": {**V139, "env": {"STRATA_DEC_BATCH": "0"}},           # the window's rows token by token
-    "v139-plebatch0": {**V139, "env": {"STRATA_PLE_BATCH": "0"}},           # the PLE block token by token
-    "v139-shstream0": {**V139, "env": {"STRATA_SH_STREAM": "0"}},
-    "v139-oldmmvq": {**V139, "env": {"STRATA_OLD_IQ_MMVQ": "1"}},           # the per-column i-quant kernels
-    # v139s = 0.1.39 with STRATA_SH_STREAM=0 (the shared expert on the window's own stream): measured here
+    "v139-stage0": {**V139, "env": {"NOSTROMA_IQ_STAGE_GRID": "0"}},          # i-quant grids not staged in shared memory
+    "v139-decbatch0": {**V139, "env": {"NOSTROMA_DEC_BATCH": "0"}},           # the window's rows token by token
+    "v139-plebatch0": {**V139, "env": {"NOSTROMA_PLE_BATCH": "0"}},           # the PLE block token by token
+    "v139-shstream0": {**V139, "env": {"NOSTROMA_SH_STREAM": "0"}},
+    "v139-oldmmvq": {**V139, "env": {"NOSTROMA_OLD_IQ_MMVQ": "1"}},           # the per-column i-quant kernels
+    # v139s = 0.1.39 with NOSTROMA_SH_STREAM=0 (the shared expert on the window's own stream): measured here
     # 56.4 / 43.5 / 62.7 tok/s (en / uk / code) against 42.5 / 32.5 / 50.2 with the forked stream.  The arms below
     # change one more thing each.
     "v139s": v139s(),
@@ -100,9 +100,9 @@ ARMS = {
     "v139s-par2": v139s(cfg={"parallel": 2}, par=[1, 2, 4]),                # what 2 batch slots cost a request alone
     "v139s-par4": v139s(cfg={"parallel": 4}, par=[1, 2, 4]),
     "v139s-cyr": v139s(draft_vocab="draft_vocab_cyrillic.bin"),
-    "v139s-ring0": v139s({"STRATA_RING_BYTES": "0"}),                       # 0.1.38's prompt ring (#583 off)
-    "v139s-stage0": v139s({"STRATA_IQ_STAGE_GRID": "0"}),
-    "v139s-nowait": v139s({"STRATA_ADAPT_NOWAIT": "1"}),
+    "v139s-ring0": v139s({"NOSTROMA_RING_BYTES": "0"}),                       # 0.1.38's prompt ring (#583 off)
+    "v139s-stage0": v139s({"NOSTROMA_IQ_STAGE_GRID": "0"}),
+    "v139s-nowait": v139s({"NOSTROMA_ADAPT_NOWAIT": "1"}),
     "v139s-spec6": v139s(args={"--spec": "6"}),                             # issue #775's settings, one at a time
     "v139s-minp70": v139s(args={"--spec-min-p": "0.7"}),
     "v139s-pcie0": v139s(args={"--pcie-frac": "0.0"}),
@@ -111,17 +111,17 @@ ARMS = {
     "v139s-q20": v139s(model="q2_0", quality=True),
     "v139s-iq3xxs": v139s(model="iq3_xxs", quality=True),
     # IQ3_XXS: 0.1.39's opt-in AVX2 gather for the IQ3 grids on the CPU (#622, bit-exact), and the Cyrillic drafts
-    "v139s-iq3xxs-g": v139s({"STRATA_IQ256_GATHER": "1"}, model="iq3_xxs"),
+    "v139s-iq3xxs-g": v139s({"NOSTROMA_IQ256_GATHER": "1"}, model="iq3_xxs"),
     "v139s-iq3xxs-cyr": v139s(model="iq3_xxs", draft_vocab="draft_vocab_cyrillic.bin"),
 }
 
 
 def start(arm):
     spec = ARMS[arm]
-    # another model size: its own config as setup wrote it (strata-<model>.json), with this script's one engine log
-    base = ROOT / f"strata-{spec['model']}.json" if spec.get("model") else BASE_CFG
+    # another model size: its own config as setup wrote it (nostroma-<model>.json), with this script's one engine log
+    base = ROOT / f"nostroma-{spec['model']}.json" if spec.get("model") else BASE_CFG
     cfg = json.loads(base.read_text(encoding="utf-8"))
-    cfg["log"] = str(ROOT / "strata-iq2_xs.log")
+    cfg["log"] = str(ROOT / "nostroma-iq2_xs.log")
     for flag, value in spec.get("args", {}).items():
         cfg["args"] = set_arg(cfg["args"], flag, value)
     if spec.get("env"):
@@ -144,7 +144,7 @@ def start_server(root):
     """R.start_server with another checkout's server (a newer version's worktree); the same wait for /health."""
     out = open(ROOT / "server.out", "w")
     err = open(ROOT / "server.err", "w")
-    proc = subprocess.Popen([R.PY, "serve/server.py", "--engine", "strata", "--config", str(R.CFG), "--port", "8080"],
+    proc = subprocess.Popen([R.PY, "serve/server.py", "--engine", "nostroma", "--config", str(R.CFG), "--port", "8080"],
                             cwd=root, stdout=out, stderr=err, creationflags=subprocess.CREATE_NO_WINDOW)
     t = time.time()
     while time.time() - t < 1200:
@@ -168,7 +168,7 @@ def measure(arm):
         rec[name] = r.get("prompt_tok_s")
         rec[name + "_err"] = r.get("error")
     rec.update(R.engine_facts())
-    log = (ROOT / "strata-iq2_xs.log").read_text(encoding="utf-8", errors="replace")[-60000:]
+    log = (ROOT / "nostroma-iq2_xs.log").read_text(encoding="utf-8", errors="replace")[-60000:]
     acc = [(int(a), int(b)) for a, b in __import__("re").findall(r"drafts accepted (\d+) of (\d+)", log)][-8:]
     rec["draft_accept"] = round(sum(a for a, _ in acc) / max(1, sum(b for _, b in acc)), 3)
     return rec
@@ -191,10 +191,10 @@ def main():
                   f"{rec.get('vram_free_mib')} MiB | drafts {rec['draft_accept']}", flush=True)
             if ARMS[arm].get("par"):        # several requests at once against this arm's server: par.py's PAR lines
                 subprocess.run([R.PY, str(HERE / "par.py"), *map(str, ARMS[arm]["par"])], cwd=HERE)
-            if ARMS[arm].get("quality"):    # the small correctness suites (strata_eval2.py), reasoning off
+            if ARMS[arm].get("quality"):    # the small correctness suites (nostroma_eval2.py), reasoning off
                 res = f"results2-{arm}.json"
                 with (HERE / f"eval2-{arm}.log").open("w", encoding="utf-8") as out:
-                    subprocess.run([R.PY, str(HERE / "strata_eval2.py"), "hard", "js", "sql", "regex"], cwd=HERE,
+                    subprocess.run([R.PY, str(HERE / "nostroma_eval2.py"), "hard", "js", "sql", "regex"], cwd=HERE,
                                    stdout=out, stderr=subprocess.STDOUT,
                                    env={**os.environ, "EFFORTS": "none", "RESULTS2": res, "PYTHONIOENCODING": "utf-8"})
                 q = json.loads((HERE / res).read_text(encoding="utf-8"))

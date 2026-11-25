@@ -9,5 +9,5 @@ Storage:       repo + packs on Netac NVMe SSD 1TB (/); GGUF shards on SATA SSD a
 GPUs:          2x NVIDIA GeForce RTX 5060 Ti, 16311 MiB each, power limit 180 W, compute capability 12.0
 Driver:        NVIDIA 610.57.04
 CUDA:          toolkit 13.4 (/usr/local/cuda-13.4), gcc 13.3.0
-Strata build:  engine 0.1.39 (reported by /metrics), CMAKE_BUILD_TYPE=Release, CUDA_ARCHITECTURES=120
-Launch:        .venv/bin/python serve/server.py --engine strata --config strata-iq3_xxs.json --port 31000 --host 0.0.0.0
+Nostroma build:  engine 0.1.39 (reported by /metrics), CMAKE_BUILD_TYPE=Release, CUDA_ARCHITECTURES=120
+Launch:        .venv/bin/python serve/server.py --engine nostroma --config nostroma-iq3_xxs.json --port 31000 --host 0.0.0.0

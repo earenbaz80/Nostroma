@@ -17,7 +17,7 @@ const out = resolve(args.out ?? join(here, '../installer-mockups'));
 mkdirSync(out, { recursive: true });
 const dist = join(host, 'dist');
 const css = readdirSync(join(dist, 'assets')).filter(f => f.endsWith('.css')).map(f => readFileSync(join(dist, 'assets', f), 'utf8')).join('\n');
-const logo = theme => readFileSync(join(dist, 'brand', `strata-lockup-${theme}.svg`), 'utf8');
+const logo = theme => readFileSync(join(dist, 'brand', `nostroma-lockup-${theme}.svg`), 'utf8');
 const { chromium } = await import(pathToFileURL(join(host, 'node_modules/playwright-core/index.mjs')).href).catch(() => import('playwright-core'));
 const CHROME = process.env.CHROME ?? ['C:/Program Files/Google/Chrome/Application/chrome.exe', '/usr/bin/google-chrome'].find(existsSync);
 
@@ -31,7 +31,7 @@ const screens = {
     <footer class="onboard-footer onboard-footer--welcome"><button class="st-btn st-btn--primary">Install Nostroma</button><small>Installs for you only. No administrator needed.</small></footer>`,
   where: theme => `<header class="onboard-header"><span class="mock-logo">${logo(theme)}</span></header>
     <div class="mock-body"><h2 class="mock-title">Where should Nostroma go?</h2><p class="mock-sub">This is the right place for most people.</p>
-    <div class="onboard-folder">${folder}<div><strong>Your Nostroma folder</strong><small>C:\\Users\\Alex\\AppData\\Local\\Strata</small></div><button class="st-btn st-btn--sm">Change</button></div>
+    <div class="onboard-folder">${folder}<div><strong>Your Nostroma folder</strong><small>C:\\Users\\Alex\\AppData\\Local\\Nostroma</small></div><button class="st-btn st-btn--sm">Change</button></div>
     <p class="mock-note">About 310 MB. Your models and chats are kept somewhere else and are never removed by an update.</p></div>
     <footer class="onboard-footer"><button class="st-btn st-btn--ghost">Back</button><span></span><button class="st-btn st-btn--primary">Install</button></footer>`,
   installing: theme => `<header class="onboard-header"><span class="mock-logo">${logo(theme)}</span></header>

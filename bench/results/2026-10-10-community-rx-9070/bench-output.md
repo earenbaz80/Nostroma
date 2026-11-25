@@ -1,4 +1,4 @@
-# Strata benchmark output
+# Nostroma benchmark output
 
 started 2026-10-10 07:54:42, finished 2026-10-10 08:00:00
 server http://127.0.0.1:8080/v1/chat/completions, model id `qwen3.8-flash-next-iq3_xxs`, output cap 256 tokens, 3 reps per length

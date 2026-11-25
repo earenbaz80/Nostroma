@@ -43,7 +43,7 @@ latencies should not be treated as unprofiled production measurements.
 
 ## Opt-in warm-up and inference comparison
 
-The warm-up is on by default (`STRATA_ADAPT_CALLBACK_WARMUP=0` turns it off, for comparison).
+The warm-up is on by default (`NOSTROMA_ADAPT_CALLBACK_WARMUP=0` turns it off, for comparison).
 The candidate initializes and synchronizes a no-op CUDA host callback before
 constructing `ExpertPool`, leaving its worker free to run on the process's
 original allowed CPUs. It does not change swap selection, notifications,
@@ -51,7 +51,7 @@ per-layer waits, residency commits, or GPU math. The flag is off by default
 and its code is guarded to Linux CUDA; overlap-off remains a valid workaround.
 
 Four starts in normal/warm-up/warm-up/normal order. No competing inference
-workload: PiForge and the persistent Strata service stopped for the tests.
+workload: PiForge and the persistent Nostroma service stopped for the tests.
 Same binary and existing calibration, fixed `--pcie-frac 0.4`, auto expert cache,
 temperature 0, 512-token output caps. Calibration's three prompts were prefixed
 with synthetic sensor-record documents at 4K; only the code prompt at 100K.

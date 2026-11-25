@@ -11,7 +11,7 @@ from nostroma_cli.launch.runner import LaunchError, Runner, missing_file, python
 TRACEBACK = [
     "  [..] Tuning Nostroma for this PC",
     "Traceback (most recent call last):",
-    '  File "C:\\Strata\\setup.py", line 6414, in calibrate_config',
+    '  File "C:\\Nostroma\\setup.py", line 6414, in calibrate_config',
     "    import calibrate as CAL",
     "ModuleNotFoundError: No module named 'calibrate'",
 ]

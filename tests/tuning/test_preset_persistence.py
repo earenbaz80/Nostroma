@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def cli(env, *args):
-    out = subprocess.run([sys.executable, str(ROOT / "strata.py"), *args, "--output", "json"], capture_output=True, text=True,
+    out = subprocess.run([sys.executable, str(ROOT / "nostroma.py"), *args, "--output", "json"], capture_output=True, text=True,
                          env=env, cwd=str(ROOT), timeout=120)
     return json.loads(out.stdout[out.stdout.index("{"):]), out
 
@@ -35,17 +35,17 @@ class PersistenceTest(unittest.TestCase):
         (t / "model.gguf").write_bytes(b"gguf" * 1000)
         (t / "engine.exe").write_bytes(b"x")
         (t / "tok").mkdir()
-        self.cfg_path = t / "strata-model.json"
+        self.cfg_path = t / "nostroma-model.json"
         self.cfg = {"exe": str(t / "engine.exe"), "tokenizer": str(t / "tok"), "model_name": "iq3_s-test", "ui_resource_profile": "work",
                     "args": ["--native", str(t / "model.gguf"), "--expert-cache", "auto", "--spec", "4", "--max-context", "65536",
                              "--kv", "int8", "--kv-resident", "32768"]}
         self.cfg_path.write_text(json.dumps(self.cfg))
-        self.env = dict(os.environ, STRATA_PRESET_DIR=str(t / "presets"), PYTHONPATH=str(ROOT), STRATA_NO_PRESET="")
-        self.env.pop("STRATA_NO_PRESET")
-        # the tune's result, saved as a preset by the library, the way `strata tune auto` does
+        self.env = dict(os.environ, NOSTROMA_PRESET_DIR=str(t / "presets"), PYTHONPATH=str(ROOT), NOSTROMA_NO_PRESET="")
+        self.env.pop("NOSTROMA_NO_PRESET")
+        # the tune's result, saved as a preset by the library, the way `nostroma tune auto` does
         sys.path.insert(0, str(ROOT))
-        os.environ["STRATA_PRESET_DIR"] = str(t / "presets")
-        self.addCleanup(lambda: os.environ.pop("STRATA_PRESET_DIR", None))
+        os.environ["NOSTROMA_PRESET_DIR"] = str(t / "presets")
+        self.addCleanup(lambda: os.environ.pop("NOSTROMA_PRESET_DIR", None))
         from nostroma_control import presets
         self.presets = presets
         ident = presets.current_identity(self.cfg, exe=self.cfg["exe"])
@@ -69,7 +69,7 @@ class PersistenceTest(unittest.TestCase):
         self.assertEqual(json.loads(self.cfg_path.read_text())["args"], self.cfg["args"])    # the saved run config itself never changes
 
     def test_a_tune_worker_measures_the_configuration_as_given(self):
-        env = dict(self.env, STRATA_NO_PRESET="1")
+        env = dict(self.env, NOSTROMA_NO_PRESET="1")
         args = fresh_process(env, self.CODE % str(self.cfg_path))
         self.assertEqual(args[args.index("--kv-resident") + 1], "32768")
 

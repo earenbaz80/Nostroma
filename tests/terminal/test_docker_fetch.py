@@ -20,7 +20,7 @@ SCRIPT = ROOT / "docker" / "fetch-engines.py"
 @unittest.skipUnless(components.host_platform() == "linux-x86_64", "the Docker images are for linux-x86_64 packages")
 class FetchEngines(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="strata-dockfetch-")
+        self.temp = tempfile.TemporaryDirectory(prefix="nostroma-dockfetch-")
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.key = fx.make_key()
@@ -36,9 +36,9 @@ class FetchEngines(unittest.TestCase):
 
     def run_script(self, *args, trust=True):
         env = dict(os.environ)
-        env.pop("STRATA_UPDATE_TRUSTED_KEYS", None)
+        env.pop("NOSTROMA_UPDATE_TRUSTED_KEYS", None)
         if trust:
-            env["STRATA_UPDATE_TRUSTED_KEYS"] = str(self.trust)
+            env["NOSTROMA_UPDATE_TRUSTED_KEYS"] = str(self.trust)
         return subprocess.run([sys.executable, str(SCRIPT), "--source", str(self.release), "--out", str(self.out), *args],
                               capture_output=True, text=True, env=env, cwd=str(ROOT))
 
@@ -65,7 +65,7 @@ class FetchEngines(unittest.TestCase):
         self.assertFalse(self.out.exists() and any(self.out.iterdir()))
 
     def test_an_archive_that_is_not_the_one_in_the_feed_is_refused(self):
-        archive = next(self.release.glob("strata-engine-*.tar.gz"))
+        archive = next(self.release.glob("nostroma-engine-*.tar.gz"))
         data = bytearray(archive.read_bytes())
         data[len(data) // 2] ^= 0xFF
         archive.write_bytes(bytes(data))
@@ -75,7 +75,7 @@ class FetchEngines(unittest.TestCase):
         self.assertEqual(r.stdout.strip(), "")
 
     def test_a_tampered_feed_is_refused(self):
-        feed = self.release / "strata-feed.json"
+        feed = self.release / "nostroma-feed.json"
         feed.write_bytes(feed.read_bytes().replace(b'"sequence": 1', b'"sequence": 2'))
         r = self.run_script("--flavors", "cuda13")
         self.assertNotEqual(r.returncode, 0)

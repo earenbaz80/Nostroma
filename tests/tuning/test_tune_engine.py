@@ -146,7 +146,7 @@ class TestEngineHarnessWithAStub(unittest.TestCase):
     """
 
     def setUp(self):
-        self.tmp = Path(tempfile.mkdtemp(prefix="strata-tune-engine-"))
+        self.tmp = Path(tempfile.mkdtemp(prefix="nostroma-tune-engine-"))
 
     def tearDown(self):
         import shutil
@@ -250,7 +250,7 @@ class TestEngineHarnessWithAStub(unittest.TestCase):
     def test_a_py_engine_runs_through_the_current_interpreter(self):
         from nostroma_control import tuning
         self.assertEqual(tuning.engine_command(Path("x") / "stub.py"), [sys.executable, str(Path("x") / "stub.py")])
-        self.assertEqual(tuning.engine_command(Path("x") / "strata"), [str(Path("x") / "strata")])
+        self.assertEqual(tuning.engine_command(Path("x") / "nostroma"), [str(Path("x") / "nostroma")])
 
     def test_a_missing_binary_is_an_error_before_any_process_starts(self):
         h = te.EngineHarness(self.tmp / "nope", {})

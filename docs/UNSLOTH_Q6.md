@@ -14,7 +14,7 @@ nostroma launch --family unsloth --model UD-Q6_K_XL
 ```
 
 Setup keeps every expert in RAM from about 118 GB of RAM. Below that it asks and keeps a RAM budget, as for UD-Q4_K_XL
-([What setup does](UNSLOTH_Q4.md#what-setup-does)). For UD-Q5_K_XL and UD-Q6_K_XL it writes `STRATA_MMQ_KQ=1`, the
+([What setup does](UNSLOTH_Q4.md#what-setup-does)). For UD-Q5_K_XL and UD-Q6_K_XL it writes `NOSTROMA_MMQ_KQ=1`, the
 K-quant MMQ prompt kernels, into the run config.
 
 ## What is in the file
@@ -76,7 +76,7 @@ not switch it to `--ple-io ram` unless the RAM really is there to lock it. `mtp/
 
 ```json
 {
-  "exe": "build/strata",
+  "exe": "build/nostroma",
   "args": [
     "--pack", "packs/ud-q6_k_xl",
     "--native", "/path/to/Qwen3.8-Flash-Next-UD-Q6_K_XL-00001-of-00006.gguf",
@@ -86,7 +86,7 @@ not switch it to `--ple-io ram` unless the RAM really is there to lock it. `mtp/
   "cwd": ".",
   "tokenizer": "packs/ud-q6_k_xl/tokenizer",
   "model_name": "qwen3.8-flash-next-ud-q6_k_xl",
-  "log": "strata-ud-q6_k_xl.log",
+  "log": "nostroma-ud-q6_k_xl.log",
   "host": "127.0.0.1",
   "port": 8080
 }
@@ -99,7 +99,7 @@ out comes from the SSD.
 
 - Decode windows: the grouped expert kernels (`native_expert_grouped`) take Q6_K gate/up (a pinned copy of llama.cpp's
   `vec_dot_q6_K_q8_1` behind `Fmt<14>`). Per-token MMVQ (`native_mmvq`) has Q6_K too.
-- Prompt path: llama.cpp's MMQ prompt kernels instantiate Q6_K in the K-quant library (`STRATA_MMQ_KQ=1`). Without it
+- Prompt path: llama.cpp's MMQ prompt kernels instantiate Q6_K in the K-quant library (`NOSTROMA_MMQ_KQ=1`). Without it
   the prompt takes the FP16 path.
 - Tests: `native_grouped_parity` loops Q6_K/Q8_0 pairs, `prefill_mmq_kquant_test` runs Q6_K gate/up products at
   1280x2560 against a double-precision reference, and `native_expert_parity --synthetic q6_K/q8_0` checks GPU and CPU

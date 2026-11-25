@@ -1,14 +1,14 @@
-// STRATA_SELECT_TWO_PASS (qsa_two_pass.hpp) against today's prompt scorer, GPU, synthetic, no model: for prompt
+// NOSTROMA_SELECT_TWO_PASS (qsa_two_pass.hpp) against today's prompt scorer, GPU, synthetic, no model: for prompt
 // chunks of 256 queries at depths from 2K to 256K and several kinds of keys (normal, indexer-like, wide magnitudes,
 // small integers with exact ties, near-duplicate and duplicate keys), qsa_block_topk over the two-pass row must return
 // exactly the ids it returns over qsa_block_scores_tc's row, every scored-again block must hold today's score bit for
 // bit, and every kept single-pass score must lie inside its bound (qsa_two_pass_check's counters).  Then, for the
 // larger cases, the time of each scorer (one synthetic run, not a benchmark).  Needs CUDA sm_80+ (77 = skipped
 // otherwise, and on HIP).
-#include "strata/kernels/qsa.hpp"
-#include "strata/env.hpp"
-#include "strata/kernels/qsa_select.hpp"
-#include "strata/kernels/qsa_two_pass.hpp"
+#include "nostroma/kernels/qsa.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kernels/qsa_select.hpp"
+#include "nostroma/kernels/qsa_two_pass.hpp"
 
 #include <cuda_runtime.h>
 
@@ -21,8 +21,8 @@
 #include <random>
 #include <vector>
 
-namespace k = strata::kernels;
-namespace tp = strata::kernels::two_pass;
+namespace k = nostroma::kernels;
+namespace tp = nostroma::kernels::two_pass;
 
 namespace {
 void ck(cudaError_t e) {
@@ -187,15 +187,15 @@ bool run(const Case& c, int64_t stride) {
 }  // namespace
 
 int main() {
-#if defined(STRATA_USE_HIP) || defined(STRATA_HIP_GFX906)
+#if defined(NOSTROMA_USE_HIP) || defined(NOSTROMA_HIP_GFX906)
     // AMD: the two-pass scorer is CUDA-only (qsa_select.cu builds stubs under HIP), so the engine keeps today's scorer
     std::puts("SKIP: the two-pass scorer is CUDA-only");
     return 77;
 #endif
 #if defined(_WIN32)
-    if (strata::env("NOSTROMA_SELECT_TWO_PASS") == nullptr) _putenv_s("STRATA_SELECT_TWO_PASS", "1");
+    if (nostroma::env("NOSTROMA_SELECT_TWO_PASS") == nullptr) _putenv_s("NOSTROMA_SELECT_TWO_PASS", "1");
 #else
-    setenv("STRATA_SELECT_TWO_PASS", "1", 0);   // read once, at the first call
+    setenv("NOSTROMA_SELECT_TWO_PASS", "1", 0);   // read once, at the first call
 #endif
     int devices = 0;
     if (cudaGetDeviceCount(&devices) != cudaSuccess || devices == 0) {
@@ -203,7 +203,7 @@ int main() {
         return 77;
     }
     if (!k::qsa_two_pass_on()) {
-        std::puts("FAIL: STRATA_SELECT_TWO_PASS is set to something other than 1");
+        std::puts("FAIL: NOSTROMA_SELECT_TWO_PASS is set to something other than 1");
         return 1;
     }
     const Case cases[] = {

@@ -1,6 +1,6 @@
-// The segment pool (STRATA_PARK_SEGPOOL_MIB): the arena logic behind the OS interface, tested with a fake OS that counts its calls.
-#include "strata/core/conversation_segment_pool.hpp"
-#include "strata/core/park_pool_policy.hpp"
+// The segment pool (NOSTROMA_PARK_SEGPOOL_MIB): the arena logic behind the OS interface, tested with a fake OS that counts its calls.
+#include "nostroma/core/conversation_segment_pool.hpp"
+#include "nostroma/core/park_pool_policy.hpp"
 
 #include <atomic>
 #include <chrono>
@@ -14,7 +14,7 @@
 #include <malloc.h>
 #endif
 
-using namespace strata::core;
+using namespace nostroma::core;
 
 namespace {
 // 2 MiB aligned memory from the C library: MSVC's C runtime has no std::aligned_alloc (its free cannot release it), so _aligned_malloc there

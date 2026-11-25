@@ -28,10 +28,10 @@ RELEASE = os.path.join(ROOT, "docs", "data", "release.json")
 OUT = "docs/CAPABILITIES.md"
 PAGES = ["docs/AI_SETUP.md", "docs/AI_REFERENCE.md"]
 
-ASSET_RE = re.compile(r"^strata-(engine|dsv41)-(\d+(?:\.\d+)*)-(windows|linux|macos)-(x86_64|aarch64|arm64)-(cuda|hip|sycl|metal)(?:-(.+?))?\.(?:tar\.gz|zip)$")
+ASSET_RE = re.compile(r"^nostroma-(engine|dsv41)-(\d+(?:\.\d+)*)-(windows|linux|macos)-(x86_64|aarch64|arm64)-(cuda|hip|sycl|metal)(?:-(.+?))?\.(?:tar\.gz|zip)$")
 COLUMN_OF = {("windows", "cuda"): "nvidia_win", ("linux", "cuda", "x86_64"): "nvidia_linux", ("linux", "cuda", "aarch64"): "nvidia_spark",
              ("windows", "hip"): "amd_win", ("linux", "hip"): "amd_linux", ("linux", "sycl"): "intel_linux", ("macos", "metal"): "mac"}
-PKG_RE = re.compile(r"^strata-(control|dsv41|engine)-(\d+(?:\.\d+)*)-(.+?)\.(?:tar\.gz|zip)$")
+PKG_RE = re.compile(r"^nostroma-(control|dsv41|engine)-(\d+(?:\.\d+)*)-(.+?)\.(?:tar\.gz|zip)$")
 KIND_WORDS = {"control": "Control", "dsv41": "DeepSeek engines", "engine": "engines"}
 MARK_RE = re.compile(r"<!-- cap:(\S+?) -->(.*?)<!-- /cap -->", re.S)
 STATUS_WORD = {"yes": "supported", "untested": "package present, untested", "no": "does not run"}

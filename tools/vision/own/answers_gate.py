@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """The answers gate of the own vision tower: greedy picture answers of the whole Nostroma server, one run per picture reader, compared.
 
-    python3 answers_gate.py --box <box.json> --helper <strata-vision> --out <dir> [--towers mtmd,own] [--max-tokens 1024] [--threads N]
+    python3 answers_gate.py --box <box.json> --helper <nostroma-vision> --out <dir> [--towers mtmd,own] [--max-tokens 1024] [--threads N]
                             [--gpu] [--n-tokens 48] [--question "..."] [--port N] <image> [<image> ...]
 
 For each tower a fresh `serve/server.py` is started (engine + the picture reader `<helper> ... --tower <tower>`, through a one-line wrapper script made
 in <dir>), every picture is sent with each question at temperature 0 (max --n-tokens tokens), and the server is stopped (its own process group only).
 Then the answers of the towers are compared picture by picture: how many are identical, and the differing ones are printed side by side (not
 argued away).  The box file is the one tools of the 145-vis runs use (src, exe, pack, native, ple, profile, mtp, tokenizer, mmproj, lib_dirs, gpu, port).
-Exit 0 when every answer is identical, 1 otherwise.  Standard library plus the repo's tools/strata_bench.py.
+Exit 0 when every answer is identical, 1 otherwise.  Standard library plus the repo's tools/nostroma_bench.py.
 """
 import argparse
 import base64
@@ -48,7 +48,7 @@ def main():
     src = Path(box["src"])
     sys.path.insert(0, str(src / "tools"))
     sys.path.insert(0, str(src))
-    import strata_bench as SB  # noqa: E402
+    import nostroma_bench as SB  # noqa: E402
 
     port = a.port or int(box.get("port", 8195))
     base = "http://127.0.0.1:%d" % port
@@ -62,14 +62,14 @@ def main():
     results = {}
     for spec in a.towers.split(","):
         # a reader spec: name[+round][:gpu][@tag]  (mtmd, own, mtmd:gpu, own:gpu, mtmd@2 for a second run of the same reader,
-        # own+round and own+round:gpu with STRATA_VIT_REF_ROUND=1 in the reader's environment)
+        # own+round and own+round:gpu with NOSTROMA_VIT_REF_ROUND=1 in the reader's environment)
         name, _, mode = spec.split("@")[0].partition(":")
         rounding = name.endswith("+round")
         name = name.replace("+round", "")
         gpu = a.gpu or mode == "gpu"
         tower = spec.replace(":", "-").replace("@", "-").replace("+", "-")        # the label of this run in file names and in the report
         wrap = out / ("reader-%s.sh" % tower)
-        wrap.write_text('#!/bin/sh\n%sexec "%s" "$@" --tower %s\n' % ("export STRATA_VIT_REF_ROUND=1\n" if rounding else "", a.helper, name))
+        wrap.write_text('#!/bin/sh\n%sexec "%s" "$@" --tower %s\n' % ("export NOSTROMA_VIT_REF_ROUND=1\n" if rounding else "", a.helper, name))
         wrap.chmod(wrap.stat().st_mode | stat.S_IXUSR)
         vis = {"exe": str(wrap), "mmproj": box["mmproj"], "model": box["native"], "gpu": gpu, "max_tokens": a.max_tokens}
         if a.threads and not gpu:
@@ -83,7 +83,7 @@ def main():
         cfgp = out / "logs" / ("cfg-%s.json" % tower)
         cfgp.write_text(json.dumps(cfg, indent=1))
         log = open(out / "logs" / ("server-%s.log" % tower), "w")
-        p = subprocess.Popen([sys.executable, str(src / "serve" / "server.py"), "--engine", "strata", "--config", str(cfgp), "--port", str(port)],
+        p = subprocess.Popen([sys.executable, str(src / "serve" / "server.py"), "--engine", "nostroma", "--config", str(cfgp), "--port", str(port)],
                              stdout=log, stderr=subprocess.STDOUT, cwd=str(src), start_new_session=True)
         answers = {}
         try:

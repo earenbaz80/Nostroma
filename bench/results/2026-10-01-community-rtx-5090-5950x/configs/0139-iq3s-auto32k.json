@@ -1,14 +1,14 @@
 {
-    "exe":  "E:\\strata-0139\\engine\\strata.exe",
+    "exe":  "E:\\nostroma-0139\\engine\\nostroma.exe",
     "args":  [
                  "--pack",
-                 "E:\\strata-data\\packs\\iq3_s",
+                 "E:\\nostroma-data\\packs\\iq3_s",
                  "--native",
-                 "E:\\strata-data\\models\\IQ3_S\\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf",
+                 "E:\\nostroma-data\\models\\IQ3_S\\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf",
                  "--ple-gguf",
-                 "E:\\strata-data\\models\\IQ3_S\\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf",
+                 "E:\\nostroma-data\\models\\IQ3_S\\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf",
                  "--expert-profile",
-                 "E:\\strata-src\\data\\expert-profile.bin",
+                 "E:\\nostroma-src\\data\\expert-profile.bin",
                  "--expert-cache",
                  "auto",
                  "--prefill",
@@ -18,7 +18,7 @@
                  "--spec-min-p",
                  "0.70",
                  "--mtp",
-                 "E:\\strata-data\\mtp\\rt",
+                 "E:\\nostroma-data\\mtp\\rt",
                  "--max-context",
                  "65536",
                  "--kv",
@@ -26,18 +26,18 @@
                  "--pcie-frac",
                  "0.55"
              ],
-    "cwd":  "E:\\strata-0139",
-    "tokenizer":  "E:\\strata-data\\packs\\iq3_s\\tokenizer",
+    "cwd":  "E:\\nostroma-0139",
+    "tokenizer":  "E:\\nostroma-data\\packs\\iq3_s\\tokenizer",
     "model_name":  "qwen3.8-flash-next-iq3_s",
-    "log":  "E:\\strata-0139\\bench\\engine-iq3s-auto32k.log",
+    "log":  "E:\\nostroma-0139\\bench\\engine-iq3s-auto32k.log",
     "lib_dirs":  [
-                     "E:\\strata-src\\.venv\\Lib\\site-packages\\nvidia\\cu13\\bin\\x86_64"
+                     "E:\\nostroma-src\\.venv\\Lib\\site-packages\\nvidia\\cu13\\bin\\x86_64"
                  ],
     "port":  18199,
     "gpu":  0,
     "gpus_asked":  true,
     "host":  "127.0.0.1",
     "env":  {
-                "STRATA_IQ_MT_MIN":  "1"
+                "NOSTROMA_IQ_MT_MIN":  "1"
             }
 }

@@ -1,6 +1,6 @@
-// #4733: see include/strata/platform/io_priority.hpp
-#include "strata/platform/io_priority.hpp"
-#include "strata/env.hpp"
+// #4733: see include/nostroma/platform/io_priority.hpp
+#include "nostroma/platform/io_priority.hpp"
+#include "nostroma/env.hpp"
 
 #include <cstdlib>
 
@@ -14,11 +14,11 @@
 #include <windows.h>
 #endif
 
-namespace strata::platform {
+namespace nostroma::platform {
 
 int restore_normal_io_priority(std::FILE* log) {
 #if defined(_WIN32)
-    const char* keep = strata::env("NOSTROMA_KEEP_IO_PRIORITY");
+    const char* keep = nostroma::env("NOSTROMA_KEEP_IO_PRIORITY");
     if (keep != nullptr && keep[0] == '1') return -1;
     using Query = LONG(NTAPI*)(HANDLE, ULONG, PVOID, ULONG, PULONG);
     using Set = LONG(NTAPI*)(HANDLE, ULONG, PVOID, ULONG);
@@ -34,12 +34,12 @@ int restore_normal_io_priority(std::FILE* log) {
     ULONG want = 2;
     if (set(GetCurrentProcess(), kProcessIoPriority, &want, sizeof want) != 0) {
         if (log != nullptr)
-            std::fprintf(log, "strata: this program runs at a low disk priority (inherited from the program that started it) "
+            std::fprintf(log, "nostroma: this program runs at a low disk priority (inherited from the program that started it) "
                               "and Windows did not let it go back to normal; reading the model can be several times slower (#4733)\n");
         return (int) now;
     }
     if (log != nullptr)
-        std::fprintf(log, "strata: the program that started the engine runs at a low disk priority, which the engine inherits and "
+        std::fprintf(log, "nostroma: the program that started the engine runs at a low disk priority, which the engine inherits and "
                           "which makes model reads several times slower; the engine's disk priority is back to normal (#4733)\n");
     return (int) now;
 #else
@@ -48,4 +48,4 @@ int restore_normal_io_priority(std::FILE* log) {
 #endif
 }
 
-}  // namespace strata::platform
+}  // namespace nostroma::platform

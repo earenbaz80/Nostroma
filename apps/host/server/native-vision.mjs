@@ -11,7 +11,7 @@ export function runtimeVision(config,requested){
 
 /**
  * The catalog with each picture-capable size marked as ready (`images`) or not (`imagesCapable` stays true either way). The Qwen engines
- * read pictures with a separate program (strata-vision) that has to sit in the engine folder.
+ * read pictures with a separate program (nostroma-vision) that has to sit in the engine folder.
  */
 export function markPictures(catalog,visionReader){
  if(!catalog||!Array.isArray(catalog.families))return catalog;

@@ -2,7 +2,7 @@
 """Quality check for a numerically different path (the fused IQ prompt kernels): run the same greedy prompts through
 two configs and compare the answers.
 
-    python quality_fused.py strata-iq3s-nofused.json strata-iq3s-best.json out.json
+    python quality_fused.py nostroma-iq3s-nofused.json nostroma-iq3s-best.json out.json
 """
 import json
 import subprocess
@@ -37,7 +37,7 @@ def run(cfg, port, tag):
     c["port"] = port
     c["log"] = f"/tmp/quality-{tag}.log"
     cpath.write_text(json.dumps(c, indent=1))
-    proc = subprocess.Popen([sys.executable, str(ROOT / "serve" / "server.py"), "--engine", "strata", "--config",
+    proc = subprocess.Popen([sys.executable, str(ROOT / "serve" / "server.py"), "--engine", "nostroma", "--config",
                              str(cpath), "--port", str(port)], cwd=str(ROOT),
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:

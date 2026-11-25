@@ -102,8 +102,8 @@ def _near(path: Path) -> Path:
 
 
 def same_drive(a: Path, b: Path) -> bool:
-    """Both folders are on one volume (a move is then a rename). STRATA_MOVE_ALWAYS_COPY=1 copies anyway: for testing the copy path on one disk."""
-    if os.environ.get("NOSTROMA_MOVE_ALWAYS_COPY", os.environ.get("STRATA_MOVE_ALWAYS_COPY")) == "1":
+    """Both folders are on one volume (a move is then a rename). NOSTROMA_MOVE_ALWAYS_COPY=1 copies anyway: for testing the copy path on one disk."""
+    if os.environ.get("NOSTROMA_MOVE_ALWAYS_COPY", os.environ.get("NOSTROMA_MOVE_ALWAYS_COPY")) == "1":
         return False
     try:
         return os.stat(_near(a)).st_dev == os.stat(_near(b)).st_dev
@@ -124,7 +124,7 @@ def _write_test(folder: Path) -> str | None:
     """None when files can be written in ``folder`` (made if missing); else the raw refusal."""
     try:
         folder.mkdir(parents=True, exist_ok=True)
-        fd, name = tempfile.mkstemp(prefix=".strata-write-test", dir=folder)
+        fd, name = tempfile.mkstemp(prefix=".nostroma-write-test", dir=folder)
         os.close(fd)
         os.remove(name)
         return None
@@ -359,10 +359,10 @@ def repoint_config(cfg_file: Path, old: Path, new: Path) -> bool:
 
 
 def config_files(install: Path | None) -> list[Path]:
-    """The ``strata-<model>.json`` run configs of an install folder."""
+    """The ``nostroma-<model>.json`` run configs of an install folder."""
     if not install or not Path(install).is_dir():
         return []
-    return [p for p in Path(install).glob("strata-*.json") if not p.name.endswith(".shared-settings.json")]
+    return [p for p in Path(install).glob("nostroma-*.json") if not p.name.endswith(".shared-settings.json")]
 
 
 def _prune(folder: Path, stop_at: Path) -> None:

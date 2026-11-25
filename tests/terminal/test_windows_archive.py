@@ -26,7 +26,7 @@ import package_terminal as pt  # noqa: E402
 
 TARGET = "windows-x86_64"
 VERSION = "9.9.9"
-STEM = f"strata-terminal-{VERSION}-{TARGET}"
+STEM = f"nostroma-terminal-{VERSION}-{TARGET}"
 
 
 def _fake_interpreter(where: Path) -> Path:
@@ -58,12 +58,12 @@ class WindowsArchive(unittest.TestCase):
 
             with zipfile.ZipFile(archive) as zf:
                 names = set(zf.namelist())
-                for launcher in ("strata.cmd", "strata.ps1", "nostroma.cmd", "nostroma.ps1"):
+                for launcher in ("nostroma.cmd", "nostroma.ps1", "nostroma.cmd", "nostroma.ps1"):
                     self.assertIn(f"{STEM}/bin/{launcher}", names, launcher)
                 # the twin is the same launcher, byte for byte: one program, two names
                 for launcher in ("cmd", "ps1"):
                     self.assertEqual(zf.read(f"{STEM}/bin/nostroma.{launcher}"),
-                                     zf.read(f"{STEM}/bin/strata.{launcher}"), launcher)
+                                     zf.read(f"{STEM}/bin/nostroma.{launcher}"), launcher)
 
 
 if __name__ == "__main__":

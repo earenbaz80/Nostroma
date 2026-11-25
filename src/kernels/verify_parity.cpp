@@ -4,12 +4,12 @@
 // accepted exactly when greedy decode would have produced them), so every kernel here is checked against the
 // one it stands in for, on random inputs that include -0.0, denormals, NaN, -inf and large values.  The tests
 // follow eddoursul's fork (MIT; verify_parity.cpp), ported to this tree's kernels.
-#include "strata/kernels/elementwise.hpp"
-#include "strata/env.hpp"
-#include "strata/kernels/f16_bits.hpp"
-#include "strata/kernels/quantize_act.hpp"
-#include "strata/kernels/sampler.hpp"
-#include "strata/kernels/verify_kernels.hpp"
+#include "nostroma/kernels/elementwise.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kernels/f16_bits.hpp"
+#include "nostroma/kernels/quantize_act.hpp"
+#include "nostroma/kernels/sampler.hpp"
+#include "nostroma/kernels/verify_kernels.hpp"
 
 #include <cuda_runtime.h>
 
@@ -49,7 +49,7 @@ template <typename T> std::vector<T> down(const T* d, size_t n) {
 // vocabularies with ties at the maximum (the lowest index wins), NaN, -inf, a row with no value above -inf, and
 // launches repeated on one scratch (each must leave its counters at zero)
 int test_argmax(std::mt19937& rng, cudaStream_t s) {
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     int bad = 0;
     std::normal_distribution<float> nd(0.0f, 4.0f);
     uint8_t* sa = dev<uint8_t>(argmax_rows_scratch_bytes(8));   // one scratch for every row count, as in the engine
@@ -106,7 +106,7 @@ int test_argmax(std::mt19937& rng, cudaStream_t s) {
 }
 
 int test_mapped_multi(std::mt19937& rng, cudaStream_t s) {
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     int bad = 0;
     // 7-copy round layout + non-multiple-of-4 large copy (1025 words) + 4B-aligned non-16B-aligned large copy (1028 words)
     const int64_t words[7] = {5, 40, 1025, 1028, 51200, 4, 16};
@@ -130,13 +130,13 @@ int test_mapped_multi(std::mt19937& rng, cudaStream_t s) {
             copy_i32_from_mapped(d_ref[i] + off[i], d_src[i] + off[i], words[i], s);
         mc[i] = {d_out[i] + off[i], d_src[i] + off[i], words[i]};
     }
-    const char* prev = strata::env("NOSTROMA_MTP_MULTI_COPY");
+    const char* prev = nostroma::env("NOSTROMA_MTP_MULTI_COPY");
     const std::string saved = prev ? prev : "";
     for (const char* mode : {"1", "0"}) {
 #if defined(_WIN32)
-        _putenv_s("STRATA_MTP_MULTI_COPY", mode);
+        _putenv_s("NOSTROMA_MTP_MULTI_COPY", mode);
 #else
-        setenv("STRATA_MTP_MULTI_COPY", mode, 1);
+        setenv("NOSTROMA_MTP_MULTI_COPY", mode, 1);
 #endif
         for (int i = 0; i < 7; ++i) check(cudaMemsetAsync(d_out[i], 0x5a, (size_t) (words[i] + off[i]) * 4, s), "poison");
         copy_from_mapped_multi(mc, 7, s);
@@ -148,10 +148,10 @@ int test_mapped_multi(std::mt19937& rng, cudaStream_t s) {
         }
     }
 #if defined(_WIN32)
-    _putenv_s("STRATA_MTP_MULTI_COPY", prev ? saved.c_str() : "");
+    _putenv_s("NOSTROMA_MTP_MULTI_COPY", prev ? saved.c_str() : "");
 #else
-    if (prev) setenv("STRATA_MTP_MULTI_COPY", saved.c_str(), 1);
-    else unsetenv("STRATA_MTP_MULTI_COPY");
+    if (prev) setenv("NOSTROMA_MTP_MULTI_COPY", saved.c_str(), 1);
+    else unsetenv("NOSTROMA_MTP_MULTI_COPY");
 #endif
     for (int i = 0; i < 7; ++i) {
         (void) cudaFreeHost(h_src[i]);
@@ -164,7 +164,7 @@ int test_mapped_multi(std::mt19937& rng, cudaStream_t s) {
 }
 
 int test_quantize_q8_0_scaled(std::mt19937& rng, cudaStream_t s) {
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     int bad = 0;
     std::normal_distribution<float> nd(0.0f, 3.0f);
     for (const int64_t n : {2560, 10240, 25600}) {
@@ -211,7 +211,7 @@ int test_quantize_q8_0_scaled(std::mt19937& rng, cudaStream_t s) {
 }
 
 void bench_head_ops(cudaStream_t s) {
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     uint8_t* sa = dev<uint8_t>(argmax_rows_scratch_bytes(8));
     uint8_t* st = dev<uint8_t>(row_top_prob_scratch_bytes(8));
     check(cudaMemset(sa, 0, argmax_rows_scratch_bytes(8)), "memset");

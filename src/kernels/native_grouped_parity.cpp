@@ -12,8 +12,8 @@
 //
 // Random bytes are valid codes for every format here (every grid index is in range); only the fp16 block scales are
 // set, small enough that the SwiGLU outputs keep a finite fp16 q8_1 scale.
-#include "strata/kernels/iq_kernels.hpp"
-#include "strata/env.hpp"
+#include "nostroma/kernels/iq_kernels.hpp"
+#include "nostroma/env.hpp"
 
 #include <cuda_runtime.h>
 
@@ -27,7 +27,7 @@
 #include <string>
 #include <vector>
 
-namespace k = strata::kernels;
+namespace k = nostroma::kernels;
 
 namespace {
 
@@ -385,14 +385,14 @@ int main(int argc, char** argv) {
         // for a strided one; the two sum in a different order, so "bitwise equal to v1" does not hold between them there (summation
         // order only: round 0214 diagnosis, RESULTS-ENGAMD.md).  Pin the CUDA layout for both runs unless the caller chose a mode.
         cudaDeviceProp prop;
-        if (strata::env("NOSTROMA_EXP_MODE") == nullptr && cudaGetDeviceProperties(&prop, 0) == cudaSuccess &&
+        if (nostroma::env("NOSTROMA_EXP_MODE") == nullptr && cudaGetDeviceProperties(&prop, 0) == cudaSuccess &&
             std::strstr(prop.gcnArchName, "gfx1151") != nullptr) {
 #ifdef _WIN32
-            _putenv_s("STRATA_EXP_MODE", "0");
+            _putenv_s("NOSTROMA_EXP_MODE", "0");
 #else
-            setenv("STRATA_EXP_MODE", "0", 1);
+            setenv("NOSTROMA_EXP_MODE", "0", 1);
 #endif
-            std::printf("gfx1151: STRATA_EXP_MODE=0 pinned for both runs (mode 8 and the CUDA layout differ in summation order)\n");
+            std::printf("gfx1151: NOSTROMA_EXP_MODE=0 pinned for both runs (mode 8 and the CUDA layout differ in summation order)\n");
         }
     }
 #endif
@@ -401,11 +401,11 @@ int main(int argc, char** argv) {
     ck(cudaStreamCreate(&s), "stream");
     std::mt19937 rng(316);
     for (int gu : {16, 17, 18, 21, 22, 23, 29, 42, 12, 13,
-#ifdef STRATA_Q6K_EXPERTS
+#ifdef NOSTROMA_Q6K_EXPERTS
                    14,
 #endif
-                   8})        // STRATA_GU_FMTS
-        for (int dt : {20, 23, 42, 7, 8, 6}) check(gu, dt, 512, 256, s, rng);   // STRATA_D_FMTS (6 = Q5_0: UD-IQ4_XS / Q3_K_XL); IQ4_XS: n_ff % 256
+                   8})        // NOSTROMA_GU_FMTS
+        for (int dt : {20, 23, 42, 7, 8, 6}) check(gu, dt, 512, 256, s, rng);   // NOSTROMA_D_FMTS (6 = Q5_0: UD-IQ4_XS / Q3_K_XL); IQ4_XS: n_ff % 256
     check(42, 42, 2560, 640, s, rng);
     check(21, 20, 2560, 640, s, rng);                                   // a model's shapes
     // round 0214: every expert type pair of the new Unsloth Qwen3.8-Flash-Next sets at the model's 2560 x 640

@@ -29,7 +29,7 @@ const bundle = await build({
     b.onLoad({ filter: /.*/, namespace: 'test-stub' }, () => ({ contents: 'export const IconBtn = () => null; export const Btn = () => null; export const Icon = () => null;' }));
   } }],
 });
-const dir = mkdtempSync(join(tmpdir(), 'strata-crlf-'));
+const dir = mkdtempSync(join(tmpdir(), 'nostroma-crlf-'));
 const file = join(dir, 'render.cjs');
 writeFileSync(file, bundle.outputFiles[0].text);
 let renders = 0;

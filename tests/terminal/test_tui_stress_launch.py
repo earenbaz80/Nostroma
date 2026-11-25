@@ -171,7 +171,7 @@ class ModelPathWins(unittest.TestCase):
         self.gguf.write_bytes(b"x")
         self.pack = self.installed / "packs" / "q2_0"
         self.pack.mkdir(parents=True)
-        self.cfg_path = self.base / "strata-q2_0.json"
+        self.cfg_path = self.base / "nostroma-q2_0.json"
         self.cfg_path.write_text(json.dumps({"args": ["--model", str(self.gguf), "--pack", str(self.pack), "--max-context", "32768"]}), encoding="utf-8")
         self.mine = self.base / "documents"
         self.mine.mkdir()

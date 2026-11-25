@@ -4,7 +4,7 @@
 // arena while the second still holds the section (the pages must stay), and a third arena joins the live section.  After the
 // last close, a new arena with the same name starts empty (the section is gone with its last handle).
 #ifdef _WIN32
-#include "strata/core/pinned.hpp"
+#include "nostroma/core/pinned.hpp"
 
 #include <windows.h>
 
@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
     const std::vector<uint64_t> no_bounds;
     if (argc >= 3 && std::strcmp(argv[1], "child") == 0) {
         const std::string name = argv[2];
-        strata::core::PinnedArena a(kBytes, no_bounds, 0, name, kPackHash);
+        nostroma::core::PinnedArena a(kBytes, no_bounds, 0, name, kPackHash);
         if (!a.valid()) { std::fprintf(stderr, "child: cannot open: %s\n", a.note.c_str()); return 2; }
         if (a.data()[123] != 0x5a) { std::fprintf(stderr, "child: did not see the parent's byte\n"); return 3; }
         if (a.shared_state == nullptr || a.shared_state->load() != 4242u) { std::fprintf(stderr, "child: state word is not the parent's\n"); return 4; }
@@ -33,9 +33,9 @@ int main(int argc, char** argv) {
     }
 
     int fail = 0;
-    const std::string name = "win:Local\\strata-pinned-test-" + std::to_string((unsigned long long) GetCurrentProcessId());
+    const std::string name = "win:Local\\nostroma-pinned-test-" + std::to_string((unsigned long long) GetCurrentProcessId());
     {
-        auto* first = new strata::core::PinnedArena(kBytes, no_bounds, 0, name, kPackHash);
+        auto* first = new nostroma::core::PinnedArena(kBytes, no_bounds, 0, name, kPackHash);
         if (!first->valid()) {
             std::fprintf(stderr, "first section failed: %s\n", first->note.c_str());
             return 1;
@@ -45,19 +45,19 @@ int main(int argc, char** argv) {
         else if (first->shared_state->load() != 0) { std::fprintf(stderr, "a new section's state word is not 0\n"); fail = 1; }
         else first->shared_state->store(4242u);
 
-        auto* second = new strata::core::PinnedArena(kBytes, no_bounds, 0, name, kPackHash);
+        auto* second = new nostroma::core::PinnedArena(kBytes, no_bounds, 0, name, kPackHash);
         if (!second->valid()) { std::fprintf(stderr, "second section failed: %s\n", second->note.c_str()); fail = 1; }
         else {
             if (second->data()[123] != 0x5a) { std::fprintf(stderr, "same name did not expose the same bytes\n"); fail = 1; }
             if (second->shared_state == nullptr || second->shared_state->load() != 4242u) { std::fprintf(stderr, "state word not shared\n"); fail = 1; }
         }
         {
-            strata::core::PinnedArena wrong_pack(kBytes, no_bounds, 0, name, kPackHash + 1);
+            nostroma::core::PinnedArena wrong_pack(kBytes, no_bounds, 0, name, kPackHash + 1);
             if (wrong_pack.valid() || wrong_pack.note.find("pack hash") == std::string::npos) {
                 std::fprintf(stderr, "pack mismatch was not refused: %s\n", wrong_pack.note.c_str());
                 fail = 1;
             }
-            strata::core::PinnedArena wrong_size(kBytes * 2, no_bounds, 0, name, kPackHash);
+            nostroma::core::PinnedArena wrong_size(kBytes * 2, no_bounds, 0, name, kPackHash);
             if (wrong_size.valid()) { std::fprintf(stderr, "a bigger size was not refused\n"); fail = 1; }
         }
 
@@ -87,13 +87,13 @@ int main(int argc, char** argv) {
         delete first;                           // the creator is gone; the second still holds the section
         if (second != nullptr && second->valid()) {
             if (second->data()[123] != 0x5a || second->data()[456] != 0xa5) { std::fprintf(stderr, "bytes lost when the first arena closed\n"); fail = 1; }
-            strata::core::PinnedArena third(kBytes, no_bounds, 0, name, kPackHash);
+            nostroma::core::PinnedArena third(kBytes, no_bounds, 0, name, kPackHash);
             if (!third.valid() || third.data()[123] != 0x5a) { std::fprintf(stderr, "a late arena did not join the live section\n"); fail = 1; }
         }
         delete second;
     }
     {
-        strata::core::PinnedArena again(kBytes, no_bounds, 0, name, kPackHash);   // (every handle was closed: a new, empty section)
+        nostroma::core::PinnedArena again(kBytes, no_bounds, 0, name, kPackHash);   // (every handle was closed: a new, empty section)
         if (!again.valid() || again.data()[123] != 0 || again.shared_state->load() != 0) {
             std::fprintf(stderr, "the section survived its last handle\n");
             fail = 1;

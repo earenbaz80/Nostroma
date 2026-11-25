@@ -17,12 +17,12 @@ const delay = ms => new Promise(r => setTimeout(r, ms));
 async function freePort() { const s = net.createServer(); await new Promise(r => s.listen(0, '127.0.0.1', r)); const p = s.address().port; await new Promise(r => s.close(r)); return p; }
 
 async function startHost() {
-  const home = await mkdtemp(join(tmpdir(), 'strata-host-badhost-'));
+  const home = await mkdtemp(join(tmpdir(), 'nostroma-host-badhost-'));
   const port = await freePort(), sharePort = await freePort();
   const env = {
-    ...process.env, STRATA_HOME: home, STRATA_MODELS_DIR: join(home, 'models'), STRATA_PORT: String(port),
-    STRATA_SHARE_PORT: String(sharePort), STRATA_TUNNEL_PORT: String(await freePort()), STRATA_REAL_ENGINE: '1',
-    STRATA_SETTINGS_FILE: join(home, 'app-settings.json'), STRATA_COMPONENTS_DIR: join(home, 'components'),
+    ...process.env, NOSTROMA_HOME: home, NOSTROMA_MODELS_DIR: join(home, 'models'), NOSTROMA_PORT: String(port),
+    NOSTROMA_SHARE_PORT: String(sharePort), NOSTROMA_TUNNEL_PORT: String(await freePort()), NOSTROMA_REAL_ENGINE: '1',
+    NOSTROMA_SETTINGS_FILE: join(home, 'app-settings.json'), NOSTROMA_COMPONENTS_DIR: join(home, 'components'),
     LOCALAPPDATA: join(home, 'Local'), APPDATA: join(home, 'Roaming'), XDG_DATA_HOME: join(home, 'xdg-data'),
     XDG_STATE_HOME: join(home, 'xdg-state'), XDG_CONFIG_HOME: join(home, 'xdg-config'),
   };

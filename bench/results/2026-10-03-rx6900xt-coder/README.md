@@ -11,7 +11,7 @@ Measured on 2026-10-03 (Asia/Tokyo), using the real RX 6900 XT through HIP. Code
 - 128 GiB installed RAM (127.9 GiB visible), eight 16 GiB DDR4 modules configured at 3200 MT/s.
 - Windows 11 Pro, build 10.0.26300; AMD display driver 32.0.21045.5002.
 - Model storage: C: NVMe SSD, CSSD-M2B2TPG3VNF.
-- Strata v0.1.38, upstream commit `99f3dbd0b21d1401b3769e0c0d963913607f380b`.
+- Nostroma v0.1.38, upstream commit `99f3dbd0b21d1401b3769e0c0d963913607f380b`.
 - Official Windows HIP release binary; bundled ROCm `10.2.0a20260930`, hipBLASLt `100500`.
 - Normal interactive desktop. Unrelated applications were not stopped. GPU power limits and driver settings were not changed.
 
@@ -25,9 +25,9 @@ Source: <https://github.com/earenbaz80/Nostroma/releases/tag/v0.1.38>
 .\.venv\Scripts\python.exe setup.py --yes --family coder --model IQ1_M --backend hip --context 65536 --vision no --host 127.0.0.1 --no-start
 ```
 
-Application: `C:\Dev\Strata`; model data: `C:\Dev\Strata-data`. Both GGUF files' complete SHA-256 hashes and byte counts matched Hugging Face's pinned LFS metadata; see `model-integrity.json`. The second shard is shared with the original model.
+Application: `C:\Dev\Nostroma`; model data: `C:\Dev\Nostroma-data`. Both GGUF files' complete SHA-256 hashes and byte counts matched Hugging Face's pinned LFS metadata; see `model-integrity.json`. The second shard is shared with the original model.
 
-At the time of this sweep, the selected configuration was saved in `C:\Dev\Strata\strata-coder-iq1_m.json` and starts with `run-coder-iq1_m.bat`. Its local-only endpoint is **http://127.0.0.1:8081**, with OpenAI base URL **http://127.0.0.1:8081/v1**. `selected-config.json` and `selected-launcher.txt` preserve the installed settings. The original setup configuration is preserved as `setup-default-config.json`.
+At the time of this sweep, the selected configuration was saved in `C:\Dev\Nostroma\nostroma-coder-iq1_m.json` and starts with `run-coder-iq1_m.bat`. Its local-only endpoint is **http://127.0.0.1:8081**, with OpenAI base URL **http://127.0.0.1:8081/v1**. `selected-config.json` and `selected-launcher.txt` preserve the installed settings. The original setup configuration is preserved as `setup-default-config.json`.
 
 Coder source: `ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF`, pinned revision `5348543e0147355ac9cbcb031184a3546350988e`. Coder retains 256 experts per layer; its IQ1_M label does not mean every tensor is uniformly one bit. Setup also obtains and prepares the original checkpoint's MTP draft tensors.
 
@@ -49,7 +49,7 @@ The token-count endpoint uses the Anthropic renderer, whose count here was 40 to
 Example, with the local server already ready:
 
 ```powershell
-.\.venv\Scripts\python.exe bench/results/2026-10-03-rx6900xt-coder/benchmark.py --cases short,4k,32k --runs 3 --out bench/results/2026-10-03-rx6900xt-coder/default --log strata-coder-iq1_m.log
+.\.venv\Scripts\python.exe bench/results/2026-10-03-rx6900xt-coder/benchmark.py --cases short,4k,32k --runs 3 --out bench/results/2026-10-03-rx6900xt-coder/default --log nostroma-coder-iq1_m.log
 ```
 
 ## Results
@@ -80,7 +80,7 @@ One additional continuation immediately after the last 32K run had **32,962 inpu
 
 ### Memory and correctness
 
-During default short inference, a snapshot showed 25.52 GiB engine working set, 71.90 GiB total system RAM in use, and 15.61 GiB dedicated GPU memory in use across the desktop. These are snapshots, not peaks. The 25.48 GiB of shared GPU memory includes host-mapped model memory and does not establish paging by itself. Windows HIP telemetry did not expose temperature or power through Strata, so neither is claimed.
+During default short inference, a snapshot showed 25.52 GiB engine working set, 71.90 GiB total system RAM in use, and 15.61 GiB dedicated GPU memory in use across the desktop. These are snapshots, not peaks. The 25.48 GiB of shared GPU memory includes host-mapped model memory and does not establish paging by itself. Windows HIP telemetry did not expose temperature or power through Nostroma, so neither is claimed.
 
 A separate generated `clamp_score` function passed all **2,001 integer inputs from -1,000 through 1,000** after its syntax was checked against a restricted allowlist. The full request, code, and result are in `coding-smoke-check.json`, reproduced by `check_code.py --url http://127.0.0.1:8081`. This is a simple operational check, not a general coding-quality score. No measured request failed.
 
@@ -89,7 +89,7 @@ A separate generated `clamp_score` function passed all **2,001 integer inputs fr
 To repeat this historical sweep, use the official release binary with the saved `selected-config.json` (31 workers), updating local paths as needed. The current local launcher uses the later group fix with automatic workers; see the follow-up report. With the historical configuration loaded, run:
 
 ```powershell
-.\.venv\Scripts\python.exe bench/results/2026-10-03-rx6900xt-coder/benchmark.py --url http://127.0.0.1:8081 --cases short,4k,32k --runs 3 --out bench/results/2026-10-03-rx6900xt-coder/repeat --log strata-coder-iq1_m.log
+.\.venv\Scripts\python.exe bench/results/2026-10-03-rx6900xt-coder/benchmark.py --url http://127.0.0.1:8081 --cases short,4k,32k --runs 3 --out bench/results/2026-10-03-rx6900xt-coder/repeat --log nostroma-coder-iq1_m.log
 ```
 
 This runs all cases in one new session. The original measured 31-worker short/long sessions are kept separately as described above.

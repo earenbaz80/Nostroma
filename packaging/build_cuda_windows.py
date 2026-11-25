@@ -2,24 +2,24 @@
 """Build the Windows NVIDIA engine package (the cuda13 and cuda12 engine zips of the release feed).
 
     py -3 packaging\\build_cuda_windows.py cuda13     CUDA 13.0: sm_75 / 86 / 89 / 120 machine code + compute_120 PTX
-    py -3 packaging\\build_cuda_windows.py cuda12     CUDA 12.9: sm_60 / 61 / 70 / 75 / 80 / 86 / 89 + compute_89 PTX, -DSTRATA_EXPERIMENTAL_SM60=ON
+    py -3 packaging\\build_cuda_windows.py cuda12     CUDA 12.9: sm_60 / 61 / 70 / 75 / 80 / 86 / 89 + compute_89 PTX, -DNOSTROMA_EXPERIMENTAL_SM60=ON
 
 Run it on a Windows PC with Visual Studio 2022 Build Tools (C++ workload), CMake + Ninja, Python 3.10+ and the CUDA toolkit of the variant
 (CUDA_PATH_V13_0 / CUDA_PATH_V12_9 as its installer sets them, or CUDA_PATH pointing at it). ggml and the picture reader's sources are the
 vendored third_party trees: nothing is downloaded. The package lands in OUT (default <repo>\\out-engine-win-<variant>). Nothing is uploaded.
 
-The steps are the release's: the engine configure line below, `strata` (+ `strata_kq` when the build tree has it), the picture reader for the
-same architectures (packaging\\build_vision_windows.bat), BUILD.json, then packaging/package_engine.py (which copies the CUDA DLLs strata.exe
+The steps are the release's: the engine configure line below, `nostroma` (+ `nostroma_kq` when the build tree has it), the picture reader for the
+same architectures (packaging\\build_vision_windows.bat), BUILD.json, then packaging/package_engine.py (which copies the CUDA DLLs nostroma.exe
 imports from the toolkit), --verify and binary_deps.py.
 
 Settings (environment, all optional):
-  STRATA_CMAKE_EXTRA  more engine configure arguments, e.g. -DSTRATA_MMQ=ON: the old engine with llama.cpp's MMQ and strata_kq.dll (A/B;
-                      the configure line names -DSTRATA_MMQ=OFF, and this comes after it)
+  NOSTROMA_CMAKE_EXTRA  more engine configure arguments, e.g. -DNOSTROMA_MMQ=ON: the old engine with llama.cpp's MMQ and nostroma_kq.dll (A/B;
+                      the configure line names -DNOSTROMA_MMQ=OFF, and this comes after it)
   BUILD / BUILD_VISION_DIR / OUT   the engine build folder, the reader's build folder, the package folder
   ARCHS               the architecture list instead of the variant's (semicolons, e.g. 120; the last one also gets PTX), as in build_cuda_linux.sh
   BUILD_JOBS          compile jobs (default 6: the CUDA compiler takes several GB of RAM per job)
   COMMIT              the source commit for the build id (default: git rev-parse HEAD; required in a tree without .git)
-  STRATA_GGML_DIR     a llama.cpp checkout to take ggml (and the reader's sources) from instead (an override, kept for two releases)
+  NOSTROMA_GGML_DIR     a llama.cpp checkout to take ggml (and the reader's sources) from instead (an override, kept for two releases)
 """
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ REPO = Path(__file__).resolve().parents[1]
 VARIANTS = {
     # variant: (CUDA version, archs, min driver, extra configure arguments)
     "cuda13": ("13.0", (75, 86, 89, 120), "580.65", []),
-    "cuda12": ("12.9", (60, 61, 70, 75, 80, 86, 89), "576.02", ["-DSTRATA_EXPERIMENTAL_SM60=ON"]),
+    "cuda12": ("12.9", (60, 61, 70, 75, 80, 86, 89), "576.02", ["-DNOSTROMA_EXPERIMENTAL_SM60=ON"]),
 }
 VCVARS = [Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / r"Microsoft Visual Studio\2022\BuildTools",
           Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / r"Microsoft Visual Studio\2022\Community",
@@ -67,28 +67,28 @@ def configure_args(src: Path, build: Path, variant: str, cuda: Path, extra: list
                    archs: tuple[int, ...] | None = None) -> list[str]:
     """The release's engine configure line (CMake defaults for everything it does not name)."""
     cu = cuda.as_posix()
-    args = ["-G", "Ninja", "-S", str(src), "-B", str(build), "-DCMAKE_BUILD_TYPE=Release", "-DSTRATA_ENABLE_CUDA=ON",
-            "-DSTRATA_BUILD_TESTS=OFF", "-DSTRATA_NATIVE_EXPERTS=ON", "-DSTRATA_PORTABLE=ON", *VARIANTS[variant][3],
-            "-DSTRATA_MMQ=OFF",   # without llama.cpp's MMQ, also in a build folder configured before (its cache says ON)
+    args = ["-G", "Ninja", "-S", str(src), "-B", str(build), "-DCMAKE_BUILD_TYPE=Release", "-DNOSTROMA_ENABLE_CUDA=ON",
+            "-DNOSTROMA_BUILD_TESTS=OFF", "-DNOSTROMA_NATIVE_EXPERTS=ON", "-DNOSTROMA_PORTABLE=ON", *VARIANTS[variant][3],
+            "-DNOSTROMA_MMQ=OFF",   # without llama.cpp's MMQ, also in a build folder configured before (its cache says ON)
             "-DCMAKE_CUDA_ARCHITECTURES=" + cuda_arch_list(archs or VARIANTS[variant][1]), "-DCMAKE_CUDA_COMPILER=%s/bin/nvcc.exe" % cu,
             "-DCUDAToolkit_ROOT=" + cu]
     if ggml_dir:
-        args.append("-DSTRATA_GGML_DIR=" + ggml_dir.replace("\\", "/"))
+        args.append("-DNOSTROMA_GGML_DIR=" + ggml_dir.replace("\\", "/"))
     return args + extra
 
 
 def engine_targets(cmake: str, build: Path, env=None) -> list[str]:
-    """['strata', 'strata_kq'] when the build tree has the strata_kq target (a build with llama.cpp's MMQ), ['strata'] when ninja names it
-    unknown (STRATA_MMQ=OFF, the default). The tree is asked with a dry run, as packaging/engine_targets.sh does; any other failure stops the build."""
-    r = subprocess.run([cmake, "--build", str(build), "--target", "strata_kq", "--", "-n"], capture_output=True, text=True, env=env,
+    """['nostroma', 'nostroma_kq'] when the build tree has the nostroma_kq target (a build with llama.cpp's MMQ), ['nostroma'] when ninja names it
+    unknown (NOSTROMA_MMQ=OFF, the default). The tree is asked with a dry run, as packaging/engine_targets.sh does; any other failure stops the build."""
+    r = subprocess.run([cmake, "--build", str(build), "--target", "nostroma_kq", "--", "-n"], capture_output=True, text=True, env=env,
                        errors="replace")
     if r.returncode == 0:
-        return ["strata", "strata_kq"]
+        return ["nostroma", "nostroma_kq"]
     text = (r.stdout or "") + (r.stderr or "")
-    if "unknown target 'strata_kq'" in text or re.search(r"No rule to make target.*strata_kq", text):
-        return ["strata"]
+    if "unknown target 'nostroma_kq'" in text or re.search(r"No rule to make target.*nostroma_kq", text):
+        return ["nostroma"]
     sys.stderr.write(text + "\n")
-    fail("cannot tell whether the build tree %s has the strata_kq target" % build)
+    fail("cannot tell whether the build tree %s has the nostroma_kq target" % build)
     return []
 
 
@@ -162,25 +162,25 @@ def main(argv: list[str]) -> int:
     vision_dir = Path(os.environ.get("BUILD_VISION_DIR") or src / ("build-vision-%s-win" % variant))
     out = Path(os.environ.get("OUT") or src / ("out-engine-win-" + variant))
     jobs = os.environ.get("BUILD_JOBS") or "6"
-    extra = (os.environ.get("STRATA_CMAKE_EXTRA") or "").split()
+    extra = (os.environ.get("NOSTROMA_CMAKE_EXTRA") or "").split()
     version, commit = project_version(src), source_commit(src)
     cuda = find_cuda(variant)
     env = msvc_env()
-    env["CUDA_PATH"] = str(cuda)                         # package_engine.py copies the DLLs strata.exe imports from here
+    env["CUDA_PATH"] = str(cuda)                         # package_engine.py copies the DLLs nostroma.exe imports from here
     env["PATH"] = str(cuda / "bin") + os.pathsep + env.get("PATH", "")
     cmake = shutil.which("cmake", path=env["PATH"]) or fail("cmake not found")
 
-    run([cmake, *configure_args(src, build, variant, cuda, extra, os.environ.get("STRATA_GGML_DIR", ""), archs)], env)
+    run([cmake, *configure_args(src, build, variant, cuda, extra, os.environ.get("NOSTROMA_GGML_DIR", ""), archs)], env)
     targets = engine_targets(cmake, build, env)
     print("engine targets: " + " ".join(targets), flush=True)
     run([cmake, "--build", str(build), "-j", jobs, "--target", *targets], env)
 
-    stage = Path(tempfile.mkdtemp(prefix="strata-engine-stage-"))
+    stage = Path(tempfile.mkdtemp(prefix="nostroma-engine-stage-"))
     try:
-        for name in ("strata.exe", "strata_kq.dll"):
+        for name in ("nostroma.exe", "nostroma_kq.dll"):
             if (build / name).is_file():
                 shutil.copy2(build / name, stage / name)
-            elif name in targets or name == "strata.exe":
+            elif name in targets or name == "nostroma.exe":
                 fail("the build made no %s" % name)
         (stage / "BUILD.json").write_text(json.dumps({"version": version, "source": "packaging/build_cuda_windows.py", "commit": commit[:12],
                                                       "archs": list(archs), "ptx": True, "cuda": cu, "vision": "gpu-cuda" + cu.split(".")[0],
@@ -192,7 +192,7 @@ def main(argv: list[str]) -> int:
         cmd = [py, str(src / "packaging" / "package_engine.py"), "--src", str(stage), "--backend", "cuda", "--version", version, "--out", str(out),
                *[x for a in archs for x in ("--arch", "sm_%d" % a)], "--arch", "compute_%d" % archs[-1], "--min-driver", "nvidia=" + mindriver,
                "--variant", variant, "--platform", "windows-x86_64", "--build-id", "%s+cuda%s" % (commit[:12], cu),
-               "--include", "strata-vision.exe", "--include", "strata_kq.dll"]
+               "--include", "nostroma-vision.exe", "--include", "nostroma_kq.dll"]
         run(cmd, env)
     finally:
         shutil.rmtree(stage, ignore_errors=True)

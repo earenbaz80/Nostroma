@@ -13,15 +13,15 @@
 //   4. a one-slot budget has no room for root and leaf, so the pin is off and the oldest leaves (the
 //      newest point stays, as before);
 //   5. the policy is pure: the same stamps, the same victim.
-#include "strata/program/conv_cache.hpp"
+#include "nostroma/program/conv_cache.hpp"
 
 #include <cstdint>
 #include <cstdio>
 #include <vector>
 
-using strata::program::conv_cache::eviction_victim;
-using strata::program::conv_cache::restore_fits;
-using strata::program::conv_cache::spread_victim;
+using nostroma::program::conv_cache::eviction_victim;
+using nostroma::program::conv_cache::restore_fits;
+using nostroma::program::conv_cache::spread_victim;
 
 namespace {
 int g_fail = 0;
@@ -134,7 +134,7 @@ int main() {
         check(eviction_victim(s4.data(), s4.size(), 1, nullptr, all) == 0, "a one-slot budget keeps no pin: the oldest leaves");
     }
     {   // #2409: a restore is refused only for a card that must create its copy stream and has no room for it
-        constexpr uint64_t need = strata::program::conv_cache::kRestoreFirstUseMib << 20;
+        constexpr uint64_t need = nostroma::program::conv_cache::kRestoreFirstUseMib << 20;
         const uint64_t loaded[] = {300ull << 20, 104ull << 20};         // a loaded card: far under --vram-reserve-mib
         const uint8_t ready[] = {1, 1};
         check(restore_fits(loaded, ready, 2, need), "cards with their stream already: any amount free admits (the #2409 review's case)");

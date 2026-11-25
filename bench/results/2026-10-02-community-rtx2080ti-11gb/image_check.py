@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Image question with an exact expected answer, through a running Strata server with the vision encoder.
+"""Image question with an exact expected answer, through a running Nostroma server with the vision encoder.
 
 Each run draws a new PNG (so the server's cache of encoded images cannot serve it): a code made of letters and digits
 in large type, a number of red circles and a number of blue squares, chosen per run. The model is asked for all
 three in a fixed format; the answer counts as correct only if all three match exactly. Streaming, greedy, reasoning
-off. Client time to the first token includes the image encode (strata-vision, which runs on the CPU in this
+off. Client time to the first token includes the image encode (nostroma-vision, which runs on the CPU in this
 configuration and takes its turn in the server's request FIFO) and the prompt read; the engine's prompt_ms covers
 only the read of the prompt with the image embeddings, so client TTFT minus prompt_ms approximates the encode time.
 
@@ -78,7 +78,7 @@ def main():
         png, code, circles, squares = draw(rnd)
         (a.out / f"image-run{run}.png").write_bytes(png)
         url = "data:image/png;base64," + base64.b64encode(png).decode()
-        req = {"model": "strata", "temperature": 0, "reasoning_effort": "none", "max_tokens": 40, "stream": True,
+        req = {"model": "nostroma", "temperature": 0, "reasoning_effort": "none", "max_tokens": 40, "stream": True,
                "stream_options": {"include_usage": True},
                "messages": [{"role": "user", "content": [{"type": "image_url", "image_url": {"url": url}},
                                                          {"type": "text", "text": QUESTION}]}]}

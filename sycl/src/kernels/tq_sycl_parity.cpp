@@ -14,12 +14,12 @@
 // integer and float operations (the int8 codebook, the q8_1 blocks and the h the device produced are read back, the
 // lane-strided sums and the xor tree are replayed); the prompt-path dequantizers (iq_dequant_f32 / _f16) against the
 // fp16 codebook, bit for bit.  Exit 0 only if all hold.
-#include "strata/artifact/gguf_reader.hpp"
-#include "strata/kernels/cpu/native_expert.hpp"
-#include "strata/kernels/cpu/expert_layout.hpp"
-#include "strata/kernels/cpu/hadamard.hpp"
-#include "strata/kernels/cpu/tq_cpu.hpp"
-#include "strata/kernels/iq_kernels.hpp"
+#include "nostroma/artifact/gguf_reader.hpp"
+#include "nostroma/kernels/cpu/native_expert.hpp"
+#include "nostroma/kernels/cpu/expert_layout.hpp"
+#include "nostroma/kernels/cpu/hadamard.hpp"
+#include "nostroma/kernels/cpu/tq_cpu.hpp"
+#include "nostroma/kernels/iq_kernels.hpp"
 #include "ggml-common-tq.h"
 #include "../../../src/kernels/cpu/tq_states.hpp"
 #include "ggml.h"
@@ -41,11 +41,11 @@
 #include "../../../src/kernels/cuda/tq_lut_i8.cuh"
 #undef __device__
 
-namespace cpu = strata::kernels::cpu;
+namespace cpu = nostroma::kernels::cpu;
 namespace {
 constexpr int NT = 3;
 constexpr int64_t H = 2560, FF = 640;
-constexpr int LN = 8;   // STRATA_EXPERT_LANES
+constexpr int LN = 8;   // NOSTROMA_EXPERT_LANES
 
 double rel(const std::vector<float>& a, const std::vector<float>& b) {
     double n = 0, d = 0;
@@ -174,12 +174,12 @@ int check_layer(const cpu::NativeFmt& f, const std::vector<uint8_t>& blob, int s
         cpu::native_down_rows(f, blob.data(), hp, NT, op, 0, (int) H);
     }
     // (c) the GPU: one group holding the NT entries
-    auto L = strata::kernels::native_expert_layout(f.gu_type, f.d_type, H, FF);
-    if (f.had_d) { L.had_block = f.had_block; L.d_signs = strata::kernels::hadamard_device_signs(f.d_signs, (int) FF); }
+    auto L = nostroma::kernels::native_expert_layout(f.gu_type, f.d_type, H, FF);
+    if (f.had_d) { L.had_block = f.had_block; L.d_signs = nostroma::kernels::hadamard_device_signs(f.d_signs, (int) FF); }
     uint8_t* dblob = dmalloc<uint8_t>(blob.size());
     float* dx = dmalloc<float>(x.size());
     uint8_t* dxq = dmalloc<uint8_t>((size_t) NT * H / 32 * 36);
-    const size_t scr_bytes = strata::kernels::native_expert_scratch_bytes(NT, FF);
+    const size_t scr_bytes = nostroma::kernels::native_expert_scratch_bytes(NT, FF);
     uint8_t* dscr = dmalloc<uint8_t>(scr_bytes);
     float* dout = dmalloc<float>((size_t) NT * H);
     unsigned long long* dptr = dmalloc<unsigned long long>(1);
@@ -194,7 +194,7 @@ int check_layer(const cpu::NativeFmt& f, const std::vector<uint8_t>& blob, int s
     to_dev(ddst, idx, NT * 4);
     to_dev(dtok, idx, NT * 4);
     if (f.had_gu) {
-        strata::kernels::hadamard_rows(dx, dx, NT, H, f.had_block, strata::kernels::hadamard_device_signs(f.gu_signs, (int) H), s);
+        nostroma::kernels::hadamard_rows(dx, dx, NT, H, f.had_block, nostroma::kernels::hadamard_device_signs(f.gu_signs, (int) H), s);
         std::vector<float> gx(x.size());
         s->wait();
         from_dev(gx.data(), dx, gx.size() * 4);
@@ -205,7 +205,7 @@ int check_layer(const cpu::NativeFmt& f, const std::vector<uint8_t>& blob, int s
         for (size_t i = 0; i < x.size(); ++i) xh[i] = ggml_fp32_to_fp16(x[i]);
         uint16_t* dxh = dmalloc<uint16_t>(xh.size());
         to_dev(dxh, xh.data(), xh.size() * 2);
-        strata::kernels::hadamard_rows_f16(dxh, NT, H, f.had_block, strata::kernels::hadamard_device_signs(f.gu_signs, (int) H), s);
+        nostroma::kernels::hadamard_rows_f16(dxh, NT, H, f.had_block, nostroma::kernels::hadamard_device_signs(f.gu_signs, (int) H), s);
         s->wait();
         from_dev(xh_out.data(), dxh, xh.size() * 2);
         sycl::free(dxh, *s);
@@ -214,8 +214,8 @@ int check_layer(const cpu::NativeFmt& f, const std::vector<uint8_t>& blob, int s
         std::printf("          gpu hadamard_rows_f16 vs cpu float rotation: rel %.2e\n", rel(xf, xr));
         if (!(rel(xf, xr) < 2e-3)) ++failures;
     }
-    strata::kernels::quantize_q8_1_rows(dx, NT, H, dxq, s);
-    strata::kernels::native_expert_grouped(L, dptr, dstart, dn, ddst, dtok, 1, NT, dxq, dscr, dout, s);
+    nostroma::kernels::quantize_q8_1_rows(dx, NT, H, dxq, s);
+    nostroma::kernels::native_expert_grouped(L, dptr, dstart, dn, ddst, dtok, 1, NT, dxq, dscr, dout, s);
     s->wait();
     from_dev(got_g.data(), dout, got_g.size() * 4);
     {   // bit-for-bit replay of the lane kernels
@@ -258,8 +258,8 @@ int check_layer(const cpu::NativeFmt& f, const std::vector<uint8_t>& blob, int s
         const struct { const uint8_t* src; int type; const std::vector<float>* want; } mats[3] = {
             {dblob, f.gu_type, &G}, {dblob + f.up_off, f.gu_type, &U}, {dblob + f.down_off, f.d_type, &D}};
         for (const auto& m : mats) {
-            strata::kernels::iq_dequant_f32(m.type, m.src, FF * H, dq, s);
-            strata::kernels::iq_dequant_f16(m.type, m.src, FF * H, dh, s);
+            nostroma::kernels::iq_dequant_f32(m.type, m.src, FF * H, dq, s);
+            nostroma::kernels::iq_dequant_f16(m.type, m.src, FF * H, dh, s);
             s->wait();
             from_dev(got_dq.data(), dq, got_dq.size() * 4);
             from_dev(got_h.data(), dh, got_h.size() * 2);
@@ -310,10 +310,10 @@ int type_of(const std::string& s) { return std::atoi(s.c_str()); }
 // the grouped expert kernels on `groups` distinct experts held in VRAM (more bytes than the card's L2), `epg` entries each:
 // microseconds per call and per expert, and the weight bytes read per second
 int bench(int gu, int dn, int groups, int epg, int iters, bool had, int phase) {
-    strata::kernels::native_expert_set_mode(7, phase);   // 0: all, 1: gate/up + SwiGLU + quantize, 2: down only
+    nostroma::kernels::native_expert_set_mode(7, phase);   // 0: all, 1: gate/up + SwiGLU + quantize, 2: down only
     cpu::NativeFmt f;
     std::string err;
-    if (!cpu::native_fmt(gu, dn, H, FF, f, err) || !strata::kernels::native_expert_supported(gu, dn, H, FF)) {
+    if (!cpu::native_fmt(gu, dn, H, FF, f, err) || !nostroma::kernels::native_expert_supported(gu, dn, H, FF)) {
         std::printf("%d/%d: not a pair the GPU expert kernels take\n", gu, dn);
         return 1;
     }
@@ -336,7 +336,7 @@ int bench(int gu, int dn, int groups, int epg, int iters, bool had, int phase) {
     float* dx = dmalloc<float>(x.size());
     to_dev(dx, x.data(), x.size() * 4);
     uint8_t* dxq = dmalloc<uint8_t>((size_t) ntok * H / 32 * 36);
-    uint8_t* dscr = dmalloc<uint8_t>(strata::kernels::native_expert_scratch_bytes(ent, FF));
+    uint8_t* dscr = dmalloc<uint8_t>(nostroma::kernels::native_expert_scratch_bytes(ent, FF));
     float* dout = dmalloc<float>((size_t) ent * H);
     std::vector<unsigned long long> ptr(groups);
     std::vector<int32_t> st(groups + 1), dst(ent), tok(ent);
@@ -350,15 +350,15 @@ int bench(int gu, int dn, int groups, int epg, int iters, bool had, int phase) {
     to_dev(dn_, &groups, 4);
     to_dev(ddst, dst.data(), ent * 4);
     to_dev(dtok, tok.data(), ent * 4);
-    auto L = strata::kernels::native_expert_layout(gu, dn, H, FF);
-    if (had) { L.had_block = f.had_block; L.d_signs = strata::kernels::hadamard_device_signs(f.d_signs, (int) FF); }
-    strata::kernels::quantize_q8_1_rows(dx, ntok, H, dxq, s);
-    for (int i = 0; i < 3; ++i) strata::kernels::native_expert_grouped(L, dptr, dstart, dn_, ddst, dtok, groups, ent, dxq, dscr, dout, s);
+    auto L = nostroma::kernels::native_expert_layout(gu, dn, H, FF);
+    if (had) { L.had_block = f.had_block; L.d_signs = nostroma::kernels::hadamard_device_signs(f.d_signs, (int) FF); }
+    nostroma::kernels::quantize_q8_1_rows(dx, ntok, H, dxq, s);
+    for (int i = 0; i < 3; ++i) nostroma::kernels::native_expert_grouped(L, dptr, dstart, dn_, ddst, dtok, groups, ent, dxq, dscr, dout, s);
     s->wait();
     std::vector<double> us;
     for (int i = 0; i < iters; ++i) {
         const auto t0 = std::chrono::steady_clock::now();
-        strata::kernels::native_expert_grouped(L, dptr, dstart, dn_, ddst, dtok, groups, ent, dxq, dscr, dout, s);
+        nostroma::kernels::native_expert_grouped(L, dptr, dstart, dn_, ddst, dtok, groups, ent, dxq, dscr, dout, s);
         s->wait();
         us.push_back(std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - t0).count());
     }
@@ -395,7 +395,7 @@ int main(int argc, char** argv) {
             cpu::NativeFmt f;
             std::string err;
             if (slash == std::string::npos || !cpu::native_fmt(gu, dn, H, FF, f, err) ||
-                !strata::kernels::native_expert_supported(gu, dn, H, FF)) {
+                !nostroma::kernels::native_expert_supported(gu, dn, H, FF)) {
                 std::printf("%s: %s\n", arg.c_str(), err.empty() ? "not a pair the GPU expert kernels take" : err.c_str());
                 ++failures;
                 continue;
@@ -415,13 +415,13 @@ int main(int argc, char** argv) {
     std::string err;
     if (!cpu::expert_layout_load(argv[1], 48, 512, err)) { std::printf("expert_layout_load: %s\n", err.c_str()); return 1; }
     const auto& lay = cpu::expert_layout();
-    const strata::GgufModel model(strata::gguf_split_paths(argv[2]));
+    const nostroma::GgufModel model(nostroma::gguf_split_paths(argv[2]));
     std::vector<int> layers;
     for (int i = 3; i < argc; ++i) layers.push_back(std::atoi(argv[i]));
     if (layers.empty()) layers = {0, 1, 2, 3, 20, 47};
     int failures = 0;
     for (int l : layers) {
-        const strata::TensorInfo* t[3] = {};
+        const nostroma::TensorInfo* t[3] = {};
         const uint8_t* data[3] = {};
         const char* roles[3] = {"gate", "up", "down"};
         for (int r = 0; r < 3; ++r) {

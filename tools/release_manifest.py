@@ -48,10 +48,10 @@ LINES = [
     ("packaging/UPDATES.md", r"pack-control <control folder> --version " + V, ["control_version"]),
     ("packaging/UPDATES.md", r"VERSION file\s*\n\s*# \(" + V + r"\)", ["control_version"]),
     ("packaging/UPDATES.md", r'"version": "' + V + r'", "platform": "linux-x86_64", "backend": "cuda"', ["engine_version"]),
-    ("packaging/UPDATES.md", r"engine/strata-engine-" + V + r"-linux-x86_64-cuda-cuda13", ["engine_version"]),
+    ("packaging/UPDATES.md", r"engine/nostroma-engine-" + V + r"-linux-x86_64-cuda-cuda13", ["engine_version"]),
     ("docs/MEDIA_KIT.md", r"for Nostroma " + V + r"\.", ["product_version"]),
     ("packaging/README.md", r"\(app and Terminal " + V + r", Control " + V + r", engines " + V + r"\)", ["product_version", "control_version", "engine_version"]),
-    ("packaging/ENGINE-COMPONENT.md", r'"name": "strata-engine", "version": "' + V + '"', ["engine_version"]),
+    ("packaging/ENGINE-COMPONENT.md", r'"name": "nostroma-engine", "version": "' + V + '"', ["engine_version"]),
     ("packaging/ENGINE-COMPONENT.md", r"package_engine.py --src <build folder> --backend cuda --version " + V, ["engine_version"]),
 ]
 
@@ -73,7 +73,7 @@ def first(rel_path, pattern):
 
 def code_versions():
     """Where the versions come from in the source tree: name -> (value found, manifest key)."""
-    cmake = first("CMakeLists.txt", r"^project\(strata VERSION ([0-9.]+) ")
+    cmake = first("CMakeLists.txt", r"^project\(nostroma VERSION ([0-9.]+) ")
     return {
         # the Terminal says the product version, or (a Control-only hotfix such as 0.2.13.1) the manifest's optional terminal_version
         "nostroma_cli/__init__.py": (first("nostroma_cli/__init__.py", r'^PRODUCT_VERSION = "([^"]+)"'), "terminal_version"),
@@ -141,7 +141,7 @@ def check(manifest):
             # in the asset list (the packages the feed offers).
             carried = bool(manifest.get("engines_from")) and manifest["engines_from"] != manifest["tag"] \
                 and _vkey(manifest["control_version"]) > _vkey(want) \
-                and any(a.startswith("strata-engine-%s-" % want) for a in manifest["assets"])
+                and any(a.startswith("nostroma-engine-%s-" % want) for a in manifest["assets"])
             if found != manifest["control_version"] or not (found == want or found.startswith(want + ".") or carried):
                 problems.append("%s says %s, docs/data/release.json %s is %s (control_version %s)" % (where, found, key, want, manifest["control_version"]))
         elif found != want:

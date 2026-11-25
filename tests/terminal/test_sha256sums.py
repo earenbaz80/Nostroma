@@ -67,7 +67,7 @@ class Sha256Sums(unittest.TestCase):
     @unittest.skipUnless(shutil.which("sha256sum"), "GNU sha256sum is not on this machine")
     def test_sha256sum_check_accepts_the_file(self):
         self.write("Nostroma-0.2.15-linux-x86_64.AppImage", b"app")
-        self.write("strata-feed.json", b"{}")
+        self.write("nostroma-feed.json", b"{}")
         sha256sums.write(self.dir)
         r = subprocess.run(["sha256sum", "-c", "SHA256SUMS.txt"], cwd=self.dir, capture_output=True, text=True)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)

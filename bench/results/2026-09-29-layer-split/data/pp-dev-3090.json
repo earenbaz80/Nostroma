@@ -56,17 +56,17 @@
   }
  ],
  "engine_lines": [
-  "strata generate: expert cache auto: 17.31 GiB free, 700 MiB reserved -> 6704 slots",
-  "strata generate: expert cache 8730 slots, 16.62 GiB of VRAM; policy is",
-  "strata serve: the prompt path borrows 2315 cache slots (4.42 GiB)",
-  "strata serve: decode expert cache hit rate: 86.6% (4986 hits / 5756 lookups)",
-  "strata serve: decode expert cache hit rate: 87.1% (3757 hits / 4315 lookups)",
-  "strata serve: decode expert cache hit rate: 88.7% (3827 hits / 4314 lookups)",
-  "strata serve: decode expert cache hit rate: 92.1% (3975 hits / 4318 lookups)",
-  "strata serve: decode expert cache hit rate: 95.5% (4124 hits / 4320 lookups)",
-  "strata serve: decode expert cache hit rate: 94.3% (25793 hits / 27360 lookups)",
-  "strata serve: decode expert cache hit rate: 94.6% (4088 hits / 4320 lookups)",
-  "strata serve: decode expert cache hit rate: 92.7% (116454 hits / 125668 lookups)",
-  "strata serve: decode expert cache hit rate: 86.4% (73970 hits / 85649 lookups)"
+  "nostroma generate: expert cache auto: 17.31 GiB free, 700 MiB reserved -> 6704 slots",
+  "nostroma generate: expert cache 8730 slots, 16.62 GiB of VRAM; policy is",
+  "nostroma serve: the prompt path borrows 2315 cache slots (4.42 GiB)",
+  "nostroma serve: decode expert cache hit rate: 86.6% (4986 hits / 5756 lookups)",
+  "nostroma serve: decode expert cache hit rate: 87.1% (3757 hits / 4315 lookups)",
+  "nostroma serve: decode expert cache hit rate: 88.7% (3827 hits / 4314 lookups)",
+  "nostroma serve: decode expert cache hit rate: 92.1% (3975 hits / 4318 lookups)",
+  "nostroma serve: decode expert cache hit rate: 95.5% (4124 hits / 4320 lookups)",
+  "nostroma serve: decode expert cache hit rate: 94.3% (25793 hits / 27360 lookups)",
+  "nostroma serve: decode expert cache hit rate: 94.6% (4088 hits / 4320 lookups)",
+  "nostroma serve: decode expert cache hit rate: 92.7% (116454 hits / 125668 lookups)",
+  "nostroma serve: decode expert cache hit rate: 86.4% (73970 hits / 85649 lookups)"
  ]
 }

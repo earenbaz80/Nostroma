@@ -27,7 +27,7 @@ class NoiseMatchesSdcppX86(unittest.TestCase):
             inc = Path(td) / "inc"
             subprocess.run([sys.executable, "-I", "-B", str(ROOT / "tools" / "image" / "sdcpp_noise" / "apply.py"),
                             "--prepare", str(inc)], check=True, capture_output=True)
-            exe = Path(td) / "strata-noise-check"
+            exe = Path(td) / "nostroma-noise-check"
             r = subprocess.run([CXX, "-std=c++17", "-O2", "-I", str(ROOT / "include"),
                                 "-I", str(ROOT / "tools" / "image" / "sdcpp_noise"), "-I", str(inc),
                                 str(ROOT / "src" / "image" / "noise" / "qi21_noise.cpp"),

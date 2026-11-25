@@ -1,6 +1,6 @@
-// src/spec/draft_policy.cpp - see include/strata/spec/draft_policy.hpp.
-#include "strata/spec/draft_policy.hpp"
-#include "strata/env.hpp"
+// src/spec/draft_policy.cpp - see include/nostroma/spec/draft_policy.hpp.
+#include "nostroma/spec/draft_policy.hpp"
+#include "nostroma/env.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -9,7 +9,7 @@
 #include <filesystem>
 #include <fstream>
 
-namespace strata::spec {
+namespace nostroma::spec {
 namespace {
 
 // The shape of a round's cost by window size, relative to one token, used only for sizes not measured yet (the
@@ -31,7 +31,7 @@ constexpr int kProbes = 3;       // a lookup window size is tried this often bef
 // one stretch (a prompt's cache refill, say) and, priced high, it would never be measured again (#1252)
 constexpr double kStaleRounds = 300.0;
 
-// STRATA_SPEC_FIXED=1 and STRATA_SPEC_FIXED_TABLE="T1,T2,.." (round ms of windows of 1, 2, .. rows): an expert's fixed table for every
+// NOSTROMA_SPEC_FIXED=1 and NOSTROMA_SPEC_FIXED_TABLE="T1,T2,.." (round ms of windows of 1, 2, .. rows): an expert's fixed table for every
 // context bucket, read once per process (the measured table of --draft-costs is the normal source).
 struct FixedEnv {
     bool on = false;
@@ -41,9 +41,9 @@ struct FixedEnv {
 const FixedEnv& fixed_env() {
     static const FixedEnv cfg = [] {
         FixedEnv c;
-        const char* e = strata::env("NOSTROMA_SPEC_FIXED");
+        const char* e = nostroma::env("NOSTROMA_SPEC_FIXED");
         c.on = e != nullptr && e[0] == '1';
-        if (const char* tab = strata::env("NOSTROMA_SPEC_FIXED_TABLE"); c.on && tab != nullptr && tab[0] != '\0') {
+        if (const char* tab = nostroma::env("NOSTROMA_SPEC_FIXED_TABLE"); c.on && tab != nullptr && tab[0] != '\0') {
             for (const char* q = tab; *q != '\0' && c.n < DraftPolicy::kMaxT;) {
                 c.ms[c.n++] = std::atof(q);
                 while (*q != '\0' && *q != ',') ++q;
@@ -251,7 +251,7 @@ CostLearner::Verdict CostLearner::check(int64_t min_rounds, int min_n) const {
 // ---------------------------------------------------------------------------------------------------- the table file
 
 namespace {
-constexpr const char* kCostFileHead = "strata-draft-costs 2";   // 2: learned from the rounds of the first seconds of a busy run; a version 1 file is learned again
+constexpr const char* kCostFileHead = "nostroma-draft-costs 2";   // 2: learned from the rounds of the first seconds of a busy run; a version 1 file is learned again
 // the path as UTF-8 (the server passes it so); on Windows a plain std::string would be read in the ANSI code page
 std::filesystem::path utf8_path(const std::string& s) { return std::filesystem::path(std::u8string(s.begin(), s.end())); }
 std::string one_line(std::string s) {
@@ -1055,4 +1055,4 @@ void DraftPolicy::observe_chain(int t_mtp, int k, int accepted, int match, doubl
     cbad_[b] = kDecay * cbad_[b] + (ok < k ? 1.0 : 0.0);
 }
 
-}  // namespace strata::spec
+}  // namespace nostroma::spec

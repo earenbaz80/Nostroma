@@ -74,7 +74,7 @@ def rows(cards: list[dict], vendor: str | None = None) -> list[dict]:
 
 
 def _eligible(cs: list[dict]) -> list[dict]:
-    """The cards that can be Main: run Strata, have memory of their own and at least MIN_CARD_GB of it; an integrated chip only when it is the
+    """The cards that can be Main: run Nostroma, have memory of their own and at least MIN_CARD_GB of it; an integrated chip only when it is the
     only device (a Strix Halo PC, a mini PC)."""
     real = [c for c in cs if _can_run(c) and not _shares(c) and _mem(c) >= gpu_fit.MIN_CARD_GB]
     if real:

@@ -15,9 +15,9 @@ from nostroma_control.profiles import ProfileError
 @unittest.skipUnless(os.name in ("posix", "nt"), "no qualified owner transport on this platform")
 class PendingState(unittest.TestCase):
     def setUp(self):
-        temp = tempfile.TemporaryDirectory(prefix="strata-state-pending-")
+        temp = tempfile.TemporaryDirectory(prefix="nostroma-state-pending-")
         self.addCleanup(temp.cleanup)
-        env = mock.patch.dict(os.environ, {"STRATA_RUNTIME_DIR": str(Path(temp.name) / "runtime")})
+        env = mock.patch.dict(os.environ, {"NOSTROMA_RUNTIME_DIR": str(Path(temp.name) / "runtime")})
         env.start()
         self.addCleanup(env.stop)
         self.path = runtime._paths("updtest")[0]

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Long-context recall check: hide one fact in a long prompt and ask for it back (the guide's "long-context retrieval" cell).
 
-    python research/tools/dgx-spark-2026-10/dgx_needle.py --config strata-iq3s-final.json --tokens 12000
+    python research/tools/dgx-spark-2026-10/dgx_needle.py --config nostroma-iq3s-final.json --tokens 12000
 
 Starts the model's server, sends one request, and reports whether the answer contains the fact.  The fact is placed at a
 random position in the prompt and never appears in the question, so a correct answer means the context was read.
@@ -57,7 +57,7 @@ def main() -> int:
     cfg["log"] = "/tmp/dgx-needle.log"
     cpath = Path("/tmp/dgx-needle.json")
     cpath.write_text(json.dumps(cfg, indent=1))
-    proc = subprocess.Popen([sys.executable, str(ROOT / "serve" / "server.py"), "--engine", "strata", "--config",
+    proc = subprocess.Popen([sys.executable, str(ROOT / "serve" / "server.py"), "--engine", "nostroma", "--config",
                              str(cpath), "--port", str(a.port)], cwd=str(ROOT),
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     ok = 0

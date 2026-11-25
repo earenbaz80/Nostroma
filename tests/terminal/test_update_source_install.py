@@ -21,7 +21,7 @@ from nostroma_control import updater
 
 class DefaultFolder(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="strata-updsrc-")
+        self.temp = tempfile.TemporaryDirectory(prefix="nostroma-updsrc-")
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.user = self.root / "user-components"
@@ -67,9 +67,9 @@ class DefaultFolder(unittest.TestCase):
 
 class AppLaunchedEngine(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="strata-updsrc-rt-")
+        self.temp = tempfile.TemporaryDirectory(prefix="nostroma-updsrc-rt-")
         self.addCleanup(self.temp.cleanup)
-        env = mock.patch.dict(os.environ, {"STRATA_RUNTIME_DIR": str(Path(self.temp.name) / "runtime")})
+        env = mock.patch.dict(os.environ, {"NOSTROMA_RUNTIME_DIR": str(Path(self.temp.name) / "runtime")})
         env.start()
         self.addCleanup(env.stop)
 

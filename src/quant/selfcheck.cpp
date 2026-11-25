@@ -1,5 +1,5 @@
 // src/quant/selfcheck.cpp - the layer's start-up self-checks (see selfcheck.hpp for what they do and do not prove).
-#include "strata/quant/selfcheck.hpp"
+#include "nostroma/quant/selfcheck.hpp"
 
 #include <cstdio>
 #include <cstring>
@@ -9,7 +9,7 @@
 #include "internal.hpp"
 #include "registry.hpp"
 
-namespace strata::quant {
+namespace nostroma::quant {
 namespace {
 
 struct Rng {
@@ -190,7 +190,7 @@ const DotKernel* checked_dot_kernel(Type w, Arith a) noexcept {
         if (!known) {
             std::string why;
             ok = check_dot(*k, &why);
-            if (!ok) std::fprintf(stderr, "strata: quant self-check failed, kernel dropped: %s\n", why.c_str());
+            if (!ok) std::fprintf(stderr, "nostroma: quant self-check failed, kernel dropped: %s\n", why.c_str());
             std::lock_guard<std::mutex> lk(vd.mu);
             vd.v.emplace_back(kk, ok);
         }
@@ -215,7 +215,7 @@ const ActKernel* checked_act_kernel(Type act, Arith a) noexcept {
         if (!known) {
             std::string why;
             ok = check_act(*k, &why);
-            if (!ok) std::fprintf(stderr, "strata: quant self-check failed, kernel dropped: %s\n", why.c_str());
+            if (!ok) std::fprintf(stderr, "nostroma: quant self-check failed, kernel dropped: %s\n", why.c_str());
             std::lock_guard<std::mutex> lk(vd.mu);
             vd.v.emplace_back(kk, ok);
         }
@@ -225,4 +225,4 @@ const ActKernel* checked_act_kernel(Type act, Arith a) noexcept {
     return nullptr;
 }
 
-}  // namespace strata::quant
+}  // namespace nostroma::quant

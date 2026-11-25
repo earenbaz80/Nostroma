@@ -8,7 +8,7 @@
 // expert (layer 0, expert 0 of a pack's experts.bin) covers the checkpoint's own distribution.
 // Also the down rows (n 640) and gate/up through silu with the blob tail's scales, 1..9 tokens (past one slice).
 // The AVX2 rows follow ggml's AVX2 path step for step, so for them every row must also be bit-equal (ggml-cpu built
-// with AVX2: STRATA_PORTABLE, or a native build). Each kernel is checked when this CPU runs it.
+// with AVX2: NOSTROMA_PORTABLE, or a native build). Each kernel is checked when this CPU runs it.
 // Speed: gate+up rows of one expert for 1..8 tokens, each way, as the CPU pool runs them.
 //
 //     nvfp4_avx512_parity --bw THREADS TOKENS [ggml|avx2]
@@ -19,11 +19,11 @@
 // ~1e-5 and its Q8_0 scale an FP16 subnormal) and with s_down applied to the output instead.
 //
 // DRAM rate: THREADS threads each run whole experts (gate/up through silu, then down) out of 4.2 GB of blobs -
-// 40x the L3 - for TOKENS tokens; GB/s of weights read. STRATA_NVFP4_PREFETCH sets the kernel's prefetch distance.
-#include "strata/kernels/cpu/expert_layout.hpp"
-#include "strata/env.hpp"
-#include "strata/kernels/cpu/nvfp4_avx2.hpp"
-#include "strata/kernels/cpu/nvfp4_avx512.hpp"
+// 40x the L3 - for TOKENS tokens; GB/s of weights read. NOSTROMA_NVFP4_PREFETCH sets the kernel's prefetch distance.
+#include "nostroma/kernels/cpu/expert_layout.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kernels/cpu/nvfp4_avx2.hpp"
+#include "nostroma/kernels/cpu/nvfp4_avx512.hpp"
 
 #include "ggml.h"
 #include "ggml-cpu.h"
@@ -47,8 +47,8 @@ struct Kern {
     void (*rows)(const uint8_t*, size_t, int, const void* const*, int, float* const*, int, int, float);
     bool exact;   // bit-equal to ggml's AVX2 dot
 };
-const Kern k512{"avx512", strata::kernels::cpu::nvfp4_512_gu_rows, strata::kernels::cpu::nvfp4_512_rows, false};
-const Kern k256{"avx2", strata::kernels::cpu::nvfp4_256_gu_rows, strata::kernels::cpu::nvfp4_256_rows, true};
+const Kern k512{"avx512", nostroma::kernels::cpu::nvfp4_512_gu_rows, nostroma::kernels::cpu::nvfp4_512_rows, false};
+const Kern k256{"avx2", nostroma::kernels::cpu::nvfp4_256_gu_rows, nostroma::kernels::cpu::nvfp4_256_rows, true};
 
 constexpr int N = 2560, ROWS = 1280, BLK = 36;   // an expert's gate+up: 1280 rows of 2560 values
 constexpr int FF = 640;                          // its down: 2560 rows of 640
@@ -101,11 +101,11 @@ int report(const std::vector<std::vector<float>>& mine, const std::vector<std::v
 int verdict(const Kern& k, const char* what, double worst, int rows, int nt, int bad, int differ) {
     std::printf("%-7s %-36s worst |mine - ggml| / max|ggml| = %.2e over %d rows x 1..%d tokens, %d beyond 1e-5, "
                 "%d not bit-equal\n", k.name, what, worst, rows, nt, bad, differ);
-#if defined(STRATA_TEST_GGML_WITHOUT_AVX2)
-    // an older-CPU build (STRATA_ISA_FLOOR): ggml-cpu has no AVX2/FMA there, so its dot is not the AVX2 one these rows
+#if defined(NOSTROMA_TEST_GGML_WITHOUT_AVX2)
+    // an older-CPU build (NOSTROMA_ISA_FLOOR): ggml-cpu has no AVX2/FMA there, so its dot is not the AVX2 one these rows
     // follow; only the 1e-5 check counts
     if (k.exact)
-        std::printf("%-7s %-36s bit-equality not required (STRATA_ISA_FLOOR build: ggml-cpu without AVX2/FMA)\n",
+        std::printf("%-7s %-36s bit-equality not required (NOSTROMA_ISA_FLOOR build: ggml-cpu without AVX2/FMA)\n",
                     k.name, what);
     return bad;
 #else
@@ -251,7 +251,7 @@ int bandwidth(int threads, int nt, bool use_ggml, const Kern& k) {
         for (auto& p : pool) p.join();
         best = std::fmin(best, now_ms() - t0);
     }
-    const char* pf = strata::env("NOSTROMA_NVFP4_PREFETCH");
+    const char* pf = nostroma::env("NOSTROMA_NVFP4_PREFETCH");
     std::printf("%s  threads %d  tokens %d  prefetch %s: %.1f ms for %d experts -> %.1f GB/s, %.1f us/expert/thread\n",
                 use_ggml ? "ggml  " : k.name, threads, nt, use_ggml ? "-" : (pf ? pf : "2048"), best, E,
                 (double) E * BLOB / best / 1e6, best * 1000.0 * threads / E);
@@ -300,7 +300,7 @@ int expert_e2e(const char* path, int layer, int e) {
         float* fp[1] = {ff.data()};
         float* op[1] = {out.data()};
         for (int mode = 0; mode < 2; ++mode) {             // 0: s_down folded into up; 1: s_down on the output
-            const Kern& k = strata::kernels::cpu::cpu_avx512_ok() ? k512 : k256;
+            const Kern& k = nostroma::kernels::cpu::cpu_avx512_ok() ? k512 : k256;
             k.gu(b.data(), ROW_BYTES, up_off, N, ap, 1, fp, 0, F, sg, mode == 0 ? s_up * s_down : s_up);
             if (mode == 0) for (float v : ff) hmax_fold = std::fmax(hmax_fold, std::fabs(v));
             q8->from_float(ff.data(), hq.data(), FF);
@@ -328,7 +328,7 @@ int main(int argc, char** argv) {
     ggml_cpu_init();
     if (argc >= 3 && std::string(argv[1]) == "--expert")
         return expert_e2e(argv[2], argc >= 4 ? std::atoi(argv[3]) : 0, argc >= 5 ? std::atoi(argv[4]) : 0);
-    const bool has512 = strata::kernels::cpu::cpu_avx512_ok(), has256 = strata::kernels::cpu::cpu_avx2_ok();
+    const bool has512 = nostroma::kernels::cpu::cpu_avx512_ok(), has256 = nostroma::kernels::cpu::cpu_avx2_ok();
     if (argc >= 4 && std::string(argv[1]) == "--bw") {
         const std::string how = argc >= 5 ? argv[4] : "";
         return bandwidth(std::atoi(argv[2]), std::atoi(argv[3]), how == "ggml", how == "avx2" || !has512 ? k256 : k512);

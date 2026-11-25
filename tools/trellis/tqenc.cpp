@@ -98,7 +98,7 @@ struct Codebook {
         if (computed) {   // tq_computed.hpp
             double ss = 0;
             for (uint32_t s = 0; s < (uint32_t) kStates; ++s) {
-                strata::kernels::cpu::tq_detail::comp_state4(s, tab + 4 * s);
+                nostroma::kernels::cpu::tq_detail::comp_state4(s, tab + 4 * s);
                 for (int j = 0; j < 4; ++j) {
                     soa[j][s] = (float) tab[4 * s + j] * (1.0f / 8192.0f);
                     ss += (double) soa[j][s] * soa[j][s];

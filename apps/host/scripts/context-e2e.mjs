@@ -3,9 +3,9 @@
  * The context fixes against a REAL engine (not the scripted worker): Gyro-S at 64K on this PC, the agent bridge and the real Harness.
  *
  *   gpu + heavy locks held first (python phaseA-tests\lock.py acquire gpu "023-agent: context e2e", then heavy); one engine; nothing of the
- *   installed app is used or touched: its model files are read, its Harness is copied (STRATA_HARNESS_DIR), data goes to a scratch folder.
+ *   installed app is used or touched: its model files are read, its Harness is copied (NOSTROMA_HARNESS_DIR), data goes to a scratch folder.
  *
- *   node scripts/context-e2e.mjs                       (needs STRATA_HARNESS_DIR; see the E2E_* names below)
+ *   node scripts/context-e2e.mjs                       (needs NOSTROMA_HARNESS_DIR; see the E2E_* names below)
  *
  * It starts serve/server.py as ITS OWN child (foreground: this script waits for it and stops it by PID at the end or on a memory alarm),
  * runs four scenarios and prints one table. Exit code 0 when every expectation held.
@@ -25,9 +25,9 @@ import { envVar } from '../server/env-compat.mjs';
 
 const REPO = join(import.meta.dirname, '..', '..', '..');
 const env = (name, fallback) => process.env[name] ?? fallback;
-const DOCS = env('E2E_DOCS', 'C:\\Users\\AI-Server\\Documents\\Strata');
-const ENGINE = env('E2E_ENGINE', 'C:\\Users\\AI-Server\\Desktop\\Strata\\GitHub\\wt-023-int\\build-cuda\\strata.exe');
-const PROFILE = env('E2E_EXPERT_PROFILE', 'C:\\Users\\AI-Server\\AppData\\Local\\Programs\\Strata\\control\\data\\expert-profile.bin');
+const DOCS = env('E2E_DOCS', 'C:\\Users\\AI-Server\\Documents\\Nostroma');
+const ENGINE = env('E2E_ENGINE', 'C:\\Users\\AI-Server\\Desktop\\Nostroma\\GitHub\\wt-023-int\\build-cuda\\nostroma.exe');
+const PROFILE = env('E2E_EXPERT_PROFILE', 'C:\\Users\\AI-Server\\AppData\\Local\\Programs\\Nostroma\\control\\data\\expert-profile.bin');
 const PYTHON = env('E2E_PYTHON', 'python');
 const PORT = Number(env('E2E_PORT', '18590'));
 const MIN_FREE_GB = Number(env('E2E_MIN_FREE_GB', '7'));
@@ -45,11 +45,11 @@ const freeGb = () => {
 const rows = [];
 const note = (id, ok, detail) => { rows.push({ id, ok, detail }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${id}  ${detail}`); };
 
-if (!envVar('HARNESS_DIR')) { console.error('STRATA_HARNESS_DIR is not set'); process.exit(2); }
+if (!envVar('HARNESS_DIR')) { console.error('NOSTROMA_HARNESS_DIR is not set'); process.exit(2); }
 if (!EXISTING) for (const f of [ENGINE, GGUF]) if (!existsSync(f)) { console.error(`missing: ${f}`); process.exit(2); }
 if (!EXISTING && freeGb() < 20) { console.error(`only ${freeGb()} GB of RAM are free; wait for the other streams (lock.py status) and run again`); process.exit(2); }
 
-const scratch = mkdtempSync(join(tmpdir(), 'strata-ctx-e2e-'));
+const scratch = mkdtempSync(join(tmpdir(), 'nostroma-ctx-e2e-'));
 const configFile = join(scratch, 'server.json');
 const logFile = join(scratch, 'server.log');
 const readyFile = join(scratch, 'ready.json');
@@ -76,8 +76,8 @@ const finish = async (code) => {
 };
 process.on('SIGINT', () => finish(130));
 
-if (!EXISTING) server = spawn(PYTHON, ['serve/server.py', '--engine', 'strata', '--config', configFile, '--port', String(PORT), '--no-api-key', '--ready-file', readyFile], {
-  cwd: REPO, env: { ...process.env, PATH: `${CUDA_BIN};${process.env.PATH}`, STRATA_DATA_DIR: join(scratch, 'data') }, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true,
+if (!EXISTING) server = spawn(PYTHON, ['serve/server.py', '--engine', 'nostroma', '--config', configFile, '--port', String(PORT), '--no-api-key', '--ready-file', readyFile], {
+  cwd: REPO, env: { ...process.env, PATH: `${CUDA_BIN};${process.env.PATH}`, NOSTROMA_DATA_DIR: join(scratch, 'data') }, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true,
 });
 const sink = [];
 if (server) { server.stdout.on('data', d => sink.push(String(d))); server.stderr.on('data', d => sink.push(String(d))); server.on('exit', code => { sink.push(`[server exited ${code}]`); server = null; }); }

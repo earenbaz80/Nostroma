@@ -1,4 +1,4 @@
-# The GSQ-RCO Coder (256 of 512 experts) on Strata
+# The GSQ-RCO Coder (256 of 512 experts) on Nostroma
 
 RTX 5070 12 GB, Ryzen 5 7600, 64 GB DDR5-5200, Windows 10. Engine 0.1.15 + PR #54 (the expert count from the model
 file), the settings setup writes (`--prefill auto`, 8-bit KV above 4K, KV streaming from 64K, MTP, greedy, 256 tokens),
@@ -31,7 +31,7 @@ prompt hit the GPU - a wrong index mapping would give about the slot share, 21%.
 
 ## Images
 
-The Coder ships the original's vision encoder (the same file). With `--vision` on the GPU it described a Strata
+The Coder ships the original's vision encoder (the same file). With `--vision` on the GPU it described a Nostroma
 Monitor screenshot correctly, windows, labels and the numbers of the dashboard and the requests table (1,079 prompt
 tokens with the image, 2,012 generated at ~50 tokens/s).
 

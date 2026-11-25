@@ -1,5 +1,5 @@
 {
-  "exe": "/work/prs/strata-engine",
+  "exe": "/work/prs/nostroma-engine",
   "args": [
     "--pack",
     "/m/packs/iq3_s",
@@ -32,7 +32,7 @@
   ],
   "cwd": "/work/prs",
   "tokenizer": "/m/packs/iq3_s/tokenizer",
-  "model_name": "strata-split",
+  "model_name": "nostroma-split",
   "log": "/bench/split-prs-kc/engine.log",
   "lib_dirs": [
     "/opt/rocm/lib"
@@ -46,15 +46,15 @@
   "gpus_asked": true,
   "layer_split": "auto",
   "env": {
-    "STRATA_ROCBLAS_TUNING": "/work/prs/tools/hip",
-    "STRATA_IO_THREADS": "128",
-    "STRATA_SELECT_SGEMM": "1",
-    "STRATA_SELECT_SGEMM_VERBOSE": "1",
-    "STRATA_SH_STREAM": "1",
-    "STRATA_HIP_PROMPT_F16": "1",
-    "STRATA_HIP_ADAPT_KERNEL_COPY": "1",
-    "STRATA_PREFILL_CPU_SHARE": "auto",
-    "STRATA_TUNING_CACHE": "/home/user/.cache/strata"
+    "NOSTROMA_ROCBLAS_TUNING": "/work/prs/tools/hip",
+    "NOSTROMA_IO_THREADS": "128",
+    "NOSTROMA_SELECT_SGEMM": "1",
+    "NOSTROMA_SELECT_SGEMM_VERBOSE": "1",
+    "NOSTROMA_SH_STREAM": "1",
+    "NOSTROMA_HIP_PROMPT_F16": "1",
+    "NOSTROMA_HIP_ADAPT_KERNEL_COPY": "1",
+    "NOSTROMA_PREFILL_CPU_SHARE": "auto",
+    "NOSTROMA_TUNING_CACHE": "/home/user/.cache/nostroma"
   },
   "gpu_order": "as_given"
 }

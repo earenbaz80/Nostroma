@@ -332,7 +332,7 @@ def end_one(record: dict, *, grace: float = 8.0, settle: float = 10.0, say=None)
         waited = int((time.monotonic() - started) // 10)
         if say is not None and waited > told:
             told = waited
-            say(f"[strata] still waiting for process {pid} to give its memory back ({told * 10} s)")
+            say(f"[nostroma] still waiting for process {pid} to give its memory back ({told * 10} s)")
     if running():
         return "stuck"
     drop_record(pid)
@@ -349,7 +349,7 @@ def end_leftovers(profile: str | None = None, *, grace: float = 8.0, settle: flo
         outcome = end_one(record, grace=grace, settle=settle, say=say)
         result[outcome].append({"pid": record["pid"], "role": record.get("role"), "profile": record.get("profile")})
         if say is not None and outcome != "gone":
-            say(f"[strata] leftover {record.get('role', 'process')} {record['pid']} {outcome}")
+            say(f"[nostroma] leftover {record.get('role', 'process')} {record['pid']} {outcome}")
     return result
 
 
@@ -450,5 +450,5 @@ def end_orphans(engine_exe: str, *, grace: float = 8.0, settle: float = 10.0, sa
         outcome = end_one(record, grace=grace, settle=settle, say=say)
         ended.append({"pid": ident.pid, "outcome": outcome})
         if say is not None and outcome != "gone":
-            say(f"[strata] an engine left behind by an earlier run (pid {ident.pid}) {outcome}")
+            say(f"[nostroma] an engine left behind by an earlier run (pid {ident.pid}) {outcome}")
     return ended

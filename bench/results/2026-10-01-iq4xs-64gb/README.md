@@ -13,7 +13,7 @@ over the pack's `experts.bin`, or the 0.1.31 path — read the GGUF in place and
 48 layers × 512 experts, 2.66 MB per expert blob, gate/up IQ4_XS + down IQ4_NL. Engine 0.1.31 and
 0.1.32 built from source (with the AVX-2 IQ4_XS gate kernel).
 
-**Method.** Offline `strata generate --tokens-file <frozen prompt> --max-new 300 --stats`, arms
+**Method.** Offline `nostroma generate --tokens-file <frozen prompt> --max-new 300 --stats`, arms
 interleaved, **arm order rotated one position per round**, one unmeasured warmup run. The primary
 metric is **ms per draft round at equal draft-round counts**. tok/s alone is not comparable across
 runs: the GPU hit path rounds differently from the CPU (the engine says so at start), so the draft
@@ -26,7 +26,7 @@ runs and 133 in one, which alone moves tok/s by ~10%.
 |---|---:|---:|---:|
 | pinned arena (no `--mmap-experts`) | 27.90 | 33.85 | — (60.94 GiB loaded at 1.88–2.19 GiB/s, every run) |
 | `--mmap-experts` over `experts.bin`, setup's arguments | 14.06 | 16.88 | ~1.2 GB |
-| same + `--kv-resident 20480` + `STRATA_IQ_PREFETCH=16384` | 33.3 | **37.5–39.0** | ~1.2 GB, 28 GB/s over the rows |
+| same + `--kv-resident 20480` + `NOSTROMA_IQ_PREFETCH=16384` | 33.3 | **37.5–39.0** | ~1.2 GB, 28 GB/s over the rows |
 | GGUF read in place (pack without `experts.bin`) | 9.63 | 9.74 | **1325 MB** |
 | GGUF in place + `--resident-budget-gib 40` | 26.7 | 26.0 | 42 MB |
 | GGUF in place + budget 40 + the two knobs above | 26.7 | 27.5 | 34 MB |
@@ -102,7 +102,7 @@ the page cache). A run that reads 1.3 GB per round from the NVMe at 2.4 GB/s is 
 state, and there a hint in front of the fault may pay; not tested.
 
 **5. Lookahead routing prefetch: no measurable effect at this size.** `--resident-budget-gib 40`
-with and without `STRATA_LOOKAHEAD=0`: 26.74/25.94 vs 26.25/26.00 tok/s. With 42 MB per round of
+with and without `NOSTROMA_LOOKAHEAD=0`: 26.74/25.94 vs 26.25/26.00 tok/s. With 42 MB per round of
 file reads there is almost nothing left to warm.
 
 **6. Two refusals reproduced.** `--resident-cpu-experts` on the mapped mode: *"resident complement
@@ -119,7 +119,7 @@ after a run at the same budget had already succeeded. 40 is the usable ceiling o
 `ExpertCache::verify_slot: slot 0 differs from the arena at byte 0 (of 2662400)`.
 
 **8. The AVX-2 multi-token kernel for IQ4_XS gate/up rows is worth ~3% here.** A/B with
-`STRATA_NO_IQ256=1` (which drops that path; the IQ4_NL `down` rows have their own switch and stayed on
+`NOSTROMA_NO_IQ256=1` (which drops that path; the IQ4_NL `down` rows have their own switch and stayed on
 in both arms), four interleaved rounds, order rotated, compared as total time for the run: the kernel
 wins **4 of 4 pairs**, median **−3.2%** (−2.6% with one outlier round dropped), gate/up phase −7.6%,
 sustained row reads 28.6 against 25.6 GB/s. Small because both arms sit at the memory wall — the win

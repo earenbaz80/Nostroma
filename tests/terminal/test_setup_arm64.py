@@ -81,11 +81,11 @@ class ArmCpu(unittest.TestCase):
         self.assertEqual((name, avx2, avx512), ("Test CPU", True, True))
 
     def test_no_older_cpu_floor_on_arm(self):
-        with mock.patch.dict(os.environ, {"STRATA_ISA_FLOOR": ""}), mock.patch.object(setup, "is_arm64", return_value=True):
+        with mock.patch.dict(os.environ, {"NOSTROMA_ISA_FLOOR": ""}), mock.patch.object(setup, "is_arm64", return_value=True):
             self.assertEqual(setup.cpu_floor(False), "")
 
     def test_the_floor_on_x86_without_avx2_is_still_asked_for(self):
-        with mock.patch.dict(os.environ, {"STRATA_ISA_FLOOR": ""}), mock.patch.object(setup, "is_arm64", return_value=False), \
+        with mock.patch.dict(os.environ, {"NOSTROMA_ISA_FLOOR": ""}), mock.patch.object(setup, "is_arm64", return_value=False), \
                 mock.patch.object(setup, "WIN", False), \
                 mock.patch("builtins.open", mock.mock_open(read_data="flags\t: fpu sse4_2 popcnt avx\n")):
             self.assertEqual(setup.cpu_floor(False), "avx")

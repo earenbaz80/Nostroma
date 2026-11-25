@@ -17,17 +17,17 @@ const ARGS = ['--pack', '/p', '--expert-cache', 'auto', '--spec', '4', '--max-co
 const CVEC = ['--control-vector-scaled', 'C:/vectors/mine.gguf:1.0', '--control-vector-layer-range', '4', '44', '--cvec-mode', 'project', '--cvec-dir', 'per-layer'];
 
 function fixture(config = {}, { gpus = [{ index: 0, vram_gb: 12 }] } = {}) {
-  const root = mkdtempSync(join(tmpdir(), 'strata-userargs-test-'));
+  const root = mkdtempSync(join(tmpdir(), 'nostroma-userargs-test-'));
   const install = join(root, 'install'), data = join(root, 'data');
   mkdirSync(install, { recursive: true });
-  process.env.STRATA_INSTALL_DIR = install;
-  const path = join(install, 'strata-q2_0.json');
-  writeFileSync(path, JSON.stringify({ exe: 'component:strata-engine', tokenizer: join(install, 'tok'), args: ARGS, model_name: 'Qwen q2_0', port: 8080, ...config }));
+  process.env.NOSTROMA_INSTALL_DIR = install;
+  const path = join(install, 'nostroma-q2_0.json');
+  writeFileSync(path, JSON.stringify({ exe: 'component:nostroma-engine', tokenizer: join(install, 'tok'), args: ARGS, model_name: 'Qwen q2_0', port: 8080, ...config }));
   const saved = [];
   const control = {
     control: { dir: join(root, 'control') }, version: '0.2.0',
     async installedModels() { return { install_dir: install, models: [{ id: 'q2_0', name: 'Qwen q2_0', source_config: path, component_status: 'present', context_tokens: 40000 }] }; },
-    async engine() { return { usable: true, backend: 'cuda', components_dir: 'E:\\c', engine: { version: '0.2.0', platform: 'windows-x86_64', backend: 'cuda', exe: 'E:\\e\\strata.exe', root: 'E:\\e' } }; },
+    async engine() { return { usable: true, backend: 'cuda', components_dir: 'E:\\c', engine: { version: '0.2.0', platform: 'windows-x86_64', backend: 'cuda', exe: 'E:\\e\\nostroma.exe', root: 'E:\\e' } }; },
     async saveProfile(name, file) { saved.push(JSON.parse(readFileSync(file, 'utf8'))); return {}; },
     async start() { return { ok: true, state: 'ready' }; },
     async stop() { return { ok: true }; },

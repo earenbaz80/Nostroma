@@ -10,7 +10,7 @@ from contextlib import redirect_stdout
 
 import serve.server as server
 
-BASE = {"exe": "strata-vision", "mmproj": "m.gguf", "model": "t.gguf"}
+BASE = {"exe": "nostroma-vision", "mmproj": "m.gguf", "model": "t.gguf"}
 
 
 def limit_of(cfg):

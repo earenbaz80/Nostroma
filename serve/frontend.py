@@ -57,9 +57,9 @@ class ChatTemplate:
     def render(self, messages: list[dict], tools: list[dict] | None = None, add_generation_prompt: bool = True,
                **kwargs) -> str:
         # Do not use completed empty assistant turns as examples for the next reply. Keep the final message.
-        # (#843.  STRATA_KEEP_EMPTY_TURNS=1 renders them as before.)
+        # (#843.  NOSTROMA_KEEP_EMPTY_TURNS=1 renders them as before.)
         messages = [m for i, m in enumerate(messages)
-                    if i == len(messages) - 1 or os.environ.get("STRATA_KEEP_EMPTY_TURNS") == "1" or not (isinstance(m, dict) and m.get("role") == "assistant"
+                    if i == len(messages) - 1 or os.environ.get("NOSTROMA_KEEP_EMPTY_TURNS") == "1" or not (isinstance(m, dict) and m.get("role") == "assistant"
                                                       and not _text_of(m.get("content")).strip()
                                                       and not _has_image(m.get("content")) and not m.get("tool_calls"))]
         return self.template.render(messages=messages, tools=tools, add_generation_prompt=add_generation_prompt,
@@ -77,23 +77,23 @@ class ChatTemplate:
                 LOGGER.debug("chat template capability probe failed: %s", exc, exc_info=True)
                 return ""
 
-        user = {"role": "user", "content": "strata_caps_user"}
-        tools = [{"name": f"strata_caps_call_{i}", "description": "strata_caps_description",
+        user = {"role": "user", "content": "nostroma_caps_user"}
+        tools = [{"name": f"nostroma_caps_call_{i}", "description": "nostroma_caps_description",
                   "parameters": {"type": "object", "properties": {"arg": {"type": "string"}}}}
                  for i in range(2)]
         tool_prompt = render([user], tools)
 
         def calls_supported(count):
-            calls = [{"name": f"strata_caps_call_{i}", "arguments": {"arg": f"strata_caps_arg_{i}"}}
+            calls = [{"name": f"nostroma_caps_call_{i}", "arguments": {"arg": f"nostroma_caps_arg_{i}"}}
                      for i in range(count)]
             messages = [user, {"role": "assistant", "content": "",
                                "tool_calls": [{"function": call} for call in calls]}]
-            replies = [f"strata_caps_result_{i}" for i in range(count)]
+            replies = [f"nostroma_caps_result_{i}" for i in range(count)]
             messages += [{"role": "tool", "content": reply} for reply in replies] + [user]
             prompt = render(messages, tools)
             # Instructions include example XML and literal tag names, which are not model output. Parse only
             # complete calls to our probe functions, using the same body parser as OutputParser.
-            bodies = re.findall(r"<tool_call>\s*(<function=strata_caps_call_\d+>.*?</function>)\s*</tool_call>",
+            bodies = re.findall(r"<tool_call>\s*(<function=nostroma_caps_call_\d+>.*?</function>)\s*</tool_call>",
                                 prompt, re.S)
             try:
                 parsed = [parse_tool_call(body) for body in bodies]
@@ -102,15 +102,15 @@ class ChatTemplate:
             return [{"name": call.name, "arguments": call.arguments} for call in parsed] == calls \
                 and all(reply in prompt for reply in replies)
 
-        history = [user, {"role": "assistant", "content": "strata_caps_answer",
-                          "reasoning_content": "strata_caps_reasoning"}, user]
+        history = [user, {"role": "assistant", "content": "nostroma_caps_answer",
+                          "reasoning_content": "nostroma_caps_reasoning"}, user]
         return {"supports_tools": all(s in tool_prompt for s in
-                                      ("strata_caps_call_0", "strata_caps_description", "<tool_call>", "<function=")),
+                                      ("nostroma_caps_call_0", "nostroma_caps_description", "<tool_call>", "<function=")),
                 "supports_tool_calls": calls_supported(1),
-                "supports_system_role": "strata_caps_system" in render(
-                    [{"role": "system", "content": "strata_caps_system"}, user]),
+                "supports_system_role": "nostroma_caps_system" in render(
+                    [{"role": "system", "content": "nostroma_caps_system"}, user]),
                 "supports_parallel_tool_calls": calls_supported(2),
-                "supports_preserve_reasoning": "strata_caps_reasoning" in render(history)}
+                "supports_preserve_reasoning": "nostroma_caps_reasoning" in render(history)}
 
 
 # ------------------------------------------------------------------------------------------------ requests
@@ -957,7 +957,7 @@ def forced_call(tool_choice, tools: list[dict] | None) -> str | None:
         return CALL_START + "\n"
     if kind == "named" and name in names:
         return CALL_START + f"\n<function={name}>\n"
-    print(f"[strata] tool_choice {json.dumps(tool_choice)[:200]} is not supported here (or names no tool of the "
+    print(f"[nostroma] tool_choice {json.dumps(tool_choice)[:200]} is not supported here (or names no tool of the "
           "request): the model decides, as with \"auto\"", flush=True)
     return None
 

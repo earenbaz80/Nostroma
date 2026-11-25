@@ -176,7 +176,7 @@ class RealStaticPie(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.tmp = tempfile.mkdtemp(prefix="strata-elf-")
+        cls.tmp = tempfile.mkdtemp(prefix="nostroma-elf-")
         src = Path(cls.tmp, "t.c")
         src.write_text('#include <stdio.h>\n#include <string.h>\n#include <stdlib.h>\n'
                        'static const char *n[]={"alpha","beta","gamma"};\n'

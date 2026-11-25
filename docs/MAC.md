@@ -60,8 +60,8 @@ The engine streams the experts from the SSD. It decides this itself when the exp
   of the RAM when that is more), whichever is smaller. It counts as free only what macOS can give without swapping, fills the
   arena in 1.5 GB steps and stops early rather than push macOS below its reserve.
 - On a Mac with 64 GB or more, the arena, the Metal buffers and the host memory together stay under 60% of the RAM, and the
-  filled arena is wired (`mlock`) so macOS does not compress it while the GPU is idle. `STRATA_METAL_WIRE_ARENA=0` turns the
-  wiring off. `STRATA_METAL_ARENA_GB` sets the arena yourself, with a warning when it is over the cap. The engine prints the
+  filled arena is wired (`mlock`) so macOS does not compress it while the GPU is idle. `NOSTROMA_METAL_WIRE_ARENA=0` turns the
+  wiring off. `NOSTROMA_METAL_ARENA_GB` sets the arena yourself, with a warning when it is over the cap. The engine prints the
   planned footprint (`planned resident footprint ... cap ...`) and the footprint after the fill.
 - Setup writes a second copy of the experts (`<model>.experts`, 40 GB for IQ3_XXS) in which each expert's three matrices sit
   together, so the SSD reads an expert with one request. On the 32 GB M4 that is about 17% faster decoding and 30% faster prompts
@@ -69,7 +69,7 @@ The engine streams the experts from the SSD. It decides this itself when the exp
   it on a Mac with 96 GB or more.
 - Setup configures such a Mac without the draft layer (one token per step is faster there). A streaming Mac with 96 GB or more
   keeps the draft layer and writes `--spec 3`.
-- Prompts stream in chunks of 4096 on a streaming Mac with 96 GB or more, and 1024 on a smaller one. `STRATA_METAL_PROMPT_CHUNK=N`
+- Prompts stream in chunks of 4096 on a streaming Mac with 96 GB or more, and 1024 on a smaller one. `NOSTROMA_METAL_PROMPT_CHUNK=N`
   sets it.
 - The model's file must be on the internal SSD. An external disk is untested and likely much slower.
 
@@ -89,7 +89,7 @@ What the first run does (each step is skipped when it is already done):
    Python 3.12 (25 MB, pinned by SHA-256) into `.python`. No sudo, no Homebrew.
 2. **Checks your Mac:** the chip, the memory, the macOS version, the Command Line Tools and the free disk.
 3. **Python packages** into `.venv`. CMake and Ninja come from pip too, installed just before the build.
-4. **Builds the engine** (`build-metal/strata`) with Apple's metal-cpp headers (pinned by SHA-256) and llama.cpp's ggml at the
+4. **Builds the engine** (`build-metal/nostroma`) with Apple's metal-cpp headers (pinned by SHA-256) and llama.cpp's ggml at the
    commit the PC build pins.
 5. **Downloads the model.** The download resumes if interrupted. `--gguf-dir` uses files you already have.
 6. **Prepares the model:** the pack (seconds) and the MTP draft layer (about 5 GB of the original checkpoint). On a Mac that
@@ -98,7 +98,7 @@ What the first run does (each step is skipped when it is already done):
    with DFlash2 instead of the MTP layer (`--spec 6`, `--draft-conf 0.7`; Apache-2.0, a copy of incoai/Qwen3.8-Flash-Next-DFlash2 that Nostroma
    tuned, notice in `data/dflash2-tuned/`). With no internet the download is skipped without a word and the MTP runs as before;
    `./setup.sh --setup` fetches it later. IQ3_S and the other sets keep the MTP.
-7. **Writes `strata-<model>.json` and `run-<model>.sh`, then starts the server.**
+7. **Writes `nostroma-<model>.json` and `run-<model>.sh`, then starts the server.**
 
 After that, `./setup.sh` or `./run-q2_0.sh` starts the model directly. The server is the same as on a PC: the OpenAI-compatible
 API on `http://127.0.0.1:8080/v1`, the Anthropic API on `/v1/messages`, and the chat page on `http://127.0.0.1:8080/`.
@@ -116,8 +116,8 @@ API on `http://127.0.0.1:8080/v1`, the Anthropic API on `/v1/messages`, and the 
 ### The desktop app and `nostroma launch` on a Mac
 
 The app and `nostroma launch` build nothing. The Metal engine comes ready-made as an engine component, from the update feed or
-inside the app's installer. The model install is `setup.py` in its Control mode (`STRATA_CONTROL_INSTALL=1`). It downloads, or
-uses with `--gguf-dir`, and prepares the model files, and writes a run config whose engine is `component:strata-engine`. It does
+inside the app's installer. The model install is `setup.py` in its Control mode (`NOSTROMA_CONTROL_INSTALL=1`). It downloads, or
+uses with `--gguf-dir`, and prepares the model files, and writes a run config whose engine is `component:nostroma-engine`. It does
 not run `metal/setup_mac.py`, needs no Command Line Tools, and writes the same Metal flags.
 
 The model list and the recommendation judge a Mac by its unified memory with the rules of `nostroma_control/mac_fit.py`, the module
@@ -134,7 +134,7 @@ The config uses the Mac defaults: `--spec 2` with MTP (best on mixed text; an ex
 or `--spec 3 --spec-min-p 0.5` for the IQ3_S, Q2_0 and Coder sets (M5 Max, 5 interleaved pairs, same tokens, over `--spec 2`: IQ3_S story -0.9%,
 code +2.5%, JSON +16.7%, agent turn +4.9%; Q2_0 story +0.4%, code +11.5%, JSON +6.3%, agent turn +1.9%; Coder story -2.5%, code +7.1%,
 JSON +9.3%, agent turn +12.5%; the other sets are not measured),
-and the Q8_0 hyper-connection read. `STRATA_HC_Q8=0` in the config's `env` gives the exact BF16 read. The Mac engine is
+and the Q8_0 hyper-connection read. `NOSTROMA_HC_Q8=0` in the config's `env` gives the exact BF16 read. The Mac engine is
 deterministic: two runs give identical numbers.
 
 ### Gyro-S and Gyro-M (agentionai's trellis experts)
@@ -147,7 +147,7 @@ like every other pack's, so Gyro-S needs 58.5 GB of disk and about 38 GB of memo
 
 Gyro-M runs on the same kernels (checked tensor by tensor) but no Mac tested here could hold it. `metal/tests/gyro_parity.sh`
 checks the decoder against the format definition and the expert kernels against a double-precision reference.
-`STRATA_METAL_GYRO_TILES=0` turns off the dense-weight tiles.
+`NOSTROMA_METAL_GYRO_TILES=0` turns off the dense-weight tiles.
 
 ## Measured (M5 Max, 128 GB)
 
@@ -210,7 +210,7 @@ from each other: top-1 agreement 95.4% against 95.8%, mean KL 0.0207 against 0.0
 
 ## Limits (this version)
 
-- **Images (vision):** on by default. The app and the Terminal use the `strata-vision` that sits beside `nostroma` in the engine
+- **Images (vision):** on by default. The app and the Terminal use the `nostroma-vision` that sits beside `nostroma` in the engine
   package; `./setup.sh` builds it and asks "Should the model also read images?" (default yes). With `--gpu` it reads on the Mac's
   GPU (ggml's Metal backend), without it on the CPU. A Mac always gets the GPU reader, whatever its memory. The footprint is about
   1.18 GB on the GPU and 1.05 GB on the CPU. `--vision cpu` is still allowed and prints a note. The CPU reader is slow because
@@ -250,22 +250,22 @@ For testing. All are off unless set; the defaults are described above.
 
 | Variable | Effect |
 | --- | --- |
-| `STRATA_HC_Q8=0` | The BF16 hyper-connection read (exact) instead of Q8_0 |
-| `STRATA_METAL_PROMPT=window` | Read the prompt through decode windows (slow, exact fallback; about 190 tok/s) |
-| `STRATA_METAL_PROMPT_CHUNK=N` | Prompt chunk size (default 2048 resident; see streaming above) |
-| `STRATA_METAL_MTP_Q8=0` | The draft layer's matrices in BF16 instead of Q8_0 |
-| `STRATA_METAL_MTP_CHAIN=0` | One GPU submission per draft step instead of one per round |
-| `STRATA_METAL_FUSE=0`, `STRATA_METAL_LAZY_FOLD=0` | Turn off two decode fusions (same tokens, slower) |
-| `STRATA_METAL_PROMPT_EXPERTS=v3` | The M5 layout for the prompt's expert GEMMs. Fails on an M1 Max, so it is off there (default v2) |
-| `STRATA_METAL_STREAM=1` / `=0` | Stream the experts from the SSD even when the pack fits / never (the default decides by size) |
-| `STRATA_METAL_CONTIG=0` | Streaming: read the model file even when the experts' copy is there |
-| `STRATA_METAL_ARENA_GB=N`, `STRATA_METAL_KEEP_FREE_GB=N` | Streaming: the arena's size, or the memory left to macOS |
-| `STRATA_METAL_LEAVE_SHARE=0.4` | Streaming, 64 GB or more: the share of the RAM left to macOS when the footprint cap is set |
-| `STRATA_METAL_WIRE_ARENA=0` | Streaming, 64 GB or more: leave the filled arena pageable (default: wired) |
-| `STRATA_METAL_IGNORE_REPACK=1` | Start although a model repack or setup's preparation is running (the engine refuses by default) |
-| `STRATA_METAL_KEEP_HOST_WEIGHTS=1` | Streaming: keep the host code's own copies of the weights (2 to 3 GB) |
-| `STRATA_METAL_F16=1` / `=0` | Decode windows of a resident model: the GEMVs of Q2_0, Q3_K-Q6_K and IQ4_XS and the Q2_0 routed experts in fp16. On in the config setup writes for a resident IQ3_S or Q2_0 pack (M5 Max: decode +9 to +15%, top-1 96-97% and mean KL 0.009-0.016 against fp32; the 61-task quality suite passes the same tasks as with it off); `=0` in the config's `env` turns it off. Other sets: off unless set. M1 Max: a 2-token window's GPU time 56-60 -> 40-41 ms, mean KL 0.009 against fp32 |
-| `STRATA_METAL_TRACE=1`, `STRATA_METAL_PROFILE=1`, `STRATA_METAL_KPROF=T` | Per-window traces, a time breakdown, per-kernel GPU times |
+| `NOSTROMA_HC_Q8=0` | The BF16 hyper-connection read (exact) instead of Q8_0 |
+| `NOSTROMA_METAL_PROMPT=window` | Read the prompt through decode windows (slow, exact fallback; about 190 tok/s) |
+| `NOSTROMA_METAL_PROMPT_CHUNK=N` | Prompt chunk size (default 2048 resident; see streaming above) |
+| `NOSTROMA_METAL_MTP_Q8=0` | The draft layer's matrices in BF16 instead of Q8_0 |
+| `NOSTROMA_METAL_MTP_CHAIN=0` | One GPU submission per draft step instead of one per round |
+| `NOSTROMA_METAL_FUSE=0`, `NOSTROMA_METAL_LAZY_FOLD=0` | Turn off two decode fusions (same tokens, slower) |
+| `NOSTROMA_METAL_PROMPT_EXPERTS=v3` | The M5 layout for the prompt's expert GEMMs. Fails on an M1 Max, so it is off there (default v2) |
+| `NOSTROMA_METAL_STREAM=1` / `=0` | Stream the experts from the SSD even when the pack fits / never (the default decides by size) |
+| `NOSTROMA_METAL_CONTIG=0` | Streaming: read the model file even when the experts' copy is there |
+| `NOSTROMA_METAL_ARENA_GB=N`, `NOSTROMA_METAL_KEEP_FREE_GB=N` | Streaming: the arena's size, or the memory left to macOS |
+| `NOSTROMA_METAL_LEAVE_SHARE=0.4` | Streaming, 64 GB or more: the share of the RAM left to macOS when the footprint cap is set |
+| `NOSTROMA_METAL_WIRE_ARENA=0` | Streaming, 64 GB or more: leave the filled arena pageable (default: wired) |
+| `NOSTROMA_METAL_IGNORE_REPACK=1` | Start although a model repack or setup's preparation is running (the engine refuses by default) |
+| `NOSTROMA_METAL_KEEP_HOST_WEIGHTS=1` | Streaming: keep the host code's own copies of the weights (2 to 3 GB) |
+| `NOSTROMA_METAL_F16=1` / `=0` | Decode windows of a resident model: the GEMVs of Q2_0, Q3_K-Q6_K and IQ4_XS and the Q2_0 routed experts in fp16. On in the config setup writes for a resident IQ3_S or Q2_0 pack (M5 Max: decode +9 to +15%, top-1 96-97% and mean KL 0.009-0.016 against fp32; the 61-task quality suite passes the same tasks as with it off); `=0` in the config's `env` turns it off. Other sets: off unless set. M1 Max: a 2-token window's GPU time 56-60 -> 40-41 ms, mean KL 0.009 against fp32 |
+| `NOSTROMA_METAL_TRACE=1`, `NOSTROMA_METAL_PROFILE=1`, `NOSTROMA_METAL_KPROF=T` | Per-window traces, a time breakdown, per-kernel GPU times |
 
 ## How it works
 
@@ -275,7 +275,7 @@ The code is in `metal/` (the engine's side in `metal/src/engine`, the kernels in
   onto a small Metal runtime (`metal/src/gpu`).
 - **Decode and prompt work** run in Metal kernels: one command buffer per verify window, experts read in place from the mapped
   model file, hyper-connections, GDN state and QSA attention on the GPU, and a whole MTP draft round in one command buffer.
-- **The PC builds are byte-identical** with this code present. Every shared file's change is behind `STRATA_GPU_METAL` or `__APPLE__`.
+- **The PC builds are byte-identical** with this code present. Every shared file's change is behind `NOSTROMA_GPU_METAL` or `__APPLE__`.
 
 ## History / older measurements
 

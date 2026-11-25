@@ -53,7 +53,7 @@ def serve(cfg_path: str, port: int, parallel: int | None = None):
     cfg["log"] = f"/tmp/dgx-conc-{port}.log"
     tmp = Path(f"/tmp/dgx-conc-{port}.json")
     tmp.write_text(json.dumps(cfg, indent=1))
-    proc = subprocess.Popen([sys.executable, str(ROOT / "serve" / "server.py"), "--engine", "strata", "--config",
+    proc = subprocess.Popen([sys.executable, str(ROOT / "serve" / "server.py"), "--engine", "nostroma", "--config",
                              str(tmp), "--port", str(port)], cwd=str(ROOT),
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     t0 = time.time()

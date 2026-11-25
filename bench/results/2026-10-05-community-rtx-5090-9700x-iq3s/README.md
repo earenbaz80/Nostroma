@@ -1,7 +1,7 @@
 # Community benchmark: RTX 5090, Ryzen 7 9700X, IQ3_S
 
 Measured on 2026-10-05 by [steve8697](https://github.com/steve8697), on a
-native Windows PC. This tests the published Strata 0.1.39 engine with the
+native Windows PC. This tests the published Nostroma 0.1.39 engine with the
 original Flash-Next IQ3_S, one GPU, and a 262,144-token context limit.
 
 Median fresh-prompt throughput was **3,072 tok/s prefill and 164.3 tok/s
@@ -53,7 +53,7 @@ doing differ, so the two folders are separate measurements.
   The engine then reports `spec=6`, `mtp_max=4`, `lookup=3`: with prompt
   lookup enabled it keeps a 4-token MTP draft and widens the verify window
   by 2, up to 8.
-- `STRATA_PF_FUSED=1`. The startup log printed `prompt experts on the fused
+- `NOSTROMA_PF_FUSED=1`. The startup log printed `prompt experts on the fused
   int8 kernels`. Prompts long enough for that path use it. The flag is read
   once at process start.
 - `"parallel": 2`. The engine reserved 2 slot sessions, 0.95 GiB each, 1.90
@@ -64,10 +64,10 @@ doing differ, so the two folders are separate measurements.
 - `experimental_speed_projection` left off. No API key. The server listened
   on all interfaces; the configured hostname allowlist is omitted here.
 
-Launch, from the Strata directory:
+Launch, from the Nostroma directory:
 
 ```text
-.venv\Scripts\python.exe -u serve\server.py --engine strata --config strata-iq3_s.json --port 5310
+.venv\Scripts\python.exe -u serve\server.py --engine nostroma --config nostroma-iq3_s.json --port 5310
 ```
 
 The script that issued the speed requests is [benchmark.py](benchmark.py).
@@ -153,7 +153,7 @@ Thinking, sampled decoding, tool calls, images, and overlapping requests were
 not measured. The twelve serial runs never shared a batch window, so
 `"parallel": 2` only reserved slot memory for them.
 
-`STRATA_PF_FUSED=1` changes how long prompts round native IQ expert math.
+`NOSTROMA_PF_FUSED=1` changes how long prompts round native IQ expert math.
 This report does not claim those tokens match a run with the flag unset.
 
 The other RTX 5090 report dated 2026-09-30 in this directory is a different

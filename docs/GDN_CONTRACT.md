@@ -13,7 +13,7 @@ state and the convolution history carry from call to call.
 
 ## One layer, in the order the engine runs it (`prefill.cpp`, `pt.mark` stages)
 
-| Stage (STRATA_PREFILL_TIMING name) | Work | In the harness |
+| Stage (NOSTROMA_PREFILL_TIMING name) | Work | In the harness |
 |---|---|---|
 | `gdn` (kPfGdn) | attn_qkv, attn_gate (z), ssm_alpha, ssm_beta projections (quantized GEMMs) | no (not a GDN kernel) |
 | `gdn conv+gates` (kPfGdnConv) | `gdn_gates`, `gdn_conv` | yes, timed separately |
@@ -39,7 +39,7 @@ Note the stage names: the profile line `gdn` is the INPUT projections, `gdn out 
 | `y` | `[T][HV*S]` FP32 | scratch the recurrence writes the raw output to |
 | `y16` | FP16, row stride `ld16` | normalized output the out projection reads |
 
-`ld16 = HV*S = 6144`, or `6144 + 64` when STRATA_PF_PAD is on and `T >= max(pf_switch_min_t, 64)`. A kernel must write exactly
+`ld16 = HV*S = 6144`, or `6144 + 64` when NOSTROMA_PF_PAD is on and `T >= max(pf_switch_min_t, 64)`. A kernel must write exactly
 the 6144 columns and leave the pad columns untouched (the harness fills them with a sentinel and fails if they change).
 
 ## Math (per value head, `g_t = exp(gate_t)`)
@@ -61,14 +61,14 @@ the 6144 columns and leave the pad columns untouched (the harness fills them wit
 
 ## Dispatch on CUDA (production, no probe)
 
-1. `STRATA_GDN_TC=1` and `T >= 128`: `gdn_rec_tc` (tensor-core scan; sm_80+, >= 48 SMs, ~122 KB smem per block). Not mentioned in the
+1. `NOSTROMA_GDN_TC=1` and `T >= 128`: `gdn_rec_tc` (tensor-core scan; sm_80+, >= 48 SMs, ~122 KB smem per block). Not mentioned in the
    2026-10-26 research pack: it landed with PR #3779. FP16 operands, FP32 accumulation: mixed-precision tier.
-2. `STRATA_GDN_CHUNKED=1` (`=2` skips the SM-count test) and `T >= 128`: `gdn_rec_chunked` (FP32, C = 32, scan grid `HK x S/16 = 128`
+2. `NOSTROMA_GDN_CHUNKED=1` (`=2` skips the SM-count test) and `T >= 128`: `gdn_rec_chunked` (FP32, C = 32, scan grid `HK x S/16 = 128`
    blocks of 384 threads, 93.7 KB smem; sm_80+).
 3. else `gdn_rec_kh_kernel` when `gdn_keyhead_ok()` (sm_80+, all 64 blocks resident), otherwise `gdn_rec_cols_pipe_kernel`
-   (`STRATA_GDN_PIPELINE=0`: `gdn_rec_cols_kernel`).
+   (`NOSTROMA_GDN_PIPELINE=0`: `gdn_rec_cols_kernel`).
 4. `gdn_out_norm_kernel` after any of them (it is the part that writes `y16`).
-`STRATA_GDN_REC_WARP` and `STRATA_GDN_CHUNK` exist only in `STRATA_EXPERIMENTAL_SM60` builds and act only on a cc 7.0 device at run
+`NOSTROMA_GDN_REC_WARP` and `NOSTROMA_GDN_CHUNK` exist only in `NOSTROMA_EXPERIMENTAL_SM60` builds and act only on a cc 7.0 device at run
 time (`gdn_chunk_available()`): they do nothing on sm_60, sm_86 or sm_120.
 
 ## Numerical tiers (gdn-research 06)
@@ -83,6 +83,6 @@ heads, tokens and state elements.
 
 ## Test hook
 
-`include/strata/prefill/gdn_probe.hpp`: a thread-local `GdnProbe` installed by a test selects/forces a path, a smaller chunked scratch
+`include/nostroma/prefill/gdn_probe.hpp`: a thread-local `GdnProbe` installed by a test selects/forces a path, a smaller chunked scratch
 segment (`gsb`), or the SM-count bypass, and reads back `selected`, `wanted` and the fallback `reason`. With no probe installed the
 dispatch is unchanged. The engine never installs one.

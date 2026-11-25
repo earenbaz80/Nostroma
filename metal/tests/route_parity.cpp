@@ -13,7 +13,7 @@
 #include <vector>
 
 namespace {
-constexpr int TK = strata_metal::geo::TOPK, NE = strata_metal::geo::NEXP;   // the shape this build is compiled for (engine/geo.h); the kernel's logits row stride is 512
+constexpr int TK = nostroma_metal::geo::TOPK, NE = nostroma_metal::geo::NEXP;   // the shape this build is compiled for (engine/geo.h); the kernel's logits row stride is 512
 constexpr int P_NG = 0, P_MAXE = 128, P_GEXP = 16, P_GSTART = P_GEXP + P_MAXE, P_ETOK = P_GSTART + P_MAXE + 4,
               P_EW = P_ETOK + P_MAXE, P_TOKENT = P_EW + P_MAXE, P_INTS = P_TOKENT + P_MAXE;
 struct MoeArgs {
@@ -24,7 +24,7 @@ struct MoeArgs {
 
 int main() {
     mtl::Context cx;
-    const int lib = cx.compile({"quant.metal", "units.metal", "moe.metal"}, strata_metal::geo::prelude());
+    const int lib = cx.compile({"quant.metal", "units.metal", "moe.metal"}, nostroma_metal::geo::prelude());
     mtl::Pipeline p = cx.pipeline(lib, "moe_route");
     mtl::Buffer lg = cx.alloc(4 * 8 * 512), ids = cx.alloc(4 * 8 * TK), w = cx.alloc(4 * 8 * TK), plan = cx.alloc(4 * P_INTS);
     ref::Rng r(9);

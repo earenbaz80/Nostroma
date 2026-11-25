@@ -1,7 +1,7 @@
 {
   "prepared_at_utc": "2026-10-09T11:04:53.941167+00:00",
   "config": {
-    "exe": "<STRATA_ROOT>/engine/strata",
+    "exe": "<NOSTROMA_ROOT>/engine/nostroma",
     "args": [
       "--pack",
       "<MODEL_DATA>/packs/swift-iq3_xxs",
@@ -10,7 +10,7 @@
       "--ple-gguf",
       "<MODEL_DATA>/models/swift-IQ3_XXS/Swift-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf",
       "--expert-profile",
-      "<STRATA_ROOT>/data/expert-profile.bin",
+      "<NOSTROMA_ROOT>/data/expert-profile.bin",
       "--mtp",
       "<MODEL_DATA>/mtp/rt",
       "--max-context",
@@ -37,7 +37,7 @@
       "262144",
       "--vision"
     ],
-    "cwd": "<STRATA_ROOT>",
+    "cwd": "<NOSTROMA_ROOT>",
     "tokenizer": "<MODEL_DATA>/packs/swift-iq3_xxs/tokenizer",
     "model_name": "hermes-brain",
     "gpu": 0,
@@ -56,7 +56,7 @@
       "top_k": 20
     },
     "vision": {
-      "exe": "<STRATA_ROOT>/engine/strata-vision",
+      "exe": "<NOSTROMA_ROOT>/engine/nostroma-vision",
       "mmproj": "<MODEL_DATA>/models/mmproj-Swift-Qwen3.8-Flash-Next-BF16.gguf",
       "model": "<MODEL_DATA>/models/swift-IQ3_XXS/Swift-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf",
       "gpu": true,

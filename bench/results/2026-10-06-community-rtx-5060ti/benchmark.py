@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Serial, fresh-prompt Strata benchmark. Run inside its prepared environment."""
+"""Serial, fresh-prompt Nostroma benchmark. Run inside its prepared environment."""
 import argparse
 import hashlib
 import json
@@ -35,8 +35,8 @@ def pick_engine(records, started_wall, ended_wall, expected):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--root", type=Path, default=Path("/workspace/Strata"))
-    parser.add_argument("--pack", type=Path, default=Path("/workspace/Strata-data/packs/iq2_xs"))
+    parser.add_argument("--root", type=Path, default=Path("/workspace/Nostroma"))
+    parser.add_argument("--pack", type=Path, default=Path("/workspace/Nostroma-data/packs/iq2_xs"))
     parser.add_argument("--url", default="http://127.0.0.1:18080")
     parser.add_argument("--out", type=Path, default=Path("/workspace/results"))
     parser.add_argument("--targets", default="4096,32768,128000")
@@ -44,7 +44,7 @@ def main():
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     sys.path[:0] = [str(args.root), str(args.root / "tools")]
-    from strata_tokenizer import Tokenizer
+    from nostroma_tokenizer import Tokenizer
     from serve.frontend import ChatTemplate, openai_to_messages
     directory = args.pack / "tokenizer"
     vocab = json.loads((directory / "vocab.json").read_text())
@@ -59,7 +59,7 @@ def main():
     rows = []
 
     def request(content, maximum=256):
-        return {"model": "strata", "messages": [{"role": "user", "content": content}],
+        return {"model": "nostroma", "messages": [{"role": "user", "content": content}],
                 "temperature": 0, "reasoning_effort": "none", "max_tokens": maximum,
                 "stream": True, "stream_options": {"include_usage": True}}
 

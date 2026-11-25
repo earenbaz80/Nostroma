@@ -1,14 +1,14 @@
 // #5718 follow-up: the stall report names the GPU streams a host may be waiting on and says, from a non-blocking query,
 // whether their work is finished.  No GPU: the query is faked per stream; this checks the list (RAII, slots), the line
 // for each state, and that nothing is printed when no stream is watched.
-#include "strata/core/stream_watch.hpp"
+#include "nostroma/core/stream_watch.hpp"
 
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <string>
 
-using namespace strata::core;
+using namespace nostroma::core;
 
 namespace {
 int failed = 0;

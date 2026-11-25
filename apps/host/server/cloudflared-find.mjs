@@ -32,27 +32,27 @@ export function versionAtLeast(found, minimum = MIN_VERSION) {
 }
 
 const SOURCE_LABEL = {
-  strata: 'Nostroma’s own connector folder',
+  nostroma: 'Nostroma’s own connector folder',
   component: 'the optional connector component',
   path: 'found on your PATH',
   system: 'a usual install location',
-  setting: 'chosen with the STRATA_CLOUDFLARED setting',
+  setting: 'chosen with the NOSTROMA_CLOUDFLARED setting',
 };
 
 /** Candidate paths in search order, each as { path, source }. Pure: no disk access. */
 export function connectorCandidates({ directory, componentDirectory = null, platform = process.platform, env = process.env, home = homedir(), search = true } = {}) {
-  // STRATA_CLOUDFLARED=<file> uses exactly that connector; STRATA_CLOUDFLARED_SEARCH=own keeps the search to Nostroma's own folders.
+  // NOSTROMA_CLOUDFLARED=<file> uses exactly that connector; NOSTROMA_CLOUDFLARED_SEARCH=own keeps the search to Nostroma's own folders.
   const windows = platform === 'win32', p = windows ? win32 : posix;
   const name = windows ? 'cloudflared.exe' : 'cloudflared';
-  if ((env.NOSTROMA_CLOUDFLARED ?? env.STRATA_CLOUDFLARED)) return [{ path: (env.NOSTROMA_CLOUDFLARED ?? env.STRATA_CLOUDFLARED), source: 'setting' }];
-  if ((env.NOSTROMA_CLOUDFLARED_SEARCH ?? env.STRATA_CLOUDFLARED_SEARCH) === 'own') search = false;
+  if ((env.NOSTROMA_CLOUDFLARED ?? env.NOSTROMA_CLOUDFLARED)) return [{ path: (env.NOSTROMA_CLOUDFLARED ?? env.NOSTROMA_CLOUDFLARED), source: 'setting' }];
+  if ((env.NOSTROMA_CLOUDFLARED_SEARCH ?? env.NOSTROMA_CLOUDFLARED_SEARCH) === 'own') search = false;
   const out = [], seen = new Set();
   const add = (dir, source) => {
     if (!dir) return;
     const path = p.join(dir, name), key = windows ? path.toLowerCase() : path;
     if (!seen.has(key)) { seen.add(key); out.push({ path, source }); }
   };
-  add(directory, 'strata');
+  add(directory, 'nostroma');
   add(componentDirectory, 'component');
   if (!search) return out;
   const pathVariable = windows ? (env.Path ?? env.PATH ?? '') : (env.PATH ?? '');

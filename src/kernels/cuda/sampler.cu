@@ -15,16 +15,16 @@
 // three implementations that pick the same token, bit for bit:
 //   - the SPLIT top_k (default): `sampler_split_part_kernel` cuts each row into 4,096-logit blocks over the whole
 //     GPU, each keeps its own top_k, and `sampler_split_merge_kernel` merges those lists and runs the tail;
-//   - `sampler_one_block_kernel` (`STRATA_SAMPLER_ONE_BLOCK=1`, and the fallback when the split cannot run): one
+//   - `sampler_one_block_kernel` (`NOSTROMA_SAMPLER_ONE_BLOCK=1`, and the fallback when the split cannot run): one
 //     block per token, `top_k` block-argmax rounds, each over the logits after the previous pick;
-//   - `sampler_kernel` (`STRATA_OLD_SAMPLER=1`), the kernel of engine 0.1.20, kept as the reference.
+//   - `sampler_kernel` (`NOSTROMA_OLD_SAMPLER=1`), the kernel of engine 0.1.20, kept as the reference.
 // The two new ones share `sampled_tail_warp` (top_p / min_p / temperature / draw on one warp).
-#include "strata/kernels/sampler.hpp"
-#include "strata/env.hpp"
-#include "strata/core/coupled_draft.hpp"
-#include "strata/core/spec_prob.hpp"
-#include "strata/core/spec_proposal.hpp"
-#include "strata/core/emulate.hpp"
+#include "nostroma/kernels/sampler.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/core/coupled_draft.hpp"
+#include "nostroma/core/spec_prob.hpp"
+#include "nostroma/core/spec_proposal.hpp"
+#include "nostroma/core/emulate.hpp"
 
 #include <cuda_runtime.h>
 
@@ -35,7 +35,7 @@
 #include <mutex>
 #include <vector>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 
 // Philox 4x32-10, the counter-based generator the phase asks for.  Counter-based matters because it makes the
@@ -65,7 +65,7 @@ __device__ __forceinline__ float philox_uniform(uint64_t seed, uint64_t counter)
     return (float) (c0 >> 8) * (1.0f / 16777216.0f);
 }
 
-// GUMBEL-MAX COUPLING (STRATA_SPEC_GUMBEL=1, ported from llama.cpp-lab's --spec-coupled, lab PRs #26/#30).  The pick
+// GUMBEL-MAX COUPLING (NOSTROMA_SPEC_GUMBEL=1, ported from llama.cpp-lab's --spec-coupled, lab PRs #26/#30).  The pick
 // is argmax_i p_i / E_i with E_i = -log(u_i) ~ Exp(1) and u_i a hash of (seed, counter, TOKEN ID) - exactly
 // equivalent to argmax(log p_i + Gumbel_i), so it is an exact sample of p.  Unlike the inverse-CDF pick over a
 // probability-sorted list, the noise a token gets does not depend on which other tokens survived the cut, so a
@@ -205,11 +205,11 @@ __global__ void sampler_greedy_kernel(const float* __restrict__ logits, int n_vo
 constexpr int kAmCtas = 8;      // CTAs per token (the portable cluster size)
 constexpr int kAmThreads = 1024;
 #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 900
-#define STRATA_AM_CLUSTER 1
+#define NOSTROMA_AM_CLUSTER 1
 #else
-#define STRATA_AM_CLUSTER 0     // older targets: a trap, never launched (sample_greedy_cluster checks)
+#define NOSTROMA_AM_CLUSTER 0     // older targets: a trap, never launched (sample_greedy_cluster checks)
 #endif
-#if STRATA_AM_CLUSTER
+#if NOSTROMA_AM_CLUSTER
 __device__ __forceinline__ void am_take(float s, int v, float& bv, int& best) {
     if (s > bv) { bv = s; best = v; }
 }
@@ -220,7 +220,7 @@ __device__ __forceinline__ void am_merge(float ov, int oi, float& bv, int& best)
 // grid (kAmCtas, n_tokens), cluster (kAmCtas, 1, 1), kAmThreads threads
 __global__ void __launch_bounds__(kAmThreads) sampler_greedy_cluster_kernel(const float* __restrict__ logits,
                                                                             int n_vocab, int* __restrict__ out) {
-#if STRATA_AM_CLUSTER
+#if NOSTROMA_AM_CLUSTER
     __shared__ float sv[32];
     __shared__ int si[32];
     __shared__ float cv[kAmCtas];    // on CTA 0: each CTA's result
@@ -291,7 +291,7 @@ __global__ void __launch_bounds__(kAmThreads) sampler_greedy_cluster_kernel(cons
 /// order - is unchanged; `top_p`'s cut reads that order in double arithmetic as before; temperature and the
 /// Philox draw apply after the cut.  `sampler_parity` pins all of it against the host reference.
 ///
-/// **KEPT AS THE REFERENCE, BEHIND `STRATA_OLD_SAMPLER=1`.**  Two costs remain in it: the `taken`
+/// **KEPT AS THE REFERENCE, BEHIND `NOSTROMA_OLD_SAMPLER=1`.**  Two costs remain in it: the `taken`
 /// sweep is O(k) per logit per round, O(k^2 x n_vocab) per row (47 M shared-memory compares at k = 20, 500 M at
 /// 64), and the double-precision tail runs on all 1,024 threads where one warp suffices - GeForce issues FP64 at
 /// 1/64 of FP32.  The kernels after this one remove both and select the same list in the same order.
@@ -559,7 +559,7 @@ __device__ void sampled_tail_warp(const int* sel_ids, const float* sel_logit, in
 /// what has not been picked.  The round is then the same block argmax with the same tie rule, so the list is the
 /// same list in the same order.  An empty round leaves (-inf, id 0) as before, and every round after it is empty
 /// in both versions (nothing after -inf beats -inf).  O(k x n_vocab) per row instead of O(k^2 x n_vocab), then warp
-/// 0 runs the tail.  `STRATA_SAMPLER_ONE_BLOCK=1`, and the fallback when the split path cannot run.
+/// 0 runs the tail.  `NOSTROMA_SAMPLER_ONE_BLOCK=1`, and the fallback when the split path cannot run.
 __global__ void __launch_bounds__(1024)
 sampler_one_block_kernel(const float* __restrict__ logits, int n_vocab, const int* __restrict__ history,
                          int history_len, const SamplerParams p, int* __restrict__ out) {
@@ -797,7 +797,7 @@ sampler_split_merge_kernel(const int2* __restrict__ cand, int n_blocks, int n_vo
     sampled_tail_warp(sel_ids, sel_logit, k, p, t, out, ex);
 }
 
-// ---- COUPLED DRAFT SAMPLING (include/strata/core/coupled_draft.hpp): the MTP draft layer samples its draft with the
+// ---- COUPLED DRAFT SAMPLING (include/nostroma/core/coupled_draft.hpp): the MTP draft layer samples its draft with the
 // target's chain and the target's Philox draw.  Everything that varies per request or per round - the chain's
 // parameters, the seed, the counter (from the cell's step record), the penalty history - is read from DEVICE memory:
 // these kernels are captured into the drafter's round/step graphs.  One row, `nv` logits: the draft head's
@@ -812,7 +812,7 @@ __global__ void coupled_stage_kernel(const SamplerParams* __restrict__ mp, const
     for (int i = threadIdx.x; i < (int) (sizeof(SamplerParams) / sizeof(int)); i += blockDim.x) d[i] = s[i];
     __syncthreads();                                   // the word holding `gumbel` was just copied
     if (threadIdx.x == 0) dp->gumbel = gumbel != 0;
-    const int h = strata::core::coupled_hist_len(((const volatile SamplerParams*) mp)->penalty_last_n, cap);
+    const int h = nostroma::core::coupled_hist_len(((const volatile SamplerParams*) mp)->penalty_last_n, cap);
     const volatile int* vh = (const volatile int*) mh;
     for (int i = cap - h + (int) threadIdx.x; i < cap; i += blockDim.x) ring[i] = vh[i];
 }
@@ -825,9 +825,9 @@ __global__ void coupled_penalize_kernel(float* __restrict__ logits, int nv, cons
                                         int id_vocab, const SamplerParams* __restrict__ dp, const int* __restrict__ ring,
                                         int cap, int j) {
     const SamplerParams p = *dp;
-    const int h = strata::core::coupled_hist_len(p.penalty_last_n, cap);
+    const int h = nostroma::core::coupled_hist_len(p.penalty_last_n, cap);
     if (h <= 0) return;
-    const int* hrow = ring + strata::core::coupled_hist_start(cap, j, h);
+    const int* hrow = ring + nostroma::core::coupled_hist_start(cap, j, h);
     extern __shared__ unsigned int seen[];
     const int words = (nv + 31) / 32;
     for (int w = threadIdx.x; w < words; w += blockDim.x) seen[w] = 0u;
@@ -853,7 +853,7 @@ coupled_merge_kernel(const int2* __restrict__ cand, int n_blocks, int nv, int kp
                      float* __restrict__ out_prob) {
     const int lane = (int) threadIdx.x;
     SamplerParams p = *dp;
-    p.counter = strata::core::coupled_draft_counter((int64_t) step_rec[0]);
+    p.counter = nostroma::core::coupled_draft_counter((int64_t) step_rec[0]);
     const int k = sampled_k(p.top_k, nv);    // <= kpart: the first k of a union lie in the first k of each list
     __shared__ int2 lists[kSplitMaxBlocks * kSelMax];
     __shared__ int sel_ids[kSelMax];
@@ -882,7 +882,7 @@ coupled_merge_kernel(const int2* __restrict__ cand, int n_blocks, int nv, int kp
     }
 }
 
-// ---- PROBABILISTIC DRAFT ACCEPTANCE (include/strata/core/spec_prob.hpp, STRATA_SPEC_PROB=1) ----
+// ---- PROBABILISTIC DRAFT ACCEPTANCE (include/nostroma/core/spec_prob.hpp, NOSTROMA_SPEC_PROB=1) ----
 //
 // `sampled_probs_warp` is `sampled_tail_warp`'s chain without the pick: the same arithmetic instruction for
 // instruction (top_p's cut in double over the top_k list, min_p's threshold in logit space, temperature, the two
@@ -948,7 +948,7 @@ spec_draft_merge_kernel(const int2* __restrict__ cand, int n_blocks, int nv, int
                         int* __restrict__ out_id, float* __restrict__ out_prob, int* __restrict__ qrow, int gate_pick, float tscale) {
     const int lane = (int) threadIdx.x;
     SamplerParams p = *dp;
-    p.temperature *= tscale;   // 1 unless STRATA_SPEC_PROB_DT: any q is valid, a sharper one may be kept more often
+    p.temperature *= tscale;   // 1 unless NOSTROMA_SPEC_PROB_DT: any q is valid, a sharper one may be kept more often
     const int k = sampled_k(p.top_k, nv);
     __shared__ int2 lists[kSplitMaxBlocks * kSelMax];
     __shared__ int sel_ids[kSelMax];
@@ -969,8 +969,8 @@ spec_draft_merge_kernel(const int2* __restrict__ cand, int n_blocks, int nv, int
     } else {
         n_keep = sampled_probs_warp(sel_logit, k, p, ex);
         if (lane == 0) {
-            const float u = philox_uniform(p.seed, strata::core::coupled_draft_counter((int64_t) step_rec[0]) |
-                                                       strata::core::kSpecCtrDraft);
+            const float u = philox_uniform(p.seed, nostroma::core::coupled_draft_counter((int64_t) step_rec[0]) |
+                                                       nostroma::core::kSpecCtrDraft);
             double cum = 0.0;
             int pi = n_keep > 0 ? n_keep - 1 : 0;
             for (int i = 0; i < n_keep; ++i) {
@@ -984,14 +984,14 @@ spec_draft_merge_kernel(const int2* __restrict__ cand, int n_blocks, int nv, int
         __syncwarp();
     }
     // q's list in token ids (the subset's index mapped back), -1 after the last entry
-    for (int i = lane; i < strata::core::kSpecQEntries; i += 32) {
+    for (int i = lane; i < nostroma::core::kSpecQEntries; i += 32) {
         if (i < n_keep) {
             const int s = sel_ids[i];
             qrow[i] = sub_to_id != nullptr ? sub_to_id[s] : s;
-            ((float*) qrow)[strata::core::kSpecQEntries + i] = (float) ex[i];
+            ((float*) qrow)[nostroma::core::kSpecQEntries + i] = (float) ex[i];
         } else {
             qrow[i] = -1;
-            ((float*) qrow)[strata::core::kSpecQEntries + i] = 0.0f;
+            ((float*) qrow)[nostroma::core::kSpecQEntries + i] = 0.0f;
         }
     }
     __syncwarp();
@@ -1032,9 +1032,9 @@ spec_verify_merge_kernel(const int2* __restrict__ cand, int n_blocks, int n_voca
     const uint64_t pos = p.counter + (uint64_t) t;
     const int d = t < T - 1 ? dtok[t] : -1;
     const bool has_q = t < n_q;
-    const int32_t* qid = has_q ? qbuf + (size_t) t * strata::core::kSpecQStride : nullptr;
-    const float* qpr = has_q ? (const float*) (qid + strata::core::kSpecQEntries) : nullptr;
-    const auto kind = strata::core::proposal::rowkind(t, T, n_q);
+    const int32_t* qid = has_q ? qbuf + (size_t) t * nostroma::core::kSpecQStride : nullptr;
+    const float* qpr = has_q ? (const float*) (qid + nostroma::core::kSpecQEntries) : nullptr;
+    const auto kind = nostroma::core::proposal::rowkind(t, T, n_q);
     // lane 0: p(d), q(d) and the accept decision.  dec: 0 plain sample, 1 accept, 2 reject; point: no usable q(d)
     int dec = 0, point = 1;
     if (lane == 0 && d >= 0) {
@@ -1043,10 +1043,10 @@ spec_verify_merge_kernel(const int2* __restrict__ cand, int n_blocks, int n_voca
             if (sel_ids[i] == d) { pd = ex[i]; break; }
         double qd = -1.0;
         if (has_q)
-            for (int i = 0; i < strata::core::kSpecQEntries && qid[i] >= 0; ++i)
+            for (int i = 0; i < nostroma::core::kSpecQEntries && qid[i] >= 0; ++i)
                 if (qid[i] == d) { qd = (double) qpr[i]; break; }
         point = qd > 0.0 ? 0 : 1;
-        const float u = philox_uniform(p.seed, pos | strata::core::kSpecCtrAccept);
+        const float u = philox_uniform(p.seed, pos | nostroma::core::kSpecCtrAccept);
         dec = (pd > 0.0 && (point ? (double) u < pd : (double) u * qd < pd)) ? 1 : 2;
         if constexpr (Augmented) {
             // An explicit mu candidate cannot silently become a point proposal.
@@ -1054,8 +1054,8 @@ spec_verify_merge_kernel(const int2* __restrict__ cand, int n_blocks, int n_voca
         }
     }
     if constexpr (Augmented) {
-        if (lane == 0 && kind == strata::core::proposal::RowKind::MuOffer && (d < 0 || d >= n_vocab)) dec = 3;
-        if (lane == 0 && kind == strata::core::proposal::RowKind::NullTail) {
+        if (lane == 0 && kind == nostroma::core::proposal::RowKind::MuOffer && (d < 0 || d >= n_vocab)) dec = 3;
+        if (lane == 0 && kind == nostroma::core::proposal::RowKind::NullTail) {
             // Last row (including T=1) has d=-1, no dtok read or acceptance draw.
             dec = 2; point = 0;
         }
@@ -1069,7 +1069,7 @@ spec_verify_merge_kernel(const int2* __restrict__ cand, int n_blocks, int n_voca
                 wi = sel_ids[i] == d ? 0.0 : ex[i];
             } else {
                 double qi = 0.0;
-                for (int j = 0; j < strata::core::kSpecQEntries && qid[j] >= 0; ++j)
+                for (int j = 0; j < nostroma::core::kSpecQEntries && qid[j] >= 0; ++j)
                     if (qid[j] == sel_ids[i]) { qi = (double) qpr[j]; break; }
                 wi = ex[i] - qi;
                 if (wi < 0.0) wi = 0.0;
@@ -1081,7 +1081,7 @@ spec_verify_merge_kernel(const int2* __restrict__ cand, int n_blocks, int n_voca
     if (lane == 0) {
         int tok;
         if (dec == 3) {
-            tok = strata::core::proposal::kProposalSamplerErrorToken;
+            tok = nostroma::core::proposal::kProposalSamplerErrorToken;
         } else if (dec == 0) {   // no draft on this row: the plain sample, the exact-match sampler's own draw
             const float u = philox_uniform(p.seed, pos);
             double cum = 0.0;
@@ -1097,13 +1097,13 @@ spec_verify_merge_kernel(const int2* __restrict__ cand, int n_blocks, int n_voca
             for (int i = 0; i < n_keep; ++i) sum += rw[i];
             if (!(sum > 0.0)) {
                 if constexpr (Augmented) {
-                    tok = kind == strata::core::proposal::RowKind::NullTail
-                        ? strata::core::proposal::kProposalSamplerErrorToken : d;
+                    tok = kind == nostroma::core::proposal::RowKind::NullTail
+                        ? nostroma::core::proposal::kProposalSamplerErrorToken : d;
                 } else {
                     tok = d;   // preserve the legacy non-NULL rounding behavior
                 }
             } else {
-                const float u = philox_uniform(p.seed, pos | strata::core::kSpecCtrResid);
+                const float u = philox_uniform(p.seed, pos | nostroma::core::kSpecCtrResid);
                 double cum = 0.0;
                 int last = -1;
                 tok = sel_ids[0];
@@ -1121,8 +1121,8 @@ spec_verify_merge_kernel(const int2* __restrict__ cand, int n_blocks, int n_voca
     }
 }
 
-// Which sampled path runs, read once: `STRATA_OLD_SAMPLER=1` is `sampler_kernel` (engine 0.1.20),
-// `STRATA_SAMPLER_ONE_BLOCK=1` the one-block kernel; by default the split top_k wherever it applies.
+// Which sampled path runs, read once: `NOSTROMA_OLD_SAMPLER=1` is `sampler_kernel` (engine 0.1.20),
+// `NOSTROMA_SAMPLER_ONE_BLOCK=1` the one-block kernel; by default the split top_k wherever it applies.
 enum class SampledPath { Split, OneBlock, Old };
 
 bool env_flag(const char* name) {
@@ -1131,13 +1131,13 @@ bool env_flag(const char* name) {
 }
 
 bool gumbel_env() {
-    static const bool on = env_flag("STRATA_SPEC_GUMBEL");
+    static const bool on = env_flag("NOSTROMA_SPEC_GUMBEL");
     return on;
 }
 
 SampledPath sampled_path() {
-    static const SampledPath path = env_flag("STRATA_OLD_SAMPLER")         ? SampledPath::Old
-                                    : env_flag("STRATA_SAMPLER_ONE_BLOCK") ? SampledPath::OneBlock
+    static const SampledPath path = env_flag("NOSTROMA_OLD_SAMPLER")         ? SampledPath::Old
+                                    : env_flag("NOSTROMA_SAMPLER_ONE_BLOCK") ? SampledPath::OneBlock
                                                                            : SampledPath::Split;
     return path;
 }
@@ -1217,7 +1217,7 @@ bool sample_greedy_cluster(const float* logits, int n_tokens, int n_vocab, int* 
     if (n_tokens <= 0 || n_vocab <= 0) return true;
     if (n_tokens > 65535) return false;
     // Per device (a layer split runs on several): 1 the cluster kernel runs here, 2 it does not - sm_90+ (the card's,
-    // or STRATA_EMULATE_CC's), code built for it (an older build's PTX holds a trap: the PTX version says which), and
+    // or NOSTROMA_EMULATE_CC's), code built for it (an older build's PTX holds a trap: the PTX version says which), and
     // room for one cluster of kAmCtas CTAs.
     static int ok[64] = {};
     int dev = 0;
@@ -1238,7 +1238,7 @@ bool sample_greedy_cluster(const float* logits, int n_tokens, int n_vocab, int* 
         int major = 0, clusters = 0;
         cudaFuncAttributes fa{};
         const bool runs = cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, dev) == cudaSuccess &&
-                          strata::cc_major_of(major) >= 9 &&
+                          nostroma::cc_major_of(major) >= 9 &&
                           cudaFuncGetAttributes(&fa, sampler_greedy_cluster_kernel) == cudaSuccess &&
                           fa.ptxVersion >= 90 && fa.binaryVersion >= 90 &&
                           cudaOccupancyMaxActiveClusters(&clusters, sampler_greedy_cluster_kernel, &cfg) ==
@@ -1273,9 +1273,9 @@ void sample_tokens(const float* logits, int n_tokens, int n_vocab, const int* hi
                                : 0;
     if (p.greedy || p.temperature <= 0.0f) {
         // Without penalties (shmem == 0: no window) on sm_90+, a cluster of CTAs per token - the same token; see
-        // `sampler_greedy_cluster_kernel`.  STRATA_ARGMAX_MULTI=0: always the one-block kernel.
+        // `sampler_greedy_cluster_kernel`.  NOSTROMA_ARGMAX_MULTI=0: always the one-block kernel.
         static const bool multi = [] {
-            const char* v = strata::env("NOSTROMA_ARGMAX_MULTI");
+            const char* v = nostroma::env("NOSTROMA_ARGMAX_MULTI");
             return !v || std::atoi(v) != 0;
         }();
         // One block per token, 1,024 threads over the vocabulary.  See `sampler_greedy_kernel`.
@@ -1429,8 +1429,8 @@ void spec_draft_sample(float* logits, int nv, const int32_t* sub_to_id, const in
     coupled_check("spec_draft split part");
     spec_draft_merge_kernel<<<1, 32, 0, s>>>((const int2*) scratch, n_blocks, nv, kpart, params, step_rec, sub_to_id,
                                              ring, cap, j, out_id, out_prob,
-                                             qrows + (size_t) j * strata::core::kSpecQStride, gate_pick, tscale);
+                                             qrows + (size_t) j * nostroma::core::kSpecQStride, gate_pick, tscale);
     coupled_check("spec_draft merge");
 }
 
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels

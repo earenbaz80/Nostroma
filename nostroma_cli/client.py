@@ -101,7 +101,7 @@ class Endpoint:
     def get(self, path: str) -> dict[str, Any]:
         if path not in ("/v1/telemetry", "/v1/status", "/metrics", "/health"):
             raise ValueError("endpoint is not part of the read-only telemetry contract")
-        headers = {"Accept": "application/json", "User-Agent": "Strata-Terminal/0.1"}
+        headers = {"Accept": "application/json", "User-Agent": "Nostroma-Terminal/0.1"}
         if self.credential:
             headers["Authorization"] = "Bearer " + self.credential
         req = urllib.request.Request(self.base_url + path, headers=headers)

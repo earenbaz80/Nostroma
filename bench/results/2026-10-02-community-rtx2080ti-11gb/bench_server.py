@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fresh-prompt read + decode speed, and follow-up turns on a long conversation, through a running Strata server.
+"""Fresh-prompt read + decode speed, and follow-up turns on a long conversation, through a running Nostroma server.
 
 Every measured prompt starts with its own nonce, so no earlier prompt's prefix can be reused: each fresh run reads its
 whole prompt (the engine log's "N reused" confirms it). The prompt text is the repository's own files (the haystack
@@ -13,7 +13,7 @@ Before every request the script waits until GET /status says busy=false, queued=
 discarded and repeated if GET /metrics counted more than one finished request or the engine log shows more than one
 prompt line (someone else's request overlapped). Run with the install's Python (it needs `regex` for the tokenizer):
 
-    STRATA_API_KEY=... python bench_server.py --targets 4096,32768,128000 --runs 3 --followup
+    NOSTROMA_API_KEY=... python bench_server.py --targets 4096,32768,128000 --runs 3 --followup
     python bench_server.py --key-config <server config.json> --targets 250000 --runs 1 --followup
 """
 from __future__ import annotations
@@ -33,7 +33,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 sys.path[:0] = [str(ROOT), str(ROOT / "tools")]
 
-from strata_tokenizer import Tokenizer  # noqa: E402
+from nostroma_tokenizer import Tokenizer  # noqa: E402
 from serve.frontend import ChatTemplate, openai_to_messages  # noqa: E402
 from needle_bench import haystack  # noqa: E402
 
@@ -56,7 +56,7 @@ def load_tokenizer(directory: Path):
 
 
 def body(messages, max_tokens):
-    return {"model": "strata", "messages": messages, "temperature": 0, "reasoning_effort": "none",
+    return {"model": "nostroma", "messages": messages, "temperature": 0, "reasoning_effort": "none",
             "max_tokens": max_tokens, "stream": True, "stream_options": {"include_usage": True}}
 
 
@@ -96,7 +96,7 @@ def stream(server: Server, req: dict, timeout: float = 3600) -> dict:
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--url", default="http://127.0.0.1:8080")
-    ap.add_argument("--key-config", help="server config JSON to read api_key from (else STRATA_API_KEY)")
+    ap.add_argument("--key-config", help="server config JSON to read api_key from (else NOSTROMA_API_KEY)")
     ap.add_argument("--tokenizer", required=True, help="the pack's tokenizer directory")
     ap.add_argument("--engine-log", required=True)
     ap.add_argument("--server-log", required=True)

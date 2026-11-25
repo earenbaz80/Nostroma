@@ -4,7 +4,7 @@ import { envVar } from './env-compat.mjs';
  * One revision attempt for Time-skip, performed by the app's own assistant.
  *
  * Nostroma Control runs this as its `--revise-command`, with the candidate folder (an isolated copy of the user's work) as the working
- * directory, the request in STRATA_TIMESKIP_PROMPT and the attempt number in STRATA_TIMESKIP_ATTEMPT. It asks the host (which owns the
+ * directory, the request in NOSTROMA_TIMESKIP_PROMPT and the attempt number in NOSTROMA_TIMESKIP_ATTEMPT. It asks the host (which owns the
  * model and the Harness) for one agent turn inside that folder and returns when the turn ends. Exit 0 means "an attempt was made", not
  * "it helped": whether it helped is decided by the checks and, failing those, by the person.
  *
@@ -25,7 +25,7 @@ if (!base || !secret || !prompt) {
 try {
   const res = await fetch(`${base}/api/internal/timeskip-revise`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-strata-internal': secret },
+    headers: { 'content-type': 'application/json', 'x-nostroma-internal': secret },
     body: JSON.stringify({ cwd: process.cwd(), prompt, attempt }),
   });
   if (!res.ok || !res.body) {

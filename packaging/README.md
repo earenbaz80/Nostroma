@@ -24,7 +24,7 @@ Each row is an OS, CPU ABI and backend. A row is `qualified` only after the acce
 
 | Target | App artifact | Engine package recipe | Status |
 | --- | --- | --- | --- |
-| `macos-arm64-metal` | `.app` and `.dmg` (Tauri) | Metal `nostroma`, bundled with `strata-vision` (`packaging/build_vision_mac.sh`) | Built. Self-test passes from the mounted DMG. Inference measurements are in [MAC.md](../docs/MAC.md). Signing: `packaging/mac/sign-and-notarize.sh` ([mac/README.md](mac/README.md)). |
+| `macos-arm64-metal` | `.app` and `.dmg` (Tauri) | Metal `nostroma`, bundled with `nostroma-vision` (`packaging/build_vision_mac.sh`) | Built. Self-test passes from the mounted DMG. Inference measurements are in [MAC.md](../docs/MAC.md). Signing: `packaging/mac/sign-and-notarize.sh` ([mac/README.md](mac/README.md)). |
 | `darwin-arm64` Terminal | self-contained `.tar.gz` | any | Built and verified. Runs from a moved directory with no system Python. |
 | `windows-x86_64-cuda` | NSIS `.exe` (Tauri) | `cuda13` and `cuda12` | Built and tested on a Windows PC with an NVIDIA card: silent install with a System32-only PATH, a real model, an agent chat. |
 | `windows-x86_64-hip` | NSIS `.exe` (Tauri) | `tools/hip/build_windows.bat` | Published. Strix Halo inference is recorded in [STRIX_HALO.md](../docs/STRIX_HALO.md). This does not qualify every discrete Radeon card ([AMD_HIP.md](../docs/AMD_HIP.md)). |
@@ -50,7 +50,7 @@ apps/desktop/scripts/fetch-node.sh --check         # verify what is installed
 ```
 
 The script refuses an archive whose SHA-256 differs from the digest recorded for that target. The digests come from nodejs.org's
-`SHASUMS256.txt` for the pinned version. To bump the version, change `STRATA_NODE_VERSION`, add the new digests and run `--check`.
+`SHASUMS256.txt` for the pinned version. To bump the version, change `NOSTROMA_NODE_VERSION`, add the new digests and run `--check`.
 `fetch-node.ps1` is the Windows equivalent.
 
 ## Desktop app
@@ -77,7 +77,7 @@ The installer carries Control, and on a Mac the Metal engine too. Neither fetche
 
 **Control** (`<install>/control`, built by `apps/desktop/scripts/stage-control.py`) is the same bundle as the Terminal archive:
 the pinned CPython 3.12.15, the hash-locked wheels, `nostroma_control`, `nostroma_cli` and `serve`, plus a `BUNDLE.json` with the
-interpreter and lock digests. The host finds it beside itself or through `STRATA_CONTROL_DIR`, runs it on its own interpreter
+interpreter and lock digests. The host finds it beside itself or through `NOSTROMA_CONTROL_DIR`, runs it on its own interpreter
 (`PYTHONNOUSERSITE=1`, no `PYTHONHOME` or `PYTHONPATH`) and starts a model with `nostroma profile create|use-config` and
 `nostroma runtime start`. The engine then runs under the owner runtime (loopback TCP and a 256-bit token on Windows, a private
 socket elsewhere; a Job Object or process group; leases), and a second client such as the Terminal can attach to the same instance.
@@ -89,15 +89,15 @@ the open window. One app can run several engines (profiles `app-1`, `app-2`, ...
 **The engine.** The Windows and Linux installers carry no engine. On the first start the app shows the engine for the card with its size
 and one Download button (with progress and resume), or installs an engine file the person already has ("I already have the file").
 The Mac dmg keeps its small Metal engine in `<install>/engine-bundle/<package folder>`. Either way the engine ends up in the per-user
-component folder, after the package is checked against its manifest (`%LOCALAPPDATA%\Nostroma\components`, `$XDG_DATA_HOME/nostroma/components`, or `STRATA_COMPONENTS_DIR`),
+component folder, after the package is checked against its manifest (`%LOCALAPPDATA%\Nostroma\components`, `$XDG_DATA_HOME/nostroma/components`, or `NOSTROMA_COMPONENTS_DIR`),
 where Control finds it like any engine that `nostroma update` installed:
 
     components/engine/<version>-<platform>-<backend>[-<variant>]/
         engine-component.json     the manifest (see ENGINE-COMPONENT.md)
         nostroma[.exe]  *.dll | *.so   the binary and the GPU runtime libraries beside it
 
-A run config names it as `"exe": "component:strata-engine"`. At start, `nostroma_control/engine_component.py` picks the package for this PC
-(platform, then the backend its GPU needs, found with nvidia-smi, rocminfo or sycl-ls, or `STRATA_ENGINE_BACKEND`), checks every
+A run config names it as `"exe": "component:nostroma-engine"`. At start, `nostroma_control/engine_component.py` picks the package for this PC
+(platform, then the backend its GPU needs, found with nvidia-smi, rocminfo or sycl-ls, or `NOSTROMA_ENGINE_BACKEND`), checks every
 file's size and SHA-256 and puts the package folder first on the library path. A mismatch is `EngineIntegrityError` and nothing starts.
 
 When no package matches, `nostroma serve` ends with exit 5 and "No engine for this PC was found". It never fetches. Before that point
@@ -105,7 +105,7 @@ everything is a warning: `nostroma launch` says it could not find an engine, ask
 the next step (exit 0, nothing started). The app shows the same warning with an "Update engine" button in Settings.
 `packaging/package_engine.py` makes a local package from a build folder.
 
-**No acquisition at run time.** `STRATA_NO_ACQUIRE=1` (set by the Tauri shell for the host, and by the host for Control) makes
+**No acquisition at run time.** `NOSTROMA_NO_ACQUIRE=1` (set by the Tauri shell for the host, and by the host for Control) makes
 `nostroma_control/acquisition.py` refuse pip, downloads and compiles. On the host side `server/acquisition.mjs` refuses the llama.cpp
 and cloudflared fetches (a connector placed in `components/cloudflared/` is used as it is). Models the user chooses to download are a
 separate, explicit action. `apps/host/tests/no-acquire.test.mjs` fails on any outbound request or installer process.
@@ -119,7 +119,7 @@ The Terminal bundles a private Python and its dependencies for `windows-x86_64`,
 - The interpreter is python-build-standalone CPython 3.12.15, digest-checked at build time.
 - Packages come from `packaging/locks/runtime-<target>-cp312.txt` and are installed with
   `pip install --require-hashes --no-deps --only-binary=:all:` at build time only. `lock_wheels.py` makes the lock; review its diff when a pin changes.
-- Wrappers: `bin/strata.cmd` and `bin/strata.ps1` on Windows, `bin/strata` on POSIX. `START-HERE.bat`, `SETUP.bat`, `UPDATE.bat`, `setup.sh`
+- Wrappers: `bin/nostroma.cmd` and `bin/nostroma.ps1` on Windows, `bin/nostroma` on POSIX. `START-HERE.bat`, `SETUP.bat`, `UPDATE.bat`, `setup.sh`
   and `update.sh` use a `python/` folder beside them when there is one.
 - `smoke_terminal.py <archive>` extracts an archive into a clean environment (a path with a space, a PATH with no Python) and runs
   `--version`, `doctor`, `profile list`, `install` and `serve --engine mock`.

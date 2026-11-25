@@ -1,6 +1,6 @@
 """Bounded, read-only discovery of setup-written local model run configs.
 
-The setup installer writes strata-*.json beside setup.py. A configured model is
+The setup installer writes nostroma-*.json beside setup.py. A configured model is
 not automatically a compatible or loadable model: component presence and native
 engine compatibility are reported separately.
 
@@ -45,8 +45,8 @@ SUPPORTED_SELECTIONS = frozenset({"qwen/Q2_0", "qwen/IQ2_XS", "qwen/IQ3_XXS", "q
 
 
 def settings_path() -> Path:
-    """The user's Nostroma settings file: the same place setup.py writes it (%APPDATA%/Strata/settings.json, or
-    $XDG_CONFIG_HOME/strata/settings.json). The desktop app sets STRATA_SETTINGS_FILE to a file of its own (in its data folder), so it
+    """The user's Nostroma settings file: the same place setup.py writes it (%APPDATA%/Nostroma/settings.json, or
+    $XDG_CONFIG_HOME/nostroma/settings.json). The desktop app sets NOSTROMA_SETTINGS_FILE to a file of its own (in its data folder), so it
     never reads an older command-line install's list of Nostroma folders."""
     return discovery.own_settings_file()
 
@@ -65,10 +65,10 @@ def _has_configs(directory: Path) -> bool:
 
 
 def resolve_install(override: str | None = None) -> tuple[Path, str]:
-    """(the main install folder, how it was found): explicit (an argument or STRATA_INSTALL_DIR), here (this folder has run
+    """(the main install folder, how it was found): explicit (an argument or NOSTROMA_INSTALL_DIR), here (this folder has run
     configs), remembered (an earlier install from the settings file), app (the desktop app's install folder, shared with the
     Terminal) or default (the app's folder, with no model in it yet)."""
-    raw = override or os.environ.get("NOSTROMA_INSTALL_DIR", os.environ.get("STRATA_INSTALL_DIR"))
+    raw = override or os.environ.get("NOSTROMA_INSTALL_DIR", os.environ.get("NOSTROMA_INSTALL_DIR"))
     if raw is not None:
         path = Path(raw).expanduser()
         if not path.is_absolute() or not path.is_dir():
@@ -91,10 +91,10 @@ def install_dir(override: str | None = None) -> Path:
 
 
 def _model_id(path: Path) -> str | None:
-    if not path.name.startswith("strata-") or not path.name.endswith(".json") or \
+    if not path.name.startswith("nostroma-") or not path.name.endswith(".json") or \
             path.name.endswith(".shared-settings.json"):
         return None
-    value = path.name[len("strata-"):-len(".json")]
+    value = path.name[len("nostroma-"):-len(".json")]
     return value if MODEL_ID.fullmatch(value) else None
 
 

@@ -14,15 +14,15 @@ def add(en, zh, ja, de, es, ru, pt, ko, fr):
     S.append(dict(en=en, zh=zh, ja=ja, de=de, es=es, ru=ru, pt=pt, ko=ko, fr=fr))
 
 
-add("To update the engine, Strata has to stop the model that is loaded: {0}.",
-    "要更新引擎，Strata 必须先停止当前已加载的模型：{0}。",
-    "エンジンを更新するには、読み込み中のモデルを Strata が停止する必要があります：{0}。",
-    "Um die Engine zu aktualisieren, muss Strata das geladene Modell anhalten: {0}.",
-    "Para actualizar el motor, Strata tiene que detener el modelo cargado: {0}.",
-    "Чтобы обновить движок, Strata должна остановить загруженную модель: {0}.",
-    "Para atualizar o motor, o Strata precisa parar o modelo carregado: {0}.",
-    "엔진을 업데이트하려면 Strata가 불러온 모델을 중지해야 합니다: {0}.",
-    "Pour mettre à jour le moteur, Strata doit arrêter le modèle chargé : {0}.")
+add("To update the engine, Nostroma has to stop the model that is loaded: {0}.",
+    "要更新引擎，Nostroma 必须先停止当前已加载的模型：{0}。",
+    "エンジンを更新するには、読み込み中のモデルを Nostroma が停止する必要があります：{0}。",
+    "Um die Engine zu aktualisieren, muss Nostroma das geladene Modell anhalten: {0}.",
+    "Para actualizar el motor, Nostroma tiene que detener el modelo cargado: {0}.",
+    "Чтобы обновить движок, Nostroma должна остановить загруженную модель: {0}.",
+    "Para atualizar o motor, o Nostroma precisa parar o modelo carregado: {0}.",
+    "엔진을 업데이트하려면 Nostroma가 불러온 모델을 중지해야 합니다: {0}.",
+    "Pour mettre à jour le moteur, Nostroma doit arrêter le modèle chargé : {0}.")
 add("The new engine downloads first while the model keeps answering. Then the model stops (answers in progress finish first), the engine is updated, and you can start the model again with the same settings. Your models and settings are kept.",
     "新引擎会先下载，此时模型仍可继续回答。然后模型停止（正在进行的回答会先完成），引擎随即更新，之后你可以用相同的设置再次启动该模型。你的模型和设置都会保留。",
     "まず新しいエンジンをダウンロードします。その間、モデルは応答を続けます。その後モデルが停止し（進行中の回答は先に完了します）、エンジンが更新され、同じ設定でモデルをもう一度起動できます。モデルと設定はそのまま残ります。",

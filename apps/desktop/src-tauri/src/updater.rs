@@ -2,7 +2,7 @@
 //!
 //! The UI is served by the App Host, so it cannot call Tauri's updater plugin; and the host is Node, which has no updater.
 //! The shell therefore opens one loopback listener, protected by a random token it hands only to the host it started
-//! (`STRATA_SHELL_BRIDGE`, `STRATA_SHELL_TOKEN`), and the host's `app-updater.mjs` talks to it:
+//! (`NOSTROMA_SHELL_BRIDGE`, `NOSTROMA_SHELL_TOKEN`), and the host's `app-updater.mjs` talks to it:
 //!
 //!   GET  /app-update/check    -> { available, disabled, reason, current }  (off in this build; a test feed answers as before)
 //!   POST /app-update/install  -> starts download + install in the background
@@ -10,7 +10,7 @@
 //!
 //! App updates are OFF in this build (see `APP_UPDATES_OFF`): `tauri.conf.json` names no feed and no public key, so there is
 //! nothing to download and nothing to verify. A check answers "off" and an install is refused; nothing here runs on start, and
-//! nothing here touches engines or models (those are Control's component updater: `strata update`).
+//! nothing here touches engines or models (those are Control's component updater: `nostroma update`).
 
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
@@ -22,12 +22,12 @@ use tauri_plugin_updater::UpdaterExt;
 
 /// Where an endpoint may come from: a local test feed. Only loopback or https.
 const ENDPOINT_ENV: &str = "NOSTROMA_UPDATE_APP_ENDPOINT";
-const ENDPOINT_ENV_OLD: &str = "STRATA_UPDATE_APP_ENDPOINT";
+const ENDPOINT_ENV_OLD: &str = "NOSTROMA_UPDATE_APP_ENDPOINT";
 
 /// App updates are off in this build. This checkout is a personal build of the product and publishes no release feed of its
 /// own: the only feed it could name is another product's, and installing from it would replace this app with that one. A
 /// check therefore says updates are off and an install is refused. Engine and model updates are Control's own path and are
-/// not affected. A local test feed can still be named through `STRATA_UPDATE_APP_ENDPOINT` (loopback or https only).
+/// not affected. A local test feed can still be named through `NOSTROMA_UPDATE_APP_ENDPOINT` (loopback or https only).
 const APP_UPDATES_OFF: &str = "App updates are off in this build. Engine updates still work.";
 
 fn app_updates_available() -> bool {
@@ -157,7 +157,7 @@ fn launch_installer(version: &str, bytes: &[u8]) -> Result<(), String> {
     use std::os::windows::process::CommandExt;
     const CREATE_BREAKAWAY_FROM_JOB: u32 = 0x0100_0000;
     const DETACHED_PROCESS: u32 = 0x0000_0008;
-    let dir = std::env::temp_dir().join(format!("strata-app-update-{version}"));
+    let dir = std::env::temp_dir().join(format!("nostroma-app-update-{version}"));
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     let installer = dir.join("installer.exe");
     std::fs::write(&installer, bytes).map_err(|e| e.to_string())?;
@@ -244,7 +244,7 @@ fn handle(mut stream: TcpStream, app: &AppHandle, token: &str, progress: &Arc<Mu
 }
 
 /// Open the bridge on a free loopback port. Returns None if the listener cannot be bound (the app then simply has no
-/// in-app update; the Terminal's `strata update --app` still works).
+/// in-app update; the Terminal's `nostroma update --app` still works).
 pub fn start(app: &AppHandle, token: String) -> Option<Bridge> {
     let listener = TcpListener::bind(("127.0.0.1", 0)).ok()?;
     let port = listener.local_addr().ok()?.port();
@@ -263,10 +263,10 @@ pub fn start(app: &AppHandle, token: String) -> Option<Bridge> {
 #[allow(dead_code)]
 pub fn apply_env(cmd: &mut std::process::Command, app: &AppHandle, bridge: Option<&Bridge>) {
     let version = app.package_info().version.to_string();
-    cmd.env("NOSTROMA_APP_VERSION", &version).env("STRATA_APP_VERSION", version);
+    cmd.env("NOSTROMA_APP_VERSION", &version).env("NOSTROMA_APP_VERSION", version);
     if let Some(bridge) = bridge {
-        cmd.env("NOSTROMA_SHELL_BRIDGE", &bridge.url).env("STRATA_SHELL_BRIDGE", &bridge.url);
-        cmd.env("NOSTROMA_SHELL_TOKEN", &bridge.token).env("STRATA_SHELL_TOKEN", &bridge.token);
+        cmd.env("NOSTROMA_SHELL_BRIDGE", &bridge.url).env("NOSTROMA_SHELL_BRIDGE", &bridge.url);
+        cmd.env("NOSTROMA_SHELL_TOKEN", &bridge.token).env("NOSTROMA_SHELL_TOKEN", &bridge.token);
     }
 }
 

@@ -51,7 +51,7 @@ class StaleConfigPaths(UpdaterCase):
     def install_control(self, version):
         folder = self.control / version
         (folder / "data").mkdir(parents=True)
-        (folder / "strata.py").write_text(f"print('strata {version} (python stub)')\n")
+        (folder / "nostroma.py").write_text(f"print('nostroma {version} (python stub)')\n")
         (folder / "data" / "expert-profile.bin").write_bytes(b"profile-" + version.encode())
         return folder
 
@@ -64,7 +64,7 @@ class StaleConfigPaths(UpdaterCase):
         script.chmod(0o700)
         if WINDOWS:
             (folder / "engine.cmd").write_bytes(f'@echo off\r\n"{sys.executable}" "%~dp0engine.py" %*\r\n'.encode())
-        (folder / "strata-vision").write_bytes(b"reader " + version.encode())
+        (folder / "nostroma-vision").write_bytes(b"reader " + version.encode())
         return folder
 
     def engine_exe(self, folder):
@@ -75,7 +75,7 @@ class StaleConfigPaths(UpdaterCase):
         (bundle / "nostroma_control").mkdir(parents=True)
         (bundle / "data").mkdir()
         (bundle / "data" / "expert-profile.bin").write_bytes(b"profile-" + version.encode())
-        (bundle / "strata.py").write_text(f"print('strata {version} (python stub)')\n")
+        (bundle / "nostroma.py").write_text(f"print('nostroma {version} (python stub)')\n")
         (bundle / "nostroma_control" / "__init__.py").write_text("")
         from feed_tool import build_feed, pack_control
         shutil.rmtree(self.release, ignore_errors=True)
@@ -110,7 +110,7 @@ class StaleConfigPaths(UpdaterCase):
                         "--expert-profile-save", str(self.control / "0.1.44" / "data" / "learned.bin"),
                         "--mtp", "2", "--lookup-file", str(self.mine)]}
         if vision:                                            # (a real start would run the picture reader: only the read-side tests ask for it)
-            cfg["vision"] = {"exe": str(self.old_engine / "strata-vision")}
+            cfg["vision"] = {"exe": str(self.old_engine / "nostroma-vision")}
         cfg.update(extra)
         path = self.root / "run" / f"{name}.json"
         path.parent.mkdir(exist_ok=True)
@@ -122,7 +122,7 @@ class StaleConfigPaths(UpdaterCase):
     def deepseek_config(self, name):
         """A DeepSeek config of Nostroma 0.2.13: its engine in engine-dsv41/, its cwd in the Control that ran setup."""
         old_ds = self.root / "data" / "engine-dsv41" / f"0.1.49-{self.engine_kind}"
-        exe = old_ds / "strata-dsv41"
+        exe = old_ds / "nostroma-dsv41"
         cfg = {"exe": str(exe), "arch": "deepseek41", "backend": "cuda", "tokenizer": self.tokenizer, "cwd": str(self.control / "0.1.44"),
                "model_name": "deepseek", "host": "127.0.0.1", "port": 0, "lib_dirs": [str(old_ds)],
                "args": ["--pack", str(self.root / "packs" / "ds"), "--max-context", "8192"]}
@@ -171,7 +171,7 @@ class StaleConfigPaths(UpdaterCase):
         active = self.control / "0.1.46"
         self.assertEqual(Path(cfg["cwd"]), active)
         self.assertEqual(Path(cfg["args"][cfg["args"].index("--expert-profile") + 1]), active / "data" / "expert-profile.bin")
-        self.assertEqual(Path(cfg["vision"]["exe"]), new_engine / "strata-vision")
+        self.assertEqual(Path(cfg["vision"]["exe"]), new_engine / "nostroma-vision")
         self.assertEqual([Path(d) for d in cfg["lib_dirs"]], [new_engine])
         self.assertEqual(Path(cfg["exe"]), self.engine_exe(new_engine))
         self.assertEqual(path.read_bytes(), before)
@@ -225,7 +225,7 @@ class StaleConfigPaths(UpdaterCase):
         self.assertTrue(started["ok"], started)
         self.assertEqual(self.cfg_of(path)["cwd"], str(self.control / "0.1.46"))
 
-    def test_a_start_planned_on_the_old_file_is_not_refused_because_strata_rewrote_it(self):
+    def test_a_start_planned_on_the_old_file_is_not_refused_because_nostroma_rewrote_it(self):
         import hashlib
         path = self.qwen_config("app-2")
         self.two_updates()

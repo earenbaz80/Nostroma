@@ -7,10 +7,10 @@ What it does, each step skipped when it is already done:
   1. checks the Mac: Apple Silicon, the chip, unified memory, macOS version, the Command Line Tools, free disk
   2. recommends a model by memory (recommend, never force: an explicit --model is kept, with what it risks)
   3. installs the Python packages into .venv (cmake and ninja come from pip, just before step 4: no Homebrew, no sudo)
-  4. builds the Metal engine from source: metal-cpp (Apple's headers) and the vendored ggml (third_party/strata-ggml)
+  4. builds the Metal engine from source: metal-cpp (Apple's headers) and the vendored ggml (third_party/nostroma-ggml)
   5. downloads the model (setup.py's downloader: resumable, the pinned revision)
   6. prepares the model: the native pack (tools/iq_pack.py) and the MTP draft layer (tools/mtp_fetch.py, mtp_pack.py)
-  7. writes strata-<model>.json and run-<model>.sh with the Metal defaults (--spec 2, the Q8_0 hyper-connection
+  7. writes nostroma-<model>.json and run-<model>.sh with the Metal defaults (--spec 2, the Q8_0 hyper-connection
      read) and starts the server (serve/server.py), the same as on a PC
 
 Everything shared - the model table, the downloader, the config and run-script writers, the server - is setup.py's.
@@ -43,7 +43,7 @@ from nostroma_control.mac_fit import (  # noqa: E402,F401  (re-exported: the tes
 METAL_CPP_URL = "https://developer.apple.com/metal/cpp/files/metal-cpp_26.zip"
 METAL_CPP_SHA256 = "4df3c078b9aadcb516212e9cb03004cbc5ce9a3e9c068fa3144d021db585a3a4"
 BUILD_DIR = ROOT / "build-metal"
-EXE = BUILD_DIR / "strata"
+EXE = BUILD_DIR / "nostroma"
 
 # the Unsloth files at setup.py's pinned revision: name -> (bytes, SHA-256), the Hub's LFS pointers (UD-Q4_K_XL's
 # are setup.py's UNSLOTH_SHARDS)
@@ -115,9 +115,9 @@ def engine_current() -> bool:
 
 def source_digest() -> str:
     """What the engine is built from: every source file's path, size and modification time (src/, include/, metal/,
-    third_party/ggml, third_party/strata-ggml).  A git pull, an unzipped update or a local edit changes it; nothing else does."""
+    third_party/ggml, third_party/nostroma-ggml).  A git pull, an unzipped update or a local edit changes it; nothing else does."""
     h = hashlib.sha256()
-    for d in ("src", "include", "metal", "third_party/ggml", "third_party/strata-ggml"):
+    for d in ("src", "include", "metal", "third_party/ggml", "third_party/nostroma-ggml"):
         for f in sorted((ROOT / d).rglob("*")):
             if f.is_file() and f.suffix in (".cpp", ".cu", ".h", ".hpp", ".mm", ".metal", ".inc", ".txt", ".cuh"):
                 st = f.stat()
@@ -138,7 +138,7 @@ def build_engine(llama: Path, jobs: int | None = None) -> Path:
     env = dict(os.environ, PATH=str(Path(sys.executable).parent) + os.pathsep + os.environ.get("PATH", ""))
     cfg = [tool("cmake"), "-S", str(ROOT / "metal"), "-B", str(BUILD_DIR), "-G", "Ninja", "-DCMAKE_BUILD_TYPE=Release",
            f"-DCMAKE_MAKE_PROGRAM={tool('ninja')}", f"-DMETAL_CPP_DIR={mcpp}", *S.ggml_defs(llama)]
-    build = [tool("ninja"), "-C", str(BUILD_DIR), "strata"] + (["-j", str(jobs)] if jobs else [])
+    build = [tool("ninja"), "-C", str(BUILD_DIR), "nostroma"] + (["-j", str(jobs)] if jobs else [])
     with open(log, "w", encoding="utf-8") as f:
         for cmd in (cfg, build):
             rc = subprocess.call(cmd, stdout=f, stderr=subprocess.STDOUT, env=env)
@@ -162,11 +162,11 @@ def engine_args(pack: Path, shards: list, rt: Path, ctx: int, stream: bool = Fal
 # the image encoder's projector (setup.py's pinned revision): name -> (bytes, SHA-256)
 VISION_SHA256 = {"mmproj-Qwen3.8-Flash-Next-BF16.gguf":
                  (907543008, "b1a82259702816a5330d7bd7607cd9676b11780e79ff7348c21103ff3ce49bd0")}
-VISION_EXE = ROOT / "build-vision" / "bin" / "strata-vision"
+VISION_EXE = ROOT / "build-vision" / "bin" / "nostroma-vision"
 
 
 def build_vision(llama: Path) -> Path:
-    """strata-vision (tools/vision: llama.cpp's mtmd at the pinned commit), with ggml's Metal backend: the encoder
+    """nostroma-vision (tools/vision: llama.cpp's mtmd at the pinned commit), with ggml's Metal backend: the encoder
     runs on the GPU."""
     stamp = ROOT / "build-vision" / "BUILD.json"
     src = source_digest()
@@ -183,8 +183,8 @@ def build_vision(llama: Path) -> Path:
     with open(log, "w", encoding="utf-8") as f:
         for cmd in ([tool("cmake"), "-S", str(ROOT / "tools" / "vision"), "-B", str(ROOT / "build-vision"), "-G", "Ninja",
                      "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_MAKE_PROGRAM={tool('ninja')}", f"-DLLAMA_DIR={S.vision_llama(llama)}",
-                     "-DSTRATA_VISION_CUDA=OFF", "-DSTRATA_VISION_METAL=ON", "-DSTRATA_PORTABLE=OFF"],
-                    [tool("ninja"), "-C", str(ROOT / "build-vision"), "strata-vision"]):
+                     "-DNOSTROMA_VISION_CUDA=OFF", "-DNOSTROMA_VISION_METAL=ON", "-DNOSTROMA_PORTABLE=OFF"],
+                    [tool("ninja"), "-C", str(ROOT / "build-vision"), "nostroma-vision"]):
             if subprocess.call(cmd, stdout=f, stderr=subprocess.STDOUT, env=env) != 0:
                 S.fail(f"the image encoder did not build (see {log})")
     stamp.write_text(json.dumps({"source": src}), encoding="utf-8")
@@ -241,7 +241,7 @@ def experts_file(native: Path) -> None:
 
 def mac_config(exe: Path, args: list, pack: Path, model_name: str, tag: str, port: int) -> dict:
     return {"exe": str(exe), "args": args, "cwd": str(ROOT), "tokenizer": str(pack / "tokenizer"),
-            "model_name": model_name, "log": str(ROOT / f"strata-{tag.lower()}.log"), "lib_dirs": [], "port": port,
+            "model_name": model_name, "log": str(ROOT / f"nostroma-{tag.lower()}.log"), "lib_dirs": [], "port": port,
             "backend": "metal"}
 
 
@@ -294,10 +294,10 @@ def repack_running(folder: Path) -> list[int]:
 
 
 def engine_pids(run=subprocess.run) -> list[int]:
-    """Pids of the running Metal engines (`strata`, the executable setup builds) that belong to THIS user.  On a shared Mac
-    another person's engine is theirs to stop: `pgrep -x strata` alone saw it and sent setup away with "stop the server" for a
+    """Pids of the running Metal engines (`nostroma`, the executable setup builds) that belong to THIS user.  On a shared Mac
+    another person's engine is theirs to stop: `pgrep -x nostroma` alone saw it and sent setup away with "stop the server" for a
     window the person could not close (M5 Max, 2026-10-31)."""
-    cmd = ["pgrep", "-x", "strata"]
+    cmd = ["pgrep", "-x", "nostroma"]
     if hasattr(os, "getuid"):
         cmd[1:1] = ["-u", str(os.getuid())]
     try:
@@ -320,7 +320,7 @@ def start(cfg_path: Path, port: int | None, open_browser: bool = True) -> int:
     cfg_path.touch()
     if "--mtp" in cfg["args"][:-1]:
         S.refresh_draft_vocab(Path(cfg["args"][cfg["args"].index("--mtp") + 1]), cfg.get("draft_vocab", "cjk"))
-    cmd = [sys.executable, str(ROOT / "serve" / "server.py"), "--engine", "strata", "--config", str(cfg_path),
+    cmd = [sys.executable, str(ROOT / "serve" / "server.py"), "--engine", "nostroma", "--config", str(cfg_path),
            "--port", str(port or cfg.get("port", 8080))]
     if open_browser and cfg.get("open_browser") is not False:
         cmd.append("--open")
@@ -335,7 +335,7 @@ def start(cfg_path: Path, port: int | None, open_browser: bool = True) -> int:
 def fetch_drafter(model_name: str, data: Path) -> Path | None:
     """The DFlash2 drafter of a set whose Mac default is DFlash2 (nostroma_control/drafting.py SET_DEFAULTS: UD-Q4_K_XL and UD-IQ4_XS-v31): the tuned one (0.34 GB), else the stock one
     (1.2 GB), through the normal download path (resumable, the pinned size and SHA-256). Offline, or an address that does not answer: nothing is said and the model keeps the MTP
-    (owner, strata-offline-users). A fault that is the person's to know (a file that failed its safety check) is one plain line. Never stops the setup. None when it is not here."""
+    (owner, nostroma-offline-users). A fault that is the person's to know (a file that failed its safety check) is one plain line. Never stops the setup. None when it is not here."""
     from nostroma_control import acquisition, drafting, drafting_fetch
     if drafting.choice_of("auto", model_name=model_name, backend="metal") != "dflash2":
         return None
@@ -390,7 +390,7 @@ def main(argv=None) -> int:
     ap.add_argument("--yes", action="store_true")
     ap.add_argument("--source", choices=S.SOURCES, default=None,
                     help="where model files come from: auto (huggingface), huggingface, modelscope; "
-                         "same as STRATA_SOURCE")
+                         "same as NOSTROMA_SOURCE")
     ap.add_argument("--setup", action="store_true")
     ap.add_argument("--no-start", action="store_true")
     ap.add_argument("--check", action="store_true")
@@ -406,8 +406,8 @@ def main(argv=None) -> int:
     # source_hint() recommends it on every platform, and a Mac that dropped it failed the download
     # with the same unreachable host (#2363).
     if a.source:
-        os.environ["STRATA_SOURCE"] = a.source
-    S.say("Strata on a Mac (Apple Silicon, Metal)")
+        os.environ["NOSTROMA_SOURCE"] = a.source
+    S.say("Nostroma on a Mac (Apple Silicon, Metal)")
     data, elsewhere = S.data_folder_for(a)
     roots = [data, *elsewhere]
     models_root = Path(a.models_dir) if a.models_dir else data / "models"
@@ -472,8 +472,8 @@ def main(argv=None) -> int:
     S.pip_install(S.requirement_lines() if S.REQUIREMENTS.exists() else S.PY_PACKAGES, "numpy, jinja2, ...")
 
     # ---- 4. the engine
-    S.step(4, "the Strata engine (Metal)")
-    llama = S.llama_override()                         # None: ggml is the vendored third_party/strata-ggml (STRATA_GGML_DIR overrides)
+    S.step(4, "the Nostroma engine (Metal)")
+    llama = S.llama_override()                         # None: ggml is the vendored third_party/nostroma-ggml (NOSTROMA_GGML_DIR overrides)
     S.ok(f"llama.cpp {S.LLAMA_CPP_COMMIT[:7]} (ggml, gguf-py)")
     if a.build:
         (BUILD_DIR / "BUILD.json").unlink(missing_ok=True)
@@ -522,7 +522,7 @@ def main(argv=None) -> int:
         vexe = build_vision(llama)
 
     # ---- 6. the pack and the MTP draft layer
-    S.step(6, "preparing the model for Strata")
+    S.step(6, "preparing the model for Nostroma")
     pack = S.find_in(roots, f"packs/{tag.lower()}") or data / "packs" / tag.lower()
     env = dict(os.environ, **S.gguf_py_env())
     # The repack and the pack move 100+ GB through the disk and the pack's python holds up to 20 GB: no engine may run beside
@@ -536,7 +536,7 @@ def main(argv=None) -> int:
     if work:
         running = engine_pids()
         if running:
-            S.fail(f"a Strata engine is running (pid {running[0]}): preparing a model beside it can freeze this Mac",
+            S.fail(f"a Nostroma engine is running (pid {running[0]}): preparing a model beside it can freeze this Mac",
                    "stop the server (close its window), then run ./setup.sh --setup again")
         lock_dir.mkdir(parents=True, exist_ok=True)
         prep_lock.write_text(str(os.getpid()))
@@ -579,7 +579,7 @@ def main(argv=None) -> int:
         S.say("  The MTP draft layer (speculative decoding) comes from the original Qwen checkpoint: only its ~5 GB of")
         S.say("  MTP tensors are downloaded.")
         S.run([sys.executable, str(ROOT / "tools" / "mtp_fetch.py"), "fetch", "--out", str(mtp)],
-              env={**env, "STRATA_SOURCE": S.model_source()})
+              env={**env, "NOSTROMA_SOURCE": S.model_source()})
         S.run([sys.executable, str(ROOT / "tools" / "mtp_pack.py"), "--src", str(mtp), "--experts", "q2_0",
                "--out", str(mtp / "mtp-q2_0.gguf")], env=env)
     if use_mtp:
@@ -593,7 +593,7 @@ def main(argv=None) -> int:
     S.step(7, "writing the start script")
     port = a.port or 8080
     cfg = mac_config(exe, engine_args(pack, shards, rt, ctx, stream, info["ram_gb"], model), pack, f"{fam['name']}-{model.lower()}", tag, port)
-    cfg["env"] = {"STRATA_METAL_STREAM": "1" if stream else "0"}   # the engine follows setup's measured choice (STRATA_METAL_F16 is the engine's own default)
+    cfg["env"] = {"NOSTROMA_METAL_STREAM": "1" if stream else "0"}   # the engine follows setup's measured choice (NOSTROMA_METAL_F16 is the engine's own default)
     if vision == "yes":
         cfg["args"] += ["--vision"]
         cfg["vision"] = {"exe": str(vexe), "mmproj": str(mmproj), "model": str(files[0]), "gpu": vision_gpu,
@@ -606,7 +606,7 @@ def main(argv=None) -> int:
         cfg["draft_vocab"] = a.draft_vocab
     if a.browser is not None:
         cfg["open_browser"] = a.browser
-    cfg_path = ROOT / f"strata-{tag.lower()}.json"
+    cfg_path = ROOT / f"nostroma-{tag.lower()}.json"
     S.write_config(cfg_path, cfg)
     script = S.write_run_script(tag, cfg_path, port, cfg.get("open_browser") is not False)
     S.ok(f"start script: {script.name}")

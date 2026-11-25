@@ -4,8 +4,8 @@ import { pushToast } from '../lib/store';
 import { tr } from '../lib/i18n';
 import { Icon } from './ui';
 
-/** Files dropped on the chat go where the attach button would put them: the composer reads the 'strata:drop-files' event. */
-export const DROP_EVENT = 'strata:drop-files';
+/** Files dropped on the chat go where the attach button would put them: the composer reads the 'nostroma:drop-files' event. */
+export const DROP_EVENT = 'nostroma:drop-files';
 export { pastedFiles } from '../lib/pasted-files';
 const hasFiles = (e: React.DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes('Files');
 

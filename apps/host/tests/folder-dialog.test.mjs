@@ -70,7 +70,7 @@ test('chosen paths lose trailing separators but roots survive', () => {
 });
 
 test('a typed path must be an absolute existing directory', async () => {
-  const dir = await mkdtemp(join(tmpdir(), 'strata-typed-'));
+  const dir = await mkdtemp(join(tmpdir(), 'nostroma-typed-'));
   try {
     await writeFile(join(dir, 'file.txt'), 'x');
     assert.equal(await typedFolder(dir, { isAbsolute }), dir);
@@ -82,7 +82,7 @@ test('a typed path must be an absolute existing directory', async () => {
 });
 
 test('the model page takes a folder or one .gguf file, with or without quotes around the path', async () => {
-  const dir = await mkdtemp(join(tmpdir(), 'strata-gguf-typed-'));
+  const dir = await mkdtemp(join(tmpdir(), 'nostroma-gguf-typed-'));
   try {
     await writeFile(join(dir, 'model-00001-of-00002.gguf'), 'x');
     await writeFile(join(dir, 'notes.txt'), 'x');
@@ -99,14 +99,14 @@ test('the model page takes a folder or one .gguf file, with or without quotes ar
 });
 
 async function startHost() {
-  const home = await mkdtemp(join(tmpdir(), 'strata-folder-home-'));
+  const home = await mkdtemp(join(tmpdir(), 'nostroma-folder-home-'));
   const net = await import('node:net');
   const probe = net.createServer();
   await new Promise(r => probe.listen(0, '127.0.0.1', r));
   const { port } = probe.address();
   await new Promise(r => probe.close(r));
   const child = spawn(process.execPath, [join(HOST_ROOT, 'server', 'index.mjs'), '--dist', join(HOST_ROOT, 'dist')], {
-    cwd: HOST_ROOT, env: { ...process.env, STRATA_HOME: home, STRATA_WORKSPACE: home, STRATA_PORT: String(port), STRATA_REAL_ENGINE: '0' }, stdio: 'ignore',
+    cwd: HOST_ROOT, env: { ...process.env, NOSTROMA_HOME: home, NOSTROMA_WORKSPACE: home, NOSTROMA_PORT: String(port), NOSTROMA_REAL_ENGINE: '0' }, stdio: 'ignore',
   });
   const base = `http://127.0.0.1:${port}`;
   for (let i = 0; i < 150; i++) {
@@ -119,7 +119,7 @@ async function startHost() {
 
 test('the host accepts a typed folder path for the picker and for adding a skill, on every OS', { timeout: 60000 }, async () => {
   const { child, base, home } = await startHost();
-  const skill = await mkdtemp(join(tmpdir(), 'strata-skill-'));
+  const skill = await mkdtemp(join(tmpdir(), 'nostroma-skill-'));
   try {
     const post = (path, body) => fetch(`${base}${path}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
     let r = await post('/api/workspaces/pick', { path: skill });

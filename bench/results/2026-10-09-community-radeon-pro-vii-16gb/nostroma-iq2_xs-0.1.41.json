@@ -1,0 +1,45 @@
+{
+ "exe": "/home/user/Nostroma/.bench/0.1.41/build-906/nostroma",
+ "args": [
+  "--pack",
+  "/home/user/Nostroma-data/packs/iq2_xs",
+  "--native",
+  "/media/user/新加卷/Nostroma-models/Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00001-of-00002.gguf",
+  "--ple-gguf",
+  "/media/user/新加卷/Nostroma-models/Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00002-of-00002.gguf",
+  "--expert-profile",
+  "/home/user/Nostroma/data/expert-profile.bin",
+  "--expert-cache",
+  "auto",
+  "--prefill",
+  "2048",
+  "--mtp",
+  "/home/user/Nostroma-data/mtp/rt",
+  "--max-context",
+  "131072",
+  "--kv",
+  "int8",
+  "--kv-resident",
+  "32768",
+  "--spec",
+  "3",
+  "--spec-min-p",
+  "0.9",
+  "--vram-reserve-mib",
+  "1024"
+ ],
+ "cwd": "/home/user/Nostroma",
+ "backend": "hip",
+ "tokenizer": "/home/user/Nostroma-data/packs/iq2_xs/tokenizer",
+ "model_name": "Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS",
+ "log": "/home/user/Nostroma/.bench/bench-0.1.41.log",
+ "lib_dirs": [
+  "/opt/rocm/lib"
+ ],
+ "host": "127.0.0.1",
+ "port": 8080,
+ "open_browser": false,
+ "gpu": [
+  0
+ ]
+}

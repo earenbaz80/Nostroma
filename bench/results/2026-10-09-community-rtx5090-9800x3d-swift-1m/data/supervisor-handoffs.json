@@ -34,7 +34,7 @@
           "pid": null,
           "startup": null
         },
-        "fallback_model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-262k",
+        "fallback_model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-262k",
         "recovery": null,
         "lease": {
           "holders": [],
@@ -91,8 +91,8 @@
           "timestamp_ms": 1791548456323,
           "kind": "prompt_cache_saved",
           "severity": "info",
-          "message": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m state=saved bytes=15514052760 elapsed_ms=7538 detail=staging unavailable: no qualified prior checkpoint; synchronous SAVE",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "message": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m state=saved bytes=15514052760 elapsed_ms=7538 detail=staging unavailable: no qualified prior checkpoint; synchronous SAVE",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": 7538
         },
@@ -102,7 +102,7 @@
           "kind": "backend_shutdown",
           "severity": "info",
           "message": "native shutdown: unloaded",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": 792281,
           "duration_ms": 1677
         },
@@ -112,7 +112,7 @@
           "kind": "model_stopped",
           "severity": "info",
           "message": "stopped pid=792281 status=ExitStatus(unix_wait_status(0)) gpu_held_mib=29006",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": 792281,
           "duration_ms": 2052
         },
@@ -122,7 +122,7 @@
           "kind": "gpu_memory_released",
           "severity": "info",
           "message": "29006 MiB of device memory came back after 10 ms",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": 10
         },
@@ -163,8 +163,8 @@
           "timestamp_ms": 1791548427183,
           "kind": "model_started",
           "severity": "info",
-          "message": "started model=qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m preset=balanced port=18091 pid=792281",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "message": "started model=qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m preset=balanced port=18091 pid=792281",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": 792281,
           "duration_ms": null
         },
@@ -174,7 +174,7 @@
           "kind": "startup_marker",
           "severity": "info",
           "message": "startup_marker=ready elapsed_ms=13505",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": null
         },
@@ -183,14 +183,14 @@
           "timestamp_ms": 1791548440689,
           "kind": "prompt_cache_restored",
           "severity": "info",
-          "message": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m state=skipped bytes=0 elapsed_ms=0 detail=no saved state",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "message": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m state=skipped bytes=0 elapsed_ms=0 detail=no saved state",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": 0
         }
       ],
       "durable_parent_at_ready": {
-        "filename": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m.state",
+        "filename": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m.state",
         "file": {
           "bytes": 15514052760,
           "mode": "0o600",
@@ -211,7 +211,7 @@
         },
         "metadata": {
           "owner": "hermes-brain",
-          "model_key": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model_key": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "fingerprint": "490d24667a83e9aa",
           "saved_at_ms": 1791548456307,
           "bytes": 15514052760
@@ -222,10 +222,10 @@
     },
     "parent_return": {
       "status": "ready",
-      "requested_model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+      "requested_model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
       "switch_response": {
-        "requested_model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
-        "active_model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+        "requested_model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
+        "active_model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
         "fallback_cause": null,
         "ok": true
       },
@@ -241,10 +241,10 @@
       "pending_write_observed": false,
       "supervisor": {
         "state": "running",
-        "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+        "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
         "preset": "balanced",
         "port": 18091,
-        "backend": "Strata native Swift IQ3_XXS MTP4",
+        "backend": "Nostroma native Swift IQ3_XXS MTP4",
         "pid": 794201,
         "approval": {
           "state": "disabled",
@@ -254,7 +254,7 @@
           "pid": null,
           "startup": null
         },
-        "fallback_model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-262k",
+        "fallback_model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-262k",
         "recovery": null,
         "lease": {
           "holders": [],
@@ -269,7 +269,7 @@
           "main_loop_ms": null,
           "slots_idle_ms": null,
           "ready_ms": 13005,
-          "last_marker": "strata /health loaded",
+          "last_marker": "nostroma /health loaded",
           "last_error": null,
           "deadline_exceeded": false,
           "prompt_cache": {
@@ -287,11 +287,11 @@
         "transition": {
           "generation": 3,
           "phase": "ready",
-          "requested_model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
-          "active_model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "requested_model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
+          "active_model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "error": null,
           "state": "idle",
-          "action": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m"
+          "action": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m"
         },
         "degraded": null
       },
@@ -302,7 +302,7 @@
         "images": true,
         "api_key": false,
         "loaded": true,
-        "service": "strata"
+        "service": "nostroma"
       },
       "native_models": {
         "object": "list",
@@ -354,8 +354,8 @@
           "timestamp_ms": 1791548465624,
           "kind": "model_started",
           "severity": "info",
-          "message": "started model=qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m preset=balanced port=18091 pid=794201",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "message": "started model=qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m preset=balanced port=18091 pid=794201",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": 794201,
           "duration_ms": null
         },
@@ -365,7 +365,7 @@
           "kind": "startup_marker",
           "severity": "info",
           "message": "startup_marker=ready elapsed_ms=13005",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": null
         },
@@ -374,8 +374,8 @@
           "timestamp_ms": 1791548485256,
           "kind": "prompt_cache_restored",
           "severity": "info",
-          "message": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m state=restored bytes=15514052760 elapsed_ms=6624",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "message": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m state=restored bytes=15514052760 elapsed_ms=6624",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": 6624
         }
@@ -396,8 +396,8 @@
           "timestamp_ms": 1791548427183,
           "kind": "model_started",
           "severity": "info",
-          "message": "started model=qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m preset=balanced port=18091 pid=792281",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "message": "started model=qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m preset=balanced port=18091 pid=792281",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": 792281,
           "duration_ms": null
         },
@@ -407,7 +407,7 @@
           "kind": "startup_marker",
           "severity": "info",
           "message": "startup_marker=ready elapsed_ms=13505",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": null
         },
@@ -416,8 +416,8 @@
           "timestamp_ms": 1791548440689,
           "kind": "prompt_cache_restored",
           "severity": "info",
-          "message": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m state=skipped bytes=0 elapsed_ms=0 detail=no saved state",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "message": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m state=skipped bytes=0 elapsed_ms=0 detail=no saved state",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": 0
         },
@@ -426,8 +426,8 @@
           "timestamp_ms": 1791548456323,
           "kind": "prompt_cache_saved",
           "severity": "info",
-          "message": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m state=saved bytes=15514052760 elapsed_ms=7538 detail=staging unavailable: no qualified prior checkpoint; synchronous SAVE",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "message": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m state=saved bytes=15514052760 elapsed_ms=7538 detail=staging unavailable: no qualified prior checkpoint; synchronous SAVE",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": 7538
         },
@@ -437,7 +437,7 @@
           "kind": "backend_shutdown",
           "severity": "info",
           "message": "native shutdown: unloaded",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": 792281,
           "duration_ms": 1677
         },
@@ -447,7 +447,7 @@
           "kind": "model_stopped",
           "severity": "info",
           "message": "stopped pid=792281 status=ExitStatus(unix_wait_status(0)) gpu_held_mib=29006",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": 792281,
           "duration_ms": 2052
         },
@@ -457,7 +457,7 @@
           "kind": "gpu_memory_released",
           "severity": "info",
           "message": "29006 MiB of device memory came back after 10 ms",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": 10
         },
@@ -483,7 +483,7 @@
         }
       ],
       "durable_parent_at_ready": {
-        "filename": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m.state",
+        "filename": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m.state",
         "file": {
           "bytes": 15514052760,
           "mode": "0o600",
@@ -504,7 +504,7 @@
         },
         "metadata": {
           "owner": "hermes-brain",
-          "model_key": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model_key": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "fingerprint": "490d24667a83e9aa",
           "saved_at_ms": 1791548456307,
           "bytes": 15514052760
@@ -514,7 +514,7 @@
       }
     },
     "durable_parent": {
-      "filename": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m.state",
+      "filename": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m.state",
       "file": {
         "bytes": 15514052760,
         "mode": "0o600",
@@ -535,7 +535,7 @@
       },
       "metadata": {
         "owner": "hermes-brain",
-        "model_key": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+        "model_key": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
         "fingerprint": "490d24667a83e9aa",
         "saved_at_ms": 1791548456307,
         "bytes": 15514052760
@@ -544,7 +544,7 @@
       "native_header_hex": "535452534553530101000000400000000535eaf5d6d4e8ce5cb923e1193e27f748a8b59c0300000000000000000000000000000000000000e29b6b87449866ff"
     },
     "learned_profile": {
-      "path": "<MEASUREMENT_ROOT>/checkpoints/live-live-supervisor-v3/expert-profiles/qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m-4c85c7e2b03bb505.experts",
+      "path": "<MEASUREMENT_ROOT>/checkpoints/live-live-supervisor-v3/expert-profiles/qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m-4c85c7e2b03bb505.experts",
       "file": {
         "bytes": 196632,
         "mode": "0o600",
@@ -615,7 +615,7 @@
           "pid": null,
           "startup": null
         },
-        "fallback_model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-262k",
+        "fallback_model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-262k",
         "recovery": null,
         "lease": {
           "holders": [],
@@ -672,8 +672,8 @@
           "timestamp_ms": 1791548489981,
           "kind": "prompt_cache_staged",
           "severity": "info",
-          "message": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m state=staged bytes=15514052760 elapsed_ms=2628 detail=rpc_saved_tokens=1000386 live_token_ids=1000386",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "message": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m state=staged bytes=15514052760 elapsed_ms=2628 detail=rpc_saved_tokens=1000386 live_token_ids=1000386",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": 2628
         },
@@ -683,7 +683,7 @@
           "kind": "backend_shutdown",
           "severity": "info",
           "message": "native shutdown: unloaded",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": 794201,
           "duration_ms": 1427
         },
@@ -693,7 +693,7 @@
           "kind": "model_stopped",
           "severity": "info",
           "message": "stopped pid=794201 status=ExitStatus(unix_wait_status(0)) gpu_held_mib=29004",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": 794201,
           "duration_ms": 1552
         },
@@ -703,7 +703,7 @@
           "kind": "gpu_memory_released",
           "severity": "info",
           "message": "29004 MiB of device memory came back after 15 ms",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": 15
         },
@@ -744,8 +744,8 @@
           "timestamp_ms": 1791548427183,
           "kind": "model_started",
           "severity": "info",
-          "message": "started model=qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m preset=balanced port=18091 pid=792281",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "message": "started model=qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m preset=balanced port=18091 pid=792281",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": 792281,
           "duration_ms": null
         },
@@ -755,7 +755,7 @@
           "kind": "startup_marker",
           "severity": "info",
           "message": "startup_marker=ready elapsed_ms=13505",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": null
         },
@@ -764,8 +764,8 @@
           "timestamp_ms": 1791548440689,
           "kind": "prompt_cache_restored",
           "severity": "info",
-          "message": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m state=skipped bytes=0 elapsed_ms=0 detail=no saved state",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "message": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m state=skipped bytes=0 elapsed_ms=0 detail=no saved state",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": 0
         },
@@ -774,8 +774,8 @@
           "timestamp_ms": 1791548456323,
           "kind": "prompt_cache_saved",
           "severity": "info",
-          "message": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m state=saved bytes=15514052760 elapsed_ms=7538 detail=staging unavailable: no qualified prior checkpoint; synchronous SAVE",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "message": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m state=saved bytes=15514052760 elapsed_ms=7538 detail=staging unavailable: no qualified prior checkpoint; synchronous SAVE",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": 7538
         },
@@ -785,7 +785,7 @@
           "kind": "backend_shutdown",
           "severity": "info",
           "message": "native shutdown: unloaded",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": 792281,
           "duration_ms": 1677
         },
@@ -795,7 +795,7 @@
           "kind": "model_stopped",
           "severity": "info",
           "message": "stopped pid=792281 status=ExitStatus(unix_wait_status(0)) gpu_held_mib=29006",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": 792281,
           "duration_ms": 2052
         },
@@ -805,7 +805,7 @@
           "kind": "gpu_memory_released",
           "severity": "info",
           "message": "29006 MiB of device memory came back after 10 ms",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": 10
         },
@@ -854,8 +854,8 @@
           "timestamp_ms": 1791548465624,
           "kind": "model_started",
           "severity": "info",
-          "message": "started model=qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m preset=balanced port=18091 pid=794201",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "message": "started model=qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m preset=balanced port=18091 pid=794201",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": 794201,
           "duration_ms": null
         },
@@ -865,7 +865,7 @@
           "kind": "startup_marker",
           "severity": "info",
           "message": "startup_marker=ready elapsed_ms=13005",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": null
         },
@@ -874,14 +874,14 @@
           "timestamp_ms": 1791548485256,
           "kind": "prompt_cache_restored",
           "severity": "info",
-          "message": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m state=restored bytes=15514052760 elapsed_ms=6624",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "message": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m state=restored bytes=15514052760 elapsed_ms=6624",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": 6624
         }
       ],
       "durable_parent_at_ready": {
-        "filename": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m.state",
+        "filename": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m.state",
         "file": {
           "bytes": 15514052760,
           "mode": "0o600",
@@ -902,7 +902,7 @@
         },
         "metadata": {
           "owner": "hermes-brain",
-          "model_key": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model_key": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "fingerprint": "490d24667a83e9aa",
           "saved_at_ms": 1791548456307,
           "bytes": 15514052760
@@ -913,10 +913,10 @@
     },
     "parent_return": {
       "status": "ready",
-      "requested_model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+      "requested_model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
       "switch_response": {
-        "requested_model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
-        "active_model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+        "requested_model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
+        "active_model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
         "fallback_cause": null,
         "ok": true
       },
@@ -932,10 +932,10 @@
       "pending_write_observed": false,
       "supervisor": {
         "state": "running",
-        "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+        "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
         "preset": "balanced",
         "port": 18091,
-        "backend": "Strata native Swift IQ3_XXS MTP4",
+        "backend": "Nostroma native Swift IQ3_XXS MTP4",
         "pid": 795971,
         "approval": {
           "state": "disabled",
@@ -945,7 +945,7 @@
           "pid": null,
           "startup": null
         },
-        "fallback_model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-262k",
+        "fallback_model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-262k",
         "recovery": null,
         "lease": {
           "holders": [],
@@ -960,7 +960,7 @@
           "main_loop_ms": null,
           "slots_idle_ms": null,
           "ready_ms": 12758,
-          "last_marker": "strata /health loaded",
+          "last_marker": "nostroma /health loaded",
           "last_error": null,
           "deadline_exceeded": false,
           "prompt_cache": {
@@ -978,11 +978,11 @@
         "transition": {
           "generation": 5,
           "phase": "ready",
-          "requested_model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
-          "active_model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "requested_model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
+          "active_model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "error": null,
           "state": "idle",
-          "action": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m"
+          "action": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m"
         },
         "degraded": null
       },
@@ -993,7 +993,7 @@
         "images": true,
         "api_key": false,
         "loaded": true,
-        "service": "strata"
+        "service": "nostroma"
       },
       "native_models": {
         "object": "list",
@@ -1035,8 +1035,8 @@
           "timestamp_ms": 1791548499364,
           "kind": "prompt_cache_saved",
           "severity": "info",
-          "message": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m state=saved bytes=15514052760 elapsed_ms=11577 detail=rpc_saved_tokens=1000386 live_token_ids=1000386",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "message": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m state=saved bytes=15514052760 elapsed_ms=11577 detail=rpc_saved_tokens=1000386 live_token_ids=1000386",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": 11577
         },
@@ -1055,8 +1055,8 @@
           "timestamp_ms": 1791548499376,
           "kind": "model_started",
           "severity": "info",
-          "message": "started model=qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m preset=balanced port=18091 pid=795971",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "message": "started model=qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m preset=balanced port=18091 pid=795971",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": 795971,
           "duration_ms": null
         },
@@ -1066,7 +1066,7 @@
           "kind": "startup_marker",
           "severity": "info",
           "message": "startup_marker=ready elapsed_ms=12758",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": null
         },
@@ -1075,8 +1075,8 @@
           "timestamp_ms": 1791548518282,
           "kind": "prompt_cache_restored",
           "severity": "info",
-          "message": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m state=restored bytes=15514052760 elapsed_ms=6146",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "message": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m state=restored bytes=15514052760 elapsed_ms=6146",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": 6146
         }
@@ -1097,8 +1097,8 @@
           "timestamp_ms": 1791548427183,
           "kind": "model_started",
           "severity": "info",
-          "message": "started model=qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m preset=balanced port=18091 pid=792281",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "message": "started model=qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m preset=balanced port=18091 pid=792281",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": 792281,
           "duration_ms": null
         },
@@ -1108,7 +1108,7 @@
           "kind": "startup_marker",
           "severity": "info",
           "message": "startup_marker=ready elapsed_ms=13505",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": null
         },
@@ -1117,8 +1117,8 @@
           "timestamp_ms": 1791548440689,
           "kind": "prompt_cache_restored",
           "severity": "info",
-          "message": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m state=skipped bytes=0 elapsed_ms=0 detail=no saved state",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "message": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m state=skipped bytes=0 elapsed_ms=0 detail=no saved state",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": 0
         },
@@ -1127,8 +1127,8 @@
           "timestamp_ms": 1791548456323,
           "kind": "prompt_cache_saved",
           "severity": "info",
-          "message": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m state=saved bytes=15514052760 elapsed_ms=7538 detail=staging unavailable: no qualified prior checkpoint; synchronous SAVE",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "message": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m state=saved bytes=15514052760 elapsed_ms=7538 detail=staging unavailable: no qualified prior checkpoint; synchronous SAVE",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": 7538
         },
@@ -1138,7 +1138,7 @@
           "kind": "backend_shutdown",
           "severity": "info",
           "message": "native shutdown: unloaded",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": 792281,
           "duration_ms": 1677
         },
@@ -1148,7 +1148,7 @@
           "kind": "model_stopped",
           "severity": "info",
           "message": "stopped pid=792281 status=ExitStatus(unix_wait_status(0)) gpu_held_mib=29006",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": 792281,
           "duration_ms": 2052
         },
@@ -1158,7 +1158,7 @@
           "kind": "gpu_memory_released",
           "severity": "info",
           "message": "29006 MiB of device memory came back after 10 ms",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": 10
         },
@@ -1207,8 +1207,8 @@
           "timestamp_ms": 1791548465624,
           "kind": "model_started",
           "severity": "info",
-          "message": "started model=qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m preset=balanced port=18091 pid=794201",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "message": "started model=qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m preset=balanced port=18091 pid=794201",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": 794201,
           "duration_ms": null
         },
@@ -1218,7 +1218,7 @@
           "kind": "startup_marker",
           "severity": "info",
           "message": "startup_marker=ready elapsed_ms=13005",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": null
         },
@@ -1227,8 +1227,8 @@
           "timestamp_ms": 1791548485256,
           "kind": "prompt_cache_restored",
           "severity": "info",
-          "message": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m state=restored bytes=15514052760 elapsed_ms=6624",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "message": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m state=restored bytes=15514052760 elapsed_ms=6624",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": 6624
         },
@@ -1237,8 +1237,8 @@
           "timestamp_ms": 1791548489981,
           "kind": "prompt_cache_staged",
           "severity": "info",
-          "message": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m state=staged bytes=15514052760 elapsed_ms=2628 detail=rpc_saved_tokens=1000386 live_token_ids=1000386",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "message": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m state=staged bytes=15514052760 elapsed_ms=2628 detail=rpc_saved_tokens=1000386 live_token_ids=1000386",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": 2628
         },
@@ -1248,7 +1248,7 @@
           "kind": "backend_shutdown",
           "severity": "info",
           "message": "native shutdown: unloaded",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": 794201,
           "duration_ms": 1427
         },
@@ -1258,7 +1258,7 @@
           "kind": "model_stopped",
           "severity": "info",
           "message": "stopped pid=794201 status=ExitStatus(unix_wait_status(0)) gpu_held_mib=29004",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": 794201,
           "duration_ms": 1552
         },
@@ -1268,7 +1268,7 @@
           "kind": "gpu_memory_released",
           "severity": "info",
           "message": "29004 MiB of device memory came back after 15 ms",
-          "model": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "pid": null,
           "duration_ms": 15
         },
@@ -1294,7 +1294,7 @@
         }
       ],
       "durable_parent_at_ready": {
-        "filename": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m.state",
+        "filename": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m.state",
         "file": {
           "bytes": 15514052760,
           "mode": "0o600",
@@ -1315,7 +1315,7 @@
         },
         "metadata": {
           "owner": "hermes-brain",
-          "model_key": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+          "model_key": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
           "fingerprint": "490d24667a83e9aa",
           "saved_at_ms": 1791548491553,
           "bytes": 15514052760
@@ -1325,7 +1325,7 @@
       }
     },
     "durable_parent": {
-      "filename": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m.state",
+      "filename": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m.state",
       "file": {
         "bytes": 15514052760,
         "mode": "0o600",
@@ -1346,7 +1346,7 @@
       },
       "metadata": {
         "owner": "hermes-brain",
-        "model_key": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+        "model_key": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
         "fingerprint": "490d24667a83e9aa",
         "saved_at_ms": 1791548491553,
         "bytes": 15514052760
@@ -1355,7 +1355,7 @@
       "native_header_hex": "535452534553530101000000400000000535eaf5d6d4e8ce5cb923e1193e27f748a8b59c0300000000000000000000000000000000000000e29b6b87449866ff"
     },
     "learned_profile": {
-      "path": "<MEASUREMENT_ROOT>/checkpoints/live-live-supervisor-v3/expert-profiles/qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m-4c85c7e2b03bb505.experts",
+      "path": "<MEASUREMENT_ROOT>/checkpoints/live-live-supervisor-v3/expert-profiles/qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m-4c85c7e2b03bb505.experts",
       "file": {
         "bytes": 196632,
         "mode": "0o600",

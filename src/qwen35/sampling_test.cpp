@@ -1,14 +1,14 @@
-// The qwen35 host sampler's penalties (include/strata/qwen35/sampling.hpp), CPU only, no model.
+// The qwen35 host sampler's penalties (include/nostroma/qwen35/sampling.hpp), CPU only, no model.
 // #3911: a history token outside a short logit row (--draft-vocab N) must not write past the row.
-#include "strata/qwen35/sampling.hpp"
+#include "nostroma/qwen35/sampling.hpp"
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <map>
 
-using strata::qwen35::Sampling;
-using strata::qwen35::apply_penalties;
+using nostroma::qwen35::Sampling;
+using nostroma::qwen35::apply_penalties;
 
 namespace {
 int checks = 0;
@@ -108,12 +108,12 @@ int main() {
     }
 
     // #4590: the history a request's penalties start from.  Default: the last prompt token only (the reply's tokens join it);
-    // STRATA_PENALTY_PROMPT=1 (counts_prompt): the whole prompt, as before.
+    // NOSTROMA_PENALTY_PROMPT=1 (counts_prompt): the whole prompt, as before.
     {
-        using strata::qwen35::penalty_history_start;
+        using nostroma::qwen35::penalty_history_start;
         const std::vector<int32_t> prompt = {5, 12, 12, 7777, 7778, 50, 51};
-        check(!strata::kernels::penalty_counts_prompt(nullptr) && !strata::kernels::penalty_counts_prompt("0") &&
-                  strata::kernels::penalty_counts_prompt("1"), "the switch: unset and 0 reply only, 1 the old window");
+        check(!nostroma::kernels::penalty_counts_prompt(nullptr) && !nostroma::kernels::penalty_counts_prompt("0") &&
+                  nostroma::kernels::penalty_counts_prompt("1"), "the switch: unset and 0 reply only, 1 the old window");
         const std::vector<int32_t> h = penalty_history_start(prompt, false);
         check(h.size() == 1 && h[0] == 51, "default: the history starts at the last prompt token");
         check(penalty_history_start(prompt, true) == prompt, "opt-out: the whole prompt");

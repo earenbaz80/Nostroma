@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Serial, fresh-prompt Strata benchmark (Windows-capable).
+"""Serial, fresh-prompt Nostroma benchmark (Windows-capable).
 
 Derived from bench/results/2026-09-30-community-rtx-5090/benchmark.py: same synthetic prompts, nonces,
 token targets, greedy decoding, reasoning off and 256-token output cap, so the numbers are comparable.
-Changes: runs with Strata's own Windows venv; a failed or cancelled run is recorded with its error and
+Changes: runs with Nostroma's own Windows venv; a failed or cancelled run is recorded with its error and
 excluded from the statistics instead of stopping the suite; peak host RAM and GPU memory are sampled
 every 0.5 s during each request.
 
@@ -73,7 +73,7 @@ def main():
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     sys.path[:0] = [str(args.root), str(args.root / "tools")]
-    from strata_tokenizer import Tokenizer
+    from nostroma_tokenizer import Tokenizer
     from serve.frontend import ChatTemplate, openai_to_messages
     directory = args.pack / "tokenizer"
     vocab = json.loads((directory / "vocab.json").read_text(encoding="utf-8"))
@@ -88,7 +88,7 @@ def main():
     rows = []
 
     def request(content, maximum=256):
-        return {"model": "strata", "messages": [{"role": "user", "content": content}],
+        return {"model": "nostroma", "messages": [{"role": "user", "content": content}],
                 "temperature": 0, "reasoning_effort": "none", "max_tokens": maximum,
                 "stream": True, "stream_options": {"include_usage": True}}
 

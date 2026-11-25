@@ -1,6 +1,6 @@
 # The all-cards split engine (starts by itself on the cards it has been run on; `--split-engine off` turns it off)
 
-`strata-split` gives every card a share of **every** layer instead of some of the layers, and the cards exchange the layer sums through
+`nostroma-split` gives every card a share of **every** layer instead of some of the layers, and the cards exchange the layer sums through
 page-locked host memory. It is built from [sFNX](https://github.com/johnfink8/sfnx) by John Fink (MIT; the licence and credit travel with the
 code in `third_party/sfnx`). Nostroma starts it by itself when the rule below says yes, and starts the normal layer split, with no message, when it does not.
 
@@ -39,7 +39,7 @@ types, not the name); **all routed experts fit in the cards' memory** (the memor
 131072 or less. The split uses the MTP drafter, so Nostroma fetches the MTP draft layer (about 5.2 GB) when it is not on the disk; if that layer is
 missing, the launch is a quiet layer split.
 
-**Turn it off:** `nostroma launch --split-engine off`, or `"split_engine": "off"` in the run config, or `STRATA_SPLIT_ENGINE=0` in the environment.
+**Turn it off:** `nostroma launch --split-engine off`, or `"split_engine": "off"` in the run config, or `NOSTROMA_SPLIT_ENGINE=0` in the environment.
 **Ask for it:** `--split-engine on` (or `"on"` in the config) uses the same rule, but says why in one line when it cannot run. It also runs the
 cases Auto leaves out (2 or 3 R9700 cards, the IQ3_S set on AMD, other AMD cards, 3 or 4 NVIDIA cards); the line says which part has not been run.
 
@@ -66,9 +66,9 @@ checks are removed because the path they protect no longer exists.
 
 ## AMD (Radeon AI PRO R9700, gfx1201)
 
-The same sources build for HIP (`-DSTRATA_ENABLE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201`, `packaging/build_split_hip.sh`): gfx12 WMMA tiles, wave32, the HIP runtime through the tree's
+The same sources build for HIP (`-DNOSTROMA_ENABLE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201`, `packaging/build_split_hip.sh`): gfx12 WMMA tiles, wave32, the HIP runtime through the tree's
 hip_compat shim. `AUTO_SPLIT_AMD_ARCHS`, `AUTO_SPLIT_AMD_CARD_COUNTS` and `AUTO_SPLIT_AMD_EXPERT_TYPES` in `nostroma_control/split_engine.py` name what Auto starts; removing an entry keeps
-the layer split there while `--split-engine on` still runs the split. It looks for `strata-split-<N>-gfx1201` beside the engine.
+the layer split there while `--split-engine on` still runs the split. It looks for `nostroma-split-<N>-gfx1201` beside the engine.
 
 **Other AMD cards the package has code for (gfx1100, gfx1101, gfx1102, gfx1103 and gfx1200) are opt-in:** only `--split-engine on` starts it there, and before the model loads the engine runs a
 kernel self-test on every card (`src/split/src/hip/selftest_policy.hpp`: the expert tile and the attention tile's WMMA shapes). It prints one line saying the card has not been run and asking for a report;
@@ -82,7 +82,7 @@ failure, or with `FNX_PEER=0`, it uses the host-memory exchange for the whole ru
 
 ## DFlash2 instead of the MTP draft layer (engine flag; the launcher starts it only when you choose both)
 
-`strata-split-N --draft dflash2 --draft-model PACK --draft-vocab FILE` (or `FNX_DRAFT=dflash2`) drafts with the DFlash2 block drafter instead of the MTP draft layer: one drafter a lane on the first card (about 0.7 GB for the pack and the draft head, about 75 MiB a lane), the taps of layers 5, 15, 25, 35 and 45 made inside the window graphs, nothing exchanged between the cards. Answers are those of the MTP split and of the split with no drafter (greedy hashes equal, 1 and 8 users). It is measured faster on greedy code and JSON (+5 to +14%) and slower on sampled text and agent turns, and at 4 users, so Auto keeps the MTP draft layer and nothing starts it by itself. The launcher and the app start it only for a person who chose DFlash2 by name (`--drafting dflash2`) and the split engine on (`--split-engine on`): the run config then carries `--draft dflash2 --draft-model PACK` instead of `--mtp`, the MTP layer is not loaded or needed, and `--parallel N` sets the lanes as before. With the split engine on Auto, DFlash2 chosen by name keeps the normal layer split with DFlash2. The numbers are an internal measurement; the run logs are not published. Testers' switches: `FNX_DF2_CONF` (0.35), `FNX_DF2_DEFER`, `FNX_DF2_REFRESH`, `FNX_DF2_CALL_MS`, `FNX_DF2_TRACE`, `FNX_SPECULATE=0` (one row a window, no drafts).
+`nostroma-split-N --draft dflash2 --draft-model PACK --draft-vocab FILE` (or `FNX_DRAFT=dflash2`) drafts with the DFlash2 block drafter instead of the MTP draft layer: one drafter a lane on the first card (about 0.7 GB for the pack and the draft head, about 75 MiB a lane), the taps of layers 5, 15, 25, 35 and 45 made inside the window graphs, nothing exchanged between the cards. Answers are those of the MTP split and of the split with no drafter (greedy hashes equal, 1 and 8 users). It is measured faster on greedy code and JSON (+5 to +14%) and slower on sampled text and agent turns, and at 4 users, so Auto keeps the MTP draft layer and nothing starts it by itself. The launcher and the app start it only for a person who chose DFlash2 by name (`--drafting dflash2`) and the split engine on (`--split-engine on`): the run config then carries `--draft dflash2 --draft-model PACK` instead of `--mtp`, the MTP layer is not loaded or needed, and `--parallel N` sets the lanes as before. With the split engine on Auto, DFlash2 chosen by name keeps the normal layer split with DFlash2. The numbers are an internal measurement; the run logs are not published. Testers' switches: `FNX_DF2_CONF` (0.35), `FNX_DF2_DEFER`, `FNX_DF2_REFRESH`, `FNX_DF2_CALL_MS`, `FNX_DF2_TRACE`, `FNX_SPECULATE=0` (one row a window, no drafts).
 
 ## Not proven
 
@@ -91,5 +91,5 @@ with two big cards, and contexts over 128K have not been run. The copy-engine ri
 
 ## Build
 
-`-DSTRATA_BUILD_SPLIT=ON -DSTRATA_GGML_DIR=<llama.cpp checkout> [-DSTRATA_SPLIT_CARDS="2;3"] [-DSTRATA_SPLIT_ARCH=86]` builds
-`strata-split-N` per card count; `packaging/build_split_cuda.sh` does that with the release engine's toolchain rules and checks the result (`packaging/build_split_hip.sh` for AMD).
+`-DNOSTROMA_BUILD_SPLIT=ON -DNOSTROMA_GGML_DIR=<llama.cpp checkout> [-DNOSTROMA_SPLIT_CARDS="2;3"] [-DNOSTROMA_SPLIT_ARCH=86]` builds
+`nostroma-split-N` per card count; `packaging/build_split_cuda.sh` does that with the release engine's toolchain rules and checks the result (`packaging/build_split_hip.sh` for AMD).

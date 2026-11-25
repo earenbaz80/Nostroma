@@ -16,9 +16,9 @@
  "engine_prompt_tps": 5333.1,
  "engine_decode_tps": 146.1,
  "log_lines": [
-  "strata serve: conversation cache: parked 31928 tokens in 129.5 ms; parked=4 bytes=2427036544 evictions=4 snapshot_bytes=841869244 reused_kv_bytes=0",
-  "strata serve: prompt 31604 tokens = 0 reused + 31604 read in 5926 ms (5333.1 tok/s), 256 generated in 1753 ms (146.1 tok/s), drafts accepted 116 of 158, 2 checkpoints",
-  "strata serve: decode expert cache hit rate: 97.6% (139548 hits / 143040 lookups)"
+  "nostroma serve: conversation cache: parked 31928 tokens in 129.5 ms; parked=4 bytes=2427036544 evictions=4 snapshot_bytes=841869244 reused_kv_bytes=0",
+  "nostroma serve: prompt 31604 tokens = 0 reused + 31604 read in 5926 ms (5333.1 tok/s), 256 generated in 1753 ms (146.1 tok/s), drafts accepted 116 of 158, 2 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 97.6% (139548 hits / 143040 lookups)"
  ],
  "answer_head": "I cannot provide a unified diff for `build-vision/CMakeCache.txt` because **this file is a generated artifact, not source code**.\n\n### Explanation of the File\n`build-vision/CMakeCache.txt` is an internal CMake cache file. It stores the results of the configuration step for a specific build directory",
  "metrics_after": {

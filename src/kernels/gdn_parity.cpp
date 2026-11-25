@@ -18,11 +18,11 @@
 // It also checks the STATE LAYOUT, which is the one place these kernels intentionally differ from the
 // reference: (S, h_v, S) with j fastest instead of (S, S, h_v).  A layout mix-up is silent, so the state is
 // filled with a value that encodes its own coordinates.
-#include "strata/kernels/gdn.hpp"
-#include "strata/env.hpp"
-#include "strata/kernels/fused_gdn.hpp"
-#include "strata/kernels/verify_kernels.hpp"
-#include "strata/kernels/native_mmvq.hpp"
+#include "nostroma/kernels/gdn.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kernels/fused_gdn.hpp"
+#include "nostroma/kernels/verify_kernels.hpp"
+#include "nostroma/kernels/native_mmvq.hpp"
 
 #include <cuda_runtime.h>
 
@@ -179,8 +179,8 @@ int main(int argc, char** argv) {
         check(cudaMemcpy(d_g, gate.data(), gate.size() * 4, cudaMemcpyHostToDevice), "cg");
         check(cudaMemcpy(d_b, beta.data(), beta.size() * 4, cudaMemcpyHostToDevice), "cb");
 
-        strata::kernels::GdnShapes sh{S, h_k, h_v};
-        strata::kernels::gdn_step(d_st, d_q, d_k, d_v, d_g, d_b, d_o, sh, nullptr);
+        nostroma::kernels::GdnShapes sh{S, h_k, h_v};
+        nostroma::kernels::gdn_step(d_st, d_q, d_k, d_v, d_g, d_b, d_o, sh, nullptr);
 
         std::vector<float> got_o((size_t) h_v * S), got_st(st_dev.size());
         check(cudaMemcpy(got_o.data(), d_o, got_o.size() * 4, cudaMemcpyDeviceToHost), "cgo");
@@ -212,7 +212,7 @@ int main(int argc, char** argv) {
             check(cudaMemcpy(d_st, zero.data(), zero.size() * 4, cudaMemcpyHostToDevice), "z0");
             check(cudaMemcpy(d_g, zg.data(), zg.size() * 4, cudaMemcpyHostToDevice), "z1");
             check(cudaMemcpy(d_b, zb.data(), zb.size() * 4, cudaMemcpyHostToDevice), "z2");
-            strata::kernels::gdn_step(d_st, d_q, d_k, d_v, d_g, d_b, d_o, sh, nullptr);
+            nostroma::kernels::gdn_step(d_st, d_q, d_k, d_v, d_g, d_b, d_o, sh, nullptr);
             std::vector<float> zz(zero.size());
             check(cudaMemcpy(zz.data(), d_st, zz.size() * 4, cudaMemcpyDeviceToHost), "z3");
             double nz = 0;
@@ -292,7 +292,7 @@ int main(int argc, char** argv) {
         check(cudaMemcpy(d_cs, cs.data(), cs.size() * 4, cudaMemcpyHostToDevice), "ccs");
         check(cudaMemcpy(d_x, x.data(), x.size() * 4, cudaMemcpyHostToDevice), "ccx");
         check(cudaMemcpy(d_w, kW.data(), kW.size() * 4, cudaMemcpyHostToDevice), "ccw");
-        strata::kernels::gdn_conv_step(d_cs, d_x, d_w, d_o, C, dc, nullptr);
+        nostroma::kernels::gdn_conv_step(d_cs, d_x, d_w, d_o, C, dc, nullptr);
         std::vector<float> got((size_t) C), got_cs(cs.size());
         check(cudaMemcpy(got.data(), d_o, got.size() * 4, cudaMemcpyDeviceToHost), "cgo");
         check(cudaMemcpy(got_cs.data(), d_cs, got_cs.size() * 4, cudaMemcpyDeviceToHost), "cgs");
@@ -336,7 +336,7 @@ int main(int argc, char** argv) {
         float* d_x = nullptr;
         check(cudaMalloc(&d_x, x.size() * 4), "lx");
         check(cudaMemcpy(d_x, x.data(), x.size() * 4, cudaMemcpyHostToDevice), "lcx");
-        strata::kernels::gdn_l2_norm(d_x, rows, cols, eps, nullptr);
+        nostroma::kernels::gdn_l2_norm(d_x, rows, cols, eps, nullptr);
         std::vector<float> got(x.size());
         check(cudaMemcpy(got.data(), d_x, got.size() * 4, cudaMemcpyDeviceToHost), "lcg");
         const double rel = rel_l1(x_ref, got);
@@ -369,7 +369,7 @@ int main(int argc, char** argv) {
         check(cudaMemcpy(d_o, o.data(), o.size() * 4, cudaMemcpyHostToDevice), "nco");
         check(cudaMemcpy(d_z, z.data(), z.size() * 4, cudaMemcpyHostToDevice), "ncz");
         check(cudaMemcpy(d_sn, sn.data(), sn.size() * 4, cudaMemcpyHostToDevice), "ncs");
-        strata::kernels::gdn_out_norm(d_o, d_z, d_sn, d_y, hv2, S2, eps, nullptr);
+        nostroma::kernels::gdn_out_norm(d_o, d_z, d_sn, d_y, hv2, S2, eps, nullptr);
         std::vector<float> got(y_ref.size());
         check(cudaMemcpy(got.data(), d_y, got.size() * 4, cudaMemcpyDeviceToHost), "ncy");
         const double rel = rel_l1(y_ref, got);
@@ -436,16 +436,16 @@ int main(int argc, char** argv) {
         auto d_sa = (float*) up(ssm_a.data(), ssm_a.size() * 4);
         auto d_gm = (float*) up(gamma.data(), gamma.size() * 4);
         int ab_bad = 0, sn_bad = 0, ab_n = 0, sn_n = 0;
-        for (int T = 1; T <= strata::kernels::kVerifyMaxT; ++T) {
+        for (int T = 1; T <= nostroma::kernels::kVerifyMaxT; ++T) {
             // --- alpha/beta
             std::vector<float> x((size_t) T * n_embd);
             for (auto& v : x) v = gauss(rng);
             auto d_x = (float*) up(x.data(), x.size() * 4);
             auto d_g = (float*) dev((size_t) T * h_v * 4), d_b = (float*) dev((size_t) T * h_v * 4);
             auto d_gr = (float*) dev((size_t) T * h_v * 4), d_br = (float*) dev((size_t) T * h_v * 4);
-            strata::kernels::gdn_ab_multi(d_x, d_wa, d_wb, d_dt, d_sa, d_g, d_b, n_embd, h_v, T, nullptr);
+            nostroma::kernels::gdn_ab_multi(d_x, d_wa, d_wb, d_dt, d_sa, d_g, d_b, n_embd, h_v, T, nullptr);
             for (int t = 0; t < T; ++t)
-                strata::kernels::fused_gdn_ab(d_x + (size_t) t * n_embd, d_wa, d_wb, d_dt, d_sa, d_gr + (size_t) t * h_v,
+                nostroma::kernels::fused_gdn_ab(d_x + (size_t) t * n_embd, d_wa, d_wb, d_dt, d_sa, d_gr + (size_t) t * h_v,
                                               d_br + (size_t) t * h_v, n_embd, h_v, nullptr);
             std::vector<float> g((size_t) T * h_v), b(g.size()), gr(g.size()), br(g.size());
             down(g, d_g); down(b, d_b); down(gr, d_gr); down(br, d_br);
@@ -475,7 +475,7 @@ int main(int argc, char** argv) {
             auto run_ref = [&](int n) {
                 check(cudaMemcpy(d_sr, st0.data(), st0.size() * 4, cudaMemcpyHostToDevice), "r0");
                 for (int t = 0; t < n; ++t)
-                    strata::kernels::fused_gdn_step_norm(d_sr, d_h + (size_t) t * C, d_h + (size_t) t * C + qk,
+                    nostroma::kernels::fused_gdn_step_norm(d_sr, d_h + (size_t) t * C, d_h + (size_t) t * C + qk,
                                                          d_h + (size_t) t * C + 2 * qk, d_gate + (size_t) t * h_v,
                                                          d_beta + (size_t) t * h_v, d_z + (size_t) t * vd, d_gm, eps,
                                                          d_yr + (size_t) t * vd, h_k, h_v, nullptr);
@@ -492,7 +492,7 @@ int main(int argc, char** argv) {
                 check(cudaMemset(d_yr, 0, (size_t) T * vd * 4), "yr0");
                 const int n = c.n_keep < 0 ? T : c.n_keep;
                 if (c.n_keep >= 0) check(cudaMemcpy(d_nk, &c.n_keep, 4, cudaMemcpyHostToDevice), "nk");
-                strata::kernels::gdn_step_norm_multi(d_st, d_h, C, d_gate, d_beta, d_z, d_gm, eps, d_y, h_k, h_v, T,
+                nostroma::kernels::gdn_step_norm_multi(d_st, d_h, C, d_gate, d_beta, d_z, d_gm, eps, d_y, h_k, h_v, T,
                                                      c.n_keep >= 0 ? d_nk : nullptr, nullptr, c.tb);
                 run_ref(n);
                 down(y, d_y); down(yr, d_yr); down(st, d_st); down(sr, d_sr);
@@ -507,22 +507,22 @@ int main(int argc, char** argv) {
                 const std::vector<float>& want_st = c.n_keep < 0 ? st0 : sr;
                 if (std::memcmp(st.data(), want_st.data(), st.size() * 4) != 0) ok = false;
                 ++sn_n;
-                // #3948 (STRATA_QFUSE): the same call with a q8_1 destination also writes the outputs' q8_1 image, row t - tb
+                // #3948 (NOSTROMA_QFUSE): the same call with a q8_1 destination also writes the outputs' q8_1 image, row t - tb
                 // at (t - tb) * value_dim: the bytes native_quantize_q8_1 makes of y rows [tb, n), the outputs and the state
                 // unchanged by asking for it, and nothing written past those rows (the engine's second group has tb > 0)
                 if (c.tb < n) {
-                    if (strata::env("NOSTROMA_GDN_PARITY_TRACE")) std::printf("    trace: T=%d '%s' with a q8_1 destination\n", T, c.name);
+                    if (nostroma::env("NOSTROMA_GDN_PARITY_TRACE")) std::printf("    trace: T=%d '%s' with a q8_1 destination\n", T, c.name);
                     const size_t qb = (size_t) (vd / 32) * 36, rows = (size_t) (n - c.tb);
                     void *d_q = dev((size_t) T * qb), *d_qr = dev((size_t) T * qb);
                     check(cudaMemset(d_q, 0x5a, (size_t) T * qb), "q0");
                     check(cudaMemcpy(d_st, st0.data(), st0.size() * 4, cudaMemcpyHostToDevice), "s1");
                     std::vector<float> y2(y.size()), st2(st0.size());
                     check(cudaMemset(d_y, 0, (size_t) T * vd * 4), "y1");
-                    strata::kernels::gdn_step_norm_multi(d_st, d_h, C, d_gate, d_beta, d_z, d_gm, eps, d_y, h_k, h_v, T,
+                    nostroma::kernels::gdn_step_norm_multi(d_st, d_h, C, d_gate, d_beta, d_z, d_gm, eps, d_y, h_k, h_v, T,
                                                          c.n_keep >= 0 ? d_nk : nullptr, nullptr, c.tb, d_q);
                     static cudaStream_t qstream = nullptr;   // (native_quantize_q8_1 refuses the null stream; a blocking stream orders with the legacy one)
                     if (qstream == nullptr) check(cudaStreamCreate(&qstream), "qstream");
-                    strata::kernels::native_quantize_q8_1(d_y + (size_t) c.tb * vd, d_qr, vd, (int) rows, qstream);
+                    nostroma::kernels::native_quantize_q8_1(d_y + (size_t) c.tb * vd, d_qr, vd, (int) rows, qstream);
                     check(cudaDeviceSynchronize(), "q sync");
                     std::vector<uint8_t> hq((size_t) T * qb), hr((size_t) T * qb);
                     check(cudaMemcpy(hq.data(), d_q, hq.size(), cudaMemcpyDeviceToHost), "q read");
@@ -561,7 +561,7 @@ int main(int argc, char** argv) {
     // (gdn_conv_commit + gdn_step_norm_multi with n_keep, no outputs) is the reference.  Several layers with their own
     // state, rows and gate/beta; n_keep 1..T; memcmp on the whole state arena (states and conv histories).
     {
-        const int qk = S * h_k, C = 2 * qk + S * h_v, L = 5, MT = strata::kernels::kVerifyMaxT;
+        const int qk = S * h_k, C = 2 * qk + S * h_v, L = 5, MT = nostroma::kernels::kVerifyMaxT;
         const int64_t conv_off = (int64_t) S * h_v * S, stride = conv_off + (int64_t) C * 3;
         std::vector<float> st0((size_t) (stride * L)), hb((size_t) L * MT * C), qkv((size_t) L * MT * C),
             gt((size_t) L * MT * h_v), bt((size_t) L * MT * h_v), zdummy((size_t) MT * S * h_v), gm(S, 1.0f);
@@ -592,12 +592,12 @@ int main(int argc, char** argv) {
             check(cudaMemcpy(d_b, st0.data(), st0.size() * 4, cudaMemcpyHostToDevice), "lcb2");
             for (int l = 0; l < L; ++l) {   // the reference: the per-layer calls
                 float* stl = d_a + (size_t) l * stride;
-                strata::kernels::gdn_conv_commit(stl + conv_off, d_qkv + (size_t) l * MT * C, C, d_nk, nullptr);
-                strata::kernels::gdn_step_norm_multi(stl, d_h + (size_t) l * MT * C, C, d_g + (size_t) l * MT * h_v,
+                nostroma::kernels::gdn_conv_commit(stl + conv_off, d_qkv + (size_t) l * MT * C, C, d_nk, nullptr);
+                nostroma::kernels::gdn_step_norm_multi(stl, d_h + (size_t) l * MT * C, C, d_g + (size_t) l * MT * h_v,
                                                      d_bt + (size_t) l * MT * h_v, d_z, d_gm, 1e-6f, d_y, h_k, h_v, MT, d_nk,
                                                      nullptr, MT);
             }
-            launched = strata::kernels::gdn_commit_layers(d_b, stride, conv_off, d_qkv, (int64_t) MT * C, d_h, (int64_t) MT * C,
+            launched = nostroma::kernels::gdn_commit_layers(d_b, stride, conv_off, d_qkv, (int64_t) MT * C, d_h, (int64_t) MT * C,
                                                           d_g, d_bt, (int64_t) MT * h_v, C, h_k, h_v, MT, L, d_nk, nullptr);
             if (!launched) break;
             check(cudaDeviceSynchronize(), "lsync");

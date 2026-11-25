@@ -1,12 +1,12 @@
-// The residency entries past what the segmented expert cache still maps (strata/core/residency_trim.hpp): after a shrink, also one
+// The residency entries past what the segmented expert cache still maps (nostroma/core/residency_trim.hpp): after a shrink, also one
 // the driver refused part way, every entry at or past the live slots becomes not resident and is listed for the next grow.  No GPU.
-#include "strata/core/residency_trim.hpp"
+#include "nostroma/core/residency_trim.hpp"
 
 #include <cstdio>
 #include <utility>
 #include <vector>
 
-using namespace strata::core;
+using namespace nostroma::core;
 
 namespace {
 int failed = 0;

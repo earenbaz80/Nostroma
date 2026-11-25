@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Spec-Sweep fuer Strata: pro N den Server neu starten, 3 Laeufe je Prompt, 256 Token, greedy.
+"""Spec-Sweep fuer Nostroma: pro N den Server neu starten, 3 Laeufe je Prompt, 256 Token, greedy.
 Liest tok/s aus dem Serverlog ("generated in X ms")."""
 import json, os, re, signal, subprocess, sys, time, urllib.request, random, pathlib, statistics
-ROOT = pathlib.Path.home() / "ai/Strata"
-OUT = pathlib.Path.home() / "messungen/2026-10-01-strata-spec-sweep"
-BASE = json.load(open(ROOT / "strata-swift-iq3_xxs.json.bak-20261001-vorsweep"))
+ROOT = pathlib.Path.home() / "ai/Nostroma"
+OUT = pathlib.Path.home() / "messungen/2026-10-01-nostroma-spec-sweep"
+BASE = json.load(open(ROOT / "nostroma-swift-iq3_xxs.json.bak-20261001-vorsweep"))
 NS = [int(x) for x in sys.argv[1].split(",")]
 RUNS = 3
 def corpus(tokens):
@@ -26,7 +26,7 @@ def stop():
             if d.isdigit() and int(d) != me:
                 try: cmd = open(f"/proc/{d}/cmdline").read().replace(chr(0), " ")
                 except OSError: continue
-                if "serve/server.py --engine strata" in cmd or "engine/strata" in cmd and "python3 sweep" not in cmd:
+                if "serve/server.py --engine nostroma" in cmd or "engine/nostroma" in cmd and "python3 sweep" not in cmd:
                     try: os.kill(int(d), sig)
                     except OSError: pass
         time.sleep(8)
@@ -41,7 +41,7 @@ def start(n):
     a = cfg["args"]; a[a.index("--spec")+1] = str(n)
     cfg["log"] = str(OUT / f"server-spec{n}.log")
     p = OUT / f"cfg-spec{n}.json"; json.dump(cfg, open(p, "w"), indent=1)
-    proc = subprocess.Popen(["setsid", str(ROOT/".venv/bin/python"), str(ROOT/"serve/server.py"), "--engine", "strata", "--config", str(p), "--port", "8080", "--open"],
+    proc = subprocess.Popen(["setsid", str(ROOT/".venv/bin/python"), str(ROOT/"serve/server.py"), "--engine", "nostroma", "--config", str(p), "--port", "8080", "--open"],
         cwd=ROOT, stdout=open(OUT/f"stdout-spec{n}.txt","w"), stderr=subprocess.STDOUT)
     for _ in range(300):
         time.sleep(3)

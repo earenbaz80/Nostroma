@@ -3,8 +3,8 @@
 in the order A, B, A, B, ... so that drift of the machine (clocks, other jobs) hits both the same way.  Reports the median, the minimum and the maximum of each (the `ms` the
 helper prints) and the ratio of the medians; also the ratio of every single pair (min / median / max), the spread that decides whether a difference is real.
 
-    python3 speed_pairs.py --helper <strata-vision> --mmproj <mmproj> --model <text model> [--threads N] [--pairs 5] [--max-tokens 1024]
-                           [--a own --env-a STRATA_VIT_CPU=fast] [--b mtmd] <image> ...
+    python3 speed_pairs.py --helper <nostroma-vision> --mmproj <mmproj> --model <text model> [--threads N] [--pairs 5] [--max-tokens 1024]
+                           [--a own --env-a NOSTROMA_VIT_CPU=fast] [--b mtmd] <image> ...
 """
 import argparse
 import os
@@ -46,7 +46,7 @@ def main():
     ap.add_argument("--max-tokens", type=int, default=1024)
     ap.add_argument("--a", default="own")
     ap.add_argument("--b", default="mtmd")
-    ap.add_argument("--env-a", action="append", default=["STRATA_VIT_CPU=fast"])
+    ap.add_argument("--env-a", action="append", default=["NOSTROMA_VIT_CPU=fast"])
     ap.add_argument("--env-b", action="append", default=[])
     ap.add_argument("--tmp", default="/tmp")
     ap.add_argument("images", nargs="+")

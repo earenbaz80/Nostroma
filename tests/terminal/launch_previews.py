@@ -56,12 +56,12 @@ def run() -> None:
         store.save(S.LaunchSettings(name="Coder 64K - agents", family="coder", model="IQ1_M", context=65536, parallel=2, last_used="2026-10-14 09:00:00"))
         store.save(S.LaunchSettings(name="Network serving", family="qwen", model="Q2_0", context=32768, parallel=1, tuned_preset="y",
                                     tuned_at="2026-10-15", last_used="2026-10-15 09:00:00"))
-        base = {"exe": "component:strata-engine", "args": ["--max-context", "131072", "--kv", "int8", "--prefill", "auto", "--expert-cache", "auto",
+        base = {"exe": "component:nostroma-engine", "args": ["--max-context", "131072", "--kv", "int8", "--prefill", "auto", "--expert-cache", "auto",
                                                           "--spec", "4"]}
         help_text = ("  --max-context N      memory for the conversation (default 4096)\n  --kv fp16|int8       how the conversation memory is stored\n"
                      "  --prefill N          how many prompt tokens are read at once\n  --expert-cache N     experts kept in graphics memory\n"
                      "  --spec N             draft tokens per step (faster replies)\n  --native-rope        experimental pinned rotary arithmetic\n")
-        patches = [mock.patch.object(Ctx, "base_config", lambda self: base), mock.patch.object(Ctx, "engine_exe", lambda self: "/engine/strata"),
+        patches = [mock.patch.object(Ctx, "base_config", lambda self: base), mock.patch.object(Ctx, "engine_exe", lambda self: "/engine/nostroma"),
                    # The fake computer's folder and free space: a capture must read the same on every machine, so the
                    # Folder step shows a fixed path and a fixed number instead of this run's temporary home and disk.
                    mock.patch.object(Ctx, "default_folder", lambda self: Path("C:/Users/AI-Server/Documents/Nostroma")),
@@ -135,7 +135,7 @@ def run() -> None:
 
         async def monitor():
             src = ov.Source(ov.metrics("reading"))
-            info = {"url": "http://127.0.0.1:8080", "urls": ["http://127.0.0.1:8080", "http://192.168.88.21:8080"], "key": "sk-strata-abcdefghijklmn",
+            info = {"url": "http://127.0.0.1:8080", "urls": ["http://127.0.0.1:8080", "http://192.168.88.21:8080"], "key": "sk-nostroma-abcdefghijklmn",
                     "model": "qwen3.8-flash-next-iq3_xxs", "context": 32768, "profile": "launch-x", "name": "Demo"}
             app = LaunchMonitor(src, None, info=info, interval=30)
             async with app.run_test(size=(120, 36)) as pilot:

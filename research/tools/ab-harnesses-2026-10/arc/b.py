@@ -3,13 +3,13 @@
 
   b.py --engine E --tag T --plan "short:128:2,p1k:8:3,p4k:8:2,p16k:8:2" [--env K=V ...] [--extra "--spec 2 ..."]
 
-plan item = case:max_new:repeat (cases are the token-id files in /mnt/models/strata-test/prompts).  Output: out/<tag>.json
+plan item = case:max_new:repeat (cases are the token-id files in /mnt/models/nostroma-test/prompts).  Output: out/<tag>.json
 with per-request prompt tok/s, decode tok/s and the tokens; one summary line per request on stderr.  A new first token per
 repeat keeps the prompt from being served out of the conversation cache (the case then differs by 1 token, same for every arm).
 """
 import argparse, json, os, queue, shlex, subprocess, sys, threading, time
 
-ROOT = "/mnt/models/strata-test"
+ROOT = "/mnt/models/nostroma-test"
 W = f"{ROOT}/arc037"
 M = "/mnt/models/llama/Qwen3.8-Flash-Next-GSQ-RCO-ISTA-DASLab"
 S1 = f"{M}/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf"
@@ -31,7 +31,7 @@ def main():
     os.makedirs(f"{W}/out", exist_ok=True)
     env = dict(os.environ)
     env.update({"ONEAPI_DEVICE_SELECTOR": "level_zero:*", "SYCL_CACHE_PERSISTENT": "0", "ZES_ENABLE_SYSMAN": "1",
-                "STRATA_VERIFY_NO_HOST": "1"})
+                "NOSTROMA_VERIFY_NO_HOST": "1"})
     if a.gpus:
         env["ONEAPI_DEVICE_SELECTOR"] = "level_zero:" + a.gpus
     for kv in a.env:

@@ -1,6 +1,6 @@
 # Community benchmark on RX 9060 XT with IQ2_XS and IQ3_XXS
 
-Measured October 9–10, 2026 by [isoux35](https://github.com/isoux35). Sharing results from my Windows desktop: Strata 0.1.40.3, Qwen3.8-Flash-Next GSQ-RCO, one 16 GB AMD GPU, and 64 GB RAM.
+Measured October 9–10, 2026 by [isoux35](https://github.com/isoux35). Sharing results from my Windows desktop: Nostroma 0.1.40.3, Qwen3.8-Flash-Next GSQ-RCO, one 16 GB AMD GPU, and 64 GB RAM.
 
 The goal was to find a practical configuration for local coding and larger context. **IQ2_XS with prefill 8,192** was the configuration I kept. It was faster than IQ3_XXS on the matched synthetic coding tasks, and one 113,501-token recall request completed under a 122,880-token context limit. That recall check is not a demonstration of reliable coding at 120K.
 
@@ -13,7 +13,7 @@ The goal was to find a practical configuration for local coding and larger conte
 | RAM | 64 GB DDR5-6000; approximately 61.66 GiB usable |
 | OS | Windows 11 Home 25H2, build 26200.9457 |
 | Driver | 32.0.31041.1004 |
-| Strata | Prebuilt Windows HIP engine 0.1.40.3; wrapper checkout `d5ea713` |
+| Nostroma | Prebuilt Windows HIP engine 0.1.40.3; wrapper checkout `d5ea713` |
 | Packaged runtime | ROCm `10.2.0a20260930`; hipBLASLt `100500` per BUILD.json |
 | Client | OpenCode 1.18.34 in Ubuntu 24.04 WSL; OpenChamber 1.24.2 |
 
@@ -26,7 +26,7 @@ Models: [ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF](https://huggingface.co/IST
 Common engine settings, with machine-specific paths omitted:
 
 ```text
-STRATA_HIP_WMMA=1
+NOSTROMA_HIP_WMMA=1
 --expert-cache auto --prefill 8192
 --spec 4 --spec-min-p 0.5
 --kv int8 --kv-resident 32768 --vram-reserve-mib 2048

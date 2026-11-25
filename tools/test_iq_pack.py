@@ -17,7 +17,7 @@ from _paths import gguf_lib
 import iq_pack                         # needs numpy + gguf_reader only: import it unguarded
 
 try:
-    _gguf = gguf_lib()                  # tools/strata_gguf.py (STRATA_GGUF_PY selects llama.cpp's gguf-py; it exits when that is not a gguf-py folder)
+    _gguf = gguf_lib()                  # tools/nostroma_gguf.py (NOSTROMA_GGUF_PY selects llama.cpp's gguf-py; it exits when that is not a gguf-py folder)
     GGUFWriter, Q, quants = _gguf.GGUFWriter, _gguf.GGMLQuantizationType, _gguf.quants
 except SystemExit:
     GGUF_PY = None
@@ -30,7 +30,7 @@ def require_gguf_py(test):
     @classmethod
     def setUpClass(cls):
         if GGUF_PY is None:
-            raise unittest.SkipTest("STRATA_GGUF_PY does not name a gguf-py folder")
+            raise unittest.SkipTest("NOSTROMA_GGUF_PY does not name a gguf-py folder")
     return setUpClass
 
 
@@ -434,7 +434,7 @@ class SplitArtifactTests(unittest.TestCase):
             self.assertEqual(rc, 0, log)
             text = (root / "pack" / "native_experts.txt").read_text()
             head, line0, line1 = text.splitlines()
-            self.assertTrue(head.startswith("# strata native experts v4:"), head)
+            self.assertTrue(head.startswith("# nostroma native experts v4:"), head)
             self.assertIn("(n_expert 4,", head)
             s2, s3 = paths[1].name, paths[2].name
             self.assertEqual(line0.split()[8:], [s2])
@@ -464,7 +464,7 @@ class SplitArtifactTests(unittest.TestCase):
             rc, log = run_pack(paths[0], root / "pack")
             self.assertEqual(rc, 0, log)
             head, line0, line1 = (root / "pack" / "native_experts.txt").read_text().splitlines()
-            self.assertTrue(head.startswith("# strata native experts v3: layer gu_type d_type offset blob_bytes "
+            self.assertTrue(head.startswith("# nostroma native experts v3: layer gu_type d_type offset blob_bytes "
                                             "gate_off up_off down_off [shard] (n_expert 4, total "), head)
             self.assertEqual(line1.split()[8:], [paths[2].name])
 
@@ -681,7 +681,7 @@ class HadamardTests(unittest.TestCase):
     def test_explicit_signs_written(self):
         text = iq_pack.hadamard_spec(self.meta(), self.layout(), self.N_EMBD, self.N_FF)
         lines = text.splitlines()
-        self.assertTrue(lines[0].startswith("# strata hadamard v1"))
+        self.assertTrue(lines[0].startswith("# nostroma hadamard v1"))
         self.assertEqual(lines[1], "block 128")
         self.assertEqual(lines[2].split()[:4], ["signs", str(self.N_FF), "1", "-1"])
         self.assertEqual(len(lines[3].split()), 2 + self.N_EMBD)
@@ -702,7 +702,7 @@ class HadamardTests(unittest.TestCase):
             with self.subTest(what):
                 got = iq_pack.hadamard_spec(m, self.layout(), self.N_EMBD, self.N_FF)
                 self.assertIsInstance(got, str)
-                self.assertFalse(got.startswith("# strata hadamard"))
+                self.assertFalse(got.startswith("# nostroma hadamard"))
         got = iq_pack.hadamard_spec(self.meta(), self.layout(gu=42), self.N_EMBD, self.N_FF)
         self.assertIn("Q2_0", got)
 
@@ -748,7 +748,7 @@ class V31HeaderOnlyLayoutTests(unittest.TestCase):
 
     def test_a_layer_across_shards_makes_a_v4_table(self):
         layout, text, _n, _t = self.layout("UD-IQ3_XXS")
-        self.assertTrue(text.startswith("# strata native experts v4:"))
+        self.assertTrue(text.startswith("# nostroma native experts v4:"))
         self.assertEqual(sum(1 for ln in text.splitlines()[1:] if "," in ln.split()[-1]), 1)
 
 
@@ -758,14 +758,14 @@ class NativeExpertsV5Tests(unittest.TestCase):
     ROWS = "0 145 146 0 100 1 2 3\n1 145 146 100 100 4 5 6\n"
 
     def table(self, version, tail="(n_expert 2, total 200)"):
-        return "# strata native experts v%s: layer gu_type d_type offset ... %s\n" % (version, tail) + self.ROWS
+        return "# nostroma native experts v%s: layer gu_type d_type offset ... %s\n" % (version, tail) + self.ROWS
 
     def test_v3_and_v4_become_v5(self):
         for v in ("3", "4"):
             with self.subTest(v):
                 got = iq_pack.native_experts_v5(self.table(v))
                 head, rest = got.split("\n", 1)
-                self.assertTrue(head.startswith("# strata native experts v5: layer gu_type"))
+                self.assertTrue(head.startswith("# nostroma native experts v5: layer gu_type"))
                 self.assertTrue(head.endswith("(n_expert 2, total 200) - v5: Hadamard-folded experts, see hadamard.txt"))
                 self.assertEqual(rest, self.ROWS)
 
@@ -773,7 +773,7 @@ class NativeExpertsV5Tests(unittest.TestCase):
         for v in ("2", "5", "6", "10"):
             with self.subTest(v):
                 got = iq_pack.native_experts_v5(self.table(v))
-                self.assertFalse(got.startswith("# strata native experts"))
+                self.assertFalse(got.startswith("# nostroma native experts"))
                 self.assertIn("v%s" % v, got)
                 self.assertIn("v3 and v4", got)
         got = iq_pack.native_experts_v5("# something else\n" + self.ROWS)
@@ -791,7 +791,7 @@ class NativeExpertsV5Tests(unittest.TestCase):
             paths = split_model(root, split_layer=False)
             out = root / "pack"
             with patch.object(iq_pack, "expert_layout", v6_layout), \
-                    patch.object(iq_pack, "hadamard_spec", return_value="# strata hadamard v1\nblock 32\n"):
+                    patch.object(iq_pack, "hadamard_spec", return_value="# nostroma hadamard v1\nblock 32\n"):
                 rc, log = run_pack(paths[0], out)
             self.assertEqual(rc, 1)
             self.assertIn("native_experts.txt v6", log)

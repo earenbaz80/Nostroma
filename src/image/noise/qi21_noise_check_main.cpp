@@ -1,12 +1,12 @@
-// src/image/noise/qi21_noise_check_main.cpp - test program strata-noise-check (not shipped): Nostroma's initial noise
-// (include/strata/image/qi21_noise.hpp) against stable-diffusion.cpp's own noise dumps.
+// src/image/noise/qi21_noise_check_main.cpp - test program nostroma-noise-check (not shipped): Nostroma's initial noise
+// (include/nostroma/image/qi21_noise.hpp) against stable-diffusion.cpp's own noise dumps.
 //
-//   strata-noise-check <dump dir> [<dump dir> ...]     each dir dump_p<P>_s<SEED> with noise.bin (stage_hooks.py)
-//   strata-noise-check --write SEED N OUT              our N values for SEED into OUT (float32), for the CPU test
+//   nostroma-noise-check <dump dir> [<dump dir> ...]     each dir dump_p<P>_s<SEED> with noise.bin (stage_hooks.py)
+//   nostroma-noise-check --write SEED N OUT              our N values for SEED into OUT (float32), for the CPU test
 //
 // Prints per dir byte-identical or the count of differing values and the largest difference in ulps, and
 // NOISE-CHECK PASS / FAIL.
-#include "strata/image/qi21_noise.hpp"
+#include "nostroma/image/qi21_noise.hpp"
 
 #include <algorithm>
 #include <cstdint>
@@ -19,7 +19,7 @@
 #include <vector>
 
 namespace fs = std::filesystem;
-using namespace strata::image;
+using namespace nostroma::image;
 
 namespace {
 
@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
         return 0;
     }
     if (argc < 2) {
-        std::fprintf(stderr, "usage: strata-noise-check <dump dir> [...] | --write SEED N OUT\n");
+        std::fprintf(stderr, "usage: nostroma-noise-check <dump dir> [...] | --write SEED N OUT\n");
         return 2;
     }
     int bad = 0;

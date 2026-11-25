@@ -8,9 +8,9 @@
 //
 // Formats: IQ2_XXS (16), IQ2_XS (17), IQ3_XXS (18), IQ3_S (21), IQ2_S (22).  IQ1_M stays on ggml-cpu (no shipped
 // model has IQ1_M expert rows: the 'Coder IQ1_M' pack's gate/up are IQ2_S / IQ3_XXS / IQ3_S).
-#include "strata/kernels/cpu/iq_avx512.hpp"
-#include "strata/env.hpp"
-#include "strata/kernels/cpu/expert_layout.hpp"
+#include "nostroma/kernels/cpu/iq_avx512.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kernels/cpu/expert_layout.hpp"
 
 #define GGML_COMMON_DECL_CPP
 #define GGML_COMMON_IMPL_CPP
@@ -28,7 +28,7 @@
 #include <cstring>
 #include <vector>
 
-namespace strata::kernels::cpu {
+namespace nostroma::kernels::cpu {
 namespace {
 
 inline float h2f(uint16_t h) { return _mm_cvtss_f32(_mm_cvtph_ps(_mm_cvtsi32_si128((int) h))); }
@@ -37,19 +37,19 @@ inline uint16_t u16(const uint8_t* p) { uint16_t v; std::memcpy(&v, p, 2); retur
 inline uint64_t u64(const uint8_t* p) { uint64_t v; std::memcpy(&v, p, 8); return v; }
 
 // E-2: the IQ3 grids by one AVX-512 gather (the same words, the same results) - measured 3-5% SLOWER than the scalar
-// lookups on a Ryzen 5 7600 (Zen 4 gathers are microcoded), so opt-in: STRATA_IQ_GATHER=1
+// lookups on a Ryzen 5 7600 (Zen 4 gathers are microcoded), so opt-in: NOSTROMA_IQ_GATHER=1
 // 0.2.5: DEFAULT on where gathers are fast (Intel server and HEDT cores with AVX-512: cpu_gather_fast), off on Zen 4 (microcoded);
-// STRATA_IQ_GATHER=1 / 0 force it either way.  The same words are loaded, so the results are bit for bit the scalar decode's.
+// NOSTROMA_IQ_GATHER=1 / 0 force it either way.  The same words are loaded, so the results are bit for bit the scalar decode's.
 const bool gather = [] {
-    const char* v = strata::env("NOSTROMA_IQ_GATHER");
+    const char* v = nostroma::env("NOSTROMA_IQ_GATHER");
     return v != nullptr && v[0] != '\0' ? std::atoi(v) != 0 : cpu_gather_fast();
 }();
 // the grid lookups by one 64-bit gather of eight entries (IQ2_XXS / IQ2_XS / IQ2_S): `idx` = eight 32-bit indices
 inline __m512i gather64(__m256i idx, const void* grid) { return _mm512_i32gather_epi64(idx, grid, 8); }
-// E-2: software prefetch distance in bytes (STRATA_IQ_PREFETCH; 0 = off): -2-3% gate/up time on IQ3_S decode
+// E-2: software prefetch distance in bytes (NOSTROMA_IQ_PREFETCH; 0 = off): -2-3% gate/up time on IQ3_S decode
 // (the rows are read at ~30 GB/s by 6 cores, near what DDR5 with 4 KB pages gives: the pool is memory-bound)
 const int prefetch_ahead = [] {
-    const char* v = strata::env("NOSTROMA_IQ_PREFETCH");
+    const char* v = nostroma::env("NOSTROMA_IQ_PREFETCH");
     return v ? std::atoi(v) : 2048;
 }();
 
@@ -856,4 +856,4 @@ void q50_512_down_rows(const uint8_t* w, size_t row_bytes, int n, const void* co
     qd_rows_nt(nt, w, row_bytes, n, hq, out, r0, r1);
 }
 
-}  // namespace strata::kernels::cpu
+}  // namespace nostroma::kernels::cpu

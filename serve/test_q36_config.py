@@ -12,7 +12,7 @@ from serve.server import engine_args, parallel_args
 
 
 def cfg(**kw):
-    base = {"arch": "qwen35moe", "exe": "strata", "args": ["--native", "/m/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf",
+    base = {"arch": "qwen35moe", "exe": "nostroma", "args": ["--native", "/m/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf",
                                                            "--max-context", "32768", "--prefill", "auto", "--mtp", "2"]}
     base.update(kw)
     return base
@@ -32,7 +32,7 @@ class Q36Config(unittest.TestCase):
         self.assertTrue(any("at most 8" in str(c) for c in pr.call_args_list))
 
     def test_a_vision_section_starts_the_engine_with_pictures(self):
-        v = {"exe": "strata-vision", "mmproj": "/m/mmproj-F16.gguf", "model": "/m/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf",
+        v = {"exe": "nostroma-vision", "mmproj": "/m/mmproj-F16.gguf", "model": "/m/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf",
              "gpu": False, "max_tokens": 300}
         self.assertIn("--vision", engine_args(cfg(vision=v)))
         self.assertIn("--vision", engine_args(cfg(vision=v, args=cfg()["args"] + ["--vision"])))
@@ -50,7 +50,7 @@ class Q36Config(unittest.TestCase):
             self.assertEqual(len(lines), 1 if said else 0, (c.get("model_name"), vram))
             self.assertEqual(a[a.index("--max-context") + 1], c["args"][c["args"].index("--max-context") + 1])
             if said:
-                self.assertIn("[strata] At 128K, this model's conversation memory needs about 5.8 GB of graphics memory. With the model itself that "
+                self.assertIn("[nostroma] At 128K, this model's conversation memory needs about 5.8 GB of graphics memory. With the model itself that "
                               "is more than this card's 12 GB, so it will probably not start. 32K fits on this card: choose 32K or less.", lines[0])
 
     def test_an_explicit_batch_in_the_args_wins(self):

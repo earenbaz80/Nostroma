@@ -126,7 +126,7 @@ class Route(unittest.TestCase):
         b = self.post({"model": "m", "max_tokens": 512, "tools": [SEARCH],
                        "messages": [{"role": "user", "content": "search"}]})
         self.assertEqual(b["stop_reason"], "end_turn")
-        self.assertEqual(b.get("strata_rejected_tool_calls"), [{"name": MCP, "reason": "undeclared"}])
+        self.assertEqual(b.get("nostroma_rejected_tool_calls"), [{"name": MCP, "reason": "undeclared"}])
 
     def test_a_tool_the_conversation_called_is_a_call_without_tool_search(self):
         # #4663 on /v1/messages: the history's tool_use blocks count as declared, as on the chat route

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Serial, fresh-prompt Strata benchmark — adapted for the MI50 (gfx906) container.
+"""Serial, fresh-prompt Nostroma benchmark — adapted for the MI50 (gfx906) container.
 
 Based on bench/results/2026-09-30-community-rtx-5090/benchmark.py. Runs INSIDE the
-strata container (imports strata_tokenizer and serve.frontend from /opt/strata).
-Added: --api-key (Strata's server requires an Authorization header).
+nostroma container (imports nostroma_tokenizer and serve.frontend from /opt/nostroma).
+Added: --api-key (Nostroma's server requires an Authorization header).
 """
 import argparse
 import hashlib
@@ -17,7 +17,7 @@ from pathlib import Path
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--root", type=Path, default=Path("/opt/strata"))
+    parser.add_argument("--root", type=Path, default=Path("/opt/nostroma"))
     parser.add_argument("--pack", type=Path, default=Path("/data/packs/iq2_xs"))
     parser.add_argument("--url", default="http://127.0.0.1:8085")
     parser.add_argument("--api-key", default="")
@@ -27,7 +27,7 @@ def main():
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     sys.path[:0] = [str(args.root), str(args.root / "tools")]
-    from strata_tokenizer import Tokenizer
+    from nostroma_tokenizer import Tokenizer
     from serve.frontend import ChatTemplate, openai_to_messages
 
     auth = {"Content-Type": "application/json"}
@@ -52,7 +52,7 @@ def main():
     rows = []
 
     def request(content, maximum=256):
-        return {"model": "strata", "messages": [{"role": "user", "content": content}],
+        return {"model": "nostroma", "messages": [{"role": "user", "content": content}],
                 "temperature": 0, "reasoning_effort": "none", "max_tokens": maximum,
                 "stream": True, "stream_options": {"include_usage": True}}
 

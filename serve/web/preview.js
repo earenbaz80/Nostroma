@@ -76,6 +76,6 @@
   }
 
   const api = {SANDBOX, csp, metaCsp, previewDoc, svgImage, kindOf, canPreview, makeFrame, themeCss};
-  root.StrataPreview = api;
+  root.NostromaPreview = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

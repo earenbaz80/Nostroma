@@ -11,7 +11,7 @@ REPORT="$(cd -- "$(dirname -- "$0")/.." && pwd)"
 ROOT="$(cd -- "$REPORT/../../.." && pwd)"
 DATA=$REPORT/data
 WORK=$DATA/ab-work
-LOG=$ROOT/strata-coder-iq1_m.log
+LOG=$ROOT/nostroma-coder-iq1_m.log
 LABEL=$1; shift
 
 mkdir -p "$DATA" "$WORK"

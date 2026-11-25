@@ -1,4 +1,4 @@
-"""The settings register must list exactly the STRATA_* settings the engine reads (tools/settings_register.py, data/settings-register.json).
+"""The settings register must list exactly the NOSTROMA_* settings the engine reads (tools/settings_register.py, data/settings-register.json).
 
 Fails when
   * the engine reads a setting that is not in the register (add it: python tools/settings_register.py, then set its status);
@@ -67,8 +67,8 @@ class SettingsRegister(unittest.TestCase):
 
     def test_scan_sees_the_known_shapes(self):
         # guards the scanner itself: a plain getenv, a helper, and an off-switch
-        self.assertIn("STRATA_HIPBLASLT_TUNING", self.engine)
-        self.assertIn("STRATA_KVA", self.engine)
+        self.assertIn("NOSTROMA_HIPBLASLT_TUNING", self.engine)
+        self.assertIn("NOSTROMA_KVA", self.engine)
         self.assertGreater(len(self.engine), 900)
 
 

@@ -4,7 +4,7 @@
  * A page of another site whose name its DNS points at 127.0.0.1 reaches this app as the same origin, and could then call
  * /api/* (chats, files, engine control). Its requests carry that site's name in `Host`, so they get 403; an IP (IPv4, IPv6,
  * IPv4-mapped), `localhost`, `*.localhost`, this PC's own names (when the app listens beyond this PC) and whatever
- * STRATA_ALLOWED_HOSTS lists pass (an exact name, `.example.com` for the names below it, or `*`).
+ * NOSTROMA_ALLOWED_HOSTS lists pass (an exact name, `.example.com` for the names below it, or `*`).
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -20,17 +20,17 @@ const root = fileURLToPath(new URL('..', import.meta.url));
 const delay = ms => new Promise(r => setTimeout(r, ms));
 async function freePort() { const s = net.createServer(); await new Promise(r => s.listen(0, '127.0.0.1', r)); const p = s.address().port; await new Promise(r => s.close(r)); return p; }
 
-/** The real app host, with a temporary home of its own. `extraEnv` overrides any setting, STRATA_ALLOWED_HOSTS included. */
+/** The real app host, with a temporary home of its own. `extraEnv` overrides any setting, NOSTROMA_ALLOWED_HOSTS included. */
 async function startHost(extraEnv = {}) {
-  const home = await mkdtemp(join(tmpdir(), 'strata-host-rebinding-'));
+  const home = await mkdtemp(join(tmpdir(), 'nostroma-host-rebinding-'));
   const port = await freePort();
   const env = {
-    ...process.env, STRATA_HOME: home, STRATA_MODELS_DIR: join(home, 'models'), STRATA_PORT: String(port),
-    STRATA_SHARE_PORT: String(await freePort()), STRATA_TUNNEL_PORT: String(await freePort()), STRATA_REAL_ENGINE: '1',
-    STRATA_SETTINGS_FILE: join(home, 'app-settings.json'), STRATA_COMPONENTS_DIR: join(home, 'components'),
+    ...process.env, NOSTROMA_HOME: home, NOSTROMA_MODELS_DIR: join(home, 'models'), NOSTROMA_PORT: String(port),
+    NOSTROMA_SHARE_PORT: String(await freePort()), NOSTROMA_TUNNEL_PORT: String(await freePort()), NOSTROMA_REAL_ENGINE: '1',
+    NOSTROMA_SETTINGS_FILE: join(home, 'app-settings.json'), NOSTROMA_COMPONENTS_DIR: join(home, 'components'),
     LOCALAPPDATA: join(home, 'Local'), APPDATA: join(home, 'Roaming'), XDG_DATA_HOME: join(home, 'xdg-data'),
     XDG_STATE_HOME: join(home, 'xdg-state'), XDG_CONFIG_HOME: join(home, 'xdg-config'),
-    STRATA_ALLOWED_HOSTS: '',
+    NOSTROMA_ALLOWED_HOSTS: '',
     ...extraEnv,
   };
   const host = spawn(process.execPath, ['server/index.mjs'], { cwd: root, stdio: 'ignore', env });
@@ -85,7 +85,7 @@ test('hostAllowed: an IP, localhost, *.localhost, a listed name and no Host pass
     assert.equal(hostAllowed(host, names), false, host);
   }
   assert.equal(hostAllowed('evil.example', []), false, 'nothing is listed: a name is refused');
-  // the forms STRATA_ALLOWED_HOSTS takes in the engine (docs/DETAILS.md): a leading dot covers the names below, "*" any name
+  // the forms NOSTROMA_ALLOWED_HOSTS takes in the engine (docs/DETAILS.md): a leading dot covers the names below, "*" any name
   for (const host of ['example.com', 'a.example.com', 'deep.a.example.com']) assert.equal(hostAllowed(host, ['.example.com']), true, host);
   assert.equal(hostAllowed('example.com.evil.example', ['.example.com']), false);
   assert.equal(hostAllowed('evil.example', ['*']), true);
@@ -112,7 +112,7 @@ test('the app port answers its own names and refuses another site\'s (#DNS rebin
 });
 
 test('listening beyond this PC: the PC\'s own name is answered, another site is not', async t => {
-  const h = await startHost({ STRATA_BIND: '0.0.0.0' });
+  const h = await startHost({ NOSTROMA_BIND: '0.0.0.0' });
   t.after(h.done);
   const pc = machineName().toLowerCase();
   assert.equal(status(await ask(h.port, `${pc}:${h.port}`)), 200, `Host ${pc}`);
@@ -121,8 +121,8 @@ test('listening beyond this PC: the PC\'s own name is answered, another site is 
   assert.equal((await fetch(`http://127.0.0.1:${h.port}/api/health`)).status, 200);
 });
 
-test('STRATA_ALLOWED_HOSTS adds the name a proxy in front of the app sends', async t => {
-  const h = await startHost({ STRATA_ALLOWED_HOSTS: 'proxy.example, other.example, .corp.example' });
+test('NOSTROMA_ALLOWED_HOSTS adds the name a proxy in front of the app sends', async t => {
+  const h = await startHost({ NOSTROMA_ALLOWED_HOSTS: 'proxy.example, other.example, .corp.example' });
   t.after(h.done);
   assert.equal(status(await ask(h.port, 'proxy.example')), 200);
   assert.equal(status(await ask(h.port, 'other.example:443')), 200);

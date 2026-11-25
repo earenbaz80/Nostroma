@@ -83,7 +83,7 @@ class SharedModelsFolder(GuiLayout):
         mine, app = self.files()
         self.put(mine, self.base / "t", 9000)
         self.put(app, self.base / "a", 1000)
-        os.environ["STRATA_SETTINGS_FILE"] = str(app)
+        os.environ["NOSTROMA_SETTINGS_FILE"] = str(app)
         self.assertIsNone(discovery.sync_data_dir())
         self.assertEqual(Path(self.read(app)["data_dir"]), self.base / "a")
 
@@ -102,7 +102,7 @@ class DocumentsModelFolder(unittest.TestCase):
 
     Discovery takes either, prefers the new name when both hold models, and creates neither: making
     ``Documents/Nostroma/Models`` is the host's job (apps/host/server/store.mjs). The fixture already built a
-    ``Documents/Strata`` with models in it, which is the install this rename has to keep working.
+    ``Documents/Nostroma`` with models in it, which is the install this rename has to keep working.
     """
 
     def setUp(self):
@@ -134,7 +134,7 @@ class DocumentsModelFolder(unittest.TestCase):
 
     def test_both_names_are_listed_for_each_documents_folder(self):
         choices = [(p.name, source) for p, source in discovery.data_dir_choices() if source == "documents"]
-        self.assertEqual(choices, [("Nostroma", "documents"), ("Strata", "documents")])
+        self.assertEqual(choices, [("Nostroma", "documents"), ("Nostroma", "documents")])
 
     def test_a_documents_folder_without_models_is_not_the_data_folder(self):
         shutil.rmtree(self.docs)
@@ -147,4 +147,4 @@ class DocumentsModelFolder(unittest.TestCase):
         default = self.base / "default"
         self.assertEqual(discovery.data_dir(default), (default, "default"))
         self.assertFalse((self.documents / "Nostroma").exists())
-        self.assertFalse((self.documents / "Strata").exists())
+        self.assertFalse((self.documents / "Nostroma").exists())

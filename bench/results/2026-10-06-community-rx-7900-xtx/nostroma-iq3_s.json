@@ -1,0 +1,45 @@
+{
+ "exe": "D:\\AI\\Nostroma\\engine\\nostroma.exe",
+ "args": [
+  "--pack",
+  "D:\\AI\\Nostroma-data\\packs\\iq3_s",
+  "--native",
+  "D:\\AI\\Nostroma-data\\models\\IQ3_S\\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf",
+  "--ple-gguf",
+  "D:\\AI\\Nostroma-data\\models\\IQ3_S\\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf",
+  "--expert-profile",
+  "D:\\AI\\Nostroma\\data\\expert-profile.bin",
+  "--expert-cache",
+  "auto",
+  "--prefill",
+  "auto:32768",
+  "--spec",
+  "4",
+  "--spec-min-p",
+  "0.5",
+  "--mtp",
+  "D:\\AI\\Nostroma-data\\mtp\\rt",
+  "--max-context",
+  "262144",
+  "--kv",
+  "int8",
+  "--kv-resident",
+   "32768",
+   "--conversation-cache-mib",
+   "8192"
+ ],
+ "cwd": "D:\\AI\\Nostroma",
+ "tokenizer": "D:\\AI\\Nostroma-data\\packs\\iq3_s\\tokenizer",
+ "model_name": "qwen3.8-flash-next-iq3_s",
+ "log": "D:\\AI\\Nostroma\\nostroma-iq3_s.log",
+ "lib_dirs": [
+  "D:\\AI\\Nostroma\\engine\\rocm\\bin"
+ ],
+ "port": 8080,
+ "backend": "hip",
+ "env": {
+  "NOSTROMA_HIPBLASLT_TUNING": "D:\\AI\\Nostroma\\tools\\hip\\gfx1100-hipblaslt-100500.txt"
+ },
+ "gpu": 0,
+ "gpus_asked": true
+}

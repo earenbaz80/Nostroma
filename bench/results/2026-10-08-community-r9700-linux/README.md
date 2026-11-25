@@ -61,14 +61,14 @@ Whole-request latency includes both stages. Warmups are retained and excluded fr
 | Expert cache | Auto: 13,021 slots, 24.71 GiB on IQ3_S | Budget 8,000 largest-expert slots |
 | Chunk / ring | Auto: 8,192 / 384 | Fixed 4,096 / 96 |
 | PCIe / adaptation | Defaults retained; probe selected PCIe fraction 0.55 | PCIe=0, adaptation disabled |
-| IQ kernel selection | Default | `STRATA_IQ_MT_MIN=1` |
+| IQ kernel selection | Default | `NOSTROMA_IQ_MT_MIN=1` |
 | MTP | `--spec 4 --spec-min-p 0.5`, default suffix/lookup policies | Same limit; suffix/chain disabled |
 | KV / context | int8, 32,768 resident cells, 147,456 maximum context | Same |
 | Workers / reserve | 15 / 1,024 MiB requested reserve | Same |
 | Prompt cache | 0, no reuse | 0 for fresh input; incremental runner sets 6 |
 
-Both use `ROCBLAS_USE_HIPBLASLT=0`, `STRATA_PREFILL_MMQ=1`, `STRATA_HIP_WMMA=0` and empty
-`STRATA_HIPBLASLT_TUNING`. Tensile was chosen after numerical failures on this installation's
+Both use `ROCBLAS_USE_HIPBLASLT=0`, `NOSTROMA_PREFILL_MMQ=1`, `NOSTROMA_HIP_WMMA=0` and empty
+`NOSTROMA_HIPBLASLT_TUNING`. Tensile was chosen after numerical failures on this installation's
 hipBLASLt path; this is not a general ROCm diagnosis. Configs use the native in-RAM expert arena,
 without an added mmap/resident-CPU-expert experiment. Exact [fresh-speed config](current-speed/iq3_s-config.json)
 and [controlled configs](evidence/configs-tensile-repro-fixed/) are included.
@@ -124,7 +124,7 @@ The original-setting strict state/work mismatches remain failures; matching cont
 not cancel them. No all-workload performance or general answer-quality acceptance is claimed.
 
 Historical numerical diagnostics, rejected tuning and optional HTTP checks are in the
-[original full archive](https://github.com/zihaomu/Strata/tree/17006083063b4443458f6f0b3f5c8325cf9cca2a/bench/results/2026-10-08-community-r9700-linux).
+[original full archive](https://github.com/zihaomu/Nostroma/tree/17006083063b4443458f6f0b3f5c8325cf9cca2a/bench/results/2026-10-08-community-r9700-linux).
 The source includes an architecture-scoped signed-zero fix related to
 [#1474](https://github.com/earenbaz80/Nostroma/issues/1474) / [#1540](https://github.com/earenbaz80/Nostroma/pull/1540);
 it is not a measurement of #1540's broader patch. Those diagnostic results are separate from the

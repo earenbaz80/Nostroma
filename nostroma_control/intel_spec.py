@@ -10,7 +10,7 @@ write `--spec 2` for such a config: the same answers as the engine gives anyway,
 Only the generated default changes.  Single cards, Arc A-series (Alchemist) cards, three or more cards, a config with no
 draft layer, and any config where the person set --spec (in "user_args", or a value other than setup's own 4 in "args") keep
 what they have.  The card generation is the PCI device id from sysfs, the same id the engine's architecture enum comes from
-(strata::intel_gpu_gen in sycl/include/strata/sycl_queue.hpp), never the marketing name.
+(nostroma::intel_gpu_gen in sycl/include/nostroma/sycl_queue.hpp), never the marketing name.
 """
 
 from __future__ import annotations

@@ -1,12 +1,12 @@
-// the default rule of the CUDA fused trellis (Gyro) prompt kernels (include/strata/prefill/fused_tq_default.hpp): unset = on for a card of the sm_86 class (compute capability 8.6, and
+// the default rule of the CUDA fused trellis (Gyro) prompt kernels (include/nostroma/prefill/fused_tq_default.hpp): unset = on for a card of the sm_86 class (compute capability 8.6, and
 // 8.0 / 8.9 since 11-12: fused_tile_rule.hpp s86_class, tested with the capability in fused_tile_rule_test) with 80+ SMs, off for every other class; =1 forces on, any other value off.  No GPU, no model.
 #include <cstdio>
 
-#include "strata/prefill/fused_tq_default.hpp"
+#include "nostroma/prefill/fused_tq_default.hpp"
 
-using strata::prefill::fused_tq::gyro_m_on;
-using strata::prefill::fused_tq::on;
-using strata::prefill::fused_tq::parse_env;
+using nostroma::prefill::fused_tq::gyro_m_on;
+using nostroma::prefill::fused_tq::on;
+using nostroma::prefill::fused_tq::parse_env;
 
 static int failed = 0;
 #define CHECK(x) do { if (!(x)) { std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #x); ++failed; } } while (0)
@@ -24,7 +24,7 @@ int main() {
     // (s86 false: outside the sm_86 class) whatever their SM count
     CHECK(!on(unset, true, 79) && !on(unset, true, 72) && !on(unset, true, 68) && !on(unset, true, 48));
     CHECK(!on(unset, false, 48) && !on(unset, false, 84) && !on(unset, false, 110) && !on(unset, false, 188) && !on(unset, false, 108) && !on(unset, false, 128));
-    // STRATA_PF_FUSED_SM86=0 makes DevInfo::s86 false: the A6000 class is back on MMQ
+    // NOSTROMA_PF_FUSED_SM86=0 makes DevInfo::s86 false: the A6000 class is back on MMQ
     CHECK(!on(unset, false, 84));
 
     // =1: the opt-in of before, on any card class (the kernels still have to set up on it)

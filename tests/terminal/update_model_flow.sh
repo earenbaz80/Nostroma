@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # An engine update beside a LOADED MODEL, from the BUILT Terminal package (not the checkout), real engines, a real model, a throwaway HOME.
 #
-#   TERMINAL_ARCHIVE=<built strata-terminal-*.tar.gz> REL28=<dir> REL29=<dir> MODEL=<qwen model folder> bash tests/terminal/update_model_flow.sh [A|B]
+#   TERMINAL_ARCHIVE=<built nostroma-terminal-*.tar.gz> REL28=<dir> REL29=<dir> MODEL=<qwen model folder> bash tests/terminal/update_model_flow.sh [A|B]
 #
-#   REL28 / REL29  the real, signed release files (read only): strata-feed.json(.sig) and strata-engine-<ver>-linux-x86_64-cuda-cuda13.tar.gz of v0.2.8
+#   REL28 / REL29  the real, signed release files (read only): nostroma-feed.json(.sig) and nostroma-engine-<ver>-linux-x86_64-cuda-cuda13.tar.gz of v0.2.8
 #                  (engine 0.1.54) and v0.2.9 (engine 0.1.55); each feed is served from 127.0.0.1 (the box needs no internet).
 #   MODEL          a Qwen model folder the engine can load (the flow passes it as --model-path).
 #   DATA           (optional) a data folder that already holds what setup would download (tokenizer, picture reader, draft layer, the prepared pack):
@@ -32,15 +32,15 @@ cleanup() {
 trap cleanup EXIT
 : "${TERMINAL_ARCHIVE:?}" "${REL28:?}" "${REL29:?}" "${MODEL:?}"
 mkdir -p "$W"/{term,home,logs}
-if [ ! -x "$(find "$W/term" -maxdepth 3 -path '*/bin/strata' 2>/dev/null | head -1)" ]; then tar -xzf "$TERMINAL_ARCHIVE" -C "$W/term"; fi
-S="$(find "$W/term" -maxdepth 3 -path '*/bin/strata' | head -1)"
+if [ ! -x "$(find "$W/term" -maxdepth 3 -path '*/bin/nostroma' 2>/dev/null | head -1)" ]; then tar -xzf "$TERMINAL_ARCHIVE" -C "$W/term"; fi
+S="$(find "$W/term" -maxdepth 3 -path '*/bin/nostroma' | head -1)"
 export HOME="$W/home" XDG_DATA_HOME="$W/home/.local/share" XDG_CONFIG_HOME="$W/home/.config" XDG_STATE_HOME="$W/home/.local/state" XDG_CACHE_HOME="$W/home/.cache"
-export STRATA_SETTINGS_FILE="$W/home/app-settings.json"
-unset STRATA_NO_ACQUIRE STRATA_COMPONENTS_DIR STRATA_API_KEY STRATA_UPDATE_FEED STRATA_ENGINE_BACKEND STRATA_INSTALL_DIR STRATA_HOME STRATA_UPDATE_TRUSTED_KEYS
-COMP="$XDG_DATA_HOME/strata/components"
+export NOSTROMA_SETTINGS_FILE="$W/home/app-settings.json"
+unset NOSTROMA_NO_ACQUIRE NOSTROMA_COMPONENTS_DIR NOSTROMA_API_KEY NOSTROMA_UPDATE_FEED NOSTROMA_ENGINE_BACKEND NOSTROMA_INSTALL_DIR NOSTROMA_HOME NOSTROMA_UPDATE_TRUSTED_KEYS
+COMP="$XDG_DATA_HOME/nostroma/components"
 PORT_MODEL=18480
-ENG54=strata-engine-0.1.54-linux-x86_64-cuda-cuda13.tar.gz
-ENG55=strata-engine-0.1.55-linux-x86_64-cuda-cuda13.tar.gz
+ENG54=nostroma-engine-0.1.54-linux-x86_64-cuda-cuda13.tar.gz
+ENG55=nostroma-engine-0.1.55-linux-x86_64-cuda-cuda13.tar.gz
 echo "package: $(basename "$TERMINAL_ARCHIVE")  launcher: $S"
 check "the package has its launcher" "[ -x '$S' ]"
 
@@ -49,7 +49,7 @@ serve() {          # serve DIR on a free port; sets PORT and SERVER_PID (no subs
   port=$(python3 -c 'import socket;s=socket.socket();s.bind(("127.0.0.1",0));print(s.getsockname()[1])')
   python3 "$HERE/cutserver.py" "$port" "$dir" "$@" > "$log" 2>&1 &
   SERVER_PID=$!; PIDS+=("$SERVER_PID")
-  for _ in $(seq 1 50); do curl -fs -o /dev/null "http://127.0.0.1:$port/strata-feed.json" && break; sleep 0.2; done
+  for _ in $(seq 1 50); do curl -fs -o /dev/null "http://127.0.0.1:$port/nostroma-feed.json" && break; sleep 0.2; done
   PORT="$port"
 }
 json() { python3 -c "import json,sys; d=json.load(sys.stdin); print($1)"; }
@@ -63,7 +63,7 @@ engine_in_use() {  # the engine FOLDER the loaded model's engine process runs fr
 engine_pid() { local p exe; for p in /proc/[0-9]*; do exe=$(readlink "$p/exe" 2>/dev/null) || continue; case "$exe" in "$COMP"/engine/*) echo "${p#/proc/}"; return;; esac; done; }
 active_version() { "$S" components engine --output json --backend cuda | json "(d.get('engine') or {}).get('version')"; }
 answers() { python3 "$HERE/prompt_check.py" "$PORT_MODEL"; }
-launch_model() {   # strata launch with the same choices every time (the 'same settings' the update must bring back)
+launch_model() {   # nostroma launch with the same choices every time (the 'same settings' the update must bring back)
   "$S" launch --family qwen --model iq3_s --model-path "$MODEL" --data-dir "${DATA:-$W/home/data}" --port "$PORT_MODEL" --no-api-key --context 8k --yes --no-tui --feed "$1" 2>&1 | tail -12
   return "${PIPESTATUS[0]}"
 }
@@ -72,7 +72,7 @@ engine_gets() { grep -c "GET /$1" "$2" || true; }
 if [ "$STAGE" = A ]; then
   say "stage A: 0.1.54 and a loaded model"
   serve "$REL28" "$W/logs/server28.log"; P28=$PORT; PID28=$SERVER_PID
-  F28="http://127.0.0.1:$P28/strata-feed.json"
+  F28="http://127.0.0.1:$P28/nostroma-feed.json"
   "$S" update --feed "$F28" --no-control --backend cuda 2>&1 | tail -4
   check "0.1.54 is the engine in use" "[ \"\$(active_version)\" = 0.1.54 ]"
   launch_model "$F28"; RC=$?
@@ -83,7 +83,7 @@ if [ "$STAGE" = A ]; then
   kill "$PID28"; wait "$PID28" 2>/dev/null
 
   serve "$REL29" "$W/logs/server29.log"; P29=$PORT
-  F29="http://127.0.0.1:$P29/strata-feed.json"
+  F29="http://127.0.0.1:$P29/nostroma-feed.json"
 
   say "A1: the check shows the notice and the one next step, and names the running model"
   "$S" update --check --feed "$F29" --no-control --backend cuda 2>&1 | tee "$W/logs/check.txt"
@@ -93,7 +93,7 @@ if [ "$STAGE" = A ]; then
 
   say "A2: the launch start screen shows one quiet line"
   python3 "$HERE/pty_drive.py" --timeout 40 --quit-after 12 --quit-with q -- "$S" launch --feed "$F29" > "$W/logs/start-screen.txt" 2>&1
-  check "the start screen carries the line" "sed 's/\x1b\[[0-9;?]*[A-Za-z]//g' '$W/logs/start-screen.txt' | tr -s ' \n' ' ' | grep -q 'A new engine 0.1.55 (you have 0.1.54) is available. Update with .strata update.'"
+  check "the start screen carries the line" "sed 's/\x1b\[[0-9;?]*[A-Za-z]//g' '$W/logs/start-screen.txt' | tr -s ' \n' ' ' | grep -q 'A new engine 0.1.55 (you have 0.1.54) is available. Update with .nostroma update.'"
   check "the model was not touched by looking at it" "[ \"\$(engine_pid)\" = '$OLDPID' ]"
 
   say "A3: a script is refused (--yes alone never stops a model), nothing is downloaded"
@@ -113,7 +113,7 @@ if [ "$STAGE" = A ]; then
 
   say "A5: the download fails: the model is not stopped, the old engine stays"
   serve "$REL29" "$W/logs/server29cut.log" "$ENG55" 50000000; PCUT=$PORT; PIDCUT=$SERVER_PID
-  "$S" update --feed "http://127.0.0.1:$PCUT/strata-feed.json" --no-control --backend cuda --stop-model --start-again; RC=$?
+  "$S" update --feed "http://127.0.0.1:$PCUT/nostroma-feed.json" --no-control --backend cuda --stop-model --start-again; RC=$?
   check "exit 6 (failed, the old engine is in use)" "[ $RC -eq 6 ]"
   check "the model was never stopped (same engine process)" "[ \"\$(engine_pid)\" = '$OLDPID' ]"
   check "0.1.54 is still the engine" "[ \"\$(active_version)\" = 0.1.54 ]"
@@ -146,7 +146,7 @@ if [ "$STAGE" = B ]; then
   "$S" launch --stop 2>&1 | tail -1
   "$S" components use 0.1.54 2>&1 | tail -2
   check "0.1.54 is in use" "[ \"\$(active_version)\" = 0.1.54 ]"
-  serve "$REL29" "$W/logs/server29b.log"; P29=$PORT; F29="http://127.0.0.1:$P29/strata-feed.json"
+  serve "$REL29" "$W/logs/server29b.log"; P29=$PORT; F29="http://127.0.0.1:$P29/nostroma-feed.json"
   launch_model "$F29"; RC=$?
   check "the model loaded on 0.1.54" "[ $RC -eq 0 ] && [ \"\$(engine_in_use | cut -d- -f1)\" = 0.1.54 ]"
 
@@ -174,7 +174,7 @@ key = signing.generate_key()
 src = next((comp / "engine").glob("0.1.55-*"))
 work = out / "src"
 shutil.copytree(src, work, ignore=shutil.ignore_patterns("MANIFEST*", "engine-component.json", "*.sig"))
-entry = json.loads((src / "engine-component.json").read_text()).get("entrypoint", "strata")
+entry = json.loads((src / "engine-component.json").read_text()).get("entrypoint", "nostroma")
 (work / entry).write_text("#!/bin/sh\nexit 3\n")
 (work / entry).chmod(0o755)
 folder = package_engine.build(work, "cuda", "0.1.56", components.host_platform(), out / "built", entry=entry, archs=("sm_86", "compute_86"),
@@ -188,8 +188,8 @@ print("bad feed written")
 PY
   ) 2>&1 | tail -4
   serve "$BADDIR" "$W/logs/serverbad.log"; PBAD=$PORT
-  STRATA_UPDATE_TRUSTED_KEYS="$BADDIR/trust.json" python3 "$HERE/pty_drive.py" --timeout 1800 --answer 'for the update\?.*=>y' --answer 'Start .* again on it\?.*=>y' -- \
-    "$S" update --feed "http://127.0.0.1:$PBAD/strata-feed.json" --no-control --backend cuda > "$W/logs/bad.txt" 2>&1; RC=$?
+  NOSTROMA_UPDATE_TRUSTED_KEYS="$BADDIR/trust.json" python3 "$HERE/pty_drive.py" --timeout 1800 --answer 'for the update\?.*=>y' --answer 'Start .* again on it\?.*=>y' -- \
+    "$S" update --feed "http://127.0.0.1:$PBAD/nostroma-feed.json" --no-control --backend cuda > "$W/logs/bad.txt" 2>&1; RC=$?
   sed 's/\x1b\[[0-9;?]*[A-Za-z]//g' "$W/logs/bad.txt" | tr -d '\r' | grep -v '^$' | tail -16
   check "exit 6 (failed, the old engine is in use)" "[ $RC -eq 6 ]"
   check "it said the new engine did not start and the current one is unchanged" "sed 's/\x1b\[[0-9;?]*[A-Za-z]//g' '$W/logs/bad.txt' | tr -s ' \n' ' ' | grep -q 'did not start correctly.*current engine is unchanged'"

@@ -81,7 +81,7 @@ class LaunchMonitor(MonitorApp):
         if self.updating or self.closing:
             return
         self.updating = True
-        threading.Thread(target=self._update_worker, name="strata-engine-update", daemon=True).start()
+        threading.Thread(target=self._update_worker, name="nostroma-engine-update", daemon=True).start()
 
     def _say_line(self, text: str) -> None:
         def show() -> None:
@@ -218,8 +218,8 @@ class LaunchMonitor(MonitorApp):
         h = self._harness()
         key = self.info.get("key") or ""
         if not self.info.get("model"):
-            self.info["model"] = ((self.latest or {}).get("model") or {}).get("id") or "strata"
-        return harness.render(h, harness.target(self.info["url"], key, self.info.get("model") or ((self.latest or {}).get("model") or {}).get("id") or "strata", self.info.get("context")))
+            self.info["model"] = ((self.latest or {}).get("model") or {}).get("id") or "nostroma"
+        return harness.render(h, harness.target(self.info["url"], key, self.info.get("model") or ((self.latest or {}).get("model") or {}).get("id") or "nostroma", self.info.get("context")))
 
     def _copy(self) -> None:
         out = self._rendered()
@@ -265,7 +265,7 @@ class LaunchMonitor(MonitorApp):
         self._paint()
         key = self.info.get("key") or ""
         url = self.info["url"]
-        model = self.info.get("model") or "strata"
+        model = self.info.get("model") or "nostroma"
 
         def work() -> None:
             res = check.run_checks(h.id, url, key, model)
@@ -356,7 +356,7 @@ class LaunchMonitor(MonitorApp):
             t.append(self.fit(f"Connect an app  {self.info['url']}/v1  key {shown} (k {'hide' if self.show_key else 'show'})", width) + "\n", style=bold_accent)
         else:
             t.append("Connect an app", style=bold_accent)
-            line = f"     URL {self.info['url']}/v1    model {self.info.get('model') or 'strata'}    key {shown}  "
+            line = f"     URL {self.info['url']}/v1    model {self.info.get('model') or 'nostroma'}    key {shown}  "
             if len(line) > width - 9:                        # too long for the line: the model name goes, the address and the key stay
                 line = f"     URL {self.info['url']}/v1    key {shown}  "
             t.append(self.fit(line, width - 9))

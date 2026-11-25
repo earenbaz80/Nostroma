@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The settings register: every STRATA_* environment setting the engine reads, in one file (data/settings-register.json).
+"""The settings register: every NOSTROMA_* environment setting the engine reads, in one file (data/settings-register.json).
 
     python tools/settings_register.py             # regenerate data/settings-register.json (keeps the hand-kept fields)
     python tools/settings_register.py --check     # scan only; print what is missing from / extra in the register; exit 1 on a difference
@@ -43,27 +43,27 @@ SKIP_PARTS = ("node_modules", "/tests/", "/test/", "__pycache__")
 STATUSES = ("default", "rollback", "opt-in", "research", "retire-candidate", "unsure", "retired")
 HAND_FIELDS = ("status", "owner", "note", "retire_after", "retired_in")
 
-# The product is Nostroma, so a setting is written NOSTROMA_<SETTING>; every name used to be STRATA_<SETTING> and the
-# engine still reads that one as the fallback (include/strata/env.hpp). The register keeps the old prefix as its key, so
+# The product is Nostroma, so a setting is written NOSTROMA_<SETTING>; every name used to be NOSTROMA_<SETTING> and the
+# engine still reads that one as the fallback (include/nostroma/env.hpp). The register keeps the old prefix as its key, so
 # data/settings-register.json, the settings page and the app do not move in the same change as the sources.
-NAME_RE = re.compile(r"(?:STRATA|NOSTROMA)_[A-Z0-9_]+")
-# a call whose first argument is the name literal: getenv, strata::env, env_on, env_int, pipe_dbg_env, kva_env_flag ...
-CALL_RE = re.compile(r'([\w:]*(?:getenv|env\w*|\w*_env\w*)\s*\(\s*)"((?:STRATA|NOSTROMA)_[A-Z0-9_]+)"')
+NAME_RE = re.compile(r"(?:NOSTROMA|NOSTROMA)_[A-Z0-9_]+")
+# a call whose first argument is the name literal: getenv, nostroma::env, env_on, env_int, pipe_dbg_env, kva_env_flag ...
+CALL_RE = re.compile(r'([\w:]*(?:getenv|env\w*|\w*_env\w*)\s*\(\s*)"((?:NOSTROMA|NOSTROMA)_[A-Z0-9_]+)"')
 
 
 def _key(name: str) -> str:
-    """The register key of a name the engine reads: NOSTROMA_X and STRATA_X are the same setting."""
-    return "STRATA_" + name[len("NOSTROMA_"):] if name.startswith("NOSTROMA_") else name
+    """The register key of a name the engine reads: NOSTROMA_X and NOSTROMA_X are the same setting."""
+    return "NOSTROMA_" + name[len("NOSTROMA_"):] if name.startswith("NOSTROMA_") else name
 WRITE_FN_RE = re.compile(r"put|set_env|unset|setenv")
 
 FLAG_FNS = {"env_on", "env_flag", "il_env_on", "kva_env_flag", "env_tri"}
 INT_FNS = {"env_int", "env_int_or", "kva_env_i64", "a_env", "env_count", "lanes_env"}
 FLOAT_FNS = {"env_num", "env_f"}
 
-HIP_MACROS = {"STRATA_USE_HIP", "__HIPCC__", "STRATA_HIP_GFX906", "FNX_HIP", "__HIP_PLATFORM_AMD__", "STRATA_HIPBLASLT_AVAILABLE",
-              "STRATA_ROCBLAS_AVAILABLE", "__HIP_DEVICE_COMPILE__", "STRATA_PREFILL_MMQ_HIP"}
-CUDA_ONLY_MACROS = {"__CUDA_ARCH__", "CUDART_VERSION", "__NVPTX__", "STRATA_EXPERIMENTAL_SM60"}
-METAL_MACROS = {"STRATA_METAL", "STRATA_GPU_METAL", "__APPLE__"}
+HIP_MACROS = {"NOSTROMA_USE_HIP", "__HIPCC__", "NOSTROMA_HIP_GFX906", "FNX_HIP", "__HIP_PLATFORM_AMD__", "NOSTROMA_HIPBLASLT_AVAILABLE",
+              "NOSTROMA_ROCBLAS_AVAILABLE", "__HIP_DEVICE_COMPILE__", "NOSTROMA_PREFILL_MMQ_HIP"}
+CUDA_ONLY_MACROS = {"__CUDA_ARCH__", "CUDART_VERSION", "__NVPTX__", "NOSTROMA_EXPERIMENTAL_SM60"}
+METAL_MACROS = {"NOSTROMA_METAL", "NOSTROMA_GPU_METAL", "__APPLE__"}
 
 
 # ---------------------------------------------------------------- file walking
@@ -263,14 +263,14 @@ def _analyze(lines, i, name, fn, col):
         if short in FLOAT_FNS:
             return "float", None, (_num_clean(arg) if arg else None)
         if short == "pipe_dbg_env":
-            return "debug-gated", None, "read only when STRATA_PIPELINE_DEBUG=1"
+            return "debug-gated", None, "read only when NOSTROMA_PIPELINE_DEBUG=1"
     # std::getenv: look at the rest of the statement and the next two lines
     win = [first]
     for k in range(1, 4):
         if i + k < len(lines):
             win.append(lines[i + k])
     text = "\n".join(win)
-    cut = re.search(r'getenv\(\s*"STRATA_', text[len(first.split(name, 1)[0]) + len(name):])
+    cut = re.search(r'getenv\(\s*"NOSTROMA_', text[len(first.split(name, 1)[0]) + len(name):])
     if cut:
         text = text[: len(first.split(name, 1)[0]) + len(name) + cut.start()]
     prev = lines[i - 1] if i > 0 else ""
@@ -379,11 +379,11 @@ def scan_launch(names):
             was_doc = in_doc
             if p.suffix == ".py" and l.count('"""') % 2 == 1:
                 in_doc = not in_doc
-            if "STRATA_" not in l:
+            if "NOSTROMA_" not in l:
                 continue
             stripped = l.strip()
             is_comment = stripped.startswith(("#", "//", "*", "/*")) or was_doc or (in_doc and not was_doc and '"""' in l and False)
-            for nm in set(re.findall(r"STRATA_[A-Z0-9_]+(?![A-Z0-9_])", l)):
+            for nm in set(re.findall(r"NOSTROMA_[A-Z0-9_]+(?![A-Z0-9_])", l)):
                 if nm not in names:
                     continue
                 named[nm].add(rel)
@@ -394,7 +394,7 @@ def scan_launch(names):
                         if m:
                             got = m.group("v").strip().rstrip(",;").strip()
                             break
-                if got is not None and (got.startswith(("\"STRATA_", "'STRATA_")) or "\\d" in got or got.endswith(":") or got in ('"reason"', '"when"', '"value"')):
+                if got is not None and (got.startswith(("\"NOSTROMA_", "'NOSTROMA_")) or "\\d" in got or got.endswith(":") or got in ('"reason"', '"when"', '"value"')):
                     got = None
                 if got is not None and not re.search(r"environ\.get|getenv|\.get\(", l[: l.find(nm)]):
                     sets[nm].append({"file": rel, "line": i + 1, "value": got[:80]})
@@ -421,7 +421,7 @@ _ARCH_LABELS = (
 
 
 def scan_engine_defaults(names):
-    """Entries of the engine's own default tables: {"STRATA_X", "v"} / push_back({"STRATA_X", "v"}). The engine applies them for a GPU
+    """Entries of the engine's own default tables: {"NOSTROMA_X", "v"} / push_back({"NOSTROMA_X", "v"}). The engine applies them for a GPU
     architecture when the person has not set the name. "arch" is the nearest architecture test above the entry (a label, to be checked
     by eye; "windows" is added when a Windows-only test sits between that test and the entry)."""
     out = collections.defaultdict(list)
@@ -429,7 +429,7 @@ def scan_engine_defaults(names):
         p = ROOT / rel
         lines = _read_lines(p)
         for i, l in enumerate(lines):
-            for m in re.finditer(r'\{\s*"(STRATA_[A-Z0-9_]+)"\s*,\s*"([^"]*)"\s*\}', l):
+            for m in re.finditer(r'\{\s*"(NOSTROMA_[A-Z0-9_]+)"\s*,\s*"([^"]*)"\s*\}', l):
                 if m.group(1) not in names:
                     continue
                 label, win = "", False
@@ -455,9 +455,9 @@ def scan_docs(names):
         if rel == SETTINGS_PAGE:   # the generated page lists the names itself; it is not a source of documentation
             continue
         for i, l in enumerate(_read_lines(p)):
-            if "STRATA_" not in l:
+            if "NOSTROMA_" not in l:
                 continue
-            for nm in set(re.findall(r"STRATA_[A-Z0-9_]+(?![A-Z0-9_])", l)):
+            for nm in set(re.findall(r"NOSTROMA_[A-Z0-9_]+(?![A-Z0-9_])", l)):
                 if nm in names:
                     out[nm].append(f"{rel}:{i + 1}")
     return out
@@ -485,7 +485,7 @@ def _tag_of_commits():
 
 def scan_git(names):
     """first and last commit that adds or removes a line holding the name, in the engine directories."""
-    out = _git("log", "--reverse", "--no-color", "-U0", "--format=@@C %H %cs", "-G", "STRATA_[A-Z0-9_]+", "-p", "--", *ENGINE_DIRS)
+    out = _git("log", "--reverse", "--no-color", "-U0", "--format=@@C %H %cs", "-G", "NOSTROMA_[A-Z0-9_]+", "-p", "--", *ENGINE_DIRS)
     tagmap = _tag_of_commits()
     first, last = {}, {}
     cur = None
@@ -551,7 +551,7 @@ def render_page(entries):
         "<!-- Generated from data/settings-register.json by tools/settings_register.py --docs. Do not edit by hand; change the register. -->",
         "",
         "The engine reads its settings from environment variables. The product's name is Nostroma, so the name to write is",
-        "`NOSTROMA_<setting>`: the older `STRATA_<setting>` is still read and still works, and `NOSTROMA_` wins when both are set.",
+        "`NOSTROMA_<setting>`: the older `NOSTROMA_<setting>` is still read and still works, and `NOSTROMA_` wins when both are set.",
         "The Terminal and the app choose what your hardware needs, so most people never set one. This page lists the ones meant for people:",
         "switches that are off until you turn them on, and switches that take a newer default back to the earlier behaviour. The other",
         "settings are for measuring and debugging and are kept in `data/settings-register.json`.",

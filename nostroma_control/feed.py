@@ -1,6 +1,6 @@
 """The signed update feed: what is published, how it is checked, which engine package fits a PC.
 
-One small document, ``strata-feed.json``, with a detached Ed25519 signature ``strata-feed.json.sig`` (the signature covers the
+One small document, ``nostroma-feed.json``, with a detached Ed25519 signature ``nostroma-feed.json.sig`` (the signature covers the
 file's exact bytes, so there is no canonicalisation to get wrong). It lists, for one channel:
 
 * ``app``: the desktop app, in exactly the shape of Tauri's static updater JSON (``version``, ``notes``, ``pub_date``,
@@ -32,10 +32,10 @@ from nostroma_control import netpolicy, shape_engine, signing, transfer
 from nostroma_control.targets import BACKEND_MATRIX, host_platform
 
 SCHEMA_VERSION = 1
-FEED_NAME = "strata-feed.json"
+FEED_NAME = "nostroma-feed.json"
 #: The Linux ARM64 (DGX Spark) Terminal reads this file instead. A Control older than 0.1.53 refuses a feed that names a platform it does not know, so
-#: the linux-aarch64 entries cannot sit in strata-feed.json: that file stays as every released client can read it. Same format, same key.
-AARCH64_FEED_NAME = "strata-feed-linux-aarch64.json"
+#: the linux-aarch64 entries cannot sit in nostroma-feed.json: that file stays as every released client can read it. Same format, same key.
+AARCH64_FEED_NAME = "nostroma-feed-linux-aarch64.json"
 SIGNATURE_SUFFIX = ".sig"
 FORMATS = ("tar.gz", "tar.xz", "zip")
 PLATFORMS = ("windows-x86_64", "linux-x86_64", "linux-aarch64", "macos-arm64", "macos-x86_64")
@@ -44,7 +44,7 @@ TAURI_TARGETS = {"windows-x86_64": "windows-x86_64", "linux-x86_64": "linux-x86_
                  "macos-arm64": "darwin-aarch64", "macos-x86_64": "darwin-x86_64"}
 _VERSION = re.compile(r"\d+\.\d+\.\d+(?:\.\d+)?")
 _HEX64 = re.compile(r"[0-9a-f]{64}")
-_log = logging.getLogger("strata.feed")
+_log = logging.getLogger("nostroma.feed")
 
 
 class FeedError(RuntimeError):
@@ -150,7 +150,7 @@ class DrafterPackage:
                 "backends": list(self.backends), "base": self.base, "licence": self.licence, "notes": self.notes}
 
 
-#: Families a ``models`` entry may name that this Control knows how to install (GGUF architectures the engine runs: ``strata --families``). A model of another family
+#: Families a ``models`` entry may name that this Control knows how to install (GGUF architectures the engine runs: ``nostroma --families``). A model of another family
 #: is still listed, as "not available on this engine"; it is never offered to install.
 MODEL_FAMILIES_INSTALLABLE = ("qwen4exp", "qwen35moe")
 _MODEL_ID = re.compile(r"[a-z0-9][a-z0-9.-]{1,39}")
@@ -254,7 +254,7 @@ class ControlPackage:
     size: int
     sha256: str
     installed_bytes: int
-    entry: str = "strata.py"
+    entry: str = "nostroma.py"
 
     @property
     def label(self) -> str:
@@ -387,7 +387,7 @@ def _control_package(item: dict, version: str, skipped: list | None = None) -> C
         raise FeedError("the feed's control entry declares a size that cannot be a real file")
     return ControlPackage(version=version, platform=platform, url=_need(item, "url", str, where), format=fmt,
                           size=size, sha256=_hex(item.get("sha256"), where), installed_bytes=installed,
-                          entry=str(item.get("entry") or "strata.py"))
+                          entry=str(item.get("entry") or "nostroma.py"))
 
 
 def _drafter_package(item: dict) -> DrafterPackage:
@@ -653,7 +653,7 @@ def verify_and_parse(payload: bytes, signature_bytes: bytes, *, source: str, tru
     """Check the signature over `payload`, then parse; then the three guards: the channel is the one asked for, the feed has
     not expired, and its sequence is not lower than the last one accepted (a replayed older feed is a downgrade)."""
     if not trusted:
-        raise FeedError("this build trusts no update key (update_keys.json is empty and STRATA_UPDATE_TRUSTED_KEYS is not set), "
+        raise FeedError("this build trusts no update key (update_keys.json is empty and NOSTROMA_UPDATE_TRUSTED_KEYS is not set), "
                         "so no update can be verified; nothing was downloaded")
     try:
         signature = json.loads(signature_bytes.decode("utf-8-sig"))
@@ -678,8 +678,8 @@ def verify_and_parse(payload: bytes, signature_bytes: bytes, *, source: str, tru
 
 
 def feed_name(platform: str | None = None) -> str:
-    """The feed file this machine reads from a folder or a release address: ``strata-feed-linux-aarch64.json`` on a Linux ARM64 machine, else
-    ``strata-feed.json``. A source that names its file (``.../x.json``) is used as given, whatever the machine."""
+    """The feed file this machine reads from a folder or a release address: ``nostroma-feed-linux-aarch64.json`` on a Linux ARM64 machine, else
+    ``nostroma-feed.json``. A source that names its file (``.../x.json``) is used as given, whatever the machine."""
     if platform is None:
         try:
             platform = host_platform()
@@ -692,7 +692,7 @@ def fetch(source: str, trusted: dict[str, bytes], *, timeout: float = 30, say=No
     """Read the feed and its signature from `source` (an https URL, a loopback http URL, a file URL or a folder/file path).  `automatic`: a read
     nobody asked for by name (nostroma_control/netpolicy.py rule 4b: a host that refused within the last hours is not asked again)."""
     if not trusted:
-        raise FeedError("this build trusts no update key (update_keys.json is empty and STRATA_UPDATE_TRUSTED_KEYS is not set), "
+        raise FeedError("this build trusts no update key (update_keys.json is empty and NOSTROMA_UPDATE_TRUSTED_KEYS is not set), "
                         "so no update can be verified; nothing was downloaded")
     location = source
     if transfer.kind_of(source) == "path":
@@ -810,7 +810,7 @@ def _settle_hip_variants(fitting: list, hardware: dict, reasons: list[str]) -> l
         why = f"the installed {hardware['installed_variant']} build is kept, this PC's AMD card could not be identified"
     if not chosen:
         reasons.append("Nostroma cannot tell which AMD build this PC needs (" + ", ".join(sorted(_hip_variants(hip))) +
-                       "); the card was not recognised, so nothing was chosen. Name the build with STRATA_ENGINE_BACKEND=hip-<build>")
+                       "); the card was not recognised, so nothing was chosen. Name the build with NOSTROMA_ENGINE_BACKEND=hip-<build>")
         return [p for p in fitting if p.backend != "hip"]
     reasons.append(f"several AMD builds fit; chose {chosen[0].variant}: {why}")
     return [p for p in fitting if p.backend != "hip" or p in chosen]

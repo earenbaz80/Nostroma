@@ -19,10 +19,10 @@
 //      rounding from reduction order, and graph replay must preserve the precision chosen at capture.
 //   6. `gr_write`'s `2*sigmoid`, which centres the gate on 1 so a ZERO injection is a plain residual add.
 //      Asserted as a property, not as a value, because that is what the source comment claims.
-#include "strata/kernels/gr.hpp"
-#include "strata/env.hpp"
-#include "strata/kernels/fused_gr.hpp"
-#include "strata/kernels/native_mmvq.hpp"
+#include "nostroma/kernels/gr.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kernels/fused_gr.hpp"
+#include "nostroma/kernels/native_mmvq.hpp"
 
 #include <cuda_runtime.h>
 
@@ -161,16 +161,16 @@ const char* activation_mode_name(int mode) {
     return mode == 2 ? "native pinned GR" : (mode == 1 ? "FP32" : "BF16");
 }
 void select_activation_mode(int mode) {
-    strata::kernels::gr_set_native_mmvf(mode == 2);
+    nostroma::kernels::gr_set_native_mmvf(mode == 2);
     // In mode 2 the precision-only switch is deliberately false: native MMVF must imply FP32 by itself.
-    strata::kernels::gr_set_fp32_activations(mode == 1);
+    nostroma::kernels::gr_set_fp32_activations(mode == 1);
 }
 
 // A diagonal GR fixture makes activation precision observable without summation-order ambiguity.
 // Two-wide matrices satisfy native MMVF's pair ABI, while each nonzero dot has only one nonzero product.
 // At R=1 and eps=0, xn=gamma exactly; any rounding in xn or lo comes from the selected activation contract.
 int scalar_activation_contract() {
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     const GrShapes sh{2, 1, 2};
     float *d_R = nullptr, *d_norm = nullptr, *d_mixed = nullptr, *d_inject = nullptr;
     uint16_t* d_weights = nullptr;
@@ -278,7 +278,7 @@ int scalar_activation_contract() {
 
 int fused_multi_lds_parity(const float* d_norm, const uint16_t* d_down, const uint16_t* d_up,
                            const uint16_t* d_inject, float eps) {
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     constexpr int N = 2560, HC = 4, LR = 320, D = N * HC, T = kFusedGrMaxT;
     std::mt19937 rng(0x6f8a);
     std::normal_distribution<float> normal(0.0f, 0.3f);
@@ -338,9 +338,9 @@ int fused_multi_lds_parity(const float* d_norm, const uint16_t* d_down, const ui
         check(cudaMemcpy(s.mixed.data(), d_mixed, s.mixed.size() * sizeof(float), cudaMemcpyDeviceToHost), "multi read mixed");
         return s;
     };
-    // the split read (STRATA_GR_V3=1) sums in another order than the single-token kernel: equal within float
+    // the split read (NOSTROMA_GR_V3=1) sums in another order than the single-token kernel: equal within float
     // rounding, not to the bit, so it is compared with a relative tolerance; the default kernels bit for bit
-    static const bool v3 = [] { const char* v = strata::env("NOSTROMA_GR_V3"); return v != nullptr && std::atoi(v) != 0; }();
+    static const bool v3 = [] { const char* v = nostroma::env("NOSTROMA_GR_V3"); return v != nullptr && std::atoi(v) != 0; }();
     auto close = [](const std::vector<float>& x, const std::vector<float>& y) {
         double worst = 0.0, mag = 1e-30;
         for (size_t i = 0; i < x.size(); ++i) {
@@ -414,7 +414,7 @@ int fused_multi_lds_parity(const float* d_norm, const uint16_t* d_down, const ui
     }
 
 
-    // S26 STRATA_QFUSE: the read's own q8_1 image of `mixed` must be the bytes native_quantize_q8_1 writes from it -
+    // S26 NOSTROMA_QFUSE: the read's own q8_1 image of `mixed` must be the bytes native_quantize_q8_1 writes from it -
     // for every T (1..8), directly and through a captured graph replayed twice (the group counters must reset)
     {
         uint8_t *d_q = nullptr, *d_ref = nullptr;
@@ -445,7 +445,7 @@ int fused_multi_lds_parity(const float* d_norm, const uint16_t* d_down, const ui
                     check(cudaMemsetAsync(d_q, 0x5a, qbytes, stream), "qfuse poison 2");
                     check(cudaGraphLaunch(qx, stream), "qfuse replay 2");
                 }
-                strata::kernels::native_quantize_q8_1(d_mixed, d_ref, N, tt, stream);
+                nostroma::kernels::native_quantize_q8_1(d_mixed, d_ref, N, tt, stream);
                 check(cudaStreamSynchronize(stream), "qfuse sync");
                 if (qx) { cudaGraphExecDestroy(qx); cudaGraphDestroy(qg); }
                 if (v3) { std::printf("  QFUSE: the v3 read writes no q8_1 (%s)\n", wrote ? "WRONG: it says it did" : "ok"); qbad += wrote; break; }
@@ -457,20 +457,20 @@ int fused_multi_lds_parity(const float* d_norm, const uint16_t* d_down, const ui
                 }
             }
         }
-        std::printf("  fused GR read + q8_1 (STRATA_QFUSE), T 1..8, direct and graph replays: %s\n", qbad ? "FAIL" : "pass");
+        std::printf("  fused GR read + q8_1 (NOSTROMA_QFUSE), T 1..8, direct and graph replays: %s\n", qbad ? "FAIL" : "pass");
         bad += qbad;
-#if (defined(STRATA_USE_HIP) || defined(__HIP_PLATFORM_AMD__)) && !defined(STRATA_HIP_GFX906)
-        // Counter-free q8_mixed path (q8_cnt == nullptr, used by MTP when STRATA_QFUSE_HC_LOCAL=1 on wave32 HIP where
-        // STRATA_GR_FAST_BUILD == 0): must return true and write identical q8_1 bytes across T=1..8 and graph replays,
-        // and must return false without writing when STRATA_QFUSE_HC_LOCAL=0 and q8_cnt == nullptr.
+#if (defined(NOSTROMA_USE_HIP) || defined(__HIP_PLATFORM_AMD__)) && !defined(NOSTROMA_HIP_GFX906)
+        // Counter-free q8_mixed path (q8_cnt == nullptr, used by MTP when NOSTROMA_QFUSE_HC_LOCAL=1 on wave32 HIP where
+        // NOSTROMA_GR_FAST_BUILD == 0): must return true and write identical q8_1 bytes across T=1..8 and graph replays,
+        // and must return false without writing when NOSTROMA_QFUSE_HC_LOCAL=0 and q8_cnt == nullptr.
         if (!v3) {
             int cf_bad = 0;
-            const char* prev_loc = strata::env("NOSTROMA_QFUSE_HC_LOCAL");
+            const char* prev_loc = nostroma::env("NOSTROMA_QFUSE_HC_LOCAL");
             const std::string saved_loc = prev_loc ? prev_loc : "";
 #if defined(_WIN32)
-            _putenv_s("STRATA_QFUSE_HC_LOCAL", "1");
+            _putenv_s("NOSTROMA_QFUSE_HC_LOCAL", "1");
 #else
-            setenv("STRATA_QFUSE_HC_LOCAL", "1", 1);
+            setenv("NOSTROMA_QFUSE_HC_LOCAL", "1", 1);
 #endif
             for (int tt = 1; tt <= T && !cf_bad; ++tt) {
                 std::vector<FusedGrArgs> qa(args.begin(), args.begin() + tt);
@@ -493,7 +493,7 @@ int fused_multi_lds_parity(const float* d_norm, const uint16_t* d_down, const ui
                         check(cudaMemcpyAsync(d_r, r.data(), r.size() * sizeof(float), cudaMemcpyHostToDevice, stream), "cf R2");
                         check(cudaGraphLaunch(qx, stream), "cf replay 2");
                     }
-                    strata::kernels::native_quantize_q8_1(d_mixed, d_ref, N, tt, stream);
+                    nostroma::kernels::native_quantize_q8_1(d_mixed, d_ref, N, tt, stream);
                     check(cudaStreamSynchronize(stream), "cf sync");
                     if (qx) { cudaGraphExecDestroy(qx); cudaGraphDestroy(qg); }
                     check(cudaMemcpy(hq.data(), d_q, (size_t) tt * (N / 32) * 36, cudaMemcpyDeviceToHost), "cf read");
@@ -502,9 +502,9 @@ int fused_multi_lds_parity(const float* d_norm, const uint16_t* d_down, const ui
                 }
             }
 #if defined(_WIN32)
-            _putenv_s("STRATA_QFUSE_HC_LOCAL", "0");
+            _putenv_s("NOSTROMA_QFUSE_HC_LOCAL", "0");
 #else
-            setenv("STRATA_QFUSE_HC_LOCAL", "0", 1);
+            setenv("NOSTROMA_QFUSE_HC_LOCAL", "0", 1);
 #endif
             {
                 std::vector<FusedGrArgs> qa(args.begin(), args.begin() + 2);
@@ -518,10 +518,10 @@ int fused_multi_lds_parity(const float* d_norm, const uint16_t* d_down, const ui
                 if (wrote || !untouched) ++cf_bad;
             }
 #if defined(_WIN32)
-            _putenv_s("STRATA_QFUSE_HC_LOCAL", prev_loc ? saved_loc.c_str() : "");
+            _putenv_s("NOSTROMA_QFUSE_HC_LOCAL", prev_loc ? saved_loc.c_str() : "");
 #else
-            if (prev_loc) setenv("STRATA_QFUSE_HC_LOCAL", saved_loc.c_str(), 1);
-            else unsetenv("STRATA_QFUSE_HC_LOCAL");
+            if (prev_loc) setenv("NOSTROMA_QFUSE_HC_LOCAL", saved_loc.c_str(), 1);
+            else unsetenv("NOSTROMA_QFUSE_HC_LOCAL");
 #endif
             std::printf("  fused GR counter-free q8_1 (q8_cnt == nullptr), T 1..8, direct/graph + LOCAL=0 guard: %s\n",
                         cf_bad ? "FAIL" : "pass");
@@ -531,16 +531,16 @@ int fused_multi_lds_parity(const float* d_norm, const uint16_t* d_down, const ui
         cudaFree(d_q); cudaFree(d_ref); cudaFree(d_cnt);
     }
 
-    // #3948: STRATA_QFUSE in a verify window of TWO GROUPS (verify.cpp gr_read_group with G = 2): the window's tokens are
+    // #3948: NOSTROMA_QFUSE in a verify window of TWO GROUPS (verify.cpp gr_read_group with G = 2): the window's tokens are
     // read in two calls one after the other, the same group counters, each call with its own tokens' destinations - the
     // attention half's xq_ is indexed from the group's first token, the expert half's nat_xq_ by the window's token.
     // Fresh random inputs every repetition, 200 repetitions for each T = 2..8 (a race that fires one launch in a hundred
     // shows), direct and as a graph replay. After every repetition: both groups' q8_1 bytes equal what
     // native_quantize_q8_1 makes of `mixed`, nothing outside the written ranges changed, and the counters are back at zero.
     if (!v3) {
-        // (STRATA_GRP_REPS=N more repetitions, STRATA_GRP_KEEP_GOING=1 counts every failure instead of stopping at the first: to measure a rare one)
-        const int REPS = strata::env("NOSTROMA_GRP_REPS") ? std::max(1, std::atoi(strata::env("NOSTROMA_GRP_REPS"))) : 200;
-        const bool keep_going = strata::env("NOSTROMA_GRP_KEEP_GOING") != nullptr;
+        // (NOSTROMA_GRP_REPS=N more repetitions, NOSTROMA_GRP_KEEP_GOING=1 counts every failure instead of stopping at the first: to measure a rare one)
+        const int REPS = nostroma::env("NOSTROMA_GRP_REPS") ? std::max(1, std::atoi(nostroma::env("NOSTROMA_GRP_REPS"))) : 200;
+        const bool keep_going = nostroma::env("NOSTROMA_GRP_KEEP_GOING") != nullptr;
         const size_t B = (size_t) (N / 32) * 36;   // one token's q8_1 image
         uint8_t *d_qa = nullptr, *d_qb = nullptr, *d_qabs = nullptr, *d_ref2 = nullptr;
         unsigned* d_cnt2 = nullptr;
@@ -596,7 +596,7 @@ int fused_multi_lds_parity(const float* d_norm, const uint16_t* d_down, const ui
                 } else {
                     check(cudaGraphLaunch(gx, stream), "qfuse2 replay");
                 }
-                strata::kernels::native_quantize_q8_1(d_mixed, d_ref2, N, tt, stream);
+                nostroma::kernels::native_quantize_q8_1(d_mixed, d_ref2, N, tt, stream);
                 check(cudaStreamSynchronize(stream), "qfuse2 sync");
                 ++runs;
                 check(cudaMemcpy(g_ref.data(), d_ref2, (size_t) tt * B, cudaMemcpyDeviceToHost), "qfuse2 read ref");
@@ -654,7 +654,7 @@ int fused_multi_lds_parity(const float* d_norm, const uint16_t* d_down, const ui
         }
         // the inputs the rest of the test (and its caller) expect again
         check(cudaDeviceSynchronize(), "qfuse2 done");
-        std::printf("  fused GR read + q8_1 (STRATA_QFUSE), a window of two groups, T 2..8, %ld runs (%d random inputs each T), "
+        std::printf("  fused GR read + q8_1 (NOSTROMA_QFUSE), a window of two groups, T 2..8, %ld runs (%d random inputs each T), "
                     "group-relative and window-indexed, direct and graph: %s\n", runs, REPS, g2bad ? "FAIL" : "pass");
         bad += g2bad;
         cudaFree(d_qa); cudaFree(d_qb); cudaFree(d_qabs); cudaFree(d_ref2); cudaFree(d_cnt2);
@@ -679,11 +679,11 @@ int fused_multi_lds_parity(const float* d_norm, const uint16_t* d_down, const ui
 }  // namespace
 
 int main(int argc, char** argv) {
-    // this test compares the default kernels bit for bit; the split read (a default on a 12.0 card since 0.2.7) is STRATA_GR_V3=1 below
+    // this test compares the default kernels bit for bit; the split read (a default on a 12.0 card since 0.2.7) is NOSTROMA_GR_V3=1 below
 #if defined(_WIN32)
-    if (strata::env("NOSTROMA_GR_V3") == nullptr) _putenv_s("STRATA_GR_V3", "0");
+    if (nostroma::env("NOSTROMA_GR_V3") == nullptr) _putenv_s("NOSTROMA_GR_V3", "0");
 #else
-    if (strata::env("NOSTROMA_GR_V3") == nullptr) setenv("STRATA_GR_V3", "0", 1);
+    if (nostroma::env("NOSTROMA_GR_V3") == nullptr) setenv("NOSTROMA_GR_V3", "0", 1);
 #endif
     bool selftest = false;
     for (int i = 1; i < argc; ++i) {
@@ -747,13 +747,13 @@ int main(int argc, char** argv) {
     check(cudaMemcpy(d_up, q_up.data(), q_up.size() * sizeof(uint16_t), cudaMemcpyHostToDevice), "c up");
     check(cudaMemcpy(d_inj, q_inject.data(), q_inject.size() * sizeof(uint16_t), cudaMemcpyHostToDevice), "c inj");
 
-    const strata::kernels::GrShapes sh{n_embd, hc, hc_lr};
+    const nostroma::kernels::GrShapes sh{n_embd, hc, hc_lr};
     // DEVICE memory: the workspace is written by the kernel.
     void* d_ws_raw = nullptr;
-    check(cudaMalloc(&d_ws_raw, strata::kernels::gr_workspace_bytes(sh)), "m ws");
-    strata::kernels::GrWorkspace ws;
-    strata::kernels::gr_workspace_init(sh, d_ws_raw, ws);
-    strata::kernels::gr_read(d_R, d_norm, d_down, d_up, d_inj, eps, sh, ws, d_mixed, d_inject, nullptr);
+    check(cudaMalloc(&d_ws_raw, nostroma::kernels::gr_workspace_bytes(sh)), "m ws");
+    nostroma::kernels::GrWorkspace ws;
+    nostroma::kernels::gr_workspace_init(sh, d_ws_raw, ws);
+    nostroma::kernels::gr_read(d_R, d_norm, d_down, d_up, d_inj, eps, sh, ws, d_mixed, d_inject, nullptr);
     std::vector<float> got_mixed((size_t) n_embd), got_inject((size_t) hc);
     check(cudaMemcpy(got_mixed.data(), d_mixed, got_mixed.size() * sizeof(float), cudaMemcpyDeviceToHost), "c mixed");
     check(cudaMemcpy(got_inject.data(), d_inject, got_inject.size() * sizeof(float), cudaMemcpyDeviceToHost), "c inject");
@@ -819,17 +819,17 @@ int main(int argc, char** argv) {
         fp32.round_activation = false;
         std::vector<float> wm, wi, gm((size_t) n_embd), gi((size_t) hc);
         reference(R, w_norm, w_down, w_up, w_inject, eps, n_embd, hc, hc_lr, fp32, wm, wi);
-        strata::kernels::gr_set_fp32_activations(true);
-        strata::kernels::gr_read(d_R, d_norm, d_down, d_up, d_inj, eps, sh, ws, d_mixed, d_inject, nullptr);
+        nostroma::kernels::gr_set_fp32_activations(true);
+        nostroma::kernels::gr_read(d_R, d_norm, d_down, d_up, d_inj, eps, sh, ws, d_mixed, d_inject, nullptr);
         check(cudaMemcpy(gm.data(), d_mixed, gm.size() * sizeof(float), cudaMemcpyDeviceToHost), "FP32 mixed");
         check(cudaMemcpy(gi.data(), d_inject, gi.size() * sizeof(float), cudaMemcpyDeviceToHost), "FP32 inject");
-        strata::kernels::gr_set_fp32_activations(false);
+        nostroma::kernels::gr_set_fp32_activations(false);
         const double rm = rel_diff(wm, gm), ri = rel_diff(wi, gi);
         const bool ok = rm <= 1e-4 && ri <= 1e-4;
         std::printf("  FP32 activations vs reference: %s (mixed %.3e, inject %.3e)\n",
                     ok ? "pass" : "FAIL", rm, ri);
         if (!ok) ++bad;
-        strata::kernels::gr_read(d_R, d_norm, d_down, d_up, d_inj, eps, sh, ws, d_mixed, d_inject, nullptr);
+        nostroma::kernels::gr_read(d_R, d_norm, d_down, d_up, d_inj, eps, sh, ws, d_mixed, d_inject, nullptr);
         check(cudaMemcpy(gm.data(), d_mixed, gm.size() * sizeof(float), cudaMemcpyDeviceToHost), "restored mixed");
         check(cudaMemcpy(gi.data(), d_inject, gi.size() * sizeof(float), cudaMemcpyDeviceToHost), "restored inject");
         const bool restored = std::memcmp(gm.data(), got_mixed.data(), gm.size() * sizeof(float)) == 0 &&
@@ -858,7 +858,7 @@ int main(int argc, char** argv) {
         std::vector<float> bad_mixed((size_t) n_embd);
         float* d_bad = nullptr;
         check(cudaMalloc(&d_bad, bad_mixed.size() * sizeof(float)), "m bad");
-        strata::kernels::gr_read(d_R, d_norm, d_down_bad, d_up_bad, d_inj, eps, sh, ws, d_bad, d_inject,
+        nostroma::kernels::gr_read(d_R, d_norm, d_down_bad, d_up_bad, d_inj, eps, sh, ws, d_bad, d_inject,
                                  nullptr);
         check(cudaMemcpy(bad_mixed.data(), d_bad, bad_mixed.size() * sizeof(float), cudaMemcpyDeviceToHost), "cb b");
         const double rel = rel_diff(want_mixed, bad_mixed);
@@ -872,7 +872,7 @@ int main(int argc, char** argv) {
     // ---- the FINAL mixer passes w_inject = nullptr, and then nothing may be written
     float sentinel = -12345.0f;
     check(cudaMemcpy(d_inject, &sentinel, sizeof(float), cudaMemcpyHostToDevice), "c sentinel");
-    strata::kernels::gr_read(d_R, d_norm, d_down, d_up, nullptr, eps, sh, ws, d_mixed, d_inject, nullptr);
+    nostroma::kernels::gr_read(d_R, d_norm, d_down, d_up, nullptr, eps, sh, ws, d_mixed, d_inject, nullptr);
     float after = 0.0f;
     check(cudaMemcpy(&after, d_inject, sizeof(float), cudaMemcpyDeviceToHost), "c after");
     const bool untouched = (after == sentinel);
@@ -892,7 +892,7 @@ int main(int argc, char** argv) {
     check(cudaMemcpy(d_bo, block_out.data(), block_out.size() * sizeof(float), cudaMemcpyHostToDevice), "c bo");
     check(cudaMemcpy(d_zi, zero_inj.data(), zero_inj.size() * sizeof(float), cudaMemcpyHostToDevice), "c zi");
 
-    strata::kernels::gr_write(d_Rw, d_bo, d_zi, sh, d_outw, nullptr);
+    nostroma::kernels::gr_write(d_Rw, d_bo, d_zi, sh, d_outw, nullptr);
     std::vector<float> got_write((size_t) hc_dim);
     check(cudaMemcpy(got_write.data(), d_outw, got_write.size() * sizeof(float), cudaMemcpyDeviceToHost), "c outw");
 
@@ -936,7 +936,7 @@ int main(int argc, char** argv) {
     std::vector<float> inj((size_t) hc);
     for (auto& x : inj) x = gauss(rng) * 3.0f;
     check(cudaMemcpy(d_zi, inj.data(), inj.size() * sizeof(float), cudaMemcpyHostToDevice), "c inj2");
-    strata::kernels::gr_write(d_Rw, d_bo, d_zi, sh, d_outw, nullptr);
+    nostroma::kernels::gr_write(d_Rw, d_bo, d_zi, sh, d_outw, nullptr);
     check(cudaMemcpy(got_write.data(), d_outw, got_write.size() * sizeof(float), cudaMemcpyDeviceToHost), "c outw2");
     double worst_stream = 0;
     for (long long c = 0; c < hc; ++c) {
@@ -994,14 +994,14 @@ int main(int argc, char** argv) {
         check(cudaMemcpy(dU, qu.data(), qu.size() * 2, cudaMemcpyHostToDevice), "crU");
         check(cudaMemcpy(dJ, qi.data(), qi.size() * 2, cudaMemcpyHostToDevice), "crJ");
 
-        const strata::kernels::GrShapes rsh{rn, rhc, rlr};
+        const nostroma::kernels::GrShapes rsh{rn, rhc, rlr};
         void* rws_raw = nullptr;
-        check(cudaMalloc(&rws_raw, strata::kernels::gr_workspace_bytes(rsh)), "m rws");
-        strata::kernels::GrWorkspace rws;
-        strata::kernels::gr_workspace_init(rsh, rws_raw, rws);
+        check(cudaMalloc(&rws_raw, nostroma::kernels::gr_workspace_bytes(rsh)), "m rws");
+        nostroma::kernels::GrWorkspace rws;
+        nostroma::kernels::gr_workspace_init(rsh, rws_raw, rws);
         for (int mode = 0; mode < 3; ++mode) {
             select_activation_mode(mode);
-            strata::kernels::gr_read(dR, dN, dD, dU, dJ, eps, rsh, rws, dM, dI, nullptr);
+            nostroma::kernels::gr_read(dR, dN, dD, dU, dJ, eps, rsh, rws, dM, dI, nullptr);
             std::vector<float> gm((size_t) rn), gi((size_t) rhc);
             check(cudaMemcpy(gm.data(), dM, gm.size() * 4, cudaMemcpyDeviceToHost), "cgm");
             check(cudaMemcpy(gi.data(), dI, gi.size() * 4, cudaMemcpyDeviceToHost), "cgi");

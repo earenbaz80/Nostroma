@@ -10,7 +10,7 @@
  * at the PNG's own size, and diffs the two, so a PNG that stopped matching the
  * picture fails here instead of shipping.
  *
- * Chromium comes from scripts/browser.mjs: STRATA_CHROME, a cached Playwright
+ * Chromium comes from scripts/browser.mjs: NOSTROMA_CHROME, a cached Playwright
  * build, or an installed Chrome, Edge, Chromium or Brave. With no browser the
  * check prints a skip line and exits 0, so the asset workflow never depends on
  * one.
@@ -91,7 +91,7 @@ if (!pairs.length) {
 const executablePath = findChromium();
 if (!executablePath) {
   console.log('skip: no Chromium found, so the PNGs were not compared with their SVGs.');
-  console.log('      Set STRATA_CHROME, or install Chrome, Edge, Chromium or Brave.');
+  console.log('      Set NOSTROMA_CHROME, or install Chrome, Edge, Chromium or Brave.');
   process.exit(0);
 }
 

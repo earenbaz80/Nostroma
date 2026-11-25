@@ -5,7 +5,7 @@
 #if defined(__aarch64__) || defined(_M_ARM64)
 #include <arm_neon.h>
 
-namespace strata_vit {
+namespace nostroma_vit {
 namespace {
 namespace kn {
 
@@ -40,7 +40,7 @@ inline V vmax(V a, V b) { return vmaxq_f32(a.v, b.v); }
 
 // The product's micro-kernel with lane-indexed FMAs: four k steps take one vector load of each A row instead of four scalar broadcasts.  The same
 // summation order as the generic micro of cpu_kernels_impl.h (each accumulator gets a[r][k] * b[k] in k order, fused), so the results are the same.
-#define STRATA_KN_HAS_MICRO 1
+#define NOSTROMA_KN_HAS_MICRO 1
 #define KN_STEP(L)                                                                                     \
     {                                                                                                  \
         const float32x4_t b0 = vld1q_f32(B + (size_t) (k + L) * ldb), b1 = vld1q_f32(B + (size_t) (k + L) * ldb + 4); \
@@ -128,19 +128,19 @@ inline void conv16(const void* Wm, int kind, size_t off, int n, float* out) {
 
 }  // namespace kn
 }  // namespace
-}  // namespace strata_vit
+}  // namespace nostroma_vit
 
-#define STRATA_KN_MR 8
+#define NOSTROMA_KN_MR 8
 #define KN_MIN(a, b) kmin(a, b)
 #define KN_MAX(a, b) kmax(a, b)
 #define KN_COPY(d, s, n) kcopy((d), (s), (n))
 #define KN_ZERO(d, n) kzero((d), (n))
-#define STRATA_KN_NAME "neon"
-#define STRATA_KN_GETTER cpu_ops_neon
+#define NOSTROMA_KN_NAME "neon"
+#define NOSTROMA_KN_GETTER cpu_ops_neon
 #include "cpu_kernels_impl.h"
 
 #else   // not AArch64: the tier does not exist, the dispatcher never asks for it
-namespace strata_vit {
+namespace nostroma_vit {
 const CpuOps& cpu_ops_neon() { return cpu_ops_scalar(); }
 }
 #endif

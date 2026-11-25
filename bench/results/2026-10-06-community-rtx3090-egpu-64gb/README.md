@@ -8,7 +8,7 @@ uses a unique nonce so no prefix-cache reuse occurs (reused tokens = 0 everywher
 
 - GPU: NVIDIA GeForce RTX 3090, 24 GB, **in a Thunderbolt 3 eGPU enclosure** (single-GPU
   configuration; the internal RTX 3070 Laptop 8 GB is present in the system but unused by
-  Strata — a multi-GPU 3090+3070 split was also measured and rejected, see Notes)
+  Nostroma — a multi-GPU 3090+3070 split was also measured and rejected, see Notes)
 - CPU: 11th Gen Intel Core i7-11800H (8C/16T, AVX-512)
 - RAM: 64 GB DDR4
 - Storage: NVMe SSD
@@ -18,12 +18,12 @@ uses a unique nonce so no prefix-cache reuse occurs (reused tokens = 0 everywher
 ## Software
 
 - OS: Windows 11 Pro 26H2 (build 26300.9457)
-- Strata: commit `1678de333d0e0711bc414ad992b640e1a37dd814` (2026-10-02, shallow clone)
-- Engine: prebuilt `strata.exe` 0.1.34 (sm_86, CUDA 13.0), NVIDIA driver 617.14 WHQL
+- Nostroma: commit `1678de333d0e0711bc414ad992b640e1a37dd814` (2026-10-02, shallow clone)
+- Engine: prebuilt `nostroma.exe` 0.1.34 (sm_86, CUDA 13.0), NVIDIA driver 617.14 WHQL
 
 ## Model
 
-- Qwen3.8-Flash-Next, Strata GSQ-RCO packs
+- Qwen3.8-Flash-Next, Nostroma GSQ-RCO packs
 - Quantizations tested: **IQ2_XS** and **IQ3_XXS**
   (`Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-0000{1,2}-of-00002.gguf`, same pattern for IQ3_XXS)
 - Vision encoder loaded (mmproj BF16) but not used in these tests
@@ -86,8 +86,8 @@ Memory: with IQ2_XS resident, ~39 GB RAM used by the model, ~23 GB free; with IQ
   ~66 tok/s, prefill to ~128–149 tok/s and the setup reduced the usable context to
   32K — the much slower second card hurts here, consistent with the MULTI_GPU.md
   guidance about much slower extra cards.
-- The eGPU Thunderbolt link does not bottleneck Strata's architecture: calibration
+- The eGPU Thunderbolt link does not bottleneck Nostroma's architecture: calibration
   picked PCIe share 0.00 (no expert prefetch over the link) on both quants.
 - Raw per-run data: `runs/*.json`. The script reads the API key from the
-  `STRATA_API_KEY` environment variable; no credentials or machine-specific paths are
+  `NOSTROMA_API_KEY` environment variable; no credentials or machine-specific paths are
   included in this PR.

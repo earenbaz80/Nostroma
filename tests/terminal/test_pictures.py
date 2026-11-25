@@ -40,7 +40,7 @@ class Layout:
 
     def __init__(self, base: Path, *, ordinary: bool = False, with_vision: bool = False):
         self.base = base
-        self.data = base / ("Strata-data" if ordinary else "own-data")
+        self.data = base / ("Nostroma-data" if ordinary else "own-data")
         self.model_dir = (self.data / "models" / "IQ3_S") if ordinary else (base / "downloads" / "IQ3_S")
         self.model_dir.mkdir(parents=True)
         self.gguf = self.model_dir / "Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf"
@@ -55,12 +55,12 @@ class Layout:
         (self.data / "mtp" / "mtp-q2_0.gguf").write_bytes(b"m")
         self.engine = base / "engine"
         self.engine.mkdir()
-        exe = "strata-vision.exe" if os.name == "nt" else "strata-vision"
+        exe = "nostroma-vision.exe" if os.name == "nt" else "nostroma-vision"
         (self.engine / exe).write_bytes(b"x")
         self.reader = self.engine / exe
-        self.config = base / "install" / "strata-iq3_s.json"
+        self.config = base / "install" / "nostroma-iq3_s.json"
         self.config.parent.mkdir()
-        cfg = {"exe": "component:strata-engine", "model_name": "qwen3.8-flash-next-iq3_s",
+        cfg = {"exe": "component:nostroma-engine", "model_name": "qwen3.8-flash-next-iq3_s",
                "args": ["--pack", str(self.pack), "--native", str(self.gguf), "--mtp", str(self.mtp), "--max-context", "8192"]}
         if with_vision:
             cfg["vision"] = {"exe": str(self.reader), "mmproj": str(self.data / "models" / NAME), "model": str(self.gguf), "gpu": False, "max_tokens": 450}
@@ -75,7 +75,7 @@ class Layout:
         kw.setdefault("hardware", {"vram_gb": 12, "make": "nvidia", "arch": 120})
         kw.setdefault("endpoint", self.mirror.as_uri())
         kw.setdefault("online", lambda url: True)
-        with mock.patch.dict(pictures.PROJECTOR_BY_FAMILY, {"qwen": TINY}), mock.patch.dict(os.environ, {"STRATA_NO_ACQUIRE": ""}):
+        with mock.patch.dict(pictures.PROJECTOR_BY_FAMILY, {"qwen": TINY}), mock.patch.dict(os.environ, {"NOSTROMA_NO_ACQUIRE": ""}):
             return pictures.fetch(self.config, **kw)
 
 
@@ -103,7 +103,7 @@ class FetchInOwnFolder(unittest.TestCase):
         for key, value in before.items():
             self.assertEqual(after[key], value, f"{key} was left alone")
         self.assertEqual(lay.config.read_bytes(), cfg_before, "the run config is the caller's to write")
-        self.assertFalse((self.base / "Strata-data").exists(), "no second data folder")
+        self.assertFalse((self.base / "Nostroma-data").exists(), "no second data folder")
 
     def test_the_section_is_the_one_setup_writes_for_this_card(self):
         lay = Layout(self.base)
@@ -200,7 +200,7 @@ class FetchInOwnFolder(unittest.TestCase):
 
     def test_a_start_never_downloads(self):
         lay = Layout(self.base)
-        with mock.patch.dict(pictures.PROJECTOR_BY_FAMILY, {"qwen": TINY}), mock.patch.dict(os.environ, {"STRATA_NO_ACQUIRE": "1"}):
+        with mock.patch.dict(pictures.PROJECTOR_BY_FAMILY, {"qwen": TINY}), mock.patch.dict(os.environ, {"NOSTROMA_NO_ACQUIRE": "1"}):
             with self.assertRaises(acquisition.AcquisitionRefused):
                 pictures.fetch(lay.config, engine_dir=lay.engine, endpoint=lay.mirror.as_uri(), online=lambda url: True)
         self.assertFalse((lay.data / "models").exists())
@@ -280,8 +280,8 @@ class ReaderRule(unittest.TestCase):
         self._tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self._tmp.cleanup)
         self.engine = Path(self._tmp.name)
-        self.cpu = "strata-vision.exe" if os.name == "nt" else "strata-vision"
-        self.hip = "strata-vision-hip.exe" if os.name == "nt" else "strata-vision-hip"
+        self.cpu = "nostroma-vision.exe" if os.name == "nt" else "nostroma-vision"
+        self.hip = "nostroma-vision-hip.exe" if os.name == "nt" else "nostroma-vision-hip"
 
     def make(self, *names, build=None):
         for n in names:
@@ -322,7 +322,7 @@ class Command(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             lay = Layout(Path(tmp))
             out = io.StringIO()
-            with mock.patch.dict(pictures.PROJECTOR_BY_FAMILY, {"qwen": TINY}), mock.patch.dict(os.environ, {"STRATA_NO_ACQUIRE": "", "HF_ENDPOINT": ""}), \
+            with mock.patch.dict(pictures.PROJECTOR_BY_FAMILY, {"qwen": TINY}), mock.patch.dict(os.environ, {"NOSTROMA_NO_ACQUIRE": "", "HF_ENDPOINT": ""}), \
                     mock.patch.object(pictures, "_online", return_value=False), redirect_stdout(out):
                 code = pictures.main(["fetch", "--config", str(lay.config), "--engine-dir", str(lay.engine), "--vision", "yes", "--vram-gb", "12", "--make", "nvidia", "--arch", "120"])
             self.assertEqual(code, 5)
@@ -330,7 +330,7 @@ class Command(unittest.TestCase):
             self.assertEqual(last["ok"], False)
             self.assertEqual(last["error"]["code"], "offline")
             out = io.StringIO()
-            with mock.patch.dict(pictures.PROJECTOR_BY_FAMILY, {"qwen": TINY}), mock.patch.dict(os.environ, {"STRATA_NO_ACQUIRE": "", "HF_ENDPOINT": lay.mirror.as_uri()}), \
+            with mock.patch.dict(pictures.PROJECTOR_BY_FAMILY, {"qwen": TINY}), mock.patch.dict(os.environ, {"NOSTROMA_NO_ACQUIRE": "", "HF_ENDPOINT": lay.mirror.as_uri()}), \
                     mock.patch.object(pictures, "_online", return_value=True), redirect_stdout(out):
                 code = pictures.main(["fetch", "--config", str(lay.config), "--engine-dir", str(lay.engine), "--vram-gb", "12", "--make", "nvidia", "--arch", "120"])
             lines = [json.loads(line) for line in out.getvalue().strip().splitlines()]

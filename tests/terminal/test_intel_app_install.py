@@ -1,7 +1,7 @@
 """ARCFIX (0.2.13): the app's model setup on an Intel Arc card (Linux, the SYCL engine).
 
 Found by QAGUI-LIN on an Arc A750: the app's install job ran setup.py with no `--backend`, so setup's NVIDIA / AMD path stopped with "no NVIDIA GPU found
-(nvidia-smi did not answer)". tools/strata_mcp.py now picks `sycl` for an Intel PC and passes `--backend sycl`; setup.py's CONTROL mode answers that with the
+(nvidia-smi did not answer)". tools/nostroma_mcp.py now picks `sycl` for an Intel PC and passes `--backend sycl`; setup.py's CONTROL mode answers that with the
 Terminal's own two steps (the pack, then the run config of nostroma_cli/launch/adopt.py). NVIDIA and AMD are what they were. Offline: nothing runs but Python."""
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 import setup  # noqa: E402
-import strata_mcp as M  # noqa: E402
+import nostroma_mcp as M  # noqa: E402
 from nostroma_control import intel_app  # noqa: E402
 
 A750 = {"vendor": "intel", "name": "Intel Arc A750", "vram_gb": 8.0, "usable": True, "index": 0}
@@ -51,7 +51,7 @@ class CardList(unittest.TestCase):
     def test_only_linux_and_only_when_the_engine_is_the_intel_one(self):
         self.assertEqual(self.add([], [], platform="win32"), [])           # no Windows Intel engine in the feed
         self.assertEqual(self.add([], [], platform="darwin"), [])
-        self.assertEqual(self.add([], [], intel=False), [])                # the engine Control would pick is not SYCL (STRATA_ENGINE_BACKEND, a saved choice)
+        self.assertEqual(self.add([], [], intel=False), [])                # the engine Control would pick is not SYCL (NOSTROMA_ENGINE_BACKEND, a saved choice)
         self.assertEqual(self.add([], [], cards=()), [])
 
     def test_a_probe_that_fails_adds_nothing(self):
@@ -61,7 +61,7 @@ class CardList(unittest.TestCase):
         self.assertEqual(intel_app.cards_to_add([], [], platform="linux", cards=lambda: [A750], intel_engine=boom), [])
 
     def test_the_hardware_report_carries_the_arc_with_its_own_id(self):
-        s = M.Strata(ROOT)
+        s = M.Nostroma(ROOT)
         S = s.setup_module()
         with mock.patch.object(M.sys, "platform", "linux"), mock.patch.object(M, "WIN", False), \
                 mock.patch.object(S, "gpus", lambda: []), mock.patch.object(S, "amd_gpus", lambda: []), \
@@ -76,14 +76,14 @@ class CardList(unittest.TestCase):
 
 class Recommendation(unittest.TestCase):
     def test_an_arc_is_a_sycl_pc_and_says_there_is_no_download(self):
-        s = M.Strata(ROOT)
+        s = M.Nostroma(ROOT)
         rec = s.recommend({"ram_gb": 64.0, "gpus": [dict(A750)], "engine_vendor": "intel", "cpu": {"avx2": True}})
         self.assertEqual(rec["backend"], "sycl")
         self.assertIn(intel_app.NO_DOWNLOAD, rec["notes"])
         self.assertTrue(rec["setup_command"].endswith(" --backend sycl"))
 
     def test_nvidia_and_amd_recommendations_are_unchanged(self):
-        s = M.Strata(ROOT)
+        s = M.Nostroma(ROOT)
         rec = s.recommend({"ram_gb": 64.0, "gpus": [dict(NVIDIA)], "cpu": {"avx2": True}})
         self.assertEqual(rec["backend"], "cuda")
         self.assertNotIn("--backend", rec["setup_command"])
@@ -95,7 +95,7 @@ class Recommendation(unittest.TestCase):
 
 class InstallPlan(unittest.TestCase):
     def plan(self, gpus, *, backend=None, family="qwen", model="Q2_0", gguf_dir=None, data_dir=None, drafter="dflash2", vision="no", engine_vendor=None):
-        s = M.Strata(ROOT)
+        s = M.Nostroma(ROOT)
         hw = {"ram_gb": 64.0, "gpus": [dict(g) for g in gpus], "cpu": {"avx2": True}, **({"engine_vendor": engine_vendor} if engine_vendor else {})}
         s.hardware = lambda fresh=False: hw
         s.disk_free = lambda p: 1000.0
@@ -131,7 +131,7 @@ class InstallPlan(unittest.TestCase):
 
     def test_without_the_files_there_is_no_download_and_the_words_say_so(self):
         with tempfile.TemporaryDirectory() as t:
-            data = Path(t) / "Strata-data"
+            data = Path(t) / "Nostroma-data"
             data.mkdir()
             with self.assertRaises(M.ToolError) as raised:
                 self.plan([A750], data_dir=str(data))
@@ -166,12 +166,12 @@ class InstallPlan(unittest.TestCase):
         self.assertNotIn("sycl", args)
 
     def test_the_tool_schema_offers_sycl(self):
-        s = M.Strata(ROOT)
+        s = M.Nostroma(ROOT)
         tools = {t["name"]: t for t in M.Tools(s).definitions()} if hasattr(M.Tools, "definitions") else {}
         if tools:
-            self.assertEqual(tools["strata_install"]["inputSchema"]["properties"]["backend"]["enum"], ["auto", "cuda", "hip", "sycl"])
+            self.assertEqual(tools["nostroma_install"]["inputSchema"]["properties"]["backend"]["enum"], ["auto", "cuda", "hip", "sycl"])
         else:
-            self.assertIn('"enum": ["auto", "cuda", "hip", "sycl"]', (ROOT / "tools" / "strata_mcp.py").read_text(encoding="utf-8"))
+            self.assertIn('"enum": ["auto", "cuda", "hip", "sycl"]', (ROOT / "tools" / "nostroma_mcp.py").read_text(encoding="utf-8"))
 
 
 class SetupControlMode(unittest.TestCase):
@@ -201,14 +201,14 @@ class SetupControlMode(unittest.TestCase):
     def test_the_pack_and_the_run_config_are_written_as_the_terminal_writes_them(self):
         with tempfile.TemporaryDirectory() as t:
             t = Path(t)
-            folder, data, home = t / "Q2_0", t / "Strata-data", t / "install"
+            folder, data, home = t / "Q2_0", t / "Nostroma-data", t / "install"
             files = shards(folder)
             home.mkdir()
             data.mkdir()
             self.assertEqual(self.run_setup(self.args(folder), data, home, driver="i915"), 0)
             self.assertEqual(self.packed, str(data / "packs" / "q2_0"))
-            cfg = json.loads((home / "strata-q2_0.json").read_text(encoding="utf-8"))
-        self.assertEqual((cfg["exe"], cfg["backend"], cfg["port"]), ("component:strata-engine", "sycl", 8080))
+            cfg = json.loads((home / "nostroma-q2_0.json").read_text(encoding="utf-8"))
+        self.assertEqual((cfg["exe"], cfg["backend"], cfg["port"]), ("component:nostroma-engine", "sycl", 8080))
         a = cfg["args"]
         self.assertEqual(a[a.index("--pack") + 1], str(data / "packs" / "q2_0"))
         self.assertEqual(a[a.index("--native") + 1], str(files[0]))
@@ -221,12 +221,12 @@ class SetupControlMode(unittest.TestCase):
     def test_a_b_series_card_streams_its_experts(self):
         with tempfile.TemporaryDirectory() as t:
             t = Path(t)
-            folder, data, home = t / "Q2_0", t / "Strata-data", t / "install"
+            folder, data, home = t / "Q2_0", t / "Nostroma-data", t / "install"
             shards(folder)
             home.mkdir()
             data.mkdir()
             self.run_setup(self.args(folder, port=8123), data, home, driver="xe")
-            cfg = json.loads((home / "strata-q2_0.json").read_text(encoding="utf-8"))
+            cfg = json.loads((home / "nostroma-q2_0.json").read_text(encoding="utf-8"))
         self.assertIn("--stream-experts", cfg["args"])
         self.assertEqual(cfg["port"], 8123)
 
@@ -237,9 +237,9 @@ class SetupControlMode(unittest.TestCase):
             home = t / "install"
             home.mkdir()
             with self.assertRaises(SystemExit):
-                self.run_setup(self.args(t / "empty"), t / "Strata-data", home)
+                self.run_setup(self.args(t / "empty"), t / "Nostroma-data", home)
             self.assertIsNone(self.packed)
-            self.assertEqual(list(home.glob("strata-*.json")), [])
+            self.assertEqual(list(home.glob("nostroma-*.json")), [])
 
     def test_the_dispatch_in_main_is_by_mode(self):
         """CONTROL mode (the app, the Terminal's installer mode) prepares and adopts; a checkout keeps the from-source Intel setup."""

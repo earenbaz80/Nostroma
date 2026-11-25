@@ -2,21 +2,21 @@
 
 On sm_70 the prompt path ran the QSA attention on the decode kernel, one query at a time with FP32 FMAs. `prompt_attn_v70_kernel`
 (`src/kernels/cuda/qsa_prompt_attn.cu`) does the two matrix products on Volta's tensor cores (`mma.sync.m8n8k4`).
-`STRATA_PROMPT_ATTN_OLD=1` is the old path, so every number below is the same binary with and without that switch.
+`NOSTROMA_PROMPT_ATTN_OLD=1` is the old path, so every number below is the same binary with and without that switch.
 
 ## Rig
 
 - Tesla V100-PCIE-32GB (sm_70, PCIe gen3 x16), driver 550.120, one card used; a second V100 and a Quadro RTX 4000 (sm_75) are in the
   PC and hidden with `CUDA_VISIBLE_DEVICES`. Intel Core i9-7960X (AVX-512), 125 GB RAM, Linux 6.8, CUDA 12.8, GCC 13.
 - Engine: `origin/main` at `99f3dbd` (0.1.35 + 83 commits) with this change, built with
-  `-DCMAKE_CUDA_ARCHITECTURES=70 -DSTRATA_EXPERIMENTAL_SM60=ON`.
+  `-DCMAKE_CUDA_ARCHITECTURES=70 -DNOSTROMA_EXPERIMENTAL_SM60=ON`.
 - Model: Unsloth `Qwen3.8-Flash-Next-UD-IQ4_XS` (3 shards), packed with `tools/iq_pack.py --compat-bf16`, MTP head from
   `tools/mtp_fetch.py`. Not one of setup's models (see the limits). `--max-context 204800`, `--kv int8`, `--spec 2`.
 
 ## Prompt speed
 
 One server start per configuration (cold), a 2K warm-up request, then three prompts of random words, each answered greedily
-(temperature 0, 48 tokens). The numbers are the server's own line `strata serve: prompt N tokens = 0 reused + N read in T ms`. One run per
+(temperature 0, 48 tokens). The numbers are the server's own line `nostroma serve: prompt N tokens = 0 reused + N read in T ms`. One run per
 cell; repeated starts of the same configuration gave the same seconds.
 
 | Prompt tokens | old path | new kernel | gain | read time, old -> new |
@@ -29,7 +29,7 @@ Decode is unchanged within the noise (38-51 tok/s, 48 tokens per request): it do
 
 ## Where the time went (nsys, one V100, 28,650-token prompt, GPU kernel time of the whole capture: prefill plus 128-193 decode tokens)
 
-`strata-1gpu-32k-*.nsys-rep`; the "before" capture is 0.1.35 (`d9ab843`), the "after" one is the same base with this change and the BF16 change
+`nostroma-1gpu-32k-*.nsys-rep`; the "before" capture is 0.1.35 (`d9ab843`), the "after" one is the same base with this change and the BF16 change
 of #540 / the closed #593 (BF16 GEMMs through FP16; that one only removes `magma_sgemmEx`, which is not in this table).
 
 | | before | after |
@@ -39,7 +39,7 @@ of #540 / the closed #593 (BF16 GEMMs through FP16; that one only removes `magma
 
 ## Accuracy
 
-`qsa_prompt_attn_parity` (synthetic, no model; build with `-DSTRATA_PARITY_PROMPT_ATTN=ON`), V100, 32K context, 2,048 queries per chunk, output scale 3.6:
+`qsa_prompt_attn_parity` (synthetic, no model; build with `-DNOSTROMA_PARITY_PROMPT_ATTN=ON`), V100, 32K context, 2,048 queries per chunk, output scale 3.6:
 
 | KV | error vs FP64, old kernel | error vs FP64, new kernel | time per chunk, old -> new |
 | --- | ---: | ---: | ---: |
@@ -60,7 +60,7 @@ old kernel (upstream's mode 4 is sm_80+ only).
 
 ## Distribution check (teacher-forced, against the old path and against controls)
 
-The method of `docs/UNSLOTH_Q4.md`: `STRATA_LOGPOS=<file> STRATA_LOGPOS_TOPK=256` on a serve engine (`--short-read 640 --adapt-every 100000`, greedy,
+The method of `docs/UNSLOTH_Q4.md`: `NOSTROMA_LOGPOS=<file> NOSTROMA_LOGPOS_TOPK=256` on a serve engine (`--short-read 640 --adapt-every 100000`, greedy,
 `--max-context 204800`). Each prompt is a chat: a long first message (8,543 / 32,906 / 99,040 tokens of this repository's docs and code, read by the
 batched prompt path, i.e. by the kernel under test), a short reply, and a last message of ~600 tokens of other repository text that goes through the verify
 windows, where every token is scored: 617 positions per prompt. KL is old || other over the old run's top 256 plus a bucket for the rest.
@@ -70,7 +70,7 @@ windows, where every token is scored: 617 positions per prompt. KL is old || oth
 | old path vs old path (a second run) | 0 / 0 / 0 | 100% | 100% |
 | new kernel vs new kernel (a second run) | 0 / 0 / 0 | 100% | 100% |
 | **old path vs new kernel** | 0.028 / 0.040 / 0.116 | 97.7 / 93.2 / 86.4% | 93.3 / 91.9 / 88.4% |
-| control A: old path, BF16 GEMMs without the FP16 detour (`STRATA_BF16_VIA_F16=0`) | 0.026 / 0.051 / 0.090 | 97.2 / 91.4 / 91.2% | 92.9 / 91.4 / 88.5% |
+| control A: old path, BF16 GEMMs without the FP16 detour (`NOSTROMA_BF16_VIA_F16=0`) | 0.026 / 0.051 / 0.090 | 97.2 / 91.4 / 91.2% | 92.9 / 91.4 / 88.5% |
 | control B: old path, `--prefill 2048` instead of auto (8192) | 0.023 / 0.035 / 0.038 | 97.9 / 94.8 / 95.6% | 92.9 / 92.2 / 89.7% |
 
 Median KL old vs new: 0.0007 / 0.0088 / 0.022; p99: 0.35 / 0.39 / 1.12 (heavy-tailed). The perplexity of the true tokens moves a lot under every
@@ -95,10 +95,10 @@ length. That is FP32 rounding level, so the differences above come from the mode
 ## Reproduce
 
 ```sh
-cmake -S . -B build -DSTRATA_ENABLE_CUDA=ON -DSTRATA_BUILD_TESTS=OFF -DSTRATA_PARITY_PROMPT_ATTN=ON \
-      -DCMAKE_CUDA_ARCHITECTURES=70 -DSTRATA_EXPERIMENTAL_SM60=ON
-cmake --build build --target strata qsa_prompt_attn_parity -j
+cmake -S . -B build -DNOSTROMA_ENABLE_CUDA=ON -DNOSTROMA_BUILD_TESTS=OFF -DNOSTROMA_PARITY_PROMPT_ATTN=ON \
+      -DCMAKE_CUDA_ARCHITECTURES=70 -DNOSTROMA_EXPERIMENTAL_SM60=ON
+cmake --build build --target nostroma qsa_prompt_attn_parity -j
 CUDA_VISIBLE_DEVICES=0 ./build/qsa_prompt_attn_parity 32768 2048 5       # the accuracy table
-STRATA_PROMPT_ATTN_OLD=1 <start script>                                   # the old path; without the variable: the new kernel
+NOSTROMA_PROMPT_ATTN_OLD=1 <start script>                                   # the old path; without the variable: the new kernel
 python tools/needle_bench.py --url http://127.0.0.1:8081 --lengths 8k,32k,128k --depths 10,30,50,70,90
 ```

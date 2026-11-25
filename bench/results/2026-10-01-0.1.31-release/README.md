@@ -1,4 +1,4 @@
-# Strata 0.1.31 vs 0.1.30 — RX 7900 XTX (gfx1100), 2026-10-01
+# Nostroma 0.1.31 vs 0.1.30 — RX 7900 XTX (gfx1100), 2026-10-01
 
 Two runs of `tools/hip/bench_prefill.py` against an otherwise idle local server, one per release binary.
 Sequential same-config runs roughly an hour apart, **not interleaved** — treat the numbers as indicative of
@@ -26,4 +26,4 @@ between trials dominated by first-touch reads from the rotational drive rather t
 - `control-0.1.30.json`, `optimized-0.1.31.json` — verbatim `bench_prefill.py` output (all trials,
   including warmup and follow-up, with usage and message text).
 - `docs/benchmarks/2026-10-01-gfx1100-0.1.31.json` — the curated control/candidate entry in the
-  `docs/benchmarks/` shape, derived from the two files above by `strata-bench-contribute.py`.
+  `docs/benchmarks/` shape, derived from the two files above by `nostroma-bench-contribute.py`.

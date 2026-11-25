@@ -16,7 +16,7 @@ from nostroma_control import atomic  # noqa: E402
 
 class TestReplace(unittest.TestCase):
     def setUp(self) -> None:
-        self.tmp = Path(tempfile.mkdtemp(prefix="strata-atomic-"))
+        self.tmp = Path(tempfile.mkdtemp(prefix="nostroma-atomic-"))
 
     def test_plain_replace(self):
         (self.tmp / "a.tmp").write_text("new")

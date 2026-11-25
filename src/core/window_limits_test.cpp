@@ -1,9 +1,9 @@
-// The window limits (include/strata/kernels/window_limits.hpp) and the pipelined-window probe
-// (include/strata/program/pipe_probe.hpp): CPU only, header-only.
-#include "strata/kernels/cpu/expert.hpp"
-#include "strata/kernels/fused_gr.hpp"
-#include "strata/kernels/verify_kernels.hpp"
-#include "strata/program/pipe_probe.hpp"
+// The window limits (include/nostroma/kernels/window_limits.hpp) and the pipelined-window probe
+// (include/nostroma/program/pipe_probe.hpp): CPU only, header-only.
+#include "nostroma/kernels/cpu/expert.hpp"
+#include "nostroma/kernels/fused_gr.hpp"
+#include "nostroma/kernels/verify_kernels.hpp"
+#include "nostroma/program/pipe_probe.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -21,7 +21,7 @@ void check(bool ok, const char* label) {
 }  // namespace
 
 int main() {
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     check(kVerifyNarrowT == 8, "the narrow window is the 0.2.7 one: 8 rows");
     check(kWindowMaxT == 8 || kWindowMaxT == 12 || kWindowMaxT == 16, "a window holds 8, 12 or 16 rows");
     check(kVerifyMaxT == kWindowMaxT, "kVerifyMaxT is the window limit");
@@ -32,37 +32,37 @@ int main() {
     check(kVerifyMaxT * 10 <= 256, "the resident plan's block holds a full window of 10 routed experts a row");
 
     // the probe: off without the environment (no clock read), and a full cycle of events does not fail when it is on
-    unsetenv("STRATA_P4_TIMING");
-    unsetenv("STRATA_P4_TRACE");
+    unsetenv("NOSTROMA_P4_TIMING");
+    unsetenv("NOSTROMA_P4_TRACE");
     {
-        strata::program::PipeProbe off(4, 4);
+        nostroma::program::PipeProbe off(4, 4);
         check(!off.on() && !off.timing(), "the probe is off by default");
-        check(off.now() == strata::program::PipeProbe::Time{}, "an off probe reads no clock");
-        { strata::program::PipeProbe::PumpScope s(off); }
+        check(off.now() == nostroma::program::PipeProbe::Time{}, "an off probe reads no clock");
+        { nostroma::program::PipeProbe::PumpScope s(off); }
         off.launched(0, 1, off.now());
         off.done(0, 1);
         off.flush();
     }
-    setenv("STRATA_P4_TIMING", "1", 1);
+    setenv("NOSTROMA_P4_TIMING", "1", 1);
     {
-        strata::program::PipeProbe on(4, 4);
-        check(on.timing(), "STRATA_P4_TIMING turns the timing on");
+        nostroma::program::PipeProbe on(4, 4);
+        check(on.timing(), "NOSTROMA_P4_TIMING turns the timing on");
         on.span_start(on.now());
         for (int w = 0; w < 3; ++w)
             for (int k = 0; k < 4; ++k) {
-                strata::program::PipeProbe::PumpScope s(on);
+                nostroma::program::PipeProbe::PumpScope s(on);
                 on.busy(2, 3);
                 on.free_stage(1, k % 2 == 0);
                 const auto before = on.now();
                 on.launched(k, w, before);
                 on.polled(before);
                 on.done(k, w);
-                strata::program::PipeProbe::VerdictScope v(on);
+                nostroma::program::PipeProbe::VerdictScope v(on);
             }
         on.span_end(10.0);
         on.flush();
     }
-    unsetenv("STRATA_P4_TIMING");
+    unsetenv("NOSTROMA_P4_TIMING");
     std::printf("window_limits_test: %d checks passed (window %d rows)\n", checks, (int) kVerifyMaxT);
     return 0;
 }

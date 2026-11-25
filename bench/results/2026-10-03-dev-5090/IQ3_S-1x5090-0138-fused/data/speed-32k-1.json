@@ -16,9 +16,9 @@
  "engine_prompt_tps": 5942.8,
  "engine_decode_tps": 181.3,
  "log_lines": [
-  "strata serve: conversation cache: parked 4270 tokens in 49.0 ms; parked=4 bytes=1158940824 evictions=2 snapshot_bytes=301372552 reused_kv_bytes=0",
-  "strata serve: prompt 33130 tokens = 0 reused + 33130 read in 5575 ms (5942.8 tok/s), 119 generated in 656 ms (181.3 tok/s), drafts accepted 75 of 86, 3 checkpoints",
-  "strata serve: decode expert cache hit rate: 94.6% (59045 hits / 62400 lookups)"
+  "nostroma serve: conversation cache: parked 4270 tokens in 49.0 ms; parked=4 bytes=1158940824 evictions=2 snapshot_bytes=301372552 reused_kv_bytes=0",
+  "nostroma serve: prompt 33130 tokens = 0 reused + 33130 read in 5575 ms (5942.8 tok/s), 119 generated in 656 ms (181.3 tok/s), drafts accepted 75 of 86, 3 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 94.6% (59045 hits / 62400 lookups)"
  ],
  "answer_head": "I'll start by exploring the repository structure to understand the context of the last file (`build-vision/CMakeCache.txt`) and the vision build system it belongs to.",
  "metrics_after": {

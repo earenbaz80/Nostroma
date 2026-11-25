@@ -7,18 +7,18 @@ Measured 2026-10-07 on a daily-driver coding-agent box. The config is the two-GP
 - GPU 0: NVIDIA GeForce RTX 5090 32 GB (all layers, expert cache, draft head, vision). GPU 1: NVIDIA RTX PRO 4000 Blackwell 24 GB (helper expert cache + vision encoder). No NVLink; PCIe probe 57.8 GB/s host->device (`pcie_frac 0.55`)
 - CPU: AMD Ryzen 7 9800X3D (8 cores / 16 threads). RAM: 128 GB. OS: Windows 11 Pro
 - Engine: ready-made CUDA 13.0 build (`engine-BUILD.json`), repo at `d5ea713` (v0.1.40.3)
-- Background workload: a vLLM embedding server holds about 12 GiB of GPU 1 permanently, which caps the helper cache at 5000 slots; GPU 0 is Strata-only. This is the machine's real state, not a clean bench rig
+- Background workload: a vLLM embedding server holds about 12 GiB of GPU 1 permanently, which caps the helper cache at 5000 slots; GPU 0 is Nostroma-only. This is the machine's real state, not a clean bench rig
 
 ## Model and configuration
 
-- Model: `unsloth/Qwen3.8-Flash-Next UD-Q4_K_XL`, native pack (`--pack` + `--native`), shipped expert profile, MTP runtime from `Strata-data/mtp/rt`
-- Config as run (`strata-config.json`): `--expert-cache auto` (7674 slots, 22.40 GiB) `--expert-cache-device1 5000` (5000 experts, 14.62 GiB on GPU 1) `--remote-expert-opt --prefill auto --spec 4 --mtp --max-context 262144 --kv int8 --kv-resident 32768 --spec-min-p 0.5 --vision`; prompt chunk auto picks 8192
-- Start: `serve/server.py --engine strata --config strata-config.json --idle-unload 0 --port 8081`
-- No `STRATA_*` environment overrides; no calibration; reasoning at the server default
+- Model: `unsloth/Qwen3.8-Flash-Next UD-Q4_K_XL`, native pack (`--pack` + `--native`), shipped expert profile, MTP runtime from `Nostroma-data/mtp/rt`
+- Config as run (`nostroma-config.json`): `--expert-cache auto` (7674 slots, 22.40 GiB) `--expert-cache-device1 5000` (5000 experts, 14.62 GiB on GPU 1) `--remote-expert-opt --prefill auto --spec 4 --mtp --max-context 262144 --kv int8 --kv-resident 32768 --spec-min-p 0.5 --vision`; prompt chunk auto picks 8192
+- Start: `serve/server.py --engine nostroma --config nostroma-config.json --idle-unload 0 --port 8081`
+- No `NOSTROMA_*` environment overrides; no calibration; reasoning at the server default
 
 ## Method
 
-- `bench_ladder.py`: prompt = Strata source and docs cut to the target length plus an "explain and propose three refactorings" task, with a random nonce first so nothing is reused from the cache. One warm-up per length, then 3 measured runs; speeds are the engine's own `timings` from the response (`prompt_per_second`, `predicted_per_second`)
+- `bench_ladder.py`: prompt = Nostroma source and docs cut to the target length plus an "explain and propose three refactorings" task, with a random nonce first so nothing is reused from the cache. One warm-up per length, then 3 measured runs; speeds are the engine's own `timings` from the response (`prompt_per_second`, `predicted_per_second`)
 - Daily-use context: the same box runs a coding agent (Kilo) at 15K-160K-token depths between the ladder runs; the ladder numbers are cold-prompt, single-stream
 
 ## Results

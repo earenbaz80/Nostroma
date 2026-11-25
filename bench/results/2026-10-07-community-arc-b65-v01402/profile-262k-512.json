@@ -1,6 +1,6 @@
 {
-  "engine": "strata",
-  "exe": "$STRATA_ROOT/build-sycl/strata",
+  "engine": "nostroma",
+  "exe": "$NOSTROMA_ROOT/build-sycl/nostroma",
   "args": [
     "--pack",
     "$PACK_DIR",
@@ -49,9 +49,9 @@
     "0.5",
     "--no-prefill-borrow"
   ],
-  "cwd": "$STRATA_ROOT",
+  "cwd": "$NOSTROMA_ROOT",
   "tokenizer": "$PACK_DIR/tokenizer",
-  "model_name": "qwen3.8-flash-next-strata-iq2-xs-262k",
+  "model_name": "qwen3.8-flash-next-nostroma-iq2-xs-262k",
   "backend": "sycl",
   "host": "127.0.0.1",
   "parallel": 1,

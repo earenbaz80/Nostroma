@@ -1,13 +1,13 @@
 // Enumerate proposal and acceptance branches exactly; no Monte Carlo or GPU.
-#include "strata/core/spec_prob.hpp"
-#include "strata/core/gated_proposal.hpp"
-#include "strata/spec/draft_policy.hpp"
+#include "nostroma/core/spec_prob.hpp"
+#include "nostroma/core/gated_proposal.hpp"
+#include "nostroma/spec/draft_policy.hpp"
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
-using namespace strata::core;
+using namespace nostroma::core;
 using Dist = std::array<double, 2>;
 int failures = 0;
 void check(bool ok, const char* message) {
@@ -36,16 +36,16 @@ bool equal(const Dist& a,const Dist& b) {
 // Enumerate the repaired first-row mixture using the ACTUAL packet builder.
 // No candidate-conditioned renormalization: every draw receives the same root mu.
 Dist proposal_contract(const Dist& p,const std::array<float,2>& q,float threshold,
-                       strata::core::gated::RootChoice root={}) {
-    std::array<int32_t,strata::core::gated::kStride> raw;
+                       nostroma::core::gated::RootChoice root={}) {
+    std::array<int32_t,nostroma::core::gated::kStride> raw;
     raw.fill(-1);raw[0]=0;raw[1]=1;
-    std::memcpy(raw.data()+strata::core::gated::kEntries,q.data(),sizeof(q));
+    std::memcpy(raw.data()+nostroma::core::gated::kEntries,q.data(),sizeof(q));
     Dist result{};
     for (int d=0;d<2;++d) {
-        const int32_t draft=d;const float score=q[d];strata::core::gated::Packet packet;
-        const bool ok=strata::core::gated::make_packet(packet,raw.data(),&draft,&score,1,1,2,2,threshold,false,root);
+        const int32_t draft=d;const float score=q[d];nostroma::core::gated::Packet packet;
+        const bool ok=nostroma::core::gated::make_packet(packet,raw.data(),&draft,&score,1,1,2,2,threshold,false,root);
         check(ok,"valid gated packet");if(!ok)continue;
-        Dist mu{strata::core::gated::mass_at(packet.mu.data(),0),strata::core::gated::mass_at(packet.mu.data(),1)};
+        Dist mu{nostroma::core::gated::mass_at(packet.mu.data(),0),nostroma::core::gated::mass_at(packet.mu.data(),1)};
         double acceptance=0;
         if (!packet.null_tail) {
             check(mu[d]>0,"offer has positive mu");
@@ -81,7 +81,7 @@ int main(int argc,char** argv) {
         }
     }
     // A planner must not learn from draws it may select, including discarded position-keyed lookahead.
-    strata::spec::DraftPolicy live(6);
+    nostroma::spec::DraftPolicy live(6);
     for(int i=0;i<5;++i) { live.observe(false,4,3,24,1.0);live.observe(false,6,5,24,1.5); }
     const auto request_plan=live;
     auto short_chain=live,long_chain=live;

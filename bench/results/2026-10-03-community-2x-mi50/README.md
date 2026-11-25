@@ -19,12 +19,12 @@ other workloads.
   workers plus its host thread. 32 GB DDR4 quad-channel (Linux reports 31.2 GiB). 8 GiB swap file. One SATA SSD.
 - **OS and runtime:** Ubuntu 24.04.4 LTS, kernel 6.8.0-138-generic, the kernel's amdgpu driver. HIP 7.14 from the
   community image `mixa3607/rocm-gfx906:7.14-complete` (AMD's current ROCm no longer ships gfx906 libraries).
-- **Source:** [`mi50-bench-build`](https://github.com/JeanP00l/Strata/tree/mi50-bench-build) at `ea51fd3`, which is
+- **Source:** [`mi50-bench-build`](https://github.com/JeanP00l/Nostroma/tree/mi50-bench-build) at `ea51fd3`, which is
   `main` 99f3dbd (engine 0.1.38) with #638 (at 17beb33), #639, #640 and #637 merged. #638's later commits
   (a914b13) only fix the CUDA/RDNA compile and do not change the gfx906 binary's behaviour.
-- **Build:** `-DSTRATA_HIP_GFX906=ON -DCMAKE_HIP_ARCHITECTURES=gfx906 -DSTRATA_PORTABLE=ON`, ROCm clang, Ninja,
+- **Build:** `-DNOSTROMA_HIP_GFX906=ON -DCMAKE_HIP_ARCHITECTURES=gfx906 -DNOSTROMA_PORTABLE=ON`, ROCm clang, Ninja,
   llama.cpp at the pinned 3cf0325.
-- **Other services:** the machine's other GPU services were stopped, so the two cards ran only Strata. CPU services
+- **Other services:** the machine's other GPU services were stopped, so the two cards ran only Nostroma. CPU services
   (a database, a sync daemon) kept running. This was not a fully isolated operating system.
 
 ## Model and configuration
@@ -39,7 +39,7 @@ with them:
 The native pack and the MTP draft layer were prepared with the repository's tools on 2026-09-29. The expert profile is the bundled
 `data/expert-profile-coder.bin`.
 
-**Configuration** ([strata-coder.json](strata-coder.json); `/m` is the model directory, `/work` the build):
+**Configuration** ([nostroma-coder.json](nostroma-coder.json); `/m` is the model directory, `/work` the build):
 
 - context 131,072, `--kv int8 --kv-resident 32768` (32,768 KV cells per attention layer in VRAM, the rest streamed
   from RAM);
@@ -49,7 +49,7 @@ The native pack and the MTP draft layer were prepared with the repository's tool
   from the profile, no eviction;
 - `--prefill 4096`, with the prompt path borrowing 1,193 + 1,084 cache slots;
 - MTP `--spec 4 --spec-min-p 0.5`; suffix drafting on (the default);
-- `--pcie-frac 0`, required with `STRATA_ARENA_MMAP=1` (#640, the expert arena as a read-only mapped file; 23.4
+- `--pcie-frac 0`, required with `NOSTROMA_ARENA_MMAP=1` (#640, the expert arena as a read-only mapped file; 23.4
   GiB of VRAM-held experts handed back to the OS at start);
 - no vision, no calibration, no speed projection, no control vectors;
 - reasoning off (`reasoning_effort: none`), temperature 0, 256 generated tokens per speed run.
@@ -58,7 +58,7 @@ The native pack and the MTP draft layer were prepared with the repository's tool
 
 [benchmark.py](benchmark.py) is the script of the
 [RTX 5090 report](../2026-09-30-community-rtx-5090/README.md), unchanged. It builds deterministic synthetic Python
-filler, puts a different nonce near the start of each request, and counts the rendered chat prompt with Strata's
+filler, puts a different nonce near the start of each request, and counts the rendered chat prompt with Nostroma's
 tokenizer. Its request hashes and the output text of every run are in [results.json](results.json); the aggregates
 are in [summary.json](summary.json).
 
@@ -66,9 +66,9 @@ The server ran in a container with both cards (the repository's `serve/` and `to
 
 ```bash
 docker run --device=/dev/kfd --device=/dev/dri --group-add video --ipc=host --ulimit memlock=-1 \
-  -e HSA_OVERRIDE_GFX_VERSION=9.0.6 -e STRATA_ARENA_MMAP=1 ... \
-  python3 serve/server.py --engine strata --config strata-coder.json --port 8080
-python3 benchmark.py --root /opt/strata --pack /m/pack-coder --url http://127.0.0.1:8080 --out results/
+  -e HSA_OVERRIDE_GFX_VERSION=9.0.6 -e NOSTROMA_ARENA_MMAP=1 ... \
+  python3 serve/server.py --engine nostroma --config nostroma-coder.json --port 8080
+python3 benchmark.py --root /opt/nostroma --pack /m/pack-coder --url http://127.0.0.1:8080 --out results/
 python3 tools/needle_bench.py --url http://127.0.0.1:8080 --lengths 32k,128k --depths 10,50,90 --out needles.json
 ```
 

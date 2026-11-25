@@ -1,0 +1,61 @@
+{
+ "exe": "/opt/nostroma-0140/build-0140/nostroma",
+ "args": [
+  "--pack",
+  "/mnt/llama/nostroma/packs/iq3_xxs",
+  "--native",
+  "/mnt/llama/nostroma/models/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf",
+  "--ple-gguf",
+  "/mnt/llama/nostroma/models/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00002-of-00002.gguf",
+  "--expert-profile",
+  "/opt/nostroma-src/data/expert-profile.bin",
+  "--expert-cache",
+  "auto",
+  "--prefill",
+  "auto:32768",
+  "--spec",
+  "4",
+  "--spec-min-p",
+  "0.5",
+  "--mtp",
+  "/mnt/llama/nostroma/mtp/rt",
+  "--max-context",
+  "262144",
+  "--kv",
+  "int8",
+  "--kv-resident",
+  "32768",
+  "--vision",
+  "--vram-reserve-mib",
+  "700",
+  "--ple-io",
+  "ram",
+  "--expert-cache-device1",
+  "auto",
+  "--remote-expert-opt"
+ ],
+ "cwd": "/opt/nostroma-0140",
+ "tokenizer": "/mnt/llama/nostroma/packs/iq3_xxs/tokenizer",
+ "model_name": "qwen3.8-flash-next-iq3_xxs",
+ "log": "/opt/nostroma-0140/nostroma-iq3_xxs.log",
+ "lib_dirs": [
+  "/usr/local/cuda-12.8/bin",
+  "/usr/local/cuda-12.8/lib64"
+ ],
+ "port": 8082,
+ "gpu": 0,
+ "gpus_asked": true,
+ "host": "0.0.0.0",
+ "vision": {
+  "exe": "/opt/nostroma-0140/build-vision/bin/nostroma-vision",
+  "mmproj": "/mnt/llama/nostroma/models/mmproj-Qwen3.8-Flash-Next-BF16.gguf",
+  "model": "/mnt/llama/nostroma/models/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf",
+  "gpu": true,
+  "max_tokens": 1024,
+  "cuda_device": 0
+ },
+ "env": {
+  "CUDA_VISIBLE_DEVICES": "0,1",
+  "NOSTROMA_PREFILL_CPU_SHARE": "auto"
+ }
+}

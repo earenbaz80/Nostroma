@@ -34,7 +34,7 @@
     "<ROOT>/data"
    ],
    "config_file": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "args": [
      "--pack",
      "<ROOT>/data/packs/ud_iq4_xs_v31",
@@ -73,7 +73,7 @@
     "args_written": "=args"
    },
    "engine": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "argv": [
      "--pack",
      "<ROOT>/data/packs/ud_iq4_xs_v31",
@@ -108,8 +108,8 @@
      "GGML_NO_BACKTRACE": "1"
     },
     "notes": [
-     "[strata] drafting: DFlash2 alone (--draft dflash2, --draft-conf 0.6)",
-     "[strata] drafting: draft vocabulary: draft_vocab.bin (the default)"
+     "[nostroma] drafting: DFlash2 alone (--draft dflash2, --draft-conf 0.6)",
+     "[nostroma] drafting: draft vocabulary: draft_vocab.bin (the default)"
     ]
    }
   },
@@ -169,7 +169,7 @@
     }
    ],
    "config_file": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "args": [
      "--pack",
      "<ROOT>/data/packs/ud_iq4_xs_v31",
@@ -197,7 +197,7 @@
     "cwd": "<REPO>",
     "tokenizer": "<ROOT>/data/packs/ud_iq4_xs_v31/tokenizer",
     "model_name": "qwen3.8-flash-next-unsloth-ud-iq4_xs-v31",
-    "log": "<ROOT>/install/strata-unsloth-ud-iq4_xs-v31.log",
+    "log": "<ROOT>/install/nostroma-unsloth-ud-iq4_xs-v31.log",
     "lib_dirs": [],
     "port": 18500,
     "backend": "sycl",
@@ -212,7 +212,7 @@
     "engine_ready_s": 946
    },
    "engine": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "argv": [
      "--pack",
      "<ROOT>/data/packs/ud_iq4_xs_v31",
@@ -247,8 +247,8 @@
      "GGML_NO_BACKTRACE": "1"
     },
     "notes": [
-     "[strata] drafting: DFlash2 alone (--draft dflash2, --draft-conf 0.6)",
-     "[strata] drafting: draft vocabulary: draft_vocab.bin (the default)"
+     "[nostroma] drafting: DFlash2 alone (--draft dflash2, --draft-conf 0.6)",
+     "[nostroma] drafting: draft vocabulary: draft_vocab.bin (the default)"
     ]
    }
   },
@@ -292,7 +292,7 @@
     }
    ],
    "config_file": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "args": [
      "--pack",
      "<ROOT>/data/packs/ud_iq4_xs_v31",
@@ -320,7 +320,7 @@
     "cwd": "<REPO>",
     "tokenizer": "<ROOT>/data/packs/ud_iq4_xs_v31/tokenizer",
     "model_name": "qwen3.8-flash-next-unsloth-ud-iq4_xs-v31",
-    "log": "<ROOT>/install/strata-unsloth-ud-iq4_xs-v31.log",
+    "log": "<ROOT>/install/nostroma-unsloth-ud-iq4_xs-v31.log",
     "lib_dirs": [],
     "port": 18500,
     "backend": "sycl",
@@ -336,7 +336,7 @@
     "engine_ready_s": 946
    },
    "engine": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "argv": [
      "--pack",
      "<ROOT>/data/packs/ud_iq4_xs_v31",
@@ -371,8 +371,8 @@
      "GGML_NO_BACKTRACE": "1"
     },
     "notes": [
-     "[strata] drafting: DFlash2 alone (--draft dflash2, --draft-conf 0.6)",
-     "[strata] drafting: draft vocabulary: draft_vocab.bin (the default)"
+     "[nostroma] drafting: DFlash2 alone (--draft dflash2, --draft-conf 0.6)",
+     "[nostroma] drafting: draft vocabulary: draft_vocab.bin (the default)"
     ]
    }
   }

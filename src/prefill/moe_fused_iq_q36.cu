@@ -2,14 +2,14 @@
 // for Qwen3.6-35B-A3B's expert shape (n_embd 2048, n_ff 512), beside the copy for the compiled geometry (Flash-Next:
 // 2560 / 640), so the Qwen3.6 engine (src/qwen35/q36_engine.cu) reads its prompt experts with them instead of llama.cpp's
 // MMQ.  moe_fused_iq.cu is not changed: it is included here with the shape override of moe_fused.hpp and its namespace
-// renamed to strata::prefill::fused_q36, so every function of the original copy keeps its code and every name here is
-// this copy's own.  The API the engine calls is declared in include/strata/prefill/moe_fused_q36.hpp.
+// renamed to nostroma::prefill::fused_q36, so every function of the original copy keeps its code and every name here is
+// this copy's own.  The API the engine calls is declared in include/nostroma/prefill/moe_fused_q36.hpp.
 //
 // CUDA, and HIP on gfx12 (the native_w11_kernel launches; the gfx11 F16 kernels of moe_f16_kq.cu are not part of this copy: its f16kq namespace is a stub below).
 
 // the headers the original includes, processed once here before the rename (none declares a name `fused`)
 #include <cuda_fp16.h>
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 #include <cuda_runtime.h>
 
 #include <algorithm>
@@ -23,63 +23,63 @@
 #include <type_traits>
 
 #include "ggml.h"
-#include "strata/core/emulate.hpp"
-#include "strata/core/gfx12_platform_defaults.hpp"
-#include "strata/core/sm120_series.hpp"
-#include "strata/kernels/gfx_arch.hpp"
-#include "strata/prefill/fused_tile_rule.hpp"
-#include "strata/prefill/pf_fused_override.hpp"
+#include "nostroma/core/emulate.hpp"
+#include "nostroma/core/gfx12_platform_defaults.hpp"
+#include "nostroma/core/sm120_series.hpp"
+#include "nostroma/kernels/gfx_arch.hpp"
+#include "nostroma/prefill/fused_tile_rule.hpp"
+#include "nostroma/prefill/pf_fused_override.hpp"
 
-#define STRATA_FUSED_GEO_N_EMBD 2048
-#define STRATA_FUSED_GEO_N_FF 512
+#define NOSTROMA_FUSED_GEO_N_EMBD 2048
+#define NOSTROMA_FUSED_GEO_N_FF 512
 #define fused fused_q36
 #include "moe_fused_iq.cu"
 #undef fused
-#undef STRATA_FUSED_GEO_N_EMBD
-#undef STRATA_FUSED_GEO_N_FF
+#undef NOSTROMA_FUSED_GEO_N_EMBD
+#undef NOSTROMA_FUSED_GEO_N_FF
 
-#define STRATA_FUSED_Q36_TU 1
-#include "strata/prefill/moe_fused_q36.hpp"
+#define NOSTROMA_FUSED_Q36_TU 1
+#include "nostroma/prefill/moe_fused_q36.hpp"
 
 // the hand-written API header (moe_fused_q36.hpp) and this copy's types agree
-namespace strata::prefill::fused_q36 {
+namespace nostroma::prefill::fused_q36 {
 static_assert(kMoeEmbd == kQ36Embd && kMoeFF == kQ36FF && kMaxBatch == kQ36MaxBatch, "the Qwen3.6 shape");
 static_assert(sizeof(Batch) == 2 * sizeof(int) + kQ36MaxBatch * sizeof(const uint8_t*) && offsetof(Batch, blob) == 2 * sizeof(int),
               "fused_q36::Batch as moe_fused_q36.hpp declares it");
 static_assert(sizeof(NativeGeom) == 2 * sizeof(int) + 4 * sizeof(size_t) && offsetof(NativeGeom, up_off) == 2 * sizeof(int) + 2 * sizeof(size_t),
               "fused_q36::NativeGeom as moe_fused_q36.hpp declares it");
-}  // namespace strata::prefill::fused_q36
+}  // namespace nostroma::prefill::fused_q36
 
 #if defined(__HIPCC__)
 // The gfx11 F16 K-quant kernels (moe_f16_kq.cu) are the original copy's: this copy's f16kq namespace (declared by moe_f16_kq.hpp inside the rename) has no kernels, so it covers nothing and
 // the int8 kernels run.  They are only reached under `!d.w12 && f16::requested()`, and this copy's layers are taken on gfx12 only (native_layer_ext).
-namespace strata::prefill::fused_q36::f16kq {
+namespace nostroma::prefill::fused_q36::f16kq {
 bool covers(int) { return false; }
 bool covers_down(int) { return false; }
 void gate_up(const Batch&, const NativeGeom&, const int32_t*, const int2*, const int32_t*, int64_t, int, int64_t, const uint8_t*, const int32_t*, uint8_t*, cudaStream_t) {}
 void down(const Batch&, const NativeGeom&, const int32_t*, const int2*, const int32_t*, int64_t, int, int64_t, const uint8_t*, float*, cudaStream_t, bool) {}
-}  // namespace strata::prefill::fused_q36::f16kq
+}  // namespace nostroma::prefill::fused_q36::f16kq
 // moe_p1a.cu's kernels likewise: the original copy's only (this copy's p1a_input is never called, so its experts_native never reaches these)
-namespace strata::prefill::fused_q36::p1a {
+namespace nostroma::prefill::fused_q36::p1a {
 bool takes(int, int, bool) { return false; }
 void gate_up(const Batch&, const NativeGeom&, const int32_t*, const int2*, const int32_t*, int64_t, const void*, const int32_t*, void*, cudaStream_t) {}
 void down(const Batch&, const NativeGeom&, const int32_t*, const int2*, const int32_t*, int64_t, const void*, void*, cudaStream_t) {}
-}  // namespace strata::prefill::fused_q36::p1a
+}  // namespace nostroma::prefill::fused_q36::p1a
 #endif
 
-namespace strata::prefill::fused {
+namespace nostroma::prefill::fused {
 bool requested();
-}  // namespace strata::prefill::fused
+}  // namespace nostroma::prefill::fused
 
-namespace strata::prefill::fused_q36 {
+namespace nostroma::prefill::fused_q36 {
 // the one function of moe_fused.cu (outside the renamed copy) the kernels' rules call: the same answer for both copies
-bool requested() { return strata::prefill::fused::requested(); }
+bool requested() { return nostroma::prefill::fused::requested(); }
 
 // ---- the K-quant downs of UD-Q4_K_XL (Q5_K on 38 layers, Q6_K on 3), item C --------------------------------------------------------------------------
 // native_kernel<T, false, ...> walks a K-quant down row's 256-value super-blocks (GU256's `D_ROWS_K % 256 == 0` arm: K = 512 here, two blocks a row) and reads
 // the minimum's code sums the Q4_K / Q5_K gate/up epilogue writes into H's spare bytes (has_min); the dispatch is not in the copy's native_supported /
 // experts_native (and moe_fused_iq.cu is not edited for it), so it is here: the pair rule of the K-quant gate/up (native_supported(gu, T_Q5_1): the same
-// prerequisites - STRATA_PF_FUSED, the K-quant instances set up, no NT = 256 / warp-specialized kernels) plus this file's own set-up of the two down instances,
+// prerequisites - NOSTROMA_PF_FUSED, the K-quant instances set up, no NT = 256 / warp-specialized kernels) plus this file's own set-up of the two down instances,
 // then the K-quant launch of experts_native with the new down.  (pick_ww takes the staged / wide arguments as experts_native computes them: both false for the Q4_K / Q5_K gate/up of this path.)
 namespace {
 #if !defined(__HIPCC__)
@@ -115,7 +115,7 @@ bool is_kq_down_pair(int gu_type, int d_type) {
 
 bool native_supported_ext(int gu_type, int d_type) {
 #if defined(__HIPCC__)
-    // gfx12: native_w11_kernel's K-quant gate/up (native_supported(gu, Q5_1): STRATA_PF_FUSED not 0, STRATA_PF_FUSED_KQ=1 as the engine sets it, the card's kernels set up) and, for the
+    // gfx12: native_w11_kernel's K-quant gate/up (native_supported(gu, Q5_1): NOSTROMA_PF_FUSED not 0, NOSTROMA_PF_FUSED_KQ=1 as the engine sets it, the card's kernels set up) and, for the
     // K-quant downs, native_w11_kernel<Q5_K / Q6_K, false> (KQD256); no per-format set-up (the instances are the copy's own and the same kernel body as the gate/up's)
     if (is_kq_down_pair(gu_type, d_type)) return native_supported(gu_type, T_Q5_1) && dev_info().w12;
 #else
@@ -124,20 +124,20 @@ bool native_supported_ext(int gu_type, int d_type) {
     return native_supported(gu_type, d_type);
 }
 
-// Whether the engine takes the fused kernels for a layer of this pair on the current device: STRATA_PF_FUSED=1 on every card whose kernels cover the pair, unset on the cards
+// Whether the engine takes the fused kernels for a layer of this pair on the current device: NOSTROMA_PF_FUSED=1 on every card whose kernels cover the pair, unset on the cards
 // the Flash-Next engine's default rule takes (fused_tile::q36_takes, which is takes_by_default for the card, the staged gate/up and the staged down), =0 never.
 bool native_layer_ext(int gu_type, int d_type) {
-    static const int env = strata::prefill::fused_tile::pf_env(strata::env("NOSTROMA_PF_FUSED"));
-    static const int sm40_env = strata::prefill::fused_tile::sm40_env_of(strata::env("NOSTROMA_PF_FUSED_SM40"));
+    static const int env = nostroma::prefill::fused_tile::pf_env(nostroma::env("NOSTROMA_PF_FUSED"));
+    static const int sm40_env = nostroma::prefill::fused_tile::sm40_env_of(nostroma::env("NOSTROMA_PF_FUSED_SM40"));
     if (env == 0 || !native_supported_ext(gu_type, d_type)) return false;
     const DevInfo& d = dev_info();
 #if defined(__HIPCC__)
-    // HIP: gfx12 only, and only with STRATA_PF_FUSED=1, which strata-q36 sets itself in a build without MMQ (fused_tile::q36_start_env); a build with MMQ keeps its route unless the user sets it
+    // HIP: gfx12 only, and only with NOSTROMA_PF_FUSED=1, which nostroma-q36 sets itself in a build without MMQ (fused_tile::q36_start_env); a build with MMQ keeps its route unless the user sets it
     (void) sm40_env;
-    return strata::prefill::fused_tile::q36_takes_gfx12(env, d.w12, true);
+    return nostroma::prefill::fused_tile::q36_takes_gfx12(env, d.w12, true);
 #else
     const bool down_ok = sw_on(d_type, false) || d_type == T_IQ4_NL || d_type == T_Q2_0;
-    return strata::prefill::fused_tile::q36_takes(env, {d.s120, d.s121, d.sms, d.s86}, sm40_env, sw_on(gu_type, true), down_ok, true);
+    return nostroma::prefill::fused_tile::q36_takes(env, {d.s120, d.s121, d.sms, d.s86}, sm40_env, sw_on(gu_type, true), down_ok, true);
 #endif
 }
 
@@ -194,7 +194,7 @@ void experts_native_ext(const Batch& b, const NativeGeom& g, int n_expert, int64
     // experts_native) runs the staging check for such a launch: one whose expert blobs are not device memory at 2-byte aligned addresses takes the unstaged 64-row kernel of the
     // same formats (same output bits), sticky for the process, one log line, no exit.  The wide argument is fused_tile::wide_pair: true for this path's K-quant pairs, so sm_86 cards with 40+ SMs take the 128-row tile above 112 rows an expert (fused_tile_rule.hpp; the 80+ SM ones used to take 64 there).
     const bool staged = sw_on(g.gu_type, true) || sw_on(g.d_type, false);
-    const int ww = launch_ww(b, g, n, n_expert, staged, strata::prefill::fused_tile::wide_pair(g.gu_type, g.d_type));
+    const int ww = launch_ww(b, g, n, n_expert, staged, nostroma::prefill::fused_tile::wide_pair(g.gu_type, g.d_type));
     const int64_t tiles = (n + kTileRows - 1) / kTileRows + (b.e1 - b.e0);
     const unsigned k_gu = (unsigned) std::min<int64_t>(tiles * (GU_ROWS_N / weight_rows(ww)), (int64_t) d.sms * d.occ_kq);
     const unsigned k_d = (unsigned) std::min<int64_t>(tiles * (D_ROWS_N / weight_rows(ww)), (int64_t) d.sms * (g.d_type == T_Q5_K ? kd.occ5 : kd.occ6));
@@ -205,4 +205,4 @@ void experts_native_ext(const Batch& b, const NativeGeom& g, int n_expert, int64
     ck(cudaGetLastError(), "experts_native_ext");
 }
 #endif
-}  // namespace strata::prefill::fused_q36
+}  // namespace nostroma::prefill::fused_q36

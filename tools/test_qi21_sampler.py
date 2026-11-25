@@ -1,7 +1,7 @@
 """tools/test_qi21_sampler.py - our Turbo sampler step (src/image/sample/qi21_sampler.cpp) against stable-diffusion.cpp
 2988060's own values: tools/image/gate/data/qi21_sampler_fixture.bin holds, for steps 0-6 of one picture (512x512,
 prompt 0, seed 42), 512 values spread over the latent of sd.cpp's DiT input x_k, its DiT output v_k and its next DiT
-input x_{k+1}, with the sigmas and sd.cpp's timestep bits (written by strata-sampler-check --fixture from the stage
+input x_{k+1}, with the sigmas and sd.cpp's timestep bits (written by nostroma-sampler-check --fixture from the stage
 dumps).  Our step on x_k, v_k must give x_{k+1} byte for byte, our parsed schedule and timestep the same bits.
 Compiled twice: plain -O2, and -O3 with contraction allowed by default (-ffp-contract=fast; the file must still not
 fuse).  No GPU, no sd.cpp, no model file.
@@ -22,7 +22,7 @@ FIXTURE = ROOT / "tools" / "image" / "gate" / "data" / "qi21_sampler_fixture.bin
 class SamplerMatchesSdcpp(unittest.TestCase):
     def build_and_check(self, flags):
         with tempfile.TemporaryDirectory() as td:
-            exe = Path(td) / "strata-sampler-check"
+            exe = Path(td) / "nostroma-sampler-check"
             r = subprocess.run([CXX, "-std=c++17", *flags, "-I", str(ROOT / "include"),
                                 str(ROOT / "src" / "image" / "sample" / "qi21_sampler.cpp"),
                                 str(ROOT / "src" / "image" / "sample" / "qi21_sampler_check_main.cpp"), "-o", str(exe)],

@@ -1,7 +1,7 @@
 # Community benchmark: Tesla V100-SXM2-32GB on Windows (CUDA 12.6, MSVC), three quantizations
 
 Measured on 2026-10-05 on a Windows 11 desktop. This report tests the **experimental Volta build**
-(`-DSTRATA_EXPERIMENTAL_SM60=ON`, #236) on a **V100-SXM2-32GB** and compares three quantizations of
+(`-DNOSTROMA_EXPERIMENTAL_SM60=ON`, #236) on a **V100-SXM2-32GB** and compares three quantizations of
 Qwen3.8-Flash-Next on the same machine, including a small correctness battery.
 
 There is already a [V100 document](../NVIDIA_V100.md) covering the kernel paths and the Linux build.
@@ -27,15 +27,15 @@ This report adds a **Windows / MSVC / CUDA 12.6** data point and the **quantizat
 
   ```
   cmake -S . -B build-sm70 -G Ninja -DCMAKE_BUILD_TYPE=Release ^
-        -DSTRATA_ENABLE_CUDA=ON -DSTRATA_ENABLE_HIP=OFF ^
-        -DSTRATA_EXPERIMENTAL_SM60=ON -DCMAKE_CUDA_ARCHITECTURES=70 ^
+        -DNOSTROMA_ENABLE_CUDA=ON -DNOSTROMA_ENABLE_HIP=OFF ^
+        -DNOSTROMA_EXPERIMENTAL_SM60=ON -DCMAKE_CUDA_ARCHITECTURES=70 ^
         -DCMAKE_CUDA_FLAGS="-allow-unsupported-compiler"
-  cmake --build build-sm70 --target strata -j 8
+  cmake --build build-sm70 --target nostroma -j 8
   ```
 
   Configure and build completed with **0 errors**. `-allow-unsupported-compiler` is needed because
   CUDA 12.6's nvcc does not recognise MSVC 19.44. The MSVC + static-CUDA-runtime `LNK1169` problem
-  (#585) does not appear: with `STRATA_EXPERIMENTAL_SM60=ON` the build already selects the shared
+  (#585) does not appear: with `NOSTROMA_EXPERIMENTAL_SM60=ON` the build already selects the shared
   runtime. The engine logs `GPU 0: Tesla V100-SXM2-32GB, compute capability 7.0` at startup.
 - **Other services:** the machine's usual desktop services kept running (browser, chat apps);
   nothing else used the V100.

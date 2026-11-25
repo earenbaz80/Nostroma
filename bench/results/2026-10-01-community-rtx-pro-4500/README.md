@@ -1,7 +1,7 @@
 # Community benchmark: RTX PRO 4500 Blackwell, Threadripper PRO 3975WX
 
 Measured on 2026-10-01 by [mlfather](https://github.com/mlfather), on a single-GPU Linux workstation. This tests
-Strata engine 0.1.31 (source build, same binary and commit for every
+Nostroma engine 0.1.31 (source build, same binary and commit for every
 quantization below) with three packs on the same GPU: the Unsloth UD-Q4_K_XL
 pack, the Unsloth UD-IQ4_XS pack, and ISTA-DASLab's GSQ-RCO IQ3_S pack, each at
 three separate context limits (8,192 / 81,920 / 139,264 tokens, one server
@@ -101,32 +101,32 @@ packs build it.
   speed projection, no control vectors or calibration. Reasoning disabled per
   request (`chat_template_kwargs.enable_thinking=false`), temperature 0,
   top_k 1 (greedy).
-- One additional comparison toggled `STRATA_KQ256=1` (multi-token AVX2 kernels
+- One additional comparison toggled `NOSTROMA_KQ256=1` (multi-token AVX2 kernels
   for the Q4_K/Q5_1/Q8_0 expert formats) against the same 8,192-context config,
   on the short and codegen prompts only. Everything else unchanged.
 
 The three complete measured configurations are
-[configs/strata-ud-q4_k_xl.json](configs/strata-ud-q4_k_xl.json) (8,192 ctx),
-[configs/strata-ud-q4_k_xl-64k.json](configs/strata-ud-q4_k_xl-64k.json)
+[configs/nostroma-ud-q4_k_xl.json](configs/nostroma-ud-q4_k_xl.json) (8,192 ctx),
+[configs/nostroma-ud-q4_k_xl-64k.json](configs/nostroma-ud-q4_k_xl-64k.json)
 (81,920 ctx) and
-[configs/strata-ud-q4_k_xl-128k.json](configs/strata-ud-q4_k_xl-128k.json)
+[configs/nostroma-ud-q4_k_xl-128k.json](configs/nostroma-ud-q4_k_xl-128k.json)
 (139,264 ctx). Each config's `--native` path and `--pack` directory are local
 to the machine that produced them; set them to your own checkout and model
 location.
 
 ```text
-.venv/bin/python serve/server.py --engine strata --config strata-ud-q4_k_xl.json --host 127.0.0.1 --port 8080
+.venv/bin/python serve/server.py --engine nostroma --config nostroma-ud-q4_k_xl.json --host 127.0.0.1 --port 8080
 ```
 
-(`strata-ud-q4_k_xl-64k.json` / `-128k.json` were run the same way as separate
+(`nostroma-ud-q4_k_xl-64k.json` / `-128k.json` were run the same way as separate
 server processes, one context limit per run.)
 
 Engine startup excerpts (AVX selection, worker count, PCIe probe, expert-cache
-fill) are in [logs/strata-ud-q4_k_xl.log](logs/strata-ud-q4_k_xl.log),
-[logs/strata-ud-q4_k_xl-64k.log](logs/strata-ud-q4_k_xl-64k.log) and
-[logs/strata-ud-q4_k_xl-128k.log](logs/strata-ud-q4_k_xl-128k.log). The KQ256
+fill) are in [logs/nostroma-ud-q4_k_xl.log](logs/nostroma-ud-q4_k_xl.log),
+[logs/nostroma-ud-q4_k_xl-64k.log](logs/nostroma-ud-q4_k_xl-64k.log) and
+[logs/nostroma-ud-q4_k_xl-128k.log](logs/nostroma-ud-q4_k_xl-128k.log). The KQ256
 comparison's console transcript is
-[logs/strata-ud-q4_k_xl-kq256.log](logs/strata-ud-q4_k_xl-kq256.log).
+[logs/nostroma-ud-q4_k_xl-kq256.log](logs/nostroma-ud-q4_k_xl-kq256.log).
 
 ### Unsloth UD-IQ4_XS (same engine build, 0.1.31)
 
@@ -165,12 +165,12 @@ resident (GPU cache + RAM budget, no file reads) at every context length:
 | 81,920 | 9,957 | 22.43 GiB | 14,619 | 24,576 |
 | 139,264 | 9,585 | 21.60 GiB | 14,991 | 24,576 |
 
-Configs: [configs/strata-ud-iq4_xs.json](configs/strata-ud-iq4_xs.json),
-[configs/strata-ud-iq4_xs-64k.json](configs/strata-ud-iq4_xs-64k.json),
-[configs/strata-ud-iq4_xs-128k.json](configs/strata-ud-iq4_xs-128k.json).
-Logs: [logs/strata-ud-iq4_xs.log](logs/strata-ud-iq4_xs.log),
-[logs/strata-ud-iq4_xs-64k.log](logs/strata-ud-iq4_xs-64k.log),
-[logs/strata-ud-iq4_xs-128k.log](logs/strata-ud-iq4_xs-128k.log).
+Configs: [configs/nostroma-ud-iq4_xs.json](configs/nostroma-ud-iq4_xs.json),
+[configs/nostroma-ud-iq4_xs-64k.json](configs/nostroma-ud-iq4_xs-64k.json),
+[configs/nostroma-ud-iq4_xs-128k.json](configs/nostroma-ud-iq4_xs-128k.json).
+Logs: [logs/nostroma-ud-iq4_xs.log](logs/nostroma-ud-iq4_xs.log),
+[logs/nostroma-ud-iq4_xs-64k.log](logs/nostroma-ud-iq4_xs-64k.log),
+[logs/nostroma-ud-iq4_xs-128k.log](logs/nostroma-ud-iq4_xs-128k.log).
 
 ### ISTA-DASLab GSQ-RCO IQ3_S (same engine build, 0.1.31)
 
@@ -203,12 +203,12 @@ hyper-connection tensors). Same MTP draft layer (`mtp/rt`) and the model's own
 | 81,920 | 12,240 | 23.23 GiB | 12,336 | 24,576 |
 | 139,264 | 11,800 | 22.39 GiB | 12,776 | 24,576 |
 
-Configs: [configs/strata-iq3_s.json](configs/strata-iq3_s.json),
-[configs/strata-iq3_s-64k.json](configs/strata-iq3_s-64k.json),
-[configs/strata-iq3_s-128k.json](configs/strata-iq3_s-128k.json).
-Logs: [logs/strata-iq3_s.log](logs/strata-iq3_s.log),
-[logs/strata-iq3_s-64k.log](logs/strata-iq3_s-64k.log),
-[logs/strata-iq3_s-128k.log](logs/strata-iq3_s-128k.log).
+Configs: [configs/nostroma-iq3_s.json](configs/nostroma-iq3_s.json),
+[configs/nostroma-iq3_s-64k.json](configs/nostroma-iq3_s-64k.json),
+[configs/nostroma-iq3_s-128k.json](configs/nostroma-iq3_s-128k.json).
+Logs: [logs/nostroma-iq3_s.log](logs/nostroma-iq3_s.log),
+[logs/nostroma-iq3_s-64k.log](logs/nostroma-iq3_s-64k.log),
+[logs/nostroma-iq3_s-128k.log](logs/nostroma-iq3_s-128k.log).
 
 ## Method
 
@@ -284,9 +284,9 @@ cap; no failures.
 | long64k | 31,256 | 102.8 | 177.2 [176.5-177.9] |
 | long128k | 31,260 | 104.3 | 184.15 [183.7-184.6] |
 
-Raw per-run records: [runs/strata-ud-q4_k_xl/](runs/strata-ud-q4_k_xl/) (each
+Raw per-run records: [runs/nostroma-ud-q4_k_xl/](runs/nostroma-ud-q4_k_xl/) (each
 prompt's `warmup.json`/`run1.json`/`run2.json`/`run3.json`). Aggregates:
-[runs/strata-ud-q4_k_xl/summary.json](runs/strata-ud-q4_k_xl/summary.json).
+[runs/nostroma-ud-q4_k_xl/summary.json](runs/nostroma-ud-q4_k_xl/summary.json).
 RAM figures are `MemTotal - MemAvailable` (process + page cache + everything
 else resident), not a single process's RSS; the model/pack/expert budget
 dominates it. Decode expert-cache hit rate per request ranged 80.7% (long128k,
@@ -310,8 +310,8 @@ first/coldest request) to 93.6% (short, warmest request).
 
 Decode expert-cache hit rate per request ranged 85.1% (long128k, first/coldest
 request) to 94.9% (long64k, warmest request); 91.7-94.6% on `short`/`codegen`.
-Raw per-run records: [runs/strata-0131-ud-iq4_xs/](runs/strata-0131-ud-iq4_xs/).
-Aggregates: [runs/strata-0131-ud-iq4_xs/summary.json](runs/strata-0131-ud-iq4_xs/summary.json).
+Raw per-run records: [runs/nostroma-0131-ud-iq4_xs/](runs/nostroma-0131-ud-iq4_xs/).
+Aggregates: [runs/nostroma-0131-ud-iq4_xs/summary.json](runs/nostroma-0131-ud-iq4_xs/summary.json).
 
 ### ISTA-DASLab GSQ-RCO IQ3_S (engine 0.1.31, same engine build as the two packs above)
 
@@ -331,8 +331,8 @@ Aggregates: [runs/strata-0131-ud-iq4_xs/summary.json](runs/strata-0131-ud-iq4_xs
 
 Decode expert-cache hit rate per request ranged 85.5-89.4% (first/coldest
 request on `short`/`long64k`/`long128k`) to 97.9% (warmest `short` request).
-Raw per-run records: [runs/strata-0131-iq3_s/](runs/strata-0131-iq3_s/).
-Aggregates: [runs/strata-0131-iq3_s/summary.json](runs/strata-0131-iq3_s/summary.json).
+Raw per-run records: [runs/nostroma-0131-iq3_s/](runs/nostroma-0131-iq3_s/).
+Aggregates: [runs/nostroma-0131-iq3_s/summary.json](runs/nostroma-0131-iq3_s/summary.json).
 
 At every context length and for every pack above (UD-Q4_K_XL, UD-IQ4_XS,
 IQ3_S), all 24,576 experts fit resident across the GPU cache and the 100 GiB
@@ -343,9 +343,9 @@ faster than UD-Q4_K_XL, consistent with it having the smallest/lowest-bitwidth
 expert set of the three and therefore keeping more of it resident in VRAM
 rather than on the CPU's AVX2 path.
 
-### STRATA_KQ256 comparison
+### NOSTROMA_KQ256 comparison
 
-`STRATA_KQ256=1` turns on multi-token AVX2 kernels for the Q4_K/Q5_1/Q8_0
+`NOSTROMA_KQ256=1` turns on multi-token AVX2 kernels for the Q4_K/Q5_1/Q8_0
 expert formats, against the same 8,192-context configuration. Tested on
 `short` and `codegen` only (3 measured runs each).
 
@@ -360,7 +360,7 @@ are statistically indistinguishable (medians within 1%). With only three runs
 per configuration, this is not a confident win either way; it is consistent
 with the project's own published guidance that this flag is "bit-exact, but
 measured no faster" on different hardware. Raw records:
-[runs/strata-ud-q4_k_xl-kq256/](runs/strata-ud-q4_k_xl-kq256/).
+[runs/nostroma-ud-q4_k_xl-kq256/](runs/nostroma-ud-q4_k_xl-kq256/).
 
 ### Same-machine comparison: other engines/builds on this card
 
@@ -395,7 +395,7 @@ machine, MTP and n-gram-in-RAM both off):
 
 A same-day, same-prompt variant of this engine with MTP (4 draft tokens) and
 the n-gram table pinned in RAM reached 36.8-50.9 tok/s decode and 1.6-4.4x
-faster prefill than the plain baseline, still well under every Strata
+faster prefill than the plain baseline, still well under every Nostroma
 configuration above on these prompts. Full detail for both engines on
 2026-09-28, including MTP acceptance rates, quality checks and exact
 configuration diffs, is kept in the project's internal results file and is
@@ -404,7 +404,7 @@ summarized, not reproduced in full, here.
 ## Correctness and limitations
 
 - **Needle-in-a-haystack recall, UD-Q4_K_XL only, 139,264-ctx server
-  (`configs/strata-ud-q4_k_xl-128k.json`)**: `tools/needle_bench.py --lengths
+  (`configs/nostroma-ud-q4_k_xl-128k.json`)**: `tools/needle_bench.py --lengths
   32k,128k --depths 10,50,90` found the planted code word in all 6
   length/depth combinations (3 depths x 2 lengths), 14-52 s per check. Full
   per-check data (prompt tokens, seconds, the exact word and the model's
@@ -418,7 +418,7 @@ summarized, not reproduced in full, here.
   engine version (0.1.18, patched) and different quantizations (ISTA IQ3_S and
   Unsloth UD-IQ4_XS): a 10-check coding-quality suite scored equal to or better
   than the production EXL3 baseline under matched sampling, and MTP acceptance
-  stayed far higher inside long reasoning on Strata than on the EXL3/TabbyAPI
+  stayed far higher inside long reasoning on Nostroma than on the EXL3/TabbyAPI
   stack. That evidence does not cover engine 0.1.31 or the UD-Q4_K_XL pack, so
   answer quality beyond needle recall is otherwise unmeasured here.
 - **Single GPU, single machine.** No multi-GPU, no concurrency, no sustained
@@ -429,7 +429,7 @@ summarized, not reproduced in full, here.
   stated in Method; `short` and `codegen` have 3.
 - **Every expert format in every pack here runs on this CPU's AVX2 path**
   (the Threadripper PRO 3975WX has no AVX-512); the optional multi-token AVX2
-  kernel (`STRATA_KQ256=1`) was evaluated on the UD-Q4_K_XL pack above and made
+  kernel (`NOSTROMA_KQ256=1`) was evaluated on the UD-Q4_K_XL pack above and made
   no clear difference there. Decode throughput on the UD-Q4_K_XL pack is
   accordingly the lowest of the three same-engine packs measured above (see
   Results): its larger, higher-bitwidth expert set keeps less of it resident
@@ -464,7 +464,7 @@ single-GPU section above. Configs are
 **`--resident-budget-gib 100` could not be reused.** That flag silently
 implies `--resident-cpu-experts` in this engine build, and the engine refuses
 to start with `--resident-cpu-experts does not support layer splits or remote
-expert caches` (`strata generate`, exit code 2) the moment both are present
+expert caches` (`nostroma generate`, exit code 2) the moment both are present
 (confirmed by a failed server start before the working configs below; the
 failed attempt's config was not kept since it never produced a server or
 log, only that one-line engine error). The two-GPU configs therefore drop
@@ -517,12 +517,12 @@ where on one card it carried roughly half the routed experts (11,800-12,812
 of 24,576 single-GPU slots, from the Results section above).
 
 **`--split-skip-if-fits` decision** (extra run, UD-Q4_K_XL, 139,264 context,
-`configs-2gpu/strata-2gpu-ud-q4_k_xl-128k-skipfits.json`): the engine logged
+`configs-2gpu/nostroma-2gpu-ud-q4_k_xl-128k-skipfits.json`): the engine logged
 `--split-skip-if-fits: CUDA0 (NVIDIA RTX PRO 4500 Blackwell) would hold only
 22.17 of the profile's 71.73 GiB (26.74 GiB free, 4.57 GiB for the session,
 drafter and reserve): the split stays` and ran the split exactly as the
 non-skip config did. A single confirmatory measurement (1 warm-up + 1 run,
-`runs-2gpu/strata-0131-2gpu-ud-q4_k_xl-skipfits/`) landed within noise of the
+`runs-2gpu/nostroma-0131-2gpu-ud-q4_k_xl-skipfits/`) landed within noise of the
 non-skip 128K run: 5,130.2 vs. 5,123.85 tok/s prefill, 127.15 vs. 130.15 tok/s
 decode. For this pack/context the main card alone is nowhere near large
 enough to hold the full 71.73 GiB profile, so the flag is a no-op here; it
@@ -603,11 +603,11 @@ a peak). Raw samples: `logs-2gpu/sec-*.csv`.
 ### 256K prompt on two GPUs
 
 Added the same evening: UD-Q4_K_XL, the two RTX PRO 4500, `--max-context 266240`
-([configs-2gpu/strata-2gpu-ud-q4_k_xl-256k.json](configs-2gpu/strata-2gpu-ud-q4_k_xl-256k.json)),
+([configs-2gpu/nostroma-2gpu-ud-q4_k_xl-256k.json](configs-2gpu/nostroma-2gpu-ud-q4_k_xl-256k.json)),
 a 255,988-token prompt (`prompts/long256k.txt` in the bench harness: a second pass over the same
 source corpus, since one pass tops out near 201K tokens), 1 warm-up + 2 measured runs, greedy,
-512-token output cap. Raw runs: [runs-2gpu/strata-0131-2gpu-ud-q4_k_xl/long256k/](runs-2gpu/strata-0131-2gpu-ud-q4_k_xl/long256k/);
-engine log [logs-2gpu/strata-2gpu-ud-q4_k_xl-256k.log](logs-2gpu/strata-2gpu-ud-q4_k_xl-256k.log).
+512-token output cap. Raw runs: [runs-2gpu/nostroma-0131-2gpu-ud-q4_k_xl/long256k/](runs-2gpu/nostroma-0131-2gpu-ud-q4_k_xl/long256k/);
+engine log [logs-2gpu/nostroma-2gpu-ud-q4_k_xl-256k.log](logs-2gpu/nostroma-2gpu-ud-q4_k_xl-256k.log).
 
 | Prompt | Prompt tokens (server) | Runs | Prefill tok/s | Decode tok/s | TTFT s |
 |---|---:|---:|---|---|---|

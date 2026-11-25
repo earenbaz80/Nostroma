@@ -11,7 +11,7 @@ export interface SoftwareUpdate {
   /** The technical reason behind `message`, shown only behind the Details disclosure. */
   details?: string;
 }
-export interface UpdateCheckResult { checkedAt: string; strata: SoftwareUpdate; engine: SoftwareUpdate }
+export interface UpdateCheckResult { checkedAt: string; nostroma: SoftwareUpdate; engine: SoftwareUpdate }
 
 export interface HardwareCheck {
   id: 'gpu' | 'memory' | 'cpu' | 'storage';

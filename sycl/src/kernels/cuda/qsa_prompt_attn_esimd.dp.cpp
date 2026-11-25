@@ -19,11 +19,11 @@
 //  * Not bitwise the FP32 kernel: Q and P are 16-bit (hi + lo int8) numbers, the sums are exact int32, the scales and
 //    the softmax are FP32.  qsa_prompt_attn_parity bounds the difference against FP64.
 // int8 KV only (the default); anything else keeps the caller's fallback.
-#include "strata/kernels/qsa_prompt_attn_esimd.hpp"
-#include "strata/env.hpp"
-#include "strata/kprof.hpp"
-#include "strata/core/geometry.hpp"
-#include "strata/sycl_queue.hpp"
+#include "nostroma/kernels/qsa_prompt_attn_esimd.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kprof.hpp"
+#include "nostroma/core/geometry.hpp"
+#include "nostroma/sycl_queue.hpp"
 #include <sycl/sycl.hpp>
 #include <sycl/ext/intel/esimd.hpp>
 #include <sycl/ext/intel/experimental/esimd/memory.hpp>
@@ -35,15 +35,15 @@
 #include <cstdlib>
 #include <type_traits>
 
-#ifndef STRATA_I8_NO_ESIMD
-namespace strata::kernels {
+#ifndef NOSTROMA_I8_NO_ESIMD
+namespace nostroma::kernels {
 namespace {
 using namespace sycl::ext::intel::esimd;
 namespace xmx = sycl::ext::intel::esimd::xmx;
 
-constexpr int HD = 256, G = strata::core::kCompiledGeometry.n_head / strata::core::kCompiledGeometry.n_head_kv, NTH = 4, SS = 128;
+constexpr int HD = 256, G = nostroma::core::kCompiledGeometry.n_head / nostroma::core::kCompiledGeometry.n_head_kv, NTH = 4, SS = 128;
 static_assert(G >= 1 && G <= 16, "qsa_prompt_attn_esimd: query heads per KV head must be 1..16 (16 score columns, two 8-row tiles)");
-static_assert(HD == strata::core::kCompiledGeometry.head_dim && G == strata::core::kCompiledGeometry.n_head / strata::core::kCompiledGeometry.n_head_kv,
+static_assert(HD == nostroma::core::kCompiledGeometry.head_dim && G == nostroma::core::kCompiledGeometry.n_head / nostroma::core::kCompiledGeometry.n_head_kv,
               "qsa_prompt_attn_esimd is compiled for core/geometry.hpp");
 constexpr uint32_t QT_OFF = 0;            // Q^T B tiles: [8 K steps][LV levels][128 dwords]
 
@@ -273,7 +273,7 @@ void launch(sycl::queue& q, const Args a, int64_t n_q) {
     constexpr uint32_t SLM_BYTES = S_OFF + 8192u;
     constexpr float COEF0Q = QL == 2 ? 254.0f : 64516.0f;
     auto props = sycl::ext::oneapi::experimental::properties{sycl::ext::intel::experimental::grf_size<256>};
-    strata::kprof::kp(&q, __FILE__, __func__, __LINE__)->submit([&](sycl::handler& h) {
+    nostroma::kprof::kp(&q, __FILE__, __func__, __LINE__)->submit([&](sycl::handler& h) {
         h.parallel_for<TagEsimdAttn<QL, PL>>(sycl::nd_range<3>(sycl::range<3>((size_t) n_q, (size_t) a.nkv, (size_t) NTH), sycl::range<3>(1, 1, NTH)), props,
                                      [=](sycl::nd_item<3> ndi) SYCL_ESIMD_KERNEL {
             slm_init<SLM_BYTES>();
@@ -406,7 +406,7 @@ void launch(sycl::queue& q, const Args a, int64_t n_q) {
 
 bool qsa_prompt_attn_esimd(const float* q, const QsaAttnPools& pools, const int32_t* ids, const int32_t* steps, int64_t cap,
                            const QsaShapes& s, float* attn, int64_t n_q, void* stream) {
-    static const int mode = [] { const char* v = strata::env("NOSTROMA_PROMPT_ATTN_ESIMD"); return v ? std::atoi(v) : 1; }();   // default on (Battlemage); =0 off
+    static const int mode = [] { const char* v = nostroma::env("NOSTROMA_PROMPT_ATTN_ESIMD"); return v ? std::atoi(v) : 1; }();   // default on (Battlemage); =0 off
     if (mode == 0 || n_q <= 0) return false;
     if (pools.k_q == nullptr || pools.v_q == nullptr || pools.k_scale == nullptr || pools.v_scale == nullptr || pools.k_q4 != nullptr ||
         pools.v_q4 != nullptr || s.head_dim != HD || s.n_head != (int64_t) G * s.n_head_kv || cap <= 0 || !ids || !steps ||
@@ -414,16 +414,16 @@ bool qsa_prompt_attn_esimd(const float* q, const QsaAttnPools& pools, const int3
         return false;
     const int64_t ps = s.page_size;
     if (ps <= 0 || (ps & (ps - 1)) != 0) return false;
-    dpct::queue_ptr st = strata::q_of(stream);
-    if (strata::intel_gpu_gen(st->get_device()) != strata::IntelGpuGen::Battlemage) return false;
+    dpct::queue_ptr st = nostroma::q_of(stream);
+    if (nostroma::intel_gpu_gen(st->get_device()) != nostroma::IntelGpuGen::Battlemage) return false;
     static bool told = false;
-    if (!told) { told = true; std::fprintf(stderr, "strata: prompt attention on the int8 DPAS (ESIMD)\n"); }
-    static const int lv = [] { const char* v = strata::env("NOSTROMA_ESIMD_LV"); return v ? std::atoi(v) : 2; }();
+    if (!told) { told = true; std::fprintf(stderr, "nostroma: prompt attention on the int8 DPAS (ESIMD)\n"); }
+    static const int lv = [] { const char* v = nostroma::env("NOSTROMA_ESIMD_LV"); return v ? std::atoi(v) : 2; }();
     int sh = 0;
     while ((1 << sh) < ps) ++sh;
     Args a{q, pools.k_q, pools.k_scale, pools.v_q, pools.v_scale, pools.page_table, ids, steps, attn,
            (int) s.n_head_kv, (int) cap, sh, (int) (ps - 1), 1.4426950408889634f / std::sqrt((float) HD),
-           strata::env("NOSTROMA_ESIMD_DBG") != nullptr ? std::atoi(strata::env("NOSTROMA_ESIMD_DBG")) : 0};
+           nostroma::env("NOSTROMA_ESIMD_DBG") != nullptr ? std::atoi(nostroma::env("NOSTROMA_ESIMD_DBG")) : 0};
     for (int64_t q0 = 0; q0 < n_q; q0 += 65535) {
         const int64_t nb = n_q - q0 < 65535 ? n_q - q0 : 65535;
         Args b = a;
@@ -438,9 +438,9 @@ bool qsa_prompt_attn_esimd(const float* q, const QsaAttnPools& pools, const int3
     }
     return true;
 }
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels
 #else
-namespace strata::kernels {
+namespace nostroma::kernels {
 bool qsa_prompt_attn_esimd(const float*, const QsaAttnPools&, const int32_t*, const int32_t*, int64_t, const QsaShapes&, float*, int64_t, void*) { return false; }
 }
 #endif

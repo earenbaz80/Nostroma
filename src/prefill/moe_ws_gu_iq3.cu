@@ -22,7 +22,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-namespace strata::prefill::ws::detail {
+namespace nostroma::prefill::ws::detail {
 namespace {
 
 constexpr int GU_ROWS = 1280, GU_K = 2560, NB = GU_K / QK_K, NSTEP = 2 * NB, NT = 128, PIECES = GU_ROWS / NT;
@@ -367,4 +367,4 @@ void gu_iq3_s(const Layer& L, double u, cudaStream_t s) {
     ck(cudaGetLastError(), "gate/up IQ3_S");
 }
 
-}  // namespace strata::prefill::ws::detail
+}  // namespace nostroma::prefill::ws::detail

@@ -1,19 +1,19 @@
 // src/quant/dequant.cpp - block -> float row dequantizers.
 //
 // Derived from ggml's `dequantize_row_*` (llama.cpp ggml/src/ggml-quants.c at 3cf03257f219afbe7334045ff7c6a06ac68c627d, Copyright (c) 2023-2026 The ggml
-// authors, MIT; third_party/strata-ggml/LICENSE).  Scalar and exact: the same float operations as ggml's, so a requantizer built on them (--mtp-q4) gives
+// authors, MIT; third_party/nostroma-ggml/LICENSE).  Scalar and exact: the same float operations as ggml's, so a requantizer built on them (--mtp-q4) gives
 // the same bytes.  fp16 -> fp32 conversions are exact whatever the instruction set.
-#define STRATA_QUANT_TABLES
+#define NOSTROMA_QUANT_TABLES
 #include "internal.hpp"
 
 #include <cassert>
 
-#include "strata/quant/dequant.hpp"
+#include "nostroma/quant/dequant.hpp"
 
-namespace strata::quant {
+namespace nostroma::quant {
 namespace {
 
-static inline void get_scale_min_k4(int j, const uint8_t * STRATA_RESTRICT q, uint8_t * STRATA_RESTRICT d, uint8_t * STRATA_RESTRICT m) {
+static inline void get_scale_min_k4(int j, const uint8_t * NOSTROMA_RESTRICT q, uint8_t * NOSTROMA_RESTRICT d, uint8_t * NOSTROMA_RESTRICT m) {
     if (j < 4) {
         *d = q[j] & 63; *m = q[j + 4] & 63;
     } else {
@@ -22,7 +22,7 @@ static inline void get_scale_min_k4(int j, const uint8_t * STRATA_RESTRICT q, ui
     }
 }
 
-void dequant_q2_0(const block_q2_0* STRATA_RESTRICT x, float* STRATA_RESTRICT y, int64_t k) {
+void dequant_q2_0(const block_q2_0* NOSTROMA_RESTRICT x, float* NOSTROMA_RESTRICT y, int64_t k) {
     static const int qk = QK2_0;
 
     assert(k % qk == 0);
@@ -42,7 +42,7 @@ void dequant_q2_0(const block_q2_0* STRATA_RESTRICT x, float* STRATA_RESTRICT y,
     }
 }
 
-void dequant_q4_0(const block_q4_0* STRATA_RESTRICT x, float* STRATA_RESTRICT y, int64_t k) {
+void dequant_q4_0(const block_q4_0* NOSTROMA_RESTRICT x, float* NOSTROMA_RESTRICT y, int64_t k) {
     static const int qk = QK4_0;
 
     assert(k % qk == 0);
@@ -62,7 +62,7 @@ void dequant_q4_0(const block_q4_0* STRATA_RESTRICT x, float* STRATA_RESTRICT y,
     }
 }
 
-void dequant_q4_1(const block_q4_1* STRATA_RESTRICT x, float* STRATA_RESTRICT y, int64_t k) {
+void dequant_q4_1(const block_q4_1* NOSTROMA_RESTRICT x, float* NOSTROMA_RESTRICT y, int64_t k) {
     static const int qk = QK4_1;
 
     assert(k % qk == 0);
@@ -83,7 +83,7 @@ void dequant_q4_1(const block_q4_1* STRATA_RESTRICT x, float* STRATA_RESTRICT y,
     }
 }
 
-void dequant_q5_0(const block_q5_0* STRATA_RESTRICT x, float* STRATA_RESTRICT y, int64_t k) {
+void dequant_q5_0(const block_q5_0* NOSTROMA_RESTRICT x, float* NOSTROMA_RESTRICT y, int64_t k) {
     static const int qk = QK5_0;
 
     assert(k % qk == 0);
@@ -109,7 +109,7 @@ void dequant_q5_0(const block_q5_0* STRATA_RESTRICT x, float* STRATA_RESTRICT y,
     }
 }
 
-void dequant_q5_1(const block_q5_1* STRATA_RESTRICT x, float* STRATA_RESTRICT y, int64_t k) {
+void dequant_q5_1(const block_q5_1* NOSTROMA_RESTRICT x, float* NOSTROMA_RESTRICT y, int64_t k) {
     static const int qk = QK5_1;
 
     assert(k % qk == 0);
@@ -136,7 +136,7 @@ void dequant_q5_1(const block_q5_1* STRATA_RESTRICT x, float* STRATA_RESTRICT y,
     }
 }
 
-void dequant_q8_0(const block_q8_0* STRATA_RESTRICT x, float* STRATA_RESTRICT y, int64_t k) {
+void dequant_q8_0(const block_q8_0* NOSTROMA_RESTRICT x, float* NOSTROMA_RESTRICT y, int64_t k) {
     static const int qk = QK8_0;
 
     assert(k % qk == 0);
@@ -152,7 +152,7 @@ void dequant_q8_0(const block_q8_0* STRATA_RESTRICT x, float* STRATA_RESTRICT y,
     }
 }
 
-void dequant_mxfp4(const block_mxfp4* STRATA_RESTRICT x, float* STRATA_RESTRICT y, int64_t k) {
+void dequant_mxfp4(const block_mxfp4* NOSTROMA_RESTRICT x, float* NOSTROMA_RESTRICT y, int64_t k) {
     static const int qk = QK_MXFP4;
 
     assert(k % qk == 0);
@@ -172,7 +172,7 @@ void dequant_mxfp4(const block_mxfp4* STRATA_RESTRICT x, float* STRATA_RESTRICT 
     }
 }
 
-void dequant_nvfp4(const block_nvfp4* STRATA_RESTRICT x, float* STRATA_RESTRICT y, int64_t k) {
+void dequant_nvfp4(const block_nvfp4* NOSTROMA_RESTRICT x, float* NOSTROMA_RESTRICT y, int64_t k) {
     static const int qk = QK_NVFP4;
     static const int qk_sub = QK_NVFP4_SUB;
     static const int n_sub = QK_NVFP4 / QK_NVFP4_SUB;
@@ -197,7 +197,7 @@ void dequant_nvfp4(const block_nvfp4* STRATA_RESTRICT x, float* STRATA_RESTRICT 
     }
 }
 
-void dequant_q2_K(const block_q2_K* STRATA_RESTRICT x, float* STRATA_RESTRICT y, int64_t k) {
+void dequant_q2_K(const block_q2_K* NOSTROMA_RESTRICT x, float* NOSTROMA_RESTRICT y, int64_t k) {
     assert(k % QK_K == 0);
     const int nb = k / QK_K;
 
@@ -229,7 +229,7 @@ void dequant_q2_K(const block_q2_K* STRATA_RESTRICT x, float* STRATA_RESTRICT y,
     }
 }
 
-void dequant_q3_K(const block_q3_K* STRATA_RESTRICT x, float* STRATA_RESTRICT y, int64_t k) {
+void dequant_q3_K(const block_q3_K* NOSTROMA_RESTRICT x, float* NOSTROMA_RESTRICT y, int64_t k) {
     assert(k % QK_K == 0);
     const int nb = k / QK_K;
 
@@ -243,8 +243,8 @@ void dequant_q3_K(const block_q3_K* STRATA_RESTRICT x, float* STRATA_RESTRICT y,
 
         const float d_all = fp16_to_fp32(x[i].d);
 
-        const uint8_t * STRATA_RESTRICT q = x[i].qs;
-        const uint8_t * STRATA_RESTRICT hm = x[i].hmask;
+        const uint8_t * NOSTROMA_RESTRICT q = x[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT hm = x[i].hmask;
         uint8_t m = 1;
 
         memcpy(aux, x[i].scales, 12);
@@ -279,7 +279,7 @@ void dequant_q3_K(const block_q3_K* STRATA_RESTRICT x, float* STRATA_RESTRICT y,
     }
 }
 
-void dequant_q4_K(const block_q4_K* STRATA_RESTRICT x, float* STRATA_RESTRICT y, int64_t k) {
+void dequant_q4_K(const block_q4_K* NOSTROMA_RESTRICT x, float* NOSTROMA_RESTRICT y, int64_t k) {
     assert(k % QK_K == 0);
     const int nb = k / QK_K;
 
@@ -303,7 +303,7 @@ void dequant_q4_K(const block_q4_K* STRATA_RESTRICT x, float* STRATA_RESTRICT y,
     }
 }
 
-void dequant_q5_K(const block_q5_K* STRATA_RESTRICT x, float* STRATA_RESTRICT y, int64_t k) {
+void dequant_q5_K(const block_q5_K* NOSTROMA_RESTRICT x, float* NOSTROMA_RESTRICT y, int64_t k) {
     assert(k % QK_K == 0);
     const int64_t nb = k / QK_K;
 
@@ -330,16 +330,16 @@ void dequant_q5_K(const block_q5_K* STRATA_RESTRICT x, float* STRATA_RESTRICT y,
     }
 }
 
-void dequant_q6_K(const block_q6_K* STRATA_RESTRICT x, float* STRATA_RESTRICT y, int64_t k) {
+void dequant_q6_K(const block_q6_K* NOSTROMA_RESTRICT x, float* NOSTROMA_RESTRICT y, int64_t k) {
     assert(k % QK_K == 0);
     const int64_t nb = k / QK_K;
 
     for (int i = 0; i < nb; i++) {
         const float d = fp16_to_fp32(x[i].d);
 
-        const uint8_t * STRATA_RESTRICT ql = x[i].ql;
-        const uint8_t * STRATA_RESTRICT qh = x[i].qh;
-        const int8_t  * STRATA_RESTRICT sc = x[i].scales;
+        const uint8_t * NOSTROMA_RESTRICT ql = x[i].ql;
+        const uint8_t * NOSTROMA_RESTRICT qh = x[i].qh;
+        const int8_t  * NOSTROMA_RESTRICT sc = x[i].scales;
 
         for (int n = 0; n < QK_K; n += 128) {
             for (int l = 0; l < 32; ++l) {
@@ -361,7 +361,7 @@ void dequant_q6_K(const block_q6_K* STRATA_RESTRICT x, float* STRATA_RESTRICT y,
     }
 }
 
-void dequant_iq2_xxs(const block_iq2_xxs* STRATA_RESTRICT x, float* STRATA_RESTRICT y, int64_t k) {
+void dequant_iq2_xxs(const block_iq2_xxs* NOSTROMA_RESTRICT x, float* NOSTROMA_RESTRICT y, int64_t k) {
     assert(k % QK_K == 0);
     const int64_t nb = k / QK_K;
 
@@ -387,7 +387,7 @@ void dequant_iq2_xxs(const block_iq2_xxs* STRATA_RESTRICT x, float* STRATA_RESTR
     }
 }
 
-void dequant_iq2_xs(const block_iq2_xs* STRATA_RESTRICT x, float* STRATA_RESTRICT y, int64_t k) {
+void dequant_iq2_xs(const block_iq2_xs* NOSTROMA_RESTRICT x, float* NOSTROMA_RESTRICT y, int64_t k) {
     assert(k % QK_K == 0);
     const int64_t nb = k / QK_K;
 
@@ -412,7 +412,7 @@ void dequant_iq2_xs(const block_iq2_xs* STRATA_RESTRICT x, float* STRATA_RESTRIC
     }
 }
 
-void dequant_iq2_s(const block_iq2_s* STRATA_RESTRICT x, float* STRATA_RESTRICT y, int64_t k) {
+void dequant_iq2_s(const block_iq2_s* NOSTROMA_RESTRICT x, float* NOSTROMA_RESTRICT y, int64_t k) {
     assert(k % QK_K == 0);
     const int64_t nb = k / QK_K;
 
@@ -442,7 +442,7 @@ void dequant_iq2_s(const block_iq2_s* STRATA_RESTRICT x, float* STRATA_RESTRICT 
     }
 }
 
-void dequant_iq3_xxs(const block_iq3_xxs* STRATA_RESTRICT x, float* STRATA_RESTRICT y, int64_t k) {
+void dequant_iq3_xxs(const block_iq3_xxs* NOSTROMA_RESTRICT x, float* NOSTROMA_RESTRICT y, int64_t k) {
     assert(k % QK_K == 0);
     const int64_t nb = k / QK_K;
 
@@ -472,7 +472,7 @@ void dequant_iq3_xxs(const block_iq3_xxs* STRATA_RESTRICT x, float* STRATA_RESTR
     }
 }
 
-void dequant_iq3_s(const block_iq3_s* STRATA_RESTRICT x, float* STRATA_RESTRICT y, int64_t k) {
+void dequant_iq3_s(const block_iq3_s* NOSTROMA_RESTRICT x, float* NOSTROMA_RESTRICT y, int64_t k) {
     assert(k % QK_K == 0);
     const int64_t nb = k / QK_K;
 
@@ -513,7 +513,7 @@ void dequant_iq3_s(const block_iq3_s* STRATA_RESTRICT x, float* STRATA_RESTRICT 
     }
 }
 
-void dequant_iq1_s(const block_iq1_s* STRATA_RESTRICT x, float* STRATA_RESTRICT y, int64_t k) {
+void dequant_iq1_s(const block_iq1_s* NOSTROMA_RESTRICT x, float* NOSTROMA_RESTRICT y, int64_t k) {
     assert(k % QK_K == 0);
     const int64_t nb = k / QK_K;
 
@@ -538,7 +538,7 @@ void dequant_iq1_s(const block_iq1_s* STRATA_RESTRICT x, float* STRATA_RESTRICT 
     }
 }
 
-void dequant_iq1_m(const block_iq1_m* STRATA_RESTRICT x, float* STRATA_RESTRICT y, int64_t k) {
+void dequant_iq1_m(const block_iq1_m* NOSTROMA_RESTRICT x, float* NOSTROMA_RESTRICT y, int64_t k) {
     assert(k % QK_K == 0);
     const int64_t nb = k / QK_K;
 
@@ -588,7 +588,7 @@ void dequant_iq1_m(const block_iq1_m* STRATA_RESTRICT x, float* STRATA_RESTRICT 
     }
 }
 
-void dequant_iq4_nl(const block_iq4_nl* STRATA_RESTRICT x, float* STRATA_RESTRICT y, int64_t k) {
+void dequant_iq4_nl(const block_iq4_nl* NOSTROMA_RESTRICT x, float* NOSTROMA_RESTRICT y, int64_t k) {
     assert(k % QK4_NL == 0);
     const int64_t nb = k / QK4_NL;
 
@@ -606,7 +606,7 @@ void dequant_iq4_nl(const block_iq4_nl* STRATA_RESTRICT x, float* STRATA_RESTRIC
     }
 }
 
-void dequant_iq4_xs(const block_iq4_xs* STRATA_RESTRICT x, float* STRATA_RESTRICT y, int64_t k) {
+void dequant_iq4_xs(const block_iq4_xs* NOSTROMA_RESTRICT x, float* NOSTROMA_RESTRICT y, int64_t k) {
     assert(k % QK_K == 0);
     const int64_t nb = k / QK_K;
 
@@ -688,4 +688,4 @@ bool dequant_row(Type t, const void* src, float* dst, int64_t n) {
     }
 }
 
-}  // namespace strata::quant
+}  // namespace nostroma::quant

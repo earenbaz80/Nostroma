@@ -32,7 +32,7 @@ class FeedMemoryTest(unittest.TestCase):
         self.assertEqual(self.source("/tmp/feed"), update_cmd.default_feed())
 
     def test_an_https_mirror_is_kept(self):
-        self.assertEqual(self.source("https://mirror.example.com/strata-feed.json"), "https://mirror.example.com/strata-feed.json")
+        self.assertEqual(self.source("https://mirror.example.com/nostroma-feed.json"), "https://mirror.example.com/nostroma-feed.json")
 
     def test_nothing_remembered_is_the_project_feed(self):
         self.assertEqual(self.source(None), update_cmd.default_feed())

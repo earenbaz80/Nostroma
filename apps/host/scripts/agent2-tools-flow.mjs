@@ -1,10 +1,10 @@
 /**
  * Settings -> Tools and what it gives the assistant, through the real app on a real model, with screenshots (playwright-core + Chrome).
  *
- *   STRATA_URL=http://127.0.0.1:8899 SHOTS=./shots MODEL='Qwen test' node scripts/agent2-tools-flow.mjs
+ *   NOSTROMA_URL=http://127.0.0.1:8899 SHOTS=./shots MODEL='Qwen test' node scripts/agent2-tools-flow.mjs
  *
- * The host must run with STRATA_BROWSER_HEADLESS=1 (the browser step must not open a window on the person's desktop) and a scratch
- * STRATA_HOME / STRATA_TIMESKIP_DIR. Steps (each prints ok/FAIL):
+ * The host must run with NOSTROMA_BROWSER_HEADLESS=1 (the browser step must not open a window on the person's desktop) and a scratch
+ * NOSTROMA_HOME / NOSTROMA_TIMESKIP_DIR. Steps (each prints ok/FAIL):
  *   1. Settings -> Tools shows the groups; two tools of my own are added through the dialog (instructions, command);
  *   2. web search with no key: "Searched the web" card, real DuckDuckGo results in the answer;
  *   3. the instruction tool is used without asking and shapes the answer; the command tool asks first in Manual, runs after Approve;
@@ -17,7 +17,7 @@ import { join, resolve } from 'node:path';
 import { envVar } from '../server/env-compat.mjs';
 
 const BASE = envVar('URL');
-if (!BASE) { console.error('STRATA_URL is required'); process.exit(2); }
+if (!BASE) { console.error('NOSTROMA_URL is required'); process.exit(2); }
 const SHOTS = resolve(process.env.SHOTS ?? 'agent2-tools-shots');
 mkdirSync(SHOTS, { recursive: true });
 const MODEL = process.env.MODEL ?? 'Qwen test';
@@ -149,7 +149,7 @@ try {
     await shot('08-search-off');
     check((await page.getByRole('switch', { name: 'Search the web' }).getAttribute('aria-checked')) === 'false', 'the switch is off');
     await newChat();
-    await send('Use the web_search tool to search for the word Strata. If you have no such tool, say exactly: NO SEARCH TOOL.');
+    await send('Use the web_search tool to search for the word Nostroma. If you have no such tool, say exactly: NO SEARCH TOOL.');
     await started().catch(() => {});
     await approveUntilIdle('08');
     await idle();

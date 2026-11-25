@@ -270,7 +270,7 @@
    ]
   },
   {
-   "config": "Strata docs, ~4.4K tokens",
+   "config": "Nostroma docs, ~4.4K tokens",
    "prompt_tokens": "4441-4441",
    "reused": 0,
    "generated": "256-256",
@@ -292,7 +292,7 @@
    ]
   },
   {
-   "config": "Strata docs, ~36.4K tokens",
+   "config": "Nostroma docs, ~36.4K tokens",
    "prompt_tokens": "36356-36359",
    "reused": 0,
    "generated": "233-256",

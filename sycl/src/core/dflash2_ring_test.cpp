@@ -6,8 +6,8 @@
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "strata/core/dflash2.hpp"
-#include "strata/kernels/dflash2.hpp"
+#include "nostroma/core/dflash2.hpp"
+#include "nostroma/kernels/dflash2.hpp"
 
 #include <algorithm>
 #include <cstdio>
@@ -15,7 +15,7 @@
 #include <cstring>
 #include <vector>
 
-using strata::core::Dflash2Drafter;
+using nostroma::core::Dflash2Drafter;
 
 static uint32_t rs = 777;
 static float frand() { rs = rs * 1664525u + 1013904223u; return (float) ((rs >> 8) & 0xffff) / 65536.0f - 0.5f; }

@@ -53,10 +53,10 @@ FILES = [
 
 def md_text(rows: list) -> str:
     L = [
-        "# Strata TPS benchmark results - Shin-BlackMamba - 2026-10-05 (corrected)",
+        "# Nostroma TPS benchmark results - Shin-BlackMamba - 2026-10-05 (corrected)",
         "",
-        "Engine: Strata Qwen3.8-Flash-Next on RTX 4070 Ti SUPER (16 GiB, sm_89).",
-        "Image: strata:latest, sm_89 fat-binary, vision decoder NOT compiled.",
+        "Engine: Nostroma Qwen3.8-Flash-Next on RTX 4070 Ti SUPER (16 GiB, sm_89).",
+        "Image: nostroma:latest, sm_89 fat-binary, vision decoder NOT compiled.",
         "Container: --network host --gpus all --ulimit memlock=-1 --shm-size=4g.",
         "Bench harness: `run.py` issues, per row:",
         "  1. **Cold prefill probe** (max_tokens=1, non-stream): `timings.prompt_per_second` after `POST /unload`",
@@ -164,13 +164,13 @@ def per_context_log(label: str, model_name: str, kv: str, ctx: dict) -> str:
         "## Container deploy line",
         "",
         "```",
-        "docker rm -f strata && sleep 2",
-        "docker run -d --name strata --network host --gpus all \\",
+        "docker rm -f nostroma && sleep 2",
+        "docker run -d --name nostroma --network host --gpus all \\",
         "  --ulimit memlock=-1 --shm-size=4g \\",
-        "  -v strata-data:/data \\",
+        "  -v nostroma-data:/data \\",
         f"  -e FAMILY=qwen -e MODEL={model_name} -e CONTEXT={ctx['target_ctx']} \\",
         f"  -e VISION=no -e KV={kv} -e REINSTALL=1 \\",
-        "  -e HOST=127.0.0.1 -e PORT=8090 --restart unless-stopped strata",
+        "  -e HOST=127.0.0.1 -e PORT=8090 --restart unless-stopped nostroma",
         "```",
         "",
         "## Cold prefill probe (max_tokens=1, non-stream)",
@@ -205,7 +205,7 @@ def per_context_log(label: str, model_name: str, kv: str, ctx: dict) -> str:
 def main():
     out = {
         "header": {
-            "engine": "Strata Qwen3.8-Flash-Next",
+            "engine": "Nostroma Qwen3.8-Flash-Next",
             "host": "Shin-BlackMamba / Ubuntu 24.04.5 LTS",
             "kernel": "6.8.0-146-generic",
             "nvidia_driver": "595.91.07",

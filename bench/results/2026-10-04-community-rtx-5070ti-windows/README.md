@@ -1,7 +1,7 @@
 # Community benchmark: RTX 5070 Ti, Ryzen 7 9800X3D, Windows 11
 
 Measured on 2026-10-04 by [Zauberio](https://github.com/Zauberio), on a native-Windows
-machine. This tests Strata 0.1.39 (the `strata-windows-x64.zip` release build) with the
+machine. This tests Nostroma 0.1.39 (the `nostroma-windows-x64.zip` release build) with the
 IQ3_S native pack, one GPU, and a 262,144-token context limit. The machine is a daily
 driver: it answers real requests all day, so the numbers below are the engine's own
 per-request lines from its log, not client walls (a foreign request can queue in front of
@@ -24,7 +24,7 @@ performance on other workloads.
   Lexar NM710 2 TB NVMe; the OS is on the same disk.
 - Windows 11 Pro, build 10.0.26300; NVIDIA driver 617.14.
 - Engine 0.1.39 from the release zip, digest verified against the release asset's sha256
-  at install time; local `strata.exe` sha256
+  at install time; local `nostroma.exe` sha256
   `d4c3a51f60d7a35abab8ab335fb20a0ff325c508a1e59d14a15f22c0d64afd0c`. BUILD.json: CUDA
   13.0, archs 75/86/89/120, PTX, GPU vision, portable. See [BUILD.json](BUILD.json).
 - Python 3.14.2; the CUDA runtime comes from the pip `nvidia/cu13` wheels. Installed
@@ -55,7 +55,7 @@ the installer from `Qwen/Qwen3.8-Flash-Next` with per-tensor hashes kept in its 
 - MTP `--spec 4 --spec-min-p 0.70`; built-in suffix drafting enabled; draft vocab: the
   shipped English/code subset.
 - `--pcie-frac 0.35` (calibrated on this box; see the appendix).
-- Engine env: `STRATA_PF_FUSED=1`, `STRATA_PF_FUSED_TILE=128`, `STRATA_GR_DOWN_MAX4=1`
+- Engine env: `NOSTROMA_PF_FUSED=1`, `NOSTROMA_PF_FUSED_TILE=128`, `NOSTROMA_GR_DOWN_MAX4=1`
   (all measured on this machine; see the appendix).
 
 ## The battery
@@ -99,10 +99,10 @@ drift).
 
 | lever | effect | method |
 |---|---|---|
-| `STRATA_PF_FUSED=1` | prefill +5.5% @104K (0.1.36), +7.8% @24K (0.1.38, n=6/arm 2×ABAB) | alternating boots |
-| `STRATA_PF_FUSED_TILE=128` | +1.5–2.2% over the auto tile at ~24K prompts | alternating boots |
-| `STRATA_GR_DOWN_MAX4=1` | decode +2.8% short, +3.5% after 130K (couplets +3.6/+4.4) | 8-boot ABBA |
-| `--pcie-frac 0.35` | on 0.1.38: 94.7 vs 90.6 at 0.20, 92.0 at 0.50, 86.3 at 0.75 (tok/s after 130K); on 0.1.39 the 0.35–0.65 range is indistinguishable and 0.20 is still bad | within-boot `strata_tune` sweep, re-checked on 0.1.39 |
+| `NOSTROMA_PF_FUSED=1` | prefill +5.5% @104K (0.1.36), +7.8% @24K (0.1.38, n=6/arm 2×ABAB) | alternating boots |
+| `NOSTROMA_PF_FUSED_TILE=128` | +1.5–2.2% over the auto tile at ~24K prompts | alternating boots |
+| `NOSTROMA_GR_DOWN_MAX4=1` | decode +2.8% short, +3.5% after 130K (couplets +3.6/+4.4) | 8-boot ABBA |
+| `--pcie-frac 0.35` | on 0.1.38: 94.7 vs 90.6 at 0.20, 92.0 at 0.50, 86.3 at 0.75 (tok/s after 130K); on 0.1.39 the 0.35–0.65 range is indistinguishable and 0.20 is still bad | within-boot `nostroma_tune` sweep, re-checked on 0.1.39 |
 | prefill cap `auto:32768` | bisection picks 20,224 here; +0.5% vs cap 16,384 at 104K/130K; plain `auto` (8,192) is ~4–5% slower there | ABBA |
 | the three env levers together, on 0.1.39 | prefill @130K +6.9%, decode after 130K +8.1%, short decode +2.6% vs all off (every couplet positive) | 8-leg ABBA, 2026-10-04 |
 
@@ -110,7 +110,7 @@ drift).
 
 | lever | result | why it stays off |
 |---|---|---|
-| `STRATA_ADAPT_NOWAIT=1` | +0.6% = noise (clean ABBA couplets −1.8/−0.1/+2.0/+2.0) | trades the #463 determinism fix for nothing |
+| `NOSTROMA_ADAPT_NOWAIT=1` | +0.6% = noise (clean ABBA couplets −1.8/−0.1/+2.0/+2.0) | trades the #463 determinism fix for nothing |
 | `IQ_PREFETCH=8192` | −0.7% (3/4 couplets negative) | shipped 2,048 default stays |
 | `--pcie-mode dma` / `direct` | 84.0 / 77.7 vs kernel (auto) ~90.3 tok/s | ABCCBA; dma balloons the CPU-row wait, direct slows the grouped span |
 | a stage-overlap patch (fork staging copy onto the copy stream inside the captured window) | mechanism verified (waitB 4.29→0.08 ms) but wall +0.6% = noise | decode here is paced by host-side work; the concurrent copy contends for SMs |

@@ -8,7 +8,7 @@ conteggio reale dei token del prompt dal server (`prompt_n`), non quello mirato.
 
     server quotidiano acceso, Jan scollegato
     python bench_sweep.py --label sweep-0.1.41
-Scrive C:\\strata-lab\\results\\bench-5080\\<label>.json (riepilogo + tutte le corse).
+Scrive C:\\nostroma-lab\\results\\bench-5080\\<label>.json (riepilogo + tutte le corse).
 """
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ from pathlib import Path
 
 from guard import report_extra, requests_total
 
-OUT = Path(r"C:\strata-lab\results\bench-5080")
+OUT = Path(r"C:\nostroma-lab\results\bench-5080")
 LENGTHS = (4096, 32768, 128000)
 RUNS = 3
 GEN = 256
@@ -47,7 +47,7 @@ def make(n_tokens: int, variant: int) -> str:
 
 
 def req(url: str, prompt: str, timeout: float) -> dict:
-    body = {"model": "strata", "max_tokens": GEN, "temperature": 0, "stream": False,
+    body = {"model": "nostroma", "max_tokens": GEN, "temperature": 0, "stream": False,
             "chat_template_kwargs": {"enable_thinking": False},
             "messages": [{"role": "user", "content": prompt}]}
     r = urllib.request.Request(url.rstrip("/") + "/v1/chat/completions", data=json.dumps(body).encode(),

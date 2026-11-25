@@ -2,8 +2,8 @@
 // Compare the invariant entry points with the production singleton dispatch, including SwiGLU.
 // Synthetic packed blocks only: no GPU, model download or private fixtures.
 #include "ggml.h"
-#include "strata/kernels/cpu/native_expert.hpp"
-#include "strata/kernels/cpu/tq_cpu.hpp"
+#include "nostroma/kernels/cpu/native_expert.hpp"
+#include "nostroma/kernels/cpu/tq_cpu.hpp"
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -11,7 +11,7 @@
 #include <vector>
 #include <utility>
 
-namespace cpu = strata::kernels::cpu;
+namespace cpu = nostroma::kernels::cpu;
 namespace {
 constexpr int width = 8, hidden = 512;
 size_t checked = 0;
@@ -115,7 +115,7 @@ int main() {
     // NVFP4's kernels already preserve singleton arithmetic. Mixed formats also carry scale tails.
     for (auto pair : {std::pair{40, 40}, {40, 20}, {40, 42}, {22, 40}, {23, 40}})
         if (!check_format(pair.first, pair.second, 64)) return 1;
-    // STRATA_KQ256 selects grouped Q4_K/Q5_1/Q8_0 kernels only when their target arithmetic matches.
+    // NOSTROMA_KQ256 selects grouped Q4_K/Q5_1/Q8_0 kernels only when their target arithmetic matches.
     if (!check_format(12, 7, 64) || !check_format(12, 8, 64)) return 1;
     // 0.2 adds Trellis formats and folded expert inputs. Exercise both their
     // production singleton dispatch and every grouped width through the new API.

@@ -35,8 +35,8 @@ def add_status(sp: argparse._SubParsersAction) -> None:
 
 def running_launch() -> dict | None:
     """The server a `nostroma launch` has running (address and its key), when no address was given: so `nostroma monitor` needs no --url.
-    Nothing is read when a connection, STRATA_URL or STRATA_CONNECTION names the server, and a thin monitor bundle has no launch code."""
-    if os.environ.get("NOSTROMA_URL", os.environ.get("STRATA_URL")) or os.environ.get("NOSTROMA_CONNECTION", os.environ.get("STRATA_CONNECTION")):
+    Nothing is read when a connection, NOSTROMA_URL or NOSTROMA_CONNECTION names the server, and a thin monitor bundle has no launch code."""
+    if os.environ.get("NOSTROMA_URL", os.environ.get("NOSTROMA_URL")) or os.environ.get("NOSTROMA_CONNECTION", os.environ.get("NOSTROMA_CONNECTION")):
         return None
     try:
         from nostroma_cli.launch.cmd import launch_info
@@ -78,8 +78,8 @@ def add_connections(sp: argparse._SubParsersAction) -> None:
     create = actions.add_parser("create", help="save a named server endpoint")
     create.add_argument("name")
     create.add_argument("--url", required=True)
-    create.add_argument("--prefix", default="", help="reverse-proxy path prefix, e.g. /strata")
-    create.add_argument("--credential-env", default="STRATA_TELEMETRY_KEY")
+    create.add_argument("--prefix", default="", help="reverse-proxy path prefix, e.g. /nostroma")
+    create.add_argument("--credential-env", default="NOSTROMA_TELEMETRY_KEY")
     show = actions.add_parser("show", help="show a saved connection without its credential")
     show.add_argument("name")
     actions.add_parser("list", help="list saved connections")
@@ -125,7 +125,7 @@ def _error(message: str, code: int, machine: bool) -> int:
     if machine:
         print(json.dumps({"schema_version": 1, "ok": False, "error": {"code": code, "message": message}}))
     else:
-        print(f"strata: {message}", file=sys.stderr)
+        print(f"nostroma: {message}", file=sys.stderr)
     return code
 
 

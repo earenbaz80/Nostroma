@@ -24,7 +24,7 @@ does not show").
 | Storage | Samsung 9100 PRO 2 TB NVMe SSD (model files, pack and MTP on it) |
 | OS | Windows 11, build 26200.9457 |
 | CUDA | nvcc 13.3 (CUDA toolkit 13.3), source build; runtime 13.2 per `nvidia-smi` |
-| Strata | tag `v0.1.41` (commit `fb58e0d`), built from source with `build.bat` in this folder: `-DCMAKE_BUILD_TYPE=Release -DSTRATA_ENABLE_CUDA=ON -DSTRATA_BUILD_TESTS=OFF -DCMAKE_CUDA_ARCHITECTURES=120`, MSVC 19.44, Ninja |
+| Nostroma | tag `v0.1.41` (commit `fb58e0d`), built from source with `build.bat` in this folder: `-DCMAKE_BUILD_TYPE=Release -DNOSTROMA_ENABLE_CUDA=ON -DNOSTROMA_BUILD_TESTS=OFF -DCMAKE_CUDA_ARCHITECTURES=120`, MSVC 19.44, Ninja |
 
 Background workloads: a desktop chat app, two browsers and Docker Desktop were open and idle; no other GPU
 compute. The engine ran as a normal process (not Task Scheduler).
@@ -41,29 +41,29 @@ Qwen3.8-Flash-Next **Unsloth UD-IQ4_XS** from `unsloth/Qwen3.8-Flash-Next-GGUF` 
 | `Qwen3.8-Flash-Next-UD-IQ4_XS-00003-of-00003.gguf` | 43,836,407,744 | `d4634e6d84f0ebb0940be15c90d3790bf6464e3dea3a1cddc567dc0e83ad8833` |
 
 Pack `unsloth-ud-iq4_xs` built by setup (1.50 GB, experts served natively from the GGUF in place, `--mmap-experts`),
-MTP draft layer `Strata-data/mtp/rt` (824 MB), the repository's `data/expert-profile.bin`, vision encoder on
+MTP draft layer `Nostroma-data/mtp/rt` (824 MB), the repository's `data/expert-profile.bin`, vision encoder on
 (`mmproj-Qwen3.8-Flash-Next-BF16.gguf`, 908 MB, run on the CPU with 20 threads; no image was sent during these runs).
 No calibration, no experimental speed projection, no custom profile.
 
 ```
-strata.exe --pack C:\Strata-data\packs\unsloth-ud-iq4_xs
-  --native C:\Strata-data\models\UD-IQ4_XS\Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf
+nostroma.exe --pack C:\Nostroma-data\packs\unsloth-ud-iq4_xs
+  --native C:\Nostroma-data\models\UD-IQ4_XS\Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf
   --expert-profile data\expert-profile.bin --expert-cache auto --prefill auto
-  --spec 5 --spec-min-p 0.8 --mtp C:\Strata-data\mtp\rt
+  --spec 5 --spec-min-p 0.8 --mtp C:\Nostroma-data\mtp\rt
   --max-context 786432 --rope-scaling yarn --rope-scale 3
   --kv int8 --kv-resident 32768 --resident-budget-gib 55
   --vision --vram-reserve-mib 1017 --pcie-frac 0.33 --suffix-draft 0
-env: STRATA_IQ_MT_MIN=1 STRATA_IQ_GATHER=1 STRATA_IQ_PREFETCH=4096 STRATA_STAGER_THREADS=8 STRATA_PREFILL_CPU_SHARE=0
+env: NOSTROMA_IQ_MT_MIN=1 NOSTROMA_IQ_GATHER=1 NOSTROMA_IQ_PREFETCH=4096 NOSTROMA_STAGER_THREADS=8 NOSTROMA_PREFILL_CPU_SHARE=0
 ```
 
-The full server config is `strata-ud-iq4_xs-786k.json` (local paths, no credentials), launched by `run-chat.bat`
+The full server config is `nostroma-ud-iq4_xs-786k.json` (local paths, no credentials), launched by `run-chat.bat`
 through `serve/server.py` on port 8080. Settings worth noting:
 
 - `--expert-cache auto` gave 2,671 slots (6.0 GiB of VRAM); `--prefill auto` picked 8,192-token chunks.
-- `--pcie-frac 0.33` and `STRATA_STAGER_THREADS=8` were chosen by earlier measurements on this machine
-  (the autotuned 0.55 and the engine's 32 stager threads were slower here); `STRATA_IQ_*` are the IQ4_XS CPU
-  pool switches, `STRATA_IQ_MT_MIN=1` makes the output reproducible run to run.
-- `STRATA_PREFILL_CPU_SHARE=0` turns off the 0.1.41 default CPU share for short prompt chunks, so the answers are
+- `--pcie-frac 0.33` and `NOSTROMA_STAGER_THREADS=8` were chosen by earlier measurements on this machine
+  (the autotuned 0.55 and the engine's 32 stager threads were slower here); `NOSTROMA_IQ_*` are the IQ4_XS CPU
+  pool switches, `NOSTROMA_IQ_MT_MIN=1` makes the output reproducible run to run.
+- `NOSTROMA_PREFILL_CPU_SHARE=0` turns off the 0.1.41 default CPU share for short prompt chunks, so the answers are
   bit-for-bit those of 0.1.40.x. Several prompts here end with a chunk under 1,024 tokens, so with the default on
   the prompt numbers would differ slightly; not measured.
 - The config's own sampling block is temperature 1.0 / top_p 0.95 / top_k 20 (daily use); every request in this
@@ -153,7 +153,7 @@ run per cell, so these are indications of size, not measured distributions. The 
   model card's recommendation); decode speed depends on the draft acceptance, which differs under sampling.
 - Prompt tok/s on the synthetic prompts is optimistic for real text, see above. The real-conversation rows are one
   private prompt: not reproducible by others, included for scale.
-- Run-to-run output is reproducible within a session on this configuration (`STRATA_IQ_MT_MIN=1`), but the same
+- Run-to-run output is reproducible within a session on this configuration (`NOSTROMA_IQ_MT_MIN=1`), but the same
   prompt generated different tokens from a freshly started engine on another day: the engine documents that
   experts computed on the GPU cache round differently from the CPU, and which experts are in the cache depends on
   history.

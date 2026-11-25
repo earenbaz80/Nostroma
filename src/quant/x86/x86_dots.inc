@@ -1,16 +1,16 @@
 // x86_dots.inc - ggml's x86 dot products (llama.cpp ggml/src/ggml-cpu/arch/x86/quants.c at 3cf03257f219afbe7334045ff7c6a06ac68c627d,
 // Copyright (c) 2023-2026 The ggml authors, MIT) in the layer's signature.  Included by dot_avx.cpp and dot_avx2.cpp inside their tier namespace: the
 // #if __AVX2__ / __AVX__ / generic branches are ggml's own, so each tier gives the bits of ggml-cpu built for that flavour.
-// Needs before it: <immintrin.h>, internal.hpp, h2f / f2h (fp16 conversions) and the strata::quant::generic dot declarations.
+// Needs before it: <immintrin.h>, internal.hpp, h2f / f2h (fp16 conversions) and the nostroma::quant::generic dot declarations.
 
-void dot_q4_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q4_0_q8_0(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const int qk = QK8_0;
     const int nb = n / qk;
 
     assert(n % qk == 0);
 
-    const block_q4_0* STRATA_RESTRICT x = (const block_q4_0*) vx;
-    const block_q8_0* STRATA_RESTRICT y = (const block_q8_0*) vy;
+    const block_q4_0* NOSTROMA_RESTRICT x = (const block_q4_0*) vx;
+    const block_q8_0* NOSTROMA_RESTRICT y = (const block_q8_0*) vy;
 
     int ib = 0;
     float sumf = 0;
@@ -156,14 +156,14 @@ void dot_q4_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     *s = sumf;
 }
 
-void dot_q4_1_q8_1(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q4_1_q8_1(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const int qk = QK8_1;
     const int nb = n / qk;
 
     assert(n % qk == 0);
 
-    const block_q4_1* STRATA_RESTRICT x = (const block_q4_1*) vx;
-    const block_q8_1* STRATA_RESTRICT y = (const block_q8_1*) vy;
+    const block_q4_1* NOSTROMA_RESTRICT x = (const block_q4_1*) vx;
+    const block_q8_1* NOSTROMA_RESTRICT y = (const block_q8_1*) vy;
 
     int ib = 0;
 
@@ -210,7 +210,7 @@ void dot_q4_1_q8_1(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 #endif
 }
 
-void dot_q5_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q5_0_q8_0(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const int qk = QK8_0;
     const int nb = n / qk;
 
@@ -219,8 +219,8 @@ void dot_q5_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     assert(n % qk == 0);
     assert(qk == QK5_0);
 
-    const block_q5_0* STRATA_RESTRICT x = (const block_q5_0*) vx;
-    const block_q8_0* STRATA_RESTRICT y = (const block_q8_0*) vy;
+    const block_q5_0* NOSTROMA_RESTRICT x = (const block_q5_0*) vx;
+    const block_q8_0* NOSTROMA_RESTRICT y = (const block_q8_0*) vy;
 
 #if defined(__AVX2__)
     // Initialize accumulator with zeros
@@ -285,7 +285,7 @@ void dot_q5_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 #endif
 }
 
-void dot_q5_1_q8_1(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q5_1_q8_1(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const int qk = QK8_1;
     const int nb = n / qk;
 
@@ -294,8 +294,8 @@ void dot_q5_1_q8_1(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     assert(n % qk == 0);
     assert(qk == QK5_1);
 
-    const block_q5_1* STRATA_RESTRICT x = (const block_q5_1*) vx;
-    const block_q8_1* STRATA_RESTRICT y = (const block_q8_1*) vy;
+    const block_q5_1* NOSTROMA_RESTRICT x = (const block_q5_1*) vx;
+    const block_q8_1* NOSTROMA_RESTRICT y = (const block_q8_1*) vy;
 
 #if defined(__AVX2__)
     // Initialize accumulator with zeros
@@ -366,14 +366,14 @@ void dot_q5_1_q8_1(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 #endif
 }
 
-void dot_q8_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q8_0_q8_0(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const int qk = QK8_0;
     const int nb = n / qk;
 
     assert(n % qk == 0);
 
-    const block_q8_0* STRATA_RESTRICT x = (const block_q8_0*) vx;
-    const block_q8_0* STRATA_RESTRICT y = (const block_q8_0*) vy;
+    const block_q8_0* NOSTROMA_RESTRICT x = (const block_q8_0*) vx;
+    const block_q8_0* NOSTROMA_RESTRICT y = (const block_q8_0*) vy;
 
     int ib = 0;
     float sumf = 0;
@@ -429,12 +429,12 @@ void dot_q8_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     *s = sumf;
 }
 
-void dot_iq4_nl_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq4_nl_q8_0(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK4_NL == 0);
     static_assert(QK4_NL == QK8_0, "QK4_NL and QK8_0 must be the same");
 
-    const block_iq4_nl* STRATA_RESTRICT x = (const block_iq4_nl*) vx;
-    const block_q8_0* STRATA_RESTRICT y = (const block_q8_0*) vy;
+    const block_iq4_nl* NOSTROMA_RESTRICT x = (const block_iq4_nl*) vx;
+    const block_q8_0* NOSTROMA_RESTRICT y = (const block_q8_0*) vy;
 
     const int nb = n / QK4_NL;
 
@@ -506,17 +506,17 @@ void dot_iq4_nl_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRIC
         // Pinned unfused (a multiply, then an add).  The contract is ggml-cpu as GCC 13.3 builds it (gnu11, -O3 -mfma), which does not fuse this tail; our C++
         // file (-ffp-contract=fast) would.  GCC 14.3 and 15.2 DO fuse it inside ggml-cpu (55 rows of the oracle, 1-2 ulp, one Broadwell box, 11-10), MSVC 19.44
         // does not; our result is the same bytes under all four.  So the oracle's reference is tests/quant/golden_x86.txt, not the ggml a newer GCC builds.
-        { float t = d * (float) (sumi1 + sumi2); STRATA_NOFUSE(t); sumf += t; }
+        { float t = d * (float) (sumi1 + sumi2); NOSTROMA_NOFUSE(t); sumf += t; }
     }
     *s = sumf;
 }
 
-void dot_mxfp4_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_mxfp4_q8_0(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_MXFP4 == 0);
     static_assert(QK_MXFP4 == QK8_0, "QK_MXFP4 and QK8_0 must be the same");
 
-    const block_mxfp4* STRATA_RESTRICT x = (const block_mxfp4*) vx;
-    const block_q8_0* STRATA_RESTRICT y = (const block_q8_0*) vy;
+    const block_mxfp4* NOSTROMA_RESTRICT x = (const block_mxfp4*) vx;
+    const block_q8_0* NOSTROMA_RESTRICT y = (const block_q8_0*) vy;
 
     const int nb = n / QK_MXFP4;
 
@@ -592,11 +592,11 @@ void dot_mxfp4_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT
     *s = sumf;
 }
 
-void dot_nvfp4_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_nvfp4_q8_0(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_NVFP4 == 0);
 
-    const block_nvfp4* STRATA_RESTRICT x = (const block_nvfp4*) vx;
-    const block_q8_0* STRATA_RESTRICT y = (const block_q8_0*) vy;
+    const block_nvfp4* NOSTROMA_RESTRICT x = (const block_nvfp4*) vx;
+    const block_q8_0* NOSTROMA_RESTRICT y = (const block_q8_0*) vy;
 
     const int nb = n / QK_NVFP4;
     int ib = 0;
@@ -725,10 +725,10 @@ void dot_nvfp4_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT
     *s = sumf;
 }
 
-void dot_q2_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q2_K_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
 
-    const block_q2_K* STRATA_RESTRICT x = (const block_q2_K*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_q2_K* NOSTROMA_RESTRICT x = (const block_q2_K*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -744,8 +744,8 @@ void dot_q2_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
         const float d = y[i].d * h2f(x[i].d);
         const float dmin = -y[i].d * h2f(x[i].dmin);
 
-        const uint8_t * STRATA_RESTRICT q2 = x[i].qs;
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q2 = x[i].qs;
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
 
         const __m128i mins_and_scales = _mm_loadu_si128((const __m128i*)x[i].scales);
         const __m128i scales8 = _mm_and_si128(mins_and_scales, m4);
@@ -811,8 +811,8 @@ void dot_q2_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
         const float dall = y[i].d * h2f(x[i].d);
         const float dmin = -y[i].d * h2f(x[i].dmin);
 
-        const uint8_t * STRATA_RESTRICT q2 = x[i].qs;
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q2 = x[i].qs;
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
 
         // load mins and scales from block_q2_K.scales[QK_K/16]
         const __m128i mins_and_scales = _mm_loadu_si128((const __m128i*)x[i].scales);
@@ -912,14 +912,14 @@ void dot_q2_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 #endif
 }
 
-void dot_q3_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q3_K_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_K == 0);
 
     const uint32_t kmask1 = 0x03030303;
     const uint32_t kmask2 = 0x0f0f0f0f;
 
-    const block_q3_K* STRATA_RESTRICT x = (const block_q3_K*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_q3_K* NOSTROMA_RESTRICT x = (const block_q3_K*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -937,8 +937,8 @@ void dot_q3_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 
         const float d = y[i].d * h2f(x[i].d);
 
-        const uint8_t * STRATA_RESTRICT q3 = x[i].qs;
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q3 = x[i].qs;
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
 
         // Set up scales
         memcpy(aux, x[i].scales, 12);
@@ -1042,8 +1042,8 @@ void dot_q3_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 
         const float d = y[i].d * h2f(x[i].d);
 
-        const uint8_t * STRATA_RESTRICT q3 = x[i].qs;
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q3 = x[i].qs;
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
 
         // Set up scales
         aux = (const uint32_t *)x[i].scales;
@@ -1179,11 +1179,11 @@ void dot_q3_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 #endif
 }
 
-void dot_q4_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q4_K_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_K == 0);
 
-    const block_q4_K* STRATA_RESTRICT x = (const block_q4_K*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_q4_K* NOSTROMA_RESTRICT x = (const block_q4_K*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -1212,8 +1212,8 @@ void dot_q4_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
         utmp[2] = uaux;
         utmp[0] &= kmask1;
 
-        const uint8_t * STRATA_RESTRICT q4 = x[i].qs;
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q4 = x[i].qs;
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
 
         const __m256i mins_and_scales = _mm256_cvtepu8_epi16(_mm_set_epi32(utmp[3], utmp[2], utmp[1], utmp[0]));
 
@@ -1271,8 +1271,8 @@ void dot_q4_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
         const float d = y[i].d * h2f(x[i].d);
         const float dmin = -y[i].d * h2f(x[i].dmin);
 
-        const uint8_t * STRATA_RESTRICT q4 = x[i].qs;
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q4 = x[i].qs;
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
 
         memcpy(utmp, x[i].scales, 12);
         utmp[3] = ((utmp[2] >> 4) & kmask2) | (((utmp[1] >> 6) & kmask3) << 4);
@@ -1352,11 +1352,11 @@ void dot_q4_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 #endif
 }
 
-void dot_q5_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q5_K_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_K == 0);
 
-    const block_q5_K* STRATA_RESTRICT x = (const block_q5_K*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_q5_K* NOSTROMA_RESTRICT x = (const block_q5_K*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -1377,8 +1377,8 @@ void dot_q5_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     float summs = 0.f;
 
     for (int i = 0; i < nb; ++i) {
-        const uint8_t * STRATA_RESTRICT q5 = x[i].qs;
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q5 = x[i].qs;
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
 
         const float d = y[i].d * h2f(x[i].d);
         const float dmin = -y[i].d * h2f(x[i].dmin);
@@ -1461,8 +1461,8 @@ void dot_q5_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
         const float d = y[i].d * h2f(x[i].d);
         const float dmin = -y[i].d * h2f(x[i].dmin);
 
-        const uint8_t * STRATA_RESTRICT q5 = x[i].qs;
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q5 = x[i].qs;
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
 
         memcpy(utmp, x[i].scales, 12);
         utmp[3] = ((utmp[2] >> 4) & kmask2) | (((utmp[1] >> 6) & kmask3) << 4);
@@ -1557,11 +1557,11 @@ void dot_q5_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 #endif
 }
 
-void dot_q6_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q6_K_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_K == 0);
 
-    const block_q6_K* STRATA_RESTRICT x = (const block_q6_K*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_q6_K* NOSTROMA_RESTRICT x = (const block_q6_K*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -1576,9 +1576,9 @@ void dot_q6_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 
         const float d = y[i].d * h2f(x[i].d);
 
-        const uint8_t * STRATA_RESTRICT q4 = x[i].ql;
-        const uint8_t * STRATA_RESTRICT qh = x[i].qh;
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q4 = x[i].ql;
+        const uint8_t * NOSTROMA_RESTRICT qh = x[i].qh;
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
 
         const __m256i q8sums = _mm256_loadu_si256((const __m256i*)y[i].bsums);
         const __m128i scales = _mm_loadu_si128((const __m128i*)x[i].scales);
@@ -1647,9 +1647,9 @@ void dot_q6_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 
         const float d = y[i].d * h2f(x[i].d);
 
-        const uint8_t * STRATA_RESTRICT q4 = x[i].ql;
-        const uint8_t * STRATA_RESTRICT qh = x[i].qh;
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q4 = x[i].ql;
+        const uint8_t * NOSTROMA_RESTRICT qh = x[i].qh;
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
 
         // handle the q6_k -32 offset separately using bsums
         const __m128i q8sums_0 = _mm_loadu_si128((const __m128i*)y[i].bsums);
@@ -1749,11 +1749,11 @@ void dot_q6_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 #endif
 }
 
-void dot_iq1_s_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq1_s_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_K == 0);
 
-    const block_iq1_s* STRATA_RESTRICT x = (const block_iq1_s*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_iq1_s* NOSTROMA_RESTRICT x = (const block_iq1_s*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -1863,11 +1863,11 @@ void dot_iq1_s_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT
 #endif
 }
 
-void dot_iq1_m_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq1_m_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_K == 0);
 
-    const block_iq1_m* STRATA_RESTRICT x = (const block_iq1_m*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_iq1_m* NOSTROMA_RESTRICT x = (const block_iq1_m*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -2065,11 +2065,11 @@ void dot_iq1_m_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT
 #endif
 }
 
-void dot_iq2_xxs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq2_xxs_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_K == 0);
 
-    const block_iq2_xxs* STRATA_RESTRICT x = (const block_iq2_xxs*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_iq2_xxs* NOSTROMA_RESTRICT x = (const block_iq2_xxs*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -2083,8 +2083,8 @@ void dot_iq2_xxs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRI
     __m256 accumf = _mm256_setzero_ps();
     for (int i = 0; i < nb; ++i) {
         const float d = h2f(x[i].d) * y[i].d;
-        const uint16_t * STRATA_RESTRICT q2 = x[i].qs;
-        const int8_t   * STRATA_RESTRICT q8 = y[i].qs;
+        const uint16_t * NOSTROMA_RESTRICT q2 = x[i].qs;
+        const int8_t   * NOSTROMA_RESTRICT q8 = y[i].qs;
         __m256i sumi1 = _mm256_setzero_si256();
         __m256i sumi2 = _mm256_setzero_si256();
         for (int ib32 = 0; ib32 < QK_K/32; ib32 += 2) {
@@ -2124,8 +2124,8 @@ void dot_iq2_xxs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRI
     __m256 accumf = _mm256_setzero_ps();
     for (int i = 0; i < nb; ++i) {
         const float d = h2f(x[i].d) * y[i].d;
-        const uint16_t * STRATA_RESTRICT q2 = x[i].qs;
-        const int8_t   * STRATA_RESTRICT q8 = y[i].qs;
+        const uint16_t * NOSTROMA_RESTRICT q2 = x[i].qs;
+        const int8_t   * NOSTROMA_RESTRICT q8 = y[i].qs;
         __m128i sumi1_0 = _mm_setzero_si128();
         __m128i sumi1_1 = _mm_setzero_si128();
         __m128i sumi2_0 = _mm_setzero_si128();
@@ -2178,11 +2178,11 @@ void dot_iq2_xxs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRI
 #endif
 }
 
-void dot_iq2_xs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq2_xs_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_K == 0);
 
-    const block_iq2_xs* STRATA_RESTRICT x = (const block_iq2_xs*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_iq2_xs* NOSTROMA_RESTRICT x = (const block_iq2_xs*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -2224,8 +2224,8 @@ void dot_iq2_xs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRIC
     __m256 accumf = _mm256_setzero_ps();
     for (int i = 0; i < nb; ++i) {
         const float d = h2f(x[i].d) * y[i].d;
-        const uint16_t * STRATA_RESTRICT q2 = x[i].qs;
-        const int8_t   * STRATA_RESTRICT q8 = y[i].qs;
+        const uint16_t * NOSTROMA_RESTRICT q2 = x[i].qs;
+        const int8_t   * NOSTROMA_RESTRICT q8 = y[i].qs;
 
         memcpy(&aux64, x[i].scales, 8);
         __m128i stmp = _mm_set1_epi64x(aux64);
@@ -2345,8 +2345,8 @@ void dot_iq2_xs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRIC
     __m256 accumf = _mm256_setzero_ps();
     for (int i = 0; i < nb; ++i) {
         const float d = h2f(x[i].d) * y[i].d;
-        const uint16_t * STRATA_RESTRICT q2 = x[i].qs;
-        const int8_t   * STRATA_RESTRICT q8 = y[i].qs;
+        const uint16_t * NOSTROMA_RESTRICT q2 = x[i].qs;
+        const int8_t   * NOSTROMA_RESTRICT q8 = y[i].qs;
 
         memcpy(&aux64, x[i].scales, 8);
         __m128i stmp = _mm_set1_epi64x(aux64);
@@ -2470,11 +2470,11 @@ void dot_iq2_xs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRIC
 #endif
 }
 
-void dot_iq2_s_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq2_s_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_K == 0);
 
-    const block_iq2_s* STRATA_RESTRICT x = (const block_iq2_s*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_iq2_s* NOSTROMA_RESTRICT x = (const block_iq2_s*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -2499,10 +2499,10 @@ void dot_iq2_s_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT
     __m256 accumf = _mm256_setzero_ps();
     for (int i = 0; i < nb; ++i) {
         const float d = h2f(x[i].d) * y[i].d;
-        const uint8_t * STRATA_RESTRICT qs = x[i].qs;
-        const uint8_t * STRATA_RESTRICT qh = x[i].qh;
-        const uint16_t * STRATA_RESTRICT signs = (const uint16_t *)(x[i].qs + QK_K/8);
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT qs = x[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT qh = x[i].qh;
+        const uint16_t * NOSTROMA_RESTRICT signs = (const uint16_t *)(x[i].qs + QK_K/8);
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
 
         memcpy(&aux64, x[i].scales, 8);
         const __m128i scales8 = _mm_add_epi8(_mm_slli_epi16(_mm_and_si128(_mm_set_epi64x(aux64 >> 4, aux64), m4), 1), m1);
@@ -2572,10 +2572,10 @@ void dot_iq2_s_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT
     __m256 accumf = _mm256_setzero_ps();
     for (int i = 0; i < nb; ++i) {
         const float d = h2f(x[i].d) * y[i].d;
-        const uint8_t * STRATA_RESTRICT qs = x[i].qs;
-        const uint8_t * STRATA_RESTRICT qh = x[i].qh;
-        const uint16_t * STRATA_RESTRICT signs = (const uint16_t *)(x[i].qs + QK_K/8);
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT qs = x[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT qh = x[i].qh;
+        const uint16_t * NOSTROMA_RESTRICT signs = (const uint16_t *)(x[i].qs + QK_K/8);
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
 
         memcpy(&aux64, x[i].scales, 8);
         const __m128i scales8 = _mm_add_epi8(_mm_slli_epi16(_mm_and_si128(_mm_set_epi64x(aux64 >> 4, aux64), m4), 1), m1);
@@ -2650,11 +2650,11 @@ void dot_iq2_s_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT
 #endif
 }
 
-void dot_iq3_xxs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq3_xxs_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_K == 0);
 
-    const block_iq3_xxs* STRATA_RESTRICT x = (const block_iq3_xxs*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_iq3_xxs* NOSTROMA_RESTRICT x = (const block_iq3_xxs*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -2667,9 +2667,9 @@ void dot_iq3_xxs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRI
     __m256 accumf = _mm256_setzero_ps();
     for (int i = 0; i < nb; ++i) {
         const float d = h2f(x[i].d) * y[i].d;
-        const uint8_t * STRATA_RESTRICT q3 = x[i].qs;
-        const uint8_t * STRATA_RESTRICT gas = x[i].qs + QK_K/4;
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q3 = x[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT gas = x[i].qs + QK_K/4;
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
         __m256i sumi1 = _mm256_setzero_si256();
         __m256i sumi2 = _mm256_setzero_si256();
         for (int ib32 = 0; ib32 < QK_K/32; ib32 += 2) {
@@ -2712,9 +2712,9 @@ void dot_iq3_xxs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRI
     __m256 accumf = _mm256_setzero_ps();
     for (int i = 0; i < nb; ++i) {
         const float d = h2f(x[i].d) * y[i].d;
-        const uint8_t * STRATA_RESTRICT q3 = x[i].qs;
-        const uint8_t * STRATA_RESTRICT gas = x[i].qs + QK_K/4;
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q3 = x[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT gas = x[i].qs + QK_K/4;
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
         __m128i sumi1_0 = _mm_setzero_si128();
         __m128i sumi1_1 = _mm_setzero_si128();
         __m128i sumi2_0 = _mm_setzero_si128();
@@ -2769,11 +2769,11 @@ void dot_iq3_xxs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRI
 #endif
 }
 
-void dot_iq3_s_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq3_s_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_K == 0);
 
-    const block_iq3_s* STRATA_RESTRICT x = (const block_iq3_s*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_iq3_s* NOSTROMA_RESTRICT x = (const block_iq3_s*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -2803,10 +2803,10 @@ void dot_iq3_s_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT
     __m256 accumf = _mm256_setzero_ps();
     for (int i = 0; i < nb; ++i) {
         const float d = h2f(x[i].d) * y[i].d;
-        const uint8_t * STRATA_RESTRICT qs = x[i].qs;
-        const uint8_t * STRATA_RESTRICT qh = x[i].qh;
-        const uint16_t * STRATA_RESTRICT signs = (const uint16_t *)x[i].signs;
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT qs = x[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT qh = x[i].qh;
+        const uint16_t * NOSTROMA_RESTRICT signs = (const uint16_t *)x[i].signs;
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
         __m256i sumi1 = _mm256_setzero_si256();
         __m256i sumi2 = _mm256_setzero_si256();
         for (int ib32 = 0; ib32 < QK_K/32; ib32 += 2) {
@@ -2888,10 +2888,10 @@ void dot_iq3_s_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT
     __m256 accumf = _mm256_setzero_ps();
     for (int i = 0; i < nb; ++i) {
         const float d = h2f(x[i].d) * y[i].d;
-        const uint8_t * STRATA_RESTRICT qs = x[i].qs;
-        const uint8_t * STRATA_RESTRICT qh = x[i].qh;
-        const uint16_t * STRATA_RESTRICT signs = (const uint16_t *)x[i].signs;
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT qs = x[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT qh = x[i].qh;
+        const uint16_t * NOSTROMA_RESTRICT signs = (const uint16_t *)x[i].signs;
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
         __m128i sumi1_0 = _mm_setzero_si128();
         __m128i sumi1_1 = _mm_setzero_si128();
         __m128i sumi2_0 = _mm_setzero_si128();
@@ -2974,11 +2974,11 @@ void dot_iq3_s_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT
 #endif
 }
 
-void dot_iq4_xs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq4_xs_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_K == 0);
 
-    const block_iq4_xs* STRATA_RESTRICT x = (const block_iq4_xs*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_iq4_xs* NOSTROMA_RESTRICT x = (const block_iq4_xs*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 

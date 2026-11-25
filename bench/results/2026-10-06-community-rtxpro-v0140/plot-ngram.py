@@ -20,7 +20,7 @@ plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 11,
                     "axes.spines.left": False, "axes.spines.bottom": False,
                     "svg.fonttype": "none", "svg.hashsalt": "rtxpro-v0140-ngram"})
 fig = plt.figure(figsize=(14, 11.5), facecolor="#f7f9fc")
-fig.text(.04, .961, "COMMUNITY MEASUREMENTS / UNMODIFIED STRATA 0.1.40",
+fig.text(.04, .961, "COMMUNITY MEASUREMENTS / UNMODIFIED NOSTROMA 0.1.40",
          fontsize=10, fontweight="bold", color="#087f8c")
 fig.text(.04, .914, "Four decoding paths on RTX PRO 6000", fontsize=27, fontweight="bold")
 fig.text(.04, .877, "8K actual input + 512 output · One request · FP16 KV · 16K allocation",

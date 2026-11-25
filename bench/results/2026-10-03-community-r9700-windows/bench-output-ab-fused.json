@@ -1,8 +1,8 @@
 {
   "started": "2026-10-03 15:21:54",
   "url": "http://127.0.0.1:8080/v1/chat/completions",
-  "model": "strata",
-  "engine_log": "D:\\AI\\Strata\\Strata-main\\Strata-main\\strata-iq2_xs.log",
+  "model": "nostroma",
+  "engine_log": "D:\\AI\\Nostroma\\Nostroma-main\\Nostroma-main\\nostroma-iq2_xs.log",
   "cap_tokens": 256,
   "reps": 3,
   "speed": [

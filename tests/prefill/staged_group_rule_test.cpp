@@ -1,11 +1,11 @@
-// staged_group_entry_default (include/strata/prefill/staged_group_rule.hpp): whether the staged walk (prompt chunks below 1,024 tokens) takes the batched group entry.
-// CUDA build: on with nothing set; HIP build: off with nothing set (owner 2026-11-12, "8 yes for nvidia"); STRATA_PF_FUSED=1 turns it on and STRATA_PF_FUSED=0 off in
+// staged_group_entry_default (include/nostroma/prefill/staged_group_rule.hpp): whether the staged walk (prompt chunks below 1,024 tokens) takes the batched group entry.
+// CUDA build: on with nothing set; HIP build: off with nothing set (owner 2026-11-12, "8 yes for nvidia"); NOSTROMA_PF_FUSED=1 turns it on and NOSTROMA_PF_FUSED=0 off in
 // both builds; any other non-empty value reads as off (as native_supported reads it); empty reads as unset.  No GPU, no model.
 #include <cstdio>
 
-#include "strata/prefill/staged_group_rule.hpp"
+#include "nostroma/prefill/staged_group_rule.hpp"
 
-using strata::prefill::staged_group_entry_default;
+using nostroma::prefill::staged_group_entry_default;
 
 static int failed = 0;
 #define CHECK(x) do { if (!(x)) { std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #x); ++failed; } } while (0)

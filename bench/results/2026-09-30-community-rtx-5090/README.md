@@ -1,7 +1,7 @@
 # Community benchmark: RTX 5090, Core Ultra 9 285K
 
 Measured on 2026-09-30 by [hagope](https://github.com/hagope), on a Linux
-machine called OMAN. This tests Strata 0.1.29 with the original Flash-Next
+machine called OMAN. This tests Nostroma 0.1.29 with the original Flash-Next
 IQ2_XS, one GPU, and a 131,072-token context limit.
 
 Median decode throughput was **179.4 tok/s at 4,096 prompt tokens, 175.7 tok/s
@@ -26,7 +26,7 @@ general answer quality or performance on other workloads.
   Base image: `nvidia/cuda@sha256:5dc1bca23d05bd37b011be68ec470c03b403a5da07ec3a86e41af9470e9d0cc6`.
   Installed Python dependencies are listed in [python-packages.txt](python-packages.txt).
 - The regular inference server, GPU TTS, and GPU embedding service were paused.
-  Other CPU services remained running. The GPU was dedicated to Strata and its
+  Other CPU services remained running. The GPU was dedicated to Nostroma and its
   vision helper; this was not a completely isolated operating system.
 
 ## Model and configuration
@@ -62,7 +62,7 @@ default expert profile, tokenizer, pack metadata/dense weights, and draft pack.
 - Experimental speed projection off; no custom control vectors or calibration.
 - Reasoning disabled, temperature 0, maximum 256 generated tokens per speed run.
 
-The complete measured configuration is [strata-iq2_xs.json](strata-iq2_xs.json).
+The complete measured configuration is [nostroma-iq2_xs.json](nostroma-iq2_xs.json).
 Startup choices and every request's timing/draft statistics are in
 [engine.log](engine.log).
 
@@ -70,32 +70,32 @@ Startup choices and every request's timing/draft statistics are in
 
 Use the attached [Dockerfile](Dockerfile), the pinned source commit, and an empty
 data directory. Mount a working directory as `/workspace`, with the checkout
-at `/workspace/Strata`. Run setup inside the CUDA container with GPU access,
+at `/workspace/Nostroma`. Run setup inside the CUDA container with GPU access,
 host IPC, and unlimited memlock:
 
 ```bash
 bash ./setup.sh --family qwen --model IQ2_XS --context 131072 --kv int8 \
   --vision gpu --experimental-speed-projection off --gpu 0 --low-ram off \
-  --build --yes --no-start --port 18080 --data-dir /workspace/Strata-data
+  --build --yes --no-start --port 18080 --data-dir /workspace/Nostroma-data
 ```
 
 Launch the prepared server on loopback inside a container using host networking:
 
 ```bash
-/workspace/Strata/.venv/bin/python serve/server.py --engine strata \
-  --config strata-iq2_xs.json --host 127.0.0.1 --port 18080
+/workspace/Nostroma/.venv/bin/python serve/server.py --engine nostroma \
+  --config nostroma-iq2_xs.json --host 127.0.0.1 --port 18080
 ```
 
 Run [benchmark.py](benchmark.py) inside that container, after placing the script
 at `/workspace/benchmark.py`. It generates deterministic synthetic Python
 functions, adds a different nonce near the start of each request, and counts the
-complete rendered chat prompt using Strata's tokenizer. It adjusts the filler
+complete rendered chat prompt using Nostroma's tokenizer. It adjusts the filler
 to the target token count and verifies the count against the server afterward.
 The resulting request hashes are in [results.json](results.json).
 
 ```bash
-/workspace/Strata/.venv/bin/python /workspace/benchmark.py
-/workspace/Strata/.venv/bin/python tools/needle_bench.py \
+/workspace/Nostroma/.venv/bin/python /workspace/benchmark.py
+/workspace/Nostroma/.venv/bin/python tools/needle_bench.py \
   --url http://127.0.0.1:18080 --lengths 32k,128k --depths 10,50,90 \
   --out /workspace/results/needles.json
 ```
@@ -137,7 +137,7 @@ contains 250 samples over 255.9 seconds, with the following observed peaks:
 
 - GPU memory: **31,785 MiB (31.04 GiB)**, system-wide on the selected GPU.
 - Host RAM: **45.54 GiB**, calculated as `MemTotal - MemAvailable`. This includes
-  Strata, other services, and non-reclaimable system memory; it is not process RSS.
+  Nostroma, other services, and non-reclaimable system memory; it is not process RSS.
 - Swap allocation increased from **0.25 MiB to 425.50 MiB**, including increases
   during the speed suite. Swap I/O rates were not measured, so this is not a
   claim that inference ran without paging. No out-of-memory error occurred.

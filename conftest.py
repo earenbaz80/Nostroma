@@ -1,5 +1,5 @@
 r"""pytest: setup.py's data-folder migration (#198) saves the data folder it settled on in the user's settings file
-(%APPDATA%\Strata\settings.json, ~/.config/strata/settings.json) and can MOVE model files from a folder it finds there.
+(%APPDATA%\Nostroma\settings.json, ~/.config/nostroma/settings.json) and can MOVE model files from a folder it finds there.
 A test that reaches it must never touch the real file, so the whole session gets its own config home."""
 import os
 import tempfile
@@ -35,12 +35,12 @@ def _no_language_of_the_box():
         yield
 
 
-_home = tempfile.mkdtemp(prefix="strata-pytest-config-")
+_home = tempfile.mkdtemp(prefix="nostroma-pytest-config-")
 os.environ["APPDATA"] = _home
 os.environ["XDG_CONFIG_HOME"] = _home
-# The per-user STATE and DATA folders too (%LOCALAPPDATA%\Strata: tuning/recheck.json, the engine store, the update records; ~/.local/state, ~/.local/share).
+# The per-user STATE and DATA folders too (%LOCALAPPDATA%\Nostroma: tuning/recheck.json, the engine store, the update records; ~/.local/state, ~/.local/share).
 # A test that installs a stub engine marks saved tuning presets for a re-check there: on 2026-10-24 one such run left an entry in the owner's real
-# tuning\recheck.json. A test that wants a place of its own still names it (STRATA_COMPONENTS_DIR, state_base=...).
+# tuning\recheck.json. A test that wants a place of its own still names it (NOSTROMA_COMPONENTS_DIR, state_base=...).
 os.environ["LOCALAPPDATA"] = _home
 os.environ["XDG_STATE_HOME"] = _home
 os.environ["XDG_DATA_HOME"] = _home
@@ -58,7 +58,7 @@ if os.name == "nt" and os.environ.get("PSModulePath"):
 # test that needs a card puts its own stand-in first (tools/feed_model_install_gate.py does when `nvidia-smi -L` fails). A test about a
 # card patches the reader (engine_component.cuda_archs_present, setup.gpus, ...) as before. POSIX only for now (a stub there would be
 # a .cmd, which code that runs `nvidia-smi` directly does not start); the Windows test boxes' cards fit the stand-ins.
-if os.name != "nt" and not os.environ.get("STRATA_TEST_REAL_NVIDIA_SMI"):
+if os.name != "nt" and not os.environ.get("NOSTROMA_TEST_REAL_NVIDIA_SMI"):
     _smi = os.path.join(_home, "no-nvidia-smi")
     os.makedirs(_smi, exist_ok=True)
     with open(os.path.join(_smi, "nvidia-smi"), "w") as _f:
@@ -69,8 +69,8 @@ if os.name != "nt" and not os.environ.get("STRATA_TEST_REAL_NVIDIA_SMI"):
 # No test reaches the network (lane NET, 11-10). A test whose fake was bypassed went to the real hosts (on 11-10 a non-hermetic test pulled
 # 1.2 GB), and one on a box without internet hung for the whole timeout. Every connect and every name lookup of this process is checked:
 # loopback and local sockets pass; anything else is refused at once (ConnectionRefusedError / gaierror, which the code under test reads as
-# "offline") and the test FAILS, naming the host. A live test sets STRATA_TEST_ALLOW_NETWORK=1 itself (the
-# STRATA_LIVE_HF test class in tools/ does). Child processes are not covered (the install.sh tests use loopback servers only).
+# "offline") and the test FAILS, naming the host. A live test sets NOSTROMA_TEST_ALLOW_NETWORK=1 itself (the
+# NOSTROMA_LIVE_HF test class in tools/ does). Child processes are not covered (the install.sh tests use loopback servers only).
 # Three things that are not "the network" pass, named here: a UDP connect() (it only names the peer and sends nothing: tests that ask which address
 # leads out), a lookup of this computer's own host name, and the RFC 5737 documentation addresses (192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24,
 # which nothing answers: a test that needs an address that cannot work); they are called (a), (b) and (c) below. Every use is counted per test and
@@ -106,7 +106,7 @@ def _where() -> str:
 
 
 def _network_allowed() -> bool:
-    return os.environ.get("STRATA_TEST_ALLOW_NETWORK") == "1"
+    return os.environ.get("NOSTROMA_TEST_ALLOW_NETWORK") == "1"
 
 
 _DOC_NETS = [ipaddress.ip_network(n) for n in ("192.0.2.0/24", "198.51.100.0/24", "203.0.113.0/24")]
@@ -148,7 +148,7 @@ def _check(sock, address) -> None:
         _allow("(c) documentation address", f"{address[0]}:{address[1]}")
         return                                              # RFC 5737 TEST-NET: reserved so that nothing answers (a test that needs an address that cannot work)
     _reached.append(f"{address[0]}:{address[1]} [{_where()}]")
-    raise ConnectionRefusedError(f"a test reached the network ({address[0]}:{address[1]}): fake it, or set STRATA_TEST_ALLOW_NETWORK=1 in a live test")
+    raise ConnectionRefusedError(f"a test reached the network ({address[0]}:{address[1]}): fake it, or set NOSTROMA_TEST_ALLOW_NETWORK=1 in a live test")
 
 
 def _guarded_connect(self, address):
@@ -166,7 +166,7 @@ def _guarded_getaddrinfo(host, *args, **kwargs):
         _allow("(b) own host name", host)
     if not (_is_loopback(host) or _network_allowed() or str(host).lower() == _OWN_NAME):
         _reached.append(f"{host} [{_where()}]")
-        raise socket.gaierror(socket.EAI_NONAME, f"a test looked up {host}: fake it, or set STRATA_TEST_ALLOW_NETWORK=1 in a live test")
+        raise socket.gaierror(socket.EAI_NONAME, f"a test looked up {host}: fake it, or set NOSTROMA_TEST_ALLOW_NETWORK=1 in a live test")
     return _real_getaddrinfo(host, *args, **kwargs)
 
 
@@ -185,7 +185,7 @@ def _no_network(request):
     if _reached:
         hosts = sorted(set(_reached))
         del _reached[:]
-        pytest.fail(f"{request.node.nodeid} reached the network: {', '.join(hosts)} (fake it, or set STRATA_TEST_ALLOW_NETWORK=1 in a live test)",
+        pytest.fail(f"{request.node.nodeid} reached the network: {', '.join(hosts)} (fake it, or set NOSTROMA_TEST_ALLOW_NETWORK=1 in a live test)",
                     pytrace=False)
 
 

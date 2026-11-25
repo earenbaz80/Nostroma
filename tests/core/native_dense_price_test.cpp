@@ -1,7 +1,7 @@
 // tests/core/native_dense_price_test.cpp - the layer split's pricing of a later stage's projections
 // (NativeDense::weight_bytes_for) against what NativeDense::load allocates for the same layers.
 //
-// With STRATA_HC_Q8=1 `load` also copies the GGUF's Q8_0 hyper-connection rows of its layers (and the final mixer's) to the
+// With NOSTROMA_HC_Q8=1 `load` also copies the GGUF's Q8_0 hyper-connection rows of its layers (and the final mixer's) to the
 // card; the search priced a stage without them (0.32 GiB of 2.2 GiB on the 48-layer UD-Q4_K_XL file, a 421 MiB WARNING on
 // every start of a two-card `--layer-split auto`).  The test builds a synthetic GGUF with two layers of projections, their
 // Q8_0 hyper-connection rows and the final mixer, and checks for each stage range that the price equals what `load` took
@@ -9,8 +9,8 @@
 // Needs a CUDA device for the arena (exits 77 without one).
 #include "gguf_fixture.hpp"
 
-#include "strata/core/native_dense.hpp"
-#include "strata/core/weights.hpp"
+#include "nostroma/core/native_dense.hpp"
+#include "nostroma/core/weights.hpp"
 
 #include <cuda_runtime.h>
 
@@ -24,8 +24,8 @@
 #include <vector>
 
 namespace fs = std::filesystem;
-using strata::core::NativeDense;
-using strata::core::WeightTable;
+using nostroma::core::NativeDense;
+using nostroma::core::WeightTable;
 
 namespace {
 int g_fail = 0;
@@ -38,7 +38,7 @@ struct TempDir {
     fs::path path;
     TempDir() {
         path = fs::temp_directory_path() /
-               ("strata-dense-price-test-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+               ("nostroma-dense-price-test-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
         fs::create_directories(path);
     }
     ~TempDir() {
@@ -131,9 +131,9 @@ int main() {
         return 77;
     }
 #if defined(_WIN32)
-    _putenv_s("STRATA_HC_Q8", "1");
+    _putenv_s("NOSTROMA_HC_Q8", "1");
 #else
-    setenv("STRATA_HC_Q8", "1", 1);
+    setenv("NOSTROMA_HC_Q8", "1", 1);
 #endif
     TempDir tmp;
     const fs::path pack = tmp.path / "pack";
@@ -144,7 +144,7 @@ int main() {
     for (const auto& n : names()) tensors.push_back({n, {NE0, NE1}, 8, seed++});
     fixture::write(shard, arch_keys(), tensors);
 
-    std::printf("1. STRATA_HC_Q8=1: the price of a stage's projections is what load allocates\n");
+    std::printf("1. NOSTROMA_HC_Q8=1: the price of a stage's projections is what load allocates\n");
     // qkv of the layer + the layer's hc rows + the final mixer and the PLE key (every stage loads both)
     const Stage s0 = run(pack, shard, 0, 1);   // blk.0: qkv + 3 hc rows; output_hc_down
     const Stage s1 = run(pack, shard, 1, 2);   // blk.1: qkv + 2 hc rows; output_hc_down

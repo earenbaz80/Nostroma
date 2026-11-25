@@ -1,6 +1,6 @@
 # Community results: RX 9070 XT 16 GB on Windows 11, the ready-made AMD engine (0.1.35), IQ3_S
 
-A run of the release's `strata-windows-x64-hip.zip` on a discrete card. [AMD_HIP.md](../../../docs/AMD_HIP.md#windows)
+A run of the release's `nostroma-windows-x64-hip.zip` on a discrete card. [AMD_HIP.md](../../../docs/AMD_HIP.md#windows)
 says the ready-made zip "has not run a model on a discrete card yet - please report"; this is that report, measured
 the way [COMMUNITY_BENCHMARKS.md](../../../docs/COMMUNITY_BENCHMARKS.md) suggests.
 
@@ -17,19 +17,19 @@ the way [COMMUNITY_BENCHMARKS.md](../../../docs/COMMUNITY_BENCHMARKS.md) suggest
 
 ## Software and settings
 
-- Strata `main` at `d9ab843` (engine 0.1.35), installed with
-  `START-HERE.bat --yes --family qwen --model IQ3_S --no-start --data-dir <folder>\Strata-data`.
+- Nostroma `main` at `d9ab843` (engine 0.1.35), installed with
+  `START-HERE.bat --yes --family qwen --model IQ3_S --no-start --data-dir <folder>\Nostroma-data`.
   Setup downloaded the ready-made AMD engine ("ready-made AMD engine 0.1.35 for gfx1100, gfx1101, gfx1102, gfx1200,
   gfx1201, gfx1030 (ROCm 10.2.0a20260930)"); nothing was compiled.
-- The engine loaded the bundled HIP runtime from `engine\` (`strata generate: HIP runtime <folder>\Strata\engine\amdhip64_7.dll`),
+- The engine loaded the bundled HIP runtime from `engine\` (`nostroma generate: HIP runtime <folder>\Nostroma\engine\amdhip64_7.dll`),
   so the #468 placement took effect.
 - Model: Qwen3.8-Flash-Next GSQ-RCO **IQ3_S** (ISTA-DASLab), both GGUFs, pack and MTP layer prepared by setup.
-- Config as written by setup: [strata-iq3_s.json](strata-iq3_s.json) (paths shortened to `<folder>`; no API key).
+- Config as written by setup: [nostroma-iq3_s.json](nostroma-iq3_s.json) (paths shortened to `<folder>`; no API key).
   Setup picked a **65,536-token context** ("recommended for your GPU"), KV int8, 32,768 KV cells resident in VRAM,
   `--expert-cache auto`, `--prefill auto`, `--spec 4 --spec-min-p 0.5`, MTP on, hipBLASLt tuning table
   `tools\hip\gfx1201-hipblaslt-100500.txt`. Images off (not available on Windows AMD yet). No calibration, no speed
   projection.
-- Server: `.venv\Scripts\python.exe serve\server.py --engine strata --config strata-iq3_s.json --port 8080`, started
+- Server: `.venv\Scripts\python.exe serve\server.py --engine nostroma --config nostroma-iq3_s.json --port 8080`, started
   fresh for this run, nothing else using it.
 
 ## Workload
@@ -43,7 +43,7 @@ three runs of each test:
 - **prefill 4K / 32K**: deterministic synthetic Python code, 3,927 / 31,059 prompt tokens, 1 token out.
 
 Per-run client results: [data/runs.json](data/runs.json). Engine log of the whole session:
-[data/strata-iq3_s.log](data/strata-iq3_s.log).
+[data/nostroma-iq3_s.log](data/nostroma-iq3_s.log).
 
 ## Results (engine timing lines; median [range] of 3 runs)
 
@@ -75,20 +75,20 @@ Per-run client results: [data/runs.json](data/runs.json). Engine log of the whol
 ## Answers to the AMD_HIP.md checklist
 
 - Card and driver: above.
-- `strata-device --list-devices` / `--selftest` (with `engine\rocm\bin` on the PATH): the card is listed as device 0,
+- `nostroma-device --list-devices` / `--selftest` (with `engine\rocm\bin` on the PATH): the card is listed as device 0,
   gfx1201, 15.9 GiB, wave32 (engine compiled for gfx1100, gfx1101, gfx1102, gfx1200, gfx1201, gfx1030), HIP runtime
-  `engine\amdhip64_7.dll`, and `strata-device selftest OK`. Full output:
-  [data/strata-device.log](data/strata-device.log).
-- End of `strata-iq3_s.log` and the speed lines: in [data/strata-iq3_s.log](data/strata-iq3_s.log); the session ran
+  `engine\amdhip64_7.dll`, and `nostroma-device selftest OK`. Full output:
+  [data/nostroma-device.log](data/nostroma-device.log).
+- End of `nostroma-iq3_s.log` and the speed lines: in [data/nostroma-iq3_s.log](data/nostroma-iq3_s.log); the session ran
   without errors from setup to the last request.
 
 ## Notes
 
-- **Setup first downloaded the model again.** The Strata folder was a fresh clone with the model files copied into
-  `Strata-data` next to it (with their `.done` marks). `%APPDATA%\Strata\settings.json` still had a `data_dir` from an
+- **Setup first downloaded the model again.** The Nostroma folder was a fresh clone with the model files copied into
+  `Nostroma-data` next to it (with their `.done` marks). `%APPDATA%\Nostroma\settings.json` still had a `data_dir` from an
   earlier install on this PC, and setup used that folder instead, so the copied files were not seen and the 54.8 GB
-  IQ3_S download started. `--data-dir <folder>\Strata-data` fixed it ("already downloaded" for both GGUFs). Behaviour
-  as designed (the remembered folder wins), but a check of `Strata-data` next to the Strata folder for complete files
+  IQ3_S download started. `--data-dir <folder>\Nostroma-data` fixed it ("already downloaded" for both GGUFs). Behaviour
+  as designed (the remembered folder wins), but a check of `Nostroma-data` next to the Nostroma folder for complete files
   before downloading would have avoided the download.
 - For orientation only, not a like-for-like comparison: the same CPU and RAM with an RTX 2080 Ti 11 GB on Linux
   (engine 0.1.34, CUDA, 262,144-token context) measured 56.0 tok/s decode and 839 / 783 tok/s prompt reads with the

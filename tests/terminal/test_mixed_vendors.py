@@ -133,15 +133,15 @@ class LaunchMix(unittest.TestCase):
         cat = catalog(self.hw)
         mcp = cat.mcp
         hw = dict(self.hw)
-        mcp.Strata._engine_vendor(hw)
+        mcp.Nostroma._engine_vendor(hw)
         self.assertEqual(hw["engine_vendor"], "nvidia")
         self.assertEqual(hw["gpu_note"], NOTE_AMD)
-        usable = cat.strata.engine_gpus(hw)
+        usable = cat.nostroma.engine_gpus(hw)
         self.assertEqual([g["name"] for g in usable], ["NVIDIA GeForce RTX 5060 Ti"])
-        self.assertEqual(cat.strata.gpu_options({"ram_gb": 20, "arena_gb": 30, "download_gb": 30}, 62.0, hw),
+        self.assertEqual(cat.nostroma.gpu_options({"ram_gb": 20, "arena_gb": 30, "download_gb": 30}, 62.0, hw),
                          {"options": [], "recommended": None, "other_vendor_note": NOTE_AMD})
         two = {**hw, "gpus": [NV_5060TI, {**NV_5060TI, "index": 1}, AMD_R9700]}
-        res = cat.strata.gpu_options({"ram_gb": 20, "arena_gb": 30, "download_gb": 30}, 62.0, two)
+        res = cat.nostroma.gpu_options({"ram_gb": 20, "arena_gb": 30, "download_gb": 30}, 62.0, two)
         self.assertEqual({tuple(o["cards"]) for o in res["options"]}, {(0,), (0, 1), (1,)})
 
 

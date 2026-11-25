@@ -1,8 +1,8 @@
-# Strata standard benchmark: NVIDIA RTX A4000, NVIDIA RTX A4000
+# Nostroma standard benchmark: NVIDIA RTX A4000, NVIDIA RTX A4000
 
-Protocol `strata-qwen38-thinking-v1-draft.1` (draft), run `20261020T091531Z-93d2b51e`, started 2026-10-20T09:15:31Z. **Status: complete.**
+Protocol `nostroma-qwen38-thinking-v1-draft.1` (draft), run `20261020T091531Z-93d2b51e`, started 2026-10-20T09:15:31Z. **Status: complete.**
 
-Written by `strata bench run`. The machine-readable result is [results.json](results.json); every request, its raw usage and timings and the client event offsets are in [outputs.jsonl](outputs.jsonl).
+Written by `nostroma bench run`. The machine-readable result is [results.json](results.json); every request, its raw usage and timings and the client event offsets are in [outputs.jsonl](outputs.jsonl).
 
 ## Hardware and software
 
@@ -10,7 +10,7 @@ Written by `strata bench run`. The machine-readable result is [results.json](res
 - CPU: Intel(R) Xeon(R) CPU E5-2643 v3 @ 3.40GHz; RAM: 62.7 GiB
 - Storage of the model files: nvme Lexar SSD NM620 512GB (nvme)
 - OS: Ubuntu 24.04.4 LTS 6.8.0-147-generic; drivers: gpu-driver 580.178.04; runtime: cuda 12.9, cuda-driver-supports 13.0
-- Strata commit: `a7bdbfdabc9a3e7c83e3dbc2441d0933569d773e`; engine 0.1.46; release build
+- Nostroma commit: `a7bdbfdabc9a3e7c83e3dbc2441d0933569d773e`; engine 0.1.46; release build
 - Background work: none besides sshd
 
 ## Model and configuration

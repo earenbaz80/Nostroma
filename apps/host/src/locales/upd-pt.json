@@ -1,5 +1,5 @@
 {
- "upd01": "Para atualizar o motor, o Strata precisa parar o modelo carregado: {0}.",
+ "upd01": "Para atualizar o motor, o Nostroma precisa parar o modelo carregado: {0}.",
  "upd02": "Primeiro o novo motor é baixado enquanto o modelo continua a responder. Depois o modelo para (as respostas em curso terminam antes), o motor é atualizado e pode iniciar o modelo de novo com as mesmas definições. Os seus modelos e definições são mantidos.",
  "upd03": "Parar e atualizar",
  "upd04": "A preparar o novo motor. {0} continua a funcionar até estar pronto.",

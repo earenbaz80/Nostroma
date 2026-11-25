@@ -1,13 +1,13 @@
 #pragma once
 #include <cstdlib>
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 #include <cstddef>
 #include <cstdint>
 #include <stdexcept>
-namespace strata::kernels {
-inline bool b60_layout_requested(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_B60_DECODE_LAYOUT");return p&&p[0]=='1';}();return on;}
-inline bool b60_single_actor_requested(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_BMG_SINGLE_ACTOR");return p&&p[0]=='1';}();return on;}
-inline bool b60_gr_q8_requested(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GR_Q8_UP32");return p&&p[0]=='1';}();return on&&b60_layout_requested();}
+namespace nostroma::kernels {
+inline bool b60_layout_requested(){static const bool on=[] {const char*p=nostroma::env("NOSTROMA_PRIVATE_B60_DECODE_LAYOUT");return p&&p[0]=='1';}();return on;}
+inline bool b60_single_actor_requested(){static const bool on=[] {const char*p=nostroma::env("NOSTROMA_PRIVATE_BMG_SINGLE_ACTOR");return p&&p[0]=='1';}();return on;}
+inline bool b60_gr_q8_requested(){static const bool on=[] {const char*p=nostroma::env("NOSTROMA_PRIVATE_GR_Q8_UP32");return p&&p[0]=='1';}();return on&&b60_layout_requested();}
 bool b60_weights_packed();
 void b60_set_weights_packed(bool);
 bool b60_main_actor();

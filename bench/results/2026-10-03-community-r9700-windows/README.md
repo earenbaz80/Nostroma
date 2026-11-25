@@ -1,6 +1,6 @@
 # Community benchmark: Radeon AI PRO R9700 (gfx1201), Windows 11, Ryzen 9 9950X
 
-Measured on 2026-10-03 by [HarukiOtaku](https://github.com/HarukiOtaku). Strata **0.1.38**
+Measured on 2026-10-03 by [HarukiOtaku](https://github.com/HarukiOtaku). Nostroma **0.1.38**
 (prebuilt Windows HIP engine), original Flash-Next **IQ2_XS**, one GPU, context limit
 262,144 tokens. Greedy, 256-token cap, reasoning off, three runs per length; prompt and
 decode figures are the engine's own log values.
@@ -61,17 +61,17 @@ code; GPU clocks and power limit are not recorded; the desktop was not isolated.
   engine **0.1.38** (each session logs `session is up (engine 0.1.38)`; its `engine/BUILD.json`
   reads prebuilt, hip, 0.1.38, ROCm 10.2.0a20260930, hipBLASLt 100500, gfx1201 — **quoted
   verbatim in [PROVENANCE.txt](PROVENANCE.txt)**, no build hash). Ready-made
-  `strata-windows-x64-hip.zip`; HIP runtime `engine/amdhip64_7.dll`.
+  `nostroma-windows-x64-hip.zip`; HIP runtime `engine/amdhip64_7.dll`.
 - **Not captured:** the Windows-AMD bundle `docs/AMD_HIP.md` asks for
-  (`strata-device --list-devices`, `--selftest`, engine-log tail), the hipBLASLt
-  `STRATA_HIPBLASLT_VERBOSE=1`/`fallbacks=0` check, clocks/power/thermals, per-run peak
+  (`nostroma-device --list-devices`, `--selftest`, engine-log tail), the hipBLASLt
+  `NOSTROMA_HIPBLASLT_VERBOSE=1`/`fallbacks=0` check, clocks/power/thermals, per-run peak
   memory, paging/OOM counters, the per-run answer text, and hashes for the IQ2_XS pack and the
   MTP tensors. The tuning table in use is
   upstream's own `tools/hip/gfx1201-hipblaslt-100500.txt` (32 rows, hipBLASLt 1.5.0 /
   ROCm 10.2.0a generation — the table is calibrated on a 2026-09-14 nightly while the engine
   reports a 2026-09-30 one, and upstream warns that a different 1.5.0 build may number its
   solutions differently) and the log shows it enabled, but it was
-  not verified with `STRATA_HIPBLASLT_VERBOSE=1`/`fallbacks=0`, and upstream's measured gain
+  not verified with `NOSTROMA_HIPBLASLT_VERBOSE=1`/`fallbacks=0`, and upstream's measured gain
   for it is +3.9 % on 4,210-token prompts.
 
 Engine state of the measured sessions, condensed from `engine-0.1.38.log` (verbatim
@@ -113,18 +113,18 @@ not enabled, which #42 documents as the expected desktop outcome for error 1314.
   sampling come from the launch configuration; the log shows the KV cell count but not the
   dtype.
 
-Engine arguments as written in `strata-iq2_xs.json` (the launchers start `serve/server.py`,
+Engine arguments as written in `nostroma-iq2_xs.json` (the launchers start `serve/server.py`,
 which spawns the engine with these):
 
 ```text
---pack  D:\AI\Strata\Strata-main\Strata-data\packs\iq2_xs
---native  D:\AI\Strata\Strata-main\Strata-data\models\IQ2_XS\Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00001-of-00002.gguf
---ple-gguf D:\AI\Strata\Strata-main\Strata-data\models\IQ2_XS\Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00002-of-00002.gguf
---expert-profile D:\AI\Strata\Strata-main\Strata-main\data\expert-profile.bin
+--pack  D:\AI\Nostroma\Nostroma-main\Nostroma-data\packs\iq2_xs
+--native  D:\AI\Nostroma\Nostroma-main\Nostroma-data\models\IQ2_XS\Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00001-of-00002.gguf
+--ple-gguf D:\AI\Nostroma\Nostroma-main\Nostroma-data\models\IQ2_XS\Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00002-of-00002.gguf
+--expert-profile D:\AI\Nostroma\Nostroma-main\Nostroma-main\data\expert-profile.bin
 --expert-cache auto --prefill auto --spec 4 --spec-min-p 0.5
---mtp D:\AI\Strata\Strata-main\Strata-data\mtp\rt
+--mtp D:\AI\Nostroma\Nostroma-main\Nostroma-data\mtp\rt
 --max-context 262144 --kv int8 --kv-resident 32768 --mmap-experts --resident-budget-gib 16
-env STRATA_HIPBLASLT_TUNING=...\tools\hip\gfx1201-hipblaslt-100500.txt
+env NOSTROMA_HIPBLASLT_TUNING=...\tools\hip\gfx1201-hipblaslt-100500.txt
 ```
 
 ## Method
@@ -150,7 +150,7 @@ env STRATA_HIPBLASLT_TUNING=...\tools\hip\gfx1201-hipblaslt-100500.txt
   run-to-run noise. The headline runs also use the **default prompt-kernel path** — the fused
   kernel is only in the A/B leg.
 - The switches `docs/DETAILS.md` recommends for byte-identical repeats and clean A/B arms
-  (`--prompt-cache 0 --adapt-swaps 0 --pcie-frac 0`, plus `STRATA_IQ_MT_MIN=1`) were **not**
+  (`--prompt-cache 0 --adapt-swaps 0 --pcie-frac 0`, plus `NOSTROMA_IQ_MT_MIN=1`) were **not**
   used, so cache adaptation and PCIe-fraction rounding can move results between requests and
   between arms — one plausible contributor to the 10.8 % default-vs-default spread.
 - The log carries **no timestamps or request ids**, so a row is bound to a log line by token
@@ -158,7 +158,7 @@ env STRATA_HIPBLASLT_TUNING=...\tools\hip\gfx1201-hipblaslt-100500.txt
   files. Re-run by hand: all 69 rows with a `usage` block (36 measured, 15 void, 18
   calibration/warm-up) match within ±1 and no `read_ms` repeats.
 - The `model` string is `qwen3.8-flash-next-iq2_xs` in the standard/240K/void files and
-  `strata` (the harness's fallback alias) in the six A/B files.
+  `nostroma` (the harness's fallback alias) in the six A/B files.
 - Prompt targets are labels, not sizes; the measured `engine_prompt_tokens` are reported
   per row. The needle is placed at 10/50/90 % of the **character** position and the repo's
   `tools/needle_bench.py` was **not** used, so the recall check is this harness's own.
@@ -233,14 +233,14 @@ Needle recall:
   KVM/VFIO guest, engine 0.1.x, 12,288 slots): 4K prompt **982 tok/s**, 4K decode **45.5**,
   16K prompt 1,402, 16K decode 48.3. Decode here is about twice that while **4K prompt is
   lower (855.8 vs 982)** — different model, RAM, OS and engine, so neither direction is a
-  controlled comparison; the opt-in matrix-core path (`STRATA_HIP_WMMA=1`) is documented to
+  controlled comparison; the opt-in matrix-core path (`NOSTROMA_HIP_WMMA=1`) is documented to
   take the R9700's 4K prompt from 1,784 to 2,427 tok/s, so 855.8 is **not** a ceiling.
-- **Environment flags.** `STRATA_PF_FUSED=1`: +0.8 % at 4K and +4.9 % at 32K against the
+- **Environment flags.** `NOSTROMA_PF_FUSED=1`: +0.8 % at 4K and +4.9 % at 32K against the
   slower of the two `default` sessions (against `ab-default2`, 1,175.4 tok/s, it is −5.3 %),
   so both deltas sit inside the 11.5 % control band and neither is attributable to the flag.
   The string "fused" does not occur anywhere in the 732-line log, but nothing in this packet
   or upstream documents a banner the flag would print on HIP, so the only defensible statement
-  is **no observable effect in one session per length**. `STRATA_PLE_BATCH=0` — the per-token
+  is **no observable effect in one session per length**. `NOSTROMA_PLE_BATCH=0` — the per-token
   PLE block [#541](https://github.com/earenbaz80/Nostroma/issues/541) names as the stall
   workaround, not a speed option — measured −12.8 % against `ab-default` / −21.3 % against
   `ab-default2` at 32K, in one session with no replicate. Raw legs:
@@ -270,7 +270,7 @@ Needle recall:
   is fully resolved.
 - **Engine version matters:** 0.1.38 reads the file tier unbuffered and
   [#577](https://github.com/earenbaz80/Nostroma/issues/577) measures prompts 15–40 % slower in
-  that regime (`STRATA_UNBUFFERED_LOAD=0` restores), so these prefill figures may *understate*
+  that regime (`NOSTROMA_UNBUFFERED_LOAD=0` restores), so these prefill figures may *understate*
   a buffered configuration; no such leg was run.
 - **No recall check at 248K:** the 240K series ran no needles, so recall is evidenced only at
   33,512 and 131,433 tokens.
@@ -282,9 +282,9 @@ Needle recall:
 - **247,990 < 262,144:** the longest prompt does not fill every token of the configured
   context window (94.6 % occupancy), and recall was checked only to 131,433 tokens — this is
   not a full-window or full-context-quality test.
-- **Not measured:** clocks/thermals, power limit, PCIe width, the `strata-device` bundle,
+- **Not measured:** clocks/thermals, power limit, PCIe width, the `nostroma-device` bundle,
   images, 384K/512K contexts, concurrency, sampled/thinking modes, quality baselines, and the
-  opt-in `STRATA_HIP_WMMA`/`STRATA_SELECT_WMMA` matrix-core paths.
+  opt-in `NOSTROMA_HIP_WMMA`/`NOSTROMA_SELECT_WMMA` matrix-core paths.
 - **Session replication:** 4K ran in 3 engine sessions and 32K in 5; **128K and 248K each ran
   in one** (the only other 128K requests are the excluded void attempt).
 - **Variance:** within a session <1 % at 32K/128K/248K and ~5 % at 4K; between sessions of the

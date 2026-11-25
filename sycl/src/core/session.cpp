@@ -1,19 +1,19 @@
 // src/core/session.cpp - one token through all 48 layers.  See the header for why the graphs are per-layer.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 #include <dpct/dpct.hpp>
-#include "strata/sycl_queue.hpp"
-#include "strata/core/session.hpp"
-#include "strata/kernels/mrope.hpp"
-#include "strata/core/progress.hpp"
+#include "nostroma/sycl_queue.hpp"
+#include "nostroma/core/session.hpp"
+#include "nostroma/kernels/mrope.hpp"
+#include "nostroma/core/progress.hpp"
 
-#include "strata/kernels/qsa.hpp"
-#include "strata/kernels/elementwise.hpp"
-#include "strata/kernels/quantize_act.hpp"
-#include "strata/kernels/s2_expert_grouped.hpp"
-#include "strata/kernels/cpu/pool.hpp"
-#include "strata/kernels/ngram.hpp"
+#include "nostroma/kernels/qsa.hpp"
+#include "nostroma/kernels/elementwise.hpp"
+#include "nostroma/kernels/quantize_act.hpp"
+#include "nostroma/kernels/s2_expert_grouped.hpp"
+#include "nostroma/kernels/cpu/pool.hpp"
+#include "nostroma/kernels/ngram.hpp"
 
 #include <atomic>
 #include <chrono>
@@ -26,12 +26,12 @@
 // spin is just less polite to the pipeline.
 #if defined(_MSC_VER) || defined(__x86_64__) || defined(__i386__)
 #include <immintrin.h>
-#define STRATA_SPIN_PAUSE() _mm_pause()
+#define NOSTROMA_SPIN_PAUSE() _mm_pause()
 #else
-#define STRATA_SPIN_PAUSE() ((void) 0)
+#define NOSTROMA_SPIN_PAUSE() ((void) 0)
 #endif
 
-namespace strata::core {
+namespace nostroma::core {
 namespace {
 
 constexpr uint64_t SESSION_STATE_ALIGN = 256;
@@ -51,7 +51,7 @@ uint64_t gdn_state_floats(const ModelGeometry& g) {
 /// `NG_HIST` rows of `hc_dim` floats: the PLE conv's history, which is the ONLY PLE state that lives in the
 /// session arena.  The table and the weights are model-level and the caller owns them.
 static uint64_t ple_hist_bytes() {
-    return (uint64_t) strata::kernels::NG_HIST * strata::kernels::NG_HC_DIM * sizeof(float);
+    return (uint64_t) nostroma::kernels::NG_HIST * nostroma::kernels::NG_HC_DIM * sizeof(float);
 }
 
 uint64_t session_bytes(const ModelGeometry& g, int64_t max_cells, int64_t k, int64_t layer_lo, int64_t layer_hi) {
@@ -134,13 +134,13 @@ uint64_t session_init(const ModelGeometry& g, int64_t max_cells, int64_t k, void
 void session_release(SessionState& s) {
     for (int64_t j = 0; s.qsa_states != nullptr && j < s.qsa_alloc; ++j)
         if (s.qsa_states[j].owns_rope) {
-            strata::kernels::rope_table_release(s.qsa_states[j].cos_tab);
+            nostroma::kernels::rope_table_release(s.qsa_states[j].cos_tab);
             s.qsa_states[j].owns_rope = false;
         }
 }
 
 void session_zero(SessionState& s, const ModelGeometry& g, const float* R_init, void* stream) {
-    dpct::queue_ptr cs = strata::q_of(stream);
+    dpct::queue_ptr cs = nostroma::q_of(stream);
     // the residual: `hc` copies of the one vector a caller hands in.  A real sequence's first token is the
     // embedding broadcast to every stream, which is the reference's own initial condition.
     if (R_init != nullptr) {
@@ -184,7 +184,7 @@ void gdn_point_at(const ModelGeometry& g, int64_t layer, SessionState& s) {
 /// The per-token staging every QSA layer's captured H2D reads FROM.  Must run before each replay: the graphs
 /// captured the SOURCE POINTER, not the value, and that is exactly why the buffers are pinned and fixed.
 void stage_token(const ModelGeometry& g, int64_t pos, int32_t pos_base, SessionState& s) {
-    const strata::kernels::QsaShapes sh = qsa_shapes(g);
+    const nostroma::kernels::QsaShapes sh = qsa_shapes(g);
     for (int64_t j = 0; j < s.qsa_alloc; ++j) {
         QsaState& q = s.qsa_states[s.qsa_ord0 + j];
         qsa_step_fill(q.host_step, pos, sh);
@@ -323,7 +323,7 @@ bool session_replay(const ModelGeometry &g, int64_t pos, int32_t pos_base,
                     SessionState &s, SessionGraphs &gr, void *stream,
                     std::string &err) try {
     if (!gr.captured || gr.n != g.n_layers) { err = "session_replay: not captured"; return false; }
-    dpct::queue_ptr cs = strata::q_of(stream);
+    dpct::queue_ptr cs = nostroma::q_of(stream);
     stage_token(g, pos, pos_base, s);
     for (int64_t l = 0; l < g.n_layers; ++l) {
         const dpct::err0 e =
@@ -361,7 +361,7 @@ bool session_replay_full(const ModelGeometry &g, int64_t pos, int32_t pos_base,
         err = "session_replay_full: not captured with post graphs";
         return false;
     }
-    dpct::queue_ptr cs = strata::q_of(stream);
+    dpct::queue_ptr cs = nostroma::q_of(stream);
     stage_token(g, pos, pos_base, s);
     for (int64_t l = 0; l < g.n_layers; ++l) {
         // `pre[l]` then `post[l]`, in the order `session_loop` uses.  The two are ordered on one stream, and
@@ -418,7 +418,7 @@ bool session_replay_stages_per_layer(const ModelGeometry& g, int64_t pos, int32_
         err = "session_replay_stages: not captured with the split";
         return false;
     }
-    dpct::queue_ptr cs = strata::q_of(stream);
+    dpct::queue_ptr cs = nostroma::q_of(stream);
     stage_token(g, pos, pos_base, s);
 
     // Four events PER LAYER rather than four reused ones: reusing them would need a synchronisation after
@@ -505,7 +505,7 @@ bool session_replay_stage_sweep(const ModelGeometry &g, int64_t pos,
         return false;
     }
     if (k < 1 || k > 5) { err = "session_replay_stage_sweep: k must be 1..5"; return false; }
-    dpct::queue_ptr cs = strata::q_of(stream);
+    dpct::queue_ptr cs = nostroma::q_of(stream);
     stage_token(g, pos, pos_base, s);
 
     dpct::event_ptr a, b;
@@ -570,7 +570,7 @@ bool session_replay_stage_prefixes(const ModelGeometry &g, int64_t pos,
         err = "session_replay_stage_prefixes: not captured with the split";
         return false;
     }
-    dpct::queue_ptr cs = strata::q_of(stream);
+    dpct::queue_ptr cs = nostroma::q_of(stream);
     stage_token(g, pos, pos_base, s);
     const int64_t n = g.n_layers;
     const size_t r_floats = (size_t) g.hc * (size_t) g.n_embd;
@@ -760,7 +760,7 @@ bool SessionLoopScratch::init(size_t parts_bytes_in, std::string &err) try {
     the migrated code and was removed or replaced with 0. You may need to check
     the migrated code.
     */
-    if (DPCT_CHECK_ERROR(y_miss = (float *)strata::host_malloc_polled(
+    if (DPCT_CHECK_ERROR(y_miss = (float *)nostroma::host_malloc_polled(
                              parts_bytes, dpct::get_in_order_queue())) != 0 || y_miss == nullptr) {
         err = "SessionLoopScratch: cudaHostAlloc for the pool's staging failed";
         return false;
@@ -778,14 +778,14 @@ bool SessionLoopScratch::init(size_t parts_bytes_in, std::string &err) try {
     // runs at 36.32.  It was being done and undone on EVERY token, which is a syscall pair on the critical path
     // for a property that wants to hold for the whole session.
     // The host's core is the pool's reserved one: the first physical core, or the last with --host-core last (F12).
-    const int host_core = strata::kernels::cpu::planned_host_core();
+    const int host_core = nostroma::kernels::cpu::planned_host_core();
     if (host_core >= 0) {
-        pinned_core = strata::kernels::cpu::pin_current_thread(host_core);
+        pinned_core = nostroma::kernels::cpu::pin_current_thread(host_core);
         pinned = pinned_core.valid;
     } else {
-        const std::vector<int> cores = strata::kernels::cpu::physical_cores(false);
+        const std::vector<int> cores = nostroma::kernels::cpu::physical_cores(false);
         if (!cores.empty()) {
-            pinned_core = strata::kernels::cpu::pin_current_thread(cores[0]);
+            pinned_core = nostroma::kernels::cpu::pin_current_thread(cores[0]);
             pinned = pinned_core.valid;
         }
     }
@@ -801,13 +801,13 @@ void SessionLoopScratch::free() {
     // Restores the caller's affinity on every path, including teardown: a library that silently leaves its
     // caller's thread nailed to one core is worse than one that never pinned at all.
     if (pinned) {
-        strata::kernels::cpu::restore_thread_affinity(pinned_core);
+        nostroma::kernels::cpu::restore_thread_affinity(pinned_core);
         pinned = false;
         pinned_core = {};
     }
     if (probe != nullptr) { dpct::destroy_event(probe); probe = nullptr; }
     if (y_miss != nullptr) {
-        strata::host_free_polled(y_miss, dpct::get_in_order_queue()); y_miss = nullptr;
+        nostroma::host_free_polled(y_miss, dpct::get_in_order_queue()); y_miss = nullptr;
     }
     parts_bytes = 0;
 }
@@ -820,7 +820,7 @@ bool session_loop(const ModelGeometry &g, int64_t pos, int32_t pos_base,
     if (gr.parts_dev == nullptr) { err = "session_loop: the graphs were captured without a parts buffer"; return false; }
     if (s.db == nullptr) { err = "session_loop: no doorbell; the loop has nothing to poll"; return false; }
 
-    dpct::queue_ptr cs = strata::q_of(stream);
+    dpct::queue_ptr cs = nostroma::q_of(stream);
     const int64_t k = s.k;
     const size_t parts_bytes = (size_t) k * g.n_embd * 4;
     ++gr.calls_total;
@@ -985,7 +985,7 @@ bool session_loop(const ModelGeometry &g, int64_t pos, int32_t pos_base,
                 return false;
             }
             if (rang) break;                             // rung, and the graph is still running: the overlap
-            STRATA_SPIN_PAUSE();
+            NOSTROMA_SPIN_PAUSE();
         }
         if (mid_graph) ++gr.rings_mid_graph;
         // the window, from just before the launch to the instant the ring was seen
@@ -1000,7 +1000,7 @@ bool session_loop(const ModelGeometry &g, int64_t pos, int32_t pos_base,
 
         // the ring can arrive before its payload on some GPUs (elementwise.hpp): wait until it is whole, or the
         // pool reads a partly stale payload and the answer is garbage (the A770's "!!!!")
-        if (!strata::kernels::doorbell_wait_payload(s.db->h_seq, s.db->h_x_f, g.n_embd, s.db->h_ids,
+        if (!nostroma::kernels::doorbell_wait_payload(s.db->h_seq, s.db->h_x_f, g.n_embd, s.db->h_ids,
                                                     s.db->h_weights, k, (uint32_t) want)) {
             err = "session_loop: layer " + std::to_string(l) + " rang but its payload never arrived whole";
             return false;
@@ -1148,7 +1148,7 @@ bool session_token(const WeightTable &tables, const ModelGeometry &g,
                    int64_t pos, int32_t pos_base, SessionState &s,
                    const float *parts, void *stream, bool sync_every_layer,
                    std::string &err) try {
-    dpct::queue_ptr cs = strata::q_of(stream);
+    dpct::queue_ptr cs = nostroma::q_of(stream);
     int64_t qsa_index = 0;
     int64_t gdn_index = 0;
 
@@ -1208,9 +1208,9 @@ catch (sycl::exception const &exc) {
   std::exit(1);
 }
 
-}  // namespace strata::core
+}  // namespace nostroma::core
 
-namespace strata::core {
+namespace nostroma::core {
 
 bool session_capture_token(const WeightTable &tables, const ModelGeometry &g,
                            SessionState &s, float *parts_dev,
@@ -1256,18 +1256,18 @@ bool session_capture_token(const WeightTable &tables, const ModelGeometry &g,
         if (!ok) { err = "session_capture_token: pre layer " + std::to_string(l) + ": " + err; break; }
         if (hits != nullptr) {
             // After the ring (and the shared expert): the GPU's experts run while the CPU computes the misses.
-            strata::kernels::moe_hit_select(s.moe.ids, hits->d_res + l * hits->n_expert, (int) s.k,
+            nostroma::kernels::moe_hit_select(s.moe.ids, hits->d_res + l * hits->n_expert, (int) s.k,
                                             (int) hits->n_expert, hits->d_slot, hits->d_dst, hits->d_count, (void*) cs);
-            strata::kernels::quantize_q8_0_scaled(s.block.mixed, hits->x_q8, hits->x_scale, g.n_embd, (void*) cs);
-            strata::kernels::moe_hit_grouped_s2_dev(hits->cache_base, hits->d_slot, hits->d_dst, hits->d_count, s.k,
+            nostroma::kernels::quantize_q8_0_scaled(s.block.mixed, hits->x_q8, hits->x_scale, g.n_embd, (void*) cs);
+            nostroma::kernels::moe_hit_grouped_s2_dev(hits->cache_base, hits->d_slot, hits->d_dst, hits->d_count, s.k,
                                                     hits->blob, hits->x_q8, hits->scratch, hits->hit_out, (void*) cs,
                                                     hits->x_scale);
         }
-        strata::kernels::doorbell_wait(s.db->d_flag, s.db->d_seq, (void*) cs);
+        nostroma::kernels::doorbell_wait(s.db->d_flag, s.db->d_seq, (void*) cs);
         // A kernel, not a memcpy node: a copy-engine node splits the WDDM submission (measured 67 flushes/token).
-        strata::kernels::copy_from_mapped(parts_dev, y_dev, (int64_t) (parts_bytes / sizeof(float)), (void*) cs);
+        nostroma::kernels::copy_from_mapped(parts_dev, y_dev, (int64_t) (parts_bytes / sizeof(float)), (void*) cs);
         if (hits != nullptr)
-            strata::kernels::moe_hit_add(parts_dev, hits->hit_out, hits->d_dst, hits->d_count, s.k, g.n_embd, (void*) cs);
+            nostroma::kernels::moe_hit_add(parts_dev, hits->hit_out, hits->d_dst, hits->d_count, s.k, g.n_embd, (void*) cs);
         ok = block_layer_post(tables, g, l, s.k, s.moe, s.block, parts_dev, (void*) cs, err);
         if (!ok) { err = "session_capture_token: post layer " + std::to_string(l) + ": " + err; break; }
         if (qsa) ++qsa_index;
@@ -1333,7 +1333,7 @@ bool session_run_token(const ModelGeometry &g, int64_t pos, int32_t pos_base,
                        float *y_miss_host, void *stream, std::string &err) try {
     if (!tg.captured) { err = "session_run_token: not captured"; return false; }
     if (y_miss_host != tg.y_src) { err = "session_run_token: the staging buffer is not the captured one"; return false; }
-    dpct::queue_ptr cs = strata::q_of(stream);
+    dpct::queue_ptr cs = nostroma::q_of(stream);
     ++tg.calls;
     stage_token(g, pos, pos_base, s);
     doorbell_reset(*s.db);
@@ -1358,7 +1358,7 @@ bool session_run_token(const ModelGeometry &g, int64_t pos, int32_t pos_base,
     (void)DPCT_CHECK_ERROR(
         (cs->ext_oneapi_empty())); // one flush, so WDDM submits the graph now
     static const int flush_us = [] {
-        const char* e = strata::env("NOSTROMA_TG_FLUSH_US");
+        const char* e = nostroma::env("NOSTROMA_TG_FLUSH_US");
         return e ? std::atoi(e) : 2000;   // 24 Sep: 0 flushes run as fast as 5 us ones; this only notices faults
     }();
     volatile uint32_t* const seq = s.db->h_seq;
@@ -1371,7 +1371,7 @@ bool session_run_token(const ModelGeometry &g, int64_t pos, int32_t pos_base,
         uint32_t spins = 0;
         progress_at("token: waiting for the GPU to reach layer", l);
         while (*seq < want) {
-            STRATA_SPIN_PAUSE();
+            NOSTROMA_SPIN_PAUSE();
             if ((++spins & 1023u) != 0) continue;
             const auto now = Clock::now();
             if (now - last_flush > std::chrono::microseconds(flush_us)) {
@@ -1447,4 +1447,4 @@ void token_graph_free(TokenGraph& tg) {
     tg = TokenGraph{};
 }
 
-}  // namespace strata::core
+}  // namespace nostroma::core

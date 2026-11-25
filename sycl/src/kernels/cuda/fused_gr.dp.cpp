@@ -1,25 +1,25 @@
 #include "b60_weight_cache.hpp"
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 #include "b60_layout_state.hpp"
-#include "strata/kernels/q8_1_finite.hpp"
-// src/kernels/cuda/fused_gr.cu - see include/strata/kernels/fused_gr.hpp.
+#include "nostroma/kernels/q8_1_finite.hpp"
+// src/kernels/cuda/fused_gr.cu - see include/nostroma/kernels/fused_gr.hpp.
 #define DPCT_PROFILING_ENABLED
 #include <mutex>
-#include "strata/kprof.hpp"
+#include "nostroma/kprof.hpp"
 #include <sycl/ext/intel/esimd.hpp>
 #include <sycl/ext/intel/experimental/esimd/math.hpp>
-#include "strata/core/geometry.hpp"
+#include "nostroma/core/geometry.hpp"
 #include <unordered_map>
 #include <sycl/sycl.hpp>
 #include <utility>
 #include <sycl/ext/intel/experimental/grf_size_properties.hpp>
 #include <dpct/dpct.hpp>
-#include "strata/sycl_queue.hpp"
-#include "strata/workload_trace.hpp"
-#include "strata/core/emulate.hpp"
-#include "strata/kernels/fused_gr.hpp"
-#include "strata/kernels/bf16_bits.hpp"
-#include "strata/kernels/verify_kernels.hpp"
+#include "nostroma/sycl_queue.hpp"
+#include "nostroma/workload_trace.hpp"
+#include "nostroma/core/emulate.hpp"
+#include "nostroma/kernels/fused_gr.hpp"
+#include "nostroma/kernels/bf16_bits.hpp"
+#include "nostroma/kernels/verify_kernels.hpp"
 
 #include <atomic>
 #include <cstdio>
@@ -29,13 +29,13 @@
 #include <string>
 #include <vector>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 
-constexpr int N = strata::core::kCompiledGeometry.n_embd;         // 2560 in Flash-Next
-constexpr int HC = strata::core::kCompiledGeometry.hc;           // streams
+constexpr int N = nostroma::core::kCompiledGeometry.n_embd;         // 2560 in Flash-Next
+constexpr int HC = nostroma::core::kCompiledGeometry.hc;           // streams
 constexpr int D = N * HC;       // 10240
-constexpr int LR = strata::core::kCompiledGeometry.hc_lr;         // 320
+constexpr int LR = nostroma::core::kCompiledGeometry.hc_lr;         // 320
 static_assert(N % 512 == 0 && LR % 64 == 0 && LR >= 256 && LR <= 512, "fused_gr: n_embd must be a multiple of 512 and hc_lr one of 256..512 in steps of 64 (the lane rule `lane < LR / 8 - 32` and the 128-column slices)");
 constexpr int THREADS = 256;
 constexpr int WARPS = THREADS / 32;
@@ -52,10 +52,10 @@ constexpr int TQ = TILE / 8 / 32;      // uint4 weight chunks per lane per tile
 // SYCL port: the down kernel's 41 work-groups filled 15% of the B70's threads (metrics 2026-09-30); each row's
 // D = 4 tiles are split over DOWN_SPLIT work-groups that write partial sums, summed in a fixed order by the up
 // kernel (deterministic, unlike atomics) before the row's nonlinearity.
-#ifndef STRATA_GR_DOWN_SPLIT
-#define STRATA_GR_DOWN_SPLIT (D / TILE)   // 4: one tile per split (1: the unsplit order, for A/B)
+#ifndef NOSTROMA_GR_DOWN_SPLIT
+#define NOSTROMA_GR_DOWN_SPLIT (D / TILE)   // 4: one tile per split (1: the unsplit order, for A/B)
 #endif
-constexpr int DOWN_SPLIT = STRATA_GR_DOWN_SPLIT;
+constexpr int DOWN_SPLIT = NOSTROMA_GR_DOWN_SPLIT;
 constexpr int DOWN_BLOCKS = LR / WARPS;          // 40 blocks of 8 rows; one more for the inject rows
 constexpr int UP_COLS = 32;                      // columns d per `up` block (x 4 streams = 128 rows)
 constexpr int UP_BLOCKS = N / UP_COLS;           // 80
@@ -75,7 +75,7 @@ __dpct_inline__ float warp_sum(float v) {
 }
 
 int g_gr_cached_norm_mode=[](){
-    const char* e=strata::env("NOSTROMA_SYCL_GR_CACHED_NORM");
+    const char* e=nostroma::env("NOSTROMA_SYCL_GR_CACHED_NORM");
     return e&&std::atoi(e)==3?3:0;
 }();
 bool gr_overlap(const void* a,size_t as,const void* b,size_t bs){
@@ -568,12 +568,12 @@ __dpct_inline__ void gr_norm_cached_write_kernel(GrMulti m) {
     }
 }
 const bool g_gr_norm_direct_bounds = [] {
-    const char* value = strata::env("NOSTROMA_SYCL_GR_NORM_BOUNDS");
+    const char* value = nostroma::env("NOSTROMA_SYCL_GR_NORM_BOUNDS");
     return value && value[0] == '1';
 }();
 
-bool gr_norm_split() {   // default; STRATA_GR_NORM_SPLIT=0: one work-group per token
-    static const bool v = strata::env("NOSTROMA_GR_NORM_SPLIT") == nullptr || std::atoi(strata::env("NOSTROMA_GR_NORM_SPLIT")) != 0;
+bool gr_norm_split() {   // default; NOSTROMA_GR_NORM_SPLIT=0: one work-group per token
+    static const bool v = nostroma::env("NOSTROMA_GR_NORM_SPLIT") == nullptr || std::atoi(nostroma::env("NOSTROMA_GR_NORM_SPLIT")) != 0;
     return v;
 }
 
@@ -809,12 +809,12 @@ __dpct_inline__ void gr_down_reduce_kernel(GrMulti m) {
 // Large-GRF mode (256 registers per thread instead of 128) for the sliced down kernel and the multi-token up kernel.
 // On the A770 the up kernel spills ~3.4 KB per thread at 128 (unitrace). Large GRF halves the threads an Xe core keeps
 // resident, so it is the default on Arc A-series (Alchemist) only, where it was measured; Battlemage and anything else
-// keep the compiler's default GRF and the same kernels as before. STRATA_GR_LARGE_GRF=1 forces it on, =0 off.
+// keep the compiler's default GRF and the same kernels as before. NOSTROMA_GR_LARGE_GRF=1 forces it on, =0 off.
 bool gr_large_grf(sycl::queue* q) {
     static const bool v = [q] {
-        const char* e = strata::env("NOSTROMA_GR_LARGE_GRF");
+        const char* e = nostroma::env("NOSTROMA_GR_LARGE_GRF");
         if (e != nullptr) return std::atoi(e) != 0;
-        return strata::intel_gpu_gen(q->get_device()) == strata::IntelGpuGen::Alchemist;
+        return nostroma::intel_gpu_gen(q->get_device()) == nostroma::IntelGpuGen::Alchemist;
     }();
     return v;
 }
@@ -823,17 +823,17 @@ bool gr_large_grf(sycl::queue* q) {
 // groups instead of 160), where only group 0 writes the per-token lo values (every group computes the same ones). Every
 // output is the same float sum in the same order (gr_bench checksums unchanged). A770, gr_bench 1-6 tokens:
 // 117-180 -> 87-149 us; decode 28.04-28.54 -> 29.99-30.00 tok/s. Default on Alchemist only, where it was measured;
-// elsewhere the 80 / 160-group kernels as before. STRATA_GR_MORE_GROUPS=1 forces it on, =0 off.
+// elsewhere the 80 / 160-group kernels as before. NOSTROMA_GR_MORE_GROUPS=1 forces it on, =0 off.
 bool gr_more_groups(sycl::queue* q) {
     static const bool v = [q] {
-        const char* e = strata::env("NOSTROMA_GR_MORE_GROUPS");
+        const char* e = nostroma::env("NOSTROMA_GR_MORE_GROUPS");
         if (e != nullptr) return std::atoi(e) != 0;
-        return strata::intel_gpu_gen(q->get_device()) == strata::IntelGpuGen::Alchemist;
+        return nostroma::intel_gpu_gen(q->get_device()) == nostroma::IntelGpuGen::Alchemist;
     }();
     return v;
 }
-bool gr_down_sliced() {   // default (gr_bench: GR read 108.6 -> 76.5 us at 6 tokens); STRATA_GR_DOWN_SLICED=0: direct
-    static const bool v = strata::env("NOSTROMA_GR_DOWN_SLICED") == nullptr || std::atoi(strata::env("NOSTROMA_GR_DOWN_SLICED")) != 0;
+bool gr_down_sliced() {   // default (gr_bench: GR read 108.6 -> 76.5 us at 6 tokens); NOSTROMA_GR_DOWN_SLICED=0: direct
+    static const bool v = nostroma::env("NOSTROMA_GR_DOWN_SLICED") == nullptr || std::atoi(nostroma::env("NOSTROMA_GR_DOWN_SLICED")) != 0;
     return v;
 }
 float* slice_partials(sycl::queue* q) {
@@ -846,8 +846,8 @@ float* slice_partials(sycl::queue* q) {
     bufs[q] = p;
     return p;
 }
-bool gr_down_direct() {   // default; STRATA_GR_DOWN_DIRECT=0: the tiled kernel (gr_bench: 13-19% slower at 3-6 tokens)
-    static const bool v = strata::env("NOSTROMA_GR_DOWN_DIRECT") == nullptr || std::atoi(strata::env("NOSTROMA_GR_DOWN_DIRECT")) != 0;
+bool gr_down_direct() {   // default; NOSTROMA_GR_DOWN_DIRECT=0: the tiled kernel (gr_bench: 13-19% slower at 3-6 tokens)
+    static const bool v = nostroma::env("NOSTROMA_GR_DOWN_DIRECT") == nullptr || std::atoi(nostroma::env("NOSTROMA_GR_DOWN_DIRECT")) != 0;
     return v;
 }
 
@@ -939,7 +939,7 @@ auto &lo = *sycl::ext::oneapi::group_local_memory_for_overwrite<
             if (apply) { bo = pBo[d0 + dd]; ip = pIp[c]; }
         }
         float mine = 0.0f;
-        if constexpr (ILP) {   // STRATA_GR_UP_ILP: the T dots first, then their butterflies interleaved step by step -
+        if constexpr (ILP) {   // NOSTROMA_GR_UP_ILP: the T dots first, then their butterflies interleaved step by step -
             float accs[kFusedGrMaxT];   // each value sees warp_sum's shuffles in warp_sum's order: the same bits
 #pragma unroll
             for (int k = 0; k < kFusedGrMaxT; ++k) {
@@ -1148,7 +1148,7 @@ auto &lo = *sycl::ext::oneapi::group_local_memory_for_overwrite<
 }
 
 bool g_gr_lo_once = [] {
-    const char* value = strata::env("NOSTROMA_SYCL_GR_LO_ONCE");
+    const char* value = nostroma::env("NOSTROMA_SYCL_GR_LO_ONCE");
     return value && std::atoi(value) != 0;
 }();
 void launch_gr_up_prepared_lo(const GrMulti& m0, dpct::queue_ptr stream) {
@@ -1167,7 +1167,7 @@ void launch_gr_up_prepared_lo(const GrMulti& m0, dpct::queue_ptr stream) {
 // gr_more_groups launches (BIG: large GRF, as gr_large_grf)
 template <bool BIG>
 void launch_gr_down_more(dpct::queue_ptr st, const GrMulti& m) {
-    strata::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler& cgh) {
+    nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler& cgh) {
         sycl::local_accessor<float, 1> tl(sycl::range<1>((size_t) kFusedGrMaxT * GRS_COLS), cgh);
         const sycl::nd_range<3> nr(sycl::range(1, 1, GRS_SLICES * GRS_RB) * sycl::range(1, 1, THREADS), sycl::range(1, 1, THREADS));
         auto body = [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] {
@@ -1180,7 +1180,7 @@ void launch_gr_down_more(dpct::queue_ptr st, const GrMulti& m) {
             cgh.parallel_for<dpct_kernel_name<class gr_down_sliced_more, dpct_kernel_scalar<0>>>(nr, body);
     });
     const unsigned nred = unsigned((m.T * GRS_ROWS + 127) / 128);
-    strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_down_reduce_more, dpct_kernel_scalar<BIG ? 1 : 0>>>(
+    nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_down_reduce_more, dpct_kernel_scalar<BIG ? 1 : 0>>>(
         sycl::nd_range<3>(sycl::range(1, 1, nred) * sycl::range(1, 1, 128), sycl::range(1, 1, 128)),
         [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] { gr_down_reduce_kernel<true>(m); });
 }
@@ -1189,25 +1189,25 @@ void launch_gr_up_more(dpct::queue_ptr st, const GrMulti& m) {
     const sycl::nd_range<3> nr(sycl::range(1, 1, UPM_BLOCKS_MORE) * sycl::range(1, 1, THREADS), sycl::range(1, 1, THREADS));
     auto body = [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] { gr_up_multi_kernel<UPM_COLS_MORE, false, true>(m); };
     if constexpr (BIG)
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_up_multi_more, dpct_kernel_scalar<1>>>(
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_up_multi_more, dpct_kernel_scalar<1>>>(
             nr, sycl::ext::oneapi::experimental::properties{sycl::ext::oneapi::experimental::use_root_sync,
                                                             sycl::ext::intel::experimental::grf_size<256>}, body);
     else
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_up_multi_more, dpct_kernel_scalar<0>>>(
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_up_multi_more, dpct_kernel_scalar<0>>>(
             nr, sycl::ext::oneapi::experimental::properties{sycl::ext::oneapi::experimental::use_root_sync}, body);
 }
 
 
 // SYCL port: the up step with COLS columns per block. 16 (160 blocks, 8 rows per warp one after another) was
-// latency-bound on Xe2 (B70: 23.7 us for 6.55 MB of BF16, 46% of the bandwidth). STRATA_GR_UP_COLS=8 / 4 run 320 /
+// latency-bound on Xe2 (B70: 23.7 us for 6.55 MB of BF16, 46% of the bandwidth). NOSTROMA_GR_UP_COLS=8 / 4 run 320 /
 // 640 blocks with 4 / 2 rows per warp; every row's dot and butterfly and every column's stream sum are the same.
 inline int gr_up_cols() {
-    static const int v = [] { const char* e = strata::env("NOSTROMA_GR_UP_COLS"); const int c = e ? std::atoi(e) : UPM_COLS;
+    static const int v = [] { const char* e = nostroma::env("NOSTROMA_GR_UP_COLS"); const int c = e ? std::atoi(e) : UPM_COLS;
                               return c == 4 || c == 8 || c == 32 || c == 64 ? c : UPM_COLS; }();
     return v;
 }
 inline bool gr_up_ilp() {
-    static const bool v = [] { const char* e = strata::env("NOSTROMA_GR_UP_ILP"); return e && e[0] == '1'; }();
+    static const bool v = [] { const char* e = nostroma::env("NOSTROMA_GR_UP_ILP"); return e && e[0] == '1'; }();
     return v;
 }
 template <int C>
@@ -1224,17 +1224,17 @@ void launch_gr_up_cols(dpct::queue_ptr st, const GrMulti& m, bool grf) {
         }
     }
     if (grf) {   // Arc A-series: large-GRF mode (256 regs/thread); at 128 this kernel spills ~3.4 KB/thread on the A770
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_up_multi_cols_grf256, dpct_kernel_scalar<C>>>(r,
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_up_multi_cols_grf256, dpct_kernel_scalar<C>>>(r,
             sycl::ext::oneapi::experimental::properties{sycl::ext::oneapi::experimental::use_root_sync,
                                                         sycl::ext::intel::experimental::grf_size<256>},
             [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] { gr_up_multi_kernel<C>(m); });
         return;
     }
     if (gr_up_ilp())
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_up_multi_cols_ilp, dpct_kernel_scalar<C>>>(r, exp_props,
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_up_multi_cols_ilp, dpct_kernel_scalar<C>>>(r, exp_props,
             [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] { gr_up_multi_kernel<C, true>(m); });
     else
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_up_multi_cols, dpct_kernel_scalar<C>>>(r, exp_props,
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_up_multi_cols, dpct_kernel_scalar<C>>>(r, exp_props,
             [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] { gr_up_multi_kernel<C>(m); });
 }
 inline void launch_gr_up_multi(dpct::queue_ptr st, const GrMulti& m, bool grf = false) {
@@ -1247,7 +1247,7 @@ inline void launch_gr_up_multi(dpct::queue_ptr st, const GrMulti& m, bool grf = 
     }
 }
 
-// ================================ hc read v3 (opt-in: STRATA_GR_V3=1) - two kernels, stream-split ================
+// ================================ hc read v3 (opt-in: NOSTROMA_GR_V3=1) - two kernels, stream-split ================
 // The norm kernel runs on only T blocks (~16 us of pure latency per call) and `down` on 41 blocks (~280 GB/s).
 // v3: `down` is split over (row group, stream[, column half]) = 164 or 328 blocks; each block stages its slice of
 // R' * w_norm for the T tokens, reduces that slice's sum of squares itself, and writes UNSCALED partial dots.  The
@@ -1507,10 +1507,10 @@ auto &lo = *sycl::ext::oneapi::group_local_memory_for_overwrite<
     }
 }
 // ================================ #315: split / staged - the same arithmetic, split differently ==================
-// The multi read's variants beside the plain read (0.1.31's default; not main's opt-in STRATA_GR_V3 read, which sums
+// The multi read's variants beside the plain read (0.1.31's default; not main's opt-in NOSTROMA_GR_V3 read, which sums
 // in another order).  Every variant computes each output with exactly the plain read's operations in its order (so
 // bitwise the plain read and the single-token read); only who does what, and when, changes.  `fused_gr_check`
-// compares them on the card before a verify window uses them (STRATA_HC_SPLIT below).
+// compares them on the card before a verify window uses them (NOSTROMA_HC_SPLIT below).
 //  - the norm (split and staged): one block per token AND stream instead of one per token.  Each thread visits
 //    exactly the elements, in the order, it visited for that stream in the plain read, so every sum of squares and rs
 //    is the same; then it recomputes its R' * w_norm and writes it times rs (the plain read stored the product and
@@ -1609,10 +1609,10 @@ auto &part = *sycl::ext::oneapi::group_local_memory_for_overwrite<float[WARPS]>(
 
 #if defined(DPCT_COMPATIBILITY_TEMP) && DPCT_COMPATIBILITY_TEMP >= 800 &&      \
     !defined(__HIPCC__)
-#define STRATA_GR_CP_ASYNC 1
+#define NOSTROMA_GR_CP_ASYNC 1
 #endif
 __dpct_inline__ void cp_async16(void *smem, const void *gmem) {
-#if defined(STRATA_GR_CP_ASYNC)
+#if defined(NOSTROMA_GR_CP_ASYNC)
     auto sa = smem;
 #if defined(__SYCL_DEVICE_ONLY__) && defined(__NVPTX__)
     asm volatile("cp.async.cg.shared.global [%0], [%1], 16;\n" ::"r"(sa),
@@ -1635,7 +1635,7 @@ __dpct_inline__ void cp_async16(void *smem, const void *gmem) {
 #endif
 }
 __dpct_inline__ void cp_async_commit() {
-#if defined(STRATA_GR_CP_ASYNC)
+#if defined(NOSTROMA_GR_CP_ASYNC)
 #if defined(__SYCL_DEVICE_ONLY__) && defined(__NVPTX__)
     asm volatile("cp.async.commit_group;\n" ::: "memory");
 #else
@@ -1644,7 +1644,7 @@ __dpct_inline__ void cp_async_commit() {
 #endif
 }
 __dpct_inline__ void cp_async_wait1() {
-#if defined(STRATA_GR_CP_ASYNC)
+#if defined(NOSTROMA_GR_CP_ASYNC)
 #if defined(__SYCL_DEVICE_ONLY__) && defined(__NVPTX__)
     asm volatile("cp.async.wait_group 1;\n" ::: "memory");
 #else
@@ -1653,7 +1653,7 @@ __dpct_inline__ void cp_async_wait1() {
 #endif
 }
 __dpct_inline__ void cp_async_wait0() {
-#if defined(STRATA_GR_CP_ASYNC)
+#if defined(NOSTROMA_GR_CP_ASYNC)
 #if defined(__SYCL_DEVICE_ONLY__) && defined(__NVPTX__)
     asm volatile("cp.async.wait_group 0;\n" ::: "memory");
 #else
@@ -1821,7 +1821,7 @@ int down_chunk(bool staged, int* tile_out) {
         the code.
         */
         optin = dpct::get_device(dev).get_local_mem_size();
-        optin = strata::smem_optin_of(optin);   // STRATA_EMULATE_CC (tests only)
+        optin = nostroma::smem_optin_of(optin);   // NOSTROMA_EMULATE_CC (tests only)
         // the down kernel stages n_tok*TILEV floats of dynamic shared memory - 80 KB at the full 8 tokens of the
         // CUDA tile.  sm_75 gets the smaller tile: all eight tokens fit one 40 KiB launch there (no more slicing),
         // the TQ-5 prefetch holds half the registers, and the smaller blocks raise how many of the 41-block grid
@@ -1834,7 +1834,7 @@ int down_chunk(bool staged, int* tile_out) {
         int cc_maj = 0, cc_min = 0;
         cc_maj = dpct::get_device(dev).get_major_version();
         cc_min = dpct::get_device(dev).get_minor_version();
-        const bool small_tile = strata::cc_major_of(cc_maj) * 10 + strata::cc_minor_of(cc_min) == 75;
+        const bool small_tile = nostroma::cc_major_of(cc_maj) * 10 + nostroma::cc_minor_of(cc_min) == 75;
 #endif
         const int tv = small_tile ? (N / 2) : N;
         tile[dev] = tv;
@@ -1874,7 +1874,7 @@ int down_chunk(bool staged, int* tile_out) {
         int cc = 0, per_block = 0;
         cc = dpct::get_device(dev).get_major_version();
         per_block = (int) dpct::get_device(dev).get_local_mem_size();   // SYCL: the work-group local memory
-        cc = strata::cc_major_of(cc);
+        cc = nostroma::cc_major_of(cc);
         const int usable = (cc >= 7 && optin > 0) ? optin : per_block;
 #endif
         const int capacity = usable / (int) (tv * sizeof(float));
@@ -1889,7 +1889,7 @@ int down_chunk(bool staged, int* tile_out) {
 
 // The multi read as `variant` (kHcPlain, kHcSplit or kHcStaged): the norm, the down projection in launches of as
 // many tokens as fit the card, the up projection; the profile's stamps after the norm and after the down projection.
-// kHcPlain is the default read exactly as before (never main's opt-in STRATA_GR_V3 path, which fused_gr_read_multi
+// kHcPlain is the default read exactly as before (never main's opt-in NOSTROMA_GR_V3 path, which fused_gr_read_multi
 // takes first).
 void launch_multi(const GrMulti &m, int variant, dpct::queue_ptr st,
                   unsigned long long *stamp_buf, int stamp_i0) {
@@ -1898,7 +1898,7 @@ void launch_multi(const GrMulti &m, int variant, dpct::queue_ptr st,
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_norm_split_kernel_200589>>(
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_norm_split_kernel_200589>>(
             sycl::nd_range<3>(sycl::range(1, HC, (unsigned)n_tok) *
                                   sycl::range(1, 1, THREADS),
                               sycl::range(1, 1, THREADS)),
@@ -1910,7 +1910,7 @@ void launch_multi(const GrMulti &m, int variant, dpct::queue_ptr st,
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_norm_multi_kernel_2f4d93>>(
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_norm_multi_kernel_2f4d93>>(
             sycl::nd_range<3>(sycl::range(1, 1, n_tok) *
                                   sycl::range(1, 1, THREADS),
                               sycl::range(1, 1, THREADS)),
@@ -1941,17 +1941,17 @@ void launch_multi(const GrMulti &m, int variant, dpct::queue_ptr st,
             for (int k = 0; k < ct; ++k) c.a[k] = m.a[c0 + k];
         }
         const size_t smem = (size_t) ct * per_tok;
-        // #443, opt-in STRATA_GR_DOWN_MAX4=1: launches of up to 4 tokens hold 4 tokens' sums per thread instead of
+        // #443, opt-in NOSTROMA_GR_DOWN_MAX4=1: launches of up to 4 tokens hold 4 tokens' sums per thread instead of
         // kFusedGrMaxT - the same tile, block size, accumulation order and plain/split/staged path, so the same bits
         // (read once: this runs per layer when decode is not captured)
-        static const bool max4_on = [] { const char* v = strata::env("NOSTROMA_GR_DOWN_MAX4"); return v && std::atoi(v) != 0; }();
+        static const bool max4_on = [] { const char* v = nostroma::env("NOSTROMA_GR_DOWN_MAX4"); return v && std::atoi(v) != 0; }();
         const bool max4 = max4_on && ct <= 4;
         if (staged) {
             if (max4) {
                 auto exp_props = sycl::ext::oneapi::experimental::properties{
                     sycl::ext::oneapi::experimental::use_root_sync};
 
-                strata::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+                nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
                     sycl::local_accessor<uint8_t, 1> dpct_local_acc_ct1(
                         sycl::range(smem), cgh);
 
@@ -1975,7 +1975,7 @@ void launch_multi(const GrMulti &m, int variant, dpct::queue_ptr st,
                 auto exp_props = sycl::ext::oneapi::experimental::properties{
                     sycl::ext::oneapi::experimental::use_root_sync};
 
-                strata::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+                nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
                     sycl::local_accessor<uint8_t, 1> dpct_local_acc_ct1(
                         sycl::range(smem), cgh);
 
@@ -2004,7 +2004,7 @@ void launch_multi(const GrMulti &m, int variant, dpct::queue_ptr st,
                 auto exp_props = sycl::ext::oneapi::experimental::properties{
                     sycl::ext::oneapi::experimental::use_root_sync};
 
-                strata::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+                nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
                     sycl::local_accessor<uint8_t, 1> dpct_local_acc_ct1(
                         sycl::range(smem), cgh);
 
@@ -2028,7 +2028,7 @@ void launch_multi(const GrMulti &m, int variant, dpct::queue_ptr st,
                 auto exp_props = sycl::ext::oneapi::experimental::properties{
                     sycl::ext::oneapi::experimental::use_root_sync};
 
-                strata::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+                nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
                     sycl::local_accessor<uint8_t, 1> dpct_local_acc_ct1(
                         sycl::range(smem), cgh);
 
@@ -2058,7 +2058,7 @@ void launch_multi(const GrMulti &m, int variant, dpct::queue_ptr st,
                 auto exp_props = sycl::ext::oneapi::experimental::properties{
                     sycl::ext::oneapi::experimental::use_root_sync};
 
-                strata::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+                nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
                     sycl::local_accessor<uint8_t, 1> dpct_local_acc_ct1(
                         sycl::range(smem), cgh);
 
@@ -2082,7 +2082,7 @@ void launch_multi(const GrMulti &m, int variant, dpct::queue_ptr st,
                 auto exp_props = sycl::ext::oneapi::experimental::properties{
                     sycl::ext::oneapi::experimental::use_root_sync};
 
-                strata::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+                nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
                     sycl::local_accessor<uint8_t, 1> dpct_local_acc_ct1(
                         sycl::range(smem), cgh);
 
@@ -2110,12 +2110,12 @@ void launch_multi(const GrMulti &m, int variant, dpct::queue_ptr st,
         }
     }
     if (stamp_buf) gpu_stamp(stamp_buf, stamp_i0 + 1, (void*) st);
-    launch_gr_up_multi(st, m);   // STRATA_GR_UP_COLS (16 default, 8, 4): the same bits
+    launch_gr_up_multi(st, m);   // NOSTROMA_GR_UP_COLS (16 default, 8, 4): the same bits
 }
 
-/// STRATA_HC_SPLIT: unset or 2 = the newest the check accepts (staged), 1 = at most split, 0 = the plain read
+/// NOSTROMA_HC_SPLIT: unset or 2 = the newest the check accepts (staged), 1 = at most split, 0 = the plain read
 int env_variant() {
-    const char* e = strata::env("NOSTROMA_HC_SPLIT");
+    const char* e = nostroma::env("NOSTROMA_HC_SPLIT");
     if (e == nullptr || e[0] == '\0') return kHcStaged;
     if (e[0] == '0') return kHcPlain;
     if (e[0] == '1') return kHcSplit;
@@ -2188,7 +2188,7 @@ auto &lo = *sycl::ext::oneapi::group_local_memory_for_overwrite<
             if (apply) { bo = pBo[d0 + dd]; ip = pIp[c]; }
         }
         float mine = 0.0f;
-        if constexpr (ILP) {   // STRATA_GR_UP_ILP: the T dots first, then their butterflies interleaved step by step -
+        if constexpr (ILP) {   // NOSTROMA_GR_UP_ILP: the T dots first, then their butterflies interleaved step by step -
             float accs[kFusedGrMaxT];   // each value sees warp_sum's shuffles in warp_sum's order: the same bits
 #pragma unroll
             for (int k = 0; k < kFusedGrMaxT; ++k) {
@@ -2310,7 +2310,7 @@ auto &lo = (*sycl::ext::oneapi::group_local_memory_for_overwrite<
             if (apply) { bo = pBo[d0 + dd]; ip = pIp[c]; }
         }
         float mine = 0.0f;
-        if constexpr (ILP) {   // STRATA_GR_UP_ILP: the T dots first, then their butterflies interleaved step by step -
+        if constexpr (ILP) {   // NOSTROMA_GR_UP_ILP: the T dots first, then their butterflies interleaved step by step -
             float accs[kFusedGrMaxT];   // each value sees warp_sum's shuffles in warp_sum's order: the same bits
 #pragma unroll
             for (int k = 0; k < kFusedGrMaxT; ++k) {
@@ -2365,7 +2365,7 @@ auto &lo = (*sycl::ext::oneapi::group_local_memory_for_overwrite<
 
 class GrUpLoVec4;
 inline bool gr_lo_vec4_enabled() {
-    static const bool on=[] {const char* p=strata::env("NOSTROMA_PRIVATE_GR_LO_VEC4");return p&&std::atoi(p)!=0;}();
+    static const bool on=[] {const char* p=nostroma::env("NOSTROMA_PRIVATE_GR_LO_VEC4");return p&&std::atoi(p)!=0;}();
     return on;
 }
 void launch_gr_up_lo_vec4(dpct::queue_ptr st,const GrMulti& m) {
@@ -2384,7 +2384,7 @@ __dpct_inline__ float b60_gr_q8_warp_max(float value){
  for(int off=16;off>0;off>>=1)value=sycl::fmax(value,dpct::experimental::permute_sub_group_by_xor(0xffffffffu,sycl::ext::oneapi::this_work_item::get_sub_group(),value,off));
  return value;
 }
-inline bool b60_gr_q8_up32_enabled(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GR_Q8_UP32");return p&&p[0]=='1';}();return on&&b60_layout_requested();}
+inline bool b60_gr_q8_up32_enabled(){static const bool on=[] {const char*p=nostroma::env("NOSTROMA_PRIVATE_GR_Q8_UP32");return p&&p[0]=='1';}();return on&&b60_layout_requested();}
 __dpct_inline__ void b60_gr_q8_up32_t1_kernel(GrMulti m) {   // stream sum unchanged, so the same bits; more blocks, fewer serial rows per warp
     constexpr int COLS=32;
     constexpr bool ILP=false;
@@ -2446,7 +2446,7 @@ auto &lo = *sycl::ext::oneapi::group_local_memory_for_overwrite<
             if (apply) { bo = pBo[d0 + dd]; ip = pIp[c]; }
         }
         float mine = 0.0f;
-        if constexpr (ILP) {   // STRATA_GR_UP_ILP: the T dots first, then their butterflies interleaved step by step -
+        if constexpr (ILP) {   // NOSTROMA_GR_UP_ILP: the T dots first, then their butterflies interleaved step by step -
             float accs[1];   // each value sees warp_sum's shuffles in warp_sum's order: the same bits
 #pragma unroll
             for (int k = 0; k < 1; ++k) {
@@ -2515,7 +2515,7 @@ void launch_b60_gr_q8_up32_t1(dpct::queue_ptr st,GrMulti m){
  st->parallel_for<B60GrQ8Up32T1>(r,props,[=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] {b60_gr_q8_up32_t1_kernel(m);});
 }
 
-inline bool gr_up_rows16_enabled(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GR_UP_ROWS16");return p&&p[0]=='1';}();return on&&b60_layout_requested()&&b60_main_actor();}
+inline bool gr_up_rows16_enabled(){static const bool on=[] {const char*p=nostroma::env("NOSTROMA_PRIVATE_GR_UP_ROWS16");return p&&p[0]=='1';}();return on&&b60_layout_requested()&&b60_main_actor();}
 void gf_dispatch_up(dpct::queue_ptr,GrMulti);
 class GrUpFromLo;
 class GrReduceSilu;
@@ -2528,7 +2528,7 @@ void launch_gr_up_from_lo(dpct::queue_ptr st,const GrMulti& m) {
 }
 
 inline bool gr_combo_silu_enabled() {
-    static const bool enabled=[] {const char* p=strata::env("NOSTROMA_PRIVATE_GR_SILU_FROM_LO");return p&&std::atoi(p)!=0;}();
+    static const bool enabled=[] {const char* p=nostroma::env("NOSTROMA_PRIVATE_GR_SILU_FROM_LO");return p&&std::atoi(p)!=0;}();
     return enabled;
 }
 
@@ -2684,12 +2684,12 @@ __dpct_inline__ void gf_postop(GrMulti m) {
 }
 
 bool gf_enabled(dpct::queue_ptr st,const GrMulti& m) {
-    static const bool enabled=[] {const char* s=strata::env("NOSTROMA_PRIVATE_GR_F32_REG");return s&&std::atoi(s)!=0;}();
+    static const bool enabled=[] {const char* s=nostroma::env("NOSTROMA_PRIVATE_GR_F32_REG");return s&&std::atoi(s)!=0;}();
     return enabled && m.T>=1 && m.T<=4 && gr_down_sliced() && !gr_more_groups(st) && !gr_large_grf(st) &&
-        gr_norm_split() && gr_up_cols()==16 && !gr_up_ilp() && strata::intel_gpu_gen(st->get_device())==strata::IntelGpuGen::Battlemage;
+        gr_norm_split() && gr_up_cols()==16 && !gr_up_ilp() && nostroma::intel_gpu_gen(st->get_device())==nostroma::IntelGpuGen::Battlemage;
 }
 bool gf_phase(const char* phase) {
-    const char* p=strata::env("NOSTROMA_PRIVATE_GR_F32_PHASE");
+    const char* p=nostroma::env("NOSTROMA_PRIVATE_GR_F32_PHASE");
     return !p || std::strcmp(p,"both")==0 || std::strcmp(p,phase)==0;
 }
 template<int E> class GfDown;
@@ -2762,7 +2762,7 @@ template<int E>void gp_launch_compute(dpct::queue_ptr st,GrMulti m){
 }
 
 
-inline bool gr_2d_pair_enabled(){static const bool enabled=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GR_2D_PAIR");return p&&p[0]=='1';}();return enabled&&b60_main_actor();}
+inline bool gr_2d_pair_enabled(){static const bool enabled=[] {const char*p=nostroma::env("NOSTROMA_PRIVATE_GR_2D_PAIR");return p&&p[0]=='1';}();return enabled&&b60_main_actor();}
 template<int E>
 SYCL_ESIMD_FUNCTION ESIMD_INLINE void gf_down_2d(GrMulti m,int sl,int tile) {
 #pragma clang fp contract(off)
@@ -2893,7 +2893,7 @@ struct GcDown {const uint16_t *w_down,*w_inject;float *xn,*part2;};
 // Merge with the head: GrMulti gained two bools (cached_norm, cached_lo, the #4185 port) after the PR measured 1384; they sit at the end, so every earlier
 // field keeps its offset and the PR's kernels (which read fields by name) are unaffected; the size is 1384 plus at most the padding of the two bools.
 static_assert(sizeof(FusedGrArgs)==168 && sizeof(GrMulti)==1392 && sizeof(GcDown)==32);
-inline bool gc_enabled(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_B60_NEXT_POOL");return p&&p[0]=='1';}();return on&&b60_main_actor();}
+inline bool gc_enabled(){static const bool on=[] {const char*p=nostroma::env("NOSTROMA_PRIVATE_B60_NEXT_POOL");return p&&p[0]=='1';}();return on&&b60_main_actor();}
 template<int E>
 SYCL_ESIMD_FUNCTION ESIMD_INLINE void gc_down(GcDown m,int sl,int tile) {
 #pragma clang fp contract(off)
@@ -2967,7 +2967,7 @@ template<int E>void gc_launch_down(dpct::queue_ptr st,GrMulti full){
  });
 }
 
-inline bool gr_soa_enabled(){static const bool enabled=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GR_SOA_CACHE");return p&&p[0]=='1';}();return enabled&&b60_main_actor();}
+inline bool gr_soa_enabled(){static const bool enabled=[] {const char*p=nostroma::env("NOSTROMA_PRIVATE_GR_SOA_CACHE");return p&&p[0]=='1';}();return enabled&&b60_main_actor();}
 template<int E>
 SYCL_ESIMD_FUNCTION ESIMD_INLINE void gf_down_soa(GrMulti m,int sl,int tile) {
 #pragma clang fp contract(off)
@@ -3139,7 +3139,7 @@ static float* down_partials(sycl::queue* q) {
 
 bool fused_gr_read_multi(const FusedGrArgs* a, int n_tok, float* xn_scratch, void* stream, unsigned long long* stamp_buf,
                          int stamp_i0) {
-    strata::workload_trace::Scope trace("decode.gr_read_api", stream, n_tok, D, LR, HC, N, 30);
+    nostroma::workload_trace::Scope trace("decode.gr_read_api", stream, n_tok, D, LR, HC, N, 30);
     if (n_tok < 1 || n_tok > kFusedGrMaxT || xn_scratch == nullptr) {
         std::fprintf(stderr, "fused_gr_read_multi: invalid arguments\n");
         std::exit(1);
@@ -3157,7 +3157,7 @@ bool fused_gr_read_multi(const FusedGrArgs* a, int n_tok, float* xn_scratch, voi
     }
     m.xn = xn_scratch;
     m.T = n_tok;
-    dpct::queue_ptr st = strata::q_of(stream);
+    dpct::queue_ptr st = nostroma::q_of(stream);
     if(gr_soa_enabled() && (n_tok==1||n_tok==2||n_tok==4)){
         if(!gf_enabled(st,m)||!gf_phase("down")||gf_phase("up")||!gr_combo_silu_enabled()||!gr_up_rows16_enabled())
             throw std::logic_error("B60 GR cache requires the measured GR control combination");
@@ -3166,8 +3166,8 @@ bool fused_gr_read_multi(const FusedGrArgs* a, int n_tok, float* xn_scratch, voi
         if(!down||!up)throw std::logic_error("B60 missing GR decode cache");
         for(int t=0;t<n_tok;++t){m.a[t].w_down=down;if(n_tok==4)m.a[t].w_up=up;}
     }
-    // STRATA_GR_V3=1: the two-kernel read above (another summation order - opt-in)
-    static const bool v3 = [] { const char* v = strata::env("NOSTROMA_GR_V3"); return v != nullptr && std::atoi(v) != 0; }();
+    // NOSTROMA_GR_V3=1: the two-kernel read above (another summation order - opt-in)
+    static const bool v3 = [] { const char* v = nostroma::env("NOSTROMA_GR_V3"); return v != nullptr && std::atoi(v) != 0; }();
     static int split3[64] = {};   // per device: 0 = not decided yet, 1 / 2 = column halves S, -1 = does not fit
     int dev3 = 0;
     if (v3) {
@@ -3189,7 +3189,7 @@ bool fused_gr_read_multi(const FusedGrArgs* a, int n_tok, float* xn_scratch, voi
             else if (need2 <= limit)
                 // #375 (kenh0u): the S = 2 split (a 64 KB opt-in card: Turing) disagrees with itself in gr_parity
                 // (graph replay vs direct call) - such a card keeps the default read until that split is fixed
-                std::fprintf(stderr, "strata: STRATA_GR_V3=1 needs the two-half split on this card, which fails its "
+                std::fprintf(stderr, "nostroma: NOSTROMA_GR_V3=1 needs the two-half split on this card, which fails its "
                                      "checks (#375): the default read is used\n");
             /*
             DPCT1026: The call to cudaGetLastError was removed because this
@@ -3214,7 +3214,7 @@ bool fused_gr_read_multi(const FusedGrArgs* a, int n_tok, float* xn_scratch, voi
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
 
-            strata::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+            nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
                 sycl::local_accessor<uint8_t, 1> dpct_local_acc_ct1(
                     sycl::range(sm), cgh);
 
@@ -3237,7 +3237,7 @@ bool fused_gr_read_multi(const FusedGrArgs* a, int n_tok, float* xn_scratch, voi
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
 
-            strata::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+            nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
                 sycl::local_accessor<uint8_t, 1> dpct_local_acc_ct1(
                     sycl::range(sm), cgh);
 
@@ -3262,7 +3262,7 @@ bool fused_gr_read_multi(const FusedGrArgs* a, int n_tok, float* xn_scratch, voi
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
 
-            strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_up_v3_kernel_6e945c,
+            nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_up_v3_kernel_6e945c,
                                               dpct_kernel_scalar<2>>>(
                 sycl::nd_range<3>(sycl::range(1, 1, UPM_BLOCKS) *
                                       sycl::range(1, 1, THREADS),
@@ -3276,7 +3276,7 @@ bool fused_gr_read_multi(const FusedGrArgs* a, int n_tok, float* xn_scratch, voi
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
 
-            strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_up_v3_kernel_716779,
+            nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_up_v3_kernel_716779,
                                               dpct_kernel_scalar<1>>>(
                 sycl::nd_range<3>(sycl::range(1, 1, UPM_BLOCKS) *
                                       sycl::range(1, 1, THREADS),
@@ -3294,21 +3294,21 @@ bool fused_gr_read_multi(const FusedGrArgs* a, int n_tok, float* xn_scratch, voi
         */
         const dpct::err0 e3 = 0;
 
-        return false;   // SYCL port: never writes the q8_1 images (STRATA_QFUSE is not supported here)
+        return false;   // SYCL port: never writes the q8_1 images (NOSTROMA_QFUSE is not supported here)
     }
     const bool cached_norm=!gf_enabled(st,m)&&g_gr_cached_norm_mode>0&&g_gr_norm_direct_bounds&&gr_norm_split()&&
         gr_down_sliced()&&gr_cached_norm_safe(a,n_tok,xn_scratch);
     m.part = down_partials(st);
-    static const bool reuse_norm = strata::bm_default_on("STRATA_GR_CACHED_NORM", st->get_device(), false);
-    static const bool reuse_lo = strata::bm_default_on("STRATA_GR_LO_REUSE", st->get_device());
+    static const bool reuse_norm = nostroma::bm_default_on("NOSTROMA_GR_CACHED_NORM", st->get_device(), false);
+    static const bool reuse_lo = nostroma::bm_default_on("NOSTROMA_GR_LO_REUSE", st->get_device());
     if ((reuse_norm || reuse_lo) && !cached_norm && !gf_enabled(st, m) && gr_norm_split() && gr_down_sliced() &&
         !gr_more_groups(st) && !gr_large_grf(st) && !gr_up_ilp() && gr_up_cols() == UPM_COLS &&
-        strata::intel_gpu_gen(st->get_device()) == strata::IntelGpuGen::Battlemage &&
+        nostroma::intel_gpu_gen(st->get_device()) == nostroma::IntelGpuGen::Battlemage &&
         gr_reuse_safe(a, n_tok, xn_scratch)) {
         m.cached_norm = reuse_norm;
         m.cached_lo = reuse_lo;
         static const bool note = [] {
-            std::fprintf(stderr, "strata: GR reuse enabled: normalized activation %d, low-rank SiLU %d\n",
+            std::fprintf(stderr, "nostroma: GR reuse enabled: normalized activation %d, low-rank SiLU %d\n",
                          (int) reuse_norm, (int) reuse_lo);
             return true;
         }();
@@ -3319,19 +3319,19 @@ bool fused_gr_read_multi(const FusedGrArgs* a, int n_tok, float* xn_scratch, voi
             sycl::ext::oneapi::experimental::use_root_sync};
 
         if(cached_norm)
-            strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_norm_cached_write>>(
+            nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_norm_cached_write>>(
                 sycl::nd_range<3>(sycl::range(1,1,n_tok*HC)*sycl::range(1,1,THREADS),sycl::range(1,1,THREADS)),
                 [=](sycl::nd_item<3>)[[sycl::reqd_sub_group_size(32)]]{gr_norm_cached_write_kernel(m);});
         else if (g_gr_norm_direct_bounds && gr_norm_split())
-            strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_norm_bounds_k>>(
+            nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_norm_bounds_k>>(
                 sycl::nd_range<3>(sycl::range(1, 1, n_tok * HC) * sycl::range(1, 1, THREADS), sycl::range(1, 1, THREADS)),
                 [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] { gr_norm_bounds_port_kernel(m); });
         else if (gr_norm_split())
-            strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_norm_split_k>>(
+            nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_norm_split_k>>(
                 sycl::nd_range<3>(sycl::range(1, 1, n_tok * HC) * sycl::range(1, 1, THREADS), sycl::range(1, 1, THREADS)),
                 [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] { gr_norm_split_port_kernel(m); });
         else
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_norm_multi_kernel_2f4d92>>(
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_norm_multi_kernel_2f4d92>>(
             sycl::nd_range<3>(sycl::range(1, 1, n_tok) *
                                   sycl::range(1, 1, THREADS),
                               sycl::range(1, 1, THREADS)),
@@ -3344,7 +3344,7 @@ bool fused_gr_read_multi(const FusedGrArgs* a, int n_tok, float* xn_scratch, voi
     // the local-memory capacity is a per-DEVICE property: once per device (a layer split runs this on two cards).
     // SYCL port: upstream picks TILEV 1280 on sm_75 and takes the per-block limit below sm_70 (CUDA compute
     // capabilities, cudaFuncSetAttribute opt-ins); here the tile is the port's TILE and the device's local memory is
-    // the only limit. The tiled kernel is the fallback (STRATA_GR_DOWN_SLICED=0 STRATA_GR_DOWN_DIRECT=0); the
+    // the only limit. The tiled kernel is the fallback (NOSTROMA_GR_DOWN_SLICED=0 NOSTROMA_GR_DOWN_DIRECT=0); the
     // default is the sliced kernel below.
     static bool attr[64] = {};
     static int chunk[64] = {};   // tokens the tiled down kernel may carry in one launch on this card
@@ -3368,7 +3368,7 @@ bool fused_gr_read_multi(const FusedGrArgs* a, int n_tok, float* xn_scratch, voi
         m.nsplit = 1;
         const bool big = gr_large_grf(st);
         if(gf_enabled(st,m) && gf_phase("down")) gf_dispatch_down(st,m);
-        else strata::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler& cgh) {
+        else nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler& cgh) {
             sycl::local_accessor<float, 1> tl(sycl::range<1>((size_t) kFusedGrMaxT * GRS_COLS), cgh);
             const sycl::nd_range<3> nr(sycl::range(1, 1, GRS_SLICES) * sycl::range(1, 1, THREADS), sycl::range(1, 1, THREADS));
             if (big)
@@ -3391,33 +3391,33 @@ bool fused_gr_read_multi(const FusedGrArgs* a, int n_tok, float* xn_scratch, voi
                 sycl::nd_range<3>(sycl::range(1,1,nred*128),sycl::range(1,1,128)),
                 [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] {gf_reduce_silu(m);});
         } else if (lo_once) {   // #3153: the reduce writes the low-rank SiLU rows (PrepareLo, the same kernel as the head's REUSE_LO)
-            strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_down_reduce_lo_once_k>>(nr,
+            nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_down_reduce_lo_once_k>>(nr,
                 [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] { gr_down_reduce_kernel<false, true>(m); });
-        } else if (m.cached_lo) {   // #4185 port (Battlemage default / STRATA_GR_LO_REUSE)
-            static const bool reduce_ilp = strata::bm_default_on("STRATA_GR_REDUCE_ILP", st->get_device(), false);
+        } else if (m.cached_lo) {   // #4185 port (Battlemage default / NOSTROMA_GR_LO_REUSE)
+            static const bool reduce_ilp = nostroma::bm_default_on("NOSTROMA_GR_REDUCE_ILP", st->get_device(), false);
             if (reduce_ilp) {
-                strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_down_reduce_lo_ilp>>(nr,
+                nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_down_reduce_lo_ilp>>(nr,
                     [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] {
                         gr_down_reduce_kernel<true, true>(m);
                     });
             } else {
-                strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_down_reduce_lo>>(nr,
+                nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_down_reduce_lo>>(nr,
                     [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] {
                         gr_down_reduce_kernel<false, true>(m);
                     });
             }
         } else
-            strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_down_reduce_k>>(nr,
+            nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_down_reduce_k>>(nr,
                 [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] { gr_down_reduce_kernel(m); });
     } else if (gr_down_direct()) {
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_down_multi_direct>>(
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_down_multi_direct>>(
             sycl::nd_range<3>(sycl::range(1, 1, DOWN_BLOCKS * DOWN_SPLIT + 1) * sycl::range(1, 1, THREADS),
                               sycl::range(1, 1, THREADS)),
             [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] { gr_down_multi_direct_kernel(m); });
     } else if (chunk_tok >= n_tok) {
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
             sycl::local_accessor<uint8_t, 1> dpct_local_acc_ct1(
                 sycl::range((size_t)n_tok * TILE * sizeof(float)), cgh);
             cgh.parallel_for<
@@ -3444,7 +3444,7 @@ bool fused_gr_read_multi(const FusedGrArgs* a, int n_tok, float* xn_scratch, voi
             c.part = m.part;
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
-            strata::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+            nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
                 sycl::local_accessor<uint8_t, 1> dpct_local_acc_ct1(
                     sycl::range((size_t)ct * TILE * sizeof(float)), cgh);
                 cgh.parallel_for<
@@ -3490,7 +3490,7 @@ bool fused_gr_read_multi(const FusedGrArgs* a, int n_tok, float* xn_scratch, voi
         if (gr_large_grf(st)) launch_gr_up_more<true>(st, m);
         else launch_gr_up_more<false>(st, m);
     } else {
-        launch_gr_up_multi(st, m, gr_large_grf(st));   // STRATA_GR_UP_COLS (16 default, 8, 4): the same bits; Arc A-series: large GRF
+        launch_gr_up_multi(st, m, gr_large_grf(st));   // NOSTROMA_GR_UP_COLS (16 default, 8, 4): the same bits; Arc A-series: large GRF
     }
     /*
     DPCT1010: SYCL uses exceptions to report errors and does not use the
@@ -3515,7 +3515,7 @@ void fused_gr_read(const FusedGrArgs& a, void* stream) {
         std::fprintf(stderr, "fused_gr_read: invalid arguments\n");
         std::exit(1);
     }
-    dpct::queue_ptr st = strata::q_of(stream);
+    dpct::queue_ptr st = nostroma::q_of(stream);
     // SYCL port: the multi-token read's sliced down kernel and per-(token, stream) norm sum in their own orders, so a
     // window's token would differ in its last bits from this kernel's. The header promises "every token's outputs
     // are bitwise fused_gr_read(a[t])" (gr_parity checks it): with those paths on, the single read IS the multi read
@@ -3537,7 +3537,7 @@ void fused_gr_read(const FusedGrArgs& a, void* stream) {
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_down_kernel_a5fa71>>(
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_down_kernel_a5fa71>>(
             sycl::nd_range<3>(sycl::range(1, 1, DOWN_BLOCKS + 1) *
                                   sycl::range(1, 1, THREADS),
                               sycl::range(1, 1, THREADS)),
@@ -3550,7 +3550,7 @@ void fused_gr_read(const FusedGrArgs& a, void* stream) {
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_up_kernel_fe3258>>(
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_up_kernel_fe3258>>(
             sycl::nd_range<3>(sycl::range(1, 1, UP_BLOCKS) *
                                   sycl::range(1, 1, THREADS),
                               sycl::range(1, 1, THREADS)),
@@ -3797,8 +3797,8 @@ int fused_gr_variant() {
     dev = dpct::get_current_device_id();
     const int v = dev >= 0 && dev < 64 ? g_variant[dev].load() : 0;
     if (v > 0) return v;
-    // not checked on this card: the plain read, unless STRATA_HC_SPLIT names a variant (a test such as gr_parity)
-    const char* e = strata::env("NOSTROMA_HC_SPLIT");
+    // not checked on this card: the plain read, unless NOSTROMA_HC_SPLIT names a variant (a test such as gr_parity)
+    const char* e = nostroma::env("NOSTROMA_HC_SPLIT");
     return e != nullptr && (e[0] == '1' || e[0] == '2') ? env_variant() : kHcPlain;
 }
 
@@ -3806,16 +3806,16 @@ void fused_gr_check() {
     int dev = 0;
     dev = dpct::get_current_device_id();
     if (dev < 0 || dev >= 64 || g_variant[dev].load() > 0) return;
-    // SYCL port: the port's own read (sliced down / split norm, STRATA_GR_DOWN_SLICED etc.) does not use upstream's
+    // SYCL port: the port's own read (sliced down / split norm, NOSTROMA_GR_DOWN_SLICED etc.) does not use upstream's
     // variants, and their self-test crashes on the B70 (0.1.32 merge, under investigation): opt-in only.
-    if (strata::env("NOSTROMA_HC_CHECK") == nullptr) {
+    if (nostroma::env("NOSTROMA_HC_CHECK") == nullptr) {
         g_variant[dev].store(kHcPlain);
         return;
     }
     const int want = env_variant();
     if (want == kHcPlain) {
         g_variant[dev].store(kHcPlain);
-        std::fprintf(stderr, "strata hc: CUDA%d: the hyper-connection read runs as the plain one (STRATA_HC_SPLIT=0)\n",
+        std::fprintf(stderr, "nostroma hc: CUDA%d: the hyper-connection read runs as the plain one (NOSTROMA_HC_SPLIT=0)\n",
                      dev);
         return;
     }
@@ -3827,20 +3827,20 @@ void fused_gr_check() {
     else if (okv[kHcSplit]) use = kHcSplit;
     g_variant[dev].store(use);
     if (!ran)
-        std::fprintf(stderr, "strata hc: CUDA%d: the check of split/staged could not run (%s)\n", dev, why[0].c_str());
+        std::fprintf(stderr, "nostroma hc: CUDA%d: the check of split/staged could not run (%s)\n", dev, why[0].c_str());
     static const char* const name[4] = {"", "plain", "split", "staged"};
     for (int v = kHcStaged; v >= kHcSplit; --v)
         if (v <= want && !okv[v] && ran)
-            std::fprintf(stderr, "strata hc: CUDA%d: the %s read differs from the plain read on this card - not used: "
+            std::fprintf(stderr, "nostroma hc: CUDA%d: the %s read differs from the plain read on this card - not used: "
                                  "%s\n", dev, name[v], why[v].c_str());
     static const char* const what[4] = {
         "", "the plain read (the norm per token, the down projection on 41 blocks)",
         "split (the norm per token and stream, then the plain read's down projection)",
         "staged (the norm per token and stream, the down projection's activations staged ahead by cp.async)"};
-    std::fprintf(stderr, "strata hc: CUDA%d: the hyper-connection read runs as %s%s\n", dev, what[use],
-                 use >= kHcSplit ? "; checked bit for bit against the plain read on this card (STRATA_HC_SPLIT=1 or 0 "
+    std::fprintf(stderr, "nostroma hc: CUDA%d: the hyper-connection read runs as %s%s\n", dev, what[use],
+                 use >= kHcSplit ? "; checked bit for bit against the plain read on this card (NOSTROMA_HC_SPLIT=1 or 0 "
                                    "for the earlier ones)" : "");
 }
 
 
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels

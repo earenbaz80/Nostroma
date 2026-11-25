@@ -19,7 +19,7 @@ with Path(sys.argv[1] if len(sys.argv) > 1 else "telemetry.jsonl").open("a") as 
                 memory[key + "_KiB"] = int(value.strip().split()[0])
         gpu = subprocess.check_output(["nvidia-smi", "--query-gpu=" + FIELDS, "--format=csv,noheader,nounits"],
                                       text=True).strip()
-        ps = subprocess.run(["ps", "-C", "strata,strata-vision", "-o", "comm=,rss="], text=True,
+        ps = subprocess.run(["ps", "-C", "nostroma,nostroma-vision", "-o", "comm=,rss="], text=True,
                             capture_output=True).stdout.split("\n")
         rss = {f[0]: int(f[1]) for f in (l.split() for l in ps) if len(f) == 2}     # KiB, resident set
         output.write(json.dumps({"epoch_s": round(time.time(), 2), "memory": memory, "gpu": gpu,

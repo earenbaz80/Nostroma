@@ -157,7 +157,7 @@ def _cancel_watcher(profile: str, job_id: str):
                 requested.set()  # Invalid private state stops the measurement safely.
                 return
 
-    thread = threading.Thread(target=watch, name="strata-calibration-cancel", daemon=True)
+    thread = threading.Thread(target=watch, name="nostroma-calibration-cancel", daemon=True)
     thread.start()
     try:
         yield requested

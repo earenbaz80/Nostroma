@@ -29,8 +29,8 @@ output cap. They do not establish general answer quality or performance on other
   7.2.4 from the image `rocm/dev-ubuntu-24.04:7.2.4-complete`. ROCm 7.0's clang rejects `__shared__ alignas(16)` at
   `src/kernels/cuda/iq_kernels.cu:1039` and `:1107`, so the 7.0 image did not build.
 - **Source:** `main` at 6f32ec0, engine 0.1.39, unmodified. The container is built from a new `Dockerfile.hip` (not in this
-  pull request). It compiles the engine with the system ROCm for `gfx1030;gfx1031` (`-DSTRATA_ENABLE_HIP=ON
-  -DSTRATA_PREFILL_MMQ=ON`, llama.cpp at the pinned commit) and writes `engine/BUILD.json` ([BUILD.json](BUILD.json)).
+  pull request). It compiles the engine with the system ROCm for `gfx1030;gfx1031` (`-DNOSTROMA_ENABLE_HIP=ON
+  -DNOSTROMA_PREFILL_MMQ=ON`, llama.cpp at the pinned commit) and writes `engine/BUILD.json` ([BUILD.json](BUILD.json)).
 - **Other services:** an ordinary desktop session. The coding agent (pi) that used this server for about three hours
   before the run was idle and not connected during it. This was not an isolated machine.
 
@@ -46,7 +46,7 @@ IQ2_XS, downloaded by setup. The repository revision was not recorded. SHA-256 o
 The native pack and the MTP draft layer were prepared by setup inside the container. No vision encoder, no custom
 pack, and the bundled expert profile.
 
-**Configuration** ([strata-iq2_xs.json](strata-iq2_xs.json); `/data` is the model folder on the hard disk):
+**Configuration** ([nostroma-iq2_xs.json](nostroma-iq2_xs.json); `/data` is the model folder on the hard disk):
 
 - context 131,072, `--kv int8 --kv-resident 32768` (KV streaming: the cache lives in RAM, 1.8 GB);
 - expert cache `auto`: 4,580 expert slots (6,293 MiB) in VRAM, 638 MiB of VRAM free after loading;
@@ -66,12 +66,12 @@ setup). I did not rerun the speed matrix with the defaults, so this report does 
 Launch command (the container's entry point runs setup, which starts the server from the saved configuration):
 
 ```bash
-docker run -d --name strata --ulimit core=0 --ulimit memlock=-1 \
+docker run -d --name nostroma --ulimit core=0 --ulimit memlock=-1 \
   --device=/dev/kfd --device=/dev/dri --group-add video --group-add render --ipc=host \
   -p 127.0.0.1:8080:8080 \
   -v /media/gpf/DDrive1/dev/models:/data \
-  -v /home/gpf/strata-ple/Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00002-of-00002.gguf:/data/models/IQ2_XS/Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00002-of-00002.gguf:ro \
-  -e MODEL=IQ2_XS -e CONTEXT=131072 strata-hip
+  -v /home/gpf/nostroma-ple/Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00002-of-00002.gguf:/data/models/IQ2_XS/Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00002-of-00002.gguf:ro \
+  -e MODEL=IQ2_XS -e CONTEXT=131072 nostroma-hip
 ```
 
 `--ulimit core=0` matters: a watchdog abort writes a core file the size of the engine's memory (about 37 GB), which
@@ -81,7 +81,7 @@ filled this PC's disk once.
 
 [benchmark.py](benchmark.py) is the [RTX 5090 report's](../2026-09-30-community-rtx-5090/benchmark.py) script, unchanged
 (SHA-256 `694df81b3d064ca609c73dc8606baf6cbb8a4837ea800933ee6f2eb80dc52d9a`). It builds deterministic synthetic Python
-filler, puts a different nonce at the start of each request, and counts the rendered chat prompt with Strata's tokenizer.
+filler, puts a different nonce at the start of each request, and counts the rendered chat prompt with Nostroma's tokenizer.
 Request hashes and the output text of every run are in [results.json](results.json); the aggregates are in
 [summary.json](summary.json). [monitor_amd.py](monitor_amd.py) is the RTX 5090 report's `monitor.py` with the
 `nvidia-smi` call replaced by amdgpu's sysfs files; it samples RAM, swap, VRAM, load, power and temperature once a

@@ -1,7 +1,7 @@
 # Community benchmark: AMD MI50 (gfx906), Intel i5-12400F
 
 Measured on 2026-10-04 by [xxDoman](https://github.com/xxDoman), on the Linux
-machine **LianLi**. This tests Strata 0.1.38 with the original Flash-Next
+machine **LianLi**. This tests Nostroma 0.1.38 with the original Flash-Next
 IQ2_XS, one GPU (the MI50), at the model's full **131,072-token context** with
 KV streaming.
 
@@ -12,7 +12,7 @@ synthetic code-explanation requests with greedy decoding and a 256-token output
 cap. They do not establish general answer quality or performance on other
 workloads.
 
-This is, to our knowledge, the first measured community run of Strata on an AMD
+This is, to our knowledge, the first measured community run of Nostroma on an AMD
 MI50 (Vega 20, gfx906). It is an experimental, unsupported architecture: the
 build carries no vendor tuning tables, and the numbers reflect that. It also
 shows that the MI50 — a 32 GB card — can serve the model's full 128K context
@@ -31,9 +31,9 @@ with KV streaming, at a decode cost of only ~7% versus a 4K prompt.
   reports AMD clang 22.0.0).
 - Source commit `99f3dbd0b21d1401b3769e0c0d963913607f380b`; engine 0.1.38.
   Built on the host for **gfx906** with the ROCm 7.2.1 toolchain and packaged
-  into a Docker image (`strata-mi50:0.1.38`); the server runs inside the
+  into a Docker image (`nostroma-mi50:0.1.38`); the server runs inside the
   container with `/dev/kfd` and `/dev/dri` passed through. See [BUILD.json](BUILD.json).
-- The GPU was dedicated to Strata during the run (the co-located Ollama server
+- The GPU was dedicated to Nostroma during the run (the co-located Ollama server
   held no model). Other CPU services remained running; this was not a
   completely isolated operating system.
 
@@ -60,7 +60,7 @@ to the engine: vision was off for this run, so this report does not cover it.
 - MTP `--spec 3 --spec-min-p 0.9`.
 - Vision off; temperature 0; maximum 256 generated tokens per speed run.
 
-The complete measured configuration is [strata-iq2_xs.json](strata-iq2_xs.json)
+The complete measured configuration is [nostroma-iq2_xs.json](nostroma-iq2_xs.json)
 and the engine's own startup and per-request lines are in [engine.log](engine.log).
 
 ## Method and reproduction
@@ -69,16 +69,16 @@ This uses an adaptation of the repository's community harness
 ([`bench/results/2026-09-30-community-rtx-5090/benchmark.py`](../2026-09-30-community-rtx-5090/benchmark.py)).
 The only changes are the target port/pack path for the container and a required
 `Authorization` header ([benchmark_mi50.py](benchmark_mi50.py)). It runs inside
-the container (imports `strata_tokenizer` and `serve.frontend` from `/opt/strata`).
+the container (imports `nostroma_tokenizer` and `serve.frontend` from `/opt/nostroma`).
 
 ```bash
-docker exec strata python3 /work/bench/benchmark_mi50.py --api-key <key> \
+docker exec nostroma python3 /work/bench/benchmark_mi50.py --api-key <key> \
   --url http://127.0.0.1:8085 --out /work/bench/results --targets 4096,32768,128000 --runs 3
 ```
 
 The script generates deterministic synthetic Python functions, adds a different
 nonce near the start of each request, and counts the complete rendered chat
-prompt using Strata's tokenizer, adjusting the filler to the target and
+prompt using Nostroma's tokenizer, adjusting the filler to the target and
 verifying the count against the server afterward. One warm-up request was
 excluded. Three runs at each length were executed serially in increasing-length
 order on the same loaded engine. All nine speed requests processed their entire
@@ -117,9 +117,9 @@ the warm-up in this run was excluded, and steady-state prefill was a flat
 Memory, from [telemetry.jsonl](telemetry.jsonl):
 
 - Host RAM: peak **40.96 GiB**, calculated as `MemTotal - MemAvailable` over all
-  processes (not Strata's RSS alone). The ~41 GiB is the expert set in RAM plus
+  processes (not Nostroma's RSS alone). The ~41 GiB is the expert set in RAM plus
   the streamed K/V for the 128K context.
-- Swap: peak **~2.9 GiB used**, up from ~0 — Strata pages during the run.
+- Swap: peak **~2.9 GiB used**, up from ~0 — Nostroma pages during the run.
 - GPU memory: the MI50 was filled to essentially all available VRAM
   (~33.5 GB, 32 GB class card); the engine reported `964 MiB` free with the
   window up and `1024 MiB` reserved for the draft head.

@@ -1,12 +1,12 @@
 /**
  * Real-clock check of a scheduled task through the real app: creates a task due two minutes from now (the host's real scheduler runs it),
- * keeps the Tasks page open to capture the toast, then shows Last result. node scripts/task-flow-s4b.mjs  (STRATA_URL, SHOTS, MODE, PROMPT)
+ * keeps the Tasks page open to capture the toast, then shows Last result. node scripts/task-flow-s4b.mjs  (NOSTROMA_URL, SHOTS, MODE, PROMPT)
  */
 import { chromium } from 'playwright-core';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { envVar } from '../server/env-compat.mjs';
-const BASE = envVar('URL'); if (!BASE) { console.error('STRATA_URL required'); process.exit(2); }
+const BASE = envVar('URL'); if (!BASE) { console.error('NOSTROMA_URL required'); process.exit(2); }
 const SHOTS = resolve(process.env.SHOTS ?? 'task-shots'); mkdirSync(SHOTS, { recursive: true });
 const CHROME = process.env.CHROME ?? ['C:/Program Files/Google/Chrome/Application/chrome.exe', '/usr/bin/google-chrome'].find(existsSync);
 let failed = false; const check = (ok, label) => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${label}`); if (!ok) failed = true; };

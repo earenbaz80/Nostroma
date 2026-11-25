@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify third_party/strata-ggml, strata-gguf-py, strata-llama and stb against their manifests (UPSTREAM.md).   python tools/check_vendored.py [--upstream <llama.cpp dir>]
+"""Verify third_party/nostroma-ggml, nostroma-gguf-py, nostroma-llama and stb against their manifests (UPSTREAM.md).   python tools/check_vendored.py [--upstream <llama.cpp dir>]
 
 The vendored ggml / ggml-cuda sources are frozen at the llama.cpp commit named in UPSTREAM.md.  The manifest lists every file with its
 kind and sha256 (text files are hashed with LF line ends, so a Windows checkout agrees with a Linux one):
@@ -8,7 +8,7 @@ kind and sha256 (text files are hashed with LF line ends, so a Windows checkout 
   edited     a Nostroma edit of an upstream file (the edit is described in UPSTREAM.md); the row also holds the upstream sha256
   added      a file that is Nostroma's own (not in llama.cpp)
   copy       ggml/src/ggml-cuda-tq/X: a verbatim copy of its pristine counterpart (ggml-cuda/X; ggml-cuda-tq/include/X is include/X); the row holds the
-             counterpart's hash.  The trellis (Gyro) MMQ build compiles its headers from this folder, which is first on strata_mmq's include path,
+             counterpart's hash.  The trellis (Gyro) MMQ build compiles its headers from this folder, which is first on nostroma_mmq's include path,
              so a header that includes mmq.cuh by name has to sit beside the patched mmq.cuh
   patched    the same, with additions (checked here: every line of the counterpart is still there, in order; only lines were added)
 
@@ -24,9 +24,9 @@ import re
 import sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-TREE = os.path.join("third_party", "strata-ggml")
-IDENTITY = ()      # a tree that keeps llama.cpp's layout and has no file under another name (third_party/strata-llama): an empty map, every file `upstream`
-GGML_RENAMED = {"strata-quant-common.h": "ggml/src/ggml-common.h"}   # the one file of third_party/strata-ggml whose upstream name differs
+TREE = os.path.join("third_party", "nostroma-ggml")
+IDENTITY = ()      # a tree that keeps llama.cpp's layout and has no file under another name (third_party/nostroma-llama): an empty map, every file `upstream`
+GGML_RENAMED = {"nostroma-quant-common.h": "ggml/src/ggml-common.h"}   # the one file of third_party/nostroma-ggml whose upstream name differs
 # every vendored tree: (folder, maps a path in the tree to the path in the llama.cpp checkout at the pin)
 GGUF_PY_MAP = (("gguf/", "gguf-py/gguf/"), ("converter/conversion/", "conversion/"), ("converter/convert_hf_to_gguf.py", "convert_hf_to_gguf.py"),
                ("converter/LICENSE", "LICENSE"), ("LICENSE", "gguf-py/LICENSE"), ("pyproject.toml", "gguf-py/pyproject.toml"))
@@ -159,13 +159,13 @@ def check_tree(root, tree_rel, upmap, upstream, problems):
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--upstream", help="a llama.cpp tree at the pinned commit (file paths as in llama.cpp; third_party/strata-gguf-py maps as in its UPSTREAM.md)")
+    ap.add_argument("--upstream", help="a llama.cpp tree at the pinned commit (file paths as in llama.cpp; third_party/nostroma-gguf-py maps as in its UPSTREAM.md)")
     ap.add_argument("--root", default=ROOT)
     a = ap.parse_args(argv)
     problems = []
     summary = [check_tree(a.root, TREE, None, a.upstream, problems),
-               check_tree(a.root, os.path.join("third_party", "strata-gguf-py"), GGUF_PY_MAP, a.upstream, problems),
-               check_tree(a.root, os.path.join("third_party", "strata-llama"), IDENTITY, a.upstream, problems),
+               check_tree(a.root, os.path.join("third_party", "nostroma-gguf-py"), GGUF_PY_MAP, a.upstream, problems),
+               check_tree(a.root, os.path.join("third_party", "nostroma-llama"), IDENTITY, a.upstream, problems),
                check_tree(a.root, os.path.join("third_party", "stb"), STB_MAP, a.upstream, problems)]
     for p in problems:
         print("check_vendored: " + p)

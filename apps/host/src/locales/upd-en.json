@@ -1,5 +1,5 @@
 {
- "upd01": "To update the engine, Strata has to stop the model that is loaded: {0}.",
+ "upd01": "To update the engine, Nostroma has to stop the model that is loaded: {0}.",
  "upd02": "The new engine downloads first while the model keeps answering. Then the model stops (answers in progress finish first), the engine is updated, and you can start the model again with the same settings. Your models and settings are kept.",
  "upd03": "Stop and update",
  "upd04": "Getting the new engine ready. {0} keeps working until it is ready.",

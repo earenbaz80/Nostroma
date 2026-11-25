@@ -11,7 +11,7 @@ parser.add_argument("--url", default="http://127.0.0.1:8080")
 args = parser.parse_args()
 
 request = {
-    "model": "strata",
+    "model": "nostroma",
     "messages": [{"role": "user", "content":
         "Write only Python code defining clamp_score(value: int) -> int. "
         "Return value clamped to the inclusive range 0 through 100. "

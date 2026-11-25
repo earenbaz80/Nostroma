@@ -2,17 +2,17 @@
 """Build a LOCAL, TEST-SIGNED release folder (a feed) from a Terminal archive and engine packages, to try `install.sh`, `install.ps1`,
 `nostroma update` and `nostroma launch` end to end without any hosting. Nothing is uploaded.
 
-    python packaging/make_local_feed.py --out FEED --terminal strata-terminal-0.1.45-linux-x86_64.tar.gz \
+    python packaging/make_local_feed.py --out FEED --terminal nostroma-terminal-0.1.45-linux-x86_64.tar.gz \
         --engine /path/to/components/engine/0.1.45-linux-x86_64-cuda [--engine ...] \
         [--keys KEYDIR] [--url http://127.0.0.1:8099] [--sequence 1]
     python -m http.server 8099 --bind 127.0.0.1 --directory FEED         # serve it (foreground; stop it with Ctrl+C)
 
 What it writes into FEED (the folder a person would host):
-    strata-feed.json + .sig        the signed feed (Ed25519, the key in KEYDIR, made once, never inside a git checkout)
+    nostroma-feed.json + .sig        the signed feed (Ed25519, the key in KEYDIR, made once, never inside a git checkout)
     control/*, engine/*            the Terminal (as a "control" package) and each engine package, archived
     install-manifest.txt           one line per platform for install.sh / install.ps1: platform version url sha256 size (written by feed_tool build-feed)
     install.sh, install.ps1        the one-line installers with this feed's address filled in (--url)
-    test-trust.json                the PUBLIC test key: `STRATA_UPDATE_TRUSTED_KEYS=<this file>` lets this build trust the feed
+    test-trust.json                the PUBLIC test key: `NOSTROMA_UPDATE_TRUSTED_KEYS=<this file>` lets this build trust the feed
                                    (the real key goes into nostroma_control/update_keys.json at release; this one never does)
 
 The engine package folders are copied (never changed in place) before they are signed with the test key.
@@ -37,7 +37,7 @@ import feed_tool as ft  # noqa: E402
 
 
 def extract_terminal(archive: Path, into: Path) -> Path:
-    """Unpack a terminal archive; returns the folder that holds python/ and strata.py."""
+    """Unpack a terminal archive; returns the folder that holds python/ and nostroma.py."""
     if archive.name.endswith(".zip"):
         with zipfile.ZipFile(archive) as zf:
             zf.extractall(into)
@@ -72,7 +72,7 @@ def main(argv=None) -> int:
     (out / "engine").mkdir(parents=True)
     (out / "control").mkdir(parents=True)
     version = a.version
-    with tempfile.TemporaryDirectory(prefix="strata-feed-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="nostroma-feed-") as tmp:
         tmpdir = Path(tmp)
         for n, term in enumerate(a.terminal):
             work = tmpdir / f"t{n}"
@@ -101,14 +101,14 @@ def main(argv=None) -> int:
                   drafters_dir=out / "drafters" if a.drafter else None)
     if any("linux-aarch64" in p.name for p in (out / "control").glob("*.entry.json")):       # the Linux ARM64 Terminal reads its own feed file (same bytes here)
         for suffix in ("", ".sig"):
-            shutil.copy2(out / ("strata-feed.json" + suffix), out / ("strata-feed-linux-aarch64.json" + suffix))
+            shutil.copy2(out / ("nostroma-feed.json" + suffix), out / ("nostroma-feed-linux-aarch64.json" + suffix))
     base = a.url.rstrip("/")
     for name in ("install.sh", "install.ps1"):
         text = (ROOT / "packaging" / name).read_text(encoding="utf-8").replace(RELEASE_FEED, base)
         (out / name).write_text(text, encoding="utf-8", newline="\n" if name.endswith(".sh") else None)
     (out / "test-trust.json").write_text((keys / "feed-key.pub.json").read_text(encoding="utf-8"), encoding="utf-8")
     print(f"feed written to {out}\n  serve it:  python -m http.server {base.rsplit(':', 1)[-1]} --bind 127.0.0.1 --directory {out}\n"
-          f"  trust it:  STRATA_UPDATE_TRUSTED_KEYS={out / 'test-trust.json'}")
+          f"  trust it:  NOSTROMA_UPDATE_TRUSTED_KEYS={out / 'test-trust.json'}")
     return 0
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """bench.py - engine-agnostic benchmark: speed + accuracy + completeness + reliability.
 
-One client for Strata / llama-server (OpenAI /v1/chat/completions, streaming) and Ollama (/api/chat, streaming).
+One client for Nostroma / llama-server (OpenAI /v1/chat/completions, streaming) and Ollama (/api/chat, streaming).
 Everything is graded against ground truth computed or executed here - never model self-report:
   reasoning   40 programmatic questions (answers computed in Python, fixed seed)
   code        12 functions graded by executing hidden tests in a subprocess
@@ -38,7 +38,7 @@ def call_openai(base, model, messages, max_tokens, think, tools, timeout):
                "temperature": 0, "top_k": 1, "top_p": 1, "seed": 1, "max_tokens": max_tokens,
                "chat_template_kwargs": {"enable_thinking": bool(think)}}
     if not think:
-        payload["reasoning_effort"] = "none"   # Strata honours this; llama-server ignores unknown fields
+        payload["reasoning_effort"] = "none"   # Nostroma honours this; llama-server ignores unknown fields
     if tools:
         payload["tools"] = tools
     t0 = time.time(); first = None
@@ -435,7 +435,7 @@ def selftest(args):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--engine", choices=["openai", "ollama"]); ap.add_argument("--base", help="e.g. http://127.0.0.1:8080")
-    ap.add_argument("--model", default="m"); ap.add_argument("--arm", help="label for this arm, e.g. strata-iq2xs-p40x1")
+    ap.add_argument("--model", default="m"); ap.add_argument("--arm", help="label for this arm, e.g. nostroma-iq2xs-p40x1")
     ap.add_argument("--suite", default="speed,reasoning,code,tools,complete,longctx")
     ap.add_argument("--think", choices=["off", "on"], default="off")
     ap.add_argument("--reps", type=int, default=1); ap.add_argument("--num-ctx", type=int, default=32768)

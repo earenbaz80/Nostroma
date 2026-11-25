@@ -66,7 +66,7 @@ def redactor(key: str = ""):
                     pattern = r"(?<![\w<-])" + pattern + r"(?![\w>-])"
                 subs.append((re.compile(pattern, 0 if exact else re.I), label, name))
 
-    add(ROOT, "<strata>")
+    add(ROOT, "<nostroma>")
     add(Path.home(), "<home>")
     add(tempfile.gettempdir(), "<tmp>")
     try:
@@ -481,7 +481,7 @@ def software(why: Why, machine: dict, *, engine_version: str | None, build_optio
         runtime.append({"name": "metal", "version": platform.mac_ver()[0] or sysinfo.release()})
     drivers = [{"name": "gpu-driver", "version": machine["driver"]}] if machine.get("driver") else []
     block = {"os": os_info(), "drivers": drivers or None, "runtime": runtime or None,
-             "strata_commit": commit, "engine_version": engine_version,
+             "nostroma_commit": commit, "engine_version": engine_version,
              "build_kind": "source" if (ROOT / ".git").exists() else "release",
              "runner_commit": commit, "build_options": build_options}
     if not drivers:
@@ -489,7 +489,7 @@ def software(why: Why, machine: dict, *, engine_version: str | None, build_optio
     if not runtime:
         why.add("/software/runtime", "no CUDA, ROCm or Metal runtime version was reported by the local tools")
     if commit is None:
-        for field in ("strata_commit", "runner_commit"):
+        for field in ("nostroma_commit", "runner_commit"):
             why.add(f"/software/{field}", "not a git checkout and no COMMIT file in this install; a release must carry its commit")
     if engine_version is None:
         why.add("/software/engine_version", "the server reported no engine version (/props build_info, /v1/status engine)")
@@ -610,7 +610,7 @@ def configuration(why: Why, *, options: dict | None, env: dict | None, props: di
         else:
             other[name] = value
     for name, value in sorted((env or {}).items()):
-        if name.startswith("STRATA_") and not SECRET_KEY.search(name):
+        if name.startswith("NOSTROMA_") and not SECRET_KEY.search(name):
             grouped["experimental_options"][name] = base_if_path(str(value))
     n_ctx = ((props.get("default_generation_settings") or {}).get("n_ctx"))
     slots = props.get("total_slots")

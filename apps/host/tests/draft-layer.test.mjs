@@ -16,17 +16,17 @@ import { checkRunConfig } from '../server/run-config-check.mjs';
 const ARGS = ['--pack', '/p', '--expert-cache', 'auto', '--spec', '4', '--spec-min-p', '0.5', '--mtp', '/m/rt', '--max-context', '40000', '--kv', 'int8', '--vision'];
 
 function fixture(config = {}, { gpuGb = 12 } = {}) {
-  const root = mkdtempSync(join(tmpdir(), 'strata-draft-test-'));
+  const root = mkdtempSync(join(tmpdir(), 'nostroma-draft-test-'));
   const install = join(root, 'install'), data = join(root, 'data');
   mkdirSync(install, { recursive: true });
-  process.env.STRATA_INSTALL_DIR = install;
-  const path = join(install, 'strata-q2_0.json');
-  writeFileSync(path, JSON.stringify({ exe: 'component:strata-engine', tokenizer: join(install, 'tok'), args: ARGS, model_name: 'Qwen q2_0', port: 8080, ...config }));
+  process.env.NOSTROMA_INSTALL_DIR = install;
+  const path = join(install, 'nostroma-q2_0.json');
+  writeFileSync(path, JSON.stringify({ exe: 'component:nostroma-engine', tokenizer: join(install, 'tok'), args: ARGS, model_name: 'Qwen q2_0', port: 8080, ...config }));
   const saved = [];
   const control = {
     control: { dir: join(root, 'control') }, version: '0.2.0',
     async installedModels() { return { install_dir: install, models: [{ id: 'q2_0', name: 'Qwen q2_0', source_config: path, component_status: 'present', context_tokens: 40000 }] }; },
-    async engine() { return { usable: true, backend: 'cuda', components_dir: 'E:\\c', engine: { version: '0.2.0', platform: 'windows-x86_64', backend: 'cuda', exe: 'E:\\e\\strata.exe', root: 'E:\\e' } }; },
+    async engine() { return { usable: true, backend: 'cuda', components_dir: 'E:\\c', engine: { version: '0.2.0', platform: 'windows-x86_64', backend: 'cuda', exe: 'E:\\e\\nostroma.exe', root: 'E:\\e' } }; },
     async saveProfile(name, file) { saved.push(JSON.parse(readFileSync(file, 'utf8'))); return {}; },
     async start() { return { ok: true, state: 'ready' }; },
     async stop() { return { ok: true }; },
@@ -35,7 +35,7 @@ function fixture(config = {}, { gpuGb = 12 } = {}) {
   return { native, saved, path, cleanup: () => rmSync(root, { recursive: true, force: true }) };
 }
 const finish = async (native, id) => { for (let i = 0; i < 500; i++) { const job = native.state().jobs.find(j => j.id === id); if (job.state !== 'running') return job; await new Promise(r => setTimeout(r, 10)); } throw new Error('job did not finish'); };
-const visionSection = { exe: 'E:\\e\\strata-vision.exe', mmproj: 'E:\\mm.gguf', model: 'E:\\m.gguf', gpu: false, max_tokens: 300 };
+const visionSection = { exe: 'E:\\e\\nostroma-vision.exe', mmproj: 'E:\\mm.gguf', model: 'E:\\m.gguf', gpu: false, max_tokens: 300 };
 
 test('withoutDraftLayer takes out --mtp, --spec-min-p and --batch-mtp and keeps --spec', () => {
   assert.deepEqual(withoutDraftLayer(ARGS), ['--pack', '/p', '--expert-cache', 'auto', '--spec', '4', '--max-context', '40000', '--kv', 'int8', '--vision']);

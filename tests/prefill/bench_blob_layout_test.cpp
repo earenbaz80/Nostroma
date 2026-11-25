@@ -7,13 +7,13 @@
 
 #include "bench_blob_layout.hpp"
 #if defined(BBL_HAVE_QUANT)
-#include "strata/quant/types.hpp"
+#include "nostroma/quant/types.hpp"
 #endif
 
-using strata::bench_blob::BlockLayout;
-using strata::bench_blob::is_scale;
-using strata::bench_blob::layout_of;
-using strata::bench_blob::perturb_offset;
+using nostroma::bench_blob::BlockLayout;
+using nostroma::bench_blob::is_scale;
+using nostroma::bench_blob::layout_of;
+using nostroma::bench_blob::perturb_offset;
 
 static int failed = 0;
 #define CHECK(x) do { if (!(x)) { std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #x); ++failed; } } while (0)
@@ -30,7 +30,7 @@ int main() {
         for (const auto& s : L.scale) CHECK(s.begin >= 0 && s.begin < s.end && s.end <= L.bytes);
 #if defined(BBL_HAVE_QUANT)
         // the geometry equals the engine's own type table (the one the bench checks against at run time)
-        const strata::quant::TypeInfo* ti = strata::quant::type_info(t);
+        const nostroma::quant::TypeInfo* ti = nostroma::quant::type_info(t);
         CHECK(ti != nullptr && (int) ti->bytes == L.bytes && ti->blck == L.values);
 #endif
 
@@ -90,9 +90,9 @@ int main() {
         return 1;
     }
 #if defined(BBL_HAVE_QUANT)
-    std::printf("bench_blob_layout_test: OK (geometry checked against strata::quant::type_info)\n");
+    std::printf("bench_blob_layout_test: OK (geometry checked against nostroma::quant::type_info)\n");
 #else
-    std::printf("bench_blob_layout_test: OK (no strata_quant in this build: geometry not cross-checked)\n");
+    std::printf("bench_blob_layout_test: OK (no nostroma_quant in this build: geometry not cross-checked)\n");
 #endif
     return 0;
 }

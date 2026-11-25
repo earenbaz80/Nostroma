@@ -1,9 +1,9 @@
-// src/image/png/png_write_main.cpp - test program strata-png-write (not shipped) for include/strata/image/png_write.hpp.
+// src/image/png/png_write_main.cpp - test program nostroma-png-write (not shipped) for include/nostroma/image/png_write.hpp.
 //
-//   strata-png-write --vectors                              CRC-32 / Adler-32 against published check values
-//   strata-png-write --pattern W H C OUT.png [PARAMETERS]   a fixed test pattern (byte = (7x + 13y + 29c) mod 256)
-//   strata-png-write --raw IN W H C OUT.png [PARAMETERS]    IN: W*H*C bytes, row-major
-#include "strata/image/png_write.hpp"
+//   nostroma-png-write --vectors                              CRC-32 / Adler-32 against published check values
+//   nostroma-png-write --pattern W H C OUT.png [PARAMETERS]   a fixed test pattern (byte = (7x + 13y + 29c) mod 256)
+//   nostroma-png-write --raw IN W H C OUT.png [PARAMETERS]    IN: W*H*C bytes, row-major
+#include "nostroma/image/png_write.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-using namespace strata::image;
+using namespace nostroma::image;
 
 int main(int argc, char** argv) {
     if (argc >= 2 && std::strcmp(argv[1], "--vectors") == 0) {
@@ -62,6 +62,6 @@ int main(int argc, char** argv) {
         if (!e.empty()) std::fprintf(stderr, "%s\n", e.c_str());
         return e.empty() ? 0 : 1;
     }
-    std::fprintf(stderr, "usage: strata-png-write --vectors | --pattern W H C OUT [PARAMS] | --raw IN W H C OUT [PARAMS]\n");
+    std::fprintf(stderr, "usage: nostroma-png-write --vectors | --pattern W H C OUT [PARAMS] | --raw IN W H C OUT [PARAMS]\n");
     return 2;
 }

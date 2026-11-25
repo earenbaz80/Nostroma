@@ -16,10 +16,10 @@
  "engine_prompt_tps": 2185.1,
  "engine_decode_tps": 79.3,
  "log_lines": [
-  "strata serve: prompt 119256 tokens = 0 reused + 119256 read in 54577 ms (2185.1 tok/s), 256 generated in 3230 ms (79.3 tok/s), drafts accepted 151 of 208, 6 checkpoints",
-  "strata serve: decode expert cache hit rate: 95.5% (140181 hits / 146787 lookups)"
+  "nostroma serve: prompt 119256 tokens = 0 reused + 119256 read in 54577 ms (2185.1 tok/s), 256 generated in 3230 ms (79.3 tok/s), drafts accepted 151 of 208, 6 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 95.5% (140181 hits / 146787 lookups)"
  ],
- "answer_head": "The last file shown is `include/strata/kernels/cpu/pool.hpp`. It declares the CPU expert pool (`ExpertPool`), which is the engine's mechanism for computing the routed MoE experts that do not fit in VRAM.\n\n**What it does:**\n\n1.  **Thread Management:** It creates a pool of worker threads pinned to phy",
+ "answer_head": "The last file shown is `include/nostroma/kernels/cpu/pool.hpp`. It declares the CPU expert pool (`ExpertPool`), which is the engine's mechanism for computing the routed MoE experts that do not fit in VRAM.\n\n**What it does:**\n\n1.  **Thread Management:** It creates a pool of worker threads pinned to phy",
  "metrics_after": {
   "engine": {
    "model": "qwen3.8-flash-next-iq3_xxs",

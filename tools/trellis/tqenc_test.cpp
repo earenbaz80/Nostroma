@@ -16,7 +16,7 @@
 //   T9  quality on Gaussian blocks: SQNR against the rate-distortion bound 6.02 * K/4 dB; approximate vs exact search
 #include "tqenc.hpp"
 
-#include "strata/kernels/cpu/tq_cpu.hpp"
+#include "nostroma/kernels/cpu/tq_cpu.hpp"
 #include "tq_states.hpp"
 
 #include <algorithm>
@@ -33,13 +33,13 @@
 #include <immintrin.h>
 #endif
 
-namespace strata::kernels::cpu {
+namespace nostroma::kernels::cpu {
 bool cpu_avx512_ok() { return __builtin_cpu_supports("avx512f") && __builtin_cpu_supports("avx512bw") && __builtin_cpu_supports("avx512vl") && __builtin_cpu_supports("avx512vbmi") && __builtin_cpu_supports("avx512vnni"); }
 bool cpu_avx2_ok() { return __builtin_cpu_supports("avx2") && __builtin_cpu_supports("fma"); }
-}  // namespace strata::kernels::cpu
+}  // namespace nostroma::kernels::cpu
 
 using namespace tqenc;
-namespace kc = strata::kernels::cpu;
+namespace kc = nostroma::kernels::cpu;
 
 static int g_fail = 0, g_checks = 0;
 #define CHECK(cond, ...)                                                                          \

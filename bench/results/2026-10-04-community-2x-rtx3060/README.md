@@ -1,7 +1,7 @@
 # Community benchmark: 2× RTX 3060 12 GB (Xeon E5-2678 v3), Qwen3.8-Flash-Next IQ3_S
 
 Measured on 2026-10-04 by [zimuhuan-code](https://github.com/zimuhuan-code), on a headless
-Linux server. This tests Strata **0.1.37** with **Qwen3.8-Flash-Next GSQ-RCO IQ3_S**, two
+Linux server. This tests Nostroma **0.1.37** with **Qwen3.8-Flash-Next GSQ-RCO IQ3_S**, two
 RTX 3060s with layer split, and a **524,288-token** context. It is the formal write-up of the
 numbers first posted in #602, now with per-run data, time-to-first-token, memory observations
 and artifact hashes.
@@ -44,14 +44,14 @@ is **not** comparable with the numbers above.
 - Storage: models on an **NVMe** device (`nvme1n1`, 1.4 TB, ext4); two idle HDDs are present
   and were not touched.
 - **Other workloads: none.** The machine's other local engine (`ftllm`), which shares these two
-  GPUs, is disabled while Strata runs. The engine had been idle for ~32 minutes before the
+  GPUs, is disabled while Nostroma runs. The engine had been idle for ~32 minutes before the
   measurement started, and the machine's interactive client (a DSH session) runs against a
   **remote** model, so it did not touch these GPUs.
 - OS **Ubuntu 26.04.1 LTS**, kernel **7.0.0-30-generic**, glibc **2.43**.
 - **CUDA 12.8** (nvcc V12.8.93; 12.9 also installed but fails to build here — see #601).
   Default `g++` is 15.2.0; the engine was built with **g++-14** plus a local `setup.py` patch
-  that selects the toolkit via `STRATA_NVCC`.
-- **Strata commit `db4f91a1171d697928b0d2e1f50ef95e25559d4c` — v0.1.37, built from source**
+  that selects the toolkit via `NOSTROMA_NVCC`.
+- **Nostroma commit `db4f91a1171d697928b0d2e1f50ef95e25559d4c` — v0.1.37, built from source**
   (there is no Linux release binary). llama.cpp pinned by setup at
   `3cf03257f219afbe7334045ff7c6a06ac68c627d`. Python **3.14.4** (the setup venv).
 
@@ -80,10 +80,10 @@ is **not** comparable with the numbers above.
 - Sampling: **temperature 0**, no top-p/top-k override (engine defaults), `max_tokens 256`,
   reasoning left at the engine default.
 
-Exact launch configuration (paths shortened; the full file is `strata-config.json`):
+Exact launch configuration (paths shortened; the full file is `nostroma-config.json`):
 
 ```text
-serve/server.py --engine strata --config <config>.json --port 8081
+serve/server.py --engine nostroma --config <config>.json --port 8081
 
 args:
   --pack <data>/packs/iq3_s
@@ -164,7 +164,7 @@ and per-run GPU/RAM observations), `raw/` for the unmodified API responses, and
   quoted in this README is binary (MiB / GiB).
 - `artifact-sha256.txt` → plain `sha256sum` output, `<hash>  <relative path>`.
 - `needles.json` → the repository script's own output format.
-- `strata-config.json` → the server configuration file as loaded, with local paths shortened.
+- `nostroma-config.json` → the server configuration file as loaded, with local paths shortened.
 
 - **Historical comparison (not re-run).** The same machine and engine with **Q2_0** measured a
   single recorded run on 2026-10-03: **45.0 tok/s decode** (1,015 tokens / 22.6 s weighted mean)
@@ -193,7 +193,7 @@ faster because the prompt prefix was already cached.
   from natural text; no multi-turn, no tool calls, no images.
 - **One quantisation measured here.** Q2_0 exists only as the historical single run above.
 - **Long context on IQ3_S has since been measured** — see [`long-context.md`](long-context.md)
-  (Strata 0.1.39, ~95K → ~514K prompt tokens, 10/10 needle tests found). The Q2_0 long-context
+  (Nostroma 0.1.39, ~95K → ~514K prompt tokens, 10/10 needle tests found). The Q2_0 long-context
   numbers quoted above remain historical and are still not an IQ3_S result.
 - **Warm cache, no cold-start arm**, and the engine was not restarted between runs.
 - PCIe link and GPU clocks were not pinned (idle Gen1 → Gen3 during generation, as measured).

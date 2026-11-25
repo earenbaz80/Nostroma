@@ -9,18 +9,18 @@ DeepSeek (`dsv41`) packages are carried as they were.
 - **The product is called Nostroma.** The window and page titles, the tray, the About row, the quit dialog, the
   installer, the app bundle, the macOS menu, the Terminal's header, the guides and the eight READMEs. The
   repository is now `earenbaz80/Nostroma`, and the sponsorship links and their contact address are gone.
-- **The command is `nostroma`, and `strata` still works.** The installer puts both names on the PATH — two links
+- **The command is `nostroma`, and `nostroma` still works.** The installer puts both names on the PATH — two links
   on Linux and macOS, two launchers on Windows — and each one says the name it was called by. A name that
   already exists and is not a link the installer made is left alone, and the install stops instead of
   overwriting it.
 - **Your settings and data keep their place.** The host reads `NOSTROMA_*` first and still honours every
-  `STRATA_*` variable as the fallback, so a launch script or a preset you already have keeps working. The
-  Python packages are now `nostroma_cli` and `nostroma_control`; `strata.py` still runs the program, and it is
+  `NOSTROMA_*` variable as the fallback, so a launch script or a preset you already have keeps working. The
+  Python packages are now `nostroma_cli` and `nostroma_control`; `nostroma.py` still runs the program, and it is
   still the file the Control archive ships.
-- **The app moves an existing install.** A `~/.strata` folder, a `Documents/Strata/Models` library and a
-  `Documents/Strata/Workspace` are renamed to the new names with their contents, and the app identifies itself as
+- **The app moves an existing install.** A `~/.nostroma` folder, a `Documents/Nostroma/Models` library and a
+  `Documents/Nostroma/Workspace` are renamed to the new names with their contents, and the app identifies itself as
   `ai.nostroma.desktop`. When a folder cannot be moved (another volume, no permission) it is read where it is.
-  The Terminal offers `Documents/Nostroma` first and still counts `Documents/Strata`, so models an older install
+  The Terminal offers `Documents/Nostroma` first and still counts `Documents/Nostroma`, so models an older install
   put there are found.
 - **A new look: amber phosphor.** Square corners, amber accents and one typeface across the app (Korean and
   Chinese still come from the system fonts), in both themes; text keeps WCAG AA contrast. The tab icon and the
@@ -41,10 +41,10 @@ DeepSeek (`dsv41`) packages are carried as they were.
 ## What stays the same
 
 - The model files, the engine packages and the signed feed. No engine package was rebuilt for 0.2.15: the engine
-  sources changed only in comments and messages, and its targets, `STRATA_*` macros and output names are
+  sources changed only in comments and messages, and its targets, `NOSTROMA_*` macros and output names are
   untouched, so a PC that already has its engine downloads nothing new.
-- `nostroma launch`, its flags and the run presets; `strata` as the second name of the command.
-- The `STRATA_*` variables, `~/.strata`, `Documents/Strata` and `strata.py`, for installs and scripts made
+- `nostroma launch`, its flags and the run presets; `nostroma` as the second name of the command.
+- The `NOSTROMA_*` variables, `~/.nostroma`, `Documents/Nostroma` and `nostroma.py`, for installs and scripts made
   before the rename.
 
 ## Packaging and the release
@@ -57,7 +57,7 @@ DeepSeek (`dsv41`) packages are carried as they were.
 - `docs/RELEASE_CHECKLIST.md` is the runbook: every asset, the script that builds it, and the order up to
   publishing as Latest.
 - The release guards now fail on an old name instead of accepting it: the page check rewrites
-  `Strata-<version>-<platform>-…` and `Strata.app`, and the tests pin that.
+  `Nostroma-<version>-<platform>-…` and `Nostroma.app`, and the tests pin that.
 
 ## What we did not test
 
@@ -75,7 +75,7 @@ DeepSeek (`dsv41`) packages are carried as they were.
   leaves it in `.updates/app`; running it is still the platform installer's job.
 - **Terminal:** run `nostroma update`. It fetches Control 0.1.61 and keeps the previous Control package, so
   `nostroma components rollback` can return to it. The engine is unchanged, so no engine is downloaded.
-- **Older installs:** `strata` and the `STRATA_*` variables keep working, so a script that has not been touched
+- **Older installs:** `nostroma` and the `NOSTROMA_*` variables keep working, so a script that has not been touched
   still starts the same server.
 
 ## Downloads
@@ -83,7 +83,7 @@ DeepSeek (`dsv41`) packages are carried as they were.
 Three installers (Windows, Linux AppImage, Mac dmg) and the Mac updater archive `Nostroma.app.tar.gz`; Control
 0.1.61 for Linux x86_64, macOS arm64 and Windows (zip), and 0.1.59 for Linux ARM64; the 12 engine packages at
 0.1.60 and the two at 0.1.59; the two DFlash2 drafter files; the six frozen DeepSeek packages; both feeds
-(`strata-feed.json` and `strata-feed-linux-aarch64.json`) with their signatures; `install.sh`, `install.ps1`,
+(`nostroma-feed.json` and `nostroma-feed-linux-aarch64.json`) with their signatures; `install.sh`, `install.ps1`,
 `install-manifest.txt` and `SHA256SUMS.txt`.
 
 The release does not publish `latest.json`: this build's app has no update row to read it, and `nostroma update

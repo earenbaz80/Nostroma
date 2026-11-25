@@ -21,7 +21,7 @@ import package_engine  # noqa: E402
 
 WINDOWS = os.name == "nt"
 HERE = components.host_platform()
-EXE = "strata.exe" if WINDOWS else "strata"
+EXE = "nostroma.exe" if WINDOWS else "nostroma"
 LIB = "cudart64_13.dll" if WINDOWS else "libcudart.so.13"
 
 
@@ -55,7 +55,7 @@ class Manifest(unittest.TestCase):
         folder = self.package()
         data = json.loads((folder / ec.MANIFEST).read_text())
         self.assertEqual(data["schema_version"], 2)
-        self.assertEqual((data["id"], data["name"], data["version"]), ("strata-engine", "strata-engine", "0.1.45"))
+        self.assertEqual((data["id"], data["name"], data["version"]), ("nostroma-engine", "nostroma-engine", "0.1.45"))
         self.assertEqual((data["platform"], data["backend"]), (HERE, "cuda"))
         self.assertEqual(data["archs"], ["sm_86", "compute_89"])
         self.assertEqual(data["min_driver"], {"nvidia": "580.65"})
@@ -94,13 +94,13 @@ class Manifest(unittest.TestCase):
         import feed_tool
         folder = self.package()
         elf = bytes([0x7f]) + b"ELF" + bytes(60)
-        for name in ("strata-split-2", "strata-vision"):                  # ELF programs without execute bits (copied over from Windows)
+        for name in ("nostroma-split-2", "nostroma-vision"):                  # ELF programs without execute bits (copied over from Windows)
             (folder / name).write_bytes(elf)
             os.chmod(folder / name, 0o644)
         (folder / "libx.so").write_bytes(elf)
         if WINDOWS:                                                       # a Linux package packed on Windows: the ELF header decides
-            self.assertEqual(feed_tool._mode(folder / "strata-split-2", "strata-split-2", "strata"), 0o755)
-            self.assertEqual(feed_tool._mode(folder / "strata-vision", "strata-vision", "strata"), 0o755)
+            self.assertEqual(feed_tool._mode(folder / "nostroma-split-2", "nostroma-split-2", "nostroma"), 0o755)
+            self.assertEqual(feed_tool._mode(folder / "nostroma-vision", "nostroma-vision", "nostroma"), 0o755)
 
     def test_a_gpu_package_without_archs_is_refused_by_the_packager(self):
         with self.assertRaises(SystemExit):
@@ -255,7 +255,7 @@ class Start(unittest.TestCase):
     def start(self, **kw):
         with mock.patch.object(ec, "cuda_archs_present", return_value=kw.pop("cards", ["sm_86"])), \
                 mock.patch.object(ec, "nvidia_driver_version", return_value=kw.pop("driver", "590.00")):
-            return ec.expand("component:strata-engine", {"backend": "cuda"}, root=self.root, **kw)
+            return ec.expand("component:nostroma-engine", {"backend": "cuda"}, root=self.root, **kw)
 
     def test_a_good_package_starts(self):
         self.assertEqual(Path(self.start()).resolve(), (self.folder / EXE).resolve())

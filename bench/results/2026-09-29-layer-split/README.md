@@ -3,7 +3,7 @@
 **Rig (a community member's PC, "RIBPC"):**
 - Ryzen 9 9950X3D, 62 GB DDR5, Windows 11, CUDA 13.1.
 - RTX 5080 16 GB (x16), RTX 3090 24 GB (x4 gen4, ~6 GB/s), RTX 2080 Ti 22 GB (x4 gen3, Turing sm_75; the
-  experimental `STRATA_EXPERIMENTAL_SM75` build).
+  experimental `NOSTROMA_EXPERIMENTAL_SM75` build).
 
 **Model:** the Coder (GSQ-RCO IQ1_M, 48 layers x 256 experts = 12,288 expert pairs, ~23 GB of experts), 32K
 context, int8 KV, `--prefill auto`, `--spec 4`. It is the only model that fits the rig's RAM and disk.
@@ -55,7 +55,7 @@ What decides it:
   decode is on par for story and +4-7% for code.
 - **Residency saturates quickly: the per-layer GPU speed decides.** From K=18 up, both caches hold 98-100% of
   the routed experts. Moving layers to the faster card is what helps: the 3090 costs 0.50 ms per layer per
-  window, the 5080 0.33 (`STRATA_SPLIT_TIMING`, the "wait for the GPU" per stage).
+  window, the 5080 0.33 (`NOSTROMA_SPLIT_TIMING`, the "wait for the GPU" per stage).
 - **Decode is bounded by that GPU time.** One 5080 with its cache adapted spends 16.3 ms waiting for its GPU and
   5.5 ms in the CPU pool per window. The split removes the pool (0.8-1.0 ms) but adds the slower card's layers:
   7.9 + 12.1 ms at K=24. The per-layer GPU half (kernels plus the host round trip that publishes each layer's
@@ -73,12 +73,12 @@ keeps the fastest:
 - **per-layer time** from SMs x clock (0.33 ms for an RTX 5080);
 - **cache contents:** each card's layers' profiled pairs, hottest first, as the fill does;
 - **routed mass** of rank r taken as (r+1)^-1.2 (fits the sweep's hit rates within 0.1-1%);
-- **missed mass** costing 190 ms per unit (fitted to the sweep's best K; `STRATA_SPLIT_MISS_MS` overrides).
+- **missed mass** costing 190 ms per unit (fitted to the sweep's best K; `NOSTROMA_SPLIT_MISS_MS` overrides).
 
 It picked K=22 on the 5080 + 3090: within 0-12% of the best fixed split on prompts and on par on decode. It gives
 a slow third card a single layer.
 
 ## Reproduce
 
-On a rig: the `strata-remote` tools, then `rib_matrix.bat`, `rib_ksweep.bat`, `rib_validate.bat` (in the dev
+On a rig: the `nostroma-remote` tools, then `rib_matrix.bat`, `rib_ksweep.bat`, `rib_validate.bat` (in the dev
 notes, not in this repository).

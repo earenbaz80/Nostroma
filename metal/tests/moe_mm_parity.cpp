@@ -19,8 +19,8 @@
 #include <vector>
 
 namespace {
-int N_EMBD = strata_metal::geo::N, N_FF = strata_metal::geo::NFF;   // the shape this build is compiled for (engine/geo.h); --embd / --ff change them (Q4-KQ: expert widths 512 and 1024)
-constexpr int TOPK = strata_metal::geo::TOPK;
+int N_EMBD = nostroma_metal::geo::N, N_FF = nostroma_metal::geo::NFF;   // the shape this build is compiled for (engine/geo.h); --embd / --ff change them (Q4-KQ: expert widths 512 and 1024)
+constexpr int TOPK = nostroma_metal::geo::TOPK;
 struct MmPlanArgs { uint32_t n_ent, topk, n_expert, tm, n_blocks; };
 struct MmArgs { uint64_t gate_off, up_off, down_off, gu_stride, d_stride; uint32_t gu_row, d_row, n_embd, n_ff; };
 double median(std::vector<double> v) { std::sort(v.begin(), v.end()); return v[v.size() / 2]; }
@@ -59,9 +59,9 @@ int main(int argc, char** argv) {
     if (v4) TM = 16 * MS;   // the plan's tile height; mm_gu4's name carries MS instead
     if (v6) TM = 16;   // ragged tiles: the padding is 16 rows, the group size is MS
     mtl::Context cx;
-    // the host defines STRATA_KQ_DOWN only for a model whose downs are K-quant / IQ4_XS / IQ3_S (window.cpp kq_down_prelude)
+    // the host defines NOSTROMA_KQ_DOWN only for a model whose downs are K-quant / IQ4_XS / IQ3_S (window.cpp kq_down_prelude)
     const bool kq_dn = dn == ref::Q3_K || dn == ref::Q4_K || dn == ref::Q5_K || dn == ref::Q6_K || dn == ref::IQ3_S || dn == ref::IQ4_XS;
-    const int lib = cx.compile({"quant.metal", "units.metal", "mma.metal", "moe_mm.metal"}, kq_dn ? "#define STRATA_KQ_DOWN 1\n" : "");
+    const int lib = cx.compile({"quant.metal", "units.metal", "mma.metal", "moe_mm.metal"}, kq_dn ? "#define NOSTROMA_KQ_DOWN 1\n" : "");
     const int NE = bench ? 512 : 64, LAYERS = bench ? 4 : 1;
     const size_t gu_row = ref::row_bytes(gu, N_EMBD), d_row = ref::row_bytes(dn, N_FF);
     const size_t up_off = (size_t)N_FF * gu_row, down_off = 2 * up_off, blob = down_off + (size_t)N_EMBD * d_row;

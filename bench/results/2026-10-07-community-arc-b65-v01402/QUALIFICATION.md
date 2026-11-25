@@ -8,7 +8,7 @@ and investigated before model benchmarks:
 | --- | --- |
 | `iq_parity` | CTest supplies `--selftest`, which this program treats as a fixture directory. A separate run against the available actual IQ fixtures passes. Native GGUF expert oracles across eight layers also pass. |
 | `ple_parity` | The standalone Q2_0 fixture is unavailable. This case remains unqualified. The measured profile uses original IQ2_XS/native model artifacts. |
-| `gr_parity` | Ordinary/native GR subchecks pass. Opt-in QFUSE and multi-QFUSE checks fail because the SYCL implementations explicitly return false. `STRATA_QFUSE` is absent in these measurements. |
+| `gr_parity` | Ordinary/native GR subchecks pass. Opt-in QFUSE and multi-QFUSE checks fail because the SYCL implementations explicitly return false. `NOSTROMA_QFUSE` is absent in these measurements. |
 | `s2_expert_grouped_parity` | Old/new grouped kernels differ bitwise in four cases. All CPU-oracle comparisons report zero rows outside tolerance, with worst normalized error no greater than 1.03e-7. This path is used by the drafter, so independent exact target-only/one-draft/MTP4 model-stream checks were required. |
 
 Those model-stream checks pass independently for both prefill profiles. No

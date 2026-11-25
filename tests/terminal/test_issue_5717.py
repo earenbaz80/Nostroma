@@ -44,13 +44,13 @@ def write_cache(bdir: Path, root: Path, nvcc: str) -> None:
         f"CUDA_cudart_LIBRARY:FILEPATH={r}/targets/x86_64-linux/lib/libcudart.so",
         f"CUDA_cublas_LIBRARY:FILEPATH={r}/targets/x86_64-linux/lib/libcublas.so",
         "CUDA_nvml_LIBRARY:FILEPATH=CUDA_nvml_LIBRARY-NOTFOUND",
-        "STRATA_ENABLE_CUDA:BOOL=ON",
+        "NOSTROMA_ENABLE_CUDA:BOOL=ON",
         ""]), encoding="utf-8")
     det = bdir / "CMakeFiles" / "3.31.6"
     det.mkdir(parents=True, exist_ok=True)
     (det / "CMakeCUDACompiler.cmake").write_text(f'set(CMAKE_CUDA_COMPILER_TOOLKIT_ROOT "{r}")\n', encoding="utf-8")
     (det / "CMakeCXXCompiler.cmake").write_text("", encoding="utf-8")
-    obj = bdir / "CMakeFiles" / "strata.dir"
+    obj = bdir / "CMakeFiles" / "nostroma.dir"
     obj.mkdir(parents=True, exist_ok=True)
     (obj / "main.cpp.o").write_bytes(b"obj")
 
@@ -75,9 +75,9 @@ class Issue5717StaleToolkitCache(unittest.TestCase):
 
     def configure(self, nvcc: Path) -> list:
         self.runs.clear()
-        setup.cmake_build(self.base, self.bdir, "strata",
-                          ["-DSTRATA_ENABLE_CUDA=ON", f"-DCMAKE_CUDA_COMPILER={nvcc}", *setup.toolkit_root_defs(nvcc)],
-                          None, "build-strata.bat")
+        setup.cmake_build(self.base, self.bdir, "nostroma",
+                          ["-DNOSTROMA_ENABLE_CUDA=ON", f"-DCMAKE_CUDA_COMPILER={nvcc}", *setup.toolkit_root_defs(nvcc)],
+                          None, "build-nostroma.bat")
         return self.runs[0]
 
     def test_a_moved_toolkit_drops_the_cached_cuda_paths(self):
@@ -98,7 +98,7 @@ class Issue5717StaleToolkitCache(unittest.TestCase):
         # CMake detects the CUDA compiler again (its toolkit root is in that file); the objects stay for the rebuild
         self.assertEqual(list(self.bdir.glob("CMakeFiles/*/CMakeCUDACompiler.cmake")), [])
         self.assertTrue((self.bdir / "CMakeFiles" / "3.31.6" / "CMakeCXXCompiler.cmake").exists())
-        self.assertTrue((self.bdir / "CMakeFiles" / "strata.dir" / "main.cpp.o").exists())
+        self.assertTrue((self.bdir / "CMakeFiles" / "nostroma.dir" / "main.cpp.o").exists())
         self.assertTrue((self.bdir / "CMakeCache.txt").exists())
 
     def test_another_installed_toolkit_also_counts(self):
@@ -126,10 +126,10 @@ class Issue5717StaleToolkitCache(unittest.TestCase):
         conf = self.configure(nvcc)                      # never configured: no cache
         self.assertFalse([a for a in conf if a.startswith("-U")], conf)
         self.bdir.mkdir(exist_ok=True)
-        (self.bdir / "CMakeCache.txt").write_text("CMAKE_GENERATOR:INTERNAL=Ninja\nSTRATA_ENABLE_CUDA:BOOL=OFF\n",
+        (self.bdir / "CMakeCache.txt").write_text("CMAKE_GENERATOR:INTERNAL=Ninja\nNOSTROMA_ENABLE_CUDA:BOOL=OFF\n",
                                                   encoding="utf-8")
         self.runs.clear()
-        setup.cmake_build(self.base, self.bdir, "strata-vision", ["-DSTRATA_VISION_CUDA=OFF"], None, "x.bat")
+        setup.cmake_build(self.base, self.bdir, "nostroma-vision", ["-DNOSTROMA_VISION_CUDA=OFF"], None, "x.bat")
         self.assertFalse([a for a in self.runs[0] if a.startswith("-U")], self.runs[0])
 
 

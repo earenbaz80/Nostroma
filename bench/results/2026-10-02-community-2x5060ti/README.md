@@ -1,27 +1,27 @@
 # Community benchmark on 2× RTX 5060 Ti 16 GB (PCIe gen3)
 
 Measured on 2026-10-02 (speed) and 2026-10-01 (agent task) by @Efs-O.
-Strata 0.1.34 running Flash-Next IQ3_S across two RTX 5060 Ti 16 GB on an older
+Nostroma 0.1.34 running Flash-Next IQ3_S across two RTX 5060 Ti 16 GB on an older
 PCIe gen3 desktop. The report has three parts: a speed test that follows
 `docs/COMMUNITY_BENCHMARKS.md`, one real agentic coding task with hidden tests,
 and, for context, the same task run by a dense local model and by paid hosted
-models. The main limitation: the agent task ran once per setup (n=1), on Strata
+models. The main limitation: the agent task ran once per setup (n=1), on Nostroma
 0.1.32 rather than 0.1.34.
 
 ## Hardware and software
 
-- GPUs: 2× RTX 5060 Ti 16 GB (Strata uses these two only). A third card, an RTX 3060
+- GPUs: 2× RTX 5060 Ti 16 GB (Nostroma uses these two only). A third card, an RTX 3060
   12 GB, runs only the vision encoder (`cuda_device: 2`).
 - PCIe: gen3, x8 / x8 for the two 5060 Tis (x4 for the 3060). nvidia-smi reports a
   lower generation at idle because of link power saving.
 - Power limits: 180 W on each 5060 Ti (stock) and no overclock for the main results. A
   second set with a memory overclock is reported separately below.
-- CPU: Intel i9-9900KF (8 cores / 16 threads, AVX2, no AVX-512). Strata started
+- CPU: Intel i9-9900KF (8 cores / 16 threads, AVX2, no AVX-512). Nostroma started
   7 expert-pool workers plus the host thread.
 - RAM: 128 GB DDR4-3200.
 - Storage: models and packs on NVMe (Samsung 9100 PRO).
 - OS: Windows 10 Pro 22H2 (19045). Driver 616.56, CUDA 13.4 (runtime from the venv's `nvidia/cu13`).
-- Strata: tag `v0.1.34` (`1678de3`), engine 0.1.34, release binaries set up with
+- Nostroma: tag `v0.1.34` (`1678de3`), engine 0.1.34, release binaries set up with
   `guarded_setup.py --model IQ3_S --gpus 0,1`.
 - Background load: an idle desktop and VS Code. No other GPU work during the runs.
 
@@ -37,7 +37,7 @@ models. The main limitation: the agent task ran once per setup (n=1), on Strata
   experimental speed projection, not in low-RAM mode.
 
 ```text
-strata.exe --pack <data>/packs/iq3_s
+nostroma.exe --pack <data>/packs/iq3_s
   --native <models>/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf
   --ple-gguf <models>/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf
   --expert-profile data/expert-profile.bin --expert-cache auto --prefill auto
@@ -46,11 +46,11 @@ strata.exe --pack <data>/packs/iq3_s
 (run config: "gpu": [0, 1], "layer_split": "auto")
 ```
 
-## Part 1: Speed (Strata 0.1.34)
+## Part 1: Speed (Nostroma 0.1.34)
 
 ### Method
 
-The script is [`speed_bench.py`](speed_bench.py) (`python speed_bench.py <code folder> <strata log>`), using streaming `/v1/chat/completions` on the local server.
+The script is [`speed_bench.py`](speed_bench.py) (`python speed_bench.py <code folder> <nostroma log>`), using streaming `/v1/chat/completions` on the local server.
 
 - Output capped at 256 tokens. Every run hit the cap.
 - One unmeasured warm-up, then 3 measured runs per condition. The server had been
@@ -61,7 +61,7 @@ The script is [`speed_bench.py`](speed_bench.py) (`python speed_bench.py <code f
   with a unique UUID line, so no prefix can be reused.
 - **long-reuse**: the same 20.9K-token text sent again after its cold run, with only
   the last part changed. The engine reused 16,384 tokens and read about 4.5K fresh.
-- Prompt and decode rates come from the engine's own `strata serve: prompt …` line.
+- Prompt and decode rates come from the engine's own `nostroma serve: prompt …` line.
   TTFT and total time are measured at the client and include HTTP. TTFT is the first
   non-empty delta, which is always reasoning text here. Keep-alive lines are ignored.
 - VRAM is from `nvidia-smi` after each request: the whole card, desktop included.
@@ -84,7 +84,7 @@ The script is [`speed_bench.py`](speed_bench.py) (`python speed_bench.py <code f
 
 Short prompts read at about 55 tok/s, and a 104-token request takes about 1.9 s
 before its first token. That is the fixed per-request cost discussed in #340, and
-it is unchanged on 0.1.34. Setting `STRATA_SPLIT_OWN=1` did not reduce it, and it
+it is unchanged on 0.1.34. Setting `NOSTROMA_SPLIT_OWN=1` did not reduce it, and it
 doubled cold prefill time (details in #340).
 
 ### Failures
@@ -134,13 +134,13 @@ implementation scores 54/55.
 
 | Setup | Engine | Hidden tests | Time to done | Output tokens | End-to-end tok/s |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Flash-Next IQ3_S, effort `medium` | Strata 0.1.32, 2× 5060 Ti | 55/55 | 797 s | 38.8K | 49 |
-| Flash-Next IQ3_S, effort `xhigh` | Strata 0.1.32, 2× 5060 Ti | 55/55 | 872 s | 42.4K | 49 |
-| Flash-Next IQ3_S, effort `low` | Strata 0.1.32, 2× 5060 Ti | 54/55, unfinished (see below) | ~1,770 s | 41.5K delivered | 52 |
+| Flash-Next IQ3_S, effort `medium` | Nostroma 0.1.32, 2× 5060 Ti | 55/55 | 797 s | 38.8K | 49 |
+| Flash-Next IQ3_S, effort `xhigh` | Nostroma 0.1.32, 2× 5060 Ti | 55/55 | 872 s | 42.4K | 49 |
+| Flash-Next IQ3_S, effort `low` | Nostroma 0.1.32, 2× 5060 Ti | 54/55, unfinished (see below) | ~1,770 s | 41.5K delivered | 52 |
 | Qwen3.8-27B UD-Q6_K + MTP, effort `low` | llama.cpp, tensor split on 2× 5060 Ti | 55/55 | 1,785 s | 69.6K | 44 |
 | Qwen3.8-27B UD-Q6_K + MTP, effort `xhigh` | llama.cpp, tensor split on 2× 5060 Ti | 55/55 | 1,824 s | 64.3K | 42 |
 
-On this task, Flash-Next on Strata finished in about half the time of the dense 27B
+On this task, Flash-Next on Nostroma finished in about half the time of the dense 27B
 at Q6, on about 40% fewer output tokens, with the same score. At `low`, Flash did not
 think less than at `medium`; it produced the longest requests of any Flash run.
 
@@ -157,7 +157,7 @@ within 0.5 s every time. So it appears fixed by the cancel-on-disconnect changes
 
 These ran in different harnesses (each vendor's own CLI, or a hosted API), on
 different hardware, with their own tool sets. They are here only so readers can
-place the local results. They are not Strata measurements and not a fair speed
+place the local results. They are not Nostroma measurements and not a fair speed
 comparison.
 
 | Model | Harness | Hidden tests | Time to done | Output tokens |
@@ -177,7 +177,7 @@ the score: every finished local run scored 55/55.
 - Agent task: **n=1 per setup**. Run-to-run variance on agent tasks is easily ±30% in time.
 - The task is small and fully specified, and most setups hit the 55/55 ceiling. It
   shows time and token spend, not which model codes better on harder work.
-- The agent-task Flash runs used Strata 0.1.32, not 0.1.34.
+- The agent-task Flash runs used Nostroma 0.1.32, not 0.1.34.
 - The agent harness used for the local runs and Cerebras is a personal VS Code
   extension. Its tool schemas and prompts differ from the vendor CLIs.
 - Not measured: needle recall, vision, a context longer than ~21K for speed, and

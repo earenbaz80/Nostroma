@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Make a local, unpublished engine package for the component folder (nostroma_control/engine_component.py).
 
-    python packaging/package_engine.py --src <folder with strata[.exe] and its libraries> --backend cuda \
+    python packaging/package_engine.py --src <folder with nostroma[.exe] and its libraries> --backend cuda \
         --version 0.1.45 --out <components>/engine --arch sm_86 --arch compute_89 \
         --min-driver nvidia=580.65 [--build-id <id>] [--platform linux-x86_64] [--tree] [--include GLOB ...]
 
@@ -14,9 +14,9 @@ checks and starts; it is not signed, not published, and nothing here uploads it.
 (`engine_component.register_signature_verifier`); `--sign-with` is deliberately absent until then.
 
 Files taken from --src, by default: the entrypoint, every `*.dll` / `*.so` / `*.so.*` / `*.dylib` / `*.metallib`
-beside it, `BUILD.json`, `LICENSE*`, the picture reader `strata-vision[.exe]` when the build has one (without it the
+beside it, `BUILD.json`, `LICENSE*`, the picture reader `nostroma-vision[.exe]` when the build has one (without it the
 engine answers text only: setup.py Control mode keeps the person's picture choice only when it is there). `--include GLOB` (repeatable, relative to --src, `**` allowed) adds more, for
-example `strata-vision.exe`, `strata-device.exe` or `rocm/**`. `--tree` takes every regular file under --src (the HIP
+example `nostroma-vision.exe`, `nostroma-device.exe` or `rocm/**`. `--tree` takes every regular file under --src (the HIP
 package ships a `rocm/` tree of kernels). Symlinks are never followed or copied.
 """
 
@@ -56,10 +56,10 @@ def sha256(path: Path) -> str:
 def wanted(path: Path) -> bool:
     name = path.name.lower()
     return (name.endswith((".dll", ".so", ".dylib", ".metallib")) or ".so." in name or name == "build.json"
-            or name.startswith("license") or name in ("strata-vision", "strata-vision.exe", "strata-vision-hip", "strata-vision-hip.exe"))   # the picture readers (CPU, AMD GPU) beside the engine
+            or name.startswith("license") or name in ("nostroma-vision", "nostroma-vision.exe", "nostroma-vision-hip", "nostroma-vision-hip.exe"))   # the picture readers (CPU, AMD GPU) beside the engine
 
 
-READER_NAMES = ("strata-vision", "strata-vision.exe")
+READER_NAMES = ("nostroma-vision", "nostroma-vision.exe")
 
 
 def _arch_numbers(value) -> set[int]:
@@ -79,7 +79,7 @@ def check_picture_reader(src: Path, backend: str, target: str, archs: tuple[str,
     """The picture reader of a package must run on every card and Mac the package does (tools tests: I1, I2, #3669, #3697).
 
     * CUDA package with a reader: BUILD.json (beside the engine) must list `vision_archs`, and every `sm_NN` the package carries
-      code for must be there. A reader reused from an older build (the Windows zips' strata-vision.exe, unchanged since 0.1.44, had no
+      code for must be there. A reader reused from an older build (the Windows zips' nostroma-vision.exe, unchanged since 0.1.44, had no
       sm_60) stops with "device kernel image is invalid" on a Pascal card while the engine runs. Refused, unless allow_stale.
     * macOS package without a reader: refused (a Mac with this package cannot read a picture), unless allow_none.
     * CUDA package without a reader: allowed (text-only), reported in the returned notes so the build log says it.
@@ -89,7 +89,7 @@ def check_picture_reader(src: Path, backend: str, target: str, archs: tuple[str,
     if target.startswith("macos"):
         if reader is None and not allow_none:
             raise SystemExit("refusing to package the macOS engine without its picture reader: a Mac with this package could not read "
-                             "a picture (#3697). Build it with packaging/build_vision_mac.sh and copy strata-vision beside strata "
+                             "a picture (#3697). Build it with packaging/build_vision_mac.sh and copy nostroma-vision beside nostroma "
                              "(or give --no-picture-reader to ship a text-only package on purpose).")
         if reader is None:
             notes.append("no picture reader in this macOS package: pictures are off for it")
@@ -121,7 +121,7 @@ def check_picture_reader(src: Path, backend: str, target: str, archs: tuple[str,
 
 def stamp_vision_archs(stage: Path, archs: str) -> None:
     """Record the architectures the picture reader in `stage` was built for as BUILD.json `vision_archs` (the build recipes for Windows
-    call this after building strata-vision.exe; check_picture_reader compares it with the package's archs)."""
+    call this after building nostroma-vision.exe; check_picture_reader compares it with the package's archs)."""
     path = stage / "BUILD.json"
     try:
         data = json.loads(path.read_text(encoding="utf-8-sig")) if path.is_file() else {}
@@ -179,13 +179,13 @@ def build(src: Path, backend: str, version: str, target: str, out: Path, *, entr
         # #3503: the cuda12 package is what the feed and docs/DOCKER.md offer to GTX 10 / P100 / V100; one built for
         # sm_75 and up starts a restart loop on those cards ("this PC's GPU is sm_60")
         raise SystemExit("refusing to package the cuda12 engine without sm_60, sm_61 or sm_70: it is the Pascal and Volta build "
-                         "(CUDA 12.9, -DSTRATA_EXPERIMENTAL_SM60=ON, --arch sm_60 --arch sm_61 --arch sm_70 ...; see packaging/build_cuda_linux.sh)")
+                         "(CUDA 12.9, -DNOSTROMA_EXPERIMENTAL_SM60=ON, --arch sm_60 --arch sm_61 --arch sm_70 ...; see packaging/build_cuda_linux.sh)")
     if backend == "hip":
         from nostroma_control import hipblaslt_tuning
         problems = hipblaslt_tuning.check_stage(src, archs)
         if problems:
             raise SystemExit("refusing to package the AMD engine:\n  " + "\n  ".join(problems))
-    entrypoint = entry or ("strata.exe" if target.startswith("windows") else "strata")
+    entrypoint = entry or ("nostroma.exe" if target.startswith("windows") else "nostroma")
     if not (src / entrypoint).is_file():
         raise SystemExit(f"{src / entrypoint} does not exist")
     if check_reader:                       # the release recipes and the CLI ask for it; the library call keeps its old behaviour
@@ -222,7 +222,7 @@ def build(src: Path, backend: str, version: str, target: str, out: Path, *, entr
             manifest["notes"] = notes
         (staging / ec.MANIFEST).write_text(json.dumps(manifest, indent=1) + "\n", encoding="utf-8")
         if os.name != "nt":
-            for exe_name in (entrypoint, "strata-vision", "strata-vision-hip"):      # the programs setup starts: executable in the tar
+            for exe_name in (entrypoint, "nostroma-vision", "nostroma-vision-hip"):      # the programs setup starts: executable in the tar
                 if (staging / exe_name).is_file():
                     (staging / exe_name).chmod(0o755)
         ec.verify(ec.read_manifest(staging, component_id), full=True)
@@ -307,14 +307,14 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--allow-lib", action="append", default=[], metavar="NAME",
                     help="an imported library that really is provided by the target system (rare; named so the check passes)")
     ap.add_argument("--shape", default="", metavar="GEOMETRY",
-                    help="package the engine of a model shape (the name the engine was compiled for, -DSTRATA_GEOMETRY=q4_lite): its own component strata-q4-lite, installed "
+                    help="package the engine of a model shape (the name the engine was compiled for, -DNOSTROMA_GEOMETRY=q4_lite): its own component nostroma-q4-lite, installed "
                          "next to the Nostroma engine and never in place of it (nostroma_control/shape_engine.py)")
     ap.add_argument("--include", action="append", default=[], metavar="GLOB", help="more files, relative to --src")
     ap.add_argument("--stamp-vision", type=Path, metavar="STAGE", help="write --vision-archs into STAGE/BUILD.json and exit")
     ap.add_argument("--vision-archs", default="", help="with --stamp-vision: the architectures the reader was built for, e.g. '60;61;70;75;80;86;89'")
     ap.add_argument("--allow-stale-vision", action="store_true",
                     help="package a CUDA picture reader whose BUILD.json vision_archs do not cover the package's archs (it will fail on those cards)")
-    ap.add_argument("--no-picture-reader", action="store_true", help="ship a macOS package without strata-vision on purpose (pictures stay off)")
+    ap.add_argument("--no-picture-reader", action="store_true", help="ship a macOS package without nostroma-vision on purpose (pictures stay off)")
     a = ap.parse_args(argv)
     if a.verify:
         try:

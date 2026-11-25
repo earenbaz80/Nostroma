@@ -14,8 +14,8 @@ arena (serve/replicas.py: one memory object holds the experts for all engines, m
 instead of 109 and 211 GB) and chooses the number of engines the RAM allows.  Without the shared arena (Windows) it needs the
 private copies to fit.
 
-Recommend, never force: this profile is opt-in (`setup.py --replica-profile`, STRATA_REPLICA_PROFILE=1, or
-"replica_profile": true in the run config; "replica_profile": false or STRATA_REPLICA_PROFILE=0 turn it off), and what the
+Recommend, never force: this profile is opt-in (`setup.py --replica-profile`, NOSTROMA_REPLICA_PROFILE=1, or
+"replica_profile": true in the run config; "replica_profile": false or NOSTROMA_REPLICA_PROFILE=0 turn it off), and what the
 person chose (the config's `replicas`, `--parallel`, `--layer-split`, `--peer-device`, an environment variable) always wins.
 It only touches the measured model class; every other computer gets exactly what it got before.
 
@@ -34,19 +34,19 @@ HEADROOM_GB = 12.0          # what the OS, the server and the page cache keep
 MIN_CARD_GB = 24.0          # measured on 32 GB cards; a smaller card is not claimed (an A4000 16 GB is measured separately)
 MIN_REPLICAS = 2
 REPLICA_RESERVE_MIB = 2500   # VRAM each one-card engine keeps free (the draft head's prompt capture needs ~2 GB at 14K tokens)
-SWITCHES = {"STRATA_QSA_SLOTS": "1", "STRATA_BATCH_SELF_COMMIT": "1", "STRATA_SLOT_COPY_DIRECT": "1",
-            "STRATA_CKPT_POOL": "1", "STRATA_CKPT_POOL_READY": "4", "STRATA_SLOT_CKPT_MOVE": "1",
-            "STRATA_SLOT_COPY_BATCHSYNC": "1"}
+SWITCHES = {"NOSTROMA_QSA_SLOTS": "1", "NOSTROMA_BATCH_SELF_COMMIT": "1", "NOSTROMA_SLOT_COPY_DIRECT": "1",
+            "NOSTROMA_CKPT_POOL": "1", "NOSTROMA_CKPT_POOL_READY": "4", "NOSTROMA_SLOT_CKPT_MOVE": "1",
+            "NOSTROMA_SLOT_COPY_BATCHSYNC": "1"}
 OFF_VALUES = ("0", "off", "no", "false")
 ON_VALUES = ("1", "on", "yes", "true")
 
 
 def requested(cfg: dict | None = None, environ=None) -> bool:
-    """Opt-in, and an explicit no wins: config "replica_profile" true/false, else STRATA_REPLICA_PROFILE."""
+    """Opt-in, and an explicit no wins: config "replica_profile" true/false, else NOSTROMA_REPLICA_PROFILE."""
     environ = os.environ if environ is None else environ
     if cfg and cfg.get("replica_profile") is not None:
         return cfg.get("replica_profile") is True
-    return str(environ.get("NOSTROMA_REPLICA_PROFILE", environ.get("STRATA_REPLICA_PROFILE", ""))).strip().lower() in ON_VALUES
+    return str(environ.get("NOSTROMA_REPLICA_PROFILE", environ.get("NOSTROMA_REPLICA_PROFILE", ""))).strip().lower() in ON_VALUES
 
 
 def quant_of(cfg: dict) -> str | None:

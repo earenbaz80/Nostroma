@@ -150,12 +150,12 @@ def test_wrapper_keeps_the_base_signature_and_forwards_exe_and_announce(monkeypa
     mod.install_two_card_spec()
     assert shape(S.engine_args) == base
     cfg = {"backend": "sycl", "gpu": [0, 1], "args": list(ARGS)}
-    assert spec_of(S.engine_args(cfg, "/x/strata-engine")) == "2"
+    assert spec_of(S.engine_args(cfg, "/x/nostroma-engine")) == "2"
     capsys.readouterr()
-    quiet = S.engine_args(cfg, "/x/strata-engine", announce=False)           # the budget check
+    quiet = S.engine_args(cfg, "/x/nostroma-engine", announce=False)           # the budget check
     assert spec_of(quiet) == "2" and capsys.readouterr().out == "", "a quiet build prints no line"
     assert spec_of(S.engine_args(cfg, exe="/y/e")) == "2"
-    assert seen == [("/x/strata-engine", True), ("/x/strata-engine", False), ("/y/e", True)]
+    assert seen == [("/x/nostroma-engine", True), ("/x/nostroma-engine", False), ("/y/e", True)]
 
 
 def test_the_real_base_function_runs_under_the_wrapper_without_a_model(monkeypatch, capsys):
@@ -168,12 +168,12 @@ def test_the_real_base_function_runs_under_the_wrapper_without_a_model(monkeypat
     mod.install_two_card_spec()
     cfg = {"model_name": "qwen3.8-flash-next-iq3_s", "backend": "sycl", "gpu": [0, 1], "args": list(ARGS), "drafting": "mtp"}
     with mock.patch.object(S.drafting, "detect_hardware", return_value=("sycl", [])), mock.patch.object(S, "drafting_vram_mib", return_value=None),             mock.patch.object(S.drafting, "mtp_ready", return_value=True):
-        started = S.engine_args(cfg, "/x/strata-engine")
+        started = S.engine_args(cfg, "/x/nostroma-engine")
         out = capsys.readouterr().out
-        quiet = S.engine_args(cfg, "/x/strata-engine", announce=False)
+        quiet = S.engine_args(cfg, "/x/nostroma-engine", announce=False)
         quiet_out = capsys.readouterr().out
     assert spec_of(started) == "2" and spec_of(quiet) == "2"
-    assert "[strata]" in out and quiet_out == ""
+    assert "[nostroma]" in out and quiet_out == ""
 
 
 def test_server_wrapper_applies_the_rule_at_start(monkeypatch):
@@ -213,7 +213,7 @@ def _derive(base, settings, cards):
 
 def test_launcher_writes_spec_2_for_two_b_series_cards():
     from nostroma_cli.launch import settings as L
-    base = {"backend": "sycl", "gpu": [0, 1], "gpus_asked": True, "layer_split": "auto", "exe": "component:strata-engine",
+    base = {"backend": "sycl", "gpu": [0, 1], "gpus_asked": True, "layer_split": "auto", "exe": "component:nostroma-engine",
             "args": list(ARGS), "port": 8095}
     two = [dict(B65, index=0), dict(B65, index=1)]
     cfg = _derive(base, L.LaunchSettings(), two)

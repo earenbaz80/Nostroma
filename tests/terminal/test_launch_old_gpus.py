@@ -45,7 +45,7 @@ class OldNvidiaCards(unittest.TestCase):
             cat = catalog()
             cat._hardware_override = None
             hw = {**HW_12, "gpus": [v100(0), v100(1)]}
-            with mock.patch.object(type(cat.strata), "hardware", return_value=hw):
+            with mock.patch.object(type(cat.nostroma), "hardware", return_value=hw):
                 comp = cat.computer(fresh=True)
             self.assertEqual(len(comp.usable_gpus), 2)
             self.assertIn("x2", comp.line())

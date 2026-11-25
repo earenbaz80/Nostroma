@@ -66,10 +66,10 @@ That is the full list found in the code. Some details:
   or the app's Update engine: with a model loaded it names the model, asks before stopping it, and downloads while the model
   keeps serving; a script is refused (exit 7) unless it passes `--stop-model`. One quiet exception, the launch monitor only:
   once a day it reads the signed update feed (a few KB, no engine, a 5 second limit, nothing shown if it fails or there is no
-  connection) so it can say "a new engine is available". `STRATA_UPDATE_CHECK=0` turns it off
+  connection) so it can say "a new engine is available". `NOSTROMA_UPDATE_CHECK=0` turns it off
   (`nostroma_control/engine_update.py`, `refresh_cache`).
 - **Starting and serving never download.** `nostroma serve` and the app's load button fetch nothing. The app sets
-  `STRATA_PACKAGED=1` and `STRATA_NO_ACQUIRE=1` for its parts (`apps/desktop/src-tauri/src/main.rs`), and the downloaders
+  `NOSTROMA_PACKAGED=1` and `NOSTROMA_NO_ACQUIRE=1` for its parts (`apps/desktop/src-tauri/src/main.rs`), and the downloaders
   refuse to run under them (`nostroma_control/acquisition.py`, `apps/host/server/acquisition.mjs`). That is why the app
   never downloads `cloudflared` for you while it runs.
 - **The engine itself has no network code.** The part of Nostroma that runs the model (`src/`, `include/`, `sycl/`, `metal/`)
@@ -85,7 +85,7 @@ That is the full list found in the code. Some details:
   storage on your disk. Models are in the folder you chose.
 - **API keys** you save for outside services are kept in a file that only your user account can open. They are not
   encrypted. (`apps/host/server/model-providers.mjs`)
-- **The server listens on `127.0.0.1`**, this PC only. The app fixes that address (`STRATA_BIND=127.0.0.1`), and the engine
+- **The server listens on `127.0.0.1`**, this PC only. The app fixes that address (`NOSTROMA_BIND=127.0.0.1`), and the engine
   server's default is the same (`serve/server.py`, the `--host` option).
 - **Sharing needs a key.** The app's "Share with other devices" and the Cloudflare tunnel will not start without an API
   key, and the shared port answers only `/v1/models`, `/v1/chat/completions` and `/v1/messages`
@@ -104,7 +104,7 @@ The server also has browser protections (a host check, an origin check, no CORS 
 
 **Updates for the engine, the Terminal and Control.**
 
-1. The release publishes `strata-feed.json` and `strata-feed.json.sig`, signed with an Ed25519 key. The matching public key is
+1. The release publishes `nostroma-feed.json` and `nostroma-feed.json.sig`, signed with an Ed25519 key. The matching public key is
    inside every installed Nostroma (`nostroma_control/update_keys.json`). The private key is kept offline by the owner.
 2. Before it uses the feed, your PC checks the signature, that the feed has not expired and that it is not older than the
    last feed it accepted (so an old feed cannot be replayed).
@@ -124,8 +124,8 @@ the Gyro files, Qwen3.6, the NVFP4 packs, the picture reader, the image model fi
 tensor). A file that does not match is deleted and the install stops. A file whose size on the server is not the pinned
 size stops it before the download starts.
 
-- If the pinned version of a file is gone from Hugging Face, the install stops and says to update Strata. It does not take
-  the repository's current file instead. A tester can set `STRATA_ALLOW_UNPINNED=1` to take the current file anyway, without
+- If the pinned version of a file is gone from Hugging Face, the install stops and says to update Nostroma. It does not take
+  the repository's current file instead. A tester can set `NOSTROMA_ALLOW_UNPINNED=1` to take the current file anyway, without
   the check. It is off by default, and setup says so when it is set.
 - Starting a model does not check its files, and running `nostroma install` again for a model you have does not download or hash them
   again. A file installed before these hashes existed is kept as it is.
@@ -138,7 +138,7 @@ size stops it before the download starts.
   (`setup.py`: `REPO_PINS`, `download`, `verify_sha256`; `tools/mtp_fetch.py`; `apps/host/server/image-models.mjs`.)
 
 **Engine in the source route.** `setup.py` checks the engine zip against the SHA-256 that GitHub's API publishes for that
-release file. If GitHub cannot say (offline, rate limit), setup warns and installs anyway. `STRATA_SKIP_SHA256=1` switches the
+release file. If GitHub cannot say (offline, rate limit), setup warns and installs anyway. `NOSTROMA_SKIP_SHA256=1` switches the
 check off, and it is never on by default.
 
 **The one-line install** (`curl ... | sh`, `irm ... | iex`) checks the Terminal archive's SHA-256 and the signed feed with the
@@ -179,7 +179,7 @@ In **Manual**:
   the address, so words from your conversation can end up in a search or a web address, which is why the first one asks.
   In Settings, Tools you can switch the web tools off, or turn on **Let the assistant search the web without asking**, which
   is off by default. A scheduled task in Manual mode cannot answer the card, so its web call is refused unless that switch is
-  on (`strata-gate.mjs`).
+  on (`nostroma-gate.mjs`).
 - **The chat folder is only where the agent starts.** Manual mode does not confine it there. What you
   approve can touch anything your user account can touch, so read the card before you press Approve.
 - **Your keys stay out of its commands.** The agent's shell does not get environment variables whose names contain KEY, TOKEN,
@@ -207,6 +207,6 @@ To report a security problem, use GitHub's private reporting (the repository's *
 | App updater | `apps/desktop/src-tauri/src/updater.rs`, `apps/desktop/src-tauri/tauri.conf.json` |
 | Downloads refused while running | `nostroma_control/acquisition.py`, `apps/host/server/acquisition.mjs` |
 | One-line installers | `packaging/install.sh`, `packaging/install.ps1` |
-| Web tools and the agent's approvals | `apps/host/server/agent/plugins/strata-gate.mjs`, `agent/profile.mjs`, `web-search-ddg.mjs`, `web-search-bing.mjs`, `web-search-keyed.mjs` |
+| Web tools and the agent's approvals | `apps/host/server/agent/plugins/nostroma-gate.mjs`, `agent/profile.mjs`, `web-search-ddg.mjs`, `web-search-bing.mjs`, `web-search-keyed.mjs` |
 | Outside model services | `apps/host/server/model-providers.mjs` |
 | Sharing, tunnel | `apps/host/server/local-share.mjs`, `cloudflare.mjs`, `nostroma_cli/launch/access.py` |

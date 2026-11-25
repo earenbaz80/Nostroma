@@ -68,7 +68,7 @@ class StartMessage(unittest.TestCase):
         from serve import server
         d = tempfile.mkdtemp()
         log = Path(d) / "engine.log"
-        log.write_text("strata generate: expert arena: resident, 31.64 GiB\n", encoding="utf-8")
+        log.write_text("nostroma generate: expert arena: resident, 31.64 GiB\n", encoding="utf-8")
         done, out = threading.Event(), io.StringIO()
         with mock.patch.object(server, "OPENS_BROWSER", opens), contextlib.redirect_stdout(out):
             t = threading.Thread(target=server.narrate_start, args=(str(log), 0, [], done))

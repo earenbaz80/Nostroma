@@ -2,7 +2,7 @@
 """The drop's acceptance gate in one command: setup detection, one benchmark cell, the identity gate and a needle, each
 with a band that the numbers on a DGX Spark should land in. Exit code 0 = all passed.
 
-    python research/tools/dgx-spark-2026-10/dgx_smoke.py [--config strata-iq3_s.json] [--tokens 12000] [--data-dir ~/Strata-data]
+    python research/tools/dgx-spark-2026-10/dgx_smoke.py [--config nostroma-iq3_s.json] [--tokens 12000] [--data-dir ~/Nostroma-data]
 
 Bands are deliberately loose (they must survive page-cache state and drift); a failure means something is wrong, not that
 the machine is 5% slower than the number in the documents.
@@ -51,7 +51,7 @@ def identity(config: str) -> tuple[bool, str]:
     off = dict(base)
     off["args"] = list(base["args"])
     env = dict(base.get("env") or {})
-    env["STRATA_PF_FUSED"] = "0"
+    env["NOSTROMA_PF_FUSED"] = "0"
     off["env"] = env
     off_path = WORK / "nofused.json"
     off_path.write_text(json.dumps(off, indent=1))
@@ -72,11 +72,11 @@ def needle(config: str, tokens: int) -> tuple[bool, str]:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--config", default="strata-iq3_s.json")
+    ap.add_argument("--config", default="nostroma-iq3_s.json")
     ap.add_argument("--cell", default="4096:0:256")
     ap.add_argument("--tokens", type=int, default=12000)
-    ap.add_argument("--data-dir", default=os.environ.get("STRATA_DATA_DIR") or str(Path.home() / "Strata-data"),
-                    help="the data folder setup uses (default: $STRATA_DATA_DIR or ~/Strata-data)")
+    ap.add_argument("--data-dir", default=os.environ.get("NOSTROMA_DATA_DIR") or str(Path.home() / "Nostroma-data"),
+                    help="the data folder setup uses (default: $NOSTROMA_DATA_DIR or ~/Nostroma-data)")
     a = ap.parse_args()
     results = []
     t0 = time.time()

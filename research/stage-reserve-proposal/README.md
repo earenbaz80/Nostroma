@@ -1,6 +1,6 @@
 # Layer-split reserve: the unused window-term proposal
 
-Moved here from `include/strata/program/stage_reserve.hpp` and `tests/program/stage_reserve_test.cpp` in cleanup step 4.2.
+Moved here from `include/nostroma/program/stage_reserve.hpp` and `tests/program/stage_reserve_test.cpp` in cleanup step 4.2.
 Nothing in the engine calls it; the default placement uses `reserve_mib` and `room_bytes` in the header, which are unchanged.
 
 ## What it is

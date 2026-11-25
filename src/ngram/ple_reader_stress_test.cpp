@@ -15,8 +15,8 @@
 //   * the reader after a failed read: the next issue/collect must fail, not wait for ever (Linux: the file is cut
 //     short under the open reader);
 //   * --big: a sparse table whose rows sit at file offsets around 2^31 and 2^32 and at the end of a 5 GiB file.
-#include "strata/ngram/ple_reader.hpp"
-#include "strata/platform/direct_file.hpp"
+#include "nostroma/ngram/ple_reader.hpp"
+#include "nostroma/platform/direct_file.hpp"
 
 #include <algorithm>
 #include <atomic>
@@ -45,7 +45,7 @@
 #include <unistd.h>
 #endif
 
-namespace ng = strata::ngram;
+namespace ng = nostroma::ngram;
 
 namespace {
 

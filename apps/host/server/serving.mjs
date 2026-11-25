@@ -77,7 +77,7 @@ export function patch(body) {
   // caller sends is compared in authorized() below, in constant time (#4535), never with ===.
   if (body.apiKey === null) serving.apiKey = null;
   else if (typeof body.apiKey === 'string' && body.apiKey.trim()) serving.apiKey = body.apiKey.trim();
-  else if (body.generateKey) serving.apiKey = `sk-strata-${randomBytes(12).toString('hex')}`;
+  else if (body.generateKey) serving.apiKey = `sk-nostroma-${randomBytes(12).toString('hex')}`;
   if (typeof body.pauseServing === 'boolean') serving.pauseServing = body.pauseServing;
   update({ serving });
   emit();

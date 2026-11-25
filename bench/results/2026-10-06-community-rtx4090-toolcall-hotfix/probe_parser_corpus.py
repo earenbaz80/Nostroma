@@ -14,7 +14,7 @@ import pathlib
 import random
 import sys
 
-ROOT = pathlib.Path("/home/dgbox/Strata")
+ROOT = pathlib.Path("/home/dgbox/Nostroma")
 sys.path.insert(0, str(ROOT))
 from serve.frontend import OutputParser  # noqa: E402
 

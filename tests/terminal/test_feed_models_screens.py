@@ -31,19 +31,19 @@ class FeedModelsOnTheModelScreen(Base):
         keys = os.path.join(self.home.tmp.name, "keys.json")
         with open(keys, "w", encoding="utf-8") as f:
             json.dump({"keys": [signing.public_part(self.key)]}, f)
-        p = mock.patch.dict(os.environ, {"STRATA_UPDATE_TRUSTED_KEYS": keys})
+        p = mock.patch.dict(os.environ, {"NOSTROMA_UPDATE_TRUSTED_KEYS": keys})
         p.start()
         self.addCleanup(p.stop)
 
     def keep_feed(self, models):
-        doc = {"schema_version": 1, "feed": "strata-updates", "channel": "stable", "sequence": 3, "generated_at": "2026-11-06T00:00:00Z", "expires_at": None}
+        doc = {"schema_version": 1, "feed": "nostroma-updates", "channel": "stable", "sequence": 3, "generated_at": "2026-11-06T00:00:00Z", "expires_at": None}
         if models is not None:
             doc["models"] = {"packages": models}
         raw = (json.dumps(doc, sort_keys=True) + "\n").encode()
         sig = json.dumps(signing.sign_bytes(self.key, raw)).encode()
         feed_models.remember(_with_signature(raw, sig, self.key))
 
-    def test_a_model_this_strata_does_not_know_is_named_with_the_reason(self):
+    def test_a_model_this_nostroma_does_not_know_is_named_with_the_reason(self):
         self.keep_feed([entry()])
 
         async def case(app, pilot, ctx):

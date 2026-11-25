@@ -17,14 +17,14 @@ def derive(base):
 
 class OwnLog(unittest.TestCase):
     def test_the_setup_log_name_is_replaced_by_the_launch_log(self):
-        for name in ("M:/Strata/strata-iq3_xxs.log", "/home/me/strata/strata-q2_0.log", r"M:\Strata\strata-iq3_s.log"):
+        for name in ("M:/Nostroma/nostroma-iq3_xxs.log", "/home/me/nostroma/nostroma-q2_0.log", r"M:\Nostroma\nostroma-iq3_s.log"):
             self.assertEqual(derive({"exe": "e", "args": [], "log": name})["log"], "C:/launch/q2_0.engine.log", name)
         self.assertEqual(derive({"exe": "e", "args": []})["log"], "C:/launch/q2_0.engine.log")
 
     def test_a_log_path_the_person_chose_is_kept(self):
-        for name in ("M:/logs/history.log", "/var/log/strata/engine.log", r"D:\notes\iq3.txt"):
+        for name in ("M:/logs/history.log", "/var/log/nostroma/engine.log", r"D:\notes\iq3.txt"):
             self.assertEqual(derive({"exe": "e", "args": [], "log": name})["log"], name, name)
-        self.assertEqual(runner.own_log_path({"log": "M:/Strata/strata-iq3_xxs.log"}), None)
+        self.assertEqual(runner.own_log_path({"log": "M:/Nostroma/nostroma-iq3_xxs.log"}), None)
         self.assertEqual(runner.own_log_path({"log": ""}), None)
         self.assertEqual(runner.own_log_path({"log": 5}), None)
 

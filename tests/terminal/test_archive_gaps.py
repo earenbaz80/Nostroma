@@ -46,40 +46,40 @@ class EnginePackageEnv(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             folder = Path(d)
             (folder / "engine-component.json").write_text("{}", encoding="utf-8")
-            (folder / "strata").write_text("x", encoding="utf-8")
+            (folder / "nostroma").write_text("x", encoding="utf-8")
             with mock.patch.dict(os.environ, {"LD_LIBRARY_PATH": "/old", "PATH": "/old"}):
-                env = tuning.engine_env(folder / "strata")
+                env = tuning.engine_env(folder / "nostroma")
             var = "PATH" if os.name == "nt" else "LD_LIBRARY_PATH"
             self.assertTrue(env[var].startswith(str(folder.resolve())))
             self.assertTrue(env[var].endswith("/old") or env[var].endswith("old"))
 
     def test_a_plain_engine_keeps_the_callers_environment(self):
         with tempfile.TemporaryDirectory() as d:
-            (Path(d) / "strata").write_text("x", encoding="utf-8")
-            self.assertIsNone(tuning.engine_env(Path(d) / "strata"))
+            (Path(d) / "nostroma").write_text("x", encoding="utf-8")
+            self.assertIsNone(tuning.engine_env(Path(d) / "nostroma"))
 
 
 class CalibrateWithoutAFullFolder(unittest.TestCase):
     def test_missing_setup_is_a_refusal_in_words_not_a_traceback(self):
         with mock.patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("STRATA_INSTALL_DIR", None)
+            os.environ.pop("NOSTROMA_INSTALL_DIR", None)
             with mock.patch("importlib.import_module", side_effect=ImportError("no module")):
                 with self.assertRaises(ProfileError) as ctx:
                     calibration._full_folder("tools.calibrate")
         self.assertEqual(ctx.exception.code if hasattr(ctx.exception, "code") else 5, 5)
-        self.assertIn("STRATA_INSTALL_DIR", str(ctx.exception))
+        self.assertIn("NOSTROMA_INSTALL_DIR", str(ctx.exception))
         self.assertIn("tune run --mode api", str(ctx.exception))
 
     def test_tool_availability_is_reported_for_the_plan(self):
         with mock.patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("STRATA_INSTALL_DIR", None)
+            os.environ.pop("NOSTROMA_INSTALL_DIR", None)
             with mock.patch("importlib.util.find_spec", return_value=None):
                 self.assertFalse(calibration._tools_available())
             with tempfile.TemporaryDirectory() as d:
                 (Path(d) / "tools").mkdir()
                 (Path(d) / "setup.py").write_text("", encoding="utf-8")
                 (Path(d) / "tools" / "calibrate.py").write_text("", encoding="utf-8")
-                os.environ["STRATA_INSTALL_DIR"] = d
+                os.environ["NOSTROMA_INSTALL_DIR"] = d
                 with mock.patch("importlib.util.find_spec", return_value=None):
                     self.assertTrue(calibration._tools_available())
 

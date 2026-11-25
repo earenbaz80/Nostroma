@@ -18,10 +18,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "strata/kernels/native_ple_postops.hpp"
-#include "strata/core/geometry.hpp"
-#include "strata/kernels/native_gr_norm.hpp"
-#include "strata/kernels/ngram.hpp"
+#include "nostroma/kernels/native_ple_postops.hpp"
+#include "nostroma/core/geometry.hpp"
+#include "nostroma/kernels/native_gr_norm.hpp"
+#include "nostroma/kernels/ngram.hpp"
 #include <cuda_runtime.h>
 #include <cuda_fp16.h>
 #include <cmath>
@@ -31,10 +31,10 @@
 #include <stdexcept>
 #include <string>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
-constexpr int N = strata::core::kCompiledGeometry.n_embd, H = strata::core::kCompiledGeometry.hc, D = N * H, HISTORY = 9;
-static_assert(N == strata::core::kCompiledGeometry.n_embd && H == strata::core::kCompiledGeometry.hc, "native_ple_postops is compiled for core/geometry.hpp");
+constexpr int N = nostroma::core::kCompiledGeometry.n_embd, H = nostroma::core::kCompiledGeometry.hc, D = N * H, HISTORY = 9;
+static_assert(N == nostroma::core::kCompiledGeometry.n_embd && H == nostroma::core::kCompiledGeometry.hc, "native_ple_postops is compiled for core/geometry.hpp");
 __device__ float warp_sum(float x) {
     for (int offset = 16; offset; offset >>= 1) x += __shfl_xor_sync(0xffffffffu, x, offset);
     return x;
@@ -288,4 +288,4 @@ void native_ple_postops_batch_snap(float* key, float* hidden, const float* value
     history_batch_snap_kernel<<<D / 256, 256, 0, st>>>(history, query_norm, T, snap);
     launch_check();
 }
-} // namespace strata::kernels
+} // namespace nostroma::kernels

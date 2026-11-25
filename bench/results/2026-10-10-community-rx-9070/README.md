@@ -1,6 +1,6 @@
 # Community benchmark on AMD Radeon RX 9070 16 GB (gfx1201), Windows 11, Ryzen 7 5800X3D
 
-Measured on 2026-10-10 by [spitzerd](https://github.com/spitzerd). Strata **0.1.41**
+Measured on 2026-10-10 by [spitzerd](https://github.com/spitzerd). Nostroma **0.1.41**
 (prebuilt Windows HIP engine), Flash-Next **IQ3_XXS**, one GPU, 131,072-token context;
 three runs each at ~4.2K, ~33.5K and ~130K prompt tokens with a 256-token cap, plus six
 recall checks. Main limitation: one machine, one engine session, a desktop in normal use
@@ -35,11 +35,11 @@ with no clock or power capture.
   - `...-00002-of-00002.gguf` 28,800,138,432 B, SHA-256
     `316b46f3a2dbd68c900f43136ab9449f9dcc3725dfd8c794847c204bc161e113`
   - **Repository and revision not recorded** (setup downloaded them; no manifest kept).
-- Pack `Strata-data\packs\iq3_xxs` built by setup (`conversions.json` names the two source
-  shards; no hash for the pack itself). Expert profile `Strata\data\expert-profile.bin`,
+- Pack `Nostroma-data\packs\iq3_xxs` built by setup (`conversions.json` names the two source
+  shards; no hash for the pack itself). Expert profile `Nostroma\data\expert-profile.bin`,
   24,576 ranked pairs, SHA-256
   `8f59b4aa8873209dff11c11e37bcda9529a1335b724a1afeea37bf6388975baf`.
-- MTP draft head `Strata-data\mtp\rt` (per-tensor SHA-256 in its `mtp-manifest.json`,
+- MTP draft head `Nostroma-data\mtp\rt` (per-tensor SHA-256 in its `mtp-manifest.json`,
   built from `Qwen3.8-Flash-Next` safetensors shards; revision not recorded). Served model
   id `qwen3.8-flash-next-iq3_xxs`.
 - **Context** 131,072 (`--max-context`), **KV** int8 with 32,768 of 131,072 cells per QSA
@@ -49,23 +49,23 @@ with no clock or power capture.
   --spec-min-p 0.5` plus the MTP draft layer (835 MiB of VRAM). **Vision** off (this
   build has none). No calibration, no experimental speed projection, no API key.
 
-Engine arguments as written in [strata-iq3_xxs.json](strata-iq3_xxs.json):
+Engine arguments as written in [nostroma-iq3_xxs.json](nostroma-iq3_xxs.json):
 
 ```text
---pack D:\Dev\Strata-data\packs\iq3_xxs
---native D:\Dev\Strata-data\models\IQ3_XXS\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf
---ple-gguf D:\Dev\Strata-data\models\IQ3_XXS\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00002-of-00002.gguf
---expert-profile D:\Dev\Strata\data\expert-profile.bin
+--pack D:\Dev\Nostroma-data\packs\iq3_xxs
+--native D:\Dev\Nostroma-data\models\IQ3_XXS\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf
+--ple-gguf D:\Dev\Nostroma-data\models\IQ3_XXS\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00002-of-00002.gguf
+--expert-profile D:\Dev\Nostroma\data\expert-profile.bin
 --expert-cache auto --prefill auto --spec 4 --spec-min-p 0.5
---mtp D:\Dev\Strata-data\mtp\rt
+--mtp D:\Dev\Nostroma-data\mtp\rt
 --max-context 131072 --kv int8 --kv-resident 32768
-env STRATA_HIPBLASLT_TUNING=D:\Dev\Strata\tools\hip\gfx1201-hipblaslt-100500.txt
+env NOSTROMA_HIPBLASLT_TUNING=D:\Dev\Nostroma\tools\hip\gfx1201-hipblaslt-100500.txt
 ```
 
-Server: `.venv\Scripts\python.exe serve\server.py --engine strata --config
-strata-iq3_xxs.json --port 8080`, started for this run and untouched afterwards. The log
+Server: `.venv\Scripts\python.exe serve\server.py --engine nostroma --config
+nostroma-iq3_xxs.json --port 8080`, started for this run and untouched afterwards. The log
 shows `hipBLASLt tuning enabled (32 rows, gfx1201, version 100500)` and the
-`STRATA_HIP_WMMA=1` hint as **not enabled** (it is opt-in because it changes output bits).
+`NOSTROMA_HIP_WMMA=1` hint as **not enabled** (it is opt-in because it changes output bits).
 
 ## Method
 
@@ -115,7 +115,7 @@ Total latency (client, whole request, median of three): 11.47 s (11.41-11.62) at
 Per-run data: [bench-output.json](bench-output.json) (4K, 32K and the rejected 128K rows)
 and [bench-output-128k.json](bench-output-128k.json) (the fitted ~130K leg). The measured
 engine session, including startup and every timing line:
-[strata-iq3_xxs-session.log](strata-iq3_xxs-session.log).
+[nostroma-iq3_xxs-session.log](nostroma-iq3_xxs-session.log).
 
 - **Within-session spread is small at 33.5K (0.2 %) and ~130K (1.5 % prompt, 11 %
   decode), wider at 4.2K (1.1 % prompt).** One session per length, so this is not a
@@ -158,7 +158,7 @@ Needle recall (one run per depth, exact string):
 - `docs/AMD_HIP.md`'s RDNA4 validation ran `--max-context 32768` with 4K/16K prompts in a
   Linux KVM guest; **Windows at 131,072 context with ~130K prompts is outside what that
   section validated** — this report is evidence for this card and session only.
-- The opt-in `STRATA_HIP_WMMA=1` matrix-core prompt path was **not** tested (the engine's
+- The opt-in `NOSTROMA_HIP_WMMA=1` matrix-core prompt path was **not** tested (the engine's
   own hint says it reads prompts about 30 % faster on this card with `--kv int8`, at the
   cost of different output bits), so the prompt figures here are the default path, not a
   ceiling.

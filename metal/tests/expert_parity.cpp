@@ -3,7 +3,7 @@
 //
 //   expert_parity [--gu Q2_0] [--dn Q2_0] [--ntok 1..8] [--gucfg L,R,S] [--dncfg L,R,S]     parity (synthetic)
 //   expert_parity --bench [--gu ..] [--dn ..] [--ntok N] [--layers 8] [--reps 96] [--sweep]  speed
-//   EXPERT_F16=1 expert_parity [--ntok N] [--gucfg ..] [--dncfg ..]     the fp16 experts (STRATA_METAL_F16, Q2_0 only)
+//   EXPERT_F16=1 expert_parity [--ntok N] [--gucfg ..] [--dncfg ..]     the fp16 experts (NOSTROMA_METAL_F16, Q2_0 only)
 //
 // Gyro (agentionai's trellis experts, TQ2_T / TQK6 / TQK7):
 //   expert_parity --gu TQK6 --dn TQK7 [--had-pack <pack dir>]       synthetic blocks; with a pack, the Hadamard rotation of
@@ -39,8 +39,8 @@ const uint16_t* tq_lut_for_test() { return tq_lut_f16; }
 
 namespace {
 
-int N_EMBD = strata_metal::geo::N, N_FF = strata_metal::geo::NFF;   // the shape this build is compiled for (engine/geo.h); --embd / --ff change them (Q4-KQ: expert widths 512 and 1024)
-constexpr int TOPK = strata_metal::geo::TOPK;
+int N_EMBD = nostroma_metal::geo::N, N_FF = nostroma_metal::geo::NFF;   // the shape this build is compiled for (engine/geo.h); --embd / --ff change them (Q4-KQ: expert widths 512 and 1024)
+constexpr int TOPK = nostroma_metal::geo::TOPK;
 // plan layout (moe.metal)
 constexpr int P_NG = 0, P_IGU = 4, P_IDN = 8, P_MAXE = 128, P_GEXP = 16, P_GSTART = P_GEXP + P_MAXE,
               P_ETOK = P_GSTART + P_MAXE + 4, P_EW = P_ETOK + P_MAXE, P_TOKENT = P_EW + P_MAXE,
@@ -143,7 +143,7 @@ bool g_had_h = false;
 bool g_dn_prep = false;   // Q2_0 down: prepared h (an xprep dispatch) instead of the raw-x decoder
 const mtl::Buffer* g_xpx = nullptr;
 const mtl::Buffer* g_xph = nullptr;
-// EXPERT_F16=1: moe_gu16 / moe_down16 (STRATA_METAL_F16) - x from the half plane x * 4^-(i % 4), h handed down as half
+// EXPERT_F16=1: moe_gu16 / moe_down16 (NOSTROMA_METAL_F16) - x from the half plane x * 4^-(i % 4), h handed down as half
 const bool g_f16 = std::getenv("EXPERT_F16") != nullptr;
 const mtl::Buffer* g_h16 = nullptr;
 
@@ -283,10 +283,10 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "EXPERT_F16: Q2_0 gate/up and down only, without --dn-prep and Hadamard\n");
         return 2;
     }
-    // the host defines STRATA_KQ_DOWN only for a model whose downs are K-quant / IQ4_XS / IQ3_S (window.cpp kq_down_prelude)
+    // the host defines NOSTROMA_KQ_DOWN only for a model whose downs are K-quant / IQ4_XS / IQ3_S (window.cpp kq_down_prelude)
     const bool kq_dn = dn == ref::Q3_K || dn == ref::Q4_K || dn == ref::Q5_K || dn == ref::Q6_K || dn == ref::IQ3_S || dn == ref::IQ4_XS;
     const int lib = cx.compile({"quant.metal", "units.metal", "moe.metal"},
-                               std::string(g_f16 ? "#define STRATA_METAL_F16 1\n" : "") + (kq_dn ? "#define STRATA_KQ_DOWN 1\n" : ""));
+                               std::string(g_f16 ? "#define NOSTROMA_METAL_F16 1\n" : "") + (kq_dn ? "#define NOSTROMA_KQ_DOWN 1\n" : ""));
     const Layout L = layout(gu, dn);
     // Gyro: the pack's hadamard.txt (the signs of the widths 2560 and 640) -> the engine's CPU spec (the reference)
     mtl::Buffer hsx, hsh;
@@ -294,21 +294,21 @@ int main(int argc, char** argv) {
     const float* sgx = nullptr;
     const float* sgh = nullptr;
     if (!had_pack.empty()) {
-        strata::kernels::cpu::HadamardSpec spec;
+        nostroma::kernels::cpu::HadamardSpec spec;
         std::string err;
-        if (!strata::kernels::cpu::hadamard_parse(had_pack + "/hadamard.txt", 48, spec, err)) {
+        if (!nostroma::kernels::cpu::hadamard_parse(had_pack + "/hadamard.txt", 48, spec, err)) {
             std::fprintf(stderr, "%s\n", err.c_str());
             return 2;
         }
-        strata::kernels::cpu::hadamard_set(std::move(spec));
-        sgx = strata::kernels::cpu::hadamard_signs(N_EMBD);
-        sgh = strata::kernels::cpu::hadamard_signs(N_FF);
+        nostroma::kernels::cpu::hadamard_set(std::move(spec));
+        sgx = nostroma::kernels::cpu::hadamard_signs(N_EMBD);
+        sgh = nostroma::kernels::cpu::hadamard_signs(N_FF);
         if (sgx) { hsx = cx.alloc(4 * N_EMBD); std::memcpy(hsx.ptr, sgx, 4 * N_EMBD); }
         if (sgh) { hsh = cx.alloc(4 * N_FF); std::memcpy(hsh.ptr, sgh, 4 * N_FF); }
         g_had32 = &had32;
         g_hsh = sgh ? &hsh : nullptr;
         g_had_h = !had_test;
-        std::printf("Hadamard: block %d, signs for %s%s\n", strata::kernels::cpu::hadamard_spec().block, sgx ? "2560 " : "", sgh ? "640" : "(none)");
+        std::printf("Hadamard: block %d, signs for %s%s\n", nostroma::kernels::cpu::hadamard_spec().block, sgx ? "2560 " : "", sgh ? "640" : "(none)");
     }
     if (decode_check) {
         // the decoder the Metal kernels and ref_quant share the meaning of, written a third time straight from the format's
@@ -381,7 +381,7 @@ int main(int argc, char** argv) {
             };
             run32(bx, by);   // out of place
             std::vector<float> want = in;
-            for (int r = 0; r < rows; ++r) strata::kernels::cpu::hadamard_rotate(want.data() + (size_t)r * width, width, 128, sg);
+            for (int r = 0; r < rows; ++r) nostroma::kernels::cpu::hadamard_rotate(want.data() + (size_t)r * width, width, 128, sg);
             int b32 = 0;
             for (size_t i = 0; i < in.size(); ++i) b32 += std::memcmp(&want[i], by.as<float>() + i, 4) != 0;
             run32(bx, bx);   // in place
@@ -392,7 +392,7 @@ int main(int argc, char** argv) {
             for (size_t i = 0; i < in.size(); ++i) hin[i] = (_Float16)in[i];
             std::vector<float> hw(in.size());
             for (size_t i = 0; i < in.size(); ++i) hw[i] = (float)hin[i];
-            for (int r = 0; r < rows; ++r) strata::kernels::cpu::hadamard_rotate(hw.data() + (size_t)r * width, width, 128, nullptr);
+            for (int r = 0; r < rows; ++r) nostroma::kernels::cpu::hadamard_rotate(hw.data() + (size_t)r * width, width, 128, nullptr);
             mtl::Buffer hx = cx.alloc(2 * in.size()), hy = cx.alloc(2 * in.size());
             std::memcpy(hx.ptr, hin.data(), 2 * in.size());
             HadArgs hb{(uint32_t)width, (uint32_t)width, (uint32_t)width, scale, 0u, 0u};
@@ -476,7 +476,7 @@ int main(int argc, char** argv) {
     for (int i = 0; i < 8 * N_EMBD; ++i) x.as<float>()[i] = rng.sym();
     if (g_had_h) {   // H (s * x) per token on the GPU, checked against the CPU's; x then holds the rotated rows
         std::vector<float> want(x.as<float>(), x.as<float>() + 8 * N_EMBD);
-        for (int t = 0; t < 8; ++t) strata::kernels::cpu::hadamard_rotate(want.data() + t * N_EMBD, N_EMBD, 128, sgx);
+        for (int t = 0; t < 8; ++t) nostroma::kernels::cpu::hadamard_rotate(want.data() + t * N_EMBD, N_EMBD, 128, sgx);
         HadArgs ha{(uint32_t)N_EMBD, (uint32_t)N_EMBD, (uint32_t)N_EMBD, 1.0f / std::sqrt(128.0f), sgx ? 1u : 0u, 0u};
         mtl::Dispatch d;
         d.p = &had32;
@@ -568,7 +568,7 @@ int main(int argc, char** argv) {
             if (g_had_h) {   // the reference of the down input: H h, in float as the engine's CPU path does
                 std::vector<float> hf(N_FF);
                 for (int r = 0; r < N_FF; ++r) hf[r] = (float)hr[r];
-                strata::kernels::cpu::hadamard_rotate(hf.data(), N_FF, 128, sgh);
+                nostroma::kernels::cpu::hadamard_rotate(hf.data(), N_FF, 128, sgh);
                 for (int r = 0; r < N_FF; ++r) hr[r] = hf[r];
             }
             for (int r = 0; r < N_FF; ++r) eh.add(h.as<float>()[ent * N_FF + r], hr[r]);

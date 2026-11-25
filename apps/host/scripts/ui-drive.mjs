@@ -1,4 +1,4 @@
-// Shared helpers for driving a throwaway host with Playwright (the app page in a real browser). STRATA_UI_BASE = the host's address, CHROME_PATH = the browser.
+// Shared helpers for driving a throwaway host with Playwright (the app page in a real browser). NOSTROMA_UI_BASE = the host's address, CHROME_PATH = the browser.
 export { chromium } from 'playwright-core';
 import { chromium as browserType } from 'playwright-core';
 import { envVar } from '../server/env-compat.mjs';

@@ -15,7 +15,7 @@ labels=[('Ordinary RoPE' if r['rope']=='none' else 'YaRN 4x')+'  /  '+('512K' if
 plt.rcParams.update({'font.family':'DejaVu Sans','font.size':12,'text.color':INK,'axes.labelcolor':MUTED,'xtick.color':MUTED,'ytick.color':INK})
 fig=plt.figure(figsize=(14,9),facecolor=BG)
 fig.text(.055,.945,'Ordinary RoPE vs YaRN at long context',fontsize=25,weight='bold')
-fig.text(.055,.900,'Existing Strata on untouched main  |  ISTA IQ3_XXS  |  FP16 KV  |  RTX PRO 6000 Blackwell',fontsize=12,color=MUTED)
+fig.text(.055,.900,'Existing Nostroma on untouched main  |  ISTA IQ3_XXS  |  FP16 KV  |  RTX PRO 6000 Blackwell',fontsize=12,color=MUTED)
 left=fig.add_axes([.24,.52,.24,.29],facecolor=BG)
 right=fig.add_axes([.64,.52,.30,.29],facecolor=BG)
 for ax in (left,right):

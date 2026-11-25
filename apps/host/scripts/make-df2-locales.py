@@ -92,15 +92,15 @@ add("There is no internet connection, so the DFlash2 drafter can't be downloaded
 add("SSD: not needed",
     "SSD：不需要", "SSD：不要", "SSD: nicht nötig", "SSD: no hace falta", "SSD: не нужен", "SSD: não é necessário", "SSD: 필요 없음", "SSD : pas nécessaire")
 
-add("DFlash2 answers one request at a time, so Strata set this model to one request at a time.",
-    "DFlash2 一次只处理一个请求，因此 Strata 将此模型设置为一次一个请求。",
-    "DFlash2 は一度に 1 件のリクエストしか処理しないため、Strata はこのモデルを一度に 1 件に設定しました。",
-    "DFlash2 beantwortet eine Anfrage nach der anderen, deshalb hat Strata dieses Modell auf eine Anfrage zur Zeit gestellt.",
-    "DFlash2 responde una solicitud a la vez, así que Strata configuró este modelo para una solicitud a la vez.",
-    "DFlash2 отвечает на один запрос за раз, поэтому Strata настроила эту модель на один запрос за раз.",
-    "O DFlash2 responde a um pedido de cada vez, por isso o Strata configurou este modelo para um pedido de cada vez.",
-    "DFlash2는 한 번에 하나의 요청만 처리하므로 Strata가 이 모델을 한 번에 하나의 요청으로 설정했습니다.",
-    "DFlash2 répond à une requête à la fois, Strata a donc réglé ce modèle sur une requête à la fois.")
+add("DFlash2 answers one request at a time, so Nostroma set this model to one request at a time.",
+    "DFlash2 一次只处理一个请求，因此 Nostroma 将此模型设置为一次一个请求。",
+    "DFlash2 は一度に 1 件のリクエストしか処理しないため、Nostroma はこのモデルを一度に 1 件に設定しました。",
+    "DFlash2 beantwortet eine Anfrage nach der anderen, deshalb hat Nostroma dieses Modell auf eine Anfrage zur Zeit gestellt.",
+    "DFlash2 responde una solicitud a la vez, así que Nostroma configuró este modelo para una solicitud a la vez.",
+    "DFlash2 отвечает на один запрос за раз, поэтому Nostroma настроила эту модель на один запрос за раз.",
+    "O DFlash2 responde a um pedido de cada vez, por isso o Nostroma configurou este modelo para um pedido de cada vez.",
+    "DFlash2는 한 번에 하나의 요청만 처리하므로 Nostroma가 이 모델을 한 번에 하나의 요청으로 설정했습니다.",
+    "DFlash2 répond à une requête à la fois, Nostroma a donc réglé ce modèle sur une requête à la fois.")
 
 add("Drafting: off (no drafter is downloaded yet)",
     "预测草稿：关闭（尚未下载任何草稿模型）",

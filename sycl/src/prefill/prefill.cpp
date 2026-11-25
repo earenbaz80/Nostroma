@@ -1,58 +1,58 @@
-// src/prefill/prefill.cpp - see include/strata/prefill/prefill.hpp.
+// src/prefill/prefill.cpp - see include/nostroma/prefill/prefill.hpp.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 #include <dpct/dpct.hpp>
-#include "strata/sycl_queue.hpp"
-#include "strata/kprof.hpp"
-#include "strata/copy_queue.hpp"
-#include "strata/prefill/xmx_moe.hpp"
-#include "strata/prefill/esimd_moe.hpp"
-#include "strata/prefill_copy_queue.hpp"
-#include "strata/prefill/prefill.hpp"
-#include "strata/kernels/dflash2.hpp"
-#include "strata/workload_trace.hpp"
-#include "strata/core/gguf_expert_source.hpp"
+#include "nostroma/sycl_queue.hpp"
+#include "nostroma/kprof.hpp"
+#include "nostroma/copy_queue.hpp"
+#include "nostroma/prefill/xmx_moe.hpp"
+#include "nostroma/prefill/esimd_moe.hpp"
+#include "nostroma/prefill_copy_queue.hpp"
+#include "nostroma/prefill/prefill.hpp"
+#include "nostroma/kernels/dflash2.hpp"
+#include "nostroma/workload_trace.hpp"
+#include "nostroma/core/gguf_expert_source.hpp"
 #include "../../../src/prefill/mmq_resident_sort.hpp"
 #include "../../../src/prefill/wmma_gemm.h"
-#include "strata/core/mtp.hpp"
-#include "strata/core/progress.hpp"
-#include "strata/core/on_device.hpp"
+#include "nostroma/core/mtp.hpp"
+#include "nostroma/core/progress.hpp"
+#include "nostroma/core/on_device.hpp"
 
-#include "strata/core/layout.hpp"
-#include "strata/kernels/cpu/expert.hpp"
-#include "strata/kernels/native_qsa.hpp"
-#include "strata/kernels/native_qsa_indexer.hpp"
-#include "strata/core/geometry.hpp"
-#include "strata/kernels/ngram.hpp"
-#include "strata/kernels/ple.hpp"
-#include "strata/kernels/native_ple_postops.hpp"
-#include "strata/kernels/iq_kernels.hpp"
-#include "strata/kernels/iq_dequant_expert.hpp"
-#include "strata/kernels/cpu/expert_layout.hpp"
-#include "strata/kernels/cpu/hadamard.hpp"
-#include "strata/kernels/qsa.hpp"
-#include "strata/kernels/kv_stream.hpp"
-#include "strata/kernels/cvec.hpp"
-#include "strata/kernels/kv_q4.hpp"
-#include "strata/core/layer.hpp"
-#include "strata/core/native_head.hpp"
-#include "strata/kernels/verify_kernels.hpp"
-#include "strata/kernels/qsa_decode_attn.hpp"
-#include "strata/kernels/qsa_prompt_attn.hpp"
-#ifdef STRATA_SYCL_TLA_ATTN
-#include "strata/kernels/qsa_prompt_attn_tla.hpp"
+#include "nostroma/core/layout.hpp"
+#include "nostroma/kernels/cpu/expert.hpp"
+#include "nostroma/kernels/native_qsa.hpp"
+#include "nostroma/kernels/native_qsa_indexer.hpp"
+#include "nostroma/core/geometry.hpp"
+#include "nostroma/kernels/ngram.hpp"
+#include "nostroma/kernels/ple.hpp"
+#include "nostroma/kernels/native_ple_postops.hpp"
+#include "nostroma/kernels/iq_kernels.hpp"
+#include "nostroma/kernels/iq_dequant_expert.hpp"
+#include "nostroma/kernels/cpu/expert_layout.hpp"
+#include "nostroma/kernels/cpu/hadamard.hpp"
+#include "nostroma/kernels/qsa.hpp"
+#include "nostroma/kernels/kv_stream.hpp"
+#include "nostroma/kernels/cvec.hpp"
+#include "nostroma/kernels/kv_q4.hpp"
+#include "nostroma/core/layer.hpp"
+#include "nostroma/core/native_head.hpp"
+#include "nostroma/kernels/verify_kernels.hpp"
+#include "nostroma/kernels/qsa_decode_attn.hpp"
+#include "nostroma/kernels/qsa_prompt_attn.hpp"
+#ifdef NOSTROMA_SYCL_TLA_ATTN
+#include "nostroma/kernels/qsa_prompt_attn_tla.hpp"
 #endif
-#include "strata/kernels/qsa_select.hpp"
-#include "strata/kernels/qsa_two_pass_status.hpp"
-#include "strata/prefill/gemm.hpp"
-#include "strata/prefill/moe_fused.hpp"
-#include "strata/prefill/moe_fused_iq.hpp"
-#include "strata/prefill/moe_mmq.hpp"
-#include "strata/core/peer_experts.hpp"
-#include "strata/prefill/kernels.hpp"
+#include "nostroma/kernels/qsa_select.hpp"
+#include "nostroma/kernels/qsa_two_pass_status.hpp"
+#include "nostroma/prefill/gemm.hpp"
+#include "nostroma/prefill/moe_fused.hpp"
+#include "nostroma/prefill/moe_fused_iq.hpp"
+#include "nostroma/prefill/moe_mmq.hpp"
+#include "nostroma/core/peer_experts.hpp"
+#include "nostroma/prefill/kernels.hpp"
 #include <oneapi/mkl.hpp>   // SYCL port: the QSA block scores as GEMM tiles
-namespace strata::kernels {   // SYCL port, kept out of the shared headers: qsa_select.dp.cpp, qsa_decode_attn.dp.cpp
+namespace nostroma::kernels {   // SYCL port, kept out of the shared headers: qsa_select.dp.cpp, qsa_decode_attn.dp.cpp
 void qsa_block_scores_reduce(const float* S, int64_t ld, int64_t b0, int64_t nb, const float* dead, const float* q_idx,
                              const int32_t* steps, int64_t nq, int64_t max_blocks, float* scores, void* stream);
 void qsa_prompt_attn_percell(const float* q, const QsaAttnPools& pools, const int32_t* ids, const int32_t* steps,
@@ -67,7 +67,7 @@ void qsa_prompt_attn_percell(const float* q, const QsaAttnPools& pools, const in
 #include <stdexcept>
 #include <sys/stat.h>
 #include <tuple>
-#include "strata/prefill/f16_expert_pair.hpp"
+#include "nostroma/prefill/f16_expert_pair.hpp"
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -81,9 +81,9 @@ void qsa_prompt_attn_percell(const float* q, const QsaAttnPools& pools, const in
 #include <unordered_map>
 #include <vector>
 
-#ifndef STRATA_PREFILL_MMQ
-// A build without the llama.cpp sources (no STRATA_NATIVE_EXPERTS): no MMQ, the FP16 expert path everywhere.
-namespace strata::prefill::mmq {
+#ifndef NOSTROMA_PREFILL_MMQ
+// A build without the llama.cpp sources (no NOSTROMA_NATIVE_EXPERTS): no MMQ, the FP16 expert path everywhere.
+namespace nostroma::prefill::mmq {
 bool built() { return false; }
 bool supported(int) { return false; }
 bool fits(int, int64_t) { return false; }
@@ -97,14 +97,14 @@ void Context::run(const Product&, void*) {}
 void gather_native(const void*, const void*, size_t, const void*, size_t, void*, void*, void*, const void*, void*, size_t) {}
 bool gather_native_group(const GatherGroup&, size_t, size_t, size_t, size_t, void*, size_t, void*, size_t, void*, size_t,
                          void*, size_t) { return false; }
-void gather_strata_q2(const uint8_t*, void*, void*, void*) {}
+void gather_nostroma_q2(const uint8_t*, void*, void*, void*) {}
 void swiglu(const float*, float*, int64_t, int64_t, bool, void*) {}
 void iota(int32_t*, int64_t, void*) {}
-}  // namespace strata::prefill::mmq
+}  // namespace nostroma::prefill::mmq
 #endif
-#ifndef STRATA_PREFILL_FUSED
+#ifndef NOSTROMA_PREFILL_FUSED
 // #136: the fused int8 experts are CUDA-only (HIP and builds without MMQ keep the MMQ / FP16 paths)
-namespace strata::prefill::fused {
+namespace nostroma::prefill::fused {
 bool built() { return false; }
 bool available() { return false; }
 bool enabled() { return false; }
@@ -118,12 +118,12 @@ bool native_supported(int, int) { return false; }
 void quantize_act_native(const float*, int64_t, int64_t, void*, void*) {}
 void experts_native(const Batch&, const NativeGeom&, int, int64_t, const void*, const void*, const int32_t*, void*,
                     float*, void*) {}
-}  // namespace strata::prefill::fused
+}  // namespace nostroma::prefill::fused
 #endif
 
-namespace strata::kernels { void iq_dequant_f16_plain_launch(int,const void*,int64_t,uint16_t*,void*); }
+namespace nostroma::kernels { void iq_dequant_f16_plain_launch(int,const void*,int64_t,uint16_t*,void*); }
 
-namespace strata::prefill {
+namespace nostroma::prefill {
 namespace {
 
 using Clock = std::chrono::steady_clock;
@@ -133,11 +133,11 @@ using Clock = std::chrono::steady_clock;
 // Level Zero driver copy through its own staging buffers on the calling thread, and on some prompts that wait never ends (the
 // thread spins in sched_yield inside libze_intel_gpu with the GPU idle; tools: /data/148-intel notes).  Only a USM host
 // allocation (the --stream-experts pinned mirror, the B70's) is DMA'd directly; every other expert is copied into one of the
-// stager's pinned buffers by its threads first, the path unpinned experts already take.  STRATA_PF_DMA_PAGEABLE=1 restores the
+// stager's pinned buffers by its threads first, the path unpinned experts already take.  NOSTROMA_PF_DMA_PAGEABLE=1 restores the
 // direct copy from pageable memory.
 inline bool dma_direct(const core::ExpertSource* src, int64_t layer, int64_t expert, const void* blob) {
     if (!src->pinned(layer, expert)) return false;
-    static const bool pageable_ok = [] { const char* v = strata::env("NOSTROMA_PF_DMA_PAGEABLE"); return v && v[0] == '1'; }();
+    static const bool pageable_ok = [] { const char* v = nostroma::env("NOSTROMA_PF_DMA_PAGEABLE"); return v && v[0] == '1'; }();
     if (pageable_ok) return true;
     if (blob == nullptr) return false;
     // the answer per 2 MiB bucket (a query costs ~2 us, 10k+ experts a chunk): "host USM" only when both ends of the bucket are, so a bucket
@@ -154,23 +154,23 @@ inline bool dma_direct(const core::ExpertSource* src, int64_t layer, int64_t exp
     return usm;
 }
 constexpr float EPS = 1e-6f;
-// the shape the engine is compiled for (include/strata/core/geometry.hpp; -DSTRATA_GEOMETRY picks it)
-constexpr int64_t N = strata::core::kCompiledGeometry.n_embd, HC = strata::core::kCompiledGeometry.hc, D = N * HC, LR = strata::core::kCompiledGeometry.hc_lr, K = strata::core::kCompiledGeometry.n_expert_used, NE = strata::core::kCompiledGeometry.n_expert;
-constexpr int64_t C = strata::core::kCompiledGeometry.ssm_conv_channels, ZV = strata::core::kCompiledGeometry.ssm_value_dim, HV = strata::core::kCompiledGeometry.ssm_v_heads;
+// the shape the engine is compiled for (include/nostroma/core/geometry.hpp; -DNOSTROMA_GEOMETRY picks it)
+constexpr int64_t N = nostroma::core::kCompiledGeometry.n_embd, HC = nostroma::core::kCompiledGeometry.hc, D = N * HC, LR = nostroma::core::kCompiledGeometry.hc_lr, K = nostroma::core::kCompiledGeometry.n_expert_used, NE = nostroma::core::kCompiledGeometry.n_expert;
+constexpr int64_t C = nostroma::core::kCompiledGeometry.ssm_conv_channels, ZV = nostroma::core::kCompiledGeometry.ssm_value_dim, HV = nostroma::core::kCompiledGeometry.ssm_v_heads;
 // widths the buffers and kernel arguments below are written in (int, as the literals they replace were)
-constexpr int kEmbd = (int) strata::core::kCompiledGeometry.n_embd, kFF = (int) strata::core::kCompiledGeometry.n_ff, kFF2 = 2 * kFF;
-constexpr int kNHead = (int) strata::core::kCompiledGeometry.n_head, kNKv = (int) strata::core::kCompiledGeometry.n_head_kv, kHeadDim = (int) strata::core::kCompiledGeometry.head_dim;
+constexpr int kEmbd = (int) nostroma::core::kCompiledGeometry.n_embd, kFF = (int) nostroma::core::kCompiledGeometry.n_ff, kFF2 = 2 * kFF;
+constexpr int kNHead = (int) nostroma::core::kCompiledGeometry.n_head, kNKv = (int) nostroma::core::kCompiledGeometry.n_head_kv, kHeadDim = (int) nostroma::core::kCompiledGeometry.head_dim;
 constexpr int kQW = kNHead * kHeadDim, kQFull = 2 * kQW, kKvW = kNKv * kHeadDim;
-static_assert(kQW == strata::core::kCompiledGeometry.ssm_value_dim, "prefill: the attention width (heads x head_dim) and the GDN value width share the m.q / m.attn / m.attn_h buffers, so they must be equal");
-constexpr int kIdxQHeads = (int) strata::core::kCompiledGeometry.idx_q_heads, kIdxK = (int) strata::core::kCompiledGeometry.idx_key_dim, kIdxQW = kIdxQHeads * kIdxK;
+static_assert(kQW == nostroma::core::kCompiledGeometry.ssm_value_dim, "prefill: the attention width (heads x head_dim) and the GDN value width share the m.q / m.attn / m.attn_h buffers, so they must be equal");
+constexpr int kIdxQHeads = (int) nostroma::core::kCompiledGeometry.idx_q_heads, kIdxK = (int) nostroma::core::kCompiledGeometry.idx_key_dim, kIdxQW = kIdxQHeads * kIdxK;
 
-// STRATA_PF_HASH_FILE=<path> (debug, off by default): for the first GDN layer of every prompt chunk the host waits for
+// NOSTROMA_PF_HASH_FILE=<path> (debug, off by default): for the first GDN layer of every prompt chunk the host waits for
 // the queue after each stage and writes one line per row "chunk stage row fnv" (the layer input, the projections, the
 // gates, the conv output, the recurrence output) plus the layer's recurrent state, so two runs show which stage of
 // the prefill first differs (CLEAN-6.0).
 inline std::FILE* pf_hash_file() {
     static std::FILE* f = [] {
-        const char* p = strata::env("NOSTROMA_PF_HASH_FILE");
+        const char* p = nostroma::env("NOSTROMA_PF_HASH_FILE");
         return p != nullptr && p[0] != 0 ? std::fopen(p, "w") : nullptr;
     }();
     return f;
@@ -182,25 +182,25 @@ inline uint64_t pf_hash_fnv(const void* p, size_t bytes) {
     return h;
 }
 // plan v0.3 P6: staging holds the largest blob of the pack (a native pack's blobs differ per layer)
-inline int64_t MAXBLOB() { return (int64_t) strata::kernels::cpu::expert_layout().max_blob; }
+inline int64_t MAXBLOB() { return (int64_t) nostroma::kernels::cpu::expert_layout().max_blob; }
 constexpr int STAGE = 8;           // host->device expert staging ring (chunks below stream_all_min())
 constexpr int kSplitHelpRing = 48;  // layer split help: the helper stage's ring slots it streams through (at most)
 // Step 3: from this chunk size on, every non-resident expert of every layer streams in a fixed order through a
 // ring_slots()-slot ring (nearly all 512 are routed at such a chunk), so the copy engine keeps working through the
 // attention halves instead of waiting for each layer's routing.
-// #828: STRATA_TEST_PAGEABLE=1 makes every pinned host allocation with a pageable fallback in Prefill::init fail, so the
+// #828: NOSTROMA_TEST_PAGEABLE=1 makes every pinned host allocation with a pageable fallback in Prefill::init fail, so the
 // fallbacks (what an LXC container's memlock limit forces) run on a PC that can pin - for ASan / MALLOC_CHECK_=3 runs.
 inline bool force_pageable() {
-    static const bool v = [] { const char* e = strata::env("NOSTROMA_TEST_PAGEABLE"); return e != nullptr && e[0] == '1'; }();
+    static const bool v = [] { const char* e = nostroma::env("NOSTROMA_TEST_PAGEABLE"); return e != nullptr && e[0] == '1'; }();
     return v;
 }
 constexpr int RING_MAX = 1024;          // the arrays; the ring itself is ring_slots(), at most ring_cap()
 // The chunk size from which every expert streams: 1024 since 0.1.30 (was 2048).  Measured on the 5070, Q2_0 / IQ2_XS,
 // fixed cache: 1,500-token prompts 621 -> 785 / 612 -> 735 tok/s, 2,000 727 -> 934 / 712 -> 892, 4,000 (its last
 // chunk) 779 -> 912 / 766 -> 844, the same output.  Below ~1,000 tokens the output changed on Q2_0 (a smaller chunk
-// takes other kernels), so 1024 is the floor.  STRATA_PREFILL_STREAM_MIN overrides (A/B).
+// takes other kernels), so 1024 is the floor.  NOSTROMA_PREFILL_STREAM_MIN overrides (A/B).
 inline int64_t stream_all_min() {
-    static const int64_t v = [] { const char* e = strata::env("NOSTROMA_PREFILL_STREAM_MIN"); return e ? (int64_t) std::atoll(e) : (int64_t) 1024; }();
+    static const int64_t v = [] { const char* e = nostroma::env("NOSTROMA_PREFILL_STREAM_MIN"); return e ? (int64_t) std::atoll(e) : (int64_t) 1024; }();
     return v;
 }
 double g_pinned_share = 1.0;
@@ -209,7 +209,7 @@ double g_nonres_share = 0.0;
 // The streamed ring: 384 slots when (nearly) every streamed expert is DMA'd from pinned RAM - measured on Q2_0,
 // 8192-token chunks: 96 slots 1153 tok/s, 384 1294 (the next layer's experts arrive during its attention half) -
 // and 96 when a large share goes through host copies (IQ3_S on 64 GB, a third unpinned: 96 slots 1216, 256 1070 -
-// the host copies are the limit and the bigger ring only takes cache slots).  STRATA_PREFILL_RING overrides.
+// the host copies are the limit and the bigger ring only takes cache slots).  NOSTROMA_PREFILL_RING overrides.
 //
 // Those are slots on the pack they were measured on, and a slot is one WHOLE expert blob - a Q2_0 blob is
 // 1,382,400 B, so 384 slots is 506 MiB.  On a pack with bigger blobs the same slot count is a different amount of
@@ -224,7 +224,7 @@ int g_ring_override = 0;   // #340: set by a layer split (Prefill::set_ring_over
 // on one chunk the smaller ring only slowed it (RTX 5070, 4K prompts: Coder -15%, IQ3_S -5%, IQ3_XXS -2%).
 int g_ring_budget = 0;
 int64_t g_ring_small_max = 0;
-// #136: the fused experts (STRATA_PF_FUSED=1) launch on a batch of a layer's streamed experts at once, so the ring
+// #136: the fused experts (NOSTROMA_PF_FUSED=1) launch on a batch of a layer's streamed experts at once, so the ring
 // should hold a whole layer's (~460 of 512 on Q2_0): with 384 slots a layer's last batch waits for slots its own
 // first batch frees.  Measured on the 5070, Q2_0, the 4K / 32K code-agent prompts (one run each): fused at 384 slots
 // +5% / +3% over MMQ, at 512 +19-22% / +11-12% (MMQ itself at 512: -2% / -1%).  P3: with the fused path's smaller
@@ -235,7 +235,7 @@ int64_t g_ring_small_max = 0;
 inline bool fused_ring() {
     if (!fused::enabled()) return false;
     if (core::peer_portable()) return false;   // multi-GPU: --peer-device keeps the MMQ path and its buffer sizes
-    const strata::kernels::cpu::ExpertLayout& lay = strata::kernels::cpu::expert_layout();
+    const nostroma::kernels::cpu::ExpertLayout& lay = nostroma::kernels::cpu::expert_layout();
     if (!lay.native) return true;
     // EVERY layer: fused_layout() shrinks the MoE buffers to the fused path's needs, so a layer the native kernels do
     // not cover (Unsloth UD-IQ4_XS's Q8_0 down projections) would run MMQ in them at the full chunk and overflow them
@@ -250,7 +250,7 @@ inline bool fused_ring() {
 }
 // the largest ring: 512 slots; 1024 with the Q2_0 pack's fused experts (P3's smaller buffers, measured there) - the
 // native packs' fused layers were measured at 512
-inline int ring_cap() { return fused_ring() && !strata::kernels::cpu::expert_layout().native ? RING_MAX : 512; }
+inline int ring_cap() { return fused_ring() && !nostroma::kernels::cpu::expert_layout().native ? RING_MAX : 512; }
 // The ring's budget in bytes: the measured slot counts above, at the blob size they were measured with.  It is
 // bytes and not slots because a slot is one whole blob and the blob is the pack's - see the note above.
 inline constexpr uint64_t Q2_0_BLOB = 1382400ull;   // the blob of the pack the ring was tuned on
@@ -261,12 +261,12 @@ inline uint64_t ring_bytes() {
 // ...and what that buys on THIS pack, never past ring_cap(): the slot count `init` lays out, and what the auto
 // chunk scan treats as a full ring.  A pack whose blobs are larger than Q2_0's gets fewer slots for the same
 // bytes, which is the point - the ring competes with the expert cache for the same VRAM.
-// 0.1.39b: on by default (#583); STRATA_RING_BYTES=0 restores 0.1.39's ring, loan and auto chunk list.  It moves the
+// 0.1.39b: on by default (#583); NOSTROMA_RING_BYTES=0 restores 0.1.39's ring, loan and auto chunk list.  It moves the
 // prompt path's loan on a native pack (fewer ring slots, the rest kept as cache slots, a larger auto chunk), so a long
 // prompt's experts are read through a different mix of resident and streamed groups and its bits differ from 0.1.39's
 // (RTX 5070, IQ3_XXS, 32K prompt: +14% to +26%; teacher-forced against the FP16 prompt path in the same band).
 inline bool ring_bytes_on() {
-    static const bool on = [] { const char* v = strata::env("NOSTROMA_RING_BYTES"); return v == nullptr || v[0] != '0'; }();
+    static const bool on = [] { const char* v = nostroma::env("NOSTROMA_RING_BYTES"); return v == nullptr || v[0] != '0'; }();
     return on;
 }
 inline int ring_budget_slots() {
@@ -276,12 +276,12 @@ inline int ring_budget_slots() {
     return (int) (n <= 0 ? 0 : (n > cap ? cap : n));
 }
 inline int ring_slots(size_t T) {
-    const char* v = strata::env("NOSTROMA_PREFILL_RING");
-#if defined(STRATA_USE_HIP)
-    // S6: with the opt-in RDNA4 matrix-core attention (STRATA_HIP_WMMA=1) a 96-slot ring: measured with it, 9070 XT
+    const char* v = nostroma::env("NOSTROMA_PREFILL_RING");
+#if defined(NOSTROMA_USE_HIP)
+    // S6: with the opt-in RDNA4 matrix-core attention (NOSTROMA_HIP_WMMA=1) a 96-slot ring: measured with it, 9070 XT
     // 4K prompts 718 -> 1,211 tok/s (16K 1,949 -> 2,032), R9700 4K 2,426 -> 2,483 (16K the same)
     static const bool wmma = [] {
-        const char* e = strata::env("NOSTROMA_HIP_WMMA");
+        const char* e = nostroma::env("NOSTROMA_HIP_WMMA");
         return e != nullptr && e[0] == '1';
     }();
     if (!v && g_ring_override <= 0 && wmma) return (int64_t) T >= stream_all_min() ? 96 : STAGE;
@@ -299,27 +299,27 @@ inline int ring_slots(size_t T) {
     // B70 in its first large chunk until 2026-10-02 - the stager's and the PLE upload's host waits on queue events,
     // which the Level Zero v2 adapter did not survive (Stager::issued_one, ple_done_seq). It runs since, and reads a
     // 40K prompt 4.8% faster than routed-only staging (1,159 vs 1,106 tok/s, same output): the default again.
-    // STRATA_PREFILL_STREAM_ALL=0 keeps routed-only staging, =1 forces the walk.
+    // NOSTROMA_PREFILL_STREAM_ALL=0 keeps routed-only staging, =1 forces the walk.
     // It copies EVERY non-resident expert of a layer, routed or not: with a big host tier (the IQ2_XS: a quarter of the
     // experts in the pinned mirror) that is several times the routed ones, and a 2,184-token prompt fell from ~570 to
     // 254 tok/s. So by default only while the VRAM holds more than 90% of the pairs (the Coder, and its lent slots).
-    static const int stream_all_env = [] { const char* e = strata::env("NOSTROMA_PREFILL_STREAM_ALL"); return e ? (e[0] == '1' ? 1 : 0) : -1; }();
+    static const int stream_all_env = [] { const char* e = nostroma::env("NOSTROMA_PREFILL_STREAM_ALL"); return e ? (e[0] == '1' ? 1 : 0) : -1; }();
     const bool stream_all_ok = stream_all_env == 1 || (stream_all_env == -1 && g_nonres_share < 0.10);
     if (!stream_all_ok) return STAGE;
     const int big = r < 16 ? 16 : r > ring_cap() ? ring_cap() : r;
     return (int64_t) T >= stream_all_min() ? big : STAGE;
 }
-// A770 port: STRATA_PF_XMX=2 holds up to a group of staged experts until its launch, so routed-only staging needs
+// A770 port: NOSTROMA_PF_XMX=2 holds up to a group of staged experts until its launch, so routed-only staging needs
 // that many more slots for the lookahead to keep copying (the slots are only reused once the group's event is in)
-// 151-b70: the fused int8 DPAS expert products (prefill/esimd_moe.dp.cpp, Battlemage).  Unset STRATA_PREFILL_MMQ (alias STRATA_PF_I8) is
+// 151-b70: the fused int8 DPAS expert products (prefill/esimd_moe.dp.cpp, Battlemage).  Unset NOSTROMA_PREFILL_MMQ (alias NOSTROMA_PF_I8) is
 // auto on a Battlemage GPU (bmg-g21 / bmg-g31 by architecture id) whose kernels are in the binary, the FP16 chain on every other GPU
 // (Alchemist included); =0 forces the FP16 chain, =1 the int8 chain everywhere it applies (IQ3_S / IQ3_XXS / IQ2_S gate/up with IQ4_NL /
 // Q2_0 down, the 640 x 2560 expert), =auto the per-group choice from the crossover measured on this GPU.  The activations are quantized,
 // so the bits differ from the FP16 path (docs/INTEL_INT8_EXPERTS.md: KL 0.0002 nats, top-1 99.7%).
-static_assert(strata::kernels::kXmxGroupMax <= strata::prefill::i8::kMaxGroup, "the int8 path holds the grouped XMX path's experts: its Layout must be at least as big");
+static_assert(nostroma::kernels::kXmxGroupMax <= nostroma::prefill::i8::kMaxGroup, "the int8 path holds the grouped XMX path's experts: its Layout must be at least as big");
 inline const char* i8_env() {
-    const char* e = strata::env("NOSTROMA_PREFILL_MMQ");
-    if (e == nullptr || e[0] == 0) e = strata::env("NOSTROMA_PF_I8");
+    const char* e = nostroma::env("NOSTROMA_PREFILL_MMQ");
+    if (e == nullptr || e[0] == 0) e = nostroma::env("NOSTROMA_PF_I8");
     return (e != nullptr && e[0] != 0) ? e : nullptr;
 }
 std::atomic<bool> g_i8_failed{false};    // an int8 launch threw: the FP16 chain for the rest of the process
@@ -327,20 +327,20 @@ std::atomic<bool> g_i8_failed{false};    // an int8 launch threw: the FP16 chain
 inline int i8_mode(void* cs) {
     if (g_i8_failed.load(std::memory_order_relaxed)) return 0;
     const char* e = i8_env();
-    if (e != nullptr) return strata::prefill::i8::choose_mode(e, false, false);
-    return strata::prefill::i8::choose_mode(nullptr, strata::prefill::i8::battlemage(cs), strata::prefill::i8::available(cs));
+    if (e != nullptr) return nostroma::prefill::i8::choose_mode(e, false, false);
+    return nostroma::prefill::i8::choose_mode(nullptr, nostroma::prefill::i8::battlemage(cs), nostroma::prefill::i8::available(cs));
 }
 // ring sizing happens before any queue is at hand: room for the int8 groups whenever the choice could be on
 inline int stage_slots() {
     const char* e = i8_env();
-    const bool i8 = e != nullptr ? strata::prefill::i8::choose_mode(e, false, false) != 0 : strata::prefill::i8::any_battlemage();
-    return (strata::prefill::xmx::mode() == 2 || i8) ? STAGE + strata::prefill::xmx::kMaxGroup : STAGE;
+    const bool i8 = e != nullptr ? nostroma::prefill::i8::choose_mode(e, false, false) != 0 : nostroma::prefill::i8::any_battlemage();
+    return (nostroma::prefill::xmx::mode() == 2 || i8) ? STAGE + nostroma::prefill::xmx::kMaxGroup : STAGE;
 }
 constexpr int DQ = 2;              // dequantized-expert ring (FP16 gate/up + down)
-// A770 port: STRATA_PF_XMX=1 dequantizes a whole group of experts, then one grouped XMX launch per product
-inline int dq_slots() { return strata::prefill::xmx::mode() == 1 ? strata::prefill::xmx::kMaxGroup : DQ; }
+// A770 port: NOSTROMA_PF_XMX=1 dequantizes a whole group of experts, then one grouped XMX launch per product
+inline int dq_slots() { return nostroma::prefill::xmx::mode() == 1 ? nostroma::prefill::xmx::kMaxGroup : DQ; }
 // The BF16-weight projections (hyper-connection, SSM alpha/beta, indexer, router, shared gate, PLE key/value) take
-// BF16 activations here and FP32 ones in decode. STRATA_PREFILL_BF16X2=1 adds each activation's BF16 remainder as a
+// BF16 activations here and FP32 ones in decode. NOSTROMA_PREFILL_BF16X2=1 adds each activation's BF16 remainder as a
 // second GEMM (Y = W.hi + W.lo, ~16 mantissa bits): a router that picks its top 10 from the same x decode would.
 // 2 = all but the hyper-connection's; 1 = the hyper-connection's too (its activations are 10240 wide and its up
 // projection writes as much: slower); 0 (the default: opt-in, it changes the prompt path's numbers) = off.
@@ -348,61 +348,61 @@ inline int dq_slots() { return strata::prefill::xmx::mode() == 1 ? strata::prefi
 // activations carry 11 mantissa bits, so the BF16 low part does not apply there.
 inline int bf16x2_mode(bool f16_io) {
     static const int v = [] {
-        const char* e = strata::env("NOSTROMA_PREFILL_BF16X2");
+        const char* e = nostroma::env("NOSTROMA_PREFILL_BF16X2");
         return e != nullptr ? std::atoi(e) : 0;
     }();
     return f16_io ? 0 : v;
 }
 inline bool bf16x2(bool f16_io) { return bf16x2_mode(f16_io) != 0; }
-// S23 (opt-in STRATA_HC_UPMIX=1): the hyper-connection read's up projection and gr_mix_r as one kernel (gr_upmix, gfx11);
-// STRATA_HC_UPMIX_CHECK=N also runs the default pair on the first N reads and reports the difference of `mixed`
-static int64_t pf_switch_min_t() {   // S23: STRATA_PF_SWITCH_MIN_T=N - the rounding-level prompt switches only on chunks of
+// S23 (opt-in NOSTROMA_HC_UPMIX=1): the hyper-connection read's up projection and gr_mix_r as one kernel (gr_upmix, gfx11);
+// NOSTROMA_HC_UPMIX_CHECK=N also runs the default pair on the first N reads and reports the difference of `mixed`
+static int64_t pf_switch_min_t() {   // S23: NOSTROMA_PF_SWITCH_MIN_T=N - the rounding-level prompt switches only on chunks of
     // N or more tokens (shorter prompts keep the default numerics, and their outputs; the switches pay on long ones)
-    static const int64_t v = [] { const char* e = strata::env("NOSTROMA_PF_SWITCH_MIN_T"); return e ? (int64_t) std::atoll(e) : (int64_t) 0; }();
+    static const int64_t v = [] { const char* e = nostroma::env("NOSTROMA_PF_SWITCH_MIN_T"); return e ? (int64_t) std::atoll(e) : (int64_t) 0; }();
     return v;
 }
 inline bool hc_upmix() {
-    static const bool v = [] { const char* e = strata::env("NOSTROMA_HC_UPMIX"); return e != nullptr && e[0] == '1'; }();
+    static const bool v = [] { const char* e = nostroma::env("NOSTROMA_HC_UPMIX"); return e != nullptr && e[0] == '1'; }();
     return v;
 }
 inline bool bf16x2_hc(bool f16_io) { return bf16x2_mode(f16_io) == 1; }
-// S23 (opt-in STRATA_CVEC_FUSE=1): a steered layer's FFN write + control vector + the next half's norm in one pass
+// S23 (opt-in NOSTROMA_CVEC_FUSE=1): a steered layer's FFN write + control vector + the next half's norm in one pass
 // over R (gr_write_cvec_norm_rs; bitwise the gr_write + cvec_apply + gr_norm_rs it replaces)
-// S23 (opt-in STRATA_PF_HCDOWN=1, on chunks of STRATA_PF_SWITCH_MIN_T+ tokens): the hyper-connection read's down and
-// inject projections as one WMMA GEMM over xn16 (strata_pf_hcdown_bf16), xn16 written with token stride
+// S23 (opt-in NOSTROMA_PF_HCDOWN=1, on chunks of NOSTROMA_PF_SWITCH_MIN_T+ tokens): the hyper-connection read's down and
+// inject projections as one WMMA GEMM over xn16 (nostroma_pf_hcdown_bf16), xn16 written with token stride
 // 10240 + 64.  Rounding-level (another k order than hipBLASLt): quality-gated.
 inline bool pf_hcdown() {
-    static const bool v = [] { const char* e = strata::env("NOSTROMA_PF_HCDOWN"); return e && e[0] == '1'; }();
+    static const bool v = [] { const char* e = nostroma::env("NOSTROMA_PF_HCDOWN"); return e && e[0] == '1'; }();
     return v;
 }
 constexpr int64_t XN_PAD = 64;
-// S (opt-in STRATA_HCD_EXACT=1, on chunks of STRATA_PF_SWITCH_MIN_T+ tokens): the HC down projection by a WMMA kernel with
-// hipBLASLt's own k order (bitwise: strata_pf_hcdown_exact_bf16), xn16 written with token stride 10240 + 64 (the inject
+// S (opt-in NOSTROMA_HCD_EXACT=1, on chunks of NOSTROMA_PF_SWITCH_MIN_T+ tokens): the HC down projection by a WMMA kernel with
+// hipBLASLt's own k order (bitwise: nostroma_pf_hcdown_exact_bf16), xn16 written with token stride 10240 + 64 (the inject
 // projection stays on hipBLASLt, reading that stride)
 inline bool hcd_exact() {
-    static const bool v = [] { const char* e = strata::env("NOSTROMA_HCD_EXACT"); return e && e[0] == '1'; }();
+    static const bool v = [] { const char* e = nostroma::env("NOSTROMA_HCD_EXACT"); return e && e[0] == '1'; }();
     return v;
 }
 inline bool hc_pad() { return pf_hcdown() || hcd_exact(); }
 inline bool cvec_fuse() {
-    static const bool v = [] { const char* e = strata::env("NOSTROMA_CVEC_FUSE"); return e && e[0] == '1'; }();
+    static const bool v = [] { const char* e = nostroma::env("NOSTROMA_CVEC_FUSE"); return e && e[0] == '1'; }();
     return v;
 }
-// S23 (opt-in STRATA_PF_PAD=1 with STRATA_PF_GEMM=1): the FP16 activations of the two K 6144 projections (ssm_out's
+// S23 (opt-in NOSTROMA_PF_PAD=1 with NOSTROMA_PF_GEMM=1): the FP16 activations of the two K 6144 projections (ssm_out's
 // y_h, attn_output's attn_h) with row stride 6144 + 64, so the GEMM's rows do not camp on the memory channels (the
 // 4 KB-multiple stride; Gemm::native pads the weight the same way).  Same bits.
 inline bool pf_pad() {
     static const bool v = [] {
-        const char* p = strata::env("NOSTROMA_PF_PAD"); const char* g = strata::env("NOSTROMA_PF_GEMM");
+        const char* p = nostroma::env("NOSTROMA_PF_PAD"); const char* g = nostroma::env("NOSTROMA_PF_GEMM");
         return p && p[0] == '1' && g && g[0] == '1';
     }();
     return v;
 }
 constexpr int64_t ZV_PAD = 64;
 
-// F-1: STRATA_GR_UNFUSED=1 keeps the FP32 copy of the normalized rows (gr_norm + gr_mix), the A/B arm
+// F-1: NOSTROMA_GR_UNFUSED=1 keeps the FP32 copy of the normalized rows (gr_norm + gr_mix), the A/B arm
 inline bool gr_unfused() {
-    static const bool v = [] { const char* e = strata::env("NOSTROMA_GR_UNFUSED"); return e && e[0] == '1'; }();
+    static const bool v = [] { const char* e = nostroma::env("NOSTROMA_GR_UNFUSED"); return e && e[0] == '1'; }();
     return v;
 }
 
@@ -431,7 +431,7 @@ struct Alloc {
             return p;
         }
         void* p = nullptr;
-        if (DPCT_CHECK_ERROR(p = (void *)strata::malloc_device_guarded(
+        if (DPCT_CHECK_ERROR(p = (void *)nostroma::malloc_device_guarded(
                                  bytes, dpct::get_in_order_queue())) != 0) {
             ok = false; failed_bytes = bytes; return nullptr;
         }
@@ -454,7 +454,7 @@ struct Alloc {
 // j-th unpinned expert, in launch order - lands in host buffer j % kRing, which is free again once the DMA of job
 // j - kRing (recorded by the launching thread, `issued`) is done.
 struct Stager {
-    // D-5: the pinned ring's depth (STRATA_STAGER_RING, default 16) - how far the host copies can run ahead of the
+    // D-5: the pinned ring's depth (NOSTROMA_STAGER_RING, default 16) - how far the host copies can run ahead of the
     // DMAs of the unpinned experts' blobs
     int kRing = 16;
     // SYCL port: a job may name the expert instead of a host pointer - the thread reads it from the GGUF itself
@@ -487,7 +487,7 @@ struct Stager {
     int device = 0;
 
     bool init(size_t blob_bytes, int nthreads) {
-        if (const char* v = strata::env("NOSTROMA_STAGER_RING")) kRing = std::clamp(std::atoi(v), 2, 256);
+        if (const char* v = nostroma::env("NOSTROMA_STAGER_RING")) kRing = std::clamp(std::atoi(v), 2, 256);
         buf.assign((size_t) kRing, nullptr);
         pinned.assign((size_t) kRing, 0);
         dma_done.assign((size_t) kRing, nullptr);
@@ -617,7 +617,7 @@ struct Stager {
     void issued_one(int j, dpct::queue_ptr copy) {
         const uint64_t s = ++issue_seq;
         want[(size_t) (j % kRing)] = s;
-        if (strata::is_copy_engine_queue(copy)) {   // a copy-only command list runs no kernels (a fill is one): a copy of the value
+        if (nostroma::is_copy_engine_queue(copy)) {   // a copy-only command list runs no kernels (a fill is one): a copy of the value
             uint64_t* v = src_seq + (size_t) (s % (uint64_t) (4 * kRing));
             *v = s;
             copy->memcpy(done_seq + j % kRing, v, sizeof(uint64_t));
@@ -659,7 +659,7 @@ struct PeerPrefill {
     // multi-GPU COMPACT: the peer's per-row buffers hold one GROUP's rows instead of the layer's (a group
     // = up to 16 experts and at most G rows), the result rows double-buffered: ~0.9 GB -> ~0.26 GB on the helper
     // card at 8192-token chunks, and no row cap (every peer-held expert's rows go to the peer).
-    // STRATA_PF_PEER_COMPACT=0: the layer-sized buffers (the A/B).
+    // NOSTROMA_PF_PEER_COMPACT=0: the layer-sized buffers (the A/B).
     bool compact = true;
     int64_t G = 0;
     void *Xq_g = nullptr, *Hq_g = nullptr;
@@ -670,7 +670,7 @@ struct PeerPrefill {
     // multi-GPU PEER STREAMING: a share of the experts the primary would stream over ITS PCIe link in a
     // big chunk is streamed by the peer over its own link instead (into its own ring) and computed there - it halves
     // the primary's copy load and moves expert work to the card that idles through most of the MoE half.
-    // STRATA_PF_PEER_STREAM = the share (0 = off), STRATA_PF_PEER_RING = its ring slots.
+    // NOSTROMA_PF_PEER_STREAM = the share (0 = off), NOSTROMA_PF_PEER_RING = its ring slots.
     double ps_frac = 0.0;
     int RP = 0;
     std::vector<uint8_t*> pstage;
@@ -742,14 +742,14 @@ struct PeerPrefill {
     }
 };
 
-// SYCL port: how many queries the prompt path hands the FP32 attention kernel at once (STRATA_ATTN_BATCH, default 32; the
+// SYCL port: how many queries the prompt path hands the FP32 attention kernel at once (NOSTROMA_ATTN_BATCH, default 32; the
 // tensor-core kernel is opt-in and slower here).  Its scratch is batch x chunks x n_head x 258 floats, about 0.41 GB at 32 and
 // 1.65 GB at 128 on Flash-Next, independent of the prompt chunk, so the size that init allocates (attn_batch_for) and the size
 // the budget counts (bytes_needed_impl, which sizes the expert cache and the prompt path's loan) must be the same number.
 // 128 reads a prompt 1.1-1.3% faster on two Arc Pro B65s with the lane-cell score phase, but its extra 1.2 GB comes out of
 // the expert cache on every card (an 8 GB A750 most), so the default stays 32.
 static int64_t attn_batch_setting() {
-    const char* v = strata::env("NOSTROMA_ATTN_BATCH");
+    const char* v = nostroma::env("NOSTROMA_ATTN_BATCH");
     const long long n = v ? std::atoll(v) : 32;
     return (n >= 1 && n <= 1024) ? (int64_t) n : 32LL;
 }
@@ -781,7 +781,7 @@ struct Prefill::Impl {
     // APR (prism.hadamard): per layer, this device's copies of the gate/up (n_embd) and down (n_ff) sign vectors
     // (nullptr: identity signs or not folded), resolved once in init so a prompt chunk reads a pointer
     std::vector<const float*> had_sx, had_sh;
-    bool f16_io = false;   // HIP, STRATA_HIP_PROMPT_F16=1: this stage's 16-bit GEMMs run FP16 in and out (set in init)
+    bool f16_io = false;   // HIP, NOSTROMA_HIP_PROMPT_F16=1: this stage's 16-bit GEMMs run FP16 in and out (set in init)
     uint16_t *xn16_lo = nullptr, *lo16_lo = nullptr, *mixed_bf_lo = nullptr;   // bf16x2(): the BF16 GEMMs' low parts
     float* bo = nullptr;
     // GDN
@@ -814,12 +814,12 @@ struct Prefill::Impl {
     // The grouping tables in mapped pinned memory, [ids | slot | src] of T_max * K each, then the MMQ bounds: kernels
     // read and write them in place.  A cudaMemcpyAsync of them queues behind the expert blobs the copy stream already
     // holds (up to `ring` of them, ~70 us each), and the GPU idles meanwhile - measured 4.2 s of a 128K prompt's
-    // 70 s at the default ring, 0.7 s with a 16-slot one.  STRATA_GROUP_COPY=1: the copies (the A/B arm).
+    // 70 s at the default ring, 0.7 s with a 16-slot one.  NOSTROMA_GROUP_COPY=1: the copies (the A/B arm).
     int32_t* grp_host = nullptr;
     int32_t* grp_dev = nullptr;          // its device alias
     size_t grp_n = 0, grp_tk = 0;        // int32s allocated; T_max * K (the offset of slot, and of src past it)
-    uint16_t* dq_gu[strata::prefill::xmx::kMaxGroup] = {};
-    uint16_t* dq_d[strata::prefill::xmx::kMaxGroup] = {};
+    uint16_t* dq_gu[nostroma::prefill::xmx::kMaxGroup] = {};
+    uint16_t* dq_d[nostroma::prefill::xmx::kMaxGroup] = {};
     uint8_t* stage_dev[RING_MAX] = {};
     int ring = STAGE;                        // the slots of this layout's ring (ring_slots)
     // this layout's GU, H and Xq are the fused path's (moe_bufs' `fused`), so a layer that runs MMQ or the FP16 path may
@@ -849,7 +849,7 @@ struct Prefill::Impl {
     uint64_t region_bytes = 0;
     PrefillStats* stats = nullptr;
     // KV streaming: one layer's whole K/V, staged from the host copy per layer and chunk (identity layout)
-    strata::kernels::KvHostPools stage;
+    nostroma::kernels::KvHostPools stage;
     int32_t* ident_table = nullptr;
     dpct::queue_ptr kv_copy = &dpct::get_in_order_queue();
     dpct::event_ptr kv_released = nullptr, kv_ready = nullptr;
@@ -867,12 +867,12 @@ struct Prefill::Impl {
 
 namespace {
 // the staging pool of a streamed session: every page of one layer (same sequence in init and bytes_needed)
-// STRATA_KV_STAGE_OWN (A/B only): the staging pool gets its own allocation instead of borrowed expert slots, so a
+// NOSTROMA_KV_STAGE_OWN (A/B only): the staging pool gets its own allocation instead of borrowed expert slots, so a
 // streamed run lends the prompt path exactly the slots a resident one does (a lent expert runs on the CPU, which
 // rounds differently: without this an A/B compares two expert placements as well as two KV placements)
-bool stage_own() { static const bool v = strata::env("NOSTROMA_KV_STAGE_OWN") != nullptr; return v; }
-void take_stage(Alloc& o_borrowed, const core::SessionState& ss, const strata::kernels::QsaShapes& s,
-                strata::kernels::KvHostPools& st, bool& ok) {
+bool stage_own() { static const bool v = nostroma::env("NOSTROMA_KV_STAGE_OWN") != nullptr; return v; }
+void take_stage(Alloc& o_borrowed, const core::SessionState& ss, const nostroma::kernels::QsaShapes& s,
+                nostroma::kernels::KvHostPools& st, bool& ok) {
     const core::QsaState& q0 = ss.qsa_states[ss.qsa_primary()];
     if (q0.kv_mode != 1) return;
     if (stage_own() && o_borrowed.count_only) return;
@@ -883,10 +883,10 @@ void take_stage(Alloc& o_borrowed, const core::SessionState& ss, const strata::k
     if (q0.kv_hybrid) {   // K8V4: the three runs of kKvHybrid; pools_of() then reads as the hybrid pools (mode 3)
         st.k_q = o.take<int8_t>(rows * s.head_dim, ok);
         st.k_scale = o.take<uint16_t>(rows * (s.head_dim / 64), ok);
-        st.v_q4 = o.take<uint8_t>(rows * strata::kernels::kv_q4_bytes_per_head((int) s.head_dim), ok);
+        st.v_q4 = o.take<uint8_t>(rows * nostroma::kernels::kv_q4_bytes_per_head((int) s.head_dim), ok);
     } else if (q0.kv_q4) {
-        st.k_q4 = o.take<uint8_t>(rows * strata::kernels::kv_q4_bytes_per_head((int) s.head_dim), ok);
-        st.v_q4 = o.take<uint8_t>(rows * strata::kernels::kv_q4_bytes_per_head((int) s.head_dim), ok);
+        st.k_q4 = o.take<uint8_t>(rows * nostroma::kernels::kv_q4_bytes_per_head((int) s.head_dim), ok);
+        st.v_q4 = o.take<uint8_t>(rows * nostroma::kernels::kv_q4_bytes_per_head((int) s.head_dim), ok);
     } else if (q0.kv_int8) {
         st.k_q = o.take<int8_t>(rows * s.head_dim, ok);
         st.v_q = o.take<int8_t>(rows * s.head_dim, ok);
@@ -897,8 +897,8 @@ void take_stage(Alloc& o_borrowed, const core::SessionState& ss, const strata::k
         st.v_pool = o.take<uint16_t>(rows * s.head_dim, ok);
     }
 }
-strata::kernels::QsaAttnPools pools_of(const strata::kernels::KvHostPools& h, const int32_t* table) {
-    strata::kernels::QsaAttnPools p;
+nostroma::kernels::QsaAttnPools pools_of(const nostroma::kernels::KvHostPools& h, const int32_t* table) {
+    nostroma::kernels::QsaAttnPools p;
     p.k_pool = h.k_pool; p.v_pool = h.v_pool; p.k_q = h.k_q; p.v_q = h.v_q; p.k_scale = h.k_scale; p.v_scale = h.v_scale;
     p.k_q4 = h.k_q4; p.v_q4 = h.v_q4;
     p.page_table = table;
@@ -908,21 +908,21 @@ strata::kernels::QsaAttnPools pools_of(const strata::kernels::KvHostPools& h, co
 
 
 // ------------------------------------------------------------------------------------------------ 151-b70: int8 or FP16 experts
-// STRATA_PREFILL_MMQ=auto picks per group of experts from the measured cost on THIS GPU: at the first layer of a given expert
+// NOSTROMA_PREFILL_MMQ=auto picks per group of experts from the measured cost on THIS GPU: at the first layer of a given expert
 // format the int8 chain (quantize, gate/up, SwiGLU + quantize, down) and the FP16 chain (dequantize, two GEMMs, SwiGLU) are timed on
 // synthetic experts (random blobs of the layer's format and shape) at 16, 32, 64, 128 and 256 rows per expert, and the crossover
 // (the mean rows per expert where the FP16 chain becomes the faster one, interpolated on the cost ratio) is kept, with a flag for
-// how clear the measurement was.  It is cached in a small text file (STRATA_CACHE_DIR, else ~/.cache/strata/i8-crossover.txt) keyed by
+// how clear the measurement was.  It is cached in a small text file (NOSTROMA_CACHE_DIR, else ~/.cache/nostroma/i8-crossover.txt) keyed by
 // device name, driver, formats and shape, and read back instead of measured when the key matches.
 namespace {
 struct I8Cross { double rows = 0; bool confident = false; bool measured = false; };
 
 std::string i8_cache_file() {
-    const char* d = strata::env("NOSTROMA_CACHE_DIR");
+    const char* d = nostroma::env("NOSTROMA_CACHE_DIR");
     std::string dir;
     if (d && d[0]) dir = d;
-    else if (const char* h = std::getenv("HOME")) dir = std::string(h) + "/.cache/strata";
-    else if (const char* a = std::getenv("LOCALAPPDATA")) dir = std::string(a) + "/strata";
+    else if (const char* h = std::getenv("HOME")) dir = std::string(h) + "/.cache/nostroma";
+    else if (const char* a = std::getenv("LOCALAPPDATA")) dir = std::string(a) + "/nostroma";
     else return "";
     return dir + "/i8-crossover.txt";
 }
@@ -965,8 +965,8 @@ void i8_cache_write(const std::string& key, const I8Cross& c) {
 }
 
 template <class M>
-I8Cross i8_calibrate(M& m, const strata::kernels::cpu::NativeFmt& f) {
-    namespace i8 = strata::prefill::i8;
+I8Cross i8_calibrate(M& m, const nostroma::kernels::cpu::NativeFmt& f) {
+    namespace i8 = nostroma::prefill::i8;
     sycl::queue& q = *m.cs;
     const std::string dev = q.get_device().template get_info<sycl::info::device::name>() + "|" +
                             q.get_device().template get_info<sycl::info::device::driver_version>();
@@ -975,7 +975,7 @@ I8Cross i8_calibrate(M& m, const strata::kernels::cpu::NativeFmt& f) {
     const std::string key = keyb;
     I8Cross res;
     if (i8_cache_read(key, res)) {
-        std::fprintf(stderr, "strata: int8 experts: crossover %.0f rows per expert (%s) from the cache for %s\n", res.rows,
+        std::fprintf(stderr, "nostroma: int8 experts: crossover %.0f rows per expert (%s) from the cache for %s\n", res.rows,
                      res.confident ? "clear" : "not clear", key.c_str());
         return res;
     }
@@ -1049,17 +1049,17 @@ I8Cross i8_calibrate(M& m, const strata::kernels::cpu::NativeFmt& f) {
                 int64_t o = 0;
                 for (int i = 0; i < E; ++i) {
                     const int qd = i % DQ;
-                    strata::kernels::iq_dequant_expert_f16(f.gu_type, f.d_type, blobs[i], blobs[i] + f.up_off, blobs[i] + f.down_off, NF, N,
+                    nostroma::kernels::iq_dequant_expert_f16(f.gu_type, f.d_type, blobs[i], blobs[i] + f.up_off, blobs[i] + f.down_off, NF, N,
                                                            m.dq_gu[qd], m.dq_d[qd], &q);
                     m.gemm.f16(X + o * N, m.dq_gu[qd], GU + o * 2 * NF, cnt[i], 2 * NF, N);
-                    strata::prefill::swiglu_interleaved(GU + o * 2 * NF, Hh + o * NF, cnt[i], &q);
+                    nostroma::prefill::swiglu_interleaved(GU + o * 2 * NF, Hh + o * NF, cnt[i], &q);
                     m.gemm.f16(Hh + o * NF, m.dq_d[qd], Dm + o * N, cnt[i], N, NF);
                     o += cnt[i];
                 }
             }) / E;
         }
     } catch (const std::exception& e) {
-        std::fprintf(stderr, "strata: int8 experts: the crossover measurement failed (%s): the int8 path is used below 64 rows per expert\n", e.what());
+        std::fprintf(stderr, "nostroma: int8 experts: the crossover measurement failed (%s): the int8 path is used below 64 rows per expert\n", e.what());
         ok = false;
     }
     for (auto* b : blobs) if (b) sycl::free(b, q);
@@ -1085,7 +1085,7 @@ I8Cross i8_calibrate(M& m, const strata::kernels::cpu::NativeFmt& f) {
     for (int i = 1; i < 5; ++i) if (ratio[i] > ratio[i - 1] * 1.05) mono = false;
     res.confident = mono && (first < 0 ? ratio[4] > 1.05 : first == 0 ? ratio[0] < 0.95 : (ratio[first - 1] > 1.05 && ratio[first] < 0.95));
     res.measured = true;
-    std::fprintf(stderr, "strata: int8 experts, measured here (%s): us per expert at 16/32/64/128/256 rows, int8 %.1f/%.1f/%.1f/%.1f/%.1f, FP16 %.1f/%.1f/%.1f/%.1f/%.1f -> crossover %.0f rows per expert (%s)\n",
+    std::fprintf(stderr, "nostroma: int8 experts, measured here (%s): us per expert at 16/32/64/128/256 rows, int8 %.1f/%.1f/%.1f/%.1f/%.1f, FP16 %.1f/%.1f/%.1f/%.1f/%.1f -> crossover %.0f rows per expert (%s)\n",
                  key.c_str(), t8[0], t8[1], t8[2], t8[3], t8[4], t16[0], t16[1], t16[2], t16[3], t16[4], res.rows, res.confident ? "clear" : "not clear");
     i8_cache_write(key, res);
     return res;
@@ -1097,7 +1097,7 @@ Prefill::~Prefill() {
     release();
 }
 
-// DFlash2 prompt taps (single stage): staging for the completed output of each tapped layer for the last prompt rows; see include/strata/prefill/prefill.hpp
+// DFlash2 prompt taps (single stage): staging for the completed output of each tapped layer for the last prompt rows; see include/nostroma/prefill/prefill.hpp
 bool Prefill::reserve_taps(const std::vector<int>& layers, int64_t cap_rows, int64_t n_embd, std::string& err) {
     tap_layers_ = layers;
     tap_cap_ = cap_rows;
@@ -1173,19 +1173,19 @@ uint64_t gdn_set_bytes(size_t T) {
     return a.used;
 }
 uint64_t qsa_set_bytes(size_t T, int64_t cap, int64_t max_blocks, int64_t sel_batch, int64_t attn_batch,
-                       const strata::kernels::QsaShapes& s) {
+                       const nostroma::kernels::QsaShapes& s) {
     Alloc a; a.count_only = true; bool ok = true;
     a.take<float>(T * kKvW, ok); a.take<float>(T * kKvW, ok); a.take<float>(T * kQFull, ok); a.take<float>(T * kQW, ok);
     a.take<float>(T * kIdxK, ok); a.take<float>(T * kIdxQW, ok); a.take<float>(T * kQW, ok);
     a.take<uint16_t>(T * (ZV + (pf_pad() ? ZV_PAD : 0)), ok);
     a.take<int32_t>(T * (size_t) cap, ok);
     a.take<float>((size_t) sel_batch * (size_t) max_blocks, ok);
-    a.take<float>((size_t) attn_batch * strata::kernels::qsa_decode_attn_scratch_floats(cap, s), ok);
+    a.take<float>((size_t) attn_batch * nostroma::kernels::qsa_decode_attn_scratch_floats(cap, s), ok);
     return a.used;
 }
-// Step 2b: which layers' experts go through MMQ (both weight types covered; the Strata Q2_0 pack always - its blob
+// Step 2b: which layers' experts go through MMQ (both weight types covered; the Nostroma Q2_0 pack always - its blob
 // is converted to GGUF Q2_0 blocks on the gather), whether any layer keeps the FP16 path (IQ1_M), and the largest
-// gate/up and down matrices a group buffer slot holds.  STRATA_PREFILL_MMQ=0: the FP16 path everywhere (the A/B).
+// gate/up and down matrices a group buffer slot holds.  NOSTROMA_PREFILL_MMQ=0: the FP16 path everywhere (the A/B).
 constexpr int MMQ_GROUP = 16;                  // experts per MMQ launch (the gather is per expert, as blobs arrive)
 // MMQ reads up to one 256-value tile past a matrix's last row when the row length is not a multiple of it (the down
 // product: 640 values).  Those bytes meet zero activations, which is harmless only if they decode to finite numbers -
@@ -1195,14 +1195,14 @@ struct MmqPlan {
     bool any = false, fallback = true;
     std::vector<char> layer;                   // per layer: MMQ
     std::vector<char> fo;                      // per layer: no MMQ here but the native fused kernels cover its formats
-                                               // (gfx11: UD-Q4_K_XL's Q4_K / Q5_K and Q5_1 / Q8_0 experts, STRATA_PF_FUSED=1)
+                                               // (gfx11: UD-Q4_K_XL's Q4_K / Q5_K and Q5_1 / Q8_0 experts, NOSTROMA_PF_FUSED=1)
     size_t gu_max = 0, d_max = 0;
 };
 const MmqPlan& mmq_plan() {
     static const MmqPlan plan = [] {
         MmqPlan p;
-        const auto& lay = strata::kernels::cpu::expert_layout();
-        const char* env = strata::env("NOSTROMA_PREFILL_MMQ");
+        const auto& lay = nostroma::kernels::cpu::expert_layout();
+        const char* env = nostroma::env("NOSTROMA_PREFILL_MMQ");
         const bool on = mmq::built() && (env == nullptr || std::atoi(env) != 0);
         const int64_t layers = lay.native ? (int64_t) lay.fmt.size() : lay.n_layers;
         p.layer.assign((size_t) std::max<int64_t>(layers, 0), 0);
@@ -1226,7 +1226,7 @@ const MmqPlan& mmq_plan() {
     }();
     return plan;
 }
-// #136 P3: a layout whose chunks run the fused experts (STRATA_PF_FUSED=1, the Q2_0 pack, a streamed chunk of
+// #136 P3: a layout whose chunks run the fused experts (NOSTROMA_PF_FUSED=1, the Q2_0 pack, a streamed chunk of
 // stream_all_min() tokens or more).  Its GU, H and Xq hold only the fused path's grouping tables, int8 H and per-token
 // int8 activations, and Hq nothing: ~100 KB a token less than MMQ's FP32 GU / H and per-slot q8_1 rows, which is what
 // lets a bigger chunk or ring fit in the slots the prompt path borrows.  A last chunk below stream_all_min() still runs
@@ -1277,26 +1277,26 @@ bool Prefill::init(const core::WeightTable &wt, const core::ModelGeometry &g,
     }
     Impl& m = *impl_;
     m.wt = &wt; m.g = &g; m.ss = &ss; m.src = src; m.cache = cache; m.host_res = host_res;
-    m.T = chunk; m.cs = strata::q_of(stream); m.stats = &stats_;
+    m.T = chunk; m.cs = nostroma::q_of(stream); m.stats = &stats_;
     if (g.n_embd != N || g.hc != HC || g.hc_lr != LR || g.n_expert < 1 || ss.k != K) {
         err = "prefill: geometry differs from the artifact's"; return false;
     }
     {   // APR: the sign vectors on this device, once (hadamard_device_signs takes a mutex and allocates its copy)
-        const strata::kernels::cpu::ExpertLayout& lay = strata::kernels::cpu::expert_layout();
+        const nostroma::kernels::cpu::ExpertLayout& lay = nostroma::kernels::cpu::expert_layout();
         m.had_sx.assign(lay.native ? lay.fmt.size() : 0, nullptr);
         m.had_sh.assign(m.had_sx.size(), nullptr);
         for (size_t l = 0; l < m.had_sx.size(); ++l) {
             if (lay.fmt[l].had_gu)
-                m.had_sx[l] = strata::kernels::hadamard_device_signs(lay.fmt[l].gu_signs, (int) lay.fmt[l].n_embd);
+                m.had_sx[l] = nostroma::kernels::hadamard_device_signs(lay.fmt[l].gu_signs, (int) lay.fmt[l].n_embd);
             if (lay.fmt[l].had_d)
-                m.had_sh[l] = strata::kernels::hadamard_device_signs(lay.fmt[l].d_signs, (int) lay.fmt[l].n_ff);
+                m.had_sh[l] = nostroma::kernels::hadamard_device_signs(lay.fmt[l].d_signs, (int) lay.fmt[l].n_ff);
         }
     }
     m.device = dpct::get_current_device_id();
     if (static bool said_i8 = false; !said_i8 && i8_mode(m.cs) != 0) {
         said_i8 = true;
-        std::fprintf(stderr, "strata: int8 prompt experts are on (%s); STRATA_PREFILL_MMQ=0 turns them off\n",
-                     i8_env() == nullptr ? "Battlemage default, auto" : "STRATA_PREFILL_MMQ set");
+        std::fprintf(stderr, "nostroma: int8 prompt experts are on (%s); NOSTROMA_PREFILL_MMQ=0 turns them off\n",
+                     i8_env() == nullptr ? "Battlemage default, auto" : "NOSTROMA_PREFILL_MMQ set");
     }
     if (stage_le_ < 0) stage_le_ = g.n_layers;
     if (stage_lb_ < 0 || stage_lb_ >= stage_le_ || stage_le_ > g.n_layers || (stage_le_ < g.n_layers) != (next_ != nullptr)) {
@@ -1346,11 +1346,11 @@ bool Prefill::init(const core::WeightTable &wt, const core::ModelGeometry &g,
     */
     // 0.1.43: the expert copies on the GPU's copy engine when the device has one the SYCL runtime does not use itself
     // (the Level Zero v2 adapter runs every queue on the compute engine: ~0.8 s of a 4K prompt on a B70 is the compute
-    // engine waiting for its own DMA).  nullptr: the ordinary in-order queue.  STRATA_COPY_ENGINE=0 turns it off.
-    m.copy = strata::make_copy_engine_queue("the prompt path's expert");
-    const char* copy_profiling = strata::env("NOSTROMA_SYCL_PREFILL_COPY_PROFILING");
+    // engine waiting for its own DMA).  nullptr: the ordinary in-order queue.  NOSTROMA_COPY_ENGINE=0 turns it off.
+    m.copy = nostroma::make_copy_engine_queue("the prompt path's expert");
+    const char* copy_profiling = nostroma::env("NOSTROMA_SYCL_PREFILL_COPY_PROFILING");
     if (m.copy == nullptr && copy_profiling && std::strcmp(copy_profiling, "0") == 0) {
-        m.copy_without_profiling = strata::make_prefill_copy_queue(*m.cs);
+        m.copy_without_profiling = nostroma::make_prefill_copy_queue(*m.cs);
         m.copy = m.copy_without_profiling.get();
     }
     if (m.copy == nullptr &&
@@ -1369,7 +1369,7 @@ bool Prefill::init(const core::WeightTable &wt, const core::ModelGeometry &g,
     if (!m.stager) {
         m.stager = std::make_unique<Stager>();
         const int hw = (int) std::thread::hardware_concurrency();
-        const char* stv = strata::env("NOSTROMA_STAGER_THREADS");   // D-5: the host copy threads of unpinned blobs
+        const char* stv = nostroma::env("NOSTROMA_STAGER_THREADS");   // D-5: the host copy threads of unpinned blobs
         // A GGUF read in place (UD-Q4_K_XL beyond its RAM budget): most of a chunk's blobs are page faults on the
         // SSD, so the copies need many reads in flight - 32 threads and a 128-deep ring read a 4K chunk in 29 s
         // instead of 71 s on an RTX 5070 / NVMe PC (4 threads, 16 deep: the defaults, kept for every other source)
@@ -1377,18 +1377,18 @@ bool Prefill::init(const core::WeightTable &wt, const core::ModelGeometry &g,
         for (int64_t l = 0; src != nullptr && !files && l < g.n_layers; ++l)
             for (int64_t e = 0; !files && e < g.n_expert; ++e) files = src->transient(l, e);
         const int threads = stv ? std::clamp(std::atoi(stv), 1, 32) : files ? 32 : std::max(2, std::min(4, hw / 4));
-        if (files && strata::env("NOSTROMA_STAGER_RING") == nullptr) m.stager->kRing = 4 * threads;
+        if (files && nostroma::env("NOSTROMA_STAGER_RING") == nullptr) m.stager->kRing = 4 * threads;
         if (!m.stager->init((size_t) MAXBLOB(), threads)) ok = false;
     }
-    m.steps_host.resize(T * strata::kernels::kStepCount);
+    m.steps_host.resize(T * nostroma::kernels::kStepCount);
     m.ids_host.resize(T * K); m.slot_host.resize(T * K); m.src_host.resize(T * K); m.cnt.resize(m.g->n_expert); m.off.resize(m.g->n_expert + 1);
     {
         const size_t need = 3 * T * K + (size_t) (2 * (m.g->n_expert + m.g->n_expert / MMQ_GROUP + 2));
         // SYCL port: the *copy* arm is the default.  On the mapped arm the GPU reads these tables straight out of
         // mapped host memory, per layer; copying them first is measurably faster on a PCIe-attached pair and
         // token-identical - 4,106 tokens 1,303 -> 1,335 tok/s, 16,380 tokens 1,622 -> 1,665, the 10,938-token chat
-        // prompt 1,576 -> 1,617, decode unchanged (round 46).  STRATA_GROUP_COPY=0 restores the mapped arm.
-        const char* gc = strata::env("NOSTROMA_GROUP_COPY");
+        // prompt 1,576 -> 1,617, decode unchanged (round 46).  NOSTROMA_GROUP_COPY=0 restores the mapped arm.
+        const char* gc = nostroma::env("NOSTROMA_GROUP_COPY");
         const bool group_copy = gc == nullptr || gc[0] != '0';
         if (m.grp_n < need && !group_copy) {
             if (m.grp_host) sycl::free(m.grp_host, dpct::get_in_order_queue());
@@ -1450,7 +1450,7 @@ bool Prefill::init(const core::WeightTable &wt, const core::ModelGeometry &g,
             if (m.ple_done_seq) m.ple_done_seq[0] = m.ple_done_seq[1] = 0;
             else ok = false;
         }
-        m.ple_rows[b].resize(T * strata::kernels::PLE_N_HEADS);
+        m.ple_rows[b].resize(T * nostroma::kernels::PLE_N_HEADS);
     }
     if (ss.qsa_states[ss.qsa_primary()].kv_mode == 1) {   // KV streaming: the staging pool's identity page table
         const int64_t pages = ss.qsa_states[ss.qsa_primary()].n_pages;
@@ -1533,9 +1533,9 @@ bool Prefill::carve(size_t T, void* alloc) {
     m.mixed_h = o.take<uint16_t>(T * N, ok); m.bo = o.take<float>(T * N, ok);
     if (bf16x2_hc(m.f16_io)) { m.xn16_lo = o.take<uint16_t>(T * D, ok); m.lo16_lo = o.take<uint16_t>(T * LR, ok); }
     if (bf16x2(m.f16_io)) m.mixed_bf_lo = o.take<uint16_t>(T * N, ok);
-    m.steps_dev = o.take<int32_t>(T * strata::kernels::kStepCount, ok);
-    strata::kernels::QsaShapes s = core::qsa_shapes(g);
-    m.cap = strata::kernels::qsa_selection_width(strata::kernels::kTopkMaxCells, s);
+    m.steps_dev = o.take<int32_t>(T * nostroma::kernels::kStepCount, ok);
+    nostroma::kernels::QsaShapes s = core::qsa_shapes(g);
+    m.cap = nostroma::kernels::qsa_selection_width(nostroma::kernels::kTopkMaxCells, s);
     m.attn_batch = attn_batch_for(T);
     m.max_blocks = ss.qsa_states[ss.qsa_primary()].max_cells / s.idx_block + 2;
     {
@@ -1560,7 +1560,7 @@ bool Prefill::carve(size_t T, void* alloc) {
         m.attn = b.take<float>(T * ZV, ok); m.attn_h = b.take<uint16_t>(T * (ZV + (pf_pad() ? ZV_PAD : 0)), ok);
         m.sel_ids = b.take<int32_t>(T * (size_t) m.cap, ok);
         m.sel_scores = b.take<float>((size_t) m.sel_batch * (size_t) m.max_blocks, ok);
-        m.attn_scratch = b.take<float>((size_t) m.attn_batch * strata::kernels::qsa_decode_attn_scratch_floats(m.cap, s), ok);
+        m.attn_scratch = b.take<float>((size_t) m.attn_batch * nostroma::kernels::qsa_decode_attn_scratch_floats(m.cap, s), ok);
         Alloc c;
         c.base = base; c.cap = region; c.owned = &m.owned;
         m.logits = c.take<float>(T * m.g->n_expert, ok); m.w = c.take<float>(T * K, ok); m.ids = c.take<int32_t>(T * K, ok);
@@ -1591,7 +1591,7 @@ bool Prefill::carve(size_t T, void* alloc) {
         if (!m.mmq_ctx) m.mmq_ctx = std::make_unique<mmq::Context>();
     }
     m.ring = ring_slots(T);
-    const int ring_n = std::max(m.ring, stage_slots());   // A770 port: STRATA_PF_XMX=2 holds a group of staged experts
+    const int ring_n = std::max(m.ring, stage_slots());   // A770 port: NOSTROMA_PF_XMX=2 holds a group of staged experts
     if (o.base == nullptr && ring_n > 0) {
         // OWNED buffers: the ring in ONE allocation.  384 separate 2.7 MiB cudaMallocs each round up to a 2 MiB page
         // (~1.3 MiB a slot, ~0.5 GiB in all) that no count ever saw.  A borrowed region keeps its per-slot layout (and
@@ -1610,7 +1610,7 @@ bool Prefill::carve(size_t T, void* alloc) {
         }
     }
     m.ple_emb = o.take<float>(T * N, ok);
-    m.ple_norm = o.take<float>((size_t) strata::kernels::NG_HC_DIM, ok);
+    m.ple_norm = o.take<float>((size_t) nostroma::kernels::NG_HC_DIM, ok);
     take_stage(o, ss, s, m.stage, ok);
     m.T = (int64_t) T;
     return ok;
@@ -1671,17 +1671,17 @@ bool Prefill::draft_kv(core::MtpDrafter& mtp, const float* R_rows, const int32_t
                        std::string& err, const char** why) {
     Impl& m = *impl_;
     auto decline = [&](const char* reason) { if (why != nullptr) *why = reason; return false; };
-    static const bool off = [] { const char* v = strata::env("NOSTROMA_MTP_BATCH"); return v != nullptr && v[0] == '0'; }();
+    static const bool off = [] { const char* v = nostroma::env("NOSTROMA_MTP_BATCH"); return v != nullptr && v[0] == '0'; }();
     // A ring (KV streaming: the drafter's window, page p in slot p % n_slots over a host copy) takes the same appends
     // with its own page table and host copy, as a streamed main layer does; the cells written are those the window can
-    // still reach (r0 below), which the ring holds, so no two of them share a slot.  STRATA_MTP_BATCH_RING=0: the
+    // still reach (r0 below), which the ring holds, so no two of them share a slot.  NOSTROMA_MTP_BATCH_RING=0: the
     // drafter's own pass for a ring (the A/B).
-    static const bool ring_ok = [] { const char* v = strata::env("NOSTROMA_MTP_BATCH_RING"); return v == nullptr || v[0] != '0'; }();
+    static const bool ring_ok = [] { const char* v = nostroma::env("NOSTROMA_MTP_BATCH_RING"); return v == nullptr || v[0] != '0'; }();
     core::QsaState& st = mtp.kv_state_rw();
-    if (off) return decline("STRATA_MTP_BATCH=0");
+    if (off) return decline("NOSTROMA_MTP_BATCH=0");
     if (n <= 0 || m.g == nullptr || m.region == nullptr) return decline("no prompt scratch region on this path");
     if (st.kv_mode != 0 && !(st.kv_mode == 2 && ring_ok))
-        return decline(st.kv_mode == 2 ? "the drafter's K/V is a ring and STRATA_MTP_BATCH_RING=0" : "the drafter's K/V mode is not paged/ring");
+        return decline(st.kv_mode == 2 ? "the drafter's K/V is a ring and NOSTROMA_MTP_BATCH_RING=0" : "the drafter's K/V mode is not paged/ring");
     if (st.kv_hybrid) return decline("the drafter's K/V is hybrid (kv_hybrid)");
     if (mtp.device() != m.device) return decline("the drafter is on another device than this prefill path");
     const auto t0 = Clock::now();
@@ -1711,8 +1711,8 @@ bool Prefill::draft_kv(core::MtpDrafter& mtp, const float* R_rows, const int32_t
     // per row: emb/e2 (N), en16 (N half), hn/h2/Rm/gated (HCN), hn16/xn16 (HCN half), lo (LR) + lo16, grs, mixed (N) +
     // mixed_h, K and V (KV each), the token id
     // E-9: the drafter's Q8_0 matrices through Q8_1 x Q8_0 MMQ - its own pass's integer dot products (mmvq), so
-    // its K/V stay close to what the drafter computes itself; STRATA_MTP_BATCH_F16=1: FP16 GEMMs (the A/B)
-    static const bool f16_only = [] { const char* v = strata::env("NOSTROMA_MTP_BATCH_F16"); return v && v[0] == '1'; }();
+    // its K/V stay close to what the drafter computes itself; NOSTROMA_MTP_BATCH_F16=1: FP16 GEMMs (the A/B)
+    static const bool f16_only = [] { const char* v = nostroma::env("NOSTROMA_MTP_BATCH_F16"); return v && v[0] == '1'; }();
     const bool q8 = !f16_only && mmq::built() && mmq::fits(kQ8_0, Nn) && mmq::fits(kQ8_0, KV);   // #420
     const uint64_t per_row = 4 * (2 * Nn + 4 * HCN + LR + HC + Nn + 2 * KV + 1) + 2 * (Nn + 2 * HCN + LR + Nn) + 64 +
                              (q8 ? (uint64_t) mmq::q8_bytes(g.hc, Nn) + 4 * g.hc : 0);
@@ -1722,7 +1722,7 @@ bool Prefill::draft_kv(core::MtpDrafter& mtp, const float* R_rows, const int32_t
     if (cap < 64) return decline("too little scratch for a 64-row batch");
     int64_t B = std::min<int64_t>(std::max<int64_t>(n - r0, 64), cap);
     if (st.kv_mode == 2)   // #453: a ring: one batch's cells must not share a slot (a batch can straddle one page more)
-        B = std::min<int64_t>(B, ((st.n_slots - 1) * strata::kernels::qsa_real_shapes().page_size) & ~(int64_t) 63);
+        B = std::min<int64_t>(B, ((st.n_slots - 1) * nostroma::kernels::qsa_real_shapes().page_size) & ~(int64_t) 63);
     if (B < 64) return decline("too little scratch for a 64-row batch");
     uint8_t* q = m.region;
     auto carve = [&](size_t bytes) { void* p = q; q += (bytes + 255) & ~(size_t) 255; return p; };
@@ -1747,13 +1747,13 @@ bool Prefill::draft_kv(core::MtpDrafter& mtp, const float* R_rows, const int32_t
     int32_t* ident = q8 ? (int32_t*) carve((size_t) B * g.hc * 4) : nullptr;
     int32_t* bnd = q8 ? (int32_t*) carve(16) : nullptr;
     if ((uint64_t) (q - m.region) > m.region_bytes) return decline("the batch buffers do not fit the scratch region");
-    static const bool timing = strata::env("NOSTROMA_DRAFT_TIMING") != nullptr;   // debug: where this pass's time goes
+    static const bool timing = nostroma::env("NOSTROMA_DRAFT_TIMING") != nullptr;   // debug: where this pass's time goes
     if (timing) m.cs->wait();
     const auto ti0 = Clock::now();
     if (!mtp.idle(err)) return false;   // the drafter's own stream (its graph uploads) before this writes its K/V
     const double ms_idle = ms_since(ti0);
     const auto tl0 = Clock::now();
-    strata::kernels::QsaShapes s = core::qsa_shapes(g);
+    nostroma::kernels::QsaShapes s = core::qsa_shapes(g);
     std::vector<int32_t> tk((size_t) B);
     if (q8) {
         if (!m.mmq_ctx) m.mmq_ctx = std::make_unique<mmq::Context>();
@@ -1803,7 +1803,7 @@ bool Prefill::draft_kv(core::MtpDrafter& mtp, const float* R_rows, const int32_t
             const auto* scales = (const float*) (codes + wemb->codes_bytes);
             const auto* offsets = wemb->has_offset ? (const float*) (codes + wemb->codes_bytes + wemb->scales_bytes)
                                                    : nullptr;
-            strata::kernels::embedding_gather_dev(codes, scales, offsets, tok, (int) nb, wemb->ne0, wemb->code_bits,
+            nostroma::kernels::embedding_gather_dev(codes, scales, offsets, tok, (int) nb, wemb->ne0, wemb->code_bits,
                                                   wemb->code_bias, wemb->group_elems,
                                                   (uint64_t) (wemb->ne0 / (8 / wemb->code_bits)),
                                                   (uint64_t) (wemb->ne0 / wemb->group_elems), emb, m.cs);
@@ -1819,12 +1819,12 @@ bool Prefill::draft_kv(core::MtpDrafter& mtp, const float* R_rows, const int32_t
         */
         m.cs->memcpy(hn, R_rows + (size_t)b0 * HCN, (size_t)nb * HCN * 4);
         if (mtp.hnorm_per_stream())   // --mtp-hnorm stream: as the drafter's own pass (mtp.cpp)
-            strata::kernels::native_qsa_rms_norm_grouped(hn, w_nh, hn, (int) Nn, (int) g.hc, (int) (nb * g.hc), EPS, m.cs);
+            nostroma::kernels::native_qsa_rms_norm_grouped(hn, w_nh, hn, (int) Nn, (int) g.hc, (int) (nb * g.hc), EPS, m.cs);
         else
             rms_rows(hn, w_nh, nb, HCN, HCN, EPS, m.cs);
         if (!q8) to_f16(hn, hn16, nb * HCN, m.cs);
         proj(hn, hn16, w_fh, h2, nb * g.hc, Nn, Nn, 1);   // every stream through fc_hidden
-        strata::kernels::add_streams_broadcast(h2, e2, Rm, Nn, (int) g.hc, (int) nb, m.cs);
+        nostroma::kernels::add_streams_broadcast(h2, e2, Rm, Nn, (int) g.hc, (int) nb, m.cs);
         // the attention hyper-connection's read (its mixed input only: this pass writes nothing back)
         gr_norm_rs(Rm, w_hn, EPS, grs, xn16, nb, m.cs);
         m.gemm.bf16(xn16, w_dn, lo, nb, LR, HCN);
@@ -1835,13 +1835,13 @@ bool Prefill::draft_kv(core::MtpDrafter& mtp, const float* R_rows, const int32_t
         proj(mixed, mixed_h, w_k, Kc, nb, KV, Nn, 0);
         proj(mixed, mixed_h, w_v, Vc, nb, KV, Nn, 0);
         rms_rows(Kc, w_kn, nb * g.n_head_kv, g.head_dim, g.head_dim, EPS, m.cs);
-        rope(Kc, nb, g.n_head_kv, g.head_dim, KV, c0, strata::kernels::rope_scaling(), m.cs);
+        rope(Kc, nb, g.n_head_kv, g.head_dim, KV, c0, nostroma::kernels::rope_scaling(), m.cs);
         if (st.kv_rot) {   // rotated as the drafter's own decode stores them (mtp.cpp)
-            strata::kernels::fwht256_inplace_cuda(Kc, nb * g.n_head_kv, m.cs);
-            strata::kernels::fwht256_inplace_cuda(Vc, nb * g.n_head_kv, m.cs);
+            nostroma::kernels::fwht256_inplace_cuda(Kc, nb * g.n_head_kv, m.cs);
+            nostroma::kernels::fwht256_inplace_cuda(Vc, nb * g.n_head_kv, m.cs);
         }
         if (st.kv_q4) {
-            strata::kernels::kv_append_q4(st.k_q4, st.v_q4, st.page_table, c0, nb, Kc, Vc, s, m.cs, &st.host);
+            nostroma::kernels::kv_append_q4(st.k_q4, st.v_q4, st.page_table, c0, nb, Kc, Vc, s, m.cs, &st.host);
         } else {
             kv_append(Kc, Vc, nb, c0, st.page_table, s.page_size, st.kv_int8 ? nullptr : st.k_pool,
                       st.kv_int8 ? nullptr : st.v_pool, st.k_q, st.v_q, st.k_scale, st.v_scale, m.cs, &st.host);
@@ -1864,17 +1864,17 @@ bool Prefill::draft_kv(core::MtpDrafter& mtp, const float* R_rows, const int32_t
     }
     mtp.ms_prefill += ms_since(t0);
     if (timing)
-        std::fprintf(stderr, "strata draft kv: %lld cells from %lld (first needed %lld), batch %lld: drafter idle %.1f ms, "
+        std::fprintf(stderr, "nostroma draft kv: %lld cells from %lld (first needed %lld), batch %lld: drafter idle %.1f ms, "
                      "the batches %.1f ms, all %.1f ms\n", (long long) n, (long long) cell0, (long long) (cell0 + r0),
                      (long long) B, ms_idle, ms_since(tl0), ms_since(t0));
     return true;
 }
 namespace {
-// Layer split: STRATA_PREFILL_HELP=1 lends the idle stage's GPU (opt-in: the helped rows are computed in another MMQ
-// grouping and round differently from the default, like STRATA_SPLIT_OWN). Unset or 0: every stage's prompt experts on
+// Layer split: NOSTROMA_PREFILL_HELP=1 lends the idle stage's GPU (opt-in: the helped rows are computed in another MMQ
+// grouping and round differently from the default, like NOSTROMA_SPLIT_OWN). Unset or 0: every stage's prompt experts on
 // its own GPU, as before.
 bool split_help_env() {
-    static const bool v = [] { const char* e = strata::env("NOSTROMA_PREFILL_HELP"); return e != nullptr && std::atoi(e) != 0; }();
+    static const bool v = [] { const char* e = nostroma::env("NOSTROMA_PREFILL_HELP"); return e != nullptr && std::atoi(e) != 0; }();
     return v;
 }
 // The share of a stage's streamed experts the idle stage's GPU takes for a one-chunk prompt of T tokens (0: none).
@@ -1883,10 +1883,10 @@ bool split_help_env() {
 // 0.2 / 0.3 / 0.4 against none: 1.5K tokens 749 / 820 / 908 (none 675), 3K 1335 / 1437 / 1328 (1262), 4K 1622 / 1620 /
 // 1440 (1609), 6K 1811 / 1660 / 1471 (2038), 8K 1895 / 1804 / 1663 (2230) - the best share falls with T and from ~4K
 // none pays, which this rule follows (0.41 at 1.5K, 0.32 at 3K, off from ~3.3K).
-// STRATA_PREFILL_HELP_FRAC sets the share for every T.
+// NOSTROMA_PREFILL_HELP_FRAC sets the share for every T.
 double split_help_frac(int64_t T) {
     static const double fixed = [] {
-        const char* e = strata::env("NOSTROMA_PREFILL_HELP_FRAC");
+        const char* e = nostroma::env("NOSTROMA_PREFILL_HELP_FRAC");
         return e ? std::clamp(std::atof(e), 0.0, 1.0) : -1.0;
     }();
     if (fixed >= 0.0) return fixed;
@@ -1973,7 +1973,7 @@ bool Prefill::bind_stage_helper(int64_t T) {
     if (!m.help_pp || helper_ == nullptr || m.pp) return false;
     const double frac = split_help_frac(T);
     if (frac <= 0.0 || T < stream_all_min() || m.src == nullptr || m.ring <= STAGE || fused_ring()) return false;
-    const strata::kernels::cpu::ExpertLayout& lay = strata::kernels::cpu::expert_layout();
+    const nostroma::kernels::cpu::ExpertLayout& lay = nostroma::kernels::cpu::expert_layout();
     for (int64_t l = stage_lb_; l < stage_le_; ++l) {
         if (!(mmq_plan().any && mmq_plan().layer[(size_t) l])) return false;   // the peer computes on MMQ only
         if (lay.native && fused::native_supported(lay.fmt[(size_t) l].gu_type, lay.fmt[(size_t) l].d_type)) return false;
@@ -2084,7 +2084,7 @@ bool Prefill::set_peer(core::PeerExperts *peer, int64_t cap_rows,
                   pp->s = dpct::get_current_device().create_queue(true)) == 0 &&
               DPCT_CHECK_ERROR(pp->ev_done = new sycl::event()) == 0;
     {
-        const char* v = strata::env("NOSTROMA_PF_PEER_OUT_PIPE");   // =0: one copy after the last group (the A/B)
+        const char* v = nostroma::env("NOSTROMA_PF_PEER_OUT_PIPE");   // =0: one copy after the last group (the A/B)
         pp->out_pipe = (v == nullptr || std::atoi(v) != 0) || pp->compact;   // compact always pipes
     }
     if (ok && pp->out_pipe) {
@@ -2102,7 +2102,7 @@ bool Prefill::set_peer(core::PeerExperts *peer, int64_t cap_rows,
         try {
     void *p = nullptr;
         if (!ok ||
-            DPCT_CHECK_ERROR(p = (void *)strata::malloc_device_guarded(
+            DPCT_CHECK_ERROR(p = (void *)nostroma::malloc_device_guarded(
                                  bytes, dpct::get_in_order_queue())) != 0) {
             ok = false; return nullptr;
         }
@@ -2117,7 +2117,7 @@ bool Prefill::set_peer(core::PeerExperts *peer, int64_t cap_rows,
     };
     pp->mixed = (float*) take((size_t) m.T_max * N * 4);
     {
-        const char* v = strata::env("NOSTROMA_PF_PEER_COMPACT");
+        const char* v = nostroma::env("NOSTROMA_PF_PEER_COMPACT");
         pp->compact = v == nullptr || std::atoi(v) != 0;
     }
     if (pp->compact) {
@@ -2132,11 +2132,11 @@ bool Prefill::set_peer(core::PeerExperts *peer, int64_t cap_rows,
         pp->Dm_b[1] = (float*) take((size_t) Gr * N * 4);
         for (int b = 0; b < 2 && ok; ++b)
             ok = DPCT_CHECK_ERROR(pp->ev_dm[b] = new sycl::event()) == 0;
-        const char* fs = strata::env("NOSTROMA_PF_PEER_STREAM");
+        const char* fs = nostroma::env("NOSTROMA_PF_PEER_STREAM");
         pp->ps_frac = fs ? std::atof(fs) : 0.35;   // measured: 0.25-0.5 all ~1950-1970 at 32K, 0.35 best
         if (pp->ps_frac > 0.0 && !mp.fallback && m.T_max >= stream_all_min()) {
             pp->RP = 48;
-            if (const char* pr = strata::env("NOSTROMA_PF_PEER_RING"); pr != nullptr) pp->RP = std::atoi(pr);
+            if (const char* pr = nostroma::env("NOSTROMA_PF_PEER_RING"); pr != nullptr) pp->RP = std::atoi(pr);
             pp->pstage.assign((size_t) pp->RP, nullptr);
             pp->pcopied.assign((size_t) pp->RP, nullptr);
             pp->pused.assign((size_t) pp->RP, nullptr);
@@ -2191,7 +2191,7 @@ bool Prefill::set_peer(core::PeerExperts *peer, int64_t cap_rows,
     */
     dpct::select_device(prev);
     if (!ok) { err = "prefill peer: the peer's buffers do not fit (raise --peer-reserve-mib or lower --peer-prefill-rows)"; return false; }
-    std::fprintf(stderr, "strata prefill: peer GPU %d computes its experts' rows of each prompt chunk (up to %lld rows per "
+    std::fprintf(stderr, "nostroma prefill: peer GPU %d computes its experts' rows of each prompt chunk (up to %lld rows per "
                          "layer%s); %zu MiB left free on it\n", pp->dev, (long long) pp->cap_rows,
                  pp->compact ? (pp->ps_frac > 0.0 ? (", compact group buffers, streams " + std::to_string((int) (pp->ps_frac * 100 + 0.5)) +
                                                     "% of the primary's streamed experts through a " + std::to_string(pp->RP) + "-slot ring").c_str()
@@ -2218,7 +2218,7 @@ int64_t Prefill::stream_all_min_tokens() { return stream_all_min(); }
 uint64_t Prefill::bytes_needed(const core::ModelGeometry& g, const core::SessionState& ss, int64_t chunk, bool src, int64_t /*tail*/) {
     return bytes_needed_impl(g, ss, chunk, false, src);
 }
-// The shared header (include/strata/prefill/prefill.hpp) carries the lent layout's MMQ tail (loan_rules.hpp) and the card's expert share for the
+// The shared header (include/nostroma/prefill/prefill.hpp) carries the lent layout's MMQ tail (loan_rules.hpp) and the card's expert share for the
 // switch-point rule. The SYCL engine has no tail buffers (no MMQ), so these members answer "no tail" (-1, room for any chunk) and the parameters
 // are accepted and ignored; the interface is kept in step with the header, the layouts behave as before the tail existed.
 int64_t Prefill::layout_tail() const { return -1; }
@@ -2245,7 +2245,7 @@ uint64_t Prefill::bytes_needed_impl(const core::ModelGeometry& g, const core::Se
     o.take<uint8_t>(GEMM_WS, ok);
     auto f = [&](size_t n) { o.take<float>(n, ok); };
     // `carve`'s order, buffer for buffer: emb, R, xn, grs, xn16, lo, lo16, gated, inj, mixed, mixed_bf, mixed_h,
-    // bo.  This counted `xn` unconditionally (carve takes it only under STRATA_GR_UNFUSED) and never counted
+    // bo.  This counted `xn` unconditionally (carve takes it only under NOSTROMA_GR_UNFUSED) and never counted
     // `grs`.  Net over-count T*(D-HC)*4 bytes: 42 MB at a 1024-token chunk, 252 MB (48 Q8_0 slots) at 6144 - the
     // prompt path was told it had less room than it did.  Safe - the direction is over-estimating, and `take`
     // still bounds-checks - but it under-sizes every loan, so every chunk the scan picks is one step smaller.
@@ -2253,7 +2253,7 @@ uint64_t Prefill::bytes_needed_impl(const core::ModelGeometry& g, const core::Se
         f(T * N); f(T * D);
         if (gr_unfused()) f(T * D);
         f(T * HC);
-    } else {   // STRATA_RING_BYTES=0: 0.1.39's count
+    } else {   // NOSTROMA_RING_BYTES=0: 0.1.39's count
         f(T * N); f(T * D); f(T * D);
     }
     o.take<uint16_t>(T * (D + (hc_pad() ? XN_PAD : 0)), ok); f(T * LR); o.take<uint16_t>(T * LR, ok);
@@ -2261,9 +2261,9 @@ uint64_t Prefill::bytes_needed_impl(const core::ModelGeometry& g, const core::Se
     const bool f16_io = prompt_f16();   // the current device's mode (the stage's), as Prefill::init will decide it
     if (bf16x2_hc(f16_io)) { o.take<uint16_t>(T * D, ok); o.take<uint16_t>(T * LR, ok); }
     if (bf16x2(f16_io)) o.take<uint16_t>(T * N, ok);
-    o.take<int32_t>(T * strata::kernels::kStepCount, ok);
-    strata::kernels::QsaShapes s = core::qsa_shapes(g);
-    const int64_t cap = strata::kernels::qsa_selection_width(strata::kernels::kTopkMaxCells, s);
+    o.take<int32_t>(T * nostroma::kernels::kStepCount, ok);
+    nostroma::kernels::QsaShapes s = core::qsa_shapes(g);
+    const int64_t cap = nostroma::kernels::qsa_selection_width(nostroma::kernels::kTopkMaxCells, s);
     const int64_t max_blocks = ss.qsa_states[ss.qsa_primary()].max_cells / s.idx_block + 2;
     o.take<uint8_t>((size_t) std::max({gdn_set_bytes(T), qsa_set_bytes(T, cap, max_blocks, 256, attn_batch_for(T), s),
                                        moe_set_bytes(T, g.n_expert, fused_layout(T, src))}), ok);
@@ -2282,8 +2282,8 @@ uint64_t Prefill::bytes_needed_impl(const core::ModelGeometry& g, const core::Se
         for (int i = 0; i < ring_n; ++i) o.take<uint8_t>((size_t) MAXBLOB(), ok);
     }
     f(T * N);
-    f((size_t) strata::kernels::NG_HC_DIM);
-    strata::kernels::KvHostPools stage;
+    f((size_t) nostroma::kernels::NG_HC_DIM);
+    nostroma::kernels::KvHostPools stage;
     take_stage(o, ss, s, stage, ok);
     return o.used + (8u << 20);   // alignment slack
 }
@@ -2340,7 +2340,7 @@ bool bf16_proj(Gemm& gm, const core::WeightRef* w, const uint16_t* X, float* Y, 
 }  // namespace
 
 namespace {
-// STRATA_PREFILL_TIMING=1: the prompt path's GPU time by phase.  Events are recorded on the compute stream in order;
+// NOSTROMA_PREFILL_TIMING=1: the prompt path's GPU time by phase.  Events are recorded on the compute stream in order;
 // the time between two consecutive marks is charged to the phase of the first, so a gap where the GPU waits (for the
 // host's expert grouping, or for an expert's copy) lands on the phase that was waiting.  Events are reused: the marks
 // are folded at every MoE layer's host sync, after which all of them have completed.
@@ -2352,21 +2352,21 @@ const char* const kPfNames[kPfCount] = {"embed+steps", "hc read", "gdn", "qsa pr
                                         "gemm gate/up", "gemm down", "combine", "ple", "kv stage", "gdn conv+gates",
                                         "gdn recurrence", "gdn out proj"};
 struct PfTimer {
-    bool on = strata::env("NOSTROMA_PREFILL_TIMING") != nullptr;
+    bool on = nostroma::env("NOSTROMA_PREFILL_TIMING") != nullptr;
     std::vector<dpct::event_ptr> ev;
     std::vector<int> ph;
     size_t used = 0;
     double ms[kPfCount] = {};
-    // STRATA_PREFILL_SYNC=1 (debug): wait for the GPU at every mark and log the phase that just finished, so a hang
+    // NOSTROMA_PREFILL_SYNC=1 (debug): wait for the GPU at every mark and log the phase that just finished, so a hang
     // names the stage that never completes
-    bool sync = strata::env("NOSTROMA_PREFILL_SYNC") != nullptr;
+    bool sync = nostroma::env("NOSTROMA_PREFILL_SYNC") != nullptr;
     long long n_sync = 0;
     void mark(int phase, dpct::queue_ptr s) {
         workload_trace::phase(phase < kPfCount ? kPfNames[phase] : "unknown", s);
         if (sync) {
             const auto t0 = std::chrono::steady_clock::now();
             s->wait();
-            std::fprintf(stderr, "strata prefill sync: mark %lld phase %s done (waited %.1f ms)\n", ++n_sync,
+            std::fprintf(stderr, "nostroma prefill sync: mark %lld phase %s done (waited %.1f ms)\n", ++n_sync,
                          phase < kPfCount ? kPfNames[phase] : "?",
                          std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
         }
@@ -2408,11 +2408,11 @@ struct PfTimer {
         for (dpct::event_ptr e : ev) DPCT_CHECK_ERROR(dpct::destroy_event(e));
     }
 };
-// multi-GPU: the peer's own timeline (STRATA_PREFILL_TIMING): marks on the peer stream, folded with the primary's
+// multi-GPU: the peer's own timeline (NOSTROMA_PREFILL_TIMING): marks on the peer stream, folded with the primary's
 enum PePhase { kPeIdle, kPeMoeIn, kPeMoeGemm, kPeMoeOut, kPeCount };
 const char* const kPeNames[kPeCount] = {"idle", "moe in", "moe gemm", "moe out"};
 struct PeTimer {
-    bool on = strata::env("NOSTROMA_PREFILL_TIMING") != nullptr;
+    bool on = nostroma::env("NOSTROMA_PREFILL_TIMING") != nullptr;
     int dev = -1;
     std::vector<dpct::event_ptr> ev;
     std::vector<int> ph;
@@ -2474,7 +2474,7 @@ struct PeTimer {
 bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                        std::string &err) try {
     err.clear();
-    strata::kprof::phase("prompt");
+    nostroma::kprof::phase("prompt");
     Impl& m = *impl_;
     const core::OnDevice on_device(m.device);
     const core::ModelGeometry& g = *m.g;
@@ -2483,12 +2483,12 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
     const int64_t LB = stage_lb_, LE = stage_le_;
     // The direct successor's future lives on the Prefill object. Intermediate
     // stages therefore do not drain the complete remaining GPU chain here.
-    double host_sync_ms = 0, host_chunk_ms = 0, host_setup_ms = 0;   // STRATA_PREFILL_TIMING: the host's share
+    double host_sync_ms = 0, host_chunk_ms = 0, host_setup_ms = 0;   // NOSTROMA_PREFILL_TIMING: the host's share
     double grp_wait_ms = 0, grp_cpu_ms = 0;   // the per-layer grouping: the drain wait, the host's loops
-    strata::kernels::QsaShapes s = core::qsa_shapes(g);
-    // read once (STRATA_KV_PREFETCH=1/0: the next streamed layer's KV prefix is staged on its own stream)
+    nostroma::kernels::QsaShapes s = core::qsa_shapes(g);
+    // read once (NOSTROMA_KV_PREFETCH=1/0: the next streamed layer's KV prefix is staged on its own stream)
     static const bool kv_prefetch_on = [] {
-        const char* e = strata::env("NOSTROMA_KV_PREFETCH");
+        const char* e = nostroma::env("NOSTROMA_KV_PREFETCH");
         return e ? std::atoi(e) != 0 : false;
     }();
     const bool kv_prefetch = kv_prefetch_on;
@@ -2539,7 +2539,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
     PfTimer pt;
     PeTimer pe;
     if (m.pp) pe.dev = m.pp->dev; else pe.on = false;
-    const dpct::queue_ptr cs = strata::q_of(m.cs);
+    const dpct::queue_ptr cs = nostroma::q_of(m.cs);
     // the MMQ row table lives in the borrowed cache slots, which the refill after a prompt overwrites with experts:
     // write it again for every prompt (a layout is reused as long as the chunk and the slots are the same)
     if (m.ids_identity != nullptr) mmq::iota(m.ids_identity, m.T * K, m.cs);
@@ -2548,24 +2548,24 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
     // depend only on the tokens (the two before a position name its n-grams), so this is the same data.
     const bool ple_on = ss.ple.ready() && LB <= 1 && 1 < LE;
     // the PLE block batched over the chunk: the pinned postops and a BF16 or GGUF-native key (else token by token);
-    // STRATA_PLE_BATCH=0 keeps the per-token block (the A/B)
+    // NOSTROMA_PLE_BATCH=0 keeps the per-token block (the A/B)
     static const bool ple_batch_env = [] {
-        const char* v = strata::env("NOSTROMA_PLE_BATCH");
+        const char* v = nostroma::env("NOSTROMA_PLE_BATCH");
         return v == nullptr || std::atoi(v) != 0;
     }();
-    const bool ple_batch = ple_on && ple_batch_env && strata::kernels::ple_native_postops_enabled() &&
+    const bool ple_batch = ple_on && ple_batch_env && nostroma::kernels::ple_native_postops_enabled() &&
                            (ss.ple.w.key_bf16 != nullptr || ss.ple.w.key_native_data != nullptr) &&
-                           m.region_bytes / ((uint64_t) (3 * strata::kernels::NG_HC_DIM + N + 4) * 4 + (uint64_t) N * 2 + 4096) >= 64;
+                           m.region_bytes / ((uint64_t) (3 * nostroma::kernels::NG_HC_DIM + N + 4) * 4 + (uint64_t) N * 2 + 4096) >= 64;
     const int32_t prev0[2] = {prev[0], prev[1]};
     // SYCL port: a short first chunk so the GPU starts while the rest of the prompt's PLE rows are still being read
     // (27k random 4 KB reads per 2k tokens, 330 ms at the drive's ~85k IOPS, otherwise all before the first kernel).
-    // STRATA_PREFILL_FIRST=<tokens> (0: off), default 256 when the prompt is longer than twice that.
+    // NOSTROMA_PREFILL_FIRST=<tokens> (0: off), default 256 when the prompt is longer than twice that.
     // Every chunk streams the experts the cache does not hold (a 4K prompt touches nearly all 512 per layer), over PCIe: with
     // part of the model in the host mirror a short first chunk costs a whole extra pass of that stream (an Arc Pro B70 on
     // IQ3_S: a 4,095-token prompt 784 -> 1,002 tok/s without it).  So the default is 256 only when the cache holds every
-    // expert; STRATA_PREFILL_FIRST=<tokens> decides explicitly.
+    // expert; NOSTROMA_PREFILL_FIRST=<tokens> decides explicitly.
     const bool all_cached = m.cache != nullptr && m.g != nullptr && m.cache->slots() >= m.g->n_layers * m.g->n_expert;
-    static const char* const first_env = strata::env("NOSTROMA_PREFILL_FIRST");
+    static const char* const first_env = nostroma::env("NOSTROMA_PREFILL_FIRST");
     const int64_t first_chunk = first_env ? std::atoll(first_env) : (all_cached ? 256 : 0);
     auto chunk_len = [&](int64_t c0) {
         if (c0 == 0 && first_chunk > 0 && first_chunk < m.T && n > 2 * first_chunk) return first_chunk;
@@ -2579,8 +2579,8 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
         int32_t pv[2] = {at(c0), at(c0 + 1)};
         for (int64_t t = 0; t < T; ++t) {
             const int32_t tok = (int32_t) tokens[c0 + t];
-            strata::kernels::ngram_rows(&tok, pv, 1, ss.ple.consts,
-                                        m.ple_rows[buf].data() + t * strata::kernels::PLE_N_HEADS);
+            nostroma::kernels::ngram_rows(&tok, pv, 1, ss.ple.consts,
+                                        m.ple_rows[buf].data() + t * nostroma::kernels::PLE_N_HEADS);
             pv[0] = pv[1];
             pv[1] = tok;
         }
@@ -2601,7 +2601,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
     }
     for (int64_t c0 = 0; c0 < n; c0 += chunk_len(c0)) {
         if (should_stop && should_stop()) { err = "cancelled"; return false; }
-        if (strata::env("NOSTROMA_TRACE")) { std::fprintf(stderr, "strata trace: prompt chunk %lld of %lld\n", (long long) c0, (long long) n); std::fflush(stderr); }
+        if (nostroma::env("NOSTROMA_TRACE")) { std::fprintf(stderr, "nostroma trace: prompt chunk %lld of %lld\n", (long long) c0, (long long) n); std::fflush(stderr); }
         const int64_t T = chunk_len(c0), p0 = pos0 + c0;
         // DFlash2 prompt taps: the rows of this chunk at positions >= tap_first_ (the drafter looks back one window)
         const int64_t tap_t0 = tap_dev_ != nullptr ? std::min<int64_t>(T, std::max<int64_t>(0, tap_first_ - p0)) : T;
@@ -2613,9 +2613,9 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
         ++stats_.chunks;
         pt.mark(kPfStart, cs);
         const auto tsetup = Clock::now();
-        auto tlap = tsetup;   // STRATA_PREFILL_TIMING=1: where the host's chunk setup goes
+        auto tlap = tsetup;   // NOSTROMA_PREFILL_TIMING=1: where the host's chunk setup goes
         auto lap = [&](const char* what) {
-            if (pt.on) { std::fprintf(stderr, "strata prefill timing: setup %s %.1f ms\n", what, ms_since(tlap)); tlap = Clock::now(); }
+            if (pt.on) { std::fprintf(stderr, "nostroma prefill timing: setup %s %.1f ms\n", what, ms_since(tlap)); tlap = Clock::now(); }
         };
         if (pt.on) { m.cs->wait(); lap("work queued before the chunk"); }
         // ---- embeddings, broadcast to the four streams - or, in a later stage of a layer split, the rows the
@@ -2669,7 +2669,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                 const auto* scales = (const float*) (codes + wemb->codes_bytes);
                 const auto* offsets = wemb->has_offset ? (const float*) (codes + wemb->codes_bytes + wemb->scales_bytes)
                                                        : nullptr;
-                strata::kernels::embedding_gather_dev(codes, scales, offsets, m.tok_dev, (int) T, wemb->ne0,
+                nostroma::kernels::embedding_gather_dev(codes, scales, offsets, m.tok_dev, (int) T, wemb->ne0,
                                                       wemb->code_bits, wemb->code_bias, wemb->group_elems,
                                                       (uint64_t) (wemb->ne0 / (8 / wemb->code_bits)),
                                                       (uint64_t) (wemb->ne0 / wemb->group_elems), m.emb, m.cs);
@@ -2777,7 +2777,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
         for (int64_t t = 0; t < T; ++t) { prev[0] = prev[1]; prev[1] = (int32_t) tokens[c0 + t]; }
         lap("PLE rows");
         // ---- the QSA step records of every position in the chunk
-        for (int64_t t = 0; t < T; ++t) strata::kernels::qsa_step_fill(m.steps_host.data() + t * strata::kernels::kStepCount, p0 + t, s);
+        for (int64_t t = 0; t < T; ++t) nostroma::kernels::qsa_step_fill(m.steps_host.data() + t * nostroma::kernels::kStepCount, p0 + t, s);
         /*
         DPCT1124: cudaMemcpyAsync is migrated to asynchronous memcpy API.
         While the origin API might be synchronous, it depends on the type of
@@ -2785,7 +2785,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
         API to ensure synchronization behavior.
         */
         m.cs->memcpy(m.steps_dev, m.steps_host.data(),
-                     (size_t)T * strata::kernels::kStepCount * 4);
+                     (size_t)T * nostroma::kernels::kStepCount * 4);
 
         int64_t qsa_index = 0, gdn_index = 0;
         for (int64_t l = 0; l < LB; ++l) (core::is_qsa_layer(g, l) ? qsa_index : gdn_index) += 1;
@@ -2814,7 +2814,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                     err = "prefill: releasing KV staging pool";
                     return false;
                 }
-                strata::kernels::kv_stage_from_host(pools_of(m.stage, m.ident_table), state.host,
+                nostroma::kernels::kv_stage_from_host(pools_of(m.stage, m.ident_table), state.host,
                     core::qsa_kv_format(state), (p0 + s.page_size - 1) / s.page_size, s, m.kv_copy);
                 /*
                 DPCT1010: SYCL uses exceptions to report errors and does
@@ -2849,7 +2849,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
         // step 3: this chunk's stream - every non-resident expert of every layer, layer by layer in id order (entry
         // k lands in ring slot k % ring); a copy is issued once the entry `ring` before it is consumed (its slot's
         // `used` event recorded), so the copy stream never waits on an event that is not queued yet
-        const strata::kernels::cpu::ExpertLayout& lay0 = strata::kernels::cpu::expert_layout();
+        const nostroma::kernels::cpu::ExpertLayout& lay0 = nostroma::kernels::cpu::expert_layout();
         const bool stream_all = m.ring > STAGE && T >= stream_all_min() && m.src != nullptr;
         const bool ps_on = stream_all && m.pp && m.pp->ps_frac > 0.0;
         if (m.pp && !ps_on) m.pp->ps_flag.clear();
@@ -2871,7 +2871,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                 */
                 P.s_cp->memcpy(
                     P.pstage[sl], en.blob,
-                    (size_t)strata::kernels::cpu::expert_layout().blob_bytes(
+                    (size_t)nostroma::kernels::cpu::expert_layout().blob_bytes(
                         en.l));
                 dpct::sync_barrier(P.pcopied[sl], P.s_cp);
                 P.plive[sl] = 1;
@@ -2903,7 +2903,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
         std::vector<StreamEntry> seq;
         std::vector<size_t> seq_start;
         size_t issued = 0, consumed = 0;
-        static const bool plan_reads = [] { const char* v = strata::env("NOSTROMA_GGUF_PLAN_READ"); return v && v[0] == '1'; }();
+        static const bool plan_reads = [] { const char* v = nostroma::env("NOSTROMA_GGUF_PLAN_READ"); return v && v[0] == '1'; }();
         const core::GgufExpertSource* gsrc = plan_reads ? nullptr : dynamic_cast<const core::GgufExpertSource*>(m.src);
         if (stream_all) {
             seq_start.assign((size_t) g.n_layers + 1, 0);
@@ -3007,9 +3007,9 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
         // D-5: the stream is issued by its own host thread, so the thread launching the layers' kernels never waits
         // behind a host copy of an unpinned blob (that wait left the GPU idle: the 'wait copy' / 'dequant' time of the
         // i-quant prompts).  The same copies in the same order into the same slots, and a slot is refilled only once
-        // the compute stream has recorded that it is done with it: the same results.  STRATA_PREFILL_ISSUER=0: inline.
+        // the compute stream has recorded that it is done with it: the same results.  NOSTROMA_PREFILL_ISSUER=0: inline.
         static const bool issuer_on = [] {
-            const char* v = strata::env("NOSTROMA_PREFILL_ISSUER");
+            const char* v = nostroma::env("NOSTROMA_PREFILL_ISSUER");
             return v == nullptr || std::atoi(v) != 0;
         }();
         std::atomic<size_t> a_issued{0}, a_consumed{0};
@@ -3096,10 +3096,10 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
         }
         host_setup_ms += ms_since(tsetup);
         bool normed = false;   // F-2: the previous half's write already normed R for this half (grs, xn16)
-        // #579 #613 (opt-in diagnosis, STRATA_PF_STEP_SYNC=1): the compute and copy streams are waited for after each
+        // #579 #613 (opt-in diagnosis, NOSTROMA_PF_STEP_SYNC=1): the compute and copy streams are waited for after each
         // step named below, a step that took over 250 ms is logged, and a stall's report names the step it is in.
         // Slower (a sync per step); the bytes are the same.
-        static const bool step_sync = [] { const char* e = strata::env("NOSTROMA_PF_STEP_SYNC"); return e && e[0] == '1'; }();
+        static const bool step_sync = [] { const char* e = nostroma::env("NOSTROMA_PF_STEP_SYNC"); return e && e[0] == '1'; }();
         auto pf_step = [&](const char *what, int64_t layer) {
             try {
         if (!step_sync) return;
@@ -3110,7 +3110,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
             const double ms = ms_since(ts);
             if (ms > 250.0 || a != 0 || b != 0)
                 std::fprintf(stderr,
-                             "strata pf-step: chunk from token %lld, layer "
+                             "nostroma pf-step: chunk from token %lld, layer "
                              "%lld: %s took %.0f ms (%s / %s)\n",
                              /*
                              DPCT1009: SYCL reports errors using exceptions
@@ -3143,8 +3143,8 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                 // files), the rest with the per-token kernels' arithmetic (native_ple_postops_batch)
                 pt.mark(kPfPle, cs);
                 const auto tp = Clock::now();
-                const strata::kernels::PleWeights& pw = ss.ple.w;
-                constexpr int64_t HD = strata::kernels::NG_HC_DIM;
+                const nostroma::kernels::PleWeights& pw = ss.ple.w;
+                constexpr int64_t HD = nostroma::kernels::NG_HC_DIM;
                 const uint64_t per_token = (uint64_t) (3 * HD + N + 4) * 4 + (uint64_t) N * (bf16x2(m.f16_io) ? 4 : 2) + 4096;
                 const int64_t SB = std::min<int64_t>(T, (int64_t) (m.region_bytes / per_token));
                 for (int64_t s0 = 0; s0 < T; s0 += SB) {
@@ -3171,7 +3171,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                     m.gemm.bf16(e16, pw.value_bf16, val, nb, N, N);
                     if (e16_lo) m.gemm.bf16(e16_lo, pw.value_bf16, val, nb, N, N, 0, 1.0f);
                     try {
-                        strata::kernels::native_ple_postops_batch(key, m.R + s0 * D, val, ss.ple.hist, pw, qn, gated,
+                        nostroma::kernels::native_ple_postops_batch(key, m.R + s0 * D, val, ss.ple.hist, pw, qn, gated,
                                                                   gate, (int) nb, m.cs);
                     } catch (const std::exception& e) { err = std::string("prefill PLE: ") + e.what(); return false; }
                 }
@@ -3180,14 +3180,14 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                 pt.mark(kPfPle, cs);
                 const auto tp = Clock::now();
                 for (int64_t t = 0; t < T; ++t) {
-                    strata::kernels::PleOut po;
+                    nostroma::kernels::PleOut po;
                     po.normalized = m.ple_norm;
                     po.result = m.R + t * D;
                     try {
-                        strata::kernels::ple_block(m.ple_emb + t * N, m.R + t * D, ss.ple.hist, ss.ple.w, po,
+                        nostroma::kernels::ple_block(m.ple_emb + t * N, m.R + t * D, ss.ple.hist, ss.ple.w, po,
                                                    ss.ple.scratch, m.cs);
                     } catch (const std::exception& e) { err = std::string("prefill PLE: ") + e.what(); return false; }
-                    strata::kernels::ple_history_advance(ss.ple.hist, m.ple_norm, m.cs);
+                    nostroma::kernels::ple_history_advance(ss.ple.hist, m.ple_norm, m.cs);
                 }
                 stats_.ms_ple += ms_since(tp);
             }
@@ -3208,15 +3208,15 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                 normed = false;
                 bool hcd = false;
                 bool hdown = false;
-                if (ldx != D && !pf_hcdown()) {   // STRATA_HCD_EXACT: the exact-order down kernel when hipBLASLt would take 1176 / 1177
+                if (ldx != D && !pf_hcdown()) {   // NOSTROMA_HCD_EXACT: the exact-order down kernel when hipBLASLt would take 1176 / 1177
                     hdown = wd->kind == core::WeightKind::Bf16InF32 && wd->data && wd->ne0 == D && wd->ne1 == LR &&
                             m.gemm.bf16_hcd_exact(m.xn16, ldx, (const uint16_t*) wd->data, m.lo, T, LR, D);
                 } else if (ldx != D) {
                     if (wd->kind != core::WeightKind::Bf16InF32 || !wd->data || wd->ne0 != D || wd->ne1 != LR ||
                         wi->kind != core::WeightKind::Bf16InF32 || !wi->data || wi->ne0 != D || wi->ne1 != HC ||
-                        !strata_pf_hcdown_bf16(m.xn16, ldx, (const uint16_t*) wd->data, (const uint16_t*) wi->data, LR,
+                        !nostroma_pf_hcdown_bf16(m.xn16, ldx, (const uint16_t*) wd->data, (const uint16_t*) wi->data, LR,
                                                HC, m.lo, m.inj, T, D, m.cs)) {
-                        err = "prefill: STRATA_PF_HCDOWN could not run the hyper-connection projections";
+                        err = "prefill: NOSTROMA_PF_HCDOWN could not run the hyper-connection projections";
                         return false;
                     }
                     hcd = true;
@@ -3226,7 +3226,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                 bool upmixed = false;
                 if (hc_upmix() && T >= pf_switch_min_t() && !gr_unfused() && !m.lo16_lo && !m.mixed_bf_lo &&
                     wu->kind == core::WeightKind::Bf16InF32 && wu->data && wu->ne0 == LR && wu->ne1 == D) {
-                    static int checks = [] { const char* e = strata::env("NOSTROMA_HC_UPMIX_CHECK"); return e ? std::atoi(e) : 0; }();
+                    static int checks = [] { const char* e = nostroma::env("NOSTROMA_HC_UPMIX_CHECK"); return e ? std::atoi(e) : 0; }();
                     if (checks > 0) {   // the default pair first, kept for the comparison
                         --checks;
                         if (!bf16_proj(m.gemm, wu, m.lo16, m.gated, T, su, err)) return false;
@@ -3256,7 +3256,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                             const double dd = (double) got[i] - ref[i];
                             e2 += dd * dd; r2 += (double) ref[i] * ref[i]; emax = std::max(emax, std::fabs(dd));
                         }
-                        std::fprintf(stderr, "strata: STRATA_HC_UPMIX_CHECK layer %lld half %d T %lld: mixed rel RMS %.3e, "
+                        std::fprintf(stderr, "nostroma: NOSTROMA_HC_UPMIX_CHECK layer %lld half %d T %lld: mixed rel RMS %.3e, "
                                      "max |diff| %.3e (%s)\n", (long long) l, half, (long long) T,
                                      std::sqrt(e2 / std::max(r2, 1e-30)), emax, upmixed ? "upmix" : "upmix refused");
                     } else {
@@ -3339,7 +3339,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                     if (!bf16_proj(m.gemm, wik, m.mixed_bf, m.idx_raw, T, v.name("indexer.k_proj.weight"), err, 0, m.mixed_bf_lo)) return false;
                     if (!bf16_proj(m.gemm, wiq, m.mixed_bf, m.q_idx, T, v.name("indexer.q_proj.weight"), err, 0, m.mixed_bf_lo)) return false;
                     rms_rows(m.Kc, (const float*) wkn->data, T * kNKv, kHeadDim, kHeadDim, EPS, m.cs);
-                    rope(m.Kc, T, kNKv, kHeadDim, kKvW, p0, strata::kernels::rope_scaling(), m.cs);
+                    rope(m.Kc, T, kNKv, kHeadDim, kKvW, p0, nostroma::kernels::rope_scaling(), m.cs);
                     // KV streaming: this layer's cells [0, p0) come in from the host copy to the staging pool, and the
                     // chunk's cells go to the host copy, the staging pool, and the VRAM slots of resident blocks
                     const bool staged = st.kv_mode == 1;
@@ -3352,105 +3352,105 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                                 return false;
                             }
                             kv_pending = -1;
-                        } else strata::kernels::kv_stage_from_host(pools_of(m.stage, m.ident_table), st.host,
+                        } else nostroma::kernels::kv_stage_from_host(pools_of(m.stage, m.ident_table), st.host,
                                                             core::qsa_kv_format(st),
                                                             (p0 + s.page_size - 1) / s.page_size, s, m.cs);
                         pt.mark(kPfQsa, cs);
                         pf_step("reading the prompt (batched, step sync): the K/V staged from RAM at layer", l);
                     }
-                    // #579 #613 (HIP, opt-in A/B, STRATA_KV_HOST_DMA=1): the append writes the staging pool and the
+                    // #579 #613 (HIP, opt-in A/B, NOSTROMA_KV_HOST_DMA=1): the append writes the staging pool and the
                     // resident slots only, and one DMA copies the chunk's blocks from the staging pool to the host copy
                     // - no kernel writes host memory over PCIe.  The bytes every reader sees are the same (the staged
                     // first block is complete; past the chunk's last cell nothing is read until a later append writes
                     // it).  CUDA: never.
-#if defined(STRATA_USE_HIP)
-                    static const bool kv_host_dma = [] { const char* e = strata::env("NOSTROMA_KV_HOST_DMA"); return e && e[0] == '1'; }();
+#if defined(NOSTROMA_USE_HIP)
+                    static const bool kv_host_dma = [] { const char* e = nostroma::env("NOSTROMA_KV_HOST_DMA"); return e && e[0] == '1'; }();
 #else
                     constexpr bool kv_host_dma = false;
 #endif
                     const bool host_by_dma = staged && kv_host_dma;
-                    const strata::kernels::KvHostPools* host_w = host_by_dma ? nullptr : &st.host;
+                    const nostroma::kernels::KvHostPools* host_w = host_by_dma ? nullptr : &st.host;
                     if (st.kv_hybrid) {   // K8V4: K INT8 unrotated, V rotated Q4_0 (only V and the output rotate)
                         // streamed: each half writes its part of the host copy and of the staging pool
-                        strata::kernels::fwht256_inplace_cuda(m.Vc, T * kNKv, m.cs);
-                        const strata::kernels::KvHostPools hk = strata::kernels::kv_hybrid_k_half(st.host),
-                                                           hv = strata::kernels::kv_hybrid_v_half(st.host),
-                                                           sk = strata::kernels::kv_hybrid_k_half(m.stage),
-                                                           sv = strata::kernels::kv_hybrid_v_half(m.stage);
+                        nostroma::kernels::fwht256_inplace_cuda(m.Vc, T * kNKv, m.cs);
+                        const nostroma::kernels::KvHostPools hk = nostroma::kernels::kv_hybrid_k_half(st.host),
+                                                           hv = nostroma::kernels::kv_hybrid_v_half(st.host),
+                                                           sk = nostroma::kernels::kv_hybrid_k_half(m.stage),
+                                                           sv = nostroma::kernels::kv_hybrid_v_half(m.stage);
                         const bool mirror = st.host.present();
                         kv_append(m.Kc, m.Kc, T, p0, st.page_table, s.page_size, nullptr, nullptr,
                                   st.k_q, st.k_q, st.k_scale, st.k_scale, m.cs, mirror ? &hk : nullptr,
                                   staged ? &sk : nullptr);
-                        strata::kernels::kv_append_q4(st.v_q4, st.v_q4, st.page_table, p0, T, m.Vc, m.Vc, s, m.cs,
+                        nostroma::kernels::kv_append_q4(st.v_q4, st.v_q4, st.page_table, p0, T, m.Vc, m.Vc, s, m.cs,
                                                       mirror ? &hv : nullptr, staged ? &sv : nullptr);
                     } else {
                         if (st.kv_rot) {   // rotated K and V (kv_q4.hpp), the queries below too, the output back
-                            strata::kernels::fwht256_inplace_cuda(m.Kc, T * kNKv, m.cs);
-                            strata::kernels::fwht256_inplace_cuda(m.Vc, T * kNKv, m.cs);
+                            nostroma::kernels::fwht256_inplace_cuda(m.Kc, T * kNKv, m.cs);
+                            nostroma::kernels::fwht256_inplace_cuda(m.Vc, T * kNKv, m.cs);
                         }
                         if (st.kv_q4)
-                            strata::kernels::kv_append_q4(st.k_q4, st.v_q4, st.page_table, p0, T, m.Kc, m.Vc, s, m.cs,
+                            nostroma::kernels::kv_append_q4(st.k_q4, st.v_q4, st.page_table, p0, T, m.Kc, m.Vc, s, m.cs,
                                                           host_w, staged ? &m.stage : nullptr);
                         else
                             kv_append(m.Kc, m.Vc, T, p0, st.page_table, s.page_size, st.kv_int8 ? nullptr : st.k_pool,
                                       st.kv_int8 ? nullptr : st.v_pool, st.k_q, st.v_q, st.k_scale, st.v_scale, m.cs,
                                       host_w, staged ? &m.stage : nullptr);
                         if (host_by_dma)
-                            strata::kernels::kv_unstage_to_host(pools_of(m.stage, m.ident_table), st.host,
+                            nostroma::kernels::kv_unstage_to_host(pools_of(m.stage, m.ident_table), st.host,
                                                                 core::qsa_kv_format(st), p0 / s.page_size,
                                                                 (p0 + T + s.page_size - 1) / s.page_size, s, m.cs);
                     }
                     if (staged) pf_step("reading the prompt (batched, step sync): the K/V append at layer", l);
                     split_q(m.Qf, m.q, T, m.cs);
                     rms_rows(m.q, (const float*) wqn->data, T * kNHead, kHeadDim, kHeadDim, EPS, m.cs);
-                    rope(m.q, T, kNHead, kHeadDim, kQW, p0, strata::kernels::rope_scaling(), m.cs);
-                    if (st.kv_rot) strata::kernels::fwht256_inplace_cuda(m.q, T * kNHead, m.cs);
+                    rope(m.q, T, kNHead, kHeadDim, kQW, p0, nostroma::kernels::rope_scaling(), m.cs);
+                    if (st.kv_rot) nostroma::kernels::fwht256_inplace_cuda(m.q, T * kNHead, m.cs);
                     rms_rows(m.q_idx, (const float*) wiqn->data, T * kIdxQHeads, kIdxK, kIdxK, EPS, m.cs);
-                    rope(m.q_idx, T, kIdxQHeads, kIdxK, kIdxQW, p0, strata::kernels::rope_scaling(), m.cs);
+                    rope(m.q_idx, T, kIdxQHeads, kIdxK, kIdxQW, p0, nostroma::kernels::rope_scaling(), m.cs);
                     // the indexer appends, token by token; then scores + selection for many queries at once:
                     // a query reads completed blocks (final once completed) and `dead` for its own tail block
-                    const strata::kernels::QsaIndexerBuffers ib{st.idx_tail, st.idx_dead, st.idx_pooled, st.idx_block_pos};
+                    const nostroma::kernels::QsaIndexerBuffers ib{st.idx_tail, st.idx_dead, st.idx_pooled, st.idx_block_pos};
                     pt.mark(kPfQsaIdx, cs);
                     // C-2: the chunk's appends in three launches instead of one per token (the same end state:
-                    // the queries below read it only after the whole chunk is appended). STRATA_INDEXER_PER_TOKEN=1: the old
+                    // the queries below read it only after the whole chunk is appended). NOSTROMA_INDEXER_PER_TOKEN=1: the old
                     try {
-                        static const bool per_token = strata::env("NOSTROMA_INDEXER_PER_TOKEN") != nullptr;
+                        static const bool per_token = nostroma::env("NOSTROMA_INDEXER_PER_TOKEN") != nullptr;
                         if (!per_token) {
-                            strata::kernels::native_qsa_indexer_append_batch(m.idx_raw, T, p0, 0, (const float*) wikn->data,
+                            nostroma::kernels::native_qsa_indexer_append_batch(m.idx_raw, T, p0, 0, (const float*) wikn->data,
                                                                              EPS, ib, s, st.max_cells,
-                                                                             strata::kernels::rope_scaling(), m.cs);
+                                                                             nostroma::kernels::rope_scaling(), m.cs);
                         }
                         for (int64_t t = 0; per_token && t < T; ++t) {
-                            const int32_t* step_t = m.steps_dev + t * strata::kernels::kStepCount;
-                            strata::kernels::native_qsa_indexer_append(m.idx_raw + t * kIdxK, step_t + strata::kernels::kStepPos, 0,
+                            const int32_t* step_t = m.steps_dev + t * nostroma::kernels::kStepCount;
+                            nostroma::kernels::native_qsa_indexer_append(m.idx_raw + t * kIdxK, step_t + nostroma::kernels::kStepPos, 0,
                                                                        (const float*) wikn->data, EPS, ib, s, st.max_cells,
-                                                                       strata::kernels::rope_scaling(), m.cs);
+                                                                       nostroma::kernels::rope_scaling(), m.cs);
                         }
                     } catch (const std::exception& e) { err = std::string("prefill indexer: ") + e.what(); return false; }
                     pt.mark(kPfQsaSel, cs);
                     for (int64_t t0 = 0; t0 < T; t0 += m.sel_batch) {
                         const int64_t nb = std::min(m.sel_batch, T - t0);
-                        const int32_t* steps0 = m.steps_dev + t0 * strata::kernels::kStepCount;
+                        const int32_t* steps0 = m.steps_dev + t0 * nostroma::kernels::kStepCount;
                         // C-1: the grid reaches the batch's last query's n_bid (they rise with the position)
-                        const int64_t active = (int64_t) m.steps_host[(size_t) ((t0 + nb - 1) * strata::kernels::kStepCount +
-                                                                                strata::kernels::kStepNBid)] + 1;
-                        // the scores on tensor cores (3xTF32: FP32-level, not bitwise); STRATA_SELECT_OLD=1: the warp kernel
-                        static const bool old_sel = strata::env("NOSTROMA_SELECT_OLD") != nullptr;
+                        const int64_t active = (int64_t) m.steps_host[(size_t) ((t0 + nb - 1) * nostroma::kernels::kStepCount +
+                                                                                nostroma::kernels::kStepNBid)] + 1;
+                        // the scores on tensor cores (3xTF32: FP32-level, not bitwise); NOSTROMA_SELECT_OLD=1: the warp kernel
+                        static const bool old_sel = nostroma::env("NOSTROMA_SELECT_OLD") != nullptr;
                         // SYCL port: the scores as oneMKL FP32 GEMM tiles (pooled keys x the batch's indexer queries)
                         // and a relu-sum (qsa_block_scores_reduce), FP32-level like the CUDA build's 3xTF32 path. The
                         // tile lives in the attention scratch, which is free until this layer's attention (same
                         // queue). It pays from ~8K cells on a B70 (launch cost below: -2% at 2K, even at 8K, select
                         // 3x faster at 40K), so by default only for a batch reaching 2,048 blocks.
-                        // STRATA_SELECT_GEMM=0: the warp kernel always, =1: the GEMM always (on every card).
+                        // NOSTROMA_SELECT_GEMM=0: the warp kernel always, =1: the GEMM always (on every card).
                         // Unset: the default from 2,048 blocks is for a Battlemage card only. It changes the answers (first-token
                         // KL ~1e-9 on an Arc A750 up to 128K, 1e-5 to 1e-3 on 2x B65), and on the A750 it gained +0.2% to
                         // +0.6% (16K to 128K: its prompts are bound by expert streaming over PCIe), under the 5% bar.
-                        static const int sel_gemm_mode = [] { const char* v = strata::env("NOSTROMA_SELECT_GEMM"); return v ? std::atoi(v) : -1; }();
-                        static const int64_t sel_gemm_min = [] { const char* v = strata::env("NOSTROMA_SELECT_GEMM_MIN"); return v ? (int64_t) std::atoll(v) : (int64_t) 2048; }();   // blocks (4 cells each)
+                        static const int sel_gemm_mode = [] { const char* v = nostroma::env("NOSTROMA_SELECT_GEMM"); return v ? std::atoi(v) : -1; }();
+                        static const int64_t sel_gemm_min = [] { const char* v = nostroma::env("NOSTROMA_SELECT_GEMM_MIN"); return v ? (int64_t) std::atoll(v) : (int64_t) 2048; }();   // blocks (4 cells each)
                         const bool sel_gemm = sel_gemm_mode > 0 || (sel_gemm_mode < 0 && active >= sel_gemm_min &&
-                                                                    strata::intel_gpu_gen(m.cs->get_device()) == strata::IntelGpuGen::Battlemage);
+                                                                    nostroma::intel_gpu_gen(m.cs->get_device()) == nostroma::IntelGpuGen::Battlemage);
                         const int64_t sel_tile = std::min<int64_t>(8192, (int64_t) ((uint64_t) m.attn_batch *
-                            strata::kernels::qsa_decode_attn_scratch_floats(m.cap, s) / (uint64_t) (nb * 4)));
+                            nostroma::kernels::qsa_decode_attn_scratch_floats(m.cap, s) / (uint64_t) (nb * 4)));
                         bool sel_done = false;
                         if (sel_gemm && !old_sel && m.attn_scratch != nullptr && s.idx_dim == 128 && s.idx_n_head == 4 &&
                             sel_tile >= 256) {
@@ -3462,7 +3462,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                                                                           1.0f, st.idx_pooled + b0 * 128, 128,
                                                                           m.q_idx + t0 * kIdxQW, 128, 0.0f, m.attn_scratch,
                                                                           sel_tile);
-                                    strata::kernels::qsa_block_scores_reduce(m.attn_scratch, sel_tile, b0, nbk, st.idx_dead,
+                                    nostroma::kernels::qsa_block_scores_reduce(m.attn_scratch, sel_tile, b0, nbk, st.idx_dead,
                                                                              m.q_idx + t0 * kIdxQW, steps0, nb, m.max_blocks,
                                                                              m.sel_scores, m.cs);
                                 }
@@ -3473,17 +3473,17 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                                 said = true;
                             }
                         }
-                        if (!sel_done && (old_sel || !strata::kernels::qsa_block_scores_tc(st.idx_pooled, st.idx_dead, m.q_idx + t0 * kIdxQW,
+                        if (!sel_done && (old_sel || !nostroma::kernels::qsa_block_scores_tc(st.idx_pooled, st.idx_dead, m.q_idx + t0 * kIdxQW,
                                                                              steps0, nb, m.max_blocks, s, m.sel_scores,
                                                                              m.cs, active)))
-                            strata::kernels::qsa_block_scores(st.idx_pooled, st.idx_dead, m.q_idx + t0 * kIdxQW, steps0, nb,
+                            nostroma::kernels::qsa_block_scores(st.idx_pooled, st.idx_dead, m.q_idx + t0 * kIdxQW, steps0, nb,
                                                               m.max_blocks, s, m.sel_scores, m.cs, active);
-                        strata::kernels::qsa_block_topk(m.sel_scores, steps0, nb, m.max_blocks, m.cap, s,
+                        nostroma::kernels::qsa_block_topk(m.sel_scores, steps0, nb, m.max_blocks, m.cap, s,
                                                         m.sel_ids + t0 * m.cap, m.cs, active);
                     }
-                    // STRATA_SEL_OVERLAP (debug, D-1's question): how much do neighbouring queries' selections share?
+                    // NOSTROMA_SEL_OVERLAP (debug, D-1's question): how much do neighbouring queries' selections share?
                     // Per tile of 16 queries: the union of their selected cells against the sum of their widths.
-                    if (static const bool ovl = strata::env("NOSTROMA_SEL_OVERLAP") != nullptr; ovl && qsa_index == 0) {
+                    if (static const bool ovl = nostroma::env("NOSTROMA_SEL_OVERLAP") != nullptr; ovl && qsa_index == 0) {
                         std::vector<int32_t> ids((size_t) (T * m.cap));
                         /*
                         DPCT1124: cudaMemcpyAsync is migrated to
@@ -3498,21 +3498,21 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                         for (int64_t t0 = 0; t0 + 16 <= T; t0 += 16) {
                             std::vector<int32_t> u;
                             for (int64_t t = t0; t < t0 + 16; ++t) {
-                                const int64_t w = m.steps_host[(size_t) (t * strata::kernels::kStepCount + strata::kernels::kStepWidth)];
+                                const int64_t w = m.steps_host[(size_t) (t * nostroma::kernels::kStepCount + nostroma::kernels::kStepWidth)];
                                 sum_w += (double) w;
                                 u.insert(u.end(), ids.begin() + t * m.cap, ids.begin() + t * m.cap + w);
                             }
                             std::sort(u.begin(), u.end());
                             sum_u += (double) (std::unique(u.begin(), u.end()) - u.begin());
                         }
-                        std::fprintf(stderr, "strata prefill: selection overlap at %lld: 16-query tiles read %.1f%% of the "
+                        std::fprintf(stderr, "nostroma prefill: selection overlap at %lld: 16-query tiles read %.1f%% of the "
                                              "cells one query at a time does\n", (long long) p0, sum_w > 0 ? 100.0 * sum_u / sum_w : 0.0);
                     }
-                    // STRATA_IDX_FP16_CHECK: would FP16 pooled indexer keys select the same cells? (the KV-streaming
+                    // NOSTROMA_IDX_FP16_CHECK: would FP16 pooled indexer keys select the same cells? (the KV-streaming
                     // design's last question). Every query is selected again from the pooled keys and `dead` rounded
                     // to fp16 (exactly what an fp16 store reads back); the agreement with the fp32 selection is
                     // printed cumulatively after each chunk's last QSA layer. Debug: syncs per layer.
-                    if (static const bool f16chk = strata::env("NOSTROMA_IDX_FP16_CHECK") != nullptr; f16chk) {
+                    if (static const bool f16chk = nostroma::env("NOSTROMA_IDX_FP16_CHECK") != nullptr; f16chk) {
                         static float *pooled16 = nullptr, *dead16 = nullptr;
                         static int32_t* ids16 = nullptr;
                         static double shared = 0, cells = 0;
@@ -3531,17 +3531,17 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                                  ids16 = (int32_t *)sycl::malloc_device(
                                      (size_t)(m.T * m.cap) * 4,
                                      dpct::get_in_order_queue())) != 0)) {
-                            err = "STRATA_IDX_FP16_CHECK: no room for its buffers";
+                            err = "NOSTROMA_IDX_FP16_CHECK: no room for its buffers";
                             return false;
                         }
                         round_f16(st.idx_pooled, pooled16, rows * s.idx_dim, m.cs);
                         round_f16(st.idx_dead, dead16, s.idx_dim, m.cs);
                         for (int64_t t0 = 0; t0 < T; t0 += m.sel_batch) {
                             const int64_t nb = std::min(m.sel_batch, T - t0);
-                            const int32_t* steps0 = m.steps_dev + t0 * strata::kernels::kStepCount;
-                            strata::kernels::qsa_block_scores(pooled16, dead16, m.q_idx + t0 * kIdxQW, steps0, nb,
+                            const int32_t* steps0 = m.steps_dev + t0 * nostroma::kernels::kStepCount;
+                            nostroma::kernels::qsa_block_scores(pooled16, dead16, m.q_idx + t0 * kIdxQW, steps0, nb,
                                                               m.max_blocks, s, m.sel_scores, m.cs);
-                            strata::kernels::qsa_block_topk(m.sel_scores, steps0, nb, m.max_blocks, m.cap, s,
+                            nostroma::kernels::qsa_block_topk(m.sel_scores, steps0, nb, m.max_blocks, m.cap, s,
                                                             ids16 + t0 * m.cap, m.cs);
                         }
                         std::vector<int32_t> a((size_t) (T * m.cap)), b((size_t) (T * m.cap));
@@ -3563,7 +3563,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                         m.cs->memcpy(b.data(), ids16, b.size() * 4);
                         m.cs->wait();
                         for (int64_t t = 0; t < T; ++t) {
-                            const int64_t w = m.steps_host[(size_t) (t * strata::kernels::kStepCount + strata::kernels::kStepWidth)];
+                            const int64_t w = m.steps_host[(size_t) (t * nostroma::kernels::kStepCount + nostroma::kernels::kStepWidth)];
                             const int32_t *x = a.data() + t * m.cap, *y = b.data() + t * m.cap;
                             int64_t i = 0, j = 0, c = 0;
                             while (i < w && j < w) {
@@ -3574,16 +3574,16 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                             if (p0 + t + 1 > m.cap) { ++sel_queries; shared += (double) c; cells += (double) w; }
                         }
                         if (qsa_index + 1 == g.n_qsa_layers())
-                            std::fprintf(stderr, "strata prefill: FP16 indexer keys: %lld of %lld selections identical; "
+                            std::fprintf(stderr, "nostroma prefill: FP16 indexer keys: %lld of %lld selections identical; "
                                                  "where the selection is sparse, %.4f%% of cells shared (%lld queries)\n",
                                          same, queries, cells > 0 ? 100.0 * shared / cells : 100.0, sel_queries);
                     }
-                    // STRATA_QSA_DUMP=<file>: append every QSA layer's selected cells for the prompt's last
-                    // STRATA_QSA_DUMP_LAST (4096) positions - records of int32 {qsa layer, pos0, T, cap} + T*cap cells,
+                    // NOSTROMA_QSA_DUMP=<file>: append every QSA layer's selected cells for the prompt's last
+                    // NOSTROMA_QSA_DUMP_LAST (4096) positions - records of int32 {qsa layer, pos0, T, cap} + T*cap cells,
                     // for tools/qsa_locality.py (how local the sparse attention's reads are: the KV-streaming question)
-                    if (static const char* dump = strata::env("NOSTROMA_QSA_DUMP"); dump != nullptr) {
-                        static const long long last = strata::env("NOSTROMA_QSA_DUMP_LAST")
-                                                          ? std::atoll(strata::env("NOSTROMA_QSA_DUMP_LAST")) : 4096;
+                    if (static const char* dump = nostroma::env("NOSTROMA_QSA_DUMP"); dump != nullptr) {
+                        static const long long last = nostroma::env("NOSTROMA_QSA_DUMP_LAST")
+                                                          ? std::atoll(nostroma::env("NOSTROMA_QSA_DUMP_LAST")) : 4096;
                         if (p0 + T > pos0 + n - last) {
                             std::vector<int32_t> h((size_t) (T * m.cap));
                             /*
@@ -3604,19 +3604,19 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                             }
                         }
                     }
-                    const strata::kernels::QsaAttnPools pools = staged ? pools_of(m.stage, m.ident_table)
+                    const nostroma::kernels::QsaAttnPools pools = staged ? pools_of(m.stage, m.ident_table)
                                                                        : core::qsa_attn_pools(st);
                     pt.mark(kPfQsaAttn, cs);
                     // perf-review D-1: the whole chunk on tensor cores, one block per (query, KV head), FP32-level
-                    // accuracy but not bitwise (qsa_prompt_attn.hpp). Q4_0 KV, or STRATA_PROMPT_ATTN_OLD=1: the
+                    // accuracy but not bitwise (qsa_prompt_attn.hpp). Q4_0 KV, or NOSTROMA_PROMPT_ATTN_OLD=1: the
                     // decode kernel, 32 queries at a time (K8V4 runs the tensor kernel's mode 3: INT8 K,
                     // V dequantized from its q4_0 blocks to fp16 at gather)
-                    static const bool old_attn = strata::env("NOSTROMA_PROMPT_ATTN_OLD") != nullptr;
-                    // STRATA_DUMP_SEL=<file>: the selected cells of every prompt position of the first QSA layer of the
+                    static const bool old_attn = nostroma::env("NOSTROMA_PROMPT_ATTN_OLD") != nullptr;
+                    // NOSTROMA_DUMP_SEL=<file>: the selected cells of every prompt position of the first QSA layer of the
                     // last chunk (int32 T, cap, then T*cap ids and T widths) - the input to the grouped-gather study
-                    if (static const char* dsel = strata::env("NOSTROMA_DUMP_SEL"); dsel && c0 + T >= n && qsa_index == 0) {
+                    if (static const char* dsel = nostroma::env("NOSTROMA_DUMP_SEL"); dsel && c0 + T >= n && qsa_index == 0) {
                         m.cs->wait();
-                        std::vector<int32_t> ids_h((size_t) T * m.cap), st_h((size_t) T * strata::kernels::kStepCount);
+                        std::vector<int32_t> ids_h((size_t) T * m.cap), st_h((size_t) T * nostroma::kernels::kStepCount);
                         m.cs->memcpy(ids_h.data(), m.sel_ids, ids_h.size() * 4).wait();
                         m.cs->memcpy(st_h.data(), m.steps_dev, st_h.size() * 4).wait();
                         if (FILE* f = std::fopen(dsel, "wb")) {
@@ -3624,38 +3624,38 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                             std::fwrite(hdr, 4, 2, f);
                             std::fwrite(ids_h.data(), 4, ids_h.size(), f);
                             for (int64_t t = 0; t < T; ++t) {
-                                const int32_t w = st_h[(size_t) t * strata::kernels::kStepCount + strata::kernels::kStepWidth];
+                                const int32_t w = st_h[(size_t) t * nostroma::kernels::kStepCount + nostroma::kernels::kStepWidth];
                                 std::fwrite(&w, 4, 1, f);
                             }
                             std::fclose(f);
-                            std::fprintf(stderr, "strata: selection of %lld positions dumped to %s\n", (long long) T, dsel);
+                            std::fprintf(stderr, "nostroma: selection of %lld positions dumped to %s\n", (long long) T, dsel);
                         }
                     }
-                    if (old_attn || !strata::kernels::qsa_prompt_attn_batch(m.q, pools, m.sel_ids, m.steps_dev, m.cap, s,
+                    if (old_attn || !nostroma::kernels::qsa_prompt_attn_batch(m.q, pools, m.sel_ids, m.steps_dev, m.cap, s,
                                                                             m.attn, T, m.cs))
                         for (int64_t t0 = 0; t0 < T; t0 += m.attn_batch) {
                             const int64_t nb = std::min(m.attn_batch, T - t0);
-#ifdef STRATA_SYCL_TLA_ATTN
-                            static const bool tla_attn = [] { const char* v=strata::env("NOSTROMA_SYCL_TLA_ATTN"); return v&&v[0]=='1'; }();
+#ifdef NOSTROMA_SYCL_TLA_ATTN
+                            static const bool tla_attn = [] { const char* v=nostroma::env("NOSTROMA_SYCL_TLA_ATTN"); return v&&v[0]=='1'; }();
                             if (tla_attn && nb == 32 && m.cap == 2051 &&
-                                strata::kernels::qsa_prompt_attn_tla_batch(m.q + t0 * kQW, pools, m.sel_ids + t0 * m.cap,
-                                    m.steps_dev + t0 * strata::kernels::kStepCount, m.cap, s, m.attn_scratch,
+                                nostroma::kernels::qsa_prompt_attn_tla_batch(m.q + t0 * kQW, pools, m.sel_ids + t0 * m.cap,
+                                    m.steps_dev + t0 * nostroma::kernels::kStepCount, m.cap, s, m.attn_scratch,
                                     m.attn + t0 * ZV, nb, m.cs)) continue;
 #endif
                             // SYCL port: the scores one work-item per cell (qsa_prompt_attn_percell, 128-cell chunks;
-                            // FP32, not bitwise with the warp kernel). STRATA_ATTN_PERCELL=0: the warp kernel.
-                            static const bool percell = [] { const char* v = strata::env("NOSTROMA_ATTN_PERCELL"); return !v || v[0] != '0'; }();
+                            // FP32, not bitwise with the warp kernel). NOSTROMA_ATTN_PERCELL=0: the warp kernel.
+                            static const bool percell = [] { const char* v = nostroma::env("NOSTROMA_ATTN_PERCELL"); return !v || v[0] != '0'; }();
                             if (percell) {
-                                strata::kernels::qsa_prompt_attn_percell(m.q + t0 * ZV, pools, m.sel_ids + t0 * m.cap,
-                                                                         m.steps_dev + t0 * strata::kernels::kStepCount, m.cap,
+                                nostroma::kernels::qsa_prompt_attn_percell(m.q + t0 * ZV, pools, m.sel_ids + t0 * m.cap,
+                                                                         m.steps_dev + t0 * nostroma::kernels::kStepCount, m.cap,
                                                                          s, m.attn_scratch, m.attn + t0 * ZV, nb, m.cs);
                                 continue;
                             }
-                            strata::kernels::qsa_decode_attn_batch(m.q + t0 * kQW, pools, m.sel_ids + t0 * m.cap,
-                                                                   m.steps_dev + t0 * strata::kernels::kStepCount, m.cap,
+                            nostroma::kernels::qsa_decode_attn_batch(m.q + t0 * kQW, pools, m.sel_ids + t0 * m.cap,
+                                                                   m.steps_dev + t0 * nostroma::kernels::kStepCount, m.cap,
                                                                    s, m.attn_scratch, m.attn + t0 * kQW, nb, m.cs);
                         }
-                    if (st.kv_rot || st.kv_hybrid) strata::kernels::fwht256_inplace_cuda(m.attn, T * kNHead, m.cs);
+                    if (st.kv_rot || st.kv_hybrid) nostroma::kernels::fwht256_inplace_cuda(m.attn, T * kNHead, m.cs);
                     pt.mark(kPfQsa, cs);
                     const int64_t ld_a = pf_pad() && T >= std::max<int64_t>(pf_switch_min_t(), 64) ? ZV + ZV_PAD : 0;
                     gate_attn(m.attn, m.Qf, m.attn_h, T, m.cs, ld_a);
@@ -3681,14 +3681,14 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                     if (wgi->kind != core::WeightKind::Bf16InF32) { err = "prefill: shared gate is not BF16"; return false; }
                     m.gemm.bf16(m.mixed_bf, (const uint16_t*) wgi->data, m.sg, T, 1, N);
                     if (m.mixed_bf_lo) m.gemm.bf16(m.mixed_bf_lo, (const uint16_t*) wgi->data, m.sg, T, 1, N, 0, 1.0f);
-                    // #136: STRATA_PF_FUSED=1 - the Q2_0 pack's experts on the fused int8 kernels (moe_fused.hpp),
+                    // #136: NOSTROMA_PF_FUSED=1 - the Q2_0 pack's experts on the fused int8 kernels (moe_fused.hpp),
                     // grouped on the GPU: no host sync.  Only where every expert's place is known before the routing -
                     // the streamed walk, in which every non-resident expert of the layer comes through the ring in id
                     // order - and where the MMQ buffers exist: they hold the fused path's own (the per-token int8
                     // activations in Xq, the int8 H in H, the grouping tables in GU).  Chunks below stream_all_min()
                     // keep MMQ; without the variable nothing here runs.  A native pack's layer takes the native kernels
                     // (moe_fused_iq.hpp) where they cover its two formats, else MMQ (or the FP16 path: IQ1_M).
-                    const strata::kernels::cpu::ExpertLayout& lay = strata::kernels::cpu::expert_layout();
+                    const nostroma::kernels::cpu::ExpertLayout& lay = nostroma::kernels::cpu::expert_layout();
                     const bool use_mmq = mmq_plan().any && mmq_plan().layer[(size_t) l];
                     // APR (prism.hadamard): folded gate/up take H (s * x) on the gathered fp16 rows, folded down H (s * h) on
                     // the fp16 SwiGLU output, both rotated in fp16 storage with fp32 arithmetic (as the CUDA FP16 path does).
@@ -3699,7 +3699,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                     const float* had_sx = had_gu ? m.had_sx[(size_t) l] : nullptr;
                     const float* had_sh = had_d ? m.had_sh[(size_t) l] : nullptr;
                     auto had_h = [&](int64_t row0, int64_t nrows) {
-                        if (had_d) strata::kernels::hadamard_rows_f16(m.Hh + row0 * kFF, nrows, kFF, had_block, had_sh, m.cs);
+                        if (had_d) nostroma::kernels::hadamard_rows_f16(m.Hh + row0 * kFF, nrows, kFF, had_block, had_sh, m.cs);
                     };
                     const int mmq_gt = lay.native ? lay.fmt[(size_t) l].gu_type : 42;
                     const int mmq_dt = lay.native ? lay.fmt[(size_t) l].d_type : 42;
@@ -3715,8 +3715,8 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                     // that never returns (the first ck() to see it is `prefill mmq: iota`, one prompt later).  fused_layout()
                     // and fused_ring() keep the shrink and this decision in step; this is the backstop for anything that
                     // drifts: a clear error, never a hang.
-                    // STRATA_DBG_FORCE_SLOW_LAYER=1 (a test of the backstop): layer 0 counts as one the fused path does not take
-                    static const bool force_slow = [] { const char* e = strata::env("NOSTROMA_DBG_FORCE_SLOW_LAYER"); return e && e[0] == '1'; }();
+                    // NOSTROMA_DBG_FORCE_SLOW_LAYER=1 (a test of the backstop): layer 0 counts as one the fused path does not take
+                    static const bool force_slow = [] { const char* e = nostroma::env("NOSTROMA_DBG_FORCE_SLOW_LAYER"); return e && e[0] == '1'; }();
                     if ((!fused_l || (force_slow && l == 0)) && m.fused_bufs && T >= stream_all_min()) {
                         err = "prefill: the fused layout's MoE buffers are too small for layer " + std::to_string(l) +
                               "'s expert path at a chunk of " + std::to_string(T) + " tokens";
@@ -3727,7 +3727,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                     if (fused_l) {
                         if (static bool said = false; !said) {
                             said = true;
-                            std::fprintf(stderr, "strata: prompt experts on the fused int8 kernels (STRATA_PF_FUSED=1, "
+                            std::fprintf(stderr, "nostroma: prompt experts on the fused int8 kernels (NOSTROMA_PF_FUSED=1, "
                                                  "#136)\n");
                         }
                         pt.mark(kPfGather, cs);
@@ -3877,7 +3877,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                                 (!on_peer.empty() && on_peer[(size_t) e] ? order_peer : order).push_back(e);
                         for (int32_t e = 0; e < m.g->n_expert && !on_peer.empty(); ++e)   // the peer-streamed ones last:
                             if (on_peer[(size_t) e] == 2) order_peer.push_back(e);        // their copies get the most time
-                        // Aurora (STRATA_MMQ_RESIDENT_SORT_NE=1, opt-in): a layer whose experts are ALL resident and
+                        // Aurora (NOSTROMA_MMQ_RESIDENT_SORT_NE=1, opt-in): a layer whose experts are ALL resident and
                         // run through MMQ groups takes them in row-count order, so each 16-expert group's max_rows
                         // (its padded tile rows) is close to its experts' own; slot/src/off are rebuilt coherently
                         // before the upload, the routed ids, weights and the within-expert row order stay as they are.
@@ -3946,7 +3946,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                         } else {
                             gather_rows16(m.mixed_h, m.src_dev, m.Xs, T * K, N, m.cs);
                             // APR: Xs is this layer's private gathered copy (rotated in fp16 storage, fp32 arithmetic)
-                            if (had_gu) strata::kernels::hadamard_rows_f16(m.Xs, T * K, N, had_block, had_sx, m.cs);
+                            if (had_gu) nostroma::kernels::hadamard_rows_f16(m.Xs, T * K, N, had_block, had_sx, m.cs);
                         }
                         // multi-GPU: the peer's share, enqueued before the primary's own experts so both cards work at once
                         peer_now = use_mmq && !order_peer.empty();
@@ -4085,7 +4085,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                                             mmq::gather_native(bd, bd + f.up_off, mmq_gub / 2, bd + f.down_off, mmq_db,
                                                                P.grp_gu + q * mmq_gub, P.grp_d + q * mmq_db, ps);
                                         else
-                                            mmq::gather_strata_q2(bd, P.grp_gu + q * mmq_gub, P.grp_d + q * mmq_db, ps);
+                                            mmq::gather_nostroma_q2(bd, P.grp_gu + q * mmq_gub, P.grp_d + q * mmq_db, ps);
                                         if (psl >= 0) {   // the slot is free once gathered
                                             dpct::sync_barrier(
                                                 P.pused[(size_t)psl], ps);
@@ -4189,7 +4189,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                                         mmq::gather_native(bd, bd + f.up_off, mmq_gub / 2, bd + f.down_off, mmq_db,
                                                            P.grp_gu + q * mmq_gub, P.grp_d + q * mmq_db, ps);
                                     else
-                                        mmq::gather_strata_q2(bd, P.grp_gu + q * mmq_gub, P.grp_d + q * mmq_db, ps);
+                                        mmq::gather_nostroma_q2(bd, P.grp_gu + q * mmq_gub, P.grp_d + q * mmq_db, ps);
                                     if (q + 1 < MMQ_GROUP && j + 1 < n) continue;
                                     const size_t j0 = j - q, g2 = j0 / MMQ_GROUP;
                                     const int ngx = (int) (q + 1);
@@ -4307,21 +4307,21 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                             m.stager->start(std::move(js));
                         }
                         StagerDone stager_done{stream_all ? nullptr : m.stager.get()};
-                        static const bool f16_pair_env = [] { const char* v = strata::env("NOSTROMA_SYCL_F16_EXPERT_PAIR"); return v && v[0] == '1'; }();
-                        const bool f16_pairs = f16_pair_env && lay.native && !use_mmq && strata::prefill::xmx::mode() == 0;
-                        strata::prefill::f16_expert_pair::Pair f16_pending{};
+                        static const bool f16_pair_env = [] { const char* v = nostroma::env("NOSTROMA_SYCL_F16_EXPERT_PAIR"); return v && v[0] == '1'; }();
+                        const bool f16_pairs = f16_pair_env && lay.native && !use_mmq && nostroma::prefill::xmx::mode() == 0;
+                        nostroma::prefill::f16_expert_pair::Pair f16_pending{};
                         int f16_n = 0;
                         int f16_slots[2] = {-1, -1};
                         auto flush_f16 = [&]() {
                             if (f16_n == 0) return;
                             if (f16_n == 2) {
                                 pt.mark(kPfGemmGU, cs);
-                                strata::prefill::f16_expert_pair::gu(*m.cs, f16_pending);
+                                nostroma::prefill::f16_expert_pair::gu(*m.cs, f16_pending);
                                 pt.mark(kPfGemmD, cs);
-                                strata::prefill::f16_expert_pair::down(*m.cs, f16_pending);
+                                nostroma::prefill::f16_expert_pair::down(*m.cs, f16_pending);
                             } else {
                                 const auto& p = f16_pending.v[0];
-                                strata::kernels::iq_dequant_f16_plain_launch(42, p.wdown, 2560 * 640, m.dq_d[0], m.cs);
+                                nostroma::kernels::iq_dequant_f16_plain_launch(42, p.wdown, 2560 * 640, m.dq_d[0], m.cs);
                                 pt.mark(kPfGemmGU, cs);
                                 m.gemm.f16(p.x, p.wgu, p.gu, p.T, 1280, 2560);
                                 swiglu_interleaved(p.gu, p.h, p.T, m.cs);
@@ -4403,9 +4403,9 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                         // (226 ms of a 32K prompt on an NVFP4 pack).  The same bytes into the same group slots.  A ring
                         // entry the routing skipped inside an open group first gathers what the group holds so far
                         // (`flush`), so no more than a group's entries are ever held back from the issuer.
-                        // STRATA_PREFILL_GROUP_GATHER=0: one gather, one wait and one record per expert.
+                        // NOSTROMA_PREFILL_GROUP_GATHER=0: one gather, one wait and one record per expert.
                         static const bool group_env = [] {
-                            const char* v = strata::env("NOSTROMA_PREFILL_GROUP_GATHER");
+                            const char* v = nostroma::env("NOSTROMA_PREFILL_GROUP_GATHER");
                             return v == nullptr || std::atoi(v) != 0;
                         }();
                         const bool group_gather = group_env && stream_all && use_mmq && lay.native &&
@@ -4446,7 +4446,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                           std::exit(1);
                         }
                         };
-                        // A770 port, STRATA_PF_XMX=2 (streamed walk, native pack, FP16 path): the experts' quantized
+                        // A770 port, NOSTROMA_PF_XMX=2 (streamed walk, native pack, FP16 path): the experts' quantized
                         // blobs are held until a group of kXmxGroupMax, then each product runs over the group in one
                         // launch that decodes the weights itself.  Their ring slots are released by ONE event after
                         // the group's down product, and nothing is given back to the issuer while any are held.
@@ -4458,7 +4458,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                             if ((gt == 144 || gt == 145) && (dt == 144 || dt == 146)) return true;   // Gyro's trellis experts (rotated above)
                             return (gt == 18 || gt == 21 || gt == 22 || gt == 23) && (dt == 20 || dt == 42);
                         };
-                        const bool xmx2_only = strata::prefill::xmx::mode() == 2 && !use_mmq && xmx2_fmt();
+                        const bool xmx2_only = nostroma::prefill::xmx::mode() == 2 && !use_mmq && xmx2_fmt();
                         // 151-b70: the fused int8 DPAS products (IQ3_S gate/up, IQ4_NL down, the 640 x 2560 expert), the same
                         // held group of staged experts as above
                         const int i8m = i8_mode(m.cs);
@@ -4466,30 +4466,30 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                                           (lay.fmt[(size_t) l].gu_type == 21 || lay.fmt[(size_t) l].gu_type == 18 || lay.fmt[(size_t) l].gu_type == 22) &&
                                           (lay.fmt[(size_t) l].d_type == 20 || lay.fmt[(size_t) l].d_type == 42) &&
                                           lay.fmt[(size_t) l].n_ff == 640 && lay.fmt[(size_t) l].n_embd == 2560 &&
-                                          strata::prefill::i8::available(m.cs);
+                                          nostroma::prefill::i8::available(m.cs);
                         const bool xmx2 = xmx2_only || i8on;
                         if (i8_env() != nullptr && i8m != 0 && lay.native) {
                             static std::set<std::tuple<int, int, int, int, int>> said_fmt;
                             const auto& ff = lay.fmt[(size_t) l];
                             if (said_fmt.insert({ff.gu_type, ff.d_type, (int) ff.n_ff, (int) ff.n_embd, (int) i8on}).second)
-                                std::fprintf(stderr, "strata: layer %lld experts gate/up type %d, down type %d, n_ff %d, n_embd %d -> int8 path %s\n",
+                                std::fprintf(stderr, "nostroma: layer %lld experts gate/up type %d, down type %d, n_ff %d, n_embd %d -> int8 path %s\n",
                                              (long long) l, ff.gu_type, ff.d_type, (int) ff.n_ff, (int) ff.n_embd, i8on ? "yes" : "no");
                         }
-                        if (strata::prefill::xmx::mode() == 2 && !xmx2) {
+                        if (nostroma::prefill::xmx::mode() == 2 && !xmx2) {
                             static bool said = false;
                             if (!said) {
                                 said = true;
-                                std::fprintf(stderr, "strata: STRATA_PF_XMX=2 not taken at layer %lld (stream_all %d, mmq %d, "
+                                std::fprintf(stderr, "nostroma: NOSTROMA_PF_XMX=2 not taken at layer %lld (stream_all %d, mmq %d, "
                                                      "native %d, formats %d/%d)\n", (long long) l, (int) stream_all,
                                              (int) use_mmq, (int) lay.native, lay.native ? lay.fmt[(size_t) l].gu_type : -1,
                                              lay.native ? lay.fmt[(size_t) l].d_type : -1);
                             }
                         }
-                        const uint8_t* xg_g[strata::kernels::kXmxGroupMax];
-                        const uint8_t* xg_u[strata::kernels::kXmxGroupMax];
-                        const uint8_t* xg_d[strata::kernels::kXmxGroupMax];
-                        int32_t xg_c[strata::kernels::kXmxGroupMax];
-                        int xg_slots[strata::kernels::kXmxGroupMax];
+                        const uint8_t* xg_g[nostroma::kernels::kXmxGroupMax];
+                        const uint8_t* xg_u[nostroma::kernels::kXmxGroupMax];
+                        const uint8_t* xg_d[nostroma::kernels::kXmxGroupMax];
+                        int32_t xg_c[nostroma::kernels::kXmxGroupMax];
+                        int xg_slots[nostroma::kernels::kXmxGroupMax];
                         int xg_n = 0, xg_ns = 0;
                         int64_t xg_r0 = 0;
                         auto xflush = [&]() {
@@ -4498,7 +4498,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                             int64_t nr = 0;
                             for (int i = 0; i < xg_n; ++i) nr += xg_c[i];
                             if (i8on) {
-                                // STRATA_PREFILL_MMQ=1: always; =auto: while the group's mean rows per expert are under the crossover
+                                // NOSTROMA_PREFILL_MMQ=1: always; =auto: while the group's mean rows per expert are under the crossover
                                 // measured on this GPU (i8_calibrate); a group above it takes the FP16 chain below
                                 bool done8 = false;
                                 try {
@@ -4512,16 +4512,16 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                                     (use_i8 ? groups_i8 : groups_fp) += 1;
                                     if (static bool said_n = false; !said_n && groups_i8 + groups_fp >= 500) {
                                         said_n = true;
-                                        std::fprintf(stderr, "strata: int8 experts (auto): %ld groups took the int8 chain, %ld the FP16 chain\n", groups_i8, groups_fp);
+                                        std::fprintf(stderr, "nostroma: int8 experts (auto): %ld groups took the int8 chain, %ld the FP16 chain\n", groups_i8, groups_fp);
                                     }
                                 }
                                 if (use_i8) {
                                     if (static bool said = false; !said) {
                                         said = true;
-                                        std::fprintf(stderr, "strata: prompt experts on the fused int8 DPAS products (STRATA_PREFILL_MMQ=%s)\n",
+                                        std::fprintf(stderr, "nostroma: prompt experts on the fused int8 DPAS products (NOSTROMA_PREFILL_MMQ=%s)\n",
                                                      i8m == 2 ? "auto" : "1");
                                     }
-                                    namespace i8 = strata::prefill::i8;
+                                    namespace i8 = nostroma::prefill::i8;
                                     i8::Layout lo8;
                                     i8::make_layout(lo8, xg_c, xg_n);
                                     i8::Workspace ws8;
@@ -4537,21 +4537,21 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                                     if (!done8) {
                                         if (static bool said_f = false; !said_f) {
                                             said_f = true;
-                                            std::fprintf(stderr, "strata: the int8 expert products could not run (layer %lld, no workspace or a format they do not handle): the FP16 chain is used\n", (long long) l);
+                                            std::fprintf(stderr, "nostroma: the int8 expert products could not run (layer %lld, no workspace or a format they do not handle): the FP16 chain is used\n", (long long) l);
                                         }
                                     }
                                 }
                                 } catch (const std::exception& ex) {   // the kernels are not in this binary for this device, or a launch failed: the FP16 chain, for good
                                     done8 = false;
                                     if (!g_i8_failed.exchange(true))
-                                        std::fprintf(stderr, "strata: the int8 expert kernels failed to launch (%s): the FP16 expert chain is used from here\n", ex.what());
+                                        std::fprintf(stderr, "nostroma: the int8 expert kernels failed to launch (%s): the FP16 expert chain is used from here\n", ex.what());
                                 }
                                 if (!done8) {   // the FP16 chain: dequantize, two oneMKL GEMMs, SwiGLU, per expert
                                     int64_t o = xg_r0;
                                     for (int i = 0; i < xg_n; ++i) {
                                         const int qd = i % DQ;
                                         pt.mark(kPfDequant, cs);
-                                        strata::kernels::iq_dequant_expert_f16(f.gu_type, f.d_type, xg_g[i], xg_u[i], xg_d[i], f.n_ff, f.n_embd,
+                                        nostroma::kernels::iq_dequant_expert_f16(f.gu_type, f.d_type, xg_g[i], xg_u[i], xg_d[i], f.n_ff, f.n_embd,
                                                                                m.dq_gu[qd], m.dq_d[qd], m.cs);
                                         pt.mark(kPfGemmGU, cs);
                                         m.gemm.f16(m.Xs + o * N, m.dq_gu[qd], m.GU + o * kFF2, xg_c[i], kFF2, N);
@@ -4573,31 +4573,31 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                             }
                             if (static bool said = false; !said) {
                                 said = true;
-                                std::fprintf(stderr, "strata: prompt experts on the fused grouped XMX (STRATA_PF_XMX=2)\n");
+                                std::fprintf(stderr, "nostroma: prompt experts on the fused grouped XMX (NOSTROMA_PF_XMX=2)\n");
                             }
                             // measured (xmx_group_parity, 16 experts): the fused launch wins below ~200 rows per
-                            // expert, dequantize + oneMKL above (gate/up 0.67-0.76x at 320); STRATA_PF_XMX_ROWS moves it
+                            // expert, dequantize + oneMKL above (gate/up 0.67-0.76x at 320); NOSTROMA_PF_XMX_ROWS moves it
                             static const int xg_max = [] {
-                                const char* v = strata::env("NOSTROMA_PF_XMX_ROWS");
+                                const char* v = nostroma::env("NOSTROMA_PF_XMX_ROWS");
                                 return v ? std::atoi(v) : 200;
                             }();
                             if (nr / xg_n < xg_max) {
                                 pt.mark(kPfGemmGU, cs);
-                                strata::kernels::iq_xmx_grouped(f.gu_type, xg_g, xg_u, xg_c, xg_n, m.Xs + xg_r0 * N,
+                                nostroma::kernels::iq_xmx_grouped(f.gu_type, xg_g, xg_u, xg_c, xg_n, m.Xs + xg_r0 * N,
                                                                 m.GU + xg_r0 * kFF2, kFF2, (int) N, m.cs);
                                 swiglu_interleaved(m.GU + xg_r0 * kFF2, m.Hh + xg_r0 * kFF, nr, m.cs);
                                 had_h(xg_r0, nr);
                                 pt.mark(kPfGemmD, cs);
-                                strata::kernels::iq_xmx_grouped(f.d_type, xg_d, nullptr, xg_c, xg_n, m.Hh + xg_r0 * kFF,
+                                nostroma::kernels::iq_xmx_grouped(f.d_type, xg_d, nullptr, xg_c, xg_n, m.Hh + xg_r0 * kFF,
                                                                 m.Dm + xg_r0 * N, (int) N, kFF, m.cs);
                             } else {
                                 int64_t o = xg_r0;
                                 for (int i = 0; i < xg_n; ++i) {
                                     const int q = i % DQ;
                                     pt.mark(kPfDequant, cs);
-                                    strata::kernels::iq_dequant_gu_f16(f.gu_type, xg_g[i], xg_u[i], f.n_ff, f.n_embd,
+                                    nostroma::kernels::iq_dequant_gu_f16(f.gu_type, xg_g[i], xg_u[i], f.n_ff, f.n_embd,
                                                                        m.dq_gu[q], m.cs);
-                                    strata::kernels::iq_dequant_f16(f.d_type, xg_d[i], f.n_embd * f.n_ff, m.dq_d[q], m.cs);
+                                    nostroma::kernels::iq_dequant_f16(f.d_type, xg_d[i], f.n_embd * f.n_ff, m.dq_d[q], m.cs);
                                     pt.mark(kPfGemmGU, cs);
                                     m.gemm.f16(m.Xs + o * N, m.dq_gu[q], m.GU + o * kFF2, xg_c[i], kFF2, N);
                                     swiglu_interleaved(m.GU + o * kFF2, m.Hh + o * kFF, xg_c[i], m.cs);
@@ -4637,7 +4637,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                                     mmq::gather_native(blob_dev, blob_dev + f.up_off, mmq_gub / 2, blob_dev + f.down_off,
                                                        mmq_db, m.grp_gu + q * mmq_gub, m.grp_d + q * mmq_db, m.cs);
                                 } else {
-                                    mmq::gather_strata_q2(blob_dev, m.grp_gu + q * mmq_gub, m.grp_d + q * mmq_db, m.cs);
+                                    mmq::gather_nostroma_q2(blob_dev, m.grp_gu + q * mmq_gub, m.grp_d + q * mmq_db, m.cs);
                                 }
                                 if (slot >= 0 && !group_gather) {
                                     dpct::sync_barrier(m.used[slot], m.cs);
@@ -4681,7 +4681,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                                 xg_c[xg_n] = m.cnt[(size_t) e];
                                 ++xg_n;
                                 if (slot >= 0) xg_slots[xg_ns++] = slot;
-                                if (xg_n == strata::kernels::kXmxGroupMax || j + 1 == order.size()) xflush();
+                                if (xg_n == nostroma::kernels::kXmxGroupMax || j + 1 == order.size()) xflush();
                                 return true;
                             }
                             if (f16_pairs) {
@@ -4690,7 +4690,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                                 if ((f.gu_type == 16 || f.gu_type == 22) && f.d_type == 42 &&
                                     f.n_ff == 640 && f.n_embd == 2560 && ne > 0 && ne <= 16) {
                                     const int q = f16_n;
-                                    strata::kernels::iq_dequant_gu_f16(f.gu_type, blob_dev, blob_dev + f.up_off,
+                                    nostroma::kernels::iq_dequant_gu_f16(f.gu_type, blob_dev, blob_dev + f.up_off,
                                                                        f.n_ff, f.n_embd, m.dq_gu[q], m.cs);
                                     f16_pending.v[q] = {m.Xs + o0 * N, m.dq_gu[q], blob_dev + f.down_off,
                                                         m.GU + o0 * 1280, m.Hh + o0 * 640, m.Dm + o0 * N, (int)ne};
@@ -4700,22 +4700,22 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                                 }
                                 flush_f16();
                             }
-                            const bool xmx_on = strata::prefill::xmx::mode() == 1;
+                            const bool xmx_on = nostroma::prefill::xmx::mode() == 1;
                             const int q = (int) (j % (size_t) dq_slots());
                             if (lay.native) {
                                 // plan v0.3 P6: a native pack's layer, dequantized by llama.cpp's own formulas
                                 const auto& f = lay.fmt[(size_t) l];
-                                // 0.1.43: both matrices in one launch (the same values; STRATA_PF_DQ_FUSED=0: two launches)
-                                static const bool dq_one = [] { const char* v = strata::env("NOSTROMA_PF_DQ_FUSED"); return !(v && v[0] == '0'); }();
+                                // 0.1.43: both matrices in one launch (the same values; NOSTROMA_PF_DQ_FUSED=0: two launches)
+                                static const bool dq_one = [] { const char* v = nostroma::env("NOSTROMA_PF_DQ_FUSED"); return !(v && v[0] == '0'); }();
                                 if (dq_one && !f16_pairs) {
-                                    strata::kernels::iq_dequant_expert_f16(f.gu_type, f.d_type, blob_dev, blob_dev + f.up_off,
+                                    nostroma::kernels::iq_dequant_expert_f16(f.gu_type, f.d_type, blob_dev, blob_dev + f.up_off,
                                                                            blob_dev + f.down_off, f.n_ff, f.n_embd, m.dq_gu[q],
                                                                            m.dq_d[q], m.cs);
                                 } else {
-                                    strata::kernels::iq_dequant_gu_f16(f.gu_type, blob_dev, blob_dev + f.up_off, f.n_ff, f.n_embd,
+                                    nostroma::kernels::iq_dequant_gu_f16(f.gu_type, blob_dev, blob_dev + f.up_off, f.n_ff, f.n_embd,
                                                                        m.dq_gu[q], m.cs);
-                                    if (f16_pairs && f.d_type == 42) strata::kernels::iq_dequant_f16_plain_launch(f.d_type, blob_dev + f.down_off, f.n_embd * f.n_ff, m.dq_d[q], m.cs);
-                                    else strata::kernels::iq_dequant_f16(f.d_type, blob_dev + f.down_off, f.n_embd * f.n_ff, m.dq_d[q], m.cs);
+                                    if (f16_pairs && f.d_type == 42) nostroma::kernels::iq_dequant_f16_plain_launch(f.d_type, blob_dev + f.down_off, f.n_embd * f.n_ff, m.dq_d[q], m.cs);
+                                    else nostroma::kernels::iq_dequant_f16(f.d_type, blob_dev + f.down_off, f.n_embd * f.n_ff, m.dq_d[q], m.cs);
                                 }
                             } else {
                                 blob_dequant_f16(blob_dev, m.dq_gu[q], m.dq_d[q], m.cs);
@@ -4727,16 +4727,16 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                             if (xmx_on) {
                                 if (static bool said = false; !said) {
                                     said = true;
-                                    std::fprintf(stderr, "strata: prompt experts on the grouped XMX GEMM (STRATA_PF_XMX=1)\n");
+                                    std::fprintf(stderr, "nostroma: prompt experts on the grouped XMX GEMM (NOSTROMA_PF_XMX=1)\n");
                                 }
                                 // A770 port: the group's experts sit in dq slots 0..q, their rows back to back from
                                 // the first one's (the order is by id and so are the offsets)
                                 if (q + 1 < dq_slots() && j + 1 < order.size()) return true;
                                 const size_t j0 = j - (size_t) q;
                                 const int ng = q + 1;
-                                int32_t gc[strata::prefill::xmx::kMaxGroup];
-                                const uint16_t* wg[strata::prefill::xmx::kMaxGroup];
-                                const uint16_t* wd[strata::prefill::xmx::kMaxGroup];
+                                int32_t gc[nostroma::prefill::xmx::kMaxGroup];
+                                const uint16_t* wg[nostroma::prefill::xmx::kMaxGroup];
+                                const uint16_t* wd[nostroma::prefill::xmx::kMaxGroup];
                                 int64_t nr = 0;
                                 for (int i = 0; i < ng; ++i) {
                                     gc[i] = m.cnt[(size_t) order[j0 + (size_t) i]];
@@ -4745,8 +4745,8 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                                 }
                                 const int64_t r0 = m.off[(size_t) order[j0]];
                                 pt.mark(kPfGemmGU, cs);
-                                if (nr / ng < strata::prefill::xmx::gu_max_mean()) {
-                                    strata::prefill::xmx::grouped_f16(m.Xs + r0 * N, wg, gc, ng, m.GU + r0 * kFF2, kFF2,
+                                if (nr / ng < nostroma::prefill::xmx::gu_max_mean()) {
+                                    nostroma::prefill::xmx::grouped_f16(m.Xs + r0 * N, wg, gc, ng, m.GU + r0 * kFF2, kFF2,
                                                                       (int) N, m.cs);
                                 } else {
                                     int64_t o = r0;
@@ -4758,7 +4758,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                                 swiglu_interleaved(m.GU + r0 * kFF2, m.Hh + r0 * kFF, nr, m.cs);
                                 had_h(r0, nr);
                                 pt.mark(kPfGemmD, cs);
-                                strata::prefill::xmx::grouped_f16(m.Hh + r0 * kFF, wd, gc, ng, m.Dm + r0 * N, (int) N, kFF,
+                                nostroma::prefill::xmx::grouped_f16(m.Hh + r0 * kFF, wd, gc, ng, m.Dm + r0 * N, (int) N, kFF,
                                                                   m.cs);
                                 return true;
                             }
@@ -4861,8 +4861,8 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                             copy_f32_wide(m.Dm + (size_t) m.pp->back_at * N, m.pp->host_rows, m.pp->back_rows * N, m.cs);
                     }
                     moe_combine(m.Dm, m.slot_dev, m.w, m.shared, m.sg, m.bo, T, m.cs);
-                    // debug: STRATA_DBG_NAN=1 reports the first layer of a chunk whose MoE produced non-finite values
-                    if (static const bool dbg = strata::env("NOSTROMA_DBG_NAN") != nullptr; dbg) {
+                    // debug: NOSTROMA_DBG_NAN=1 reports the first layer of a chunk whose MoE produced non-finite values
+                    if (static const bool dbg = nostroma::env("NOSTROMA_DBG_NAN") != nullptr; dbg) {
                         m.cs->wait();
                         auto bad = [&](const float *d, int64_t n) {
                             try {
@@ -4905,12 +4905,12 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                         const int64_t bdq = (!use_mmq && m.dq_gu[0]) ? bad16(m.dq_gu[0], (int64_t) kFF2 * N, mxq) : -1;
                         static int64_t reported = -1;
                         if ((bgu || bdm || bbo || bh > 0) && reported != stats_.chunks)
-                            std::fprintf(stderr, "strata dbg: layer %lld fp16 inputs: activations %lld non-finite (max %.3g), "
+                            std::fprintf(stderr, "nostroma dbg: layer %lld fp16 inputs: activations %lld non-finite (max %.3g), "
                                          "dequantized gate/up %lld non-finite (max %.3g)\n", (long long) l, (long long) bxs, mxs,
                                          (long long) bdq, mxq);
                         if ((bgu || bdm || bbo || bh > 0) && reported != stats_.chunks) {
                             reported = stats_.chunks;
-                            std::fprintf(stderr, "strata dbg: layer %lld (mmq %d, types %d/%d, %zu experts): non-finite GU %lld "
+                            std::fprintf(stderr, "nostroma dbg: layer %lld (mmq %d, types %d/%d, %zu experts): non-finite GU %lld "
                                          "H %lld Dm %lld bo %lld of T %lld\n", (long long) l, (int) use_mmq, mmq_gt, mmq_dt,
                                          n_order, (long long) bgu, (long long) bh, (long long) bdm, (long long) bbo,
                                          (long long) T);
@@ -4921,12 +4921,12 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                 // touches R in between (not the stage's last half, not before the PLE block of layer 1, not under a
                 // control vector)
                 const int64_t nl = half == 0 ? l : l + 1;
-                const bool steered = half == 1 && strata::kernels::cvec().covers(l);
+                const bool steered = half == 1 && nostroma::kernels::cvec().covers(l);
                 const float *cv_dir = nullptr, *cv_s = nullptr;
                 const int* cv_on = nullptr;
                 const bool cv_fused = steered && cvec_fuse() && !gr_unfused() && nl < LE && !(nl == 1 && ple_on) &&
-                                      strata::kernels::cvec().n_embd == N && strata::kernels::cvec().hc == HC &&
-                                      strata::kernels::cvec_tables(&cv_dir, &cv_s, &cv_on);
+                                      nostroma::kernels::cvec().n_embd == N && nostroma::kernels::cvec().hc == HC &&
+                                      nostroma::kernels::cvec_tables(&cv_dir, &cv_s, &cv_on);
                 const bool fuse = !gr_unfused() && nl < LE && !(half == 1 && nl == 1 && ple_on) && (!steered || cv_fused);
                 const core::WeightRef* wnn = nullptr;
                 if (fuse) {
@@ -4935,9 +4935,9 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                     if (!wnn) return false;
                 }
                 if (wnn && cv_fused) {
-                    // STRATA_CVEC_FUSE_CHECK=N: on the first N fused writes, also run the three-kernel path on a copy
+                    // NOSTROMA_CVEC_FUSE_CHECK=N: on the first N fused writes, also run the three-kernel path on a copy
                     // of R and report whether R, the row scales and the BF16 image are bit-identical
-                    static int checks = [] { const char* e = strata::env("NOSTROMA_CVEC_FUSE_CHECK"); return e ? std::atoi(e) : 0; }();
+                    static int checks = [] { const char* e = nostroma::env("NOSTROMA_CVEC_FUSE_CHECK"); return e ? std::atoi(e) : 0; }();
                     if (checks > 0) {
                         --checks;
                         float *Rc = nullptr, *rc = nullptr;
@@ -4957,10 +4957,10 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                         */
                         m.cs->memcpy(Rc, m.R, (size_t)T * D * 4);
                         gr_write(Rc, m.bo, m.inj, HC, T, m.cs);
-                        strata::kernels::cvec_apply(Rc, l, T, D, nullptr, 0, nullptr, 0, false, m.cs);
+                        nostroma::kernels::cvec_apply(Rc, l, T, D, nullptr, 0, nullptr, 0, false, m.cs);
                         gr_norm_rs(Rc, (const float*) wnn->data, EPS, rc, xc, T, m.cs, nullptr, D);
                         gr_write_cvec_norm_rs(m.R, m.bo, m.inj, HC, cv_dir + l * N, cv_s + l, cv_on,
-                                              strata::kernels::cvec().mode, (const float*) wnn->data, EPS, m.grs,
+                                              nostroma::kernels::cvec().mode, (const float*) wnn->data, EPS, m.grs,
                                               m.xn16, T, m.cs, m.xn16_lo, ldx);
                         std::vector<float> a((size_t) T * D), b((size_t) T * D), ra((size_t) T * HC), rb((size_t) T * HC);
                         std::vector<uint16_t> xa((size_t) T * D), xb((size_t) T * D);
@@ -5016,14 +5016,14 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                         sycl::free(Rc, dpct::get_in_order_queue());
                             sycl::free(rc, dpct::get_in_order_queue());
                             sycl::free(xc, dpct::get_in_order_queue());
-                        std::fprintf(stderr, "strata: STRATA_CVEC_FUSE_CHECK layer %lld T %lld: R %s, rs %s, xn16 %s\n",
+                        std::fprintf(stderr, "nostroma: NOSTROMA_CVEC_FUSE_CHECK layer %lld T %lld: R %s, rs %s, xn16 %s\n",
                                      (long long) l, (long long) T,
                                      std::memcmp(a.data(), b.data(), a.size() * 4) ? "DIFFERS" : "identical",
                                      std::memcmp(ra.data(), rb.data(), ra.size() * 4) ? "DIFFERS" : "identical",
                                      std::memcmp(xa.data(), xb.data(), xa.size() * 2) ? "DIFFERS" : "identical");
                     } else
                     gr_write_cvec_norm_rs(m.R, m.bo, m.inj, HC, cv_dir + l * N, cv_s + l, cv_on,
-                                          strata::kernels::cvec().mode, (const float*) wnn->data, EPS, m.grs, m.xn16,
+                                          nostroma::kernels::cvec().mode, (const float*) wnn->data, EPS, m.grs, m.xn16,
                                           T, m.cs, m.xn16_lo, ldx);
                     normed = true;
                 } else if (wnn) {
@@ -5034,9 +5034,9 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                     gr_write(m.R, m.bo, m.inj, HC, T, m.cs);
                 }
                 if (steered && !cv_fused)   // --control-vector-scaled
-                    strata::kernels::cvec_apply(m.R, l, T, D, nullptr, 0, nullptr, 0, false, m.cs);
+                    nostroma::kernels::cvec_apply(m.R, l, T, D, nullptr, 0, nullptr, 0, false, m.cs);
                 if (half == 1 && tap_rows > 0 && tap_slot[(size_t) l] >= 0)   // DFlash2: this layer's completed output, mean of the streams
-                    strata::kernels::df2_tap_rows(m.R + (size_t) tap_t0 * D, tap_dev_ + (size_t) tap_slot[(size_t) l] * N, (int64_t) tap_layers_.size() * N, N,
+                    nostroma::kernels::df2_tap_rows(m.R + (size_t) tap_t0 * D, tap_dev_ + (size_t) tap_slot[(size_t) l] * N, (int64_t) tap_layers_.size() * N, N,
                                                   (int) HC, (int) tap_rows, m.cs);
             }
         }
@@ -5090,7 +5090,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
             hand_buf_ ^= 1;
             continue;   // the last stage reports the chunk (on_chunk)
         }
-        if (const char* dump = strata::env("NOSTROMA_PREFILL_DUMP_R")) {   // debug: the final residuals, every 64th
+        if (const char* dump = nostroma::env("NOSTROMA_PREFILL_DUMP_R")) {   // debug: the final residuals, every 64th
             m.cs->wait(); // position (A/B quality of this path)
             if (std::FILE* f = std::fopen(dump, c0 == 0 ? "wb" : "ab")) {
                 std::vector<float> row((size_t) D);
@@ -5105,7 +5105,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                 std::fclose(f);
             }
         }
-        if (const char* dump = strata::env("NOSTROMA_PREFILL_DUMP_R_ALL")) {
+        if (const char* dump = nostroma::env("NOSTROMA_PREFILL_DUMP_R_ALL")) {
             // S25 (draft-layer distillation data, opt-in): every position's final multi-stream residual as BF16
             // (round-to-nearest-even), rows in position order, appended across chunks and requests: [n][hc*n_embd]
             m.cs->wait();
@@ -5162,7 +5162,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
     // stage can return while later GPUs are still processing the previous chunk.
     ss.ple_prev[0] = prev[0];
     ss.ple_prev[1] = prev[1];
-    if (strata::env("NOSTROMA_DBG_NAN") != nullptr) {   // debug: the state the prompt leaves for the token path
+    if (nostroma::env("NOSTROMA_DBG_NAN") != nullptr) {   // debug: the state the prompt leaves for the token path
         m.cs->wait();
         auto bad = [&](const float *d, int64_t n) {
             try {
@@ -5182,9 +5182,9 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
         }
         };
         const int64_t last = (n - 1) % m.T;
-        std::fprintf(stderr, "strata dbg: prompt end: last residual row");
+        std::fprintf(stderr, "nostroma dbg: prompt end: last residual row");
         bad(m.R + last * D, D);
-        if (ss.ple.ready()) { std::fprintf(stderr, "; PLE history"); bad(ss.ple.hist, (int64_t) strata::kernels::NG_HIST * strata::kernels::NG_HC_DIM); }
+        if (ss.ple.ready()) { std::fprintf(stderr, "; PLE history"); bad(ss.ple.hist, (int64_t) nostroma::kernels::NG_HIST * nostroma::kernels::NG_HC_DIM); }
         std::fprintf(stderr, "; GDN state 0");
         bad(ss.gdn_state, 64 * 1024);
         std::fprintf(stderr, "\n");
@@ -5240,11 +5240,11 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                   dpct::get_error_string_dummy(cst);
             return false;
         }
-        std::fprintf(stderr, "strata KV prefetch: %lld layer prefixes, single existing staging pool\n",
+        std::fprintf(stderr, "nostroma KV prefetch: %lld layer prefixes, single existing staging pool\n",
                      (long long) kv_prefetches);
     }
     stats_.ms_total += ms_since(t_start);
-    strata::kprof::window_end("prompt");   // STRATA_KPROF=1: the per-kernel table of this prompt
+    nostroma::kprof::window_end("prompt");   // NOSTROMA_KPROF=1: the per-kernel table of this prompt
     if (pt.on) {
         pt.fold();
         double total = 0.0;
@@ -5256,9 +5256,9 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
             std::snprintf(b, sizeof b, " %s %.0f (%.1f%%)", kPfNames[i], pt.ms[i], total > 0 ? 100.0 * pt.ms[i] / total : 0.0);
             line += b;
         }
-        std::fprintf(stderr, "strata prefill timing: %lld tokens, GPU timeline %.0f ms, wall %.0f ms, host staging %.0f ms:%s\n",
+        std::fprintf(stderr, "nostroma prefill timing: %lld tokens, GPU timeline %.0f ms, wall %.0f ms, host staging %.0f ms:%s\n",
                      (long long) n, total, ms_since(t_start), stats_.ms_experts_host, line.c_str());
-        std::fprintf(stderr, "strata prefill timing: host: chunk setup (PLE rows, the expert stream plan) %.0f ms, "
+        std::fprintf(stderr, "nostroma prefill timing: host: chunk setup (PLE rows, the expert stream plan) %.0f ms, "
                              "waiting for each chunk %.0f ms, after each chunk (the draft layer, progress) %.0f ms, "
                              "PLE %.0f ms\n", host_setup_ms, host_sync_ms, host_chunk_ms, stats_.ms_ple);
         if (pe.on) {
@@ -5278,16 +5278,16 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
                 std::snprintf(b, sizeof b, " %s %.0f", kPeNames[i], pe.ms[i]);
                 pl += b;
             }
-            std::fprintf(stderr, "strata prefill timing (peer GPU, ms):%s; MoE layers %lld, rows/layer %.0f of %lld cap, experts/layer %.0f, "
+            std::fprintf(stderr, "nostroma prefill timing (peer GPU, ms):%s; MoE layers %lld, rows/layer %.0f of %lld cap, experts/layer %.0f, "
                                  "over the cap %lld\n", pl.c_str(), (long long) m.pp->layers,
                          m.pp->layers ? (double) m.pp->rows / m.pp->layers : 0.0, (long long) m.pp->cap_rows,
                          m.pp->layers ? (double) m.pp->experts / m.pp->layers : 0.0, (long long) m.pp->over_cap);
             if (m.pp->ps_frac > 0.0)
-                std::fprintf(stderr, "strata prefill timing: peer-streamed experts %lld (%.0f per MoE layer)\n",
+                std::fprintf(stderr, "nostroma prefill timing: peer-streamed experts %lld (%.0f per MoE layer)\n",
                              (long long) m.pp->ps_experts, m.pp->layers ? (double) m.pp->ps_experts / m.pp->layers : 0.0);
         }
     }
-    if (strata::env("NOSTROMA_STATE_HASH_GDN") != nullptr) {   // debug: the GDN states as the prompt path leaves them
+    if (nostroma::env("NOSTROMA_STATE_HASH_GDN") != nullptr) {   // debug: the GDN states as the prompt path leaves them
         m.cs->wait();
         std::vector<uint8_t> b((size_t) gdn_floats * 4);
         std::string line;
@@ -5302,7 +5302,7 @@ bool Prefill::run_impl(const int64_t *tokens, int64_t n, int64_t pos0,
             std::snprintf(h, sizeof(h), "%04llx ", (unsigned long long) (x & 0xffff));
             line += h;
         }
-        std::fprintf(stderr, "strata prefill: GDN_HASH %s\n", line.c_str());
+        std::fprintf(stderr, "nostroma prefill: GDN_HASH %s\n", line.c_str());
     }
     return true;
 }
@@ -5334,7 +5334,7 @@ bool Prefill::drain_pipeline(std::string& err) {
 }
 
 bool Prefill::run(const int64_t* tokens, int64_t n, int64_t pos0, std::string& err) {
-    static strata::kernels::two_pass::RequestStatus tp_status(strata::env("NOSTROMA_SELECT_TWO_PASS"));
+    static nostroma::kernels::two_pass::RequestStatus tp_status(nostroma::env("NOSTROMA_SELECT_TWO_PASS"));
     (void) tp_status.on("SYCL");   // the two-pass scorer is CUDA-only: say once that a set switch is not used
     const bool body_ok = run_impl(tokens, n, pos0, err);
 
@@ -5349,4 +5349,4 @@ bool Prefill::run(const int64_t* tokens, int64_t n, int64_t pos0, std::string& e
     return true;
 }
 
-}  // namespace strata::prefill
+}  // namespace nostroma::prefill

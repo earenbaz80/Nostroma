@@ -1,4 +1,4 @@
-"""`bench.sh` (tools/strata_bench.py) has its own GPU probe, so the ROCm 7+ fix in nostroma_cli/bench_facts.py did not
+"""`bench.sh` (tools/nostroma_bench.py) has its own GPU probe, so the ROCm 7+ fix in nostroma_cli/bench_facts.py did not
 reach it: with no `rocm-smi` on the box it wrote the server's vendor stub as the card ("AMD Radeon",
 `...-community-unknown-...`) and `GPU driver: not read`. The strings below are the real answers of `amd-smi static
 --asic --json`, `static --driver --json` and `list --json` on one AI PRO R9700 (gfx1201) plus a Ryzen iGPU, with ROCm
@@ -13,7 +13,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from tools import strata_bench as sb
+from tools import nostroma_bench as sb
 
 ASIC = {"gpu_data": [{"gpu": 0, "asic": {"market_name": "AMD Radeon AI PRO R9700", "target_graphics_version": "gfx1201"}},
                      {"gpu": 1, "asic": {"market_name": "AMD Radeon Graphics", "target_graphics_version": "gfx1036"}}]}

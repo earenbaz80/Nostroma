@@ -11,16 +11,16 @@
 #define VIT_F16_HD
 #endif
 
-namespace strata_vit {
+namespace nostroma_vit {
 
-// how a BF16 matrix reaches the GPU's products (STRATA_VIT_BF16_AS_F16)
+// how a BF16 matrix reaches the GPU's products (NOSTROMA_VIT_BF16_AS_F16)
 enum Bf16Mode {
     BF16_STORED = 0,     // BF16 weights, BF16 inputs
     BF16_ROUNDED = 1,    // weights as F16, inputs rounded to BF16 and then written as F16 (the gfx1151 kind: the products see BF16 values)
     BF16_TO_F16 = 2,     // weights as F16, inputs written as F16 (10-bit mantissa instead of BF16's 7)
 };
 
-// the mode from STRATA_VIT_BF16_AS_F16 (env, nullptr when unset) and the card's default: "2" is BF16_TO_F16; "0", an empty or a non-numeric value
+// the mode from NOSTROMA_VIT_BF16_AS_F16 (env, nullptr when unset) and the card's default: "2" is BF16_TO_F16; "0", an empty or a non-numeric value
 // BF16_STORED and every other number BF16_ROUNDED, as before the F16 kind existed
 inline int vit_gpu_bf16_mode(const char* env, int card_default) {
     if (!env) return card_default;
@@ -88,4 +88,4 @@ inline Bf16F16Count bf16_count_f16(const uint16_t* w, long long n) {
     return c;
 }
 
-}  // namespace strata_vit
+}  // namespace nostroma_vit

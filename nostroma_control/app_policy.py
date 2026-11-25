@@ -67,7 +67,7 @@ _CARDS = {
     "nameonly3060": {"name": "GeForce RTX 3060", "vram_gb": 12.0},
 }
 _MODELS = {"qwen": {}, "qwen36": {"arch": "qwen35moe"},
-           "qwen_pictures": {"vision": {"exe": "strata-vision"}}, "qwen36_pictures": {"arch": "qwen35moe", "vision": {"exe": "strata-vision"}}}
+           "qwen_pictures": {"vision": {"exe": "nostroma-vision"}}, "qwen36_pictures": {"arch": "qwen35moe", "vision": {"exe": "nostroma-vision"}}}
 _NAMES = ["qwen3.8-flash-next", "qwen3.8-flash-next-iq3_s", "qwen3.8-flash-next-Q2_0", "qwen3.8-flash-next-unsloth-ud-q4_k_xl", "qwen3.8-flash-next-unsloth-ud-iq4_xs-v31",
           "qwen3.8-flash-next-gyro-iq4", "qwen3.8-flash-next-coder-iq1_m", "qwen3.8-flash-next-swift-iq3_s", "swift-1.5-iq3_s", "qwen3.6-35b-a3b-ud-q4_k_xl", ""]
 

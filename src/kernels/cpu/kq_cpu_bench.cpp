@@ -9,8 +9,8 @@
 //
 // --part times only the gate/up rows (gu) or only the down rows (down); --hot K walks only K distinct expert blobs over and
 // over (K=1: one expert, cache-resident: the arithmetic and instruction throughput; the default walks --mb of blobs: DRAM).
-#include "strata/kernels/cpu/expert_layout.hpp"
-#include "strata/kernels/cpu/native_expert.hpp"
+#include "nostroma/kernels/cpu/expert_layout.hpp"
+#include "nostroma/kernels/cpu/native_expert.hpp"
 
 #include "ggml.h"
 #include "ggml-cpu.h"
@@ -28,7 +28,7 @@
 #include <thread>
 #include <vector>
 
-namespace cpu = strata::kernels::cpu;
+namespace cpu = nostroma::kernels::cpu;
 
 namespace {
 

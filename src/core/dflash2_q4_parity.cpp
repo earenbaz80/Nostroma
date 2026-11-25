@@ -6,7 +6,7 @@
 // random planar-int8 activations (df2_quant_rows).  The reference reads the same blocks and the same activation codes back and sums per block in integers,
 // so the only difference to the kernel is the float order of the sum over blocks.  Shapes: the drafter's (n_in 2560, 4096, 7680, 12800), one, two and three
 // matrices to a launch, 1..8 columns.  Exit 0 when every output is within 2e-5 of the largest value (relative), 1 otherwise.
-#include "strata/kernels/dflash2.hpp"
+#include "nostroma/kernels/dflash2.hpp"
 
 #include <cuda_runtime.h>
 
@@ -103,7 +103,7 @@ int main() {
             cudaMalloc((void**) &tmp, blocks[m].size());
             cudaMemcpy(tmp, blocks[m].data(), blocks[m].size(), cudaMemcpyHostToDevice);
             cudaMalloc((void**) &dev_w[m], blocks[m].size());
-            strata::kernels::df2_q4_tile(tmp, dev_w[m], dev_w[m] + (size_t) n_out * n_in / 2, n_in, (int64_t) n_out * nb, nullptr);
+            nostroma::kernels::df2_q4_tile(tmp, dev_w[m], dev_w[m] + (size_t) n_out * n_in / 2, n_in, (int64_t) n_out * nb, nullptr);
             cudaDeviceSynchronize();
             cudaFree(tmp);
             cudaMalloc((void**) &dev_y[m], (size_t) 8 * n_out * 4);
@@ -117,16 +117,16 @@ int main() {
         cudaMalloc((void**) &dxq, (size_t) 8 * n_in + 4096);
         cudaMalloc((void**) &dxd, (size_t) 8 * nb * 4 + 64);
         cudaMemcpy(dx, x.data(), x.size() * 4, cudaMemcpyHostToDevice);
-        strata::kernels::df2_quant_rows(dx, n_in, 8, dxq, dxd, nullptr);
+        nostroma::kernels::df2_quant_rows(dx, n_in, 8, dxq, dxd, nullptr);
         cudaDeviceSynchronize();
         std::vector<int8_t> xq((size_t) 8 * n_in);
         std::vector<float> xd((size_t) 8 * nb);
         cudaMemcpy(xq.data(), dxq, xq.size(), cudaMemcpyDeviceToHost);
         cudaMemcpy(xd.data(), dxd, xd.size() * 4, cudaMemcpyDeviceToHost);
         for (int ncols : {1, 2, 3, 5, 8}) {
-            strata::kernels::Df2Mat mats[3];
-            for (int m = 0; m < nm; ++m) mats[m] = strata::kernels::Df2Mat{dev_w[m], dev_y[m], cs.n_out[m], true};
-            strata::kernels::df2_gemm(mats, nm, dxq, dxd, n_in, ncols, nullptr);
+            nostroma::kernels::Df2Mat mats[3];
+            for (int m = 0; m < nm; ++m) mats[m] = nostroma::kernels::Df2Mat{dev_w[m], dev_y[m], cs.n_out[m], true};
+            nostroma::kernels::df2_gemm(mats, nm, dxq, dxd, n_in, ncols, nullptr);
             cudaDeviceSynchronize();
             double worst = 0, big = 0;
             for (int m = 0; m < nm; ++m) {

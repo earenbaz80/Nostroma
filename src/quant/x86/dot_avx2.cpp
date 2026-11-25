@@ -4,9 +4,9 @@
 
 #include "../generic.hpp"
 #include "../registry.hpp"
-#include "strata/quant/dot.hpp"
+#include "nostroma/quant/dot.hpp"
 
-namespace strata::quant {
+namespace nostroma::quant {
 namespace avx2 {
 
 #include "x86_helpers.inc"
@@ -30,4 +30,4 @@ const DotKernel kTable[] = {
 
 DotTable avx2_dot_table() noexcept { return {kTable, (int) (sizeof kTable / sizeof kTable[0])}; }
 
-}  // namespace strata::quant
+}  // namespace nostroma::quant

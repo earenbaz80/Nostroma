@@ -1,10 +1,10 @@
-// The default of --pipeline-windows (strata::pipeline_auto_on), no GPU needed: on only for a layer split of exactly two
+// The default of --pipeline-windows (nostroma::pipeline_auto_on), no GPU needed: on only for a layer split of exactly two
 // Battlemage cards with --serve and the MTP drafter.
 #include <cstdio>
-#include "strata/pipeline_auto.hpp"
+#include "nostroma/pipeline_auto.hpp"
 
-using strata::PipelineAutoInputs;
-using strata::pipeline_auto_on;
+using nostroma::PipelineAutoInputs;
+using nostroma::pipeline_auto_on;
 static int bad = 0;
 #define CHECK(cond, what) do { if (!(cond)) { std::printf("FAIL: %s\n", what); ++bad; } } while (0)
 
@@ -31,7 +31,7 @@ int main() {
     { auto in = two_b65(); in.later_is_battlemage = false; CHECK(!pipeline_auto_on(in), "second card not Battlemage -> off"); }
     { auto in = two_b65(); in.first_is_battlemage = false; in.later_is_battlemage = false;
       CHECK(!pipeline_auto_on(in), "two A-series cards -> off"); }
-    { auto in = two_b65(); in.auto_off = true; CHECK(!pipeline_auto_on(in), "STRATA_PIPELINE_AUTO=0 -> off"); }
+    { auto in = two_b65(); in.auto_off = true; CHECK(!pipeline_auto_on(in), "NOSTROMA_PIPELINE_AUTO=0 -> off"); }
     { auto in = two_b65(); in.batch = 4; CHECK(!pipeline_auto_on(in), "--batch slots -> off"); }
     { auto in = two_b65(); in.peer_device = true; CHECK(!pipeline_auto_on(in), "--peer-device -> off"); }
     { auto in = two_b65(); in.helper_caches = true; CHECK(!pipeline_auto_on(in), "helper caches -> off"); }

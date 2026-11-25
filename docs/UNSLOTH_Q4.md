@@ -34,12 +34,12 @@ nostroma launch --family unsloth --model UD-Q4_K_XL
   SHA-256 against the table below once and remembers it in the file's finish mark. A file with the wrong hash is
   deleted, so the next run downloads it again.
 - **Packing.** `--compat-bf16`, and never an `experts.bin` (`--low-ram` does not apply).
-- **Defaults it writes** into the run config's `env`: `STRATA_ROUTE_TAIL_SKIP=0` where every expert is in RAM, except on
+- **Defaults it writes** into the run config's `env`: `NOSTROMA_ROUTE_TAIL_SKIP=0` where every expert is in RAM, except on
   Linux AMD gfx12 (R9700, RX 9000), where the engine's own default (the skip on, rank 7) stays: UD-Q4_K_XL decodes 6-16%
-  faster there at an unchanged 61-task suite (`STRATA_ROUTE_TAIL_SKIP=0` turns it off). UD-Q4_K_XL keeps `STRATA_MMQ_KQ`
-  opt-in in the config (the Linux gfx12 engine takes it by itself since 0.2.10.1). Setup no longer writes `STRATA_HC_Q8`:
+  faster there at an unchanged 61-task suite (`NOSTROMA_ROUTE_TAIL_SKIP=0` turns it off). UD-Q4_K_XL keeps `NOSTROMA_MMQ_KQ`
+  opt-in in the config (the Linux gfx12 engine takes it by itself since 0.2.10.1). Setup no longer writes `NOSTROMA_HC_Q8`:
   on NVIDIA the engine itself reads the file's own Q8_0 hyper-connection projections (closer to the file and faster) for
-  files that carry them as Q8_0, and `STRATA_HC_Q8=0` restores the BF16 read.
+  files that carry them as Q8_0, and `NOSTROMA_HC_Q8=0` restores the BF16 read.
 - **Context.** It recommends 8K on a GPU under 14 GB, because every GB of KV cache is a GB less of cached experts.
 - **GPUs.** NVIDIA or AMD. One GPU is the default in the budget mode. With several GPUs, each card caches the experts of
   its own layers and the budget holds the hottest of the rest by the whole expert profile. Setup asks; `--gpus 0,1`
@@ -74,7 +74,7 @@ Windows). Hugging Face snapshot symlinks work if you pass the snapshot's file na
 ## The pack (by hand)
 
 Build Nostroma, then from the repository root, with gguf-py from the pinned llama.cpp (setup installs it;
-`STRATA_GGUF_PY` can point to its `gguf-py` folder):
+`NOSTROMA_GGUF_PY` can point to its `gguf-py` folder):
 
 ```sh
 .venv/bin/python tools/iq_pack.py \
@@ -112,14 +112,14 @@ in `Nostroma-data`). Otherwise build it as [ORCA.md](ORCA.md#preparation) shows 
 
 ## The server
 
-Save as `strata-ud-q4_k_xl.json` at the repository root (or next to setup's other `strata-*.json`), with `/path/to/`
+Save as `nostroma-ud-q4_k_xl.json` at the repository root (or next to setup's other `nostroma-*.json`), with `/path/to/`
 pointing at **shard 1**. `--ple-gguf` is not needed: the engine finds the shard that holds the PLE table
 (`per_layer_token_embd.weight`, shard 2) by name. `--resident-budget-gib` turns on the mapped mode with a RAM budget (it
 implies `--mmap-experts`).
 
 ```json
 {
-  "exe": "engine/strata.exe",
+  "exe": "engine/nostroma.exe",
   "args": [
     "--pack", "packs/ud-q4_k_xl",
     "--native", "/path/to/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf",
@@ -131,17 +131,17 @@ implies `--mmap-experts`).
   "cwd": ".",
   "tokenizer": "packs/ud-q4_k_xl/tokenizer",
   "model_name": "qwen3.8-flash-next-ud-q4_k_xl",
-  "log": "strata-ud-q4_k_xl.log",
+  "log": "nostroma-ud-q4_k_xl.log",
   "host": "127.0.0.1",
   "port": 8080
 }
 ```
 
 ```sh
-.venv/bin/python -m serve.server --engine strata --config strata-ud-q4_k_xl.json --port 8080
+.venv/bin/python -m serve.server --engine nostroma --config nostroma-ud-q4_k_xl.json --port 8080
 ```
 
-`engine/strata.exe` is setup's engine on Windows; a self-built one is `build/strata`. The expert profile is the base
+`engine/nostroma.exe` is setup's engine on Windows; a self-built one is `build/nostroma`. The expert profile is the base
 model's (`data/expert-profile.bin`). It ranks the same 48 x 512 experts and decides which ones the GPU cache and the RAM
 budget take first.
 
@@ -152,7 +152,7 @@ available commit capacity. If N exceeds the smaller value minus 4 GiB headroom, 
 setting that matters most; a bigger budget was faster in every measurement (24 / 32 / 40 GiB).
 
 When the driver page-locks the whole budget, the GPU also computes a share of the misses over PCIe, as in the resident
-low-RAM mode. `STRATA_RESIDENT_PIN=0` uses ordinary pageable memory instead, and the CPU then computes every miss. On
+low-RAM mode. `NOSTROMA_RESIDENT_PIN=0` uses ordinary pageable memory instead, and the CPU then computes every miss. On
 Windows the allocation log reports available physical RAM and commit capacity before allocation and after a failure,
 because free RAM alone does not guarantee that Windows can commit the requested memory.
 
@@ -166,7 +166,7 @@ start on 12 GB. `--kv int8` halves the KV cache's VRAM.
 > on this page.
 
 Both were given the same token sequences, and at every position each wrote its 20 most likely next tokens with their
-log-probabilities. Nostroma used its verify windows (`STRATA_LOGPOS` with `STRATA_LOGPOS_TOPK=20`), llama.cpp used
+log-probabilities. Nostroma used its verify windows (`NOSTROMA_LOGPOS` with `NOSTROMA_LOGPOS_TOPK=20`), llama.cpp used
 `llama_get_logits_ith` over one batch. Per position: whether the most likely token is the same (argmax agreement), how
 many of the 5 and 10 most likely tokens both have, the KL divergence (llama.cpp's distribution against Nostroma's, over
 llama.cpp's top 20 plus one bucket for the rest), and the perplexity of the sequence under each.
@@ -179,7 +179,7 @@ llama.cpp's top 20 plus one bucket for the rest), and the perplexity of the sequ
 | Real text after a 16K prompt: the last 510 tokens of 16,384 tokens of this repository's docs and code | 510 | 91.2% | 88.3% / 89.9% | 0.035 | 4.27 / 4.29 |
 | The same 511 positions with only 512 tokens before them | 511 | 89.2% | 86.0% / 86.3% | 0.061 | 8.99 / 8.87 |
 
-For comparison, [eddoursul/Strata](https://github.com/eddoursul/Strata) reported 98.2 to 99.3% (code), 95.6 to 95.8%
+For comparison, [eddoursul/Nostroma](https://github.com/eddoursul/Nostroma) reported 98.2 to 99.3% (code), 95.6 to 95.8%
 (thinking) and 97.7% (after a 16K prompt) for the same file against llama.cpp on an RTX 3090.
 
 The two differ at near-ties. Where llama.cpp's own gap between its two most likely tokens is 0.2 or more, Nostroma picks
@@ -188,10 +188,10 @@ position where the gap is 0.5 or more (144 of 144 in the continuation, 254 of 25
 document has many more near-ties than a short answer (58 of the continuation's 256 positions and 135 of the real text's
 510 have a gap under 0.2, against 13 of the code answer's 400), which is why its agreement is lower. The perplexities
 match within 3% in every set. The 16K prompts were read by Nostroma's batched prompt path (15,872 tokens), the rest
-through the verify windows. These numbers are the FP16 prompt path's. With the MMQ prompt path (`STRATA_MMQ_KQ=1`) the
+through the verify windows. These numbers are the FP16 prompt path's. With the MMQ prompt path (`NOSTROMA_MMQ_KQ=1`) the
 continuation after the 16K prompt agrees at 92.2% (KL 0.029, three runs, identical).
 
-To repeat it, set `STRATA_LOGPOS=<file>` with `STRATA_LOGPOS_TOPK=20` on a serve engine with `--short-read` covering the
+To repeat it, set `NOSTROMA_LOGPOS=<file>` with `NOSTROMA_LOGPOS_TOPK=20` on a serve engine with `--short-read` covering the
 positions to compare. llama.cpp's side was a short program over `llama_decode` and `llama_get_logits_ith` writing the
 same top 20 per position.
 
@@ -199,12 +199,12 @@ same top 20 per position.
 
 | Variable | Effect |
 | --- | --- |
-| `STRATA_LOOKAHEAD=0` | Turns off the routing-aware prefetch (on by default in this mode). While the CPU works on a layer, a thread applies the next layer's router to this layer's input and asks the OS to read the predicted experts' pages. Pages only; the answers are the same. `STRATA_LOOKAHEAD_K` sets the experts per token (default 10). |
-| `STRATA_MMQ_KQ=1` | Multiplies the Q4_K / Q5_K / Q5_1 experts of a prompt with llama.cpp's MMQ kernels instead of dequantizing them to FP16. It rounds differently from the FP16 path, so it is opt-in for this file. On CUDA the kernels are a library next to the engine (`libstrata_kq.so` / `strata_kq.dll`), opened only then, so they take no VRAM from other models ([QUANTS.md](QUANTS.md)). |
-| `STRATA_KQ256=1` | Multi-token AVX2 kernels for the Q4_K / Q5_1 / Q8_0 experts. Bit-exact with ggml's, but measured no faster, so off. |
-| `STRATA_PARTIAL_PIN=1` | Registers the hottest part of the RAM budget (up to `STRATA_PARTIAL_PIN_GIB`, default 24) with the GPU driver, so the GPU computes a share of the misses over PCIe (`--pcie-frac`). Measured no faster, and it changes the numerics of those experts, so off. |
-| `STRATA_FETCH_THREADS=N` | Threads that read the experts from the GGUF while it answers (default 8). The prompt path has its own: `STRATA_STAGER_THREADS` (default 32 here) and `STRATA_STAGER_RING` (128). |
-| `STRATA_RESIDENT_PIN=0` | Ordinary pageable memory for the RAM budget, also for the RAM copy the engine makes on its own (see above). |
+| `NOSTROMA_LOOKAHEAD=0` | Turns off the routing-aware prefetch (on by default in this mode). While the CPU works on a layer, a thread applies the next layer's router to this layer's input and asks the OS to read the predicted experts' pages. Pages only; the answers are the same. `NOSTROMA_LOOKAHEAD_K` sets the experts per token (default 10). |
+| `NOSTROMA_MMQ_KQ=1` | Multiplies the Q4_K / Q5_K / Q5_1 experts of a prompt with llama.cpp's MMQ kernels instead of dequantizing them to FP16. It rounds differently from the FP16 path, so it is opt-in for this file. On CUDA the kernels are a library next to the engine (`libnostroma_kq.so` / `nostroma_kq.dll`), opened only then, so they take no VRAM from other models ([QUANTS.md](QUANTS.md)). |
+| `NOSTROMA_KQ256=1` | Multi-token AVX2 kernels for the Q4_K / Q5_1 / Q8_0 experts. Bit-exact with ggml's, but measured no faster, so off. |
+| `NOSTROMA_PARTIAL_PIN=1` | Registers the hottest part of the RAM budget (up to `NOSTROMA_PARTIAL_PIN_GIB`, default 24) with the GPU driver, so the GPU computes a share of the misses over PCIe (`--pcie-frac`). Measured no faster, and it changes the numerics of those experts, so off. |
+| `NOSTROMA_FETCH_THREADS=N` | Threads that read the experts from the GGUF while it answers (default 8). The prompt path has its own: `NOSTROMA_STAGER_THREADS` (default 32 here) and `NOSTROMA_STAGER_RING` (128). |
+| `NOSTROMA_RESIDENT_PIN=0` | Ordinary pageable memory for the RAM budget, also for the RAM copy the engine makes on its own (see above). |
 
 ## UD-IQ4_XS
 
@@ -274,14 +274,14 @@ bartowski's Swift-1.5 Q4_0, whose header shows the same formats.
 - Tests: the packer's synthetic 4-shard and conversion tests
   (`.venv/bin/python -m unittest discover -s tools -p test_iq_pack.py`) and the CTests `gguf_split_test`,
   `expert_layout_test`, `native_expert_parity_*` (the three real expert format pairs against ggml-cpu, the Q5_1 min term,
-  Q8_0 rows, Q4_0/Q4_0 and Q4_0/Q4_1). With `-DSTRATA_MMQ_KQUANTS=ON`, `prefill_mmq_kquant_test` checks the prompt path's
+  Q8_0 rows, Q4_0/Q4_0 and Q4_0/Q4_1). With `-DNOSTROMA_MMQ_KQUANTS=ON`, `prefill_mmq_kquant_test` checks the prompt path's
   MMQ products for Q4_K / Q5_K / Q5_1 / Q8_0 against ggml's dequantized weights.
 - Not validated: sampled decoding and long conversations. Please report what you see.
 
 ## Credits
 
 The split-artifact loader, the expert formats' GPU kernels and the packing of Unsloth's files follow
-[eddoursul/Strata](https://github.com/eddoursul/Strata) (PR #245), which ran these files first. The Q8_0 kernels, the
+[eddoursul/Nostroma](https://github.com/eddoursul/Nostroma) (PR #245), which ran these files first. The Q8_0 kernels, the
 per-role shard column and the PLE convolution's F32 to F16 fix come from @gopinath87607's PR #255. Per-role shard names
 were also proposed by @jagsan-cyber in PR #247. The quantization is [Unsloth](https://huggingface.co/unsloth)'s; the
 model is Qwen's ([license](https://huggingface.co/Qwen/Qwen3.8-Flash-Next)).
@@ -303,7 +303,7 @@ model is Qwen's ([license](https://huggingface.co/Qwen/Qwen3.8-Flash-Next)).
 - A 16K prompt was read at 160 tokens/s (15,873 tokens in 99 s) on engine 0.1.32, up from 57 tokens/s (273 to 282 s) on
   0.1.31, after the prompt path began reading experts with 32 threads and up to 128 blobs in flight.
 - The routing-aware prefetch added a mean of +14% (6.9 to 7.9 tok/s); about half of the SSD reads were predicted.
-- With `STRATA_MMQ_KQ=1` the products took 4x less GPU time, but on this PC the prompt waited for the SSD either way (29 s
+- With `NOSTROMA_MMQ_KQ=1` the products took 4x less GPU time, but on this PC the prompt waited for the SSD either way (29 s
   per 4K chunk).
 - Where the time goes at 40 GiB (`--stats`): about 550 to 750 ms of each verify round (3.5 tokens) reading experts from
   the SSD, about 75 ms the CPU's expert kernels, about 13 ms the GPU.

@@ -5,14 +5,14 @@ its default it removes those entries, so a default launch carries none of them a
 contract (phaseA-tests/notes-027-plan.md).  The app does the same in apps/host/server/native-settings.mjs (SPEED_SWITCHES); tests/terminal/test_speed_switches.py
 reads that file and fails when the two disagree, so the Terminal and the app cannot drift apart.
 
-- "Faster long prompts" (Qwen KVA) is OFF by default (owner decision, 26 October): ``STRATA_KVA=1`` turns it on.  A file that holds ``STRATA_KVA=0`` (the
+- "Faster long prompts" (Qwen KVA) is OFF by default (owner decision, 26 October): ``NOSTROMA_KVA=1`` turns it on.  A file that holds ``NOSTROMA_KVA=0`` (the
   off switch of an earlier 0.2.7 test build) reads as off, which is what it is now.
 - "Faster answers on 12 GB NVIDIA cards" (residency-biased routing) is OFF by default since 0.2.8 (owner decision, 29 October; #4402: it can repeat itself
-  and give weaker results in long agent sessions): ``STRATA_ROUTE_PRIOR=1.5`` turns it on.  The ``STRATA_ROUTE_PRIOR=0`` that 0.2.7's Off wrote is the default state now.
+  and give weaker results in long agent sessions): ``NOSTROMA_ROUTE_PRIOR=1.5`` turns it on.  The ``NOSTROMA_ROUTE_PRIOR=0`` that 0.2.7's Off wrote is the default state now.
 - "Faster answers on Radeon RX 9000 / AI PRO R9700" is ON by default; turning it off writes its entry.
 
-The Terminal shows the switches as rows of its Advanced table (nostroma_cli/launch/params.py), only where they apply: ``nostroma launch --set STRATA_KVA=1``
-turns "Faster long prompts" on, ``--set STRATA_KVA=off`` puts the default back (the same as removing the row).
+The Terminal shows the switches as rows of its Advanced table (nostroma_cli/launch/params.py), only where they apply: ``nostroma launch --set NOSTROMA_KVA=1``
+turns "Faster long prompts" on, ``--set NOSTROMA_KVA=off`` puts the default back (the same as removing the row).
 """
 
 from __future__ import annotations
@@ -40,27 +40,27 @@ class Switch:
 SWITCHES: tuple[Switch, ...] = (
     Switch("faster_long_prompts", "Faster long prompts",
            "Reads very long prompts faster by approximating part of the work. Off by default: answers about long documents can miss or mix up details.",
-           (("STRATA_KVA", "1"),), "qwen-gpu", default="off"),
+           (("NOSTROMA_KVA", "1"),), "qwen-gpu", default="off"),
     Switch("faster_12gb_nvidia", "Faster answers on 12 GB NVIDIA cards",
            "Prefers the parts of the model already on the graphics card, which makes answers faster on 12 GB cards. Off by default: in long agent sessions it can repeat itself and give weaker results. Turn on if you mostly chat and want the speed.",
-           (("STRATA_ROUTE_PRIOR", "1.5"),), "qwen-cuda-12gb", default="off"),
+           (("NOSTROMA_ROUTE_PRIOR", "1.5"),), "qwen-cuda-12gb", default="off"),
     Switch("faster_radeon_9000", "Faster answers on Radeon RX 9000 / AI PRO R9700",
            "Shares the work between the graphics card and the processor in a way that makes answers faster on these cards. "
            "Turn off to go back to the previous setting, which is slower.",
-           (("STRATA_PCIE_FRAC_DEFAULT", "old"),), "qwen-radeon-9000"),
-    # The picture reader (owner 11-11: "Our tower, the other selectable"): Nostroma's own by default (strata-vision's `auto`: ours where it was measured no slower
-    # and correct, llama.cpp's by itself where it was measured slower or does not start); STRATA_VISION_TOWER=mtmd picks llama.cpp's mtmd reader.  The server
-    # hands the run config's env to the reader, and an older strata-vision ignores the name.  Label, options and help line approved by the owner 11-11 morning
+           (("NOSTROMA_PCIE_FRAC_DEFAULT", "old"),), "qwen-radeon-9000"),
+    # The picture reader (owner 11-11: "Our tower, the other selectable"): Nostroma's own by default (nostroma-vision's `auto`: ours where it was measured no slower
+    # and correct, llama.cpp's by itself where it was measured slower or does not start); NOSTROMA_VISION_TOWER=mtmd picks llama.cpp's mtmd reader.  The server
+    # hands the run config's env to the reader, and an older nostroma-vision ignores the name.  Label, options and help line approved by the owner 11-11 morning
     # (par/OWNER-WORDING-1111.md); the Terminal row's frame (env_words) is still [DRAFT].
     Switch("picture_reader", "Picture reader",
            "Which program turns pictures into something the model can read. Nostroma's own is faster on most computers and reads very large pictures correctly; "
            "on a few graphics cards where it is still slower, Nostroma uses llama.cpp's by itself. Choose llama.cpp's if pictures look misread.",
-           (("STRATA_VISION_TOWER", "mtmd"),), "qwen-pictures", group="Image reading",
+           (("NOSTROMA_VISION_TOWER", "mtmd"),), "qwen-pictures", group="Image reading",
            words=(("on", "Nostroma's own (recommended)"), ("off", "llama.cpp's")), terminal_default="auto"),
     # Troubleshooting only, in the Terminal's Advanced table and nowhere else: every Qwen 0.2.7 default back to its 0.2.6 behaviour.
     Switch("qwen_defaults_026", "Qwen: 0.2.6 behaviour",
            "Starts every Qwen speed setting new in 0.2.7 the way 0.2.6 did, for troubleshooting. Use it if something that worked before no longer does.",
-           (("STRATA_DEFAULTS", "026"),), "qwen-any", default="off", terminal_only=True),
+           (("NOSTROMA_DEFAULTS", "026"),), "qwen-any", default="off", terminal_only=True),
 )
 
 BY_ID = {s.id: s for s in SWITCHES}
@@ -103,7 +103,7 @@ def applies(switch: Switch | str, cfg: Mapping[str, Any] | None, gpus: Iterable[
     if sw.only == "qwen-any":
         return True
     if sw.only == "qwen-pictures":
-        # a Qwen run config that reads pictures (its "vision" section starts strata-vision)
+        # a Qwen run config that reads pictures (its "vision" section starts nostroma-vision)
         return bool((cfg or {}).get("vision"))
     backend = (cfg or {}).get("backend") or backend
     if sw.only == "qwen-gpu":
@@ -130,7 +130,7 @@ def app_switches() -> list[Switch]:
 
 def is_set(env: Mapping[str, Any] | None, switch: Switch | str) -> bool:
     """Every entry the switch writes is there with its value (the switch is out of its default).  A file with only some of them, or other values
-    (``STRATA_KVA=0``), is in the default state and is left alone."""
+    (``NOSTROMA_KVA=0``), is in the default state and is left alone."""
     sw = BY_ID[switch] if isinstance(switch, str) else switch
     have = lambda entries: bool(entries) and all((env or {}).get(name) == value for name, value in entries)   # noqa: E731
     return have(sw.env) or have(sw.legacy)

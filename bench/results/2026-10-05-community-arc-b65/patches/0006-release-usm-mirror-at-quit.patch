@@ -10,7 +10,7 @@
 +            // Release the direct-access USM host mirror before process teardown.
 +            gguf_src.close();
 +        } catch (const std::exception& e) {
-+            std::fprintf(stderr, "strata shutdown: mirror release failed: %s\n", e.what());
++            std::fprintf(stderr, "nostroma shutdown: mirror release failed: %s\n", e.what());
 +            std::fflush(stderr);
 +            std::_Exit(1);
 +        }

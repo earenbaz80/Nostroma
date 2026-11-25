@@ -16,8 +16,8 @@
  "engine_prompt_tps": 2506.6,
  "engine_decode_tps": 66.8,
  "log_lines": [
-  "strata serve: prompt 31630 tokens = 0 reused + 31630 read in 12619 ms (2506.6 tok/s), 26 generated in 389 ms (66.8 tok/s), drafts accepted 12 of 21, 2 checkpoints",
-  "strata serve: decode expert cache hit rate: 99.1% (16646 hits / 16791 lookups)"
+  "nostroma serve: prompt 31630 tokens = 0 reused + 31630 read in 12619 ms (2506.6 tok/s), 26 generated in 389 ms (66.8 tok/s), drafts accepted 12 of 21, 2 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 99.1% (16646 hits / 16791 lookups)"
  ],
  "answer_head": "I don't see any file content in the conversation above. Could you please share the file you'd like me to analyze?",
  "metrics_after": {

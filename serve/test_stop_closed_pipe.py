@@ -17,7 +17,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from serve import server  # noqa: E402
-from serve.server import StrataEngine  # noqa: E402
+from serve.server import NostromaEngine  # noqa: E402
 
 
 class FakeProc:
@@ -28,8 +28,8 @@ class FakeProc:
         return None
 
 
-def engine() -> StrataEngine:
-    e = StrataEngine.__new__(StrataEngine)
+def engine() -> NostromaEngine:
+    e = NostromaEngine.__new__(NostromaEngine)
     e.alive = lambda: True
     e.batch, e.multi, e.silence_s, e.can_stop = 0, 0, 0, True
     e.lines = queue.Queue()

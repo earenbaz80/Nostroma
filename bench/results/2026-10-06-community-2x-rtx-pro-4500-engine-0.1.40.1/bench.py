@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Community benchmark: laufender Server (Port 8080), 3 Laeufe je Laenge, 256 Token, greedy, Prompt ohne Cache (Nonce vorn)."""
 import json, re, time, random, pathlib, statistics, urllib.request, sys
-ROOT = pathlib.Path.home() / "ai/Strata"
+ROOT = pathlib.Path.home() / "ai/Nostroma"
 OUT = pathlib.Path(sys.argv[1]); OUT.mkdir(parents=True, exist_ok=True)
 LOG = pathlib.Path(sys.argv[2])
 MODEL = "swift-1.5-iq3_xxs"

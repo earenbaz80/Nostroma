@@ -51,7 +51,7 @@ const chat = (id, n, len, extra = {}) => ({
   ...extra,
 });
 const host = (io = realIo) => {
-  const dir = mkdtempSync(join(tmpdir(), 'strata-persist-'));
+  const dir = mkdtempSync(join(tmpdir(), 'nostroma-persist-'));
   const store = createChatStore({ dir, io });
   const state = { offline: false };
   const transport = storeTransport(store, TransportError, state);
@@ -357,11 +357,11 @@ test('a streamed answer of 1,500 tokens is a handful of saves to the host, the f
     await store.flushSessions();
     const puts = fake.calls.filter((c) => c.method === 'PUT').length - before;
     assert.ok(puts >= 1 && puts <= 6, `a 1,500-token answer sent the chat ${puts} times`);
-    assert.ok(fake.calls.filter((c) => c.method === 'PUT').every((c) => c.headers['x-strata-client'] && c.headers['x-strata-window']), 'every save names the page and the window');
+    assert.ok(fake.calls.filter((c) => c.method === 'PUT').every((c) => c.headers['x-nostroma-client'] && c.headers['x-nostroma-window']), 'every save names the page and the window');
     const saved = (await fromHost(h)).find((s) => s.messages.some((m) => m.role === 'assistant'));
     const answer = saved.messages.find((m) => m.role === 'assistant');
     assert.ok(answer.content.length >= TOKENS * 5 - 10, 'the finished answer is what is on disk');
     assert.equal(answer.streaming, false);
-    assert.equal([...memory.keys()].filter((k) => k.startsWith('strata.session')).length, 0, 'nothing is written to the browser storage any more');
+    assert.equal([...memory.keys()].filter((k) => k.startsWith('nostroma.session')).length, 0, 'nothing is written to the browser storage any more');
   } finally { fake.restore(); h.done(); }
 });

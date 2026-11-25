@@ -27,7 +27,7 @@ const OUTLINE_EMOJI: &str = "Noto Emoji";
 /// fontconfig's own configuration. `FONTCONFIG_FILE` replaces it, so the written file pulls it back in.
 pub const SYSTEM_CONFIG: &str = "/etc/fonts/fonts.conf";
 
-/// `STRATA_FONT_CONFIG=off` turns this off; `STRATA_FONT_CONFIG=/path/to/fonts.conf` uses the person's own file.
+/// `NOSTROMA_FONT_CONFIG=off` turns this off; `NOSTROMA_FONT_CONFIG=/path/to/fonts.conf` uses the person's own file.
 const OFF: &str = "off";
 
 /// The name of the file written under the data folder.
@@ -96,7 +96,7 @@ pub fn config_text(system_config: &str) -> String {
         "<!DOCTYPE fontconfig SYSTEM \"urn:fontconfig:fonts.dtd\">".into(),
         "<!-- Written by Nostroma for its own window only. The WebKitGTK inside the AppImage aborts while it draws a COLRv1 colour font,".into(),
         "     so those faces are hidden from the window; every other font is the system's own setup, included first.".into(),
-        "     Off: STRATA_FONT_CONFIG=off. Your own file: set FONTCONFIG_FILE yourself. -->".into(),
+        "     Off: NOSTROMA_FONT_CONFIG=off. Your own file: set FONTCONFIG_FILE yourself. -->".into(),
         "<fontconfig>".into(),
         format!("  <include ignore_missing=\"yes\">{system_config}</include>"),
         "  <selectfont>".into(),
@@ -141,14 +141,14 @@ pub fn ensure_config(dir: &Path, system_config: &Path) -> Option<PathBuf> {
 /// The file the window process should hand to fontconfig, or None to leave the environment exactly as it is. In this order, so a person's
 /// own choice always wins and a machine without the font is untouched:
 ///   1. `FONTCONFIG_FILE` already set: theirs.
-///   2. `STRATA_FONT_CONFIG=off`: nothing.
-///   3. `STRATA_FONT_CONFIG=<path>`: that file, when it exists.
+///   2. `NOSTROMA_FONT_CONFIG=off`: nothing.
+///   3. `NOSTROMA_FONT_CONFIG=<path>`: that file, when it exists.
 ///   4. no COLRv1 font installed: nothing.
 pub fn config_for(env: &dyn Fn(&str) -> Option<String>, dir: &Path, dirs: &[PathBuf], system_config: &Path) -> Option<PathBuf> {
-    if env("FONTCONFIG_FILE").is_some() || env("STRATA_FONT_CONFIG").as_deref() == Some(OFF) {
+    if env("FONTCONFIG_FILE").is_some() || env("NOSTROMA_FONT_CONFIG").as_deref() == Some(OFF) {
         return None;
     }
-    if let Some(custom) = env("STRATA_FONT_CONFIG") {
+    if let Some(custom) = env("NOSTROMA_FONT_CONFIG") {
         let p = PathBuf::from(custom);
         return p.is_file().then_some(p);
     }
@@ -166,7 +166,7 @@ mod tests {
     }
 
     fn scratch(name: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("strata-fontguard-{name}-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("nostroma-fontguard-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         dir
@@ -220,11 +220,11 @@ mod tests {
         std::fs::write(fonts.join("Noto-COLRv1.ttf"), b"x").unwrap();
         let dirs = vec![fonts];
         assert_eq!(config_for(&env_from(&[("FONTCONFIG_FILE", "/home/me/fonts.conf")]), &dir, &dirs, &system), None);
-        assert_eq!(config_for(&env_from(&[("STRATA_FONT_CONFIG", "off")]), &dir, &dirs, &system), None);
+        assert_eq!(config_for(&env_from(&[("NOSTROMA_FONT_CONFIG", "off")]), &dir, &dirs, &system), None);
         let theirs = dir.join("theirs.conf");
         std::fs::write(&theirs, b"<fontconfig/>").unwrap();
-        assert_eq!(config_for(&env_from(&[("STRATA_FONT_CONFIG", theirs.to_str().unwrap())]), &dir, &dirs, &system), Some(theirs));
-        assert_eq!(config_for(&env_from(&[("STRATA_FONT_CONFIG", "/no/such/fonts.conf")]), &dir, &dirs, &system), None);
+        assert_eq!(config_for(&env_from(&[("NOSTROMA_FONT_CONFIG", theirs.to_str().unwrap())]), &dir, &dirs, &system), Some(theirs));
+        assert_eq!(config_for(&env_from(&[("NOSTROMA_FONT_CONFIG", "/no/such/fonts.conf")]), &dir, &dirs, &system), None);
         // no setting at all: the font is there, so the file is written
         assert!(config_for(&env_from(&[]), &dir.join("out"), &dirs, &system).is_some());
         let _ = std::fs::remove_dir_all(&dir);

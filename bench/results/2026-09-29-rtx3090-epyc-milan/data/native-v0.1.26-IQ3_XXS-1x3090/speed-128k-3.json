@@ -16,10 +16,10 @@
  "engine_prompt_tps": 2168.8,
  "engine_decode_tps": 72.0,
  "log_lines": [
-  "strata serve: prompt 129913 tokens = 0 reused + 129913 read in 59901 ms (2168.8 tok/s), 256 generated in 3556 ms (72.0 tok/s), drafts accepted 148 of 200, 6 checkpoints",
-  "strata serve: decode expert cache hit rate: 95.6% (138618 hits / 145073 lookups)"
+  "nostroma serve: prompt 129913 tokens = 0 reused + 129913 read in 59901 ms (2168.8 tok/s), 256 generated in 3556 ms (72.0 tok/s), drafts accepted 148 of 200, 6 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 95.6% (138618 hits / 145073 lookups)"
  ],
- "answer_head": "The last file is `include/strata/kernels/gdn.hpp`. It declares the non-projection parts of the gated delta-net (GDN) layer used by 36 of the model's 48 layers. It defines `GdnShapes` (S=128, h_k=16, h_v=48) and declares `gdn_step`, which performs one in-place step of the delta-rule recurrence: it de",
+ "answer_head": "The last file is `include/nostroma/kernels/gdn.hpp`. It declares the non-projection parts of the gated delta-net (GDN) layer used by 36 of the model's 48 layers. It defines `GdnShapes` (S=128, h_k=16, h_v=48) and declares `gdn_step`, which performs one in-place step of the delta-rule recurrence: it de",
  "metrics_after": {
   "engine": {
    "model": "qwen3.8-flash-next-iq3_xxs",

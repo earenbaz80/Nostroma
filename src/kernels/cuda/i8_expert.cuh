@@ -1,5 +1,5 @@
 // src/kernels/cuda/i8_expert.cuh - our own int8 dot-product kernels for a prompt layer of experts (native_expert_i8, declared in
-// include/strata/kernels/iq_kernels.hpp), for cards that have no matrix cores the fused kernels can use (RDNA2, Pascal, any
+// include/nostroma/kernels/iq_kernels.hpp), for cards that have no matrix cores the fused kernels can use (RDNA2, Pascal, any
 // card with only a byte dot product).  Included once by iq_kernels.cu, INSIDE its anonymous namespace (it uses that file's
 // block types, codebook tables, q8_1 helpers and the dp4a wrapper).
 //
@@ -532,7 +532,7 @@ __device__ __forceinline__ int i8_row_t(const uint4 (&w)[2], const uint4& rc, co
     }
 }
 
-// NR = variant "N8" (tile 2 by default, STRATA_I8_N8=1 for tiles 2-4, 0 for none; i8_n8_takes): the entry slices are 8 entries wide instead of 16.  A thread owns 2 weight rows (the row pair `half` = ty / 8:
+// NR = variant "N8" (tile 2 by default, NOSTROMA_I8_N8=1 for tiles 2-4, 0 for none; i8_n8_takes): the entry slices are 8 entries wide instead of 16.  A thread owns 2 weight rows (the row pair `half` = ty / 8:
 // rows tx + 16 (2 half + i2)) and one entry of each 8-entry slice (entry ty % 8 + 8 js), so a block with 6 entries runs one slice with all 256 threads busy
 // where the 16-entry slice left 10 of 16 entry rows computing nothing.  Every (row, entry) accumulates the same terms in the same order: bit-identical output.
 // The gate/up epilogue needs the gate (row pair 0) and up (row pair 1) values of one entry together: the up half hands them over through shared memory.
@@ -569,12 +569,12 @@ i8_kernel(const unsigned long long* __restrict__ grp_ptr, const int32_t* __restr
     const int nv = e_hi - e_lo;   // entries of this tile (the rest of the tile is empty)
     I8P blob = i8_uniform(I8_GPTR(grp_ptr[g]));
     const int tid = threadIdx.x, tx = tid & 15, ty = tid >> 4;
-#if defined(STRATA_I8_DBG)
+#if defined(NOSTROMA_I8_DBG)
     if (tid == 0 && blockIdx.y == 0 && ti < 3)
         printf("i8 dbg T=%d GU=%d TM=%d ti=%d ng=%d total=%d g=%d e_lo=%d e_hi=%d blob=%p A=%p hq=%p out=%p tok=%p\n", T, (int) GU, TM, ti, ng,
                tile_off[ng], g, e_lo, e_hi, (const void*) blob, (const void*) A, (const void*) hq, (const void*) out, (const void*) ent_idx);
 #endif
-    if (bisect == 1) return;   // research (STRATA_I8_BISECT = n): return at point n, uniform over the block (the HIP fault hunt)
+    if (bisect == 1) return;   // research (NOSTROMA_I8_BISECT = n): return at point n, uniform over the block (the HIP fault hunt)
     const int K = GU ? (int) L.n_embd : (int) L.n_ff;
     const int ns = K / I8_KS;
     const size_t wrb = GU ? L.gu_row : L.d_row;
@@ -1192,7 +1192,7 @@ size_t i8_smem_limit() {
     int dev = 0, v = 0;
     size_t lim = 48 * 1024;
     if (cudaGetDevice(&dev) == cudaSuccess && cudaDeviceGetAttribute(&v, cudaDevAttrMaxSharedMemoryPerBlockOptin, dev) == cudaSuccess && v > 0) lim = (size_t) v;
-    const int o = i8_env_int("STRATA_I8_SMEM_LIMIT", 0);   // research / the parity test: pretend a smaller device
+    const int o = i8_env_int("NOSTROMA_I8_SMEM_LIMIT", 0);   // research / the parity test: pretend a smaller device
     return o > 0 && (size_t) o < lim ? (size_t) o : lim;
 }
 template <int T, bool GU>

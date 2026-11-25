@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Strata community benchmark harness — standard library only.
+Nostroma community benchmark harness — standard library only.
 
-Measures prompt processing (prefill) and decode through the local Strata server,
+Measures prompt processing (prefill) and decode through the local Nostroma server,
 mirroring the method used in bench/results/2026-09-30-community-rtx-5090:
 
   * synthetic Python-like filler of a requested size,
@@ -17,7 +17,7 @@ Outputs bench-output.json, bench-output.md and bench-output.txt next to this fil
 
 Usage (run from the folder that has this file):
   .venv\\Scripts\\python.exe benchmark.py --url http://127.0.0.1:8080/v1/chat/completions \
-      --log D:\\AI\\Strata\\Strata-main\\Strata-main\\strata-iq2_xs.log \
+      --log D:\\AI\\Nostroma\\Nostroma-main\\Nostroma-main\\nostroma-iq2_xs.log \
       --lengths 4096,32768,128000 --reps 3 --needle-lengths 32768,128000 --needle-depths 10,50,90
 """
 
@@ -192,10 +192,10 @@ def detect_model(url: str) -> str:
             data = json.loads(resp.read().decode())
         items = data.get("data") or data.get("models") or []
         if items:
-            return items[0].get("id") or items[0].get("name") or "strata"
+            return items[0].get("id") or items[0].get("name") or "nostroma"
     except Exception:
         pass
-    return "strata"
+    return "nostroma"
 
 
 # ----------------------------------------------------------------------------- measurement
@@ -303,7 +303,7 @@ def summarise(rows: list[dict]) -> str:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", default="http://127.0.0.1:8080/v1/chat/completions")
-    ap.add_argument("--log", default=r"D:\AI\Strata\Strata-main\Strata-main\strata-iq2_xs.log")
+    ap.add_argument("--log", default=r"D:\AI\Nostroma\Nostroma-main\Nostroma-main\nostroma-iq2_xs.log")
     ap.add_argument("--lengths", default="4096,32768,128000")
     ap.add_argument("--reps", type=int, default=3)
     ap.add_argument("--needle-lengths", default="32768,128000")
@@ -428,7 +428,7 @@ def main() -> int:
             f"(prompt {r.get('engine_prompt_tokens')} tok, prefill {r.get('read_tok_s')} tok/s)"
         )
     report = (
-        f"# Strata benchmark output\n\n"
+        f"# Nostroma benchmark output\n\n"
         f"started {results['started']}, finished {results['finished']}\n"
         f"server {args.url}, model id `{model}`, output cap {args.cap} tokens, "
         f"{args.reps} reps per length\n\n## Speed\n\n{table}\n"

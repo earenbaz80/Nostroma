@@ -1,5 +1,5 @@
-// src/prefill/moe_fused.cu - see include/strata/prefill/moe_fused.hpp (#136: the Q2_0 pack's prompt experts on
-// Strata's own int8 tensor-core kernels, with the grouping on the GPU).
+// src/prefill/moe_fused.cu - see include/nostroma/prefill/moe_fused.hpp (#136: the Q2_0 pack's prompt experts on
+// Nostroma's own int8 tensor-core kernels, with the grouping on the GPU).
 //
 // The arithmetic.  A Q2_0 block is 64 weights w = d_w * (q - 1), q in 0..3, four codes per byte, weight j of a block
 // in byte j / 4 at bits 2 * (j % 4).  An activation block of 32 values is x = d_x * a with a = round(x / d_x) in
@@ -19,12 +19,12 @@
 // activations are stored in it (perm32), and a lane's two B registers (h = 0 and 1) are adjacent: one 8-byte load.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
-#include "strata/env.hpp"
-#include "strata/kprof.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kprof.hpp"
 #include <dpct/dpct.hpp>
-#include "strata/sycl_queue.hpp"
-#include "strata/prefill/moe_fused.hpp"
-#include "strata/core/geometry.hpp"
+#include "nostroma/sycl_queue.hpp"
+#include "nostroma/prefill/moe_fused.hpp"
+#include "nostroma/core/geometry.hpp"
 
 #include <algorithm>
 #include <cstdio>
@@ -33,7 +33,7 @@
 #include <mutex>
 #include <cmath>
 
-namespace strata::prefill::fused {
+namespace nostroma::prefill::fused {
 namespace {
 
 void ck(dpct::err0 e, const char *what) {
@@ -42,7 +42,7 @@ void ck(dpct::err0 e, const char *what) {
 constexpr int AB = 80;                  // activation bytes per 64 values: 64 codes, then {d0, c0, d1, c1}
 constexpr int MAGIC = 0x4B400000;       // the bits of 1.5 * 2^23
 constexpr float MAGICF = 12582912.0f;
-// The Strata Q2_0 blob (moe_mmq.cu strata_q2_kernel, kernels.cu blob_dequant_kernel): gate/up codes [1280][640 B]
+// The Nostroma Q2_0 blob (moe_mmq.cu nostroma_q2_kernel, kernels.cu blob_dequant_kernel): gate/up codes [1280][640 B]
 // (rows interleaved: gate of feature f at row 2f, its up at 2f + 1), down codes [2560][160 B], gate/up scales
 // [1280][40] fp16, down scales [2560][10] fp16.
 constexpr size_t O_GU_CODES = 0, O_D_CODES = (size_t) 1280 * 640, O_GU_SC = O_D_CODES + (size_t) 2560 * 160,
@@ -629,9 +629,9 @@ __dpct_inline__ void expert_kernel(
 // blocks (80 B) straight from global memory (L2: an expert's rows are read by every tile, a token's by every weight
 // block), one block ahead in registers; the work item's weight scales go to LDS once.
 #if defined(__gfx1100__) || defined(__gfx1101__) || defined(__gfx1102__) || defined(__gfx1150__) || defined(__gfx1151__)
-#define STRATA_FUSED_W11 1
+#define NOSTROMA_FUSED_W11 1
 #else
-#define STRATA_FUSED_W11 0
+#define NOSTROMA_FUSED_W11 0
 #endif
 typedef int w11_i4 __attribute__((ext_vector_type(4)));
 typedef int w11_i8 __attribute__((ext_vector_type(8)));
@@ -639,7 +639,7 @@ constexpr int W_ROWS = 128;                       // weight rows per work item (
 constexpr int W_THREADS = 256;                    // 8 waves: 4 along the weight rows (32 each) x 2 along the tile (32)
 
 __device__ __forceinline__ w11_i8 wmma_iu8(w11_i4 a, w11_i4 b, w11_i8 c) {
-#if STRATA_FUSED_W11
+#if NOSTROMA_FUSED_W11
     return __builtin_amdgcn_wmma_i32_16x16x16_iu8_w32(false, a, true, b, c, false);
 #else
     __builtin_trap();
@@ -651,7 +651,7 @@ template <bool GU>
 __global__ void __launch_bounds__(W_THREADS)
 expert_w11_kernel(const Batch b, const Tables tb, const uint8_t* __restrict__ act, const int32_t* __restrict__ src,
                   uint8_t* __restrict__ out, float* __restrict__ dm) {
-#if STRATA_FUSED_W11
+#if NOSTROMA_FUSED_W11
     constexpr int NKB = GU ? 40 : 10;                 // 64-weight blocks along K
     constexpr int NFB = (GU ? 1280 : 2560) / W_ROWS;  // work items per tile
     constexpr int CODE_LD = GU ? 640 : 160;           // code bytes per weight row
@@ -840,10 +840,10 @@ DevInfo g_dev[32];
 // WGP (two CUs, which these kernels use as one in the default WGP mode) as one multiprocessor, and the occupancy query
 // answers 1 block for these kernels where 2 run side by side - so the grid was half the GPU's room.  gfx1151 (20
 // WGPs), 8192 tokens x top 10, IQ3_S / IQ4_NL, one layer: 1 block per WGP 60.7 ms, 2 44.7, 3 49.9, 4 45.2 (the same
-// work items and arithmetic: the results do not change).  STRATA_PF_OCC=N sets the blocks per WGP (an experiment knob).
+// work items and arithmetic: the results do not change).  NOSTROMA_PF_OCC=N sets the blocks per WGP (an experiment knob).
 static int wgp_blocks(int occ) {
     static const int env = [] {
-        const char* v = strata::env("NOSTROMA_PF_OCC");
+        const char* v = nostroma::env("NOSTROMA_PF_OCC");
         return v != nullptr ? std::atoi(v) : 0;
     }();
     return env > 0 ? env : 2 * std::max(occ, 1);
@@ -856,7 +856,7 @@ const DevInfo &dev_info() try {
     DevInfo& d = g_dev[dev & 31];
     if (d.done) return d;
     d.done = true;
-#if defined(STRATA_HIP_GFX906)
+#if defined(NOSTROMA_HIP_GFX906)
     // gfx906 reports compute capability 9.0 through HIP, but the mma.sync bodies above are CUDA sm_80+ only and
     // empty in a hipcc build: never available here (the prompt path keeps its own expert GEMMs)
     return d;
@@ -942,15 +942,15 @@ catch (sycl::exception const &exc) {
 
 bool built() { return true; }
 // the blob layout and the tile loops below are Flash-Next's 2560 x 640 (O_D_CODES = 1280 * 640 ...): another compiled shape never takes this path
-bool available() { return strata::core::kCompiledGeometry.n_embd == 2560 && strata::core::kCompiledGeometry.n_ff == 640 && dev_info().cc >= 80; }
+bool available() { return nostroma::core::kCompiledGeometry.n_embd == 2560 && nostroma::core::kCompiledGeometry.n_ff == 640 && dev_info().cc >= 80; }
 // 0.1.36: on by default for the Q2_0 pack (+13-23% prompts on an RTX 5070; teacher-forced against the FP16 path as
-// close as MMQ at 8K and closer at 32K: phaseA-tests s18-tf); STRATA_PF_FUSED=0 keeps MMQ.  The native packs' kernels
-// (moe_fused_iq) stay opt-in: STRATA_PF_FUSED=1 (requested()).
+// close as MMQ at 8K and closer at 32K: phaseA-tests s18-tf); NOSTROMA_PF_FUSED=0 keeps MMQ.  The native packs' kernels
+// (moe_fused_iq) stay opt-in: NOSTROMA_PF_FUSED=1 (requested()).
 bool enabled() {
     static const bool env = [] {
-        const char* v = strata::env("NOSTROMA_PF_FUSED");
+        const char* v = nostroma::env("NOSTROMA_PF_FUSED");
 #if defined(__HIPCC__)
-        return v != nullptr && v[0] == '1';   // Aurora: the gfx11 WMMA kernels are opt-in (STRATA_PF_FUSED=1)
+        return v != nullptr && v[0] == '1';   // Aurora: the gfx11 WMMA kernels are opt-in (NOSTROMA_PF_FUSED=1)
 #else
         return v == nullptr || v[0] != '0';
 #endif
@@ -959,7 +959,7 @@ bool enabled() {
 }
 bool requested() {
     static const bool env = [] {
-        const char* v = strata::env("NOSTROMA_PF_FUSED");
+        const char* v = nostroma::env("NOSTROMA_PF_FUSED");
         return v != nullptr && v[0] == '1';
     }();
     return env && available();
@@ -979,7 +979,7 @@ void quantize_act(const float* x, int64_t rows, int64_t cols, void* xa, void* st
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
 
-            strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+            nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
                 ->template parallel_for<dpct_kernel_name<class quant_act_kernel_da6c97>>(
                     sycl::nd_range<3>(sycl::range(1, 1, blocks(nblk, 8)) *
                                           sycl::range(1, 1, 256),
@@ -1004,7 +1004,7 @@ void group(const int32_t* ids, int64_t n, int k, int n_expert, void* scratch, in
         std::fprintf(stderr, "prefill fused experts: %d experts (the grouping takes 1 to 1024)\n", n_expert);
         std::exit(1);
     }
-    const dpct::queue_ptr s = strata::q_of(stream);
+    const dpct::queue_ptr s = nostroma::q_of(stream);
     const Tables tb = tables(scratch, n_expert);
     ck(DPCT_CHECK_ERROR(s->memset(tb.cnt, 0, (size_t)n_expert * 4)),
        "group memset");
@@ -1019,7 +1019,7 @@ void group(const int32_t* ids, int64_t n, int k, int n_expert, void* scratch, in
                 auto exp_props = sycl::ext::oneapi::experimental::properties{
                     sycl::ext::oneapi::experimental::use_root_sync};
 
-                strata::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+                nostroma::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
                     sycl::local_accessor<uint8_t, 1> dpct_local_acc_ct1(
                         sycl::range((size_t)n_expert * 4), cgh);
 
@@ -1047,7 +1047,7 @@ void group(const int32_t* ids, int64_t n, int k, int n_expert, void* scratch, in
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
 
-            strata::kprof::kp(s, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class scan_kernel_7ed98e>>(
+            nostroma::kprof::kp(s, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class scan_kernel_7ed98e>>(
                 sycl::nd_range<3>(
                     sycl::range(1, 1, (unsigned)((n_expert + 31) / 32 * 32)),
                     sycl::range(1, 1, (unsigned)((n_expert + 31) / 32 * 32))),
@@ -1061,7 +1061,7 @@ void group(const int32_t* ids, int64_t n, int k, int n_expert, void* scratch, in
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
 
-            strata::kprof::kp(s, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class place_kernel_cf784d>>(
+            nostroma::kprof::kp(s, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class place_kernel_cf784d>>(
                 sycl::nd_range<3>(sycl::range(1, 1, blocks(n, 256)) *
                                       sycl::range(1, 1, 256),
                                   sycl::range(1, 1, 256)),
@@ -1081,7 +1081,7 @@ void experts(const Batch& b, int n_expert, int64_t n, const void* scratch, const
              void* ha, float* dm, void* stream) {
     if (b.e1 <= b.e0 || n <= 0) return;
     const DevInfo& d = dev_info();
-    const dpct::queue_ptr s = strata::q_of(stream);
+    const dpct::queue_ptr s = nostroma::q_of(stream);
     const Tables tb = tables(const_cast<void*>(scratch), n_expert);
     // the most tiles the batch can have: every row in it, plus a partial tile per expert
     const int64_t tiles = (n + kTileRows - 1) / kTileRows + (b.e1 - b.e0);
@@ -1103,7 +1103,7 @@ void experts(const Batch& b, int n_expert, int64_t n, const void* scratch, const
             sycl::ext::oneapi::experimental::use_root_sync};
         dpct::has_capability_or_fail(s->get_device(), {sycl::aspect::fp16});
 
-        strata::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+        nostroma::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
             sycl::local_accessor<uint8_t, 1> dpct_local_acc_ct1(
                 sycl::range(smem_bytes(true)), cgh);
 
@@ -1134,7 +1134,7 @@ void experts(const Batch& b, int n_expert, int64_t n, const void* scratch, const
             sycl::ext::oneapi::experimental::use_root_sync};
         dpct::has_capability_or_fail(s->get_device(), {sycl::aspect::fp16});
 
-        strata::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+        nostroma::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
             sycl::local_accessor<uint8_t, 1> dpct_local_acc_ct1(
                 sycl::range(smem_bytes(false)), cgh);
 
@@ -1163,4 +1163,4 @@ void experts(const Batch& b, int n_expert, int64_t n, const void* scratch, const
     ck(0, "experts");
 }
 
-}  // namespace strata::prefill::fused
+}  // namespace nostroma::prefill::fused

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Strata community benchmark runner — 2x RTX 3060, Qwen3.8-Flash-Next IQ3_S.
+Nostroma community benchmark runner — 2x RTX 3060, Qwen3.8-Flash-Next IQ3_S.
 
 Protocol follows docs/COMMUNITY_BENCHMARKS.md:
   * three prompt sizes (~4k / ~32k / ~128k tokens), RUNS measured runs each;
@@ -14,13 +14,13 @@ Protocol follows docs/COMMUNITY_BENCHMARKS.md:
     `cache_n` stays 0 — freshly processed prompt tokens, as the guide asks.
 
 Environment variables (all optional):
-  STRATA_URL       default http://127.0.0.1:8081
-  STRATA_KEY       default "local"
-  STRATA_MODEL     default qwen3.8-flash-next-iq3_s
-  STRATA_RUNS      default 3
-  STRATA_MAXTOK    default 256
-  STRATA_TARGETS   default 4096,32768,131072
-  STRATA_TTFT      default 1 (also run one streaming TTFT run per size)
+  NOSTROMA_URL       default http://127.0.0.1:8081
+  NOSTROMA_KEY       default "local"
+  NOSTROMA_MODEL     default qwen3.8-flash-next-iq3_s
+  NOSTROMA_RUNS      default 3
+  NOSTROMA_MAXTOK    default 256
+  NOSTROMA_TARGETS   default 4096,32768,131072
+  NOSTROMA_TTFT      default 1 (also run one streaming TTFT run per size)
 
 Outputs (next to this script):
   results.json     meta + every run + summary
@@ -37,15 +37,15 @@ import time
 import urllib.error
 import urllib.request
 
-URL = os.environ.get("STRATA_URL", "http://127.0.0.1:8081")
-API_KEY = os.environ.get("STRATA_KEY", "local")
-MODEL = os.environ.get("STRATA_MODEL", "qwen3.8-flash-next-iq3_s")
+URL = os.environ.get("NOSTROMA_URL", "http://127.0.0.1:8081")
+API_KEY = os.environ.get("NOSTROMA_KEY", "local")
+MODEL = os.environ.get("NOSTROMA_MODEL", "qwen3.8-flash-next-iq3_s")
 OUTDIR = os.path.dirname(os.path.abspath(__file__))
 RAW = os.path.join(OUTDIR, "raw")
-RUNS = int(os.environ.get("STRATA_RUNS", "3"))
-MAXTOK = int(os.environ.get("STRATA_MAXTOK", "256"))
-TARGETS = [int(x) for x in os.environ.get("STRATA_TARGETS", "4096,32768,131072").split(",")]
-DO_TTFT = os.environ.get("STRATA_TTFT", "1") == "1"
+RUNS = int(os.environ.get("NOSTROMA_RUNS", "3"))
+MAXTOK = int(os.environ.get("NOSTROMA_MAXTOK", "256"))
+TARGETS = [int(x) for x in os.environ.get("NOSTROMA_TARGETS", "4096,32768,131072").split(",")]
+DO_TTFT = os.environ.get("NOSTROMA_TTFT", "1") == "1"
 
 # Fixed filler text; the exact prompts are reproducible from this string plus the
 # repetition count recorded in each run (see `filler_repeats` / `prompt_sha256`).

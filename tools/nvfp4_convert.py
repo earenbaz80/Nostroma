@@ -31,7 +31,7 @@ import time
 
 ENGINE = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ENGINE / "tools"))
-from _paths import add_gguf_py, converter_dir  # noqa: E402  (the vendored gguf-py and converter, third_party/strata-gguf-py)
+from _paths import add_gguf_py, converter_dir  # noqa: E402  (the vendored gguf-py and converter, third_party/nostroma-gguf-py)
 
 CONVERTER = pathlib.Path(converter_dir())
 add_gguf_py()
@@ -104,7 +104,7 @@ def main() -> int:
     rc = C.main()
     took = time.time() - t0
 
-    commit = ""   # the converter is vendored at the llama.cpp pin: third_party/strata-gguf-py/UPSTREAM.md names it
+    commit = ""   # the converter is vendored at the llama.cpp pin: third_party/nostroma-gguf-py/UPSTREAM.md names it
     try:
         for line in (CONVERTER.parent / "UPSTREAM.md").read_text(encoding="utf-8").splitlines():
             if line.startswith("pin:"):

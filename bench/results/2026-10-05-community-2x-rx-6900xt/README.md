@@ -31,8 +31,8 @@ performance on other workloads.
   #849 (`a649e42`: PR #540's attention kernel on gfx103x with 8 cells per step and DPP lane exchanges, bit-exact) and
   #854 (`ffca1b0`: a helper GPU's experts kept out of the PCIe share) merged locally. The PR branches since gained
   docs and `bench/results` commits only; the engine source is the same.
-- **Build:** both trees built by hand with cmake and ROCm's clang: `-DCMAKE_BUILD_TYPE=Release -DSTRATA_ENABLE_HIP=ON
-  -DCMAKE_HIP_ARCHITECTURES=gfx1030 -DSTRATA_PREFILL_MMQ=ON` (the options setup uses for AMD), llama.cpp at the pinned
+- **Build:** both trees built by hand with cmake and ROCm's clang: `-DCMAKE_BUILD_TYPE=Release -DNOSTROMA_ENABLE_HIP=ON
+  -DCMAKE_HIP_ARCHITECTURES=gfx1030 -DNOSTROMA_PREFILL_MMQ=ON` (the options setup uses for AMD), llama.cpp at the pinned
   `3cf0325`. Each configuration's `BUILD.txt` has the tree, the commit and the binary's SHA-256.
 - **Other load:** nothing else used the GPUs during the runs (telemetry, below). The machine's other services (a
   llama-swap router that was idle, a home-automation stack) kept running on the CPU.
@@ -77,11 +77,11 @@ decode numbers here are a few percent under what the engine does when it does no
 
 [benchmark.py](benchmark.py) is the script of the
 [RTX 5090 report](../2026-09-30-community-rtx-5090/README.md), unchanged. It builds deterministic synthetic Python
-filler, puts a different nonce near the start of each request, and counts the rendered chat prompt with Strata's
+filler, puts a different nonce near the start of each request, and counts the rendered chat prompt with Nostroma's
 tokenizer. [monitor.py](monitor.py) is the AMD form of that report's monitor: it samples RAM, swap and both cards'
 VRAM, GTT, busy percentage and power from sysfs once per second.
 
-Every configuration started its own server (`serve/server.py --engine strata --config <config.json> --port 8089`
+Every configuration started its own server (`serve/server.py --engine nostroma --config <config.json> --port 8089`
 from its tree), and ran, in this order:
 
 ```bash

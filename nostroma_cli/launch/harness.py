@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
-PLACEHOLDER_KEY = "strata-local"      # the tested configs' placeholder when the server has no key (not a secret)
+PLACEHOLDER_KEY = "nostroma-local"      # the tested configs' placeholder when the server has no key (not a secret)
 OUTPUT_CAP = 4096                     # the output cap every tested config used
 TESTED_CONTEXT = 32768                # the window every config below was tested on
 COMPACT_AT = 15000                    # and where those tested configs make the app compact its conversation
@@ -98,21 +98,21 @@ def _j(obj) -> str:
 # ------------------------------------------------------------------------------------------------ the eight
 
 def opencode_file(t: Target) -> str:
-    return _j({"$schema": "https://opencode.ai/config.json", "model": f"strata/{t.model}", "small_model": f"strata/{t.model}",
+    return _j({"$schema": "https://opencode.ai/config.json", "model": f"nostroma/{t.model}", "small_model": f"nostroma/{t.model}",
                "autoupdate": False,
                "compaction": {"auto": True, "buffer": max(1024, t.input_limit - compact_at(t))},
                "share": "disabled",
-               "provider": {"strata": {"npm": "@ai-sdk/openai-compatible", "name": "Nostroma (local)",
+               "provider": {"nostroma": {"npm": "@ai-sdk/openai-compatible", "name": "Nostroma (local)",
                                        "options": {"baseURL": t.base, "apiKey": t.key},
                                        "models": {t.model: {"name": "Qwen3.8-Flash-Next (local)", "tool_call": True, "reasoning": True,
                                                             "limit": {"context": t.context, "input": t.input_limit, "output": t.output_cap}}}}}})
 
 
 def codex_file(t: Target) -> str:
-    return (f'model = "{t.model}"\nmodel_provider = "strata"\nmodel_context_window = {t.context}\n'
+    return (f'model = "{t.model}"\nmodel_provider = "nostroma"\nmodel_context_window = {t.context}\n'
             f"model_auto_compact_token_limit = {compact_at(t)}\nmodel_reasoning_summary = \"auto\"\napproval_policy = \"never\"\n"
-            'sandbox_mode = "workspace-write"\ncheck_for_update_on_startup = false\n\n[model_providers.strata]\n'
-            f'name = "Nostroma (local)"\nbase_url = "{t.base}"\nwire_api = "responses"\nenv_key = "STRATA_API_KEY"\n'
+            'sandbox_mode = "workspace-write"\ncheck_for_update_on_startup = false\n\n[model_providers.nostroma]\n'
+            f'name = "Nostroma (local)"\nbase_url = "{t.base}"\nwire_api = "responses"\nenv_key = "NOSTROMA_API_KEY"\n'
             "stream_idle_timeout_ms = 600000\n")
 
 
@@ -129,7 +129,7 @@ def claude_file(t: Target) -> str:
 
 
 def omp_models(t: Target) -> str:
-    return ("providers:\n  strata:\n    baseUrl: " + t.base + "\n    api: openai-completions\n    auth: none\n    compat:\n"
+    return ("providers:\n  nostroma:\n    baseUrl: " + t.base + "\n    api: openai-completions\n    auth: none\n    compat:\n"
             "      supportsDeveloperRole: false\n    models:\n      - id: " + t.model + "\n        name: Qwen3.8-Flash-Next (Nostroma, local)\n"
             "        reasoning: true\n        input: [text]\n        contextWindow: " + str(t.context) + "\n        maxTokens: " + str(t.output_cap) +
             "\n        thinking:\n          mode: effort\n          efforts: [minimal, low, medium, high]\n          defaultLevel: medium\n"
@@ -137,12 +137,12 @@ def omp_models(t: Target) -> str:
 
 
 def omp_config(t: Target) -> str:
-    return ("modelRoles:\n  default: strata/" + t.model + "\ndefaultThinkingLevel: medium\ncompaction:\n  enabled: true\n  thresholdTokens: "
+    return ("modelRoles:\n  default: nostroma/" + t.model + "\ndefaultThinkingLevel: medium\ncompaction:\n  enabled: true\n  thresholdTokens: "
             + str(compact_at(t)) + "\n  keepRecentTokens: 4000\n  methodOrder:\n    - soft\n  idleEnabled: false\nsetupVersion: 2\n")
 
 
 def pi_models(t: Target) -> str:
-    return _j({"providers": {"strata": {"baseUrl": t.base, "api": "openai-completions", "apiKey": t.key,
+    return _j({"providers": {"nostroma": {"baseUrl": t.base, "api": "openai-completions", "apiKey": t.key,
                                         "compat": {"supportsDeveloperRole": False, "supportsReasoningEffort": False},
                                         "models": [{"id": t.model, "name": "Qwen3.8-Flash-Next (Nostroma, local)", "reasoning": True,
                                                     "input": ["text"], "contextWindow": t.context, "maxTokens": t.output_cap,
@@ -150,7 +150,7 @@ def pi_models(t: Target) -> str:
 
 
 def pi_settings(t: Target) -> str:
-    return _j({"defaultProvider": "strata", "defaultModel": t.model, "defaultThinkingLevel": "medium",
+    return _j({"defaultProvider": "nostroma", "defaultModel": t.model, "defaultThinkingLevel": "medium",
                "compaction": {"enabled": True, "reserveTokens": max(1024, t.context - compact_at(t)), "keepRecentTokens": 4000}})
 
 
@@ -160,12 +160,12 @@ def hermes_file(t: Target) -> str:
 
 
 def openclaw_file(t: Target) -> str:
-    return _j({"models": {"mode": "merge", "providers": {"strata": {
+    return _j({"models": {"mode": "merge", "providers": {"nostroma": {
         "baseUrl": t.base, "apiKey": t.key, "api": "openai-completions",
         "models": [{"id": t.model, "name": f"{t.model} (Nostroma)", "contextWindow": t.context,
                     "contextTokens": int(t.context * 23192 / 32768), "maxTokens": t.output_cap, "reasoning": True, "input": ["text"],
                     "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}}]}}},
-        "agents": {"defaults": {"model": {"primary": f"strata/{t.model}"},
+        "agents": {"defaults": {"model": {"primary": f"nostroma/{t.model}"},
                                 "compaction": {"enabled": True, "notifyUser": True, "keepRecentTokens": 4000}}}})
 
 
@@ -178,7 +178,7 @@ def _limits_opencode(t: Target) -> list[str]:
 
 def _limits_codex(t: Target) -> list[str]:
     return ["Codex prints \"Model metadata ... not found\" on every start: harmless, it does not know the model.",
-            "It will not send without STRATA_API_KEY set; any text works when the server has no key.",
+            "It will not send without NOSTROMA_API_KEY set; any text works when the server has no key.",
             "Where the sandbox cannot start (no bubblewrap), use --dangerously-bypass-approvals-and-sandbox only in a throwaway folder.",
             "Its system prompt and tools take about 8.6K tokens of the window."]
 
@@ -232,7 +232,7 @@ HARNESSES: list[Harness] = [
             files=[FileSpec("~/.config/opencode/opencode.json", "json", opencode_file, merge=True)], limits=_limits_opencode,
             run='opencode run "your task"', install="npm i -g opencode-ai"),
     Harness("codex", "Codex CLI", "responses + tools", tested="codex-cli 0.163.0",
-            files=[FileSpec("~/.codex/config.toml", "toml", codex_file)], env=lambda t: {"STRATA_API_KEY": t.key}, limits=_limits_codex,
+            files=[FileSpec("~/.codex/config.toml", "toml", codex_file)], env=lambda t: {"NOSTROMA_API_KEY": t.key}, limits=_limits_codex,
             run='codex exec --skip-git-repo-check "your task"', install="npm i -g @openai/codex"),
     Harness("claude-code", "Claude Code", "messages + tools", tested="Claude Code 2.1.302",
             files=[FileSpec("~/.claude/settings.json", "json", claude_file, merge=True)], env=claude_env, limits=_limits_claude,
@@ -278,7 +278,7 @@ def server_root(url: str) -> str:
 
 
 def target(url: str, key: str | None, model: str, context: int | None = None) -> Target:
-    return Target(url=server_root(url), key=key or PLACEHOLDER_KEY, model=model or "strata", context=int(context or 32768))
+    return Target(url=server_root(url), key=key or PLACEHOLDER_KEY, model=model or "nostroma", context=int(context or 32768))
 
 
 def render(h: Harness, t: Target) -> dict:
@@ -294,7 +294,7 @@ def expand(path: str) -> Path:
 
 
 def write_file(spec: dict, *, backup: bool = True) -> dict:
-    """Write one rendered file. An existing file is copied to `<name>.strata-bak-<time>` first; a JSON file with `merge` keeps the
+    """Write one rendered file. An existing file is copied to `<name>.nostroma-bak-<time>` first; a JSON file with `merge` keeps the
     keys it already had (the new ones win on the same key). Returns {path, backup, action}."""
     path = expand(spec["path"])
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -302,7 +302,7 @@ def write_file(spec: dict, *, backup: bool = True) -> dict:
     bak = None
     text = spec["text"]
     if existed and backup:
-        bak = path.with_name(path.name + ".strata-bak-" + time.strftime("%Y%m%d-%H%M%S"))
+        bak = path.with_name(path.name + ".nostroma-bak-" + time.strftime("%Y%m%d-%H%M%S"))
         shutil.copy2(path, bak)
     if existed and spec.get("merge") and spec["kind"] == "json":
         try:
@@ -327,8 +327,8 @@ def _keep_output_cap(old, merged) -> None:
     the cap that breaks compaction for ever. OpenCode's limit.output and Claude Code's CLAUDE_CODE_MAX_OUTPUT_TOKENS."""
     if not (isinstance(old, dict) and isinstance(merged, dict)):
         return
-    models = ((old.get("provider") or {}).get("strata") or {}).get("models")
-    new_models = ((merged.get("provider") or {}).get("strata") or {}).get("models")
+    models = ((old.get("provider") or {}).get("nostroma") or {}).get("models")
+    new_models = ((merged.get("provider") or {}).get("nostroma") or {}).get("models")
     if isinstance(models, dict) and isinstance(new_models, dict):
         for name, entry in models.items():
             was = ((entry or {}).get("limit") or {}).get("output") if isinstance(entry, dict) else None

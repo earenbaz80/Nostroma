@@ -1,11 +1,11 @@
 // src/kernels/gr_v3_screen.cpp - the v3 hyper-connection read (gr_down_v3 / gr_up_v3, the sm_120 default) with and
-// without its weight-prefetch variants (STRATA_GR_V3_PF; BW-DENSE): every output of every variant must be bitwise the
+// without its weight-prefetch variants (NOSTROMA_GR_V3_PF; BW-DENSE): every output of every variant must be bitwise the
 // plain v3 read's (FNV-1a hash of R, lo, rs, inject and mixed), and each variant's time on COLD weights (the read
 // rotates over `sets` copies of one layer's 13 MB so L2 holds none of it, as in the engine).
 //
 //     build/gr_v3_screen [iters] [T min] [T max] [sets] [rounds]
-#include "strata/kernels/fused_gr.hpp"
-#include "strata/kernels/verify_kernels.hpp"
+#include "nostroma/kernels/fused_gr.hpp"
+#include "nostroma/kernels/verify_kernels.hpp"
 
 #include <cuda_runtime.h>
 
@@ -24,7 +24,7 @@
 #define unsetenv(k) _putenv_s((k), "")
 #endif
 
-namespace K = strata::kernels;
+namespace K = nostroma::kernels;
 
 static uint16_t bf16(float x) {
     uint32_t u;
@@ -33,7 +33,7 @@ static uint16_t bf16(float x) {
 }
 
 int main(int argc, char** argv) {
-    setenv("STRATA_GR_V3", "1", 1);
+    setenv("NOSTROMA_GR_V3", "1", 1);
     setvbuf(stdout, nullptr, _IONBF, 0);
     K::fused_gr_v3_print_resources();
     if (argc > 1 && std::string(argv[1]) == "--resources") return 0;

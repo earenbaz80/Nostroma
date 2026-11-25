@@ -27,7 +27,7 @@ class Base(unittest.TestCase):
         p = mock.patch.object(Catalog, "hardware", lambda self, fresh=False: dict(HW_12, disk_free_gb=500.0))
         p.start()
         self.addCleanup(p.stop)
-        t = tempfile.TemporaryDirectory(prefix="strata-netown-")
+        t = tempfile.TemporaryDirectory(prefix="nostroma-netown-")
         self.addCleanup(t.cleanup)
         self.base = Path(t.name)
 
@@ -81,9 +81,9 @@ class ReadOnlyFolder(Base):
 
 
 class FinishMarks(Base):
-    def test_own_files_are_marked_in_stratas_folder(self):
+    def test_own_files_are_marked_in_nostromas_folder(self):
         own = self.own(self.base / "mine" / "IQ3_XXS")
-        root = self.base / "strata"
+        root = self.base / "nostroma"
         root.mkdir()
         shard = own / IQ3XXS[0]
         with mock.patch.object(setup, "ROOT", root), mock.patch.object(setup, "_OWN_DIRS", []):

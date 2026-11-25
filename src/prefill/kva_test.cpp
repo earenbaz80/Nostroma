@@ -1,7 +1,7 @@
 // src/prefill/kva_test.cpp - the KVA switch, the automatic tail and the reasons a read is turned away (no GPU needed).
-#include "strata/kernels/window_start.hpp"
-#include "strata/prefill/kva.hpp"
-#include "strata/prefill/kva_floor.hpp"
+#include "nostroma/kernels/window_start.hpp"
+#include "nostroma/prefill/kva.hpp"
+#include "nostroma/prefill/kva_floor.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-using namespace strata::prefill;
+using namespace nostroma::prefill;
 
 static int fails = 0;
 #define CHECK(c) do { if (!(c)) { std::printf("FAIL line %d: %s\n", __LINE__, #c); ++fails; } } while (0)
@@ -29,15 +29,15 @@ static void put(const char* k, const char* v) {
 #endif
 }
 static void clear_all() {
-    for (const char* k : {"STRATA_KVA", "STRATA_KVA_SPLIT", "STRATA_KVA_SUFFIX", "STRATA_KVA_MIN_PROMPT", "STRATA_KVA_PARITY",
-                          "STRATA_KVA_CAPTURE", "STRATA_KVA_CAPTURE_FP32", "STRATA_KVA_ORACLE", "STRATA_KVA_ORACLE_FP32",
-                          "STRATA_KVA_PROJECTOR", "STRATA_KVA_MODE", "STRATA_KVA_ONLY", "STRATA_KVA_DRAFT_FLOOR", "STRATA_KVA_SKIP", "STRATA_KVA_ANY_MODEL"})
+    for (const char* k : {"NOSTROMA_KVA", "NOSTROMA_KVA_SPLIT", "NOSTROMA_KVA_SUFFIX", "NOSTROMA_KVA_MIN_PROMPT", "NOSTROMA_KVA_PARITY",
+                          "NOSTROMA_KVA_CAPTURE", "NOSTROMA_KVA_CAPTURE_FP32", "NOSTROMA_KVA_ORACLE", "NOSTROMA_KVA_ORACLE_FP32",
+                          "NOSTROMA_KVA_PROJECTOR", "NOSTROMA_KVA_MODE", "NOSTROMA_KVA_ONLY", "NOSTROMA_KVA_DRAFT_FLOOR", "NOSTROMA_KVA_SKIP", "NOSTROMA_KVA_ANY_MODEL"})
         unset(k);
 }
 static bool is(const char* got, const char* want) { return got != nullptr && std::strcmp(got, want) == 0; }
 
 int main() {
-    // ---- the switch: off unless STRATA_KVA=1 (0.2.7 ships KVA opt-in; unset is the exact 0.2.6 engine)
+    // ---- the switch: off unless NOSTROMA_KVA=1 (0.2.7 ships KVA opt-in; unset is the exact 0.2.6 engine)
     clear_all();
     {
         const KvaConfig c = kva_config_from_env();
@@ -46,28 +46,28 @@ int main() {
         CHECK(c.mode == KvaConfig::Mode::Identity && c.only == KvaConfig::Only::All && !c.capture);
         KvaEngine eng;
         CHECK(!c.wants_cell_floor(eng, true));
-        CHECK(is(c.decline(eng, 0, 30000, 0, -1, 48), "off (STRATA_KVA is not 1)"));   // a 30K cold prompt is read exactly
+        CHECK(is(c.decline(eng, 0, 30000, 0, -1, 48), "off (NOSTROMA_KVA is not 1)"));   // a 30K cold prompt is read exactly
     }
-    put("STRATA_KVA", "0");
+    put("NOSTROMA_KVA", "0");
     { const KvaConfig c = kva_config_from_env(); CHECK(!c.on && !c.explicit_on); }
-    put("STRATA_KVA", "1");
+    put("NOSTROMA_KVA", "1");
     { const KvaConfig c = kva_config_from_env(); CHECK(c.on && c.explicit_on); }
-    put("STRATA_KVA", "");   // an empty value is "not set"
+    put("NOSTROMA_KVA", "");   // an empty value is "not set"
     { const KvaConfig c = kva_config_from_env(); CHECK(!c.on && !c.explicit_on); }
     clear_all();
-    put("STRATA_KVA", "1");   // everything below runs with KVA switched on
+    put("NOSTROMA_KVA", "1");   // everything below runs with KVA switched on
 
-    // ---- switched on: split 36 and a 2048-token tail (the configuration measured), or STRATA_KVA_SPLIT / STRATA_KVA_SUFFIX
+    // ---- switched on: split 36 and a 2048-token tail (the configuration measured), or NOSTROMA_KVA_SPLIT / NOSTROMA_KVA_SUFFIX
     {
         const KvaConfig c = kva_config_from_env();
         CHECK(c.on && c.split == 36 && c.effective_suffix() == kKvaSuffixDefault && kKvaSuffixDefault == 2048);
-        put("STRATA_KVA_SPLIT", "30");
+        put("NOSTROMA_KVA_SPLIT", "30");
         CHECK(kva_config_from_env().split == 30);
-        unset("STRATA_KVA_SPLIT");
-        put("STRATA_KVA_SUFFIX", "3000");
+        unset("NOSTROMA_KVA_SPLIT");
+        put("NOSTROMA_KVA_SUFFIX", "3000");
         const KvaConfig e = kva_config_from_env();
         CHECK(e.effective_suffix() == 3000);
-        unset("STRATA_KVA_SUFFIX");
+        unset("NOSTROMA_KVA_SUFFIX");
     }
 
     // ---- who is turned away, and why (the first reason that holds is the one named)
@@ -81,13 +81,13 @@ int main() {
         // a continuation (turn 2 of a chat, a resumed prompt): routine
         CHECK(is(c.decline(eng, 9000, 14600, 0, -1, 48, false, false, &routine), "a continuation read (pos0 != 0)") && routine);
         // short prompts and a prompt the tail would swallow: routine
-        CHECK(is(c.decline(eng, 0, 3000, 0, -1, 48, false, false, &routine), "the prompt is shorter than STRATA_KVA_MIN_PROMPT") && routine);
+        CHECK(is(c.decline(eng, 0, 3000, 0, -1, 48, false, false, &routine), "the prompt is shorter than NOSTROMA_KVA_MIN_PROMPT") && routine);
         CHECK(c.decline(eng, 0, 4096, 0, -1, 48) == nullptr);   // 4096 is the first prompt that is long enough
-        put("STRATA_KVA_SUFFIX", "5000");   // a longer tail swallows a prompt of 5000 and not one of 5065
+        put("NOSTROMA_KVA_SUFFIX", "5000");   // a longer tail swallows a prompt of 5000 and not one of 5065
         { const KvaConfig s = kva_config_from_env();
           CHECK(is(s.decline(eng, 0, 5000, 0, -1, 48, false, false, &routine), "the suffix leaves too few positions to approximate") && routine);
           CHECK(s.decline(eng, 0, 5065, 0, -1, 48) == nullptr); }
-        unset("STRATA_KVA_SUFFIX");
+        unset("NOSTROMA_KVA_SUFFIX");
         // not routine: the user may want to know
         CHECK(is(c.decline(eng, 0, 14600, 24, -1, 48, false, false, &routine), "a layer split (not the whole trunk)") && !routine);
         CHECK(is(c.decline(eng, 0, 14600, 0, 24, 48), "a layer split (not the whole trunk)"));
@@ -100,25 +100,25 @@ int main() {
         // a model whose shape KVA was not measured on (not 48 layers / 512 experts) is turned away, not warned about;
         // the routine reasons (a short prompt, a continuation) still come first
         CHECK(is(c.decline(eng, 0, 14600, 0, -1, 40, false, false, &routine, true), kKvaShapeReason) && !routine);
-        CHECK(is(c.decline(eng, 0, 3000, 0, -1, 40, false, false, &routine, true), "the prompt is shorter than STRATA_KVA_MIN_PROMPT") && routine);
+        CHECK(is(c.decline(eng, 0, 3000, 0, -1, 40, false, false, &routine, true), "the prompt is shorter than NOSTROMA_KVA_MIN_PROMPT") && routine);
         CHECK(c.decline(eng, 0, 14600, 0, -1, 48, false, false, &routine, false) == nullptr);   // the measured shape applies
-        put("STRATA_KVA_ANY_MODEL", "1");   // the research override allows it (prefill.cpp then warns once)
+        put("NOSTROMA_KVA_ANY_MODEL", "1");   // the research override allows it (prefill.cpp then warns once)
         { const KvaConfig a = kva_config_from_env(); CHECK(a.any_model && a.decline(eng, 0, 14600, 0, -1, 40, false, false, nullptr, true) == nullptr); }
-        unset("STRATA_KVA_ANY_MODEL");
+        unset("NOSTROMA_KVA_ANY_MODEL");
         CHECK(!kva_config_from_env().any_model);
         // capture wins over the rest
-        put("STRATA_KVA_CAPTURE", "/tmp/kva-cap");
+        put("NOSTROMA_KVA_CAPTURE", "/tmp/kva-cap");
         { const KvaConfig o = kva_config_from_env(); CHECK(o.capture && is(o.decline(eng, 0, 14600, 0, -1, 48), "capture mode")); }
-        unset("STRATA_KVA_CAPTURE");
+        unset("NOSTROMA_KVA_CAPTURE");
     }
     clear_all();
 
     // ---- the research modes still parse
-    put("STRATA_KVA_ORACLE", "/tmp/o");
-    put("STRATA_KVA_ORACLE_FP32", "1");
-    put("STRATA_KVA_ONLY", "qsa");
-    put("STRATA_KVA_SPLIT", "30");
-    put("STRATA_KVA_MIN_PROMPT", "1024");
+    put("NOSTROMA_KVA_ORACLE", "/tmp/o");
+    put("NOSTROMA_KVA_ORACLE_FP32", "1");
+    put("NOSTROMA_KVA_ONLY", "qsa");
+    put("NOSTROMA_KVA_SPLIT", "30");
+    put("NOSTROMA_KVA_MIN_PROMPT", "1024");
     {
         const KvaConfig c = kva_config_from_env();
         CHECK(c.mode == KvaConfig::Mode::Oracle && c.oracle_fp32 && c.oracle_dir == "/tmp/o");
@@ -126,39 +126,39 @@ int main() {
     }
     clear_all();
 
-    // ---- STRATA_KVA_SKIP: the default is the state-only form; "moe" runs the attention halves and skips the MoE half
+    // ---- NOSTROMA_KVA_SKIP: the default is the state-only form; "moe" runs the attention halves and skips the MoE half
     {
         CHECK(kva_config_from_env().skip == KvaConfig::Skip::StateOnly);
-        put("STRATA_KVA_SKIP", "moe");
+        put("NOSTROMA_KVA_SKIP", "moe");
         CHECK(kva_config_from_env().skip == KvaConfig::Skip::Moe);
-        put("STRATA_KVA_SKIP", "state");
+        put("NOSTROMA_KVA_SKIP", "state");
         CHECK(kva_config_from_env().skip == KvaConfig::Skip::StateOnly);
-        put("STRATA_KVA_SKIP", "bogus");
+        put("NOSTROMA_KVA_SKIP", "bogus");
         CHECK(kva_config_from_env().skip == KvaConfig::Skip::StateOnly);
-        unset("STRATA_KVA_SKIP");
+        unset("NOSTROMA_KVA_SKIP");
     }
-    // ---- "not applied => identical to STRATA_KVA=0", the parts that need no GPU
+    // ---- "not applied => identical to NOSTROMA_KVA=0", the parts that need no GPU
     // (1) by default the draft layer is 0.2.6's own code; the cell floor is a research option, wired only when asked
     {
         KvaEngine eng;
-        put("STRATA_KVA", "1");
+        put("NOSTROMA_KVA", "1");
         const KvaConfig on = kva_config_from_env();
         CHECK(on.on && !on.draft_floor && !on.wants_cell_floor(eng, true));
-        put("STRATA_KVA_DRAFT_FLOOR", "1");
+        put("NOSTROMA_KVA_DRAFT_FLOOR", "1");
         const KvaConfig fl = kva_config_from_env();
         CHECK(fl.draft_floor && fl.wants_cell_floor(eng, true));
         CHECK(!fl.wants_cell_floor(eng, false));          // no draft layer: nothing to wire
         KvaEngine blocked;
         blocked.blocked = "batch slots (--batch)";
         CHECK(!fl.wants_cell_floor(blocked, true));       // ruled out for the process: 0.2.6's own attention code
-        put("STRATA_KVA", "0");
+        put("NOSTROMA_KVA", "0");
         const KvaConfig off = kva_config_from_env();
-        CHECK(!off.wants_cell_floor(eng, true));          // STRATA_KVA=0: untouched
+        CHECK(!off.wants_cell_floor(eng, true));          // NOSTROMA_KVA=0: untouched
         clear_all();
     }
     // (2) with a floor of 0 the window is exactly the plain window, for every length and every window
     {
-        using strata::kernels::window_start;
+        using nostroma::kernels::window_start;
         bool same = true;
         for (int window : {1, 2, 64, 2048, 32768, 0x7fffffff})
             for (int n_kv : {0, 1, 2, 63, 64, 65, 2047, 2048, 2049, 4096, 14000, 32768, 32769, 100000}) {

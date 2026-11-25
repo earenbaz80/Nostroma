@@ -25,7 +25,7 @@ WINDOWS = os.name == "nt"
 GOOD_ENGINE = (
     "import sys, os\nfrom pathlib import Path\n"
     "Path(os.environ['FAKE_ENGINE_MARK']).write_text(os.path.abspath(__file__) + '\\n' + ' '.join(sys.argv[1:]))\n"
-    "if '--version' in sys.argv:\n    print('strata-engine stub'); sys.exit(0)\n"
+    "if '--version' in sys.argv:\n    print('nostroma-engine stub'); sys.exit(0)\n"
     "print('READY 4096 stop', flush=True)\n"
     "for line in sys.stdin:\n"
     "    if line.strip() == 'QUIT': break\n"
@@ -54,11 +54,11 @@ def build_package(parent: Path, version: str, *, engine_source: str = GOOD_ENGIN
     src.mkdir(parents=True)
     (src / "engine_main.py").write_text(engine_source, encoding="utf-8")
     if WINDOWS:
-        entry = "strata.cmd"
+        entry = "nostroma.cmd"
         (src / entry).write_bytes(f'@echo off\r\n"{sys.executable}" "%~dp0engine_main.py" %*\r\n'.encode())
         library = "cudart64_13.dll"
     else:
-        entry = "strata"
+        entry = "nostroma"
         (src / entry).write_text(f'#!/bin/sh\nexec "{sys.executable}" "$(dirname "$0")/engine_main.py" "$@"\n')
         (src / entry).chmod(0o755)
         library = "libcudart.so.13"

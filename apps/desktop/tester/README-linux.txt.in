@@ -37,7 +37,7 @@ START IT
        ./@APPIMAGE@
 
 The very first start takes about a minute longer: the engine that came with the app is unpacked into your home folder
-(~/.local/share/strata). Later starts are quick. Then open the Models page, pick a model and press the install button.
+(~/.local/share/nostroma). Later starts are quick. Then open the Models page, pick a model and press the install button.
 A model download is big; it carries on where it stopped if it is interrupted.
 
 Closing the window stops Nostroma and the engine. (In browser mode closing the tab does not: see BROWSER MODE below.)
@@ -62,11 +62,11 @@ WHAT TO SEND BACK
 Open  Settings > Engine > Diagnostics > View logs > Save logs.  Send the saved file, plus a few words about what you did and what you saw
 (a photo of the screen is fine).
 If the window crashed or would not open, the app window is not available for that: run   ./@APPIMAGE@ --save-logs   in a terminal instead.
-It writes strata-logs-<date>.txt in your Downloads folder (including the crash log of the window); send that file.
+It writes nostroma-logs-<date>.txt in your Downloads folder (including the crash log of the window); send that file.
 
 
 WHERE THINGS ARE (to remove Nostroma completely, delete the file and these folders)
 --------------------------------------------------------------------------------
-  ~/.strata                      settings, chats, prepared model files
-  ~/.local/share/strata          the unpacked engine, and logs/ (what the app printed, and a crash log if the window ever crashes)
-  ~/Documents/Strata             downloaded models (Models) and your work folder (Workspace)
+  ~/.nostroma                      settings, chats, prepared model files
+  ~/.local/share/nostroma          the unpacked engine, and logs/ (what the app printed, and a crash log if the window ever crashes)
+  ~/Documents/Nostroma             downloaded models (Models) and your work folder (Workspace)

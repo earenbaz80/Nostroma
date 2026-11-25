@@ -71,7 +71,7 @@ def run_config(cfg_path, port, tag):
     cfg["log"] = f"/tmp/quality24-{tag}.log"
     tmp = Path(f"/tmp/quality24-{tag}.json")
     tmp.write_text(json.dumps(cfg, indent=1))
-    proc = subprocess.Popen([sys.executable, str(ROOT / "serve" / "server.py"), "--engine", "strata", "--config",
+    proc = subprocess.Popen([sys.executable, str(ROOT / "serve" / "server.py"), "--engine", "nostroma", "--config",
                              str(tmp), "--port", str(port)], cwd=str(ROOT),
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     answers = []

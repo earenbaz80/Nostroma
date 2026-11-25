@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""The answers rule for Qwen3.6: greedy picture answers of strata-q36 (the engine protocol, one engine for every arm) for embeddings made by different readers.
+"""The answers rule for Qwen3.6: greedy picture answers of nostroma-q36 (the engine protocol, one engine for every arm) for embeddings made by different readers.
 
-    python3 answers_q36.py --engine <strata-q36> --model <Qwen3.6 .gguf> --vc <dir with shapes.png.q0.llama.log / .q1.llama.log> --out <dir>
+    python3 answers_q36.py --engine <nostroma-q36> --model <Qwen3.6 .gguf> --vc <dir with shapes.png.q0.llama.log / .q1.llama.log> --out <dir>
                            [--n 48] [--engine-args "--max-context 4096 --vision"] --arm mtmd-cpu=<dir of .sve> --arm own-cpu=<dir> --arm mtmd-gpu=<dir> --arm own-gpu=<dir>
                            [--pictures a.png b.png ...]
 
-Every arm is a folder of <picture name>.sve files (strata-vision outputs of one reader for the same pictures at the same token limit).  The prompt ids are the
+Every arm is a folder of <picture name>.sve files (nostroma-vision outputs of one reader for the same pictures at the same token limit).  The prompt ids are the
 chat template's: the text before the picture, the picture's pad tokens (as many as the .sve has rows), then the text after it with the question.  The two
 questions are the ones q36_vision_cmp.py asks (their token ids are read from llama.cpp's logs of shapes.png, which the question's tokens do not depend on).
 The engine decodes greedily; the ids are turned back into text with the model's own vocabulary (byte-level BPE).  Prints the pairwise counts of identical

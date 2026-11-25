@@ -1,10 +1,10 @@
 // tests/cuda/hc_q8_stream_test.cu - `hc_q8_to_bf16` expands on the stream it is given.  The layer-major prompt walk
-// called `bf16_proj` for its hyper-connection projections without a stream, so under STRATA_HC_REQ8 the int8 expansion
+// called `bf16_proj` for its hyper-connection projections without a stream, so under NOSTROMA_HC_REQ8 the int8 expansion
 // ran on the default stream while the GEMMs read it on another.  This pins the property that failed; it does not cover
 // the call sites themselves (`bf16_proj` is file-static, so no test reaches it).
 //
 // Exit 0 pass, 1 fail, 77 no CUDA device (ctest SKIP_RETURN_CODE).
-#include "strata/kernels/fused_gr.hpp"
+#include "nostroma/kernels/fused_gr.hpp"
 
 #include <cuda_runtime.h>
 
@@ -75,7 +75,7 @@ void check(bool with_spin, int n_blocks, uint32_t seed) {
         ck(cudaMemcpy(d_sc, sc.data(), sc.size() * 4, cudaMemcpyHostToDevice), "upload sc");
         ck(cudaMemset(d_out, 0xff, (size_t) n * 2), "poison out");
         if (with_spin) spin_kernel<<<1, 1, 0, a>>>();
-        strata::kernels::hc_q8_to_bf16(d_q, d_sc, d_out, n, a);
+        nostroma::kernels::hc_q8_to_bf16(d_q, d_sc, d_out, n, a);
         // the readback is ordered by the expansion's stream and by nothing else
         ck(cudaEventRecord(ev, a), "record");
         ck(cudaStreamWaitEvent(nullptr, ev, 0), "wait on the default stream");

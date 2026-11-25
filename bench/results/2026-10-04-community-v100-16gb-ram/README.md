@@ -10,7 +10,7 @@ model size; the V100 sits on a PCIe 3.0 x4 link.
   and was idle during the runs); power limit 250 W (default). CPU: Intel Core i7-13700KF (24 threads, AVX2, no
   integrated GPU). RAM: **16 GB DDR5** (15 GiB visible). Model files on a SATA SSD (Samsung 870 EVO 500 GB).
 - OS: Ubuntu 24.04.4 LTS, kernel 7.0.0-30-generic; NVIDIA driver 580.173.02; CUDA 12.9 toolkit.
-- Strata main at 6f32ec0, engine 0.1.39. Engine built by setup.sh from source (CUDA 12, `-DSTRATA_EXPERIMENTAL_SM60=ON`,
+- Nostroma main at 6f32ec0, engine 0.1.39. Engine built by setup.sh from source (CUDA 12, `-DNOSTROMA_EXPERIMENTAL_SM60=ON`,
   sm_70; the build took ~45 s). One local change in `serve/frontend.py` (images inside Anthropic tool_result blocks, PR #819);
   it does not touch the engine or these OpenAI-API requests.
 - Transparent huge pages: `enabled = madvise`, `defrag = madvise`.
@@ -29,7 +29,7 @@ model size; the V100 sits on a PCIe 3.0 x4 link.
   The config also sets `"reasoning_budget_tokens": 8192` (irrelevant here with reasoning off).
 
 ```text
-./setup.sh --yes --family coder --gpu 1 --cuda 12 --low-ram on --vision gpu --data-dir /mnt/steam/Strata-data --no-start
+./setup.sh --yes --family coder --gpu 1 --cuda 12 --low-ram on --vision gpu --data-dir /mnt/steam/Nostroma-data --no-start
 engine args: --pack .../packs/coder-iq1_m --native ...-00001-of-00002.gguf --ple-gguf ...-00002-of-00002.gguf
   --expert-profile data/expert-profile-coder.bin --expert-cache auto --prefill auto --spec 4 --spec-min-p 0.5
   --mtp .../mtp/rt --max-context 131072 --kv int8 --resident-experts --vision --vram-reserve-mib 700

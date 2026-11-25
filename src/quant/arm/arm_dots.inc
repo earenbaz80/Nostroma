@@ -2,9 +2,9 @@
 // Copyright (c) 2023-2026 The ggml authors, MIT) in the layer's signature.  Included by dot_neon.cpp inside its namespace under the flavour's flags
 // (armv8.2-a + dotprod + fp16 + i8mm, no SVE): the #if __ARM_FEATURE_* branches are ggml's own, so the kernels give the bits of ggml-cpu built for that
 // flavour.  bs, bx, by and nrc are the constants of the one-row call (the pool never asks for ggml's two-row i8mm form).
-// Needs before it: arm_helpers.inc, arm_tables.inc, internal.hpp and the strata::quant::generic dot declarations.
+// Needs before it: arm_helpers.inc, arm_tables.inc, internal.hpp and the nostroma::quant::generic dot declarations.
 
-void dot_q2_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q2_0_q8_0(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const size_t bs = 0, bx = 0, by = 0;   // one row at a time: ggml's nrc == 1 path
     const int nrc = 1;
     const int qk = QK2_0;
@@ -17,8 +17,8 @@ void dot_q2_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     UNUSED(by);
     UNUSED(bs);
 
-    const block_q2_0* STRATA_RESTRICT x = (const block_q2_0*) vx;
-    const block_q8_0* STRATA_RESTRICT y = (const block_q8_0*) vy;
+    const block_q2_0* NOSTROMA_RESTRICT x = (const block_q2_0*) vx;
+    const block_q8_0* NOSTROMA_RESTRICT y = (const block_q8_0*) vy;
 
     float sumf = 0.0f;
 
@@ -42,7 +42,7 @@ void dot_q2_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 
         // group 64: one Q2_0 block (64 weights) maps to two Q8_0 blocks (2 * 32 = 64)
         for (int k = 0; k < 2; k++) {
-            const block_q8_0 * STRATA_RESTRICT yb = &y[i * 2 + k];
+            const block_q8_0 * NOSTROMA_RESTRICT yb = &y[i * 2 + k];
             const float d1 = h2f(yb->d);
 
             // Load 8 bytes of packed 2-bit values
@@ -81,7 +81,7 @@ void dot_q2_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     *s = sumf;
 }
 
-void dot_q4_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q4_0_q8_0(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const size_t bs = 0, bx = 0, by = 0;   // one row at a time: ggml's nrc == 1 path
     const int nrc = 1;
     const int qk = QK8_0;
@@ -98,23 +98,23 @@ void dot_q4_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     UNUSED(by);
     UNUSED(bs);
 
-    const block_q4_0* STRATA_RESTRICT x = (const block_q4_0*) vx;
-    const block_q8_0* STRATA_RESTRICT y = (const block_q8_0*) vy;
+    const block_q4_0* NOSTROMA_RESTRICT x = (const block_q4_0*) vx;
+    const block_q8_0* NOSTROMA_RESTRICT y = (const block_q8_0*) vy;
 
 #if defined(__ARM_FEATURE_MATMUL_INT8)
     if (nrc == 2) {
-        const block_q4_0* STRATA_RESTRICT vx0 = (const block_q4_0*) vx;
-        const block_q4_0 * STRATA_RESTRICT vx1 = (const block_q4_0 *) ((const uint8_t*)vx + bx);
-        const block_q8_0* STRATA_RESTRICT vy0 = (const block_q8_0*) vy;
-        const block_q8_0 * STRATA_RESTRICT vy1 = (const block_q8_0 *) ((const uint8_t*)vy + by);
+        const block_q4_0* NOSTROMA_RESTRICT vx0 = (const block_q4_0*) vx;
+        const block_q4_0 * NOSTROMA_RESTRICT vx1 = (const block_q4_0 *) ((const uint8_t*)vx + bx);
+        const block_q8_0* NOSTROMA_RESTRICT vy0 = (const block_q8_0*) vy;
+        const block_q8_0 * NOSTROMA_RESTRICT vy1 = (const block_q8_0 *) ((const uint8_t*)vy + by);
 
         float32x4_t sumv0 = vdupq_n_f32(0.0f);
 
         for (int i = 0; i < nb; i++) {
-            const block_q4_0 * STRATA_RESTRICT b_x0 = &vx0[i];
-            const block_q4_0 * STRATA_RESTRICT b_x1 = &vx1[i];
-            const block_q8_0 * STRATA_RESTRICT b_y0 = &vy0[i];
-            const block_q8_0 * STRATA_RESTRICT b_y1 = &vy1[i];
+            const block_q4_0 * NOSTROMA_RESTRICT b_x0 = &vx0[i];
+            const block_q4_0 * NOSTROMA_RESTRICT b_x1 = &vx1[i];
+            const block_q8_0 * NOSTROMA_RESTRICT b_y0 = &vy0[i];
+            const block_q8_0 * NOSTROMA_RESTRICT b_y1 = &vy1[i];
 
             const uint8x16_t m4b = vdupq_n_u8(0x0F);
             const int8x16_t  s8b = vdupq_n_s8(0x8);
@@ -191,10 +191,10 @@ void dot_q4_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
                 const svbool_t ph4 = svptrue_pat_b32(SV_VL4);
 
                 for (; ib + 1 < nb; ib += 2) {
-                    const block_q4_0 * STRATA_RESTRICT x0 = &x[ib + 0];
-                    const block_q4_0 * STRATA_RESTRICT x1 = &x[ib + 1];
-                    const block_q8_0 * STRATA_RESTRICT y0 = &y[ib + 0];
-                    const block_q8_0 * STRATA_RESTRICT y1 = &y[ib + 1];
+                    const block_q4_0 * NOSTROMA_RESTRICT x0 = &x[ib + 0];
+                    const block_q4_0 * NOSTROMA_RESTRICT x1 = &x[ib + 1];
+                    const block_q8_0 * NOSTROMA_RESTRICT y0 = &y[ib + 0];
+                    const block_q8_0 * NOSTROMA_RESTRICT y1 = &y[ib + 1];
 
                     // load x
                     const svuint8_t qx0r = svld1rq_u8(svptrue_b8(), x0->qs);
@@ -237,10 +237,10 @@ void dot_q4_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
                 const svbool_t pl16 = svnot_b_z(svptrue_b8(), ph16);
 
                 for (; ib + 1 < nb; ib += 2) {
-                    const block_q4_0 * STRATA_RESTRICT x0 = &x[ib + 0];
-                    const block_q4_0 * STRATA_RESTRICT x1 = &x[ib + 1];
-                    const block_q8_0 * STRATA_RESTRICT y0 = &y[ib + 0];
-                    const block_q8_0 * STRATA_RESTRICT y1 = &y[ib + 1];
+                    const block_q4_0 * NOSTROMA_RESTRICT x0 = &x[ib + 0];
+                    const block_q4_0 * NOSTROMA_RESTRICT x1 = &x[ib + 1];
+                    const block_q8_0 * NOSTROMA_RESTRICT y0 = &y[ib + 0];
+                    const block_q8_0 * NOSTROMA_RESTRICT y1 = &y[ib + 1];
 
                     // load x
                     const svuint8_t qx0r = svld1rq_u8(svptrue_b8(), x0->qs);
@@ -278,10 +278,10 @@ void dot_q4_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
                 const svbool_t pl16 = svnot_b_z(ph32, ph16);
 
                 for (; ib + 1 < nb; ib += 2) {
-                    const block_q4_0 * STRATA_RESTRICT x0 = &x[ib + 0];
-                    const block_q4_0 * STRATA_RESTRICT x1 = &x[ib + 1];
-                    const block_q8_0 * STRATA_RESTRICT y0 = &y[ib + 0];
-                    const block_q8_0 * STRATA_RESTRICT y1 = &y[ib + 1];
+                    const block_q4_0 * NOSTROMA_RESTRICT x0 = &x[ib + 0];
+                    const block_q4_0 * NOSTROMA_RESTRICT x1 = &x[ib + 1];
+                    const block_q8_0 * NOSTROMA_RESTRICT y0 = &y[ib + 0];
+                    const block_q8_0 * NOSTROMA_RESTRICT y1 = &y[ib + 1];
 
                     // load x
                     const svuint8_t qx0r = svld1rq_u8(ph32, x0->qs);
@@ -318,10 +318,10 @@ void dot_q4_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     float32x4_t sumv1 = vdupq_n_f32(0.0f);
 
     for (; ib + 1 < nb; ib += 2) {
-        const block_q4_0 * STRATA_RESTRICT x0 = &x[ib + 0];
-        const block_q4_0 * STRATA_RESTRICT x1 = &x[ib + 1];
-        const block_q8_0 * STRATA_RESTRICT y0 = &y[ib + 0];
-        const block_q8_0 * STRATA_RESTRICT y1 = &y[ib + 1];
+        const block_q4_0 * NOSTROMA_RESTRICT x0 = &x[ib + 0];
+        const block_q4_0 * NOSTROMA_RESTRICT x1 = &x[ib + 1];
+        const block_q8_0 * NOSTROMA_RESTRICT y0 = &y[ib + 0];
+        const block_q8_0 * NOSTROMA_RESTRICT y1 = &y[ib + 1];
 
         const uint8x16_t m4b = vdupq_n_u8(0x0F);
         const int8x16_t  s8b = vdupq_n_s8(0x8);
@@ -376,7 +376,7 @@ void dot_q4_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     *s = sumf;
 }
 
-void dot_q4_1_q8_1(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q4_1_q8_1(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const size_t bs = 0, bx = 0, by = 0;   // one row at a time: ggml's nrc == 1 path
     const int nrc = 1;
     const int qk = QK8_1;
@@ -393,24 +393,24 @@ void dot_q4_1_q8_1(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     UNUSED(by);
     UNUSED(bs);
 
-    const block_q4_1* STRATA_RESTRICT x = (const block_q4_1*) vx;
-    const block_q8_1* STRATA_RESTRICT y = (const block_q8_1*) vy;
+    const block_q4_1* NOSTROMA_RESTRICT x = (const block_q4_1*) vx;
+    const block_q8_1* NOSTROMA_RESTRICT y = (const block_q8_1*) vy;
 
 #if defined(__ARM_FEATURE_MATMUL_INT8)
     if (nrc == 2) {
-        const block_q4_1* STRATA_RESTRICT vx0 = (const block_q4_1*) vx;
-        const block_q4_1 * STRATA_RESTRICT vx1 = (const block_q4_1 *) ((const uint8_t*)vx + bx);
-        const block_q8_1* STRATA_RESTRICT vy0 = (const block_q8_1*) vy;
-        const block_q8_1 * STRATA_RESTRICT vy1 = (const block_q8_1 *) ((const uint8_t*)vy + by);
+        const block_q4_1* NOSTROMA_RESTRICT vx0 = (const block_q4_1*) vx;
+        const block_q4_1 * NOSTROMA_RESTRICT vx1 = (const block_q4_1 *) ((const uint8_t*)vx + bx);
+        const block_q8_1* NOSTROMA_RESTRICT vy0 = (const block_q8_1*) vy;
+        const block_q8_1 * NOSTROMA_RESTRICT vy1 = (const block_q8_1 *) ((const uint8_t*)vy + by);
 
         float32x4_t sumv0 = vdupq_n_f32(0.0f);
         float32x4_t summs0 = vdupq_n_f32(0.0f);
 
         for (int i = 0; i < nb; i++) {
-            const block_q4_1 * STRATA_RESTRICT b_x0 = &vx0[i];
-            const block_q4_1 * STRATA_RESTRICT b_x1 = &vx1[i];
-            const block_q8_1 * STRATA_RESTRICT b_y0 = &vy0[i];
-            const block_q8_1 * STRATA_RESTRICT b_y1 = &vy1[i];
+            const block_q4_1 * NOSTROMA_RESTRICT b_x0 = &vx0[i];
+            const block_q4_1 * NOSTROMA_RESTRICT b_x1 = &vx1[i];
+            const block_q8_1 * NOSTROMA_RESTRICT b_y0 = &vy0[i];
+            const block_q8_1 * NOSTROMA_RESTRICT b_y1 = &vy1[i];
 
             float32_t summs_t[4] = {
                 h2f(b_x0->m) * h2f(b_y0->s),
@@ -483,10 +483,10 @@ void dot_q4_1_q8_1(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     float summs = 0;
 
     for (; ib + 1 < nb; ib += 2) {
-        const block_q4_1 * STRATA_RESTRICT x0 = &x[ib + 0];
-        const block_q4_1 * STRATA_RESTRICT x1 = &x[ib + 1];
-        const block_q8_1 * STRATA_RESTRICT y0 = &y[ib + 0];
-        const block_q8_1 * STRATA_RESTRICT y1 = &y[ib + 1];
+        const block_q4_1 * NOSTROMA_RESTRICT x0 = &x[ib + 0];
+        const block_q4_1 * NOSTROMA_RESTRICT x1 = &x[ib + 1];
+        const block_q8_1 * NOSTROMA_RESTRICT y0 = &y[ib + 0];
+        const block_q8_1 * NOSTROMA_RESTRICT y1 = &y[ib + 1];
 
         summs += h2f(x0->m) * h2f(y0->s) + h2f(x1->m) * h2f(y1->s);
 
@@ -537,7 +537,7 @@ void dot_q4_1_q8_1(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     *s = sumf;
 }
 
-void dot_q5_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q5_0_q8_0(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const size_t bs = 0, bx = 0, by = 0;   // one row at a time: ggml's nrc == 1 path
     const int nrc = 1;
     const int qk = QK8_0;
@@ -554,8 +554,8 @@ void dot_q5_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     UNUSED(by);
     UNUSED(bs);
 
-    const block_q5_0* STRATA_RESTRICT x = (const block_q5_0*) vx;
-    const block_q8_0* STRATA_RESTRICT y = (const block_q8_0*) vy;
+    const block_q5_0* NOSTROMA_RESTRICT x = (const block_q5_0*) vx;
+    const block_q8_0* NOSTROMA_RESTRICT y = (const block_q8_0*) vy;
 
 #if defined(__ARM_NEON)
     float32x4_t sumv0 = vdupq_n_f32(0.0f);
@@ -568,10 +568,10 @@ void dot_q5_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     uint64_t tmp1[4];
 
     for (; ib + 1 < nb; ib += 2) {
-        const block_q5_0 * STRATA_RESTRICT x0 = &x[ib];
-        const block_q5_0 * STRATA_RESTRICT x1 = &x[ib + 1];
-        const block_q8_0 * STRATA_RESTRICT y0 = &y[ib];
-        const block_q8_0 * STRATA_RESTRICT y1 = &y[ib + 1];
+        const block_q5_0 * NOSTROMA_RESTRICT x0 = &x[ib];
+        const block_q5_0 * NOSTROMA_RESTRICT x1 = &x[ib + 1];
+        const block_q8_0 * NOSTROMA_RESTRICT y0 = &y[ib];
+        const block_q8_0 * NOSTROMA_RESTRICT y1 = &y[ib + 1];
 
         const uint8x16_t m4b = vdupq_n_u8(0x0F);
 
@@ -651,7 +651,7 @@ void dot_q5_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     *s = sumf;
 }
 
-void dot_q5_1_q8_1(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q5_1_q8_1(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const size_t bs = 0, bx = 0, by = 0;   // one row at a time: ggml's nrc == 1 path
     const int nrc = 1;
     const int qk = QK8_1;
@@ -668,8 +668,8 @@ void dot_q5_1_q8_1(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     UNUSED(by);
     UNUSED(bs);
 
-    const block_q5_1* STRATA_RESTRICT x = (const block_q5_1*) vx;
-    const block_q8_1* STRATA_RESTRICT y = (const block_q8_1*) vy;
+    const block_q5_1* NOSTROMA_RESTRICT x = (const block_q5_1*) vx;
+    const block_q8_1* NOSTROMA_RESTRICT y = (const block_q8_1*) vy;
 
 #if defined(__ARM_NEON)
     float32x4_t sumv0 = vdupq_n_f32(0.0f);
@@ -685,10 +685,10 @@ void dot_q5_1_q8_1(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     uint64_t tmp1[4];
 
     for (; ib + 1 < nb; ib += 2) {
-        const block_q5_1 * STRATA_RESTRICT x0 = &x[ib];
-        const block_q5_1 * STRATA_RESTRICT x1 = &x[ib + 1];
-        const block_q8_1 * STRATA_RESTRICT y0 = &y[ib];
-        const block_q8_1 * STRATA_RESTRICT y1 = &y[ib + 1];
+        const block_q5_1 * NOSTROMA_RESTRICT x0 = &x[ib];
+        const block_q5_1 * NOSTROMA_RESTRICT x1 = &x[ib + 1];
+        const block_q8_1 * NOSTROMA_RESTRICT y0 = &y[ib];
+        const block_q8_1 * NOSTROMA_RESTRICT y1 = &y[ib + 1];
 
         const uint8x16_t m4b = vdupq_n_u8(0x0F);
 
@@ -771,7 +771,7 @@ void dot_q5_1_q8_1(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     *s = sumf;
 }
 
-void dot_q8_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q8_0_q8_0(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const size_t bs = 0, bx = 0, by = 0;   // one row at a time: ggml's nrc == 1 path
     const int nrc = 1;
     const int qk = QK8_0;
@@ -788,24 +788,24 @@ void dot_q8_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     UNUSED(by);
     UNUSED(bs);
 
-    const block_q8_0* STRATA_RESTRICT x = (const block_q8_0*) vx;
-    const block_q8_0* STRATA_RESTRICT y = (const block_q8_0*) vy;
+    const block_q8_0* NOSTROMA_RESTRICT x = (const block_q8_0*) vx;
+    const block_q8_0* NOSTROMA_RESTRICT y = (const block_q8_0*) vy;
 
 #if defined(__ARM_FEATURE_MATMUL_INT8)
     if (nrc == 2) {
-        const block_q8_0* STRATA_RESTRICT vx0 = (const block_q8_0*) vx;
-        const block_q8_0 * STRATA_RESTRICT vx1 = (const block_q8_0 *) ((const uint8_t*)vx + bx);
-        const block_q8_0* STRATA_RESTRICT vy0 = (const block_q8_0*) vy;
-        const block_q8_0 * STRATA_RESTRICT vy1 = (const block_q8_0 *) ((const uint8_t*)vy + by);
+        const block_q8_0* NOSTROMA_RESTRICT vx0 = (const block_q8_0*) vx;
+        const block_q8_0 * NOSTROMA_RESTRICT vx1 = (const block_q8_0 *) ((const uint8_t*)vx + bx);
+        const block_q8_0* NOSTROMA_RESTRICT vy0 = (const block_q8_0*) vy;
+        const block_q8_0 * NOSTROMA_RESTRICT vy1 = (const block_q8_0 *) ((const uint8_t*)vy + by);
 
         float32x4_t sumv0 = vdupq_n_f32(0.0f);
 
         for (int i = 0; i < nb; i++) {
-            const block_q8_0 * STRATA_RESTRICT b_x0 = &vx0[i];
-            const block_q8_0 * STRATA_RESTRICT b_y0 = &vy0[i];
+            const block_q8_0 * NOSTROMA_RESTRICT b_x0 = &vx0[i];
+            const block_q8_0 * NOSTROMA_RESTRICT b_y0 = &vy0[i];
 
-            const block_q8_0 * STRATA_RESTRICT b_x1 = &vx1[i];
-            const block_q8_0 * STRATA_RESTRICT b_y1 = &vy1[i];
+            const block_q8_0 * NOSTROMA_RESTRICT b_x1 = &vx1[i];
+            const block_q8_0 * NOSTROMA_RESTRICT b_y1 = &vy1[i];
 
             const int8x16_t x0_l = vld1q_s8(b_x0->qs);
             const int8x16_t x0_h = vld1q_s8(b_x0->qs + 16);
@@ -870,10 +870,10 @@ void dot_q8_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
                 const svbool_t pl16 = svptrue_pat_b32(SV_VL4);
 
                 for (; ib + 1 < nb; ib += 2) {
-                    const block_q8_0 * STRATA_RESTRICT x0 = &x[ib + 0];
-                    const block_q8_0 * STRATA_RESTRICT x1 = &x[ib + 1];
-                    const block_q8_0 * STRATA_RESTRICT y0 = &y[ib + 0];
-                    const block_q8_0 * STRATA_RESTRICT y1 = &y[ib + 1];
+                    const block_q8_0 * NOSTROMA_RESTRICT x0 = &x[ib + 0];
+                    const block_q8_0 * NOSTROMA_RESTRICT x1 = &x[ib + 1];
+                    const block_q8_0 * NOSTROMA_RESTRICT y0 = &y[ib + 0];
+                    const block_q8_0 * NOSTROMA_RESTRICT y1 = &y[ib + 1];
 
                     // load x
                     const svint8_t qx0_0 = svld1_s8(ph16, x0->qs);
@@ -901,10 +901,10 @@ void dot_q8_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
             {
                 //printf("sve256");
                 for (; ib + 1 < nb; ib += 2) {
-                    const block_q8_0 * STRATA_RESTRICT x0 = &x[ib + 0];
-                    const block_q8_0 * STRATA_RESTRICT x1 = &x[ib + 1];
-                    const block_q8_0 * STRATA_RESTRICT y0 = &y[ib + 0];
-                    const block_q8_0 * STRATA_RESTRICT y1 = &y[ib + 1];
+                    const block_q8_0 * NOSTROMA_RESTRICT x0 = &x[ib + 0];
+                    const block_q8_0 * NOSTROMA_RESTRICT x1 = &x[ib + 1];
+                    const block_q8_0 * NOSTROMA_RESTRICT y0 = &y[ib + 0];
+                    const block_q8_0 * NOSTROMA_RESTRICT y1 = &y[ib + 1];
 
                     // load x
                     const svint8_t qx0 = svld1_s8(svptrue_b8(), x0->qs);
@@ -937,10 +937,10 @@ void dot_q8_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
                 svfloat32_t sumv00 = svdup_n_f32(0.0f);
 
                 for (; ib + 1 < nb; ib += 2) {
-                    const block_q8_0 * STRATA_RESTRICT x0 = &x[ib + 0];
-                    const block_q8_0 * STRATA_RESTRICT x1 = &x[ib + 1];
-                    const block_q8_0 * STRATA_RESTRICT y0 = &y[ib + 0];
-                    const block_q8_0 * STRATA_RESTRICT y1 = &y[ib + 1];
+                    const block_q8_0 * NOSTROMA_RESTRICT x0 = &x[ib + 0];
+                    const block_q8_0 * NOSTROMA_RESTRICT x1 = &x[ib + 1];
+                    const block_q8_0 * NOSTROMA_RESTRICT y0 = &y[ib + 0];
+                    const block_q8_0 * NOSTROMA_RESTRICT y1 = &y[ib + 1];
 
                     //load 32 int8_t in first half of vector and put another 32 int8_t in second vector lower bits
                     // and add them to make one 64 element vector
@@ -980,10 +980,10 @@ void dot_q8_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     float32x4_t sumv1 = vdupq_n_f32(0.0f);
 
     for (; ib + 1 < nb; ib += 2) {
-        const block_q8_0 * STRATA_RESTRICT x0 = &x[ib + 0];
-        const block_q8_0 * STRATA_RESTRICT x1 = &x[ib + 1];
-        const block_q8_0 * STRATA_RESTRICT y0 = &y[ib + 0];
-        const block_q8_0 * STRATA_RESTRICT y1 = &y[ib + 1];
+        const block_q8_0 * NOSTROMA_RESTRICT x0 = &x[ib + 0];
+        const block_q8_0 * NOSTROMA_RESTRICT x1 = &x[ib + 1];
+        const block_q8_0 * NOSTROMA_RESTRICT y0 = &y[ib + 0];
+        const block_q8_0 * NOSTROMA_RESTRICT y1 = &y[ib + 1];
 
         const int8x16_t x0_0 = vld1q_s8(x0->qs);
         const int8x16_t x0_1 = vld1q_s8(x0->qs + 16);
@@ -1020,7 +1020,7 @@ void dot_q8_0_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     *s = sumf;
 }
 
-void dot_iq4_nl_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq4_nl_q8_0(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const size_t bs = 0, bx = 0, by = 0;   // one row at a time: ggml's nrc == 1 path
     const int nrc = 1;
     assert(nrc == 1);
@@ -1031,8 +1031,8 @@ void dot_iq4_nl_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRIC
     assert(n % QK4_NL == 0);
     static_assert(QK4_NL == QK8_0, "QK4_NL and QK8_0 must be the same");
 
-    const block_iq4_nl* STRATA_RESTRICT x = (const block_iq4_nl*) vx;
-    const block_q8_0* STRATA_RESTRICT y = (const block_q8_0*) vy;
+    const block_iq4_nl* NOSTROMA_RESTRICT x = (const block_iq4_nl*) vx;
+    const block_q8_0* NOSTROMA_RESTRICT y = (const block_q8_0*) vy;
 
     const int nb = n / QK4_NL;
 
@@ -1082,7 +1082,7 @@ void dot_iq4_nl_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRIC
     *s = sumf;
 }
 
-void dot_mxfp4_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_mxfp4_q8_0(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const size_t bs = 0, bx = 0, by = 0;   // one row at a time: ggml's nrc == 1 path
     const int nrc = 1;
     assert(nrc == 1);
@@ -1093,8 +1093,8 @@ void dot_mxfp4_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT
     assert(n % QK_MXFP4 == 0);
     static_assert(QK_MXFP4 == QK8_0, "QK_MXFP4 and QK8_0 must be the same");
 
-    const block_mxfp4* STRATA_RESTRICT x = (const block_mxfp4*) vx;
-    const block_q8_0* STRATA_RESTRICT y = (const block_q8_0*) vy;
+    const block_mxfp4* NOSTROMA_RESTRICT x = (const block_mxfp4*) vx;
+    const block_q8_0* NOSTROMA_RESTRICT y = (const block_q8_0*) vy;
 
     const int nb = n / QK_MXFP4;
 
@@ -1145,7 +1145,7 @@ void dot_mxfp4_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT
     *s = sumf;
 }
 
-void dot_nvfp4_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_nvfp4_q8_0(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const size_t bs = 0, bx = 0, by = 0;   // one row at a time: ggml's nrc == 1 path
     const int nrc = 1;
     assert(nrc == 1);
@@ -1155,8 +1155,8 @@ void dot_nvfp4_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT
     UNUSED(bs);
     assert(n % QK_NVFP4 == 0);
 
-    const block_nvfp4* STRATA_RESTRICT x = (const block_nvfp4*) vx;
-    const block_q8_0* STRATA_RESTRICT y = (const block_q8_0*) vy;
+    const block_nvfp4* NOSTROMA_RESTRICT x = (const block_nvfp4*) vx;
+    const block_q8_0* NOSTROMA_RESTRICT y = (const block_q8_0*) vy;
 
     // Each NVFP4 super-block (64 elements) spans 2 q8_0 blocks
     const int nb = n / QK_NVFP4;
@@ -1257,7 +1257,7 @@ void dot_nvfp4_q8_0(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT
     *s = sumf;
 }
 
-void dot_q2_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q2_K_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const size_t bs = 0, bx = 0, by = 0;   // one row at a time: ggml's nrc == 1 path
     const int nrc = 1;
     assert(nrc == 1);
@@ -1266,8 +1266,8 @@ void dot_q2_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     UNUSED(by);
     UNUSED(bs);
 
-    const block_q2_K* STRATA_RESTRICT x = (const block_q2_K*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_q2_K* NOSTROMA_RESTRICT x = (const block_q2_K*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -1287,9 +1287,9 @@ void dot_q2_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
                 const float dmin = -y[i].d * h2f(x[i].dmin);
                 svfloat32_t dmin_broad = svdup_n_f32((float32_t)dmin);
 
-                const uint8_t * STRATA_RESTRICT q2 = x[i].qs;
-                const int8_t  * STRATA_RESTRICT q8_sv = y[i].qs;
-                const uint8_t * STRATA_RESTRICT sc = x[i].scales;
+                const uint8_t * NOSTROMA_RESTRICT q2 = x[i].qs;
+                const int8_t  * NOSTROMA_RESTRICT q8_sv = y[i].qs;
+                const uint8_t * NOSTROMA_RESTRICT sc = x[i].scales;
 
                 svuint32_t mins_and_scales_sve = svld1ub_u32(svptrue_b32(), sc);
                 const svint32_t mins_sv_1 = svreinterpret_s32_u32(svlsr_n_u32_x(svptrue_b32(), mins_and_scales_sve, 4));
@@ -1432,9 +1432,9 @@ void dot_q2_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
                 const float dmin = -y[i].d * h2f(x[i].dmin);
                 svfloat32_t dmin_broad = svdup_n_f32((float32_t)dmin);
 
-                const uint8_t * STRATA_RESTRICT q2 = x[i].qs;
-                const int8_t  * STRATA_RESTRICT q8_sv = y[i].qs;
-                const uint8_t * STRATA_RESTRICT sc = x[i].scales;
+                const uint8_t * NOSTROMA_RESTRICT q2 = x[i].qs;
+                const int8_t  * NOSTROMA_RESTRICT q8_sv = y[i].qs;
+                const uint8_t * NOSTROMA_RESTRICT sc = x[i].scales;
 
                 const svuint32_t mins_and_scales_sve = svld1ub_u32(svptrue_pat_b32(SV_VL8), sc); sc += 8;
                 const svint32_t scales_sv = svreinterpret_s32_u32(svand_u32_m(svptrue_pat_b32(SV_VL8), mins_and_scales_sve, m4s));
@@ -1531,9 +1531,9 @@ void dot_q2_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
         const float d = y[i].d * h2f(x[i].d);
         const float dmin = -y[i].d * h2f(x[i].dmin);
 
-        const uint8_t * STRATA_RESTRICT q2 = x[i].qs;
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
-        const uint8_t * STRATA_RESTRICT sc = x[i].scales;
+        const uint8_t * NOSTROMA_RESTRICT q2 = x[i].qs;
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT sc = x[i].scales;
 
         const uint8x16_t mins_and_scales = vld1q_u8(sc);
         const uint8x16_t scales = vandq_u8(mins_and_scales, m4);
@@ -1592,7 +1592,7 @@ void dot_q2_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 #endif
 }
 
-void dot_q3_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q3_K_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const size_t bs = 0, bx = 0, by = 0;   // one row at a time: ggml's nrc == 1 path
     const int nrc = 1;
     assert(n % QK_K == 0);
@@ -1605,8 +1605,8 @@ void dot_q3_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     const uint32_t kmask1 = 0x03030303;
     const uint32_t kmask2 = 0x0f0f0f0f;
 
-    const block_q3_K* STRATA_RESTRICT x = (const block_q3_K*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_q3_K* NOSTROMA_RESTRICT x = (const block_q3_K*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -1631,9 +1631,9 @@ void dot_q3_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 
         const float d = y[i].d * h2f(x[i].d);
 
-        const uint8_t * STRATA_RESTRICT q3_sv = x[i].qs;
-        const uint8_t * STRATA_RESTRICT qh_sv = x[i].hmask;
-        const int8_t  * STRATA_RESTRICT q8_sv = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q3_sv = x[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT qh_sv = x[i].hmask;
+        const int8_t  * NOSTROMA_RESTRICT q8_sv = y[i].qs;
 
         // Set up scales
         memcpy(aux, x[i].scales, 12);
@@ -1807,9 +1807,9 @@ void dot_q3_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 
         const float d = y[i].d * h2f(x[i].d);
 
-        const uint8_t * STRATA_RESTRICT q3 = x[i].qs;
-        const uint8_t * STRATA_RESTRICT qh = x[i].hmask;
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q3 = x[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT qh = x[i].hmask;
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
 
         ggml_uint8x16x2_t qhbits = ggml_vld1q_u8_x2(qh);
 
@@ -1890,7 +1890,7 @@ void dot_q3_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 
 }
 
-void dot_q4_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q4_K_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const size_t bs = 0, bx = 0, by = 0;   // one row at a time: ggml's nrc == 1 path
     const int nrc = 1;
     assert(n % QK_K == 0);
@@ -1904,8 +1904,8 @@ void dot_q4_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     UNUSED(by);
     UNUSED(bs);
 
-    const block_q4_K* STRATA_RESTRICT x = (const block_q4_K*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_q4_K* NOSTROMA_RESTRICT x = (const block_q4_K*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -1922,10 +1922,10 @@ void dot_q4_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     if (nrc == 2) {
         svbool_t pg32_2 = svptrue_pat_b32(SV_VL2);
 
-        const block_q4_K* STRATA_RESTRICT vx0 = (const block_q4_K*) vx;
-        const block_q8_K* STRATA_RESTRICT vy0 = (const block_q8_K*) vy;
-        const block_q4_K * STRATA_RESTRICT vx1 = (const block_q4_K *) ((const uint8_t*)vx + bx);
-        const block_q8_K * STRATA_RESTRICT vy1 = (const block_q8_K *) ((const uint8_t*)vy + by);
+        const block_q4_K* NOSTROMA_RESTRICT vx0 = (const block_q4_K*) vx;
+        const block_q8_K* NOSTROMA_RESTRICT vy0 = (const block_q8_K*) vy;
+        const block_q4_K * NOSTROMA_RESTRICT vx1 = (const block_q4_K *) ((const uint8_t*)vx + bx);
+        const block_q8_K * NOSTROMA_RESTRICT vy1 = (const block_q8_K *) ((const uint8_t*)vy + by);
 
         union {
             uint32_t u32[8];
@@ -1949,10 +1949,10 @@ void dot_q4_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
                         svfloat32_t vx_dmins = svzip1_f32(svdup_n_f32(GGML_FP16_TO_FP32(vx0[i].dmin)), svdup_n_f32(GGML_FP16_TO_FP32(vx1[i].dmin)));
                         svfloat32_t vy_dmins = svuzp1_f32(svdup_n_f32(vy0[i].d), svdup_n_f32(vy1[i].d));
                         svfloat32_t svdmins = svmul_n_f32_x(pg128_all, svmul_f32_x(pg128_all, vy_dmins, vx_dmins), -1);
-                        const uint8_t * STRATA_RESTRICT q4_0 = vx0[i].qs;
-                        const int8_t  * STRATA_RESTRICT q8_0 = vy0[i].qs;
-                        const uint8_t * STRATA_RESTRICT q4_1 = vx1[i].qs;
-                        const int8_t  * STRATA_RESTRICT q8_1 = vy1[i].qs;
+                        const uint8_t * NOSTROMA_RESTRICT q4_0 = vx0[i].qs;
+                        const int8_t  * NOSTROMA_RESTRICT q8_0 = vy0[i].qs;
+                        const uint8_t * NOSTROMA_RESTRICT q4_1 = vx1[i].qs;
+                        const int8_t  * NOSTROMA_RESTRICT q8_1 = vy1[i].qs;
                         svint16_t lo = svld1_s16(pg128_all, vy0[i].bsums + 0);
                         svint16_t hi = svld1_s16(pg128_all, vy0[i].bsums + 8);
                         svint16_t sum_tmp1 = svuzp1_s16(lo, hi);
@@ -2044,10 +2044,10 @@ void dot_q4_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
                     const svbool_t pg8_16 = svptrue_pat_b8(SV_VL16);
                     const svbool_t pg256_all = svptrue_pat_b8(SV_ALL);
                     for (int i = 0; i < nb; ++i) {
-                        const uint8_t * STRATA_RESTRICT q4_0 = vx0[i].qs;
-                        const int8_t  * STRATA_RESTRICT q8_0 = vy0[i].qs;
-                        const uint8_t * STRATA_RESTRICT q4_1 = vx1[i].qs;
-                        const int8_t  * STRATA_RESTRICT q8_1 = vy1[i].qs;
+                        const uint8_t * NOSTROMA_RESTRICT q4_0 = vx0[i].qs;
+                        const int8_t  * NOSTROMA_RESTRICT q8_0 = vy0[i].qs;
+                        const uint8_t * NOSTROMA_RESTRICT q4_1 = vx1[i].qs;
+                        const int8_t  * NOSTROMA_RESTRICT q8_1 = vy1[i].qs;
                         svint32_t svscales, sumi1, sumi2;
                         svint32_t acc_sumif1 = svdup_n_s32(0);
                         svint32_t acc_sumif2 = svdup_n_s32(0);
@@ -2129,20 +2129,20 @@ void dot_q4_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     }
 #elif defined(__ARM_FEATURE_MATMUL_INT8)
     if (nrc == 2) {
-        const block_q4_K * STRATA_RESTRICT x0 = x;
-        const block_q4_K * STRATA_RESTRICT x1 = (const block_q4_K *) ((const uint8_t *)vx + bx);
-        const block_q8_K * STRATA_RESTRICT y0 = y;
-        const block_q8_K * STRATA_RESTRICT y1 = (const block_q8_K *) ((const uint8_t *)vy + by);
+        const block_q4_K * NOSTROMA_RESTRICT x0 = x;
+        const block_q4_K * NOSTROMA_RESTRICT x1 = (const block_q4_K *) ((const uint8_t *)vx + bx);
+        const block_q8_K * NOSTROMA_RESTRICT y0 = y;
+        const block_q8_K * NOSTROMA_RESTRICT y1 = (const block_q8_K *) ((const uint8_t *)vy + by);
 
         const uint8x16_t m4b = vdupq_n_u8(0x0f);
 
         float32x4_t vfsum = vdupq_n_f32(0.0f);
 
         for (int i = 0; i < nb; ++i, ++x0, ++x1, ++y0, ++y1) {
-            const uint8_t * STRATA_RESTRICT qx0 = x0->qs;
-            const uint8_t * STRATA_RESTRICT qx1 = x1->qs;
-            const  int8_t * STRATA_RESTRICT qy0 = y0->qs;
-            const  int8_t * STRATA_RESTRICT qy1 = y1->qs;
+            const uint8_t * NOSTROMA_RESTRICT qx0 = x0->qs;
+            const uint8_t * NOSTROMA_RESTRICT qx1 = x1->qs;
+            const  int8_t * NOSTROMA_RESTRICT qy0 = y0->qs;
+            const  int8_t * NOSTROMA_RESTRICT qy1 = y1->qs;
 
             // decode scales and mins
             int8_t x0_scales[8], x1_scales[8];
@@ -2292,8 +2292,8 @@ void dot_q4_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 
         const uint8_t * scales = (const uint8_t *)utmp;
 
-        const uint8_t * STRATA_RESTRICT q4 = x[i].qs;
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q4 = x[i].qs;
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
 
         const svuint8_t m4b = svdup_n_u8(0xf);
         const svint32_t mzero = svdup_n_s32(0);
@@ -2379,8 +2379,8 @@ void dot_q4_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 
         const uint8_t * scales = (const uint8_t *)utmp;
 
-        const uint8_t * STRATA_RESTRICT q4 = x[i].qs;
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q4 = x[i].qs;
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
 
         int32_t sumi1 = 0;
         int32_t sumi2 = 0;
@@ -2422,7 +2422,7 @@ void dot_q4_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 #endif
 }
 
-void dot_q5_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q5_K_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const size_t bs = 0, bx = 0, by = 0;   // one row at a time: ggml's nrc == 1 path
     const int nrc = 1;
     assert(n % QK_K == 0);
@@ -2432,8 +2432,8 @@ void dot_q5_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     UNUSED(by);
     UNUSED(bs);
 
-    const block_q5_K* STRATA_RESTRICT x = (const block_q5_K*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_q5_K* NOSTROMA_RESTRICT x = (const block_q5_K*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -2476,9 +2476,9 @@ void dot_q5_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 
         const uint8_t * scales = (const uint8_t *)utmp;
 
-        const uint8_t * STRATA_RESTRICT q5 = x[i].qs;
-        const uint8_t * STRATA_RESTRICT qh = x[i].qh;
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q5 = x[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT qh = x[i].qh;
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
 
         ggml_uint8x16x2_t qhbits = ggml_vld1q_u8_x2(qh);
 
@@ -2524,7 +2524,7 @@ void dot_q5_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 #endif
 }
 
-void dot_q6_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q6_K_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const size_t bs = 0, bx = 0, by = 0;   // one row at a time: ggml's nrc == 1 path
     const int nrc = 1;
     assert(n % QK_K == 0);
@@ -2538,8 +2538,8 @@ void dot_q6_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     UNUSED(by);
     UNUSED(bs);
 
-    const block_q6_K* STRATA_RESTRICT x = (const block_q6_K*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_q6_K* NOSTROMA_RESTRICT x = (const block_q6_K*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -2552,25 +2552,25 @@ void dot_q6_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 
         svfloat32_t sum = svdup_n_f32(0);
 
-        const block_q6_K* STRATA_RESTRICT vx0 = (const block_q6_K*) vx;
-        const block_q8_K* STRATA_RESTRICT vy0 = (const block_q8_K*) vy;
-        const block_q6_K * STRATA_RESTRICT vx1 = (const block_q6_K *) ((const uint8_t*)vx + bx);
-        const block_q8_K * STRATA_RESTRICT vy1 = (const block_q8_K *) ((const uint8_t*)vy + by);
+        const block_q6_K* NOSTROMA_RESTRICT vx0 = (const block_q6_K*) vx;
+        const block_q8_K* NOSTROMA_RESTRICT vy0 = (const block_q8_K*) vy;
+        const block_q6_K * NOSTROMA_RESTRICT vx1 = (const block_q6_K *) ((const uint8_t*)vx + bx);
+        const block_q8_K * NOSTROMA_RESTRICT vy1 = (const block_q8_K *) ((const uint8_t*)vy + by);
 
         switch (vector_length) {
             case 128:
                 {
                     const svbool_t pg128_all = svptrue_pat_b8(SV_ALL);
                     for (int i = 0; i < nb; ++i) {
-                        const uint8_t * STRATA_RESTRICT ql0 = vx0[i].ql;
-                        const uint8_t * STRATA_RESTRICT qh0 = vx0[i].qh;
-                        const uint8_t * STRATA_RESTRICT ql1 = vx1[i].ql;
-                        const uint8_t * STRATA_RESTRICT qh1 = vx1[i].qh;
-                        const int8_t  * STRATA_RESTRICT q80 = vy0[i].qs;
-                        const int8_t  * STRATA_RESTRICT q81 = vy1[i].qs;
+                        const uint8_t * NOSTROMA_RESTRICT ql0 = vx0[i].ql;
+                        const uint8_t * NOSTROMA_RESTRICT qh0 = vx0[i].qh;
+                        const uint8_t * NOSTROMA_RESTRICT ql1 = vx1[i].ql;
+                        const uint8_t * NOSTROMA_RESTRICT qh1 = vx1[i].qh;
+                        const int8_t  * NOSTROMA_RESTRICT q80 = vy0[i].qs;
+                        const int8_t  * NOSTROMA_RESTRICT q81 = vy1[i].qs;
 
-                        const int8_t * STRATA_RESTRICT scale0 = vx0[i].scales;
-                        const int8_t * STRATA_RESTRICT scale1 = vx1[i].scales;
+                        const int8_t * NOSTROMA_RESTRICT scale0 = vx0[i].scales;
+                        const int8_t * NOSTROMA_RESTRICT scale1 = vx1[i].scales;
 
                         svfloat32_t vy_d = svuzp1_f32(svdup_n_f32(vy0[i].d), svdup_n_f32(vy1[i].d));
                         svfloat32_t vx_d = svzip1_f32(svdup_n_f32(GGML_FP16_TO_FP32(vx0[i].d)), svdup_n_f32(GGML_FP16_TO_FP32(vx1[i].d)));
@@ -2648,15 +2648,15 @@ void dot_q6_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
                     const svbool_t pg256_all = svptrue_pat_b8(SV_ALL);
                     const svbool_t pg32_4 = svptrue_pat_b32(SV_VL4);
                     for (int i = 0; i < nb; ++i) {
-                        const uint8_t * STRATA_RESTRICT ql0 = vx0[i].ql;
-                        const uint8_t * STRATA_RESTRICT qh0 = vx0[i].qh;
-                        const uint8_t * STRATA_RESTRICT ql1 = vx1[i].ql;
-                        const uint8_t * STRATA_RESTRICT qh1 = vx1[i].qh;
-                        const int8_t  * STRATA_RESTRICT q80 = vy0[i].qs;
-                        const int8_t  * STRATA_RESTRICT q81 = vy1[i].qs;
+                        const uint8_t * NOSTROMA_RESTRICT ql0 = vx0[i].ql;
+                        const uint8_t * NOSTROMA_RESTRICT qh0 = vx0[i].qh;
+                        const uint8_t * NOSTROMA_RESTRICT ql1 = vx1[i].ql;
+                        const uint8_t * NOSTROMA_RESTRICT qh1 = vx1[i].qh;
+                        const int8_t  * NOSTROMA_RESTRICT q80 = vy0[i].qs;
+                        const int8_t  * NOSTROMA_RESTRICT q81 = vy1[i].qs;
 
-                        const int8_t * STRATA_RESTRICT scale0 = vx0[i].scales;
-                        const int8_t * STRATA_RESTRICT scale1 = vx1[i].scales;
+                        const int8_t * NOSTROMA_RESTRICT scale0 = vx0[i].scales;
+                        const int8_t * NOSTROMA_RESTRICT scale1 = vx1[i].scales;
                         svfloat32_t vx_d = svzip1_f32(svdup_n_f32(GGML_FP16_TO_FP32(vx0[i].d)), svdup_n_f32(GGML_FP16_TO_FP32(vx1[i].d)));
                         svfloat64_t vy_d_tmp = svreinterpret_f64_f32(svuzp1_f32(svdup_n_f32(vy0[i].d), svdup_n_f32(vy1[i].d)));
                         svfloat32_t vy_d = svreinterpret_f32_f64(svuzp1_f64(vy_d_tmp, vy_d_tmp));
@@ -2739,20 +2739,20 @@ void dot_q6_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     }
 #elif defined(__ARM_FEATURE_MATMUL_INT8)
     if (nrc == 2) {
-        const block_q6_K * STRATA_RESTRICT x0 = x;
-        const block_q6_K * STRATA_RESTRICT x1 = (const block_q6_K *) ((const uint8_t *)vx + bx);
-        const block_q8_K * STRATA_RESTRICT y0 = y;
-        const block_q8_K * STRATA_RESTRICT y1 = (const block_q8_K *) ((const uint8_t *)vy + by);
+        const block_q6_K * NOSTROMA_RESTRICT x0 = x;
+        const block_q6_K * NOSTROMA_RESTRICT x1 = (const block_q6_K *) ((const uint8_t *)vx + bx);
+        const block_q8_K * NOSTROMA_RESTRICT y0 = y;
+        const block_q8_K * NOSTROMA_RESTRICT y1 = (const block_q8_K *) ((const uint8_t *)vy + by);
 
         float32x4_t vfsum = vdupq_n_f32(0.0f);
 
         for (int i = 0; i < nb; ++i, ++x0, ++x1, ++y0, ++y1) {
-            const uint8_t * STRATA_RESTRICT ql0 = x0->ql;
-            const uint8_t * STRATA_RESTRICT ql1 = x1->ql;
-            const uint8_t * STRATA_RESTRICT qh0 = x0->qh;
-            const uint8_t * STRATA_RESTRICT qh1 = x1->qh;
-            const  int8_t * STRATA_RESTRICT qy0 = y0->qs;
-            const  int8_t * STRATA_RESTRICT qy1 = y1->qs;
+            const uint8_t * NOSTROMA_RESTRICT ql0 = x0->ql;
+            const uint8_t * NOSTROMA_RESTRICT ql1 = x1->ql;
+            const uint8_t * NOSTROMA_RESTRICT qh0 = x0->qh;
+            const uint8_t * NOSTROMA_RESTRICT qh1 = x1->qh;
+            const  int8_t * NOSTROMA_RESTRICT qy0 = y0->qs;
+            const  int8_t * NOSTROMA_RESTRICT qy1 = y1->qs;
 
             const uint8x16_t mone = vdupq_n_u8(0x30);
             const uint8x16_t  m4b = vdupq_n_u8(0x0f);
@@ -2917,11 +2917,11 @@ void dot_q6_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
     for (int i = 0; i < nb; ++i) {
         const float d_all = h2f(x[i].d);
 
-        const uint8_t * STRATA_RESTRICT q6 = x[i].ql;
-        const uint8_t * STRATA_RESTRICT qh = x[i].qh;
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q6 = x[i].ql;
+        const uint8_t * NOSTROMA_RESTRICT qh = x[i].qh;
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
 
-        const int8_t * STRATA_RESTRICT scale = x[i].scales;
+        const int8_t * NOSTROMA_RESTRICT scale = x[i].scales;
 
         const svbool_t pg16_8 = svptrue_pat_b16(SV_VL8);
         const svint16_t q8sums_1 = svld1_s16(pg16_8, y[i].bsums);
@@ -3070,11 +3070,11 @@ void dot_q6_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 
         const float d_all = h2f(x[i].d);
 
-        const uint8_t * STRATA_RESTRICT q6 = x[i].ql;
-        const uint8_t * STRATA_RESTRICT qh = x[i].qh;
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q6 = x[i].ql;
+        const uint8_t * NOSTROMA_RESTRICT qh = x[i].qh;
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
 
-        const int8_t * STRATA_RESTRICT scale = x[i].scales;
+        const int8_t * NOSTROMA_RESTRICT scale = x[i].scales;
 
         const ggml_int16x8x2_t q8sums = ggml_vld1q_s16_x2(y[i].bsums);
         const int8x16_t scales = vld1q_s8(scale);
@@ -3156,7 +3156,7 @@ void dot_q6_K_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT 
 #endif
 }
 
-void dot_iq1_s_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq1_s_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const size_t bs = 0, bx = 0, by = 0;   // one row at a time: ggml's nrc == 1 path
     const int nrc = 1;
     assert(n % QK_K == 0);
@@ -3166,8 +3166,8 @@ void dot_iq1_s_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT
     UNUSED(by);
     UNUSED(bs);
 
-    const block_iq1_s* STRATA_RESTRICT x = (const block_iq1_s*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_iq1_s* NOSTROMA_RESTRICT x = (const block_iq1_s*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -3224,7 +3224,7 @@ void dot_iq1_s_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT
 #endif
 }
 
-void dot_iq1_m_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq1_m_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const size_t bs = 0, bx = 0, by = 0;   // one row at a time: ggml's nrc == 1 path
     const int nrc = 1;
     assert(n % QK_K == 0);
@@ -3234,8 +3234,8 @@ void dot_iq1_m_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT
     UNUSED(by);
     UNUSED(bs);
 
-    const block_iq1_m* STRATA_RESTRICT x = (const block_iq1_m*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_iq1_m* NOSTROMA_RESTRICT x = (const block_iq1_m*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -3320,7 +3320,7 @@ void dot_iq1_m_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT
 #endif
 }
 
-void dot_iq2_xxs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq2_xxs_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const size_t bs = 0, bx = 0, by = 0;   // one row at a time: ggml's nrc == 1 path
     const int nrc = 1;
     assert(n % QK_K == 0);
@@ -3330,8 +3330,8 @@ void dot_iq2_xxs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRI
     UNUSED(by);
     UNUSED(bs);
 
-    const block_iq2_xxs* STRATA_RESTRICT x = (const block_iq2_xxs*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_iq2_xxs* NOSTROMA_RESTRICT x = (const block_iq2_xxs*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -3349,8 +3349,8 @@ void dot_iq2_xxs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRI
     float sumf = 0;
     for (int i = 0; i < nb; ++i) {
         const float d = h2f(x[i].d) * y[i].d;
-        const uint16_t * STRATA_RESTRICT q2 = x[i].qs;
-        const int8_t   * STRATA_RESTRICT q8 = y[i].qs;
+        const uint16_t * NOSTROMA_RESTRICT q2 = x[i].qs;
+        const int8_t   * NOSTROMA_RESTRICT q8 = y[i].qs;
         float sumf1 = 0, sumf2 = 0;
         for (int ib32 = 0; ib32 < QK_K/32; ib32 += 2) {
             q8b = ggml_vld1q_s8_x4(q8); q8 += 64;
@@ -3384,7 +3384,7 @@ void dot_iq2_xxs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRI
 #endif
 }
 
-void dot_iq2_xs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq2_xs_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const size_t bs = 0, bx = 0, by = 0;   // one row at a time: ggml's nrc == 1 path
     const int nrc = 1;
     assert(n % QK_K == 0);
@@ -3394,8 +3394,8 @@ void dot_iq2_xs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRIC
     UNUSED(by);
     UNUSED(bs);
 
-    const block_iq2_xs* STRATA_RESTRICT x = (const block_iq2_xs*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_iq2_xs* NOSTROMA_RESTRICT x = (const block_iq2_xs*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -3412,8 +3412,8 @@ void dot_iq2_xs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRIC
     float sumf = 0;
     for (int i = 0; i < nb; ++i) {
         const float d = h2f(x[i].d) * y[i].d;
-        const uint16_t * STRATA_RESTRICT q2 = x[i].qs;
-        const int8_t   * STRATA_RESTRICT q8 = y[i].qs;
+        const uint16_t * NOSTROMA_RESTRICT q2 = x[i].qs;
+        const int8_t   * NOSTROMA_RESTRICT q8 = y[i].qs;
         const uint8x8_t scales8 = vld1_u8(x[i].scales);
         const uint8x8_t scales_l = vand_u8(scales8, vdup_n_u8(0xf));
         const uint8x8_t scales_h = vshr_n_u8(scales8, 4);
@@ -3460,7 +3460,7 @@ void dot_iq2_xs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRIC
 #endif
 }
 
-void dot_iq2_s_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq2_s_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const size_t bs = 0, bx = 0, by = 0;   // one row at a time: ggml's nrc == 1 path
     const int nrc = 1;
     assert(n % QK_K == 0);
@@ -3470,8 +3470,8 @@ void dot_iq2_s_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT
     UNUSED(by);
     UNUSED(bs);
 
-    const block_iq2_s* STRATA_RESTRICT x = (const block_iq2_s*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_iq2_s* NOSTROMA_RESTRICT x = (const block_iq2_s*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -3497,10 +3497,10 @@ void dot_iq2_s_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT
 
         const float d = h2f(x[i].d) * y[i].d;
 
-        const uint8_t * STRATA_RESTRICT qs = x[i].qs;
-        const uint8_t * STRATA_RESTRICT qh = x[i].qh;
-        const uint16_t * STRATA_RESTRICT signs = (const uint16_t *)(x[i].qs + QK_K/8);
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT qs = x[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT qh = x[i].qh;
+        const uint16_t * NOSTROMA_RESTRICT signs = (const uint16_t *)(x[i].qs + QK_K/8);
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
 
         int sumi1 = 0, sumi2 = 0;
         for (int ib32 = 0; ib32 < QK_K/32; ib32 += 2) {
@@ -3559,7 +3559,7 @@ void dot_iq2_s_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT
 
 }
 
-void dot_iq3_xxs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq3_xxs_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const size_t bs = 0, bx = 0, by = 0;   // one row at a time: ggml's nrc == 1 path
     const int nrc = 1;
     assert(n % QK_K == 0);
@@ -3569,8 +3569,8 @@ void dot_iq3_xxs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRI
     UNUSED(by);
     UNUSED(bs);
 
-    const block_iq3_xxs* STRATA_RESTRICT x = (const block_iq3_xxs*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_iq3_xxs* NOSTROMA_RESTRICT x = (const block_iq3_xxs*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -3586,9 +3586,9 @@ void dot_iq3_xxs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRI
     float sumf = 0;
     for (int i = 0; i < nb; ++i) {
         const float d = h2f(x[i].d) * y[i].d;
-        const uint8_t * STRATA_RESTRICT q3 = x[i].qs;
-        const uint8_t * STRATA_RESTRICT gas = x[i].qs + QK_K/4;
-        const int8_t   * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q3 = x[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT gas = x[i].qs + QK_K/4;
+        const int8_t   * NOSTROMA_RESTRICT q8 = y[i].qs;
         float sumf1 = 0, sumf2 = 0;
         for (int ib32 = 0; ib32 < QK_K/32; ib32 += 2) {
             q8b = ggml_vld1q_s8_x4(q8); q8 += 64;
@@ -3623,7 +3623,7 @@ void dot_iq3_xxs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRI
 #endif
 }
 
-void dot_iq3_s_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq3_s_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const size_t bs = 0, bx = 0, by = 0;   // one row at a time: ggml's nrc == 1 path
     const int nrc = 1;
     assert(n % QK_K == 0);
@@ -3633,8 +3633,8 @@ void dot_iq3_s_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT
     UNUSED(by);
     UNUSED(bs);
 
-    const block_iq3_s* STRATA_RESTRICT x = (const block_iq3_s*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_iq3_s* NOSTROMA_RESTRICT x = (const block_iq3_s*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -3671,10 +3671,10 @@ void dot_iq3_s_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT
     float sumf = 0;
     for (int i = 0; i < nb; ++i) {
         const float d = h2f(x[i].d) * y[i].d;
-        const uint8_t * STRATA_RESTRICT qs = x[i].qs;
-        const uint8_t * STRATA_RESTRICT qh = x[i].qh;
-        const uint16_t * STRATA_RESTRICT signs = (const uint16_t *)x[i].signs;
-        const int8_t   * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT qs = x[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT qh = x[i].qh;
+        const uint16_t * NOSTROMA_RESTRICT signs = (const uint16_t *)x[i].signs;
+        const int8_t   * NOSTROMA_RESTRICT q8 = y[i].qs;
 
         memcpy(scales32, x[i].scales, 4);
         scales32[1] = (((scales32[0] >> 4) & 0x0f0f0f0f) << 1) | 0x01010101;
@@ -3735,7 +3735,7 @@ void dot_iq3_s_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT
 #endif
 }
 
-void dot_iq4_xs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq4_xs_q8_K(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const size_t bs = 0, bx = 0, by = 0;   // one row at a time: ggml's nrc == 1 path
     const int nrc = 1;
     assert(nrc == 1);
@@ -3745,8 +3745,8 @@ void dot_iq4_xs_q8_K(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRIC
     UNUSED(bs);
     assert(n % QK_K == 0);
 
-    const block_iq4_xs* STRATA_RESTRICT x = (const block_iq4_xs*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_iq4_xs* NOSTROMA_RESTRICT x = (const block_iq4_xs*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 

@@ -3,21 +3,21 @@
 // them but does not run on Metal (the prompt chunks are metal/src/engine/window.cpp, see stubs_df2.cpp); they exist so the shared host
 // files link.
 //   fused::want_dm_f16   asks the fused kernels to write the down rows as FP16 (gfx11): this build has no fused kernels, nothing to ask.
-//   fewrows_record       STRATA_PF_FEWROWS (research switch, off): the plan record of a few-row expert, written by a CUDA kernel;
+//   fewrows_record       NOSTROMA_PF_FEWROWS (research switch, off): the plan record of a few-row expert, written by a CUDA kernel;
 //                        stops the engine with its name, like stubs.cpp, if it is ever reached.
 
 #include <cstdint>
 
-#include "strata/prefill/kernels.hpp"
-#include "strata/prefill/moe_fused_iq.hpp"
+#include "nostroma/prefill/kernels.hpp"
+#include "nostroma/prefill/moe_fused_iq.hpp"
 
-namespace strata::metal_engine { void missing(const char* name); }
+namespace nostroma::metal_engine { void missing(const char* name); }
 
-namespace strata::prefill {
+namespace nostroma::prefill {
 void fewrows_record(void*, const void*, int, int, void*) {
-    strata::metal_engine::missing("strata::prefill::fewrows_record");
+    nostroma::metal_engine::missing("nostroma::prefill::fewrows_record");
 }
 namespace fused {
 void want_dm_f16(bool) {}
 }  // namespace fused
-}  // namespace strata::prefill
+}  // namespace nostroma::prefill

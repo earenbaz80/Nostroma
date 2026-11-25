@@ -7,8 +7,8 @@
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "strata/kernels/gr.hpp"
-#include "strata/core/geometry.hpp"
+#include "nostroma/kernels/gr.hpp"
+#include "nostroma/core/geometry.hpp"
 
 #include <cstdint>
 #include <cstdio>
@@ -17,7 +17,7 @@
 #include <random>
 #include <vector>
 
-namespace k = strata::kernels;
+namespace k = nostroma::kernels;
 
 namespace {
 void ck(dpct::err0 e, const char *w) {
@@ -68,7 +68,7 @@ uint16_t bf16_of(float f) {
 }  // namespace
 
 int main() {
-    const long long n_embd = strata::core::kCompiledGeometry.n_embd, hc = strata::core::kCompiledGeometry.hc, hc_lr = strata::core::kCompiledGeometry.hc_lr, hc_dim = hc * n_embd;   // the compiled shape (Q4-SYCL)
+    const long long n_embd = nostroma::core::kCompiledGeometry.n_embd, hc = nostroma::core::kCompiledGeometry.hc, hc_lr = nostroma::core::kCompiledGeometry.hc_lr, hc_dim = hc * n_embd;   // the compiled shape (Q4-SYCL)
     const float eps = 1e-6f;
     std::mt19937 rng(783);
     std::normal_distribution<float> gauss(0.f, 1.f);

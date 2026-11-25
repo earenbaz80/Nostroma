@@ -1,7 +1,7 @@
 // src/core/dflash2_small_bench.cpp - time of each of the drafter's small kernels, back to back (graph-free), on dummy data.
 //
 //     dflash2_small_bench [iters]
-#include "strata/kernels/dflash2.hpp"
+#include "nostroma/kernels/dflash2.hpp"
 
 #include <cuda_runtime.h>
 
@@ -11,7 +11,7 @@
 #include <functional>
 #include <vector>
 
-using namespace strata::kernels;
+using namespace nostroma::kernels;
 
 static float* dev(size_t n, float v = 0.5f) {
     float* p;

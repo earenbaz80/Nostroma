@@ -2,11 +2,11 @@
 // at init map only their first cells; the K/V then grows from new VRAM (the take that returns 0, as generate.cpp's
 // kvg_ensure does when the cache has nothing to give) to the cells a long prompt needs and on to the whole context, and
 // every cell it maps is writable and reads back.  GPU with virtual memory needed; skips with 77 otherwise.
-#include "strata/core/geometry.hpp"
-#include "strata/core/kv_grow_rules.hpp"
-#include "strata/core/layer.hpp"
-#include "strata/core/layout.hpp"
-#include "strata/core/vmm.hpp"
+#include "nostroma/core/geometry.hpp"
+#include "nostroma/core/kv_grow_rules.hpp"
+#include "nostroma/core/layer.hpp"
+#include "nostroma/core/layout.hpp"
+#include "nostroma/core/vmm.hpp"
 
 #include <cuda_runtime.h>
 
@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-using namespace strata::core;
+using namespace nostroma::core;
 
 namespace {
 int failed = 0;
@@ -26,7 +26,7 @@ size_t pool_bytes(int64_t cells, int64_t page_size, int64_t heads, int64_t w) {
     return (size_t) ((cells + page_size - 1) / page_size) * (size_t) (heads * page_size * w);
 }
 
-bool fill_and_check(const QsaState& st, const strata::kernels::QsaShapes& s, int64_t cells, uint8_t v) {
+bool fill_and_check(const QsaState& st, const nostroma::kernels::QsaShapes& s, int64_t cells, uint8_t v) {
     const int64_t scb = (s.head_dim / 64) * 2;
     const std::pair<void*, int64_t> arrays[] = {{st.k_q, s.head_dim}, {st.v_q, s.head_dim}, {st.k_scale, scb}, {st.v_scale, scb}};
     for (const auto& [p, w] : arrays) {
@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
         return 77;
     }
     const ModelGeometry g;   // the model's QSA shapes
-    const strata::kernels::QsaShapes s = qsa_shapes(g);
+    const nostroma::kernels::QsaShapes s = qsa_shapes(g);
     const int64_t max_cells = 65536, init = 4096;
     qsa_set_kv_int8(true);
     qsa_set_kv_elastic(true, init);

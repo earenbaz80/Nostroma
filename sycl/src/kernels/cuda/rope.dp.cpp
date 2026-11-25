@@ -27,17 +27,17 @@
 // order, so `rope_parity` can hold every variant to a bit-exact float64 transcription of the same spec.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
-#include "strata/kprof.hpp"
+#include "nostroma/kprof.hpp"
 #include <dpct/dpct.hpp>
-#include "strata/sycl_queue.hpp"
-#include "strata/kernels/rope.hpp"
-#include "strata/kernels/mrope.hpp"
+#include "nostroma/sycl_queue.hpp"
+#include "nostroma/kernels/rope.hpp"
+#include "nostroma/kernels/mrope.hpp"
 
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 
 namespace {
 // The process's rope config (rope_scaling.hpp).  One writer - the engine's startup thread, before
@@ -138,7 +138,7 @@ void rope_neox_apply(const float* x, float* out, int64_t rows, int head_dim, int
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->submit([&](sycl::handler &cgh) {
                 auto mrope_table_ct8 = mrope_table();
 
@@ -163,4 +163,4 @@ void rope_neox_apply(const float* x, float* out, int64_t rows, int head_dim, int
     if (stream == nullptr) dpct::get_current_device().queues_wait_and_throw();
 }
 
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels

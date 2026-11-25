@@ -383,7 +383,7 @@ z
    <text style="font-weight: 700; font-size: 10px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #087f8c" x="40.32" y="26.6112" transform="rotate(-0 40.32 26.6112)">COMMUNITY MEASUREMENTS / UNMODIFIED RELEASE ENGINES</text>
   </g>
   <g id="text_38">
-   <text style="font-weight: 700; font-size: 29px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #162c43" x="40.32" y="57.456" transform="rotate(-0 40.32 57.456)">Strata 0.1.39 → 0.1.40</text>
+   <text style="font-weight: 700; font-size: 29px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #162c43" x="40.32" y="57.456" transform="rotate(-0 40.32 57.456)">Nostroma 0.1.39 → 0.1.40</text>
   </g>
   <g id="text_39">
    <text style="font-size: 13px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #506176" x="40.32" y="80.4384" transform="rotate(-0 40.32 80.4384)">Q4 and Q8 on RTX PRO 6000 Blackwell · 8K input + 512 output · FP16 KV</text>

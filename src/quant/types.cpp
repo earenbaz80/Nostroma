@@ -1,9 +1,9 @@
 // src/quant/types.cpp - the quant type table.
-#include "strata/quant/types.hpp"
+#include "nostroma/quant/types.hpp"
 
 #include "internal.hpp"
 
-namespace strata::quant {
+namespace nostroma::quant {
 namespace {
 
 constexpr Type kQ80 = Type::Q8_0, kQ81 = Type::Q8_1, kQ8K = Type::Q8_K;
@@ -61,4 +61,4 @@ size_t row_bytes(int type, int64_t n) noexcept {
     return (size_t) (n / t->blck) * t->bytes;
 }
 
-}  // namespace strata::quant
+}  // namespace nostroma::quant

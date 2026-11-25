@@ -13,7 +13,7 @@ from unittest import mock
 from serve.frontend import ChatTemplate
 from serve.replicas import (BLOCK, ReplicaConfigError, ReplicaEngine, Router, cpu_sets, gpu_groups, remove_arena,
                             replica_cfg, shared_arena_plan, sweep_stale_arenas)
-from serve.server import ByteTokenizer, Service, StrataEngine, serve
+from serve.server import ByteTokenizer, Service, NostromaEngine, serve
 from serve.test_parallel import FAKE_BATCH
 
 
@@ -35,12 +35,12 @@ class Config(unittest.TestCase):
                 gpu_groups(cfg)
 
     def test_replica_cfg(self):
-        cfg = {"gpu": [0, 1, 2, 3], "args": ["--x"], "log": "/l/strata.log", "hip_ordinal": 1, "env": {"A": "1"},
+        cfg = {"gpu": [0, 1, 2, 3], "args": ["--x"], "log": "/l/nostroma.log", "hip_ordinal": 1, "env": {"A": "1"},
                "expert_profile_save": "/p/prof.bin",
                "replicas": [{"gpus": [0, 1], "env": {"B": 2}}, {"gpus": [2, 3], "args": ["--y"]}]}
         a, b = replica_cfg(cfg, 0, [0, 1]), replica_cfg(cfg, 1, [2, 3])
         self.assertEqual((a["gpu"], b["gpu"]), ([0, 1], [2, 3]))
-        self.assertEqual((a["log"], b["log"]), ("/l/strata.r0.log", "/l/strata.r1.log"))
+        self.assertEqual((a["log"], b["log"]), ("/l/nostroma.r0.log", "/l/nostroma.r1.log"))
         self.assertEqual(a["env"], {"A": "1", "B": "2"})
         self.assertEqual(b["args"], ["--x", "--y"])
         self.assertNotIn("replicas", a)
@@ -153,7 +153,7 @@ class RouteChoice(unittest.TestCase):
         engine.inflight[0] = 1
         cancel = threading.Event()
         selected = []
-        cancel._strata_replica_selected = selected.append
+        cancel._nostroma_replica_selected = selected.append
         self.assertEqual(list(engine.generate([1, 2], 1, {}, cancel)), [7])
         self.assertEqual(selected, [1])
 
@@ -162,7 +162,7 @@ class ReplicaService(unittest.TestCase):
     def start(self, slots=4, n=2):
         import serve.server as server
         self.tmp = tempfile.TemporaryDirectory()
-        script = Path(self.tmp.name) / "fake_strata.py"
+        script = Path(self.tmp.name) / "fake_nostroma.py"
         script.write_text(FAKE_BATCH, encoding="utf-8")
         real = server.subprocess.Popen
         self.logs = [Path(self.tmp.name) / f"r{i}.log" for i in range(n)]
@@ -171,7 +171,7 @@ class ReplicaService(unittest.TestCase):
             extra = (["--batch", str(slots)] if slots else []) + ["--log", str(self.logs[i])]
             with mock.patch.object(server.subprocess, "Popen",
                                    lambda cmd, **kw: real([sys.executable, str(script), *cmd[1:]], **kw)):
-                engines.append(StrataEngine("strata", extra))
+                engines.append(NostromaEngine("nostroma", extra))
         self.engine = ReplicaEngine(engines)
         self.svc = Service(self.engine, ByteTokenizer(), ChatTemplate(Path(__file__).parent / "chat_template.jinja"))
         self.httpd = serve(self.svc, port=0)
@@ -324,21 +324,21 @@ class SharedArena(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             self.assertEqual(self.plan({"args": []}, tmp=d), (None, ""))
             self.assertEqual(self.plan(n=1, tmp=d), (None, ""))
-            self.assertEqual(self.plan({"args": []}, tmp=d, environ={"STRATA_REPLICA_SHARED_ARENA": "0"}), (None, ""))
+            self.assertEqual(self.plan({"args": []}, tmp=d, environ={"NOSTROMA_REPLICA_SHARED_ARENA": "0"}), (None, ""))
 
     def test_on_by_config_or_environment(self):
         with tempfile.TemporaryDirectory() as d:
             path, note = self.plan(tmp=d)
             self.assertTrue(path and path.startswith(d) and path.endswith(".bin"), path)
             self.assertIn("once", note)
-            path2, _ = self.plan({"args": []}, tmp=d, environ={"STRATA_REPLICA_SHARED_ARENA": "1"})
+            path2, _ = self.plan({"args": []}, tmp=d, environ={"NOSTROMA_REPLICA_SHARED_ARENA": "1"})
             self.assertTrue(path2)
             self.assertEqual(path, path2)      # (one server: one file)
 
     def test_windows_gets_a_named_section(self):
         with tempfile.TemporaryDirectory() as d:
             path, note = self.plan(tmp=d, platform="win32")
-            self.assertTrue(path and path.startswith("win:Local") and "strata-replicas-" in path, path)
+            self.assertTrue(path and path.startswith("win:Local") and "nostroma-replicas-" in path, path)
             self.assertIn("Windows section", note)
             remove_arena(path)                 # (nothing to remove: harmless)
 
@@ -361,10 +361,10 @@ class SharedArena(unittest.TestCase):
     def test_a_stale_file_goes_a_live_one_stays(self):
         with tempfile.TemporaryDirectory() as d:
             uid = __import__("os").getuid() if hasattr(__import__("os"), "getuid") else 0
-            dead = Path(d) / f"strata-replicas-{uid}-2999999.bin"
-            live = Path(d) / f"strata-replicas-{uid}-{__import__('os').getpid()}.bin"
-            other = Path(d) / f"strata-replicas-{uid + 1}-2999999.bin"
-            junk = Path(d) / "strata-replicas-x.bin"
+            dead = Path(d) / f"nostroma-replicas-{uid}-2999999.bin"
+            live = Path(d) / f"nostroma-replicas-{uid}-{__import__('os').getpid()}.bin"
+            other = Path(d) / f"nostroma-replicas-{uid + 1}-2999999.bin"
+            junk = Path(d) / "nostroma-replicas-x.bin"
             for f in (dead, live, other, junk):
                 f.write_bytes(b"x")
             with mock.patch("serve.replicas._pid_alive", side_effect=lambda pid: pid != 2999999):

@@ -7,7 +7,7 @@
  *
  * It speaks the Model Context Protocol over stdio (newline-delimited JSON-RPC), the transport the Harness's MCP client uses for a program
  * it starts. The file is re-read on every request, so a change in Settings is seen without restarting anything. The assistant's text for
- * a command tool reaches the command in the STRATA_INPUT environment variable (never spliced into the command line, so it cannot add
+ * a command tool reaches the command in the NOSTROMA_INPUT environment variable (never spliced into the command line, so it cannot add
  * commands of its own). A command runs in the shell that suits it (PowerShell for a Windows command that reads as PowerShell, cmd.exe for
  * the rest, sh elsewhere), in its own folder or the one the assistant names, gets 2 minutes unless its tool allows more (up to an hour) and
  * 20,000 characters of output (custom-command-run.mjs).
@@ -49,7 +49,7 @@ async function handle(line) {
   if (id === undefined) return;                                  // notifications need no answer
   try {
     if (method === 'initialize') {
-      return send({ id, result: { protocolVersion: params?.protocolVersion ?? '2024-11-05', capabilities: { tools: { listChanged: false } }, serverInfo: { name: `strata-${mode}`, version: '1.0.0' } } });
+      return send({ id, result: { protocolVersion: params?.protocolVersion ?? '2024-11-05', capabilities: { tools: { listChanged: false } }, serverInfo: { name: `nostroma-${mode}`, version: '1.0.0' } } });
     }
     if (method === 'ping') return send({ id, result: {} });
     if (method === 'tools/list') return send({ id, result: { tools: listTools() } });

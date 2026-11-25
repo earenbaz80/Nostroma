@@ -1,11 +1,11 @@
 // tests/program/gpu_report_test.cpp - #3797: the out-of-memory report at start (pure text; the NVML query is only
 // checked to be safe to call: it must return, not throw, and leave the list empty when it answers false).
-#include "strata/program/gpu_report.hpp"
+#include "nostroma/program/gpu_report.hpp"
 
 #include <cstdio>
 #include <string>
 
-using namespace strata::program::gpu_report;
+using namespace nostroma::program::gpu_report;
 
 namespace {
 int g_fail = 0;
@@ -25,11 +25,11 @@ int main() {
         c.free_mib = 320;
         c.total_mib = 21998;
         c.processes_known = true;
-        c.processes = {{4242, "/usr/bin/python3.12", 20100}, {777, "/opt/strata/strata", 900}, {1, "Xorg", 12}, {5, "", 0}};
+        c.processes = {{4242, "/usr/bin/python3.12", 20100}, {777, "/opt/nostroma/nostroma", 900}, {1, "Xorg", 12}, {5, "", 0}};
         const std::string r = format_gpu_memory_report({c}, 777);
         check(has(r, "CUDA1 (NVIDIA GeForce RTX 2080 Ti): 320 MiB free of 21998 MiB"), "free and total", r);
         check(has(r, "python3.12 (pid 4242) 19.6 GiB"), "the largest other program, by file name", r);
-        check(!has(r, "strata (pid 777)"), "this process is not listed as another program", r);
+        check(!has(r, "nostroma (pid 777)"), "this process is not listed as another program", r);
         check(has(r, "Xorg (pid 1) 12 MiB"), "a small one is still named", r);
         check(has(r, "1 program whose memory the driver does not report"), "a process of unknown size is counted", r);
         check(r.find("python3.12") < r.find("Xorg"), "largest first", r);
@@ -61,7 +61,7 @@ int main() {
         c.free_mib = 700;
         c.total_mib = 12288;
         c.processes_known = true;
-        c.processes = {{99, "strata.exe", 11000}};
+        c.processes = {{99, "nostroma.exe", 11000}};
         const std::string r = format_gpu_memory_report({c}, 99);
         check(has(r, "the driver lists no other program using it"), "only ourselves", r);
     }

@@ -38,7 +38,7 @@ tag if you want updates only when you decide. The examples below use these image
 
 ## One command per card
 
-Each command runs Nostroma in the background, keeps your files in the volume `strata-data`, and listens only on this computer
+Each command runs Nostroma in the background, keeps your files in the volume `nostroma-data`, and listens only on this computer
 (`127.0.0.1:8080`). Choose `FAMILY` and `MODEL`, and generate your own key. The examples select ISTA-DASLab originals explicitly. The first start downloads the model (tens of GB): watch it with
 `docker logs -f nostroma`. Already have the model's GGUF files? Add `-e MODEL_PATH=/models -v /your/folder:/models:ro` and nothing is
 downloaded for the model itself ([Files you already have](#files-you-already-have)).
@@ -48,7 +48,7 @@ downloaded for the model itself ([Files you already have](#files-you-already-hav
 ```sh
 docker run -d --name nostroma --gpus all -p 127.0.0.1:8080:8080 \
   --ulimit memlock=-1:-1 --shm-size 2g --stop-timeout 120 \
-  -v strata-data:/data -e FAMILY=qwen -e MODEL=IQ3_XXS -e API_KEY=$(openssl rand -hex 24) \
+  -v nostroma-data:/data -e FAMILY=qwen -e MODEL=IQ3_XXS -e API_KEY=$(openssl rand -hex 24) \
   ghcr.io/earenbaz80/Nostroma:0.2.7-cuda13
 ```
 
@@ -58,7 +58,7 @@ docker run -d --name nostroma --gpus all -p 127.0.0.1:8080:8080 \
 docker run -d --name nostroma --device /dev/kfd --device /dev/dri \
   --group-add video --group-add $(getent group render | cut -d: -f3) -p 127.0.0.1:8080:8080 \
   --ulimit memlock=-1:-1 --shm-size 2g --stop-timeout 120 \
-  -v strata-data:/data -e FAMILY=qwen -e MODEL=IQ3_XXS -e API_KEY=$(openssl rand -hex 24) \
+  -v nostroma-data:/data -e FAMILY=qwen -e MODEL=IQ3_XXS -e API_KEY=$(openssl rand -hex 24) \
   ghcr.io/earenbaz80/Nostroma:0.2.7-rocm-gfx120x
 ```
 
@@ -67,7 +67,7 @@ docker run -d --name nostroma --device /dev/kfd --device /dev/dri \
 ```sh
 docker run -d --name nostroma --device /dev/dri --group-add $(getent group render | cut -d: -f3) \
   -p 127.0.0.1:8080:8080 --ulimit memlock=-1:-1 --shm-size 2g --stop-timeout 120 \
-  -v strata-data:/data -e FAMILY=qwen -e MODEL=IQ3_S -e MODEL_PATH=/models -v /srv/gguf/IQ3_S:/models:ro \
+  -v nostroma-data:/data -e FAMILY=qwen -e MODEL=IQ3_S -e MODEL_PATH=/models -v /srv/gguf/IQ3_S:/models:ro \
   -e API_KEY=$(openssl rand -hex 24) ghcr.io/earenbaz80/Nostroma:0.2.7-sycl
 ```
 
@@ -108,8 +108,8 @@ docker compose -f docker-compose.nvidia.yml logs -f
 
 They set what the commands above set: the GPU (`deploy.resources.reservations.devices` for NVIDIA, `/dev/kfd` and
 `/dev/dri` plus the `video` and `render` groups for AMD, `/dev/dri` for Intel), `ulimits.memlock`, `shm_size`, a two-minute
-`stop_grace_period`, the `strata-data` volume, and the port bound to `127.0.0.1`. To let other computers reach it, set
-`STRATA_BIND=0.0.0.0` in `.env` and keep a real `API_KEY`.
+`stop_grace_period`, the `nostroma-data` volume, and the port bound to `127.0.0.1`. To let other computers reach it, set
+`NOSTROMA_BIND=0.0.0.0` in `.env` and keep a real `API_KEY`.
 
 ## Settings
 
@@ -133,7 +133,7 @@ screens; leave out what you do not care about.
 | `TUNE_ALLOW_SMALL` | `1` passes `--tune-allow-small` to `launch` (allow tuning on a small card) | `0` |
 | `PORT` | the port inside the container | `8080` |
 | `PRESET` | the preset name in `/data` | `docker` |
-| `STRATA_SET` | advanced engine settings, space separated, like `nostroma launch --set` (`"prefill=65536 STRATA_PIN_BY_NEED=1"`) | none |
+| `NOSTROMA_SET` | advanced engine settings, space separated, like `nostroma launch --set` (`"prefill=65536 NOSTROMA_PIN_BY_NEED=1"`) | none |
 
 Your choices are saved as a preset in the volume. Start again with no settings and the saved preset is used; start with
 settings and they replace the saved ones (tuning results are kept). To change one thing, recreate the container with the new
@@ -143,7 +143,7 @@ variable; the model and tuning stay in `/data`. Anything else: `docker exec nost
 What is in the volume `/data`: `Nostroma-data/` (model files, the prepared pack), `state/` (presets, tuning, the key), `install/`
 (run settings and logs), `home/`. The engine and the Terminal are in the image, so updating the image never touches your files.
 
-To keep it all on a big disk, mount a folder there instead of the named volume: `-v /mnt/big/strata:/data` (the folder must be writable by the
+To keep it all on a big disk, mount a folder there instead of the named volume: `-v /mnt/big/nostroma:/data` (the folder must be writable by the
 container's user). Nothing large is written anywhere else in the container.
 
 ### Files you already have
@@ -217,7 +217,7 @@ docker stop nostroma && docker rm nostroma
 # run the same docker run command again with the new tag (compose: docker compose pull && docker compose up -d)
 ```
 
-The models, the prepared pack, your preset and tuning stay in the volume `strata-data`; nothing is downloaded again. A new
+The models, the prepared pack, your preset and tuning stay in the volume `nostroma-data`; nothing is downloaded again. A new
 engine can make an old tuning result less useful: start once with `-e TUNE=quick -e RETUNE=1` to tune again.
 `nostroma update` inside the container is not the way to update: the engine is part of the image.
 
@@ -243,7 +243,7 @@ use the `cuda12` image or update the driver.
 
 **`[X] /data is not writable by uid 1000:1000`.** The volume belongs to `root`, because an image that ran as root made it (every
 release before 0.2.15 did), or because you mounted a folder root owns. Give it to the account the image runs as, once:
-`docker run --rm -u 0 -v strata-data:/data <image> chown -R 1000:1000 /data` (a folder you mounted: `sudo chown -R 1000:1000 <folder>`),
+`docker run --rm -u 0 -v nostroma-data:/data <image> chown -R 1000:1000 /data` (a folder you mounted: `sudo chown -R 1000:1000 <folder>`),
 or build the image with `--build-arg APP_UID=$(id -u) --build-arg APP_GID=$(id -g)` so the account is yours.
 
 **AMD: `Permission denied` on `/dev/kfd`, or no card found.** The container needs the device files and your user (or the
@@ -256,7 +256,7 @@ SELinux (Fedora, RHEL) that still refuses the device files, add `--security-opt 
 `i915` or `xe` driver on the host (`ls /dev/dri/renderD*` must show a device; `lspci -k | grep -A3 -i arc` shows the driver in use).
 
 **SELinux (Fedora, RHEL, Rocky): `Permission denied` on a folder you mounted.** Add `:z` (shared) or `:Z` (private) to the
-mount: `-v /srv/gguf/IQ3_XXS:/models:ro,z`. A named volume like `strata-data` needs nothing.
+mount: `-v /srv/gguf/IQ3_XXS:/models:ro,z`. A named volume like `nostroma-data` needs nothing.
 
 **The container is killed or the computer swaps.** Nostroma loads tens of GB into RAM: leave the container without a memory
 limit, close other big programs, and pick a smaller `MODEL` ([MODELS.md](MODELS.md)). The log prints a warning when it sees a
@@ -283,7 +283,7 @@ package and start through `nostroma launch`. Mapping:
 | `MODEL`, `FAMILY`, `CONTEXT`, `API_KEY`, `PORT`, `KV`, `GPU`, `GPUS`, `VISION` | the same (`VISION` takes `off\|on\|gpu\|cpu`; `no` / `yes` still work) |
 | `GGUF_DIR` | `MODEL_PATH` (the old name still works) |
 | `HOST` | not needed: the server listens on every address inside the container; choose where it is reachable with `-p` |
-| `LOW_RAM`, `RESIDENT_BUDGET_GIB`, `KV_STREAMING`, `LAYER_SPLIT`, `CONFIG`, `REINSTALL` | ignored with a warning; use `STRATA_SET` for engine settings and `nostroma launch --help` for the rest |
+| `LOW_RAM`, `RESIDENT_BUDGET_GIB`, `KV_STREAMING`, `LAYER_SPLIT`, `CONFIG`, `REINSTALL` | ignored with a warning; use `NOSTROMA_SET` for engine settings and `nostroma launch --help` for the rest |
 
 A volume from the older image is picked up: the first start moves `/data/models`, `/data/packs` and `/data/mtp` into
 `/data/Nostroma-data` (a rename inside the volume: nothing is copied or downloaded again, and the prepared pack is kept). The old
@@ -295,7 +295,7 @@ The container name, the volume and the port can stay as they were.
 
 ## Build it yourself
 
-This is the way to get an image for a computer without registry access or after changing Strata. You need an engine package
+This is the way to get an image for a computer without registry access or after changing Nostroma. You need an engine package
 folder (made by `packaging/package_engine.py`, or fetched by `nostroma update` into a components folder) and Docker on Linux:
 
 ```sh
@@ -311,16 +311,16 @@ to the system or the graphics driver (`packaging/binary_deps.py`); finally it ch
 library inside the finished image. A package that fails any of these stops the build. Nothing is pushed anywhere.
 `docker/smoke-test.sh` runs the checks we ran on real cards (serves, key, chat, tool call, monitor, clean stop, memory freed, restart); see its first lines for the variables.
 
-**From source.** `docker build -t strata:src --build-arg STRATA_COMMIT=$(git rev-parse HEAD) .` in the repository compiles the CUDA 13
+**From source.** `docker build -t nostroma:src --build-arg NOSTROMA_COMMIT=$(git rev-parse HEAD) .` in the repository compiles the CUDA 13
 engine inside Docker, makes the package and puts it in the same kind of image (`--build-arg CUDA_ARCHITECTURES=89` for one card only,
-much faster). `.git` is not copied into the build, so the commit comes in as `STRATA_COMMIT`; without it the Terminal stage stops.
+much faster). `.git` is not copied into the build, so the commit comes in as `NOSTROMA_COMMIT`; without it the Terminal stage stops.
 The runtime stage of that image ends as the unprivileged account `nostroma` (uid 1000), never root: the server, the engine and the
 Terminal need no privilege. `/data` is created in the image for that account, so a **new** volume mounted there is its own; a volume
 made by an image that ran as root belongs to root, and the start says so — give it to the account once:
-`docker run --rm -u 0 -v strata-data:/data strata:src chown -R 1000:1000 /data`. The base images are pinned by digest (the tag stays
+`docker run --rm -u 0 -v nostroma-data:/data nostroma:src chown -R 1000:1000 /data`. The base images are pinned by digest (the tag stays
 in front of it); to move to a newer base, replace the digest, which is the tag's content digest:
 `docker buildx imagetools inspect ubuntu:24.04 --format '{{.Manifest.Digest}}'`.
-For a GTX 10, P100 or V100 build the CUDA 12 variant: `docker build -t strata:src-cuda12 --build-arg STRATA_COMMIT=$(git rev-parse HEAD)
+For a GTX 10, P100 or V100 build the CUDA 12 variant: `docker build -t nostroma:src-cuda12 --build-arg NOSTROMA_COMMIT=$(git rev-parse HEAD)
 --build-arg CUDA_IMAGE=nvidia/cuda:12.9.1-devel-ubuntu24.04 --build-arg CUDA_ARCHITECTURES="60;61;70;75;80;86;89" --build-arg BUILD_VISION=0 .`
 (the build turns on the Pascal / Volta code by itself when an architecture below 75 is listed, and names the package `cuda12` with
 driver 575.51). For AMD and Intel builds from source see [AMD_HIP.md](AMD_HIP.md) and [INTEL.md](INTEL.md); then package the result
@@ -331,7 +331,7 @@ with `packaging/package_engine.py` and use `docker/build.sh`.
 The images are built from the **engine packages of a release**, never from a build on the runner, so an image holds exactly the
 files the signed update feed names. Nothing publishes by itself: a maintainer starts the workflow, after the owner's OK.
 
-1. Make the release first (its `strata-feed.json`, `strata-feed.json.sig` and the engine archives must be on the GitHub release).
+1. Make the release first (its `nostroma-feed.json`, `nostroma-feed.json.sig` and the engine archives must be on the GitHub release).
 2. GitHub, **Actions, Docker images, Run workflow** ([.github/workflows/docker-images.yml](../.github/workflows/docker-images.yml); the file has to be on
    the default branch to show up). Inputs: the release tag (`v0.2.7`), the flavors (empty: every flavor the release has a package
    for), **push** and **latest**. Run it once with **push off**: it builds every image and publishes nothing (a dry run).

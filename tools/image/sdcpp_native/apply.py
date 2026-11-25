@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-MARK = "// strata: native Qwen-Image-2.1 runner"
+MARK = "// nostroma: native Qwen-Image-2.1 runner"
 
 BUILDER_OLD = """            if (version == VERSION_QWEN_IMAGE_2_1) {
                 result.diffusion = std::make_shared<Qwen::QwenImage21Runner>(ctx.backends.runtime_backend(SDBackendModule::DIFFUSION),

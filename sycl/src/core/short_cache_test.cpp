@@ -1,9 +1,9 @@
-// sycl/src/core/short_cache_test.cpp - the sizing of a start short of VRAM (strata/core/short_cache.hpp), on the 8 GB Arc A750's figures from the engine's logs.
-#include "strata/core/short_cache.hpp"
+// sycl/src/core/short_cache_test.cpp - the sizing of a start short of VRAM (nostroma/core/short_cache.hpp), on the 8 GB Arc A750's figures from the engine's logs.
+#include "nostroma/core/short_cache.hpp"
 
 #include <cstdio>
 
-using namespace strata::core;
+using namespace nostroma::core;
 static int g_fail = 0;
 static void check(bool ok, const char* what) { std::printf("  %-110s %s\n", what, ok ? "ok" : "FAIL"); if (!ok) ++g_fail; }
 

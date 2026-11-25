@@ -20,8 +20,8 @@
   "kernel": "7.0.0-38-generic",
   "cuda": "release 13.4, V13.4.92",
   "storage": "",
-  "strata_commit": "1735d6471df29b42c26170efaac1f1446a58640f",
-  "strata_branch": "main",
+  "nostroma_commit": "1735d6471df29b42c26170efaac1f1446a58640f",
+  "nostroma_branch": "main",
   "engine_version": "0.1.40",
   "model_name": "qwen3.8-flash-next-iq3_xxs",
   "context": {
@@ -34,20 +34,20 @@
    "available": true,
    "error": null
   },
-  "engine_launch_command": "/bin/bash -c cd ~/Strata && echo /home/dgbox/Strata/strata-test-200k-kvpref.json > try-config && sudo -n systemctl restart strata.service && for i in $(seq 1 60); do curl -s -m 5 http://127.0.0.1:8080/health | grep -q '\"loaded\": true' && break; sleep 5; done; curl -s -m 5 http://127.0.0.1:8080/health; echo; tr '\\0' '\\n' < /proc/$(pgrep -f \"engine/strata --serve\" | head -1)/cmdline | grep -c STRATA || true; echo \"--- замер 32k/128k с KV_PREFETCH=1 ---\"; timeout 1200 .venv/bin/python -u ~/scripts/strata-bench.py kvpref-check --style code --lengths 32k,128k --no-gen-case 2>&1 | tail -12",
+  "engine_launch_command": "/bin/bash -c cd ~/Nostroma && echo /home/dgbox/Nostroma/nostroma-test-200k-kvpref.json > try-config && sudo -n systemctl restart nostroma.service && for i in $(seq 1 60); do curl -s -m 5 http://127.0.0.1:8080/health | grep -q '\"loaded\": true' && break; sleep 5; done; curl -s -m 5 http://127.0.0.1:8080/health; echo; tr '\\0' '\\n' < /proc/$(pgrep -f \"engine/nostroma --serve\" | head -1)/cmdline | grep -c NOSTROMA || true; echo \"--- замер 32k/128k с KV_PREFETCH=1 ---\"; timeout 1200 .venv/bin/python -u ~/scripts/nostroma-bench.py kvpref-check --style code --lengths 32k,128k --no-gen-case 2>&1 | tail -12",
   "model_files": [],
-  "server_config_path": "/home/dgbox/Strata/strata-test-200k-kvpref.json",
+  "server_config_path": "/home/dgbox/Nostroma/nostroma-test-200k-kvpref.json",
   "server_config": {
-   "exe": "/home/dgbox/Strata/engine/strata",
+   "exe": "/home/dgbox/Nostroma/engine/nostroma",
    "args": [
     "--pack",
-    "/home/dgbox/Strata-data/packs/iq3_xxs",
+    "/home/dgbox/Nostroma-data/packs/iq3_xxs",
     "--native",
-    "/home/dgbox/Strata-data/models/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf",
+    "/home/dgbox/Nostroma-data/models/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf",
     "--ple-gguf",
-    "/home/dgbox/Strata-data/models/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00002-of-00002.gguf",
+    "/home/dgbox/Nostroma-data/models/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00002-of-00002.gguf",
     "--expert-profile",
-    "/home/dgbox/Strata/data/expert-profile.bin",
+    "/home/dgbox/Nostroma/data/expert-profile.bin",
     "--expert-cache",
     "auto",
     "--prefill",
@@ -55,7 +55,7 @@
     "--spec",
     "4",
     "--mtp",
-    "/home/dgbox/Strata-data/mtp/rt",
+    "/home/dgbox/Nostroma-data/mtp/rt",
     "--max-context",
     "204800",
     "--kv",
@@ -65,7 +65,7 @@
     "--vram-reserve-mib",
     "989",
     "--control-vector-scaled",
-    "/home/dgbox/Strata/data/experimental-speed-projection/Qwen3.8-Flash-Next-experimental-speed-projection.gguf:1.0",
+    "/home/dgbox/Nostroma/data/experimental-speed-projection/Qwen3.8-Flash-Next-experimental-speed-projection.gguf:1.0",
     "--control-vector-layer-range",
     "4",
     "44",
@@ -80,17 +80,17 @@
     "--pool-workers",
     "10"
    ],
-   "cwd": "/home/dgbox/Strata",
-   "tokenizer": "/home/dgbox/Strata-data/packs/iq3_xxs/tokenizer",
+   "cwd": "/home/dgbox/Nostroma",
+   "tokenizer": "/home/dgbox/Nostroma-data/packs/iq3_xxs/tokenizer",
    "model_name": "qwen3.8-flash-next-iq3_xxs",
    "draft_vocab": "cyrillic",
-   "expert_profile_save": "/home/dgbox/Strata/data/expert-profile-learned.bin",
+   "expert_profile_save": "/home/dgbox/Nostroma/data/expert-profile-learned.bin",
    "expert_profile_save_every": 10,
    "env": {
-    "STRATA_PF_FUSED": "1",
-    "STRATA_KV_PREFETCH": "1"
+    "NOSTROMA_PF_FUSED": "1",
+    "NOSTROMA_KV_PREFETCH": "1"
    },
-   "log": "/home/dgbox/Strata/strata-200k.log",
+   "log": "/home/dgbox/Nostroma/nostroma-200k.log",
    "lib_dirs": [
     "/usr/local/cuda/bin",
     "/usr/local/cuda/lib64"
@@ -100,9 +100,9 @@
    "gpu": 0,
    "gpus_asked": true,
    "vision": {
-    "exe": "/home/dgbox/Strata/engine/strata-vision",
-    "mmproj": "/home/dgbox/Strata-data/models/mmproj-Qwen3.8-Flash-Next-BF16.gguf",
-    "model": "/home/dgbox/Strata-data/models/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf",
+    "exe": "/home/dgbox/Nostroma/engine/nostroma-vision",
+    "mmproj": "/home/dgbox/Nostroma-data/models/mmproj-Qwen3.8-Flash-Next-BF16.gguf",
+    "model": "/home/dgbox/Nostroma-data/models/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf",
     "gpu": true,
     "max_tokens": 1024
    },

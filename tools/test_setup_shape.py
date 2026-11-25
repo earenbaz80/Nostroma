@@ -3,7 +3,7 @@
     python -m pytest tools/test_setup_shape.py
 
 A Qwen4 model whose geometry is not Flash-Next's runs on its own engine component. The model list puts it in the same tables as every feed model, with the shape; setup's engine
-step fetches that engine (not the Nostroma engine's) and the run config names it ("component:strata-q4-lite"); the Terminal's launch checks it in its first step. Every other model
+step fetches that engine (not the Nostroma engine's) and the run config names it ("component:nostroma-q4-lite"); the Terminal's launch checks it in its first step. Every other model
 is exactly what it was. The engine fetch, downloads and processes are mocked; nothing is fetched from the network.
 """
 from __future__ import annotations
@@ -39,13 +39,13 @@ class Registered(base.Base):
         self.result = feed_models.apply(self.setup, base.parsed(clean(shaped())), {"qwen4exp"})        # the Nostroma engine runs qwen4exp only: not what decides
         self.fam = self.setup.FAMILIES["q4lite-test"]
 
-    def test_it_is_listed_and_installable_though_the_strata_engine_does_not_list_its_family(self):
+    def test_it_is_listed_and_installable_though_the_nostroma_engine_does_not_list_its_family(self):
         self.assertEqual((self.result.registered, self.result.unavailable), (["q4lite-test"], {}))
         self.assertEqual(self.fam["shape"], "q4_lite")
         self.assertTrue(self.fam["feed"])
         self.assertNotIn("q4lite-test", self.setup.FEED_UNAVAILABLE)
 
-    def test_its_min_engine_is_not_compared_with_the_strata_engine(self):
+    def test_its_min_engine_is_not_compared_with_the_nostroma_engine(self):
         """The app marks a size "needs a newer engine" when the Nostroma engine is older than the size's `engine`; a shape model runs on its own engine."""
         feed_models.apply(self.setup, base.parsed(clean(shaped(id="q4lite-min", min_engine="0.1.59"))), None)
         sizes = [m for m in self.setup.MODELS.values() if "q4lite-min" in m.get("families", ())]
@@ -97,18 +97,18 @@ class EngineStep(base.Base):
         self.addCleanup(self.setup.SHAPE_ENGINE.clear)
 
     def test_the_run_config_names_the_shape_engine_only_for_a_model_of_that_shape(self):
-        self.assertEqual(self.setup.engine_exe(Path("engine")), "component:strata-engine" if self.setup.CONTROL else str(Path("engine") / self.setup.EXE))
+        self.assertEqual(self.setup.engine_exe(Path("engine")), "component:nostroma-engine" if self.setup.CONTROL else str(Path("engine") / self.setup.EXE))
         self.setup.SHAPE_ENGINE["shape"] = "q4_lite"
-        self.assertEqual(self.setup.engine_exe(Path("engine")), "component:strata-q4-lite")
+        self.assertEqual(self.setup.engine_exe(Path("engine")), "component:nostroma-q4-lite")
         self.setup.SHAPE_ENGINE.clear()
-        self.assertNotEqual(self.setup.engine_exe(Path("engine")), "component:strata-q4-lite")
+        self.assertNotEqual(self.setup.engine_exe(Path("engine")), "component:nostroma-q4-lite")
 
-    def test_engine_step_fetches_the_shape_engine_and_not_the_strata_engine(self):
+    def test_engine_step_fetches_the_shape_engine_and_not_the_nostroma_engine(self):
         self.setup.SHAPE_ENGINE["shape"] = "q4_lite"
         folder = self.root / "components" / "shapes" / "q4_lite" / "engine" / "0.1.59-linux-x86_64-cuda"
         folder.mkdir(parents=True)
         found = mock.Mock(root=str(folder), version="0.1.59", backend="cuda", platform="linux-x86_64")
-        with mock.patch.object(shape_engine, "ensure", return_value=folder / "strata") as ensure, \
+        with mock.patch.object(shape_engine, "ensure", return_value=folder / "nostroma") as ensure, \
                 mock.patch.object(shape_engine, "find", return_value=found), \
                 mock.patch.object(self.setup, "llama_cpp_if_here", return_value=Path("llama")), \
                 mock.patch.object(self.setup, "get_llama_cpp", return_value=Path("llama")), \
@@ -126,20 +126,20 @@ class EngineStep(base.Base):
         folder.mkdir(parents=True)
         found = mock.Mock(root=str(folder), version="0.1.59", backend="cuda", platform="linux-x86_64")
         said = []
-        with mock.patch.object(shape_engine, "ensure", return_value=folder / "strata") as ensure, mock.patch.object(shape_engine, "find", return_value=found),                 mock.patch.object(self.setup, "llama_cpp_if_here", return_value=Path("llama")), mock.patch.object(self.setup, "get_llama_cpp", return_value=Path("llama")),                 mock.patch.object(self.setup, "ok", side_effect=said.append):
+        with mock.patch.object(shape_engine, "ensure", return_value=folder / "nostroma") as ensure, mock.patch.object(shape_engine, "find", return_value=found),                 mock.patch.object(self.setup, "llama_cpp_if_here", return_value=Path("llama")), mock.patch.object(self.setup, "get_llama_cpp", return_value=Path("llama")),                 mock.patch.object(self.setup, "ok", side_effect=said.append):
             self.setup.engine_step(argparse.Namespace(feed=None), {"index": 0}, False, False, 13, "none")
         self.assertEqual(ensure.call_args.kwargs["title"], "Q4 Lite Shape")
         self.assertTrue(any(line.startswith("engine for Q4 Lite Shape: 0.1.59") for line in said), said)
         self.assertFalse(any("q4_lite" in line.split(" in ")[0] for line in said), said)
-        cfg = {"exe": "component:strata-q4-lite", "args": [], "model_name": "x"}
-        target = self.root / "strata-q4lite.json"
+        cfg = {"exe": "component:nostroma-q4-lite", "args": [], "model_name": "x"}
+        target = self.root / "nostroma-q4lite.json"
         self.setup.write_setup_config(target, cfg)
         self.assertEqual(json.loads(target.read_text(encoding="utf-8"))["shape_title"], "Q4 Lite Shape")
-        plain = {"exe": "component:strata-engine", "args": [], "model_name": "y"}      # another model's config is exactly what it was
-        self.setup.write_setup_config(self.root / "strata-other.json", plain)
-        self.assertNotIn("shape_title", json.loads((self.root / "strata-other.json").read_text(encoding="utf-8")))
+        plain = {"exe": "component:nostroma-engine", "args": [], "model_name": "y"}      # another model's config is exactly what it was
+        self.setup.write_setup_config(self.root / "nostroma-other.json", plain)
+        self.assertNotIn("shape_title", json.loads((self.root / "nostroma-other.json").read_text(encoding="utf-8")))
 
-    def test_without_a_shape_the_strata_engine_step_runs_as_before(self):
+    def test_without_a_shape_the_nostroma_engine_step_runs_as_before(self):
         self.assertEqual(self.setup.SHAPE_ENGINE, {})
         with mock.patch.object(self.setup, "control_engine_step", return_value=("L", "E", {}, [], {}, "none")) as step, mock.patch.object(self.setup, "CONTROL", True):
             self.assertEqual(self.setup.engine_step(argparse.Namespace(), {}, False, False, 13, "none")[1], "E")
@@ -149,7 +149,7 @@ class EngineStep(base.Base):
         self.setup.SHAPE_ENGINE["shape"] = "q4_lite"
         with mock.patch.object(shape_engine, "ensure", return_value=None), \
                 mock.patch.object(self.setup, "llama_cpp_if_here", return_value=Path("llama")), mock.patch.object(self.setup, "get_llama_cpp", return_value=Path("llama")), \
-                mock.patch.dict("os.environ", {"STRATA_ALLOW_NO_ENGINE": ""}):
+                mock.patch.dict("os.environ", {"NOSTROMA_ALLOW_NO_ENGINE": ""}):
             with self.assertRaises(SystemExit):
                 self.setup.engine_step(argparse.Namespace(feed=None), {"index": 0}, False, False, 13, "none")
 
@@ -157,7 +157,7 @@ class EngineStep(base.Base):
         self.setup.SHAPE_ENGINE["shape"] = "q4_lite"
         with mock.patch.object(shape_engine, "ensure", return_value=None), \
                 mock.patch.object(self.setup, "llama_cpp_if_here", return_value=Path("llama")), mock.patch.object(self.setup, "get_llama_cpp", return_value=Path("llama")), \
-                mock.patch.dict("os.environ", {"STRATA_ALLOW_NO_ENGINE": "1"}):
+                mock.patch.dict("os.environ", {"NOSTROMA_ALLOW_NO_ENGINE": "1"}):
             out = self.setup.engine_step(argparse.Namespace(feed=None), {"index": 0}, False, False, 13, "none")
         self.assertEqual(out[2]["component"], "missing")
 
@@ -169,7 +169,7 @@ class Launch(unittest.TestCase):
         from nostroma_cli.launch import runner as R
         fake = mock.Mock()
         fake.s.family = "q4lite-test"
-        fake.catalog.strata.setup_module.return_value = mock.Mock(FAMILIES=families)
+        fake.catalog.nostroma.setup_module.return_value = mock.Mock(FAMILIES=families)
         fake.multi_file.return_value = False
         return R, fake
 
@@ -180,10 +180,10 @@ class Launch(unittest.TestCase):
         self.assertIsNone(R.Runner.model_shape(fake))
         R, fake = self.runner({})
         self.assertIsNone(R.Runner.model_shape(fake))
-        fake.catalog.strata.setup_module.side_effect = RuntimeError("no table")
+        fake.catalog.nostroma.setup_module.side_effect = RuntimeError("no table")
         self.assertIsNone(R.Runner.model_shape(fake))
 
-    def test_step_one_checks_the_shape_engine_and_never_the_strata_engine(self):
+    def test_step_one_checks_the_shape_engine_and_never_the_nostroma_engine(self):
         R, fake = self.runner({"q4lite-test": {"shape": "q4_lite"}})
         fake.model_shape.return_value = "q4_lite"
         with mock.patch.object(ec, "status", side_effect=AssertionError("the Nostroma engine is not looked at")):
@@ -207,7 +207,7 @@ class Launch(unittest.TestCase):
         events = []
         fake.emit.side_effect = lambda stage, text, *a, **k: events.append(text)
         found = mock.Mock(version="0.1.59", backend="cuda")
-        with mock.patch.object(shape_engine, "ensure", return_value=Path("/x/strata")) as ensure, mock.patch.object(shape_engine, "find", return_value=found):
+        with mock.patch.object(shape_engine, "ensure", return_value=Path("/x/nostroma")) as ensure, mock.patch.object(shape_engine, "find", return_value=found):
             R.Runner.ensure_shape_engine(fake, "q4_lite")
         self.assertEqual(ensure.call_args.kwargs["title"], "Q4 Lite Shape")
         self.assertIn("Checking the engine for Q4 Lite Shape…", events)

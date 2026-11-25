@@ -34,7 +34,7 @@ class Base(unittest.TestCase):
         p.start()
         self.addCleanup(p.stop)
         not_intel(self)                  # the plan asks the machine that runs the test whether the engine is the Intel one (p1006 has an Arc card: its plan drops the picture reader)
-        t = tempfile.TemporaryDirectory(prefix="strata-nettruth-")
+        t = tempfile.TemporaryDirectory(prefix="nostroma-nettruth-")
         self.addCleanup(t.cleanup)
         self.base = Path(t.name)
 
@@ -49,7 +49,7 @@ class Base(unittest.TestCase):
         folder = self.model_files(data / "models" / "IQ3_XXS")
         pack = data / "packs" / "iq3_xxs"
         pack.mkdir(parents=True, exist_ok=True)
-        cfg = data / "strata-iq3_xxs.json"
+        cfg = data / "nostroma-iq3_xxs.json"
         cfg.write_text(json.dumps({"exe": "x", "args": ["--native", str(folder / IQ3XXS[0]), "--pack", str(pack)]}), encoding="utf-8")
         return cfg
 

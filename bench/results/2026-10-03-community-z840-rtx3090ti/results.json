@@ -1,6 +1,6 @@
 {
   "date": "2026-10-03",
-  "strata": {"version": "0.1.38", "build": "source, CMAKE_CUDA_ARCHITECTURES=86, CUDA 12.3 nvcc, gcc 12.3"},
+  "nostroma": {"version": "0.1.38", "build": "source, CMAKE_CUDA_ARCHITECTURES=86, CUDA 12.3 nvcc, gcc 12.3"},
   "hardware": {
     "gpu": "NVIDIA GeForce RTX 3090 Ti 24 GB", "pcie": "Gen3 x16, probe 12.4 GB/s host->device", "power_limit_w": 320,
     "cpu": "2x Intel Xeon E5-2699 v3 (Haswell-EP, 18C/36T each, AVX2, no AVX-512)",
@@ -18,7 +18,7 @@
     {"n": 3, "prompt_tokens": 31, "reused": 24, "prompt_ms": 83, "prompt_tok_s": 83.9, "generated": 512, "decode_ms": 5621, "decode_tok_s": 91.1, "drafts_accepted": 348, "drafts_offered": 423, "hit_rate_pct": 92.1}
   ],
   "numa_ab_after_calibration": {
-    "method": "strata-numa-ab.sh: fresh engine start per placement, 2 warm-up, 5 decode runs (31-token prompt, 512 tokens), 5 long-prompt runs (~5K tokens, unique prefix, 32 tokens); medians of engine-reported tok/s",
+    "method": "nostroma-numa-ab.sh: fresh engine start per placement, 2 warm-up, 5 decode runs (31-token prompt, 512 tokens), 5 long-prompt runs (~5K tokens, unique prefix, 32 tokens); medians of engine-reported tok/s",
     "placements": [
       {"name": "A_node0", "numactl": "--cpunodebind=0 --membind=0", "hugepages_node0_node1": [28000, 0], "ready_s": 32,
        "decode_tok_s_median": 94.9, "decode_tok_s_range": [93.7, 95.9], "hit_rate_pct": 90.7, "prompt_tok_s_median": 1304.4, "prompt_tok_s_range": [1295.7, 1307.6]},

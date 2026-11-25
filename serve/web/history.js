@@ -85,6 +85,6 @@
 
   const api = {TITLE_MAX, newChat, chatTitle, cleanMessages, cleanChat, groupKey, filterChats, lostAttachments, draftOf, rewind,
                regenerate, editAnswer, branch};
-  root.StrataHistory = api;
+  root.NostromaHistory = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

@@ -277,12 +277,12 @@ GenReq parse_gen(const std::string& line, int vocab, int pad, bool batch, bool i
             if (v != "0" && v != "1") throw std::runtime_error(cmd + ": ckpt=" + v + " is not 0 or 1");
             r.hints.cache = v == "1";
         }
-        else if (k == "pin") {   // a client's strata_prefix: sFNX's cache has no pinned checkpoints
+        else if (k == "pin") {   // a client's nostroma_prefix: sFNX's cache has no pinned checkpoints
             static bool said = false;
-            if (!said) std::fprintf(stderr, "sfnx: pin= (a client's strata_prefix) is not supported: such requests go on without it\n");
+            if (!said) std::fprintf(stderr, "sfnx: pin= (a client's nostroma_prefix) is not supported: such requests go on without it\n");
             said = true;
         }
-        // Nostroma's per-request engine tuning (strata_tune) and its control vector: nothing in sFNX to set
+        // Nostroma's per-request engine tuning (nostroma_tune) and its control vector: nothing in sFNX to set
         else if (k == "pcie_frac" || k == "spec_min_p" || k == "pipe" || k == "aux_cpus" || k == "cvec") {
             static std::set<std::string> said;
             if (said.insert(k).second)

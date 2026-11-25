@@ -1,7 +1,7 @@
 # Community benchmark: Intel Arc Pro B65, PCIe Gen4 x16
 
 Measured 2026-10-06 by timnevits. Original full 512-expert Flash-Next IQ2_XS,
-Strata v0.1.40 release source with six local patches (see BUILD.md), 8K context, INT8 KV and
+Nostroma v0.1.40 release source with six local patches (see BUILD.md), 8K context, INT8 KV and
 confidence-limited MTP window 4. Three fresh native engine launches; five fixed
 synthetic tasks at each of 512 and 7000 exact input tokens, 640 output tokens per
 request. This is a native greedy speed/recovery report, not broad answer-quality
@@ -51,18 +51,18 @@ vision encoder, reasoning, calibration or experimental speed projection.
 One request at a time; combined context 8192; INT8 KV, no KV streaming;
 prefill 512; VRAM reserve 3072 MiB; `--expert-cache auto`, full fixed upstream
 ranking, `--stream-experts`, `--pcie-frac 1`; protected 16 GiB pinned host mirror
-and `STRATA_VERIFY_DEVICE_PLAN=1` / `STRATA_VERIFY_NO_HOST=1`. Missing experts
+and `NOSTROMA_VERIFY_DEVICE_PLAN=1` / `NOSTROMA_VERIFY_NO_HOST=1`. Missing experts
 execute on the GPU through direct pinned-host reads; no CPU expert computation.
 All missing experts must be mirrored or startup is refused.
 
-`STRATA_DBG_NAN` is explicitly unset. The expensive qualification-only
+`NOSTROMA_DBG_NAN` is explicitly unset. The expensive qualification-only
 intermediate-tensor downloads and CPU scans are disabled. The retained model and
 launch settings are used with the disclosed patched v0.1.40 source build. All
 three repetitions of each task/length reproduce the same output-ID hash.
 
 Native verify/commit graphs enabled; eager off. `--spec 4 --mtp-max-t 4
 --spec-min-p 0.5` permits up to three drafts per verification window, shortened
-by confidence. `STRATA_WARM_GRAPHS=0` does not disable these serve graphs.
+by confidence. `NOSTROMA_WARM_GRAPHS=0` does not disable these serve graphs.
 Suffix drafting, adaptation, prompt/conversation caches and short-read mode
 are off. Sampling is temperature 0, seed 17; thinking disabled in the model's
 template. [profile.json](profile.json) contains every native launch argument.
@@ -216,6 +216,6 @@ patches identify the measured build.
 
 Two further source observations for maintainers: the tagged setup Intel card
 table lacks this B65's verified PCI ID 8086:e222 and 32 GiB VRAM; and
-STRATA_VERIFY_COHERENT is guarded by STRATA_USE_HIP in the tagged SYCL verifier.
+NOSTROMA_VERIFY_COHERENT is guarded by NOSTROMA_USE_HIP in the tagged SYCL verifier.
 The Intel CMake target does not define that macro. No speed effect from that
 switch is claimed. These are setup/source observations, not GPU faults.

@@ -1,10 +1,10 @@
 // iq512_gather_parity: the 512-bit i-quant rows (iq_avx512.cpp) against ggml-cpu's own dot.
 //  (a) iq512x_rows, for 1..4 tokens, is ggml-cpu's single-token vec_dot bit for bit (IQ3_XXS, IQ3_S, IQ2_S), whatever the
-//      grid lookup is (scalar loads or gathers: STRATA_IQ_GATHER=0 / 1, ctest runs both);
+//      grid lookup is (scalar loads or gathers: NOSTROMA_IQ_GATHER=0 / 1, ctest runs both);
 //  (b) iq512_rows (the engine's multi-token rows) agrees with it to float rounding (another summation order).
 // Synthetic blocks (random bytes, a fixed f16 scale), so no quantizer and no imatrix are needed.  SKIP without AVX-512.
-#include "strata/kernels/cpu/expert_layout.hpp"
-#include "strata/kernels/cpu/iq_avx512.hpp"
+#include "nostroma/kernels/cpu/expert_layout.hpp"
+#include "nostroma/kernels/cpu/iq_avx512.hpp"
 
 #include "ggml.h"
 #include "ggml-cpu.h"
@@ -14,7 +14,7 @@
 #include <cstring>
 #include <vector>
 
-namespace cpu = strata::kernels::cpu;
+namespace cpu = nostroma::kernels::cpu;
 
 static int g_fail = 0;
 #define CHECK(c)                                                              \

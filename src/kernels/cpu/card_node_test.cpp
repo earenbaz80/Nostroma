@@ -1,7 +1,7 @@
-// card_node_test: when the engine restricts itself to the graphics card's NUMA node (include/strata/kernels/cpu/card_node.hpp).
+// card_node_test: when the engine restricts itself to the graphics card's NUMA node (include/nostroma/kernels/cpu/card_node.hpp).
 // The decision on made-up machines, the sysfs / proc readers on a fake tree in a temp directory, and (Linux) the restriction
 // of a two-thread process to a subset of its own CPUs.  No GPU, no model.
-#include "strata/kernels/cpu/card_node.hpp"
+#include "nostroma/kernels/cpu/card_node.hpp"
 
 #include <atomic>
 #include <chrono>
@@ -13,7 +13,7 @@
 #include <thread>
 #include <vector>
 
-namespace cpu = strata::kernels::cpu;
+namespace cpu = nostroma::kernels::cpu;
 namespace fs = std::filesystem;
 
 static int g_fail = 0;
@@ -87,7 +87,7 @@ static void decisions() {
         auto in = pod();
         in.switch_off = true;
         const auto d = cpu::decide_card_node(in);
-        expect(!d.on && d.why == "STRATA_NUMA_CARD=0", "switch off: left as is");
+        expect(!d.on && d.why == "NOSTROMA_NUMA_CARD=0", "switch off: left as is");
     }
     // the card's node not known (sysfs -1 or unreadable)
     {
@@ -280,7 +280,7 @@ static void readers() {
     expect(!cpu::card_node_parse_cpulist("1,,2", v), "cpulist empty item: refused");
     expect(!cpu::card_node_parse_cpulist("a", v), "cpulist letters: refused");
     std::vector<int> mems;
-    expect(cpu::card_node_mems_allowed("Name:\tstrata\nMems_allowed:\t00000003\nMems_allowed_list:\t0-1\nVoluntary: 1\n", mems) &&
+    expect(cpu::card_node_mems_allowed("Name:\tnostroma\nMems_allowed:\t00000003\nMems_allowed_list:\t0-1\nVoluntary: 1\n", mems) &&
                mems == std::vector<int>({0, 1}), "Mems_allowed_list 0-1");
     expect(cpu::card_node_mems_allowed("Mems_allowed_list:\t1\n", mems) && mems == std::vector<int>({1}), "Mems_allowed_list 1");
     expect(!cpu::card_node_mems_allowed("Name:\tx\n", mems) && mems.empty(), "no Mems_allowed_list line");

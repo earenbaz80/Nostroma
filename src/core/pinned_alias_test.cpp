@@ -1,7 +1,7 @@
 // pinned_alias_test (#3431, Windows HIP): the GPU alias of every range the expert arena registers is reserved in the process's
 // own address space while the arena lives, and a range whose alias covers memory already in use is not kept registered - a
 // copy through that memory must still reach the device and come back.  Needs an AMD GPU on Windows, else it skips (77).
-#include "strata/core/pinned.hpp"
+#include "nostroma/core/pinned.hpp"
 
 #include <cuda_runtime.h>
 
@@ -14,7 +14,7 @@
 #include <windows.h>
 #endif
 
-#if defined(_WIN32) && defined(STRATA_USE_HIP)
+#if defined(_WIN32) && defined(NOSTROMA_USE_HIP)
 static int g_fail = 0;
 #define CHECK(c)                                                              \
     do {                                                                      \
@@ -51,11 +51,11 @@ static bool round_trip(uint8_t* buf) {
 #endif
 
 int main() {
-#if !(defined(_WIN32) && defined(STRATA_USE_HIP))
+#if !(defined(_WIN32) && defined(NOSTROMA_USE_HIP))
     std::printf("pinned_alias_test: SKIP (Windows HIP only)\n");
     return 77;
 #else
-    using namespace strata::core;
+    using namespace nostroma::core;
     if (cudaFree(0) != cudaSuccess) {
         std::printf("pinned_alias_test: SKIP (no GPU)\n");
         return 77;

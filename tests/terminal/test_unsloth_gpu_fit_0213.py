@@ -76,7 +76,7 @@ class TheTerminalMenu(unittest.TestCase):
 
     def test_the_catalog_words(self):
         with Home():
-            row = next(x for x in catalog(HW_V100_31).strata.model_table(HW_V100_31) if x["family"] == "unsloth")
+            row = next(x for x in catalog(HW_V100_31).nostroma.model_table(HW_V100_31) if x["family"] == "unsloth")
         by = {x["model"]: x["on_this_pc"] for x in row["sizes"]}
         self.assertEqual({v for k, v in by.items()}, {"fits", "may run slower"})
         self.assertEqual(by["UD-IQ3_XXS"], "fits")

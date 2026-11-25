@@ -41,10 +41,10 @@ export function refreshBoard() { void refresh(); }
 
 function subscribe(listener: () => void) {
   listeners.add(listener);
-  if (listeners.size === 1) { void refresh(); timer = setInterval(() => void refresh(), 4000); window.addEventListener('strata:tasks', refreshBoard); }
+  if (listeners.size === 1) { void refresh(); timer = setInterval(() => void refresh(), 4000); window.addEventListener('nostroma:tasks', refreshBoard); }
   return () => {
     listeners.delete(listener);
-    if (!listeners.size && timer) { clearInterval(timer); timer = null; window.removeEventListener('strata:tasks', refreshBoard); }
+    if (!listeners.size && timer) { clearInterval(timer); timer = null; window.removeEventListener('nostroma:tasks', refreshBoard); }
   };
 }
 

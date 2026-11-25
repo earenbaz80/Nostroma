@@ -1,6 +1,6 @@
 # Windows processor-group and pool-affinity probe
 
-Captured on 2026-10-03 on the Windows 11 Pro build 10.0.26300 machine used for the RX 6900 XT benchmark. The probe ran in a separate 64-bit Python 3.12.10 process. It made no changes to Strata, model settings, servers, or other processes. Only short-lived threads owned by the probe were given temporary affinities, which the helper restored before thread exit.
+Captured on 2026-10-03 on the Windows 11 Pro build 10.0.26300 machine used for the RX 6900 XT benchmark. The probe ran in a separate 64-bit Python 3.12.10 process. It made no changes to Nostroma, model settings, servers, or other processes. Only short-lived threads owned by the probe were given temporary affinities, which the helper restored before thread exit.
 
 ## Observed topology
 

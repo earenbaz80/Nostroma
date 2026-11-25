@@ -16,7 +16,7 @@
  "engine_prompt_tps": null,
  "engine_decode_tps": null,
  "log_lines": [],
- "answer_head": "Based on the content provided, here is an explanation of the `CMakeLists.txt` file and a proposed improvement.\n\n### Explanation of `CMakeLists.txt`\n\nThis file is the top-level build configuration for the **Strata Engine**, a C++/CUDA/HIP mixture-of-experts model runner. Its primary responsibilities ",
+ "answer_head": "Based on the content provided, here is an explanation of the `CMakeLists.txt` file and a proposed improvement.\n\n### Explanation of `CMakeLists.txt`\n\nThis file is the top-level build configuration for the **Nostroma Engine**, a C++/CUDA/HIP mixture-of-experts model runner. Its primary responsibilities ",
  "metrics_after": {
   "engine": {
    "model": "qwen3.8-flash-next-iq3_xxs",

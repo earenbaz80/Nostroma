@@ -10,23 +10,23 @@ The tests were run by an AI agent (Claude Code) on my machine, with me deciding 
 - CPU: AMD Ryzen Threadripper 7960X, 24 cores / 48 threads. RAM: 64 GB DDR5 (61 GiB usable)
 - Storage: model on a 3.7 TB NVMe at PCIe 4.0 x4. The disk only matters at start.
 - OS: Ubuntu 26.04.1 LTS, kernel 7.0.0-38-generic. Driver 595.91.07. CUDA 13.4 toolkit
-- Strata: tag v0.1.40.1, commit `82f46a8c8f475f001ad76d92f58f4a4f8ffb0253`, **source build** for SM 120 (`build.txt`). Control: v0.1.39, commit `6f32ec070f23ced9f50e704d854d775da52591ab`, source build
+- Nostroma: tag v0.1.40.1, commit `82f46a8c8f475f001ad76d92f58f4a4f8ffb0253`, **source build** for SM 120 (`build.txt`). Control: v0.1.39, commit `6f32ec070f23ced9f50e704d854d775da52591ab`, source build
 - Background workloads: none besides the benchmark. The server was stopped and restarted between configurations.
 
 ## Model and configuration
 
-- Model: `ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF`, IQ3_XXS, files `Swift-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-0000{1,2}-of-00002.gguf` (39.8 GB + 36.2 GB). Pack built by setup, shipped expert profile, MTP runtime from `Strata-data/mtp/rt`
+- Model: `ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF`, IQ3_XXS, files `Swift-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-0000{1,2}-of-00002.gguf` (39.8 GB + 36.2 GB). Pack built by setup, shipped expert profile, MTP runtime from `Nostroma-data/mtp/rt`
 - Context 262144, KV `k8v4`, expert cache auto, prefill auto, `--spec 5`, `--spec-min-p 0.5`, layer split 25 over GPUs 0 and 1
 - Solo runs: vision encoder loaded (no images sent), `--vram-reserve-mib 700`
-- Batch runs: no vision, `--vram-reserve-mib 700`, `--batch 2` or `--batch 4`, each with `--batch-groups 2 --trim-stage-weights`. **No `STRATA_*` environment overrides**; in particular no `STRATA_VERIFY_ALL_RESIDENT=0`
+- Batch runs: no vision, `--vram-reserve-mib 700`, `--batch 2` or `--batch 4`, each with `--batch-groups 2 --trim-stage-weights`. **No `NOSTROMA_*` environment overrides**; in particular no `NOSTROMA_VERIFY_ALL_RESIDENT=0`
 - With 2 slots 100% of the experts are VRAM-resident; with 4 slots 95% (the startup log says so)
 - Sampling: server `presence_penalty` set to **0.0** in all runs (our daily config uses 0.2; batch windows apply no penalties, so all arms use the same value). `bench.py`: `temperature 0`. `parlast.py`: `temperature 0.7, top_p 0.95, top_k 20`. Reasoning at the server default. No calibration, no experimental speed projection
 
-Configs as run: `config-solo.json`, `config-batch2.json`, `config-batch4.json`. Start: `serve/server.py --engine strata --config <file> --port 8080`.
+Configs as run: `config-solo.json`, `config-batch2.json`, `config-batch4.json`. Start: `serve/server.py --engine nostroma --config <file> --port 8080`.
 
 ## Method
 
-- Single stream: `bench.py` (`temperature 0`, `max_tokens 256`, the reasoning text counts toward the 256). Prompt = Strata source and docs cut to the target length plus an "explain and propose three refactorings" task, with a random nonce first so nothing is reused from the cache (`reused` is 0). One warm-up per length, then 3 measured runs; speeds are read from the server log line. The 256k row is new (target 245,000 tokens)
+- Single stream: `bench.py` (`temperature 0`, `max_tokens 256`, the reasoning text counts toward the 256). Prompt = Nostroma source and docs cut to the target length plus an "explain and propose three refactorings" task, with a random nonce first so nothing is reused from the cache (`reused` is 0). One warm-up per length, then 3 measured runs; speeds are read from the server log line. The 256k row is new (target 245,000 tokens)
 - Concurrency: `parlast.py`, 8,000-token prompts (a different one per request, nonce first), 400 tokens out, streaming through the server, 1-4 concurrent requests, 3 rounds, median. "Total tok/s" = all generated tokens / wall time of the round, **including** prompt reading (about 2.5 s per request). It is not decode speed. The 32k check used 32,000-token prompts and 300 tokens, 2 rounds.
 - Needle recall: `tools/needle_bench.py --lengths 32k,128k --depths 10,50,90`, run against the 0.1.40.1 solo server
 - Scripts: `run-series.sh` (main series), `run-control-0.1.39.sh` (control). Order: 0.1.40.1 solo, batch 2, batch 4, then 0.1.39 solo

@@ -11,12 +11,12 @@
 #include <string>
 #include <vector>
 
-#include "strata/quant/act.hpp"
-#include "strata/quant/dot.hpp"
-#include "strata/quant/isa.hpp"
-#include "strata/quant/types.hpp"
+#include "nostroma/quant/act.hpp"
+#include "nostroma/quant/dot.hpp"
+#include "nostroma/quant/isa.hpp"
+#include "nostroma/quant/types.hpp"
 
-namespace sq = strata::quant;
+namespace sq = nostroma::quant;
 
 namespace {
 uint64_t g_s = 88172645463325252ull;

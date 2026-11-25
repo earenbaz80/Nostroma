@@ -48,9 +48,9 @@ class ApiHarness:
     def __init__(self, *, python: Path | str, serve_dir: Path, config_path: Path,
                  port: int = 8123, host: str = "127.0.0.1", boot_timeout_s: float = 900.0,
                  request_timeout_s: float = 900.0, env: dict[str, str] | None = None,
-                 engine: str = "strata") -> None:
+                 engine: str = "nostroma") -> None:
         self.python = str(python)
-        # `strata` is the real engine; `mock` is the scripted one, and a measurement taken against it
+        # `nostroma` is the real engine; `mock` is the scripted one, and a measurement taken against it
         # is a test of this harness and never a performance result.
         self.engine = engine
         self.serve_dir = Path(serve_dir)
@@ -78,7 +78,7 @@ class ApiHarness:
 
     def start(self) -> None:
         import tempfile
-        self._log = tempfile.NamedTemporaryFile(prefix="strata-api-harness-", suffix=".log",
+        self._log = tempfile.NamedTemporaryFile(prefix="nostroma-api-harness-", suffix=".log",
                                                 delete=False)
         try:
             from serve import lifeline       # the worker (and the engine under it) end with this process
@@ -145,7 +145,7 @@ class ApiHarness:
 
     def measure(self, *, prompt: str, max_new: int, expect: str | None = None,
                 temperature: float = 0.0, seed: int = 1,
-                model: str = "strata-local") -> EngineMeasurement:
+                model: str = "nostroma-local") -> EngineMeasurement:
         """One streamed chat completion, measured end to end.
 
         `expect` is a regular expression the answer must match for the run to count as correct. A
@@ -159,7 +159,7 @@ class ApiHarness:
         }).encode("utf-8")
         request = urllib.request.Request(
             f"{self.url}/v1/chat/completions", data=body,
-            headers={"content-type": "application/json", "authorization": "Bearer strata-local"},
+            headers={"content-type": "application/json", "authorization": "Bearer nostroma-local"},
             method="POST")
 
         started = time.monotonic()
@@ -275,7 +275,7 @@ def make_api_measure(*, python: Path | str, serve_dir: Path, config_path: Path, 
     def measure(candidate) -> dict[str, float]:
         args = getattr(candidate, "args", candidate)
         candidate_cfg = apply_args_to_config(base, args_to_argv(args) if isinstance(args, dict) else list(args))
-        with tempfile.NamedTemporaryFile("w", prefix="strata-tune-candidate-", suffix=".json",
+        with tempfile.NamedTemporaryFile("w", prefix="nostroma-tune-candidate-", suffix=".json",
                                          delete=False, encoding="utf-8") as fh:
             json.dump(candidate_cfg, fh, indent=1)
             path = Path(fh.name)

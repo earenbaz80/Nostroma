@@ -1,7 +1,7 @@
 @echo off
-title Strata IQ2_XS (STRATA_PLE_BATCH=0)
-cd /d "D:\AI\Strata\Strata-main\Strata-main"
-set STRATA_PLE_BATCH=0
-echo Starting Strata with STRATA_PLE_BATCH=0
-"D:\AI\Strata\Strata-main\Strata-main\.venv\Scripts\python.exe" "D:\AI\Strata\Strata-main\Strata-main\serve\server.py" "--engine" "strata" "--config" "D:\AI\Strata\Strata-main\Strata-main\strata-iq2_xs.json" "--port" "8080" "--open"
+title Nostroma IQ2_XS (NOSTROMA_PLE_BATCH=0)
+cd /d "D:\AI\Nostroma\Nostroma-main\Nostroma-main"
+set NOSTROMA_PLE_BATCH=0
+echo Starting Nostroma with NOSTROMA_PLE_BATCH=0
+"D:\AI\Nostroma\Nostroma-main\Nostroma-main\.venv\Scripts\python.exe" "D:\AI\Nostroma\Nostroma-main\Nostroma-main\serve\server.py" "--engine" "nostroma" "--config" "D:\AI\Nostroma\Nostroma-main\Nostroma-main\nostroma-iq2_xs.json" "--port" "8080" "--open"
 if errorlevel 1 pause

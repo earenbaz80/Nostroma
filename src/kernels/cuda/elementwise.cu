@@ -1,10 +1,10 @@
 // src/kernels/cuda/elementwise.cu - P2.S5's glue kernels.  See the header for why each exists.
-#include "strata/kernels/elementwise.hpp"
-#include "strata/env.hpp"
-#include "strata/kernels/dp4a.hpp"
+#include "nostroma/kernels/elementwise.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kernels/dp4a.hpp"
 
-#include "strata/kernels/bf16_bits.hpp"
-#include "strata/kernels/f16_bits.hpp"
+#include "nostroma/kernels/bf16_bits.hpp"
+#include "nostroma/kernels/f16_bits.hpp"
 
 #include <cuda_runtime.h>
 
@@ -12,7 +12,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 
 constexpr int THREADS = 256;
@@ -217,7 +217,7 @@ __global__ void doorbell_ring_kernel(uint32_t* seq) {
 
 __global__ void doorbell_wait_kernel(const volatile uint32_t* flag, const volatile uint32_t* seq) {
     const uint32_t want = *seq;
-    while (*flag != want) strata_spin_pause();
+    while (*flag != want) nostroma_spin_pause();
     __threadfence_system();
 }
 
@@ -243,7 +243,7 @@ __global__ void copy_rows_from_mapped_kernel(float4* __restrict__ dst, const vol
     __shared__ int hit;
     if (threadIdx.x == 0) {
         if (wait_flag != nullptr) {   // 143-amdk: the wait_flag_ge launch folded in
-            while (*wait_flag < wait_value) strata_spin_pause();
+            while (*wait_flag < wait_value) nostroma_spin_pause();
             __threadfence_system();
         }
         int h = 0;
@@ -351,7 +351,7 @@ __global__ void doorbell_publish_res_kernel(const float* __restrict__ x, const i
     }
 }
 
-// #649 (HIP, STRATA_DOORBELL_STORE=1): the same publish, but the ring is STORED (the step's own number, known at
+// #649 (HIP, NOSTROMA_DOORBELL_STORE=1): the same publish, but the ring is STORED (the step's own number, known at
 // capture) instead of read-modify-written over PCIe - one store, no read of host memory from the GPU.
 __global__ void doorbell_publish_value_kernel(const float* __restrict__ x, const int32_t* __restrict__ ids,
                                               const float* __restrict__ w, int n, int k, float* x_out, int32_t* ids_out,
@@ -424,7 +424,7 @@ void copy_i32_from_mapped(int32_t* dst, const int32_t* src, int64_t n, void* str
 void copy_from_mapped_multi(const MappedCopy* copies, int n, void* stream) {
     if (n <= 0) return;
     if (n > 8) { std::fprintf(stderr, "copy_from_mapped_multi: at most 8 copies\n"); std::exit(1); }
-    const char* e = strata::env("NOSTROMA_MTP_MULTI_COPY");
+    const char* e = nostroma::env("NOSTROMA_MTP_MULTI_COPY");
     const bool multi_on = e == nullptr || e[0] != '0';
     if (!multi_on) {
         for (int i = 0; i < n; ++i) {
@@ -466,4 +466,4 @@ void rms_norm_weighted(float* x, const float* w, int64_t rows, int64_t cols, flo
     sync_if_needed(stream, "rms_norm_weighted");
 }
 
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels

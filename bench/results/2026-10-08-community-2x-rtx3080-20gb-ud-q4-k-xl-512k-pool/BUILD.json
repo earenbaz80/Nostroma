@@ -1,15 +1,15 @@
 {
   "engine_version_reported_by_engine": "0.1.40.3 (start line: 'session is up (engine 0.1.40.3)')",
   "binary": {
-    "path": "/opt/strata-bmtp/build/strata-w7",
+    "path": "/opt/nostroma-bmtp/build/nostroma-w7",
     "sha256": "b1df9608295501f0c67f51bef3cfd2831c7e60fb7369866f00b980ff766a1283",
     "bytes": 67691704,
     "mtime": "2026-10-07 23:32:38 -0400"
   },
   "binary_not_a_release": "Built on lm-server from my fork. It is NOT upstream v0.1.40.3 and NOT upstream main plus the four open PRs; see README, 'Source of the binary' and 'My open PRs for the patches that are not in main'.",
   "source_of_binary": {
-    "statement": "strata-w7 = the up-merge build (strata-w5) plus branch opt/04-split-batched-draft-kv, per my own evidence notes (pr-evidence 'w7 = merged w5 + opt/04'). The commit is not embedded in the binary; the match below is by branch contents and by time (binary mtime 23:32:38, opt/04 commit time 23:32:28, 2026-10-07, -0400).",
-    "repository": "https://github.com/noon-at-cgn/Strata",
+    "statement": "nostroma-w7 = the up-merge build (nostroma-w5) plus branch opt/04-split-batched-draft-kv, per my own evidence notes (pr-evidence 'w7 = merged w5 + opt/04'). The commit is not embedded in the binary; the match below is by branch contents and by time (binary mtime 23:32:38, opt/04 commit time 23:32:28, 2026-10-07, -0400).",
+    "repository": "https://github.com/noon-at-cgn/Nostroma",
     "branch": "opt/04-split-batched-draft-kv",
     "commit": "ac5fc3f3cce9e5b917aa0e818afb116725f53ea5",
     "repro_branch": {
@@ -24,13 +24,13 @@
     },
     "commits_on_up_merge_not_in_upstream_main_fb58e0d": "77 commits that are not merges, plus 9 merge commits; 7 of the 77 are in main under other commit ids. repro/w7 adds the opt/04 commit (78 and 9 on top of v0.1.40.3 d5ea713)"
   },
-  "python_front_end": "serve/ from the same merged tree, copied to /opt/strata-bmtp/build/w5root (systemd drop-in PYTHONPATH). The checkout /opt/strata-bmtp itself is an older tree (v0.1.40.1-23-gf197c62) with uncommitted edits to serve/server.py and is not the code that served.",
+  "python_front_end": "serve/ from the same merged tree, copied to /opt/nostroma-bmtp/build/w5root (systemd drop-in PYTHONPATH). The checkout /opt/nostroma-bmtp itself is an older tree (v0.1.40.1-23-gf197c62) with uncommitted edits to serve/server.py and is not the code that served.",
   "build": {
     "cmake_build_type": "Release",
     "cuda_architectures": "86",
-    "nvcc": "/usr/local/cuda-13.3/bin/nvcc, release 13.3, V13.3.73 (from CMakeCache.txt of /opt/strata-bmtp/build)",
-    "STRATA_ENABLE_CUDA": "ON",
-    "STRATA_BUILD_TESTS": "ON"
+    "nvcc": "/usr/local/cuda-13.3/bin/nvcc, release 13.3, V13.3.73 (from CMakeCache.txt of /opt/nostroma-bmtp/build)",
+    "NOSTROMA_ENABLE_CUDA": "ON",
+    "NOSTROMA_BUILD_TESTS": "ON"
   },
   "branches_on_origin_checked_with_git_ls_remote": {
     "opt/04-split-batched-draft-kv": "ac5fc3f3cce9e5b917aa0e818afb116725f53ea5",
@@ -49,7 +49,7 @@
     "pr/batch-mtp-141 (#1636, batch MTP on a layer split)": "2c0807762e258b6be7031f77ac19b4b0fa0de262",
     "pr/adapt-async-141 (#1637, adaptive tier beside batch slots)": "4dba66ac5e721c0d336328b32f8a385e9c487dbf",
     "repro/w7": "428d9910134aaaae9ffd8c8e262cec39504221e5",
-    "up-141 (my stack on upstream 0.1.41, built as strata-w10; code head db925c1)": "10baecbcb5c70b39b21422a5fc6d11f4bcbc138d"
+    "up-141 (my stack on upstream 0.1.41, built as nostroma-w10; code head db925c1)": "10baecbcb5c70b39b21422a5fc6d11f4bcbc138d"
   },
   "upstream_main_at_report_time": "fb58e0dbc8399662c0e47c76578c6e878b14f6cf"
 }

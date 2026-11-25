@@ -1,4 +1,4 @@
-"""The shared-memory page drop (STRATA_UMA_DROP_PAGES) runs and prints only in a Linux CUDA build.
+"""The shared-memory page drop (NOSTROMA_UMA_DROP_PAGES) runs and prints only in a Linux CUDA build.
 
 src/program/generate.cpp gives the GGUF's cached expert pages back on a GPU that reports cudaDevAttrIntegrated (the DGX Spark).
 The same attribute is true on AMD APUs under HIP and on every Mac under the Metal layer, the gfx906 layer has no such attribute,
@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 GEN = ROOT / "src" / "program" / "generate.cpp"
-GUARD = ("#if defined(__linux__) && !defined(STRATA_USE_HIP) && !defined(STRATA_HIP_GFX906) && !defined(STRATA_GPU_METAL)"
+GUARD = ("#if defined(__linux__) && !defined(NOSTROMA_USE_HIP) && !defined(NOSTROMA_HIP_GFX906) && !defined(NOSTROMA_GPU_METAL)"
          "   // SPARK-UMA-DROP")
 
 
@@ -38,7 +38,7 @@ class UmaDropGuard(unittest.TestCase):
 
     def test_call_and_line_inside_the_guard(self):
         first, last = guarded_span(self.lines)
-        for needle in ("drop_cached_pages(", "holds every expert, so the", "getenv(\"STRATA_UMA_DROP_PAGES\")"):
+        for needle in ("drop_cached_pages(", "holds every expert, so the", "getenv(\"NOSTROMA_UMA_DROP_PAGES\")"):
             at = [i for i, l in enumerate(self.lines) if needle in l]
             self.assertTrue(at, needle)
             for i in at:
@@ -47,7 +47,7 @@ class UmaDropGuard(unittest.TestCase):
     def test_line_only_when_pages_were_given_back(self):
         first, last = guarded_span(self.lines)
         block = "\n".join(self.lines[first:last + 1])
-        self.assertRegex(block, r"if \(freed > 0\)\s*\n\s*std::fprintf\(stderr, \"strata serve: this GPU shares")
+        self.assertRegex(block, r"if \(freed > 0\)\s*\n\s*std::fprintf\(stderr, \"nostroma serve: this GPU shares")
 
 
 if __name__ == "__main__":

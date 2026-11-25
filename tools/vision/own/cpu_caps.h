@@ -1,8 +1,8 @@
 // tools/vision/own/cpu_caps.h - the instruction-set probe and the 16-bit float helpers of the CPU tower.
 //
-// TODO(0.2.15): use strata_quant.  This is a stand-in with the same names as the OWN-2A layer (quant::caps(), best_isa(), isa_ok(), the STRATA_FORCE_ISA cap,
+// TODO(0.2.15): use nostroma_quant.  This is a stand-in with the same names as the OWN-2A layer (quant::caps(), best_isa(), isa_ok(), the NOSTROMA_FORCE_ISA cap,
 // the fp16 helpers), written here because f-own-3v is not based on f-own-2a; when the branches meet the file is deleted and the includes point at
-// include/strata/quant/.
+// include/nostroma/quant/.
 #pragma once
 
 #include <cstdint>
@@ -15,10 +15,10 @@
 #include <intrin.h>
 #endif
 
-namespace strata_vit {
+namespace nostroma_vit {
 namespace quant {
 
-// ranked: an x86 tier includes every lower one (STRATA_FORCE_ISA caps by rank).  Neon: AArch64 only (baseline Advanced SIMD), outside the x86 ranking.
+// ranked: an x86 tier includes every lower one (NOSTROMA_FORCE_ISA caps by rank).  Neon: AArch64 only (baseline Advanced SIMD), outside the x86 ranking.
 enum class Isa { Scalar = 0, Sse41 = 1, Avx = 2, Avx2 = 3, Avx512 = 4, Neon = 5 };
 
 struct Caps {
@@ -85,7 +85,7 @@ inline bool isa_ok_for(const Caps& c, Isa i) {
 
 inline bool isa_ok(Isa i) { return isa_ok_for(caps(), i); }
 
-// the best tier a CPU with feature set `c` runs, capped by `force` (STRATA_FORCE_ISA's value, may be null): scalar|sse41|avx|avx2|avx512 (on AArch64: neon, or scalar)
+// the best tier a CPU with feature set `c` runs, capped by `force` (NOSTROMA_FORCE_ISA's value, may be null): scalar|sse41|avx|avx2|avx512 (on AArch64: neon, or scalar)
 inline Isa best_isa_for(const Caps& c, const char* force) {
 #if defined(__aarch64__) || defined(_M_ARM64)
     (void) c;
@@ -102,8 +102,8 @@ inline Isa best_isa_for(const Caps& c, const char* force) {
 #endif
 }
 
-// the best tier this CPU runs, capped by STRATA_FORCE_ISA
-inline Isa best_isa() { return best_isa_for(caps(), std::getenv("STRATA_FORCE_ISA")); }
+// the best tier this CPU runs, capped by NOSTROMA_FORCE_ISA
+inline Isa best_isa() { return best_isa_for(caps(), std::getenv("NOSTROMA_FORCE_ISA")); }
 
 inline const char* isa_name(Isa i) {
     return i == Isa::Neon ? "neon" : i == Isa::Avx512 ? "avx512" : i == Isa::Avx2 ? "avx2" : i == Isa::Avx ? "avx" : i == Isa::Sse41 ? "sse41" : "scalar";
@@ -138,4 +138,4 @@ inline float f16_to_f32(uint16_t h) {
 }
 
 }  // namespace quant
-}  // namespace strata_vit
+}  // namespace nostroma_vit

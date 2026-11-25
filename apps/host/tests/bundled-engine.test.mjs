@@ -8,16 +8,16 @@ import { join } from 'node:path';
 import { installBundledEngine, removeVerifiedBundle, cleanupAfterInstall, compareVersions, wrongMakeNotice } from '../server/bundled-engine.mjs';
 
 // the make of card is read from this computer unless a test names it; the existing tests are written for an NVIDIA PC
-process.env.STRATA_ENGINE_BACKEND = 'cuda';
+process.env.NOSTROMA_ENGINE_BACKEND = 'cuda';
 const sha = buffer => createHash('sha256').update(buffer).digest('hex');
 function makePackage(root, version, { body = 'engine-' + version, backend = 'cuda', platform = 'windows-x86_64', variant = 'cuda13', minDriver = null } = {}) {
   const name = `${version}-${platform}-${backend}-${variant}`;
   const dir = join(root, name);
   mkdirSync(dir, { recursive: true });
-  const files = { 'strata.exe': Buffer.from(body), 'strata_kq.dll': Buffer.from('kq-' + body), 'BUILD.json': Buffer.from('{}') };
+  const files = { 'nostroma.exe': Buffer.from(body), 'nostroma_kq.dll': Buffer.from('kq-' + body), 'BUILD.json': Buffer.from('{}') };
   for (const [file, data] of Object.entries(files)) writeFileSync(join(dir, file), data);
   writeFileSync(join(dir, 'engine-component.json'), JSON.stringify({
-    schema_version: 2, id: 'strata-engine', name: 'strata-engine', version, platform, backend, archs: ['sm_86'], ...(minDriver ? { min_driver: { nvidia: minDriver } } : {}), build_id: 'x', entrypoint: 'strata.exe',
+    schema_version: 2, id: 'nostroma-engine', name: 'nostroma-engine', version, platform, backend, archs: ['sm_86'], ...(minDriver ? { min_driver: { nvidia: minDriver } } : {}), build_id: 'x', entrypoint: 'nostroma.exe',
     files: Object.entries(files).map(([path, data]) => ({ path, sha256: sha(data), bytes: data.length })), signature: null }));
   return name;
 }
@@ -40,7 +40,7 @@ test('no engine installed: the bundled one is installed, hash-checked, with noth
     const name = makePackage(t.bundle, '0.1.45');
     const result = await installBundledEngine({ bundleDir: t.bundle, components: t.components });
     assert.equal(result.action, 'installed');
-    assert.equal(readFileSync(join(t.engine, name, 'strata.exe'), 'utf8'), 'engine-0.1.45');
+    assert.equal(readFileSync(join(t.engine, name, 'nostroma.exe'), 'utf8'), 'engine-0.1.45');
     assert.ok(existsSync(join(t.engine, name, 'engine-component.json')));
     assert.deepEqual(readdirSync(t.engine), [name], 'no temporary folder remains');
     assert.equal((await installBundledEngine({ bundleDir: t.bundle, components: t.components })).action, 'kept', 'a second start does nothing');
@@ -64,11 +64,11 @@ test('a newer or equal engine is never overwritten or touched', async () => {
     makePackage(t.bundle, '0.1.45');
     assert.equal((await installBundledEngine({ bundleDir: t.bundle, components: t.components })).action, 'kept');
     assert.deepEqual(readdirSync(t.engine), [newer]);
-    assert.equal(readFileSync(join(t.engine, newer, 'strata.exe'), 'utf8'), 'mine');
+    assert.equal(readFileSync(join(t.engine, newer, 'nostroma.exe'), 'utf8'), 'mine');
     // same version, other build: the installed one stays
     const same = makePackage(t.engine, '0.1.45', { body: 'installed-build' });
     assert.equal((await installBundledEngine({ bundleDir: t.bundle, components: t.components })).action, 'kept');
-    assert.equal(readFileSync(join(t.engine, same, 'strata.exe'), 'utf8'), 'installed-build');
+    assert.equal(readFileSync(join(t.engine, same, 'nostroma.exe'), 'utf8'), 'installed-build');
   } finally { t.cleanup(); }
 });
 
@@ -77,9 +77,9 @@ test('a damaged copy of the same package is put right; an engine for another bac
   try {
     const name = makePackage(t.bundle, '0.1.45');
     makePackage(t.engine, '0.1.45');
-    writeFileSync(join(t.engine, name, 'strata.exe'), 'cut');          // wrong size
+    writeFileSync(join(t.engine, name, 'nostroma.exe'), 'cut');          // wrong size
     assert.equal((await installBundledEngine({ bundleDir: t.bundle, components: t.components })).action, 'repaired');
-    assert.equal(readFileSync(join(t.engine, name, 'strata.exe'), 'utf8'), 'engine-0.1.45');
+    assert.equal(readFileSync(join(t.engine, name, 'nostroma.exe'), 'utf8'), 'engine-0.1.45');
     const t2 = setup();
     try {
       makePackage(t2.engine, '0.1.50', { backend: 'cpu' });
@@ -93,7 +93,7 @@ test('a bundle that does not match its manifest is refused and installs nothing'
   const t = setup();
   try {
     const name = makePackage(t.bundle, '0.1.45');
-    writeFileSync(join(t.bundle, name, 'strata_kq.dll'), 'kq-engine-0.1.4X');   // same size, other bytes
+    writeFileSync(join(t.bundle, name, 'nostroma_kq.dll'), 'kq-engine-0.1.4X');   // same size, other bytes
     const result = await installBundledEngine({ bundleDir: t.bundle, components: t.components });
     assert.equal(result.action, 'refused');
     assert.equal(existsSync(join(t.engine, name)), false);
@@ -179,7 +179,7 @@ test('Windows: the display adapters decide the make, and a leftover nvidia-smi d
   assert.equal(gpuBackendHere({}, { vendors: new Set(['1002']) }), 'hip');
   assert.equal(gpuBackendHere({}, { vendors: new Set(['10de', '1002']) }), 'cuda');
   assert.equal(gpuBackendHere({}, { vendors: new Set(['8086']) }), 'sycl');
-  assert.equal(gpuBackendHere({ STRATA_ENGINE_BACKEND: 'cuda' }, { vendors: new Set(['1002']) }), 'cuda', 'an explicit choice wins');
+  assert.equal(gpuBackendHere({ NOSTROMA_ENGINE_BACKEND: 'cuda' }, { vendors: new Set(['1002']) }), 'cuda', 'an explicit choice wins');
   const out = 'MatchingDeviceId    REG_SZ    PCI/VEN_1002&DEV_7551&SUBSYS_0' + String.fromCharCode(10) + 'MatchingDeviceId    REG_SZ    PCI/VEN_8086&DEV_46A6';
   assert.deepEqual([...windowsDisplayVendors({ platform: 'win32', run: () => out })].sort(), ['1002', '8086']);
   assert.equal(windowsDisplayVendors({ platform: 'linux', run: () => { throw new Error('must not run'); } }).size, 0);
@@ -201,7 +201,7 @@ test('after an update, the engine bundle of the old install folder is removed on
     // 2. the engine is copied (the app's own first start does this)
     assert.equal((await installBundledEngine({ bundleDir: t.bundle, components: t.components })).action, 'installed');
     // 3. a store file with the right size and the wrong content: kept (the hash is checked, not only the size)
-    const target = join(t.engine, name, 'strata.exe');
+    const target = join(t.engine, name, 'nostroma.exe');
     const good = readFileSync(target);
     writeFileSync(target, Buffer.alloc(good.length, 'x'));
     lines.length = 0;
@@ -273,7 +273,7 @@ test('macOS: the engine bundle inside a signed .app stays (deleting it breaks th
     as('darwin');
     let r = await removeVerifiedBundle({ bundleDir: app, components: t.components, log: l => lines.push(l) });
     assert.equal(r.removed, false);
-    assert.ok(existsSync(join(app, inApp, 'strata.exe')), 'the signed app keeps its engine files');
+    assert.ok(existsSync(join(app, inApp, 'nostroma.exe')), 'the signed app keeps its engine files');
     assert.equal(lines.length, 1);
     assert.match(lines[0], /kept in the install folder.*macOS app bundles must remain unchanged after signing/);
     // 2. macOS, bundle outside an .app: removed as before
@@ -305,7 +305,7 @@ test('a card taken out of the PC does not decide the make; two present makes acc
   assert.equal(windowsDisplayVendors({ platform: 'win32', run: () => registry, present: () => new Set() }).size, 2);
   // the second source is only asked when two makes are listed
   assert.equal(windowsDisplayVendors({ platform: 'win32', run: () => 'MatchingDeviceId    REG_SZ    PCI/VEN_1002&DEV_7550', present: () => { throw new Error('must not run'); } }).size, 1);
-  assert.deepEqual(gpuBackendsHere({ STRATA_ENGINE_BACKEND: 'hip' }, { vendors: new Set(['10de', '1002']) }), ['hip']);
+  assert.deepEqual(gpuBackendsHere({ NOSTROMA_ENGINE_BACKEND: 'hip' }, { vendors: new Set(['10de', '1002']) }), ['hip']);
 
   const t = setup();
   try {

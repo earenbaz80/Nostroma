@@ -17,7 +17,7 @@
     "source": "batches/pilot-1m-v3/checkpoint.json",
     "source_record_sha256": "b0cc11d1f98601366362e9dfec7e617431dac46f93f3078a355833d5f48ddbbe",
     "status": "failed",
-    "error": "Strata startup exited with 1",
+    "error": "Nostroma startup exited with 1",
     "hermes_restored": true
   },
   {

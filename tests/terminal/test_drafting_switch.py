@@ -48,7 +48,7 @@ class TheChoiceStaysWithItsFamily(unittest.TestCase):
 
 class AQwenLaunchWritesItsDraftingChoice(unittest.TestCase):
     def test_qwen_still_writes_it(self):
-        base = {"exe": "component:strata-engine", "args": ["--pack", "/d/packs/x", "--mtp", "/d/mtp/rt"], "port": 8080, "model_name": "qwen3.8-flash-next-iq3_s"}
+        base = {"exe": "component:nostroma-engine", "args": ["--pack", "/d/packs/x", "--mtp", "/d/mtp/rt"], "port": 8080, "model_name": "qwen3.8-flash-next-iq3_s"}
         for family in ("qwen", "gyro", "unsloth"):
             cfg = derive_config(base, S.LaunchSettings(family=family, drafting="dflash2"), bool_flags=frozenset())
             self.assertEqual(cfg["drafting"], "dflash2", family)

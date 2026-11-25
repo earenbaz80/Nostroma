@@ -2,7 +2,7 @@
   "clean_tag_patch_replay_passed": true,
   "changed_files_identical_to_measured_source": true,
   "sha256": {
-    "sycl/include/strata/core/verify.hpp": "80ff939651573538679bba8daff3b46d9718b2c7650e3da99ba5312e3499d73d",
+    "sycl/include/nostroma/core/verify.hpp": "80ff939651573538679bba8daff3b46d9718b2c7650e3da99ba5312e3499d73d",
     "sycl/src/core/verify.cpp": "aed157ed2f918b78ecb71a599dce7b22e57419308499516ff6651373b2b75eb3",
     "sycl/src/kernels/cuda/fused_gr.dp.cpp": "db9777be49329f4aa4678b050c92018f9be0ba6ea3150a50ebe240cfca15a229",
     "sycl/src/core/expert_source.cpp": "5f169d3708e3da80110890c9bf535654c1b70c599a56e9df63cecd572ae60216",

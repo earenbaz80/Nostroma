@@ -1,8 +1,8 @@
 {
  "what": "per-run data for the gfx1100 hipBLASLt 100500 table A/B on the ROCm 10.2 nightly (PR #745 follow-up)",
  "fields": {
-  "arm": "nightly-100500 = STRATA_HIPBLASLT_TUNING pointed at gfx1100-hipblaslt-100500.txt; nightly-notable = the variable unset (the parent folder's nightly condition)",
-  "tier": "prompt workload: qsa-profile-1024 / qsa-profile-131072 token files (code-agent prompts), one-shot strata generate, greedy, --max-new 256",
+  "arm": "nightly-100500 = NOSTROMA_HIPBLASLT_TUNING pointed at gfx1100-hipblaslt-100500.txt; nightly-notable = the variable unset (the parent folder's nightly condition)",
+  "tier": "prompt workload: qsa-profile-1024 / qsa-profile-131072 token files (code-agent prompts), one-shot nostroma generate, greedy, --max-new 256",
   "exit": "engine process exit code (0 = completed all 256 tokens)",
   "prompt_tokens": "actual prompt tokens from the engine's 'prefill timing:' line",
   "prefill_gpu_s": "GPU timeline seconds for prefill (same line); prefill_tok_s = prompt_tokens / prefill_gpu_s",

@@ -61,13 +61,13 @@ def dead_feed(kind: str):
         netpolicy.HOSTS.forget()
         if kind == "offline":
             stack.enter_context(mock.patch.object(socket, "getaddrinfo", side_effect=socket.gaierror(socket.EAI_NONAME, "Name or service not known")))
-            yield "https://strata-feed.example.invalid/strata-feed.json"
+            yield "https://nostroma-feed.example.invalid/nostroma-feed.json"
         elif kind == "refused":
-            yield f"http://127.0.0.1:{refused_port()}/strata-feed.json"
+            yield f"http://127.0.0.1:{refused_port()}/nostroma-feed.json"
         else:
             hole = BlackHole()
             try:
-                yield f"http://127.0.0.1:{hole.port}/strata-feed.json"
+                yield f"http://127.0.0.1:{hole.port}/nostroma-feed.json"
             finally:
                 hole.close()
         netpolicy.HOSTS.forget()

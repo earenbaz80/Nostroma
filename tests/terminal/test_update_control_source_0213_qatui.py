@@ -25,7 +25,7 @@ from nostroma_control import engine_component as ec, updater  # noqa: E402
 class SourceTreeVersion(unittest.TestCase):
     def test_it_is_the_cmake_project_version(self):
         with tempfile.TemporaryDirectory() as t:
-            (Path(t) / "CMakeLists.txt").write_text("cmake_minimum_required(VERSION 3.20)\nproject(strata VERSION 0.1.56 LANGUAGES CXX)\n", encoding="utf-8")
+            (Path(t) / "CMakeLists.txt").write_text("cmake_minimum_required(VERSION 3.20)\nproject(nostroma VERSION 0.1.56 LANGUAGES CXX)\n", encoding="utf-8")
             self.assertEqual(updater.source_tree_version(Path(t)), "0.1.56")
 
     def test_nothing_to_read_is_none(self):

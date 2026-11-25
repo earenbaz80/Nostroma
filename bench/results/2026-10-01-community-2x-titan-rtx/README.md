@@ -24,24 +24,24 @@ and the recall check attached.
 | Storage | Samsung MZVLW1T0HMLH NVMe 1 TB (model), SATA SSD also present |
 | OS | AlmaLinux 9.8, kernel 5.14.0-687.51.1.el9_8.x86_64 |
 | CUDA | 12.9 (nvcc), source build |
-| Strata | commit `9259cad`, engine 0.1.31, built from source for `CMAKE_CUDA_ARCHITECTURES=75` |
+| Nostroma | commit `9259cad`, engine 0.1.31, built from source for `CMAKE_CUDA_ARCHITECTURES=75` |
 
-Build used no non-default options beyond `-DSTRATA_ENABLE_CUDA=ON
--DSTRATA_BUILD_TESTS=OFF -DCMAKE_CUDA_ARCHITECTURES=75`. No prebuilt engine:
-the release ships `strata-windows-x64.zip` only.
+Build used no non-default options beyond `-DNOSTROMA_ENABLE_CUDA=ON
+-DNOSTROMA_BUILD_TESTS=OFF -DCMAKE_CUDA_ARCHITECTURES=75`. No prebuilt engine:
+the release ships `nostroma-windows-x64.zip` only.
 
 ## Model and configuration
 
 Qwen3.8-Flash-Next **IQ3_S** (3.5 bpw, the recommended quality tier),
 `ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF`, two GGUF shards
 (54,817,524,224 + 28,800,138,432 bytes), plus the MTP draft layer packed by
-`setup.sh` into `Strata-data/mtp/rt` (787 MB).
+`setup.sh` into `Nostroma-data/mtp/rt` (787 MB).
 
 ```
---pack Strata-data/packs/iq3_s --native ...IQ3_S-00001-of-00002.gguf
+--pack Nostroma-data/packs/iq3_s --native ...IQ3_S-00001-of-00002.gguf
 --ple-gguf ...IQ3_S-00002-of-00002.gguf --expert-profile data/expert-profile.bin
 --expert-cache auto --prefill auto --spec 4 --spec-min-p 0.5
---mtp Strata-data/mtp/rt --max-context 262144 --kv int8 --kv-resident 65536
+--mtp Nostroma-data/mtp/rt --max-context 262144 --kv int8 --kv-resident 65536
 --ple-io ram --layer-split auto
 ```
 

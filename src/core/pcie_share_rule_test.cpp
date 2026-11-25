@@ -1,5 +1,5 @@
 // src/core/pcie_share_rule_test.cpp - the decode miss share's rule, its ceiling and the 0.2.10.1 defaults (no GPU needed).
-#include "strata/core/pcie_share_rule.hpp"
+#include "nostroma/core/pcie_share_rule.hpp"
 
 #include <cmath>
 #include <cstdio>
@@ -9,7 +9,7 @@ static int fails = 0;
 static bool near(double a, double b) { return std::fabs(a - b) < 1e-9; }
 
 int main() {
-    using namespace strata;
+    using namespace nostroma;
     // k: the shipped 1.85 from 30 GB/s up and whenever the rule is off; 0.8 at 12 and below; linear between
     CHECK(near(pcie_pool_k(30.0, true), 1.85));
     CHECK(near(pcie_pool_k(65.0, true), 1.85));

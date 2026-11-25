@@ -1,4 +1,4 @@
-"""Strata speed test following docs/COMMUNITY_BENCHMARKS.md.
+"""Nostroma speed test following docs/COMMUNITY_BENCHMARKS.md.
 
 Three conditions, 3 measured runs each after one unmeasured warm-up, output capped at 256 tokens:
   short       104-token prompt, fully processed (a unique first line defeats prefix reuse)
@@ -7,7 +7,7 @@ Three conditions, 3 measured runs each after one unmeasured warm-up, output capp
 Throughput comes from the engine's own timings (prompt_ms / predicted_ms); TTFT and total
 latency are measured at the client. The engine's log lines for each request are kept.
 
-Usage: python speed_bench.py <folder of .ts files used as filler text> <path to the strata serve log>
+Usage: python speed_bench.py <folder of .ts files used as filler text> <path to the nostroma serve log>
 """
 import json, pathlib, subprocess, sys, time, urllib.request, uuid
 
@@ -62,7 +62,7 @@ def call(label, messages):
     time.sleep(1.0)
     with LOG.open("rb") as f:
         f.seek(log_pos)
-        log_lines = [l for l in f.read().decode("utf-8", "replace").splitlines() if l.startswith("strata serve:")]
+        log_lines = [l for l in f.read().decode("utf-8", "replace").splitlines() if l.startswith("nostroma serve:")]
     t = timings or {}
     row = {
         "label": label,

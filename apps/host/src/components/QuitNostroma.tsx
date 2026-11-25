@@ -13,7 +13,7 @@ export function QuitNostromaDialog({ open, onClose }: { open: boolean; onClose: 
     setState('stopping');
     try {
       // the header is what a web page on another site cannot send; the host also refuses any request that does not come from this computer
-      const response = await fetch('/api/app/quit', { method: 'POST', headers: { 'x-strata-client': 'ui' } });
+      const response = await fetch('/api/app/quit', { method: 'POST', headers: { 'x-nostroma-client': 'ui' } });
       setState(response.ok ? 'stopped' : 'failed');
     } catch { setState('failed'); }
   }

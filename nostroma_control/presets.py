@@ -31,7 +31,7 @@ from typing import Any
 from nostroma_control import tune_knobs, tune_machine
 from nostroma_control import atomic as _atomic_mod
 
-SCHEMA = "strata.preset/1"
+SCHEMA = "nostroma.preset/1"
 RECHECK_SET = "recheck/1"
 DEFAULT_LAST_OK_DAYS = 90
 
@@ -43,7 +43,7 @@ class PresetError(ValueError):
 # --------------------------------------------------------------------------- the folder
 
 def preset_dir() -> Path:
-    explicit = os.environ.get("NOSTROMA_PRESET_DIR", os.environ.get("STRATA_PRESET_DIR"))
+    explicit = os.environ.get("NOSTROMA_PRESET_DIR", os.environ.get("NOSTROMA_PRESET_DIR"))
     if explicit:
         return Path(explicit).expanduser()
     from nostroma_control import profiles
@@ -478,7 +478,7 @@ def overlay(cfg: dict[str, Any], *, now: dict[str, Any] | None = None, use: str 
             out["env"] = tune_knobs.apply_to_env(dict(out.get("env") or {}), s["env"])
         if s.get("per_request"):
             sampling = dict(out.get("sampling") or {})
-            sampling.setdefault("strata_tune", {k: v for k, v in s["per_request"].items() if v is not None})
+            sampling.setdefault("nostroma_tune", {k: v for k, v in s["per_request"].items() if v is not None})
             out["sampling"] = sampling
         info.update({"applied": True, "args": s.get("args"), "env": s.get("env"), "per_request": s.get("per_request"),
                      "answers": preset.get("answers"), "notice": notice(preset)})

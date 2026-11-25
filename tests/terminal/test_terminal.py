@@ -37,7 +37,7 @@ def four_gpu_snapshot():
         "requests": [{"finish": "stop", "prompt_tokens": 100, "output_tokens": 20}],
         "totals": {"requests": 1, "output_tokens": 20},
     }
-    status = {"service": "strata", "model": "test-model", "loaded": True,
+    status = {"service": "nostroma", "model": "test-model", "loaded": True,
               "concurrency": {"serving": 8}, "started": 1_789_999_000}
     return normalize_legacy(metrics, status)
 
@@ -188,26 +188,26 @@ class ContractTests(unittest.TestCase):
                     self.assertTrue(all(display_width(line) <= width for line in view.splitlines()), name)
 
     def test_batch_telemetry_opt_in_and_explicit_disable_are_reversible(self):
-        env = {"STRATA_BATCH_TELEMETRY": "1"}
+        env = {"NOSTROMA_BATCH_TELEMETRY": "1"}
         configure_batch_telemetry_env(env, {}, None)
-        self.assertEqual(env["STRATA_BATCH_TELEMETRY"], "1")
+        self.assertEqual(env["NOSTROMA_BATCH_TELEMETRY"], "1")
         configure_batch_telemetry_env(env, {"batch_telemetry": False}, None)
-        self.assertNotIn("STRATA_BATCH_TELEMETRY", env)
+        self.assertNotIn("NOSTROMA_BATCH_TELEMETRY", env)
         configure_batch_telemetry_env(env, {"batch_telemetry": False}, True)
-        self.assertEqual(env["STRATA_BATCH_TELEMETRY"], "1")
+        self.assertEqual(env["NOSTROMA_BATCH_TELEMETRY"], "1")
         configure_batch_telemetry_env(env, {"batch_telemetry": True}, False)
-        self.assertNotIn("STRATA_BATCH_TELEMETRY", env)
+        self.assertNotIn("NOSTROMA_BATCH_TELEMETRY", env)
 
     def test_cache_boundary_is_opt_in_and_an_explicit_off_wins(self):
-        env = {"STRATA_CACHE_MESSAGE_BOUNDARY": "1"}
+        env = {"NOSTROMA_CACHE_MESSAGE_BOUNDARY": "1"}
         configure_cache_boundary_env(env, {})
-        self.assertEqual(env["STRATA_CACHE_MESSAGE_BOUNDARY"], "1")      # absent: the inherited environment, unchanged
+        self.assertEqual(env["NOSTROMA_CACHE_MESSAGE_BOUNDARY"], "1")      # absent: the inherited environment, unchanged
         configure_cache_boundary_env(env, {"cache_boundary": "on"})
-        self.assertEqual(env["STRATA_CACHE_MESSAGE_BOUNDARY"], "1")
+        self.assertEqual(env["NOSTROMA_CACHE_MESSAGE_BOUNDARY"], "1")
         configure_cache_boundary_env(env, {"cache_boundary": "off"})
-        self.assertNotIn("STRATA_CACHE_MESSAGE_BOUNDARY", env)
+        self.assertNotIn("NOSTROMA_CACHE_MESSAGE_BOUNDARY", env)
         configure_cache_boundary_env(env, {"cache_boundary": True})
-        self.assertEqual(env["STRATA_CACHE_MESSAGE_BOUNDARY"], "1")
+        self.assertEqual(env["NOSTROMA_CACHE_MESSAGE_BOUNDARY"], "1")
 
     def test_batch_window_sample_distinguishes_processed_rows_from_active_slots(self):
         self.assertEqual(parse_batch_window_sample("BSTAT 3 18 9 1000\n"),
@@ -278,7 +278,7 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(rejected["quality"]["stage_in_flight"], "unavailable")
 
     def test_engine_stage_log_is_bounded_and_reports_only_valid_final_ranges(self):
-        line = ("strata serve: layer split: layers 0-11 (CUDA0), 12-23 (CUDA1), "
+        line = ("nostroma serve: layer split: layers 0-11 (CUDA0), 12-23 (CUDA1), "
                 "24-35 (CUDA2), 36-47 (CUDA3), one hand-off per window")
         self.assertEqual([row["layer_start"] for row in parse_engine_stage_line(line)], [0, 12, 24, 36])
         for bad in (line.replace("12-23", "13-23"), line.replace("CUDA3", "CUDA99"),
@@ -612,7 +612,7 @@ class ContractTests(unittest.TestCase):
                 err = io.StringIO()
                 with mock.patch.dict(os.environ, {}, clear=True), contextlib.redirect_stderr(err):
                     with self.assertRaises(SystemExit):
-                        server.main(["--engine", "strata", "--config", str(profile),
+                        server.main(["--engine", "nostroma", "--config", str(profile),
                                      "--host", "0.0.0.0", "--port", "0", *extra])
                 self.assertIn("tokenizer is missing", err.getvalue(), (body, extra))   # past the key check, stopped later
 
@@ -1182,7 +1182,7 @@ class HeadlessMonitorTests(unittest.TestCase):
 
     def test_initial_attach_keeps_status_when_telemetry_is_unavailable(self):
         status_only = sanitize_telemetry(normalize_status_only(
-            {"service": "strata", "model": "fixture", "loaded": False,
+            {"service": "nostroma", "model": "fixture", "loaded": False,
              "concurrency": {"serving": 4}}))
 
         class Source:

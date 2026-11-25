@@ -1,10 +1,10 @@
-// src/image/dit/qi21_rope.cpp - see include/strata/image/qi21_rope.hpp.  Written as sd.cpp writes it, operation by
+// src/image/dit/qi21_rope.cpp - see include/nostroma/image/qi21_rope.hpp.  Written as sd.cpp writes it, operation by
 // operation (float arithmetic, the float overloads of std::cos / std::sin, ::powf), so the bits are the same.
-#include "strata/image/qi21_rope.hpp"
+#include "nostroma/image/qi21_rope.hpp"
 
 #include <cmath>
 
-namespace strata::image {
+namespace nostroma::image {
 
 namespace {
 const int kAxes[3] = {16, 56, 56};
@@ -64,4 +64,4 @@ std::vector<float> qi21_rope_table(const std::vector<float>& positions) {
     return out;
 }
 
-}  // namespace strata::image
+}  // namespace nostroma::image

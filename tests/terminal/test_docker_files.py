@@ -28,7 +28,7 @@ def sh_path(p) -> str:
 class Scripts(unittest.TestCase):
     @unittest.skipIf(SH is None, "needs sh")
     def test_shell_scripts_parse(self):
-        for name in ("entrypoint.sh", "strata-wrapper.sh", "healthcheck.sh", "build.sh", "publish.sh"):
+        for name in ("entrypoint.sh", "nostroma-wrapper.sh", "healthcheck.sh", "build.sh", "publish.sh"):
             r = subprocess.run([SH, "-n", sh_path(DOCKER / name)], capture_output=True, text=True)
             self.assertEqual(r.returncode, 0, f"{name}: {r.stderr}")
 
@@ -44,9 +44,9 @@ class Scripts(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             pkg = Path(tmp) / "pkg"
             pkg.mkdir()
-            (pkg / "engine-component.json").write_text('{"entrypoint": "strata"}', encoding="utf-8")
-            (pkg / "strata").write_text("#!/bin/sh\n", encoding="utf-8")
-            (pkg / "strata").chmod(0o755)
+            (pkg / "engine-component.json").write_text('{"entrypoint": "nostroma"}', encoding="utf-8")
+            (pkg / "nostroma").write_text("#!/bin/sh\n", encoding="utf-8")
+            (pkg / "nostroma").chmod(0o755)
             ctx = Path(tmp) / "ctx"
             r = subprocess.run([SH, sh_path(DOCKER / "build.sh"), "--flavor", "cuda", "--engine", sh_path(pkg), "--ctx", sh_path(ctx), "--ctx-only"],
                                capture_output=True, text=True)
@@ -74,15 +74,15 @@ class Scripts(unittest.TestCase):
                 self.assertTrue((ctx / "terminal-src" / "metal" / "tools" / f"{name}.py").is_file(), f"build.sh did not copy metal/tools/{name}.py into the context")
 
     def test_scripts_use_unix_line_ends(self):
-        for name in ("entrypoint.sh", "strata-wrapper.sh", "healthcheck.sh", "build.sh", "publish.sh"):
+        for name in ("entrypoint.sh", "nostroma-wrapper.sh", "healthcheck.sh", "build.sh", "publish.sh"):
             self.assertNotIn(b"\r", (DOCKER / name).read_bytes(), name)       # build.sh strips CR for a CRLF checkout, the files themselves stay LF
 
     def test_the_entry_point_accepts_the_new_command_name(self):
-        """`docker run ... <image> nostroma ...` runs the Terminal, as the older `strata` word does: the alias the image
+        """`docker run ... <image> nostroma ...` runs the Terminal, as the older `nostroma` word does: the alias the image
         installs (see Dockerfiles.test_the_wrapper_is_installed_under_both_names) is useless without this dispatch."""
         entry = (DOCKER / "entrypoint.sh").read_text(encoding="utf-8")
         dispatch = next(line for line in entry.splitlines() if 'case "$1" in' in line)
-        self.assertIn("strata", dispatch)
+        self.assertIn("nostroma", dispatch)
         self.assertIn("nostroma", dispatch)
 
 
@@ -101,19 +101,19 @@ class Dockerfiles(unittest.TestCase):
             text = f.read_text(encoding="utf-8")
             self.assertIn("HEALTHCHECK", text, f.name)
             self.assertIn("STOPSIGNAL SIGTERM", text, f.name)
-            self.assertIn('ENTRYPOINT ["/usr/bin/tini", "--", "/opt/strata/entrypoint.sh"]', text, f.name)
+            self.assertIn('ENTRYPOINT ["/usr/bin/tini", "--", "/opt/nostroma/entrypoint.sh"]', text, f.name)
             self.assertIn("VOLUME [\"/data\"]", text, f.name)
-            self.assertIn("STRATA_COMPONENTS_DIR=/opt/strata/components", text, f.name)
+            self.assertIn("NOSTROMA_COMPONENTS_DIR=/opt/nostroma/components", text, f.name)
 
     def test_the_wrapper_is_installed_under_both_names(self):
-        """`nostroma` is the command; `strata` stays as the name it had before (install.sh links both too). The image
+        """`nostroma` is the command; `nostroma` stays as the name it had before (install.sh links both too). The image
         carries both names as the same wrapper, executable, or a page that says `docker exec ... nostroma` fails."""
         for f in self.FILES:
             text = f.read_text(encoding="utf-8")
-            for name in ("strata", "nostroma"):
-                self.assertIn(f"COPY docker/strata-wrapper.sh /usr/local/bin/{name}", text, f.name)
+            for name in ("nostroma", "nostroma"):
+                self.assertIn(f"COPY docker/nostroma-wrapper.sh /usr/local/bin/{name}", text, f.name)
             chmod = next(line for line in text.splitlines() if line.startswith("RUN chmod 0755 "))
-            for name in ("strata", "nostroma"):
+            for name in ("nostroma", "nostroma"):
                 self.assertIn(f"/usr/local/bin/{name}", chmod, f.name)
 
     def test_every_image_runs_as_an_unprivileged_user(self):
@@ -131,7 +131,7 @@ class Dockerfiles(unittest.TestCase):
             self.assertIn("useradd", text, f.name)
             self.assertIn("--chown=${APP_UID}:${APP_GID}", text, f.name)
             self.assertIn("WORKDIR /data/home", text, f.name)
-            self.assertRegex(text, r'(?m)^RUN set -e; \\$[\s\S]*?chown -R "\$\{APP_UID\}:\$\{APP_GID\}" /opt/strata/components',
+            self.assertRegex(text, r'(?m)^RUN set -e; \\$[\s\S]*?chown -R "\$\{APP_UID\}:\$\{APP_GID\}" /opt/nostroma/components',
                              f"{f.name}: the components folder must be writable to the account, its files included")
 
     def test_the_amd_and_intel_flavors_add_the_device_groups(self):
@@ -144,9 +144,9 @@ class Dockerfiles(unittest.TestCase):
         self.assertIn("getent group video", text)
         self.assertIn("getent group render", text)
         self.assertIn("usermod -aG video,render", text)
-        amd = yaml.safe_load((DOCKER / "compose" / "docker-compose.amd.yml").read_text(encoding="utf-8"))["services"]["strata"]
+        amd = yaml.safe_load((DOCKER / "compose" / "docker-compose.amd.yml").read_text(encoding="utf-8"))["services"]["nostroma"]
         self.assertIn("video", amd["group_add"], "the AMD example must pass the group the image now needs")
-        intel = yaml.safe_load((DOCKER / "compose" / "docker-compose.intel.yml").read_text(encoding="utf-8"))["services"]["strata"]
+        intel = yaml.safe_load((DOCKER / "compose" / "docker-compose.intel.yml").read_text(encoding="utf-8"))["services"]["nostroma"]
         self.assertTrue(intel["group_add"], "the Intel example must pass the render group")
 
     def test_base_images_are_pinned_by_digest(self):
@@ -179,32 +179,32 @@ class Dockerfiles(unittest.TestCase):
 class Compose(unittest.TestCase):
     def load(self, name: str) -> dict:
         data = yaml.safe_load((DOCKER / "compose" / name).read_text(encoding="utf-8"))
-        self.assertIn("strata", data["services"], name)
+        self.assertIn("nostroma", data["services"], name)
         return data
 
     def test_common_settings(self):
         for name in ("docker-compose.nvidia.yml", "docker-compose.amd.yml", "docker-compose.intel.yml"):
-            svc = self.load(name)["services"]["strata"]
-            self.assertIn("strata-data:/data", svc["volumes"], name)
+            svc = self.load(name)["services"]["nostroma"]
+            self.assertIn("nostroma-data:/data", svc["volumes"], name)
             self.assertEqual(svc["ulimits"]["memlock"], {"soft": -1, "hard": -1}, name)
             self.assertEqual(svc["shm_size"], "2gb", name)
             self.assertEqual(svc["stop_grace_period"], "2m", name)
-            self.assertTrue(svc["ports"][0].startswith("${STRATA_BIND:-127.0.0.1}:"), f"{name}: the port must default to this computer only")
+            self.assertTrue(svc["ports"][0].startswith("${NOSTROMA_BIND:-127.0.0.1}:"), f"{name}: the port must default to this computer only")
             for var in ("MODEL", "MODEL_PATH", "CONTEXT", "PARALLEL", "VISION", "TUNE", "API_KEY"):
                 self.assertIn(var, svc["environment"], f"{name}: {var}")
-            self.assertIn("strata-data", self.load(name)["volumes"], name)
+            self.assertIn("nostroma-data", self.load(name)["volumes"], name)
 
     def test_gpu_access_per_vendor(self):
-        nv = self.load("docker-compose.nvidia.yml")["services"]["strata"]
+        nv = self.load("docker-compose.nvidia.yml")["services"]["nostroma"]
         dev = nv["deploy"]["resources"]["reservations"]["devices"][0]
         self.assertEqual(dev["driver"], "nvidia")
         self.assertIn("gpu", dev["capabilities"])
-        amd = self.load("docker-compose.amd.yml")["services"]["strata"]
+        amd = self.load("docker-compose.amd.yml")["services"]["nostroma"]
         self.assertIn("/dev/kfd:/dev/kfd", amd["devices"])
         self.assertIn("/dev/dri:/dev/dri", amd["devices"])
         self.assertIn("video", amd["group_add"])
         self.assertTrue(any("render" in str(g).lower() or "RENDER" in str(g) for g in amd["group_add"]))
-        intel = self.load("docker-compose.intel.yml")["services"]["strata"]
+        intel = self.load("docker-compose.intel.yml")["services"]["nostroma"]
         self.assertIn("/dev/dri:/dev/dri", intel["devices"])
         self.assertNotIn("/dev/kfd:/dev/kfd", intel["devices"])
 
@@ -275,7 +275,7 @@ class Document(unittest.TestCase):
         for line in section.splitlines():
             if line.startswith("| `"):
                 names.update(re.findall(r"`([A-Z][A-Z_]+)`", line.split("|")[1]))
-        self.assertTrue({"MODEL", "CONTEXT", "API_KEY", "TUNE", "VISION", "MODEL_PATH", "STRATA_SET"} <= names, names)
+        self.assertTrue({"MODEL", "CONTEXT", "API_KEY", "TUNE", "VISION", "MODEL_PATH", "NOSTROMA_SET"} <= names, names)
         for name in sorted(names):
             self.assertIn(name, entry, f"docs/DOCKER.md lists {name} but docker/entrypoint.sh does not read it")
 
@@ -335,11 +335,11 @@ class Publishing(unittest.TestCase):
         docker/Dockerfile does; without it package_terminal.py stops (#3644). The documented source-build commands pass it."""
         for dockerfile in (ROOT / "Dockerfile", DOCKER / "Dockerfile"):
             text = dockerfile.read_text(encoding="utf-8")
-            self.assertRegex(text, r"(?m)^ARG STRATA_COMMIT=", dockerfile.name)
-            self.assertIn("ENV STRATA_BUILD_COMMIT=${STRATA_COMMIT}", text, dockerfile.name)
+            self.assertRegex(text, r"(?m)^ARG NOSTROMA_COMMIT=", dockerfile.name)
+            self.assertIn("ENV NOSTROMA_BUILD_COMMIT=${NOSTROMA_COMMIT}", text, dockerfile.name)
         self.assertIn(".git", (ROOT / ".dockerignore").read_text(encoding="utf-8").split())
         doc = (ROOT / "docs" / "DOCKER.md").read_text(encoding="utf-8")
-        self.assertEqual(doc.count("docker build -t strata:src"), doc.count("--build-arg STRATA_COMMIT=$(git rev-parse HEAD)"))
+        self.assertEqual(doc.count("docker build -t nostroma:src"), doc.count("--build-arg NOSTROMA_COMMIT=$(git rev-parse HEAD)"))
         self.assertIn("/data/install/", (ROOT / ".dockerignore").read_text(encoding="utf-8"))
 
     def test_workflow_is_manual_and_pushes_only_on_request(self):

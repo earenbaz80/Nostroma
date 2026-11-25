@@ -47,7 +47,7 @@ class ShapeEngines(Base):
         self.assertEqual([f["family"] for f in listing["families"]], ["qwen"])
         self.assertEqual(set(listing["families"][0]), {"family", "title", "engines"})
 
-    def test_an_installed_shape_engine_is_its_own_family_after_the_strata_engine(self):
+    def test_an_installed_shape_engine_is_its_own_family_after_the_nostroma_engine(self):
         self.install("0.1.59", "0.1.60")
         listing = lib.list_engines(self.ctx())
         self.assertEqual([f["family"] for f in listing["families"]], ["qwen", FAMILY])
@@ -76,7 +76,7 @@ class ShapeEngines(Base):
         self.assertEqual((back["status"], back["automatic"]), ("switched", True))
         self.assertIsNone(ec.pinned_folder(shape_engine.root(SHAPE, self.comp)), "the newest follows updates again: no pin")
         self.assertEqual(lib.use_engine(self.ctx(), FAMILY, self.rows()["0.1.60"]["folder"])["status"], "already")
-        self.assertEqual(self.strata_before, tree(self.comp / "engine"))
+        self.assertEqual(self.nostroma_before, tree(self.comp / "engine"))
 
     def test_delete_the_older_one_and_never_the_one_in_use_or_one_a_program_uses(self):
         self.install("0.1.59", "0.1.60")
@@ -92,7 +92,7 @@ class ShapeEngines(Base):
         self.assertEqual((out["status"], out["version"], out["component"]), ("deleted", "0.1.59", shape_engine.component_id(SHAPE)))
         self.assertEqual(sorted(self.rows()), ["0.1.60"])
         self.assertEqual(self.picked(), "0.1.60")
-        self.assertEqual(self.strata_before, tree(self.comp / "engine"))
+        self.assertEqual(self.nostroma_before, tree(self.comp / "engine"))
 
     def test_a_deleted_pinned_engine_leaves_no_pin(self):
         self.install("0.1.59", "0.1.60")
@@ -108,7 +108,7 @@ class ShapeEngines(Base):
         self.assertIsNone(ec.pinned_folder(shape_engine.root(SHAPE, self.comp)))
 
     def test_a_family_that_is_not_a_shape_is_refused(self):
-        for bad in ("shape:", "shape:X", "shape:engine", "shapes:q4_lite", "strata-q4-lite"):
+        for bad in ("shape:", "shape:X", "shape:engine", "shapes:q4_lite", "nostroma-q4-lite"):
             with self.assertRaises(updater.UpdateError):
                 lib.use_engine(self.ctx(), bad, "0.1.59-x")
         self.assertEqual(lib.shape_of_family(FAMILY), SHAPE)

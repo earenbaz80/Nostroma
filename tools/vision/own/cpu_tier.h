@@ -10,7 +10,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-namespace strata_vit {
+namespace nostroma_vit {
 
 struct CpuOps {
     const char* name;
@@ -34,7 +34,7 @@ struct CpuOps {
     void (*layernorm)(const float* x, float* y, int D, const float* w, const float* b, float eps);
     // x[i] += y[i], i < n
     void (*add)(float* x, const float* y, size_t n);
-    // p[i] rounded to the 16-bit type and back (kind 1 BF16, 2 F16; round to nearest even): STRATA_VIT_REF_ROUND, the inputs of the products as ggml's CPU path hands them
+    // p[i] rounded to the 16-bit type and back (kind 1 BF16, 2 F16; round to nearest even): NOSTROMA_VIT_REF_ROUND, the inputs of the products as ggml's CPU path hands them
     void (*round16)(float* p, size_t n, int kind);
     // One key tile of the online softmax for qrows query rows: S[qrows][nkeys] (row stride lds, already scaled) becomes P = exp(S - m_new) in place, the running
     // max m[r] and sum l[r] are updated and the context rows O[r][0..hd) (row stride ldo) are rescaled by exp(m_old - m_new) (O's P*V is added afterwards).
@@ -56,8 +56,8 @@ const CpuOps& cpu_ops_neon();      // AArch64 only (cpu_ops_neon returns the sca
 // expf of the C library, out of line and compiled at the baseline (cpu_ops.cpp): the scalar tails of the tiers' softmax
 float cpu_tier_expf(float x);
 
-// false when STRATA_VIT_CPU_TAIL1=0 (a diagnostic): the raw-vector tiers then take a last column tile of one vector or less through the two-vector product as
+// false when NOSTROMA_VIT_CPU_TAIL1=0 (a diagnostic): the raw-vector tiers then take a last column tile of one vector or less through the two-vector product as
 // before; out of line, compiled at the baseline (cpu_ops.cpp), read once
 bool cpu_tier_one_vector_tail();
 
-}  // namespace strata_vit
+}  // namespace nostroma_vit

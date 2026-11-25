@@ -1,11 +1,11 @@
-// tests/program/split_walk_test.cpp - the layer split's spill walk (include/strata/program/split_walk.hpp): who is short, who is not, and what is given up in which order.
-#include "strata/program/split_walk.hpp"
+// tests/program/split_walk_test.cpp - the layer split's spill walk (include/nostroma/program/split_walk.hpp): who is short, who is not, and what is given up in which order.
+#include "nostroma/program/split_walk.hpp"
 
 #include <cstdint>
 #include <cstdio>
 #include <string>
 
-using namespace strata::program::split_walk;
+using namespace nostroma::program::split_walk;
 
 namespace {
 int g_fail = 0;

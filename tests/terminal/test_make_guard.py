@@ -63,14 +63,14 @@ class Detection(unittest.TestCase):
 
     def test_the_environment_override_still_wins(self):
         with mock.patch.object(ec, "windows_display_adapters", return_value=R9700_ONLY):
-            self.assertEqual(ec.detect_backend({"STRATA_ENGINE_BACKEND": "cuda"}), ("cuda", "environment"))
+            self.assertEqual(ec.detect_backend({"NOSTROMA_ENGINE_BACKEND": "cuda"}), ("cuda", "environment"))
 
 
 class Decision(unittest.TestCase):
     """Faked hardware and a faked installed engine (a HIP package cannot be built on a machine without the HIP tuning files)."""
 
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="strata-makeguard-")
+        self.temp = tempfile.TemporaryDirectory(prefix="nostroma-makeguard-")
         self.addCleanup(self.temp.cleanup)
         self.components = Path(self.temp.name) / "components"
         self.state = updater.State(self.components)

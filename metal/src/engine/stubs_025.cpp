@@ -6,14 +6,14 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace strata::metal_engine { void missing(const char* name); }
+namespace nostroma::metal_engine { void missing(const char* name); }
 
-namespace strata::kernels::cpu {
+namespace nostroma::kernels::cpu {
 
 bool iq512_gather_on() noexcept { return false; }
 bool iq512x_supported(int) noexcept { return false; }
 void iq512x_rows(int, const uint8_t*, size_t, int, const void* const*, int, float* const*, int, int) {
-    strata::metal_engine::missing("strata::kernels::cpu::iq512x_rows");
+    nostroma::metal_engine::missing("nostroma::kernels::cpu::iq512x_rows");
 }
 
 // round 0216 (f-0216-cpu): the fused gate/up, reference gate/up, Q5_0 down and Q2_0 512-bit rows; the callers ask cpu_vnni_ok() /
@@ -21,13 +21,13 @@ void iq512x_rows(int, const uint8_t*, size_t, int, const void* const*, int, floa
 bool q2_rows_512_ok() { return false; }
 bool iq512f_supported(int) noexcept { return false; }
 void iq512_fused_gu_rows(int, const uint8_t*, size_t, size_t, int, const void* const*, int, float* const*, int, int) {
-    strata::metal_engine::missing("strata::kernels::cpu::iq512_fused_gu_rows");
+    nostroma::metal_engine::missing("nostroma::kernels::cpu::iq512_fused_gu_rows");
 }
 void iq512_reference_gu_rows(int, const uint8_t*, size_t, size_t, int, const void* const*, int, float* const*, int, int) {
-    strata::metal_engine::missing("strata::kernels::cpu::iq512_reference_gu_rows");
+    nostroma::metal_engine::missing("nostroma::kernels::cpu::iq512_reference_gu_rows");
 }
 void q50_512_down_rows(const uint8_t*, size_t, int, const void* const*, int, float* const*, int, int) {
-    strata::metal_engine::missing("strata::kernels::cpu::q50_512_down_rows");
+    nostroma::metal_engine::missing("nostroma::kernels::cpu::q50_512_down_rows");
 }
 
-}  // namespace strata::kernels::cpu
+}  // namespace nostroma::kernels::cpu

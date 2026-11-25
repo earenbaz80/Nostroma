@@ -8,11 +8,11 @@
 //   1 rewind     : A fed to P + 600, rewound to P (a repeated or rewound prefix)             -> rebuild from the live log
 //   2 parked     : A fed to P, B fed (different tokens and taps), A resumed at P             -> swap from the stash, rebuild
 //   3 branch     : A fed to P + 700, a request branches at P - 300 with other tokens, then A's old branch resumes at P -> stash copy (shared chunks, copy on write)
-//   4 off        : STRATA_DF2_RING_LOG=0 (env set before the run): the same rewind finds the window blank (the old behaviour), reported not asserted
+//   4 off        : NOSTROMA_DF2_RING_LOG=0 (env set before the run): the same rewind finds the window blank (the old behaviour), reported not asserted
 //   5 evicted    : a stash too small to keep A: the resume is cold (missing rows reported, *cold set)
 // Exit 0 when every assertion holds.
-#include "strata/core/dflash2.hpp"
-#include "strata/env.hpp"
+#include "nostroma/core/dflash2.hpp"
+#include "nostroma/env.hpp"
 
 #include <cuda_runtime.h>
 
@@ -24,7 +24,7 @@
 #include <string>
 #include <vector>
 
-using strata::core::Dflash2Drafter;
+using nostroma::core::Dflash2Drafter;
 
 namespace {
 int g_fail = 0;
@@ -97,13 +97,13 @@ int count_bad(Dflash2Drafter& d, const std::vector<float>& ref, int64_t lo, int6
 int main(int argc, char** argv) {
     if (argc < 2) { std::printf("usage: dflash2_ring_test PACK [device]\n"); return 2; }
     const int device = argc > 2 ? std::atoi(argv[2]) : 0;
-    const bool log_off_run = strata::env("NOSTROMA_DF2_RING_LOG") != nullptr && strata::env("NOSTROMA_DF2_RING_LOG")[0] == '0';
+    const bool log_off_run = nostroma::env("NOSTROMA_DF2_RING_LOG") != nullptr && nostroma::env("NOSTROMA_DF2_RING_LOG")[0] == '0';
     cudaSetDevice(device);
     std::string err;
     const int64_t P = 4227, N = 4232;   // the resumed prefix and the prompt (the agent prompt's numbers)
     float* dev = nullptr;
     cudaMalloc((void**) &dev, (size_t) 256 * kTap * 4);
-    std::printf("dflash2_ring_test%s\n", log_off_run ? " (STRATA_DF2_RING_LOG=0)" : "");
+    std::printf("dflash2_ring_test%s\n", log_off_run ? " (NOSTROMA_DF2_RING_LOG=0)" : "");
 
     auto fresh = [&](Dflash2Drafter& d) -> bool {
         if (!d.load(argv[1], device, err)) { std::printf("load: %s\n", err.c_str()); return false; }
@@ -188,10 +188,10 @@ int main(int argc, char** argv) {
     }
     {   // ---- 5 evicted
         std::printf("5 evicted (stash budget 0)\n");
-        setenv("STRATA_DF2_LOG_MIB", "0", 1);
+        setenv("NOSTROMA_DF2_LOG_MIB", "0", 1);
         Dflash2Drafter d;
         if (!fresh(d)) return 2;
-        unsetenv("STRATA_DF2_LOG_MIB");
+        unsetenv("NOSTROMA_DF2_LOG_MIB");
         if (!feed(d, dev, 1, 0, P, err)) return 2;
         const std::vector<int32_t> idsB = ids_of(2, 3000);
         bool cold = false;

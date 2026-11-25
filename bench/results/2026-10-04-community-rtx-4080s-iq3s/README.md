@@ -1,7 +1,7 @@
 # Community benchmark: RTX 4080 SUPER (32 GB), Core i7-13790F
 
 Measured on 2026-10-04 by [1314521gjy](https://github.com/1314521gjy), on one
-Windows 11 machine. This exercises Strata **0.1.39** with the Flash-Next
+Windows 11 machine. This exercises Nostroma **0.1.39** with the Flash-Next
 **IQ3_S** pack, one GPU, INT8 KV, `--max-context 524288`, and vision enabled.
 
 The report covers three knobs and one cost measurement:
@@ -12,7 +12,7 @@ The report covers three knobs and one cost measurement:
    pool-4 arms agree to 0.21%, and 8 of 8 workload-by-pair cells favour 4. In an
    earlier 0.1.36 sweep, the pool's own per-round cost rose monotonically from
    6.38 to 17.87 ms/round between 4 and 15 workers.
-2. **`STRATA_PF_FUSED=1`** (fused int8 prompt kernels, #136) with **IQ3_S**
+2. **`NOSTROMA_PF_FUSED=1`** (fused int8 prompt kernels, #136) with **IQ3_S**
    experts: cold prefill **+8.9%**, decode unchanged within noise.
 3. **The context tier itself, at a fixed prompt.** 524,288 tokens costs +0.9…+6.3% on a
    43,969-token fresh read over 262,144. 1,048,576 costs almost nothing **if the expert
@@ -34,7 +34,7 @@ The report covers three knobs and one cost measurement:
 - 95.78 GiB installed RAM. Weights and packs are on an ORICO 1.9 TB NVMe SSD.
 - Windows 11 Pro. Engine 0.1.39, `source: release`, CUDA 13.0, archs
   `[75, 86, 89, 120]`, portable build; see [BUILD.json](BUILD.json).
-- The GPU was dedicated to Strata and its vision helper during these runs. Other
+- The GPU was dedicated to Nostroma and its vision helper during these runs. Other
   desktop and background services stayed running; this was not an isolated
   operating system. The user's own interactive session was not active during the
   measured runs.
@@ -66,7 +66,7 @@ artifacts are the same installs. The per-quantization files (`index.txt`,
 `native_experts.txt`) and `merges.txt`, `tokenizer.json`, the MTP `dense.txt`
 differ.
 
-Launch configuration, [strata-iq3_s.json](strata-iq3_s.json):
+Launch configuration, [nostroma-iq3_s.json](nostroma-iq3_s.json):
 
 - `--max-context 524288` with `--rope-scaling yarn --rope-scale 2
   --yarn-orig-ctx 262144` (the model's trained context is 262,144).
@@ -79,7 +79,7 @@ Launch configuration, [strata-iq3_s.json](strata-iq3_s.json):
   43,969-token probe it chose **6,912**-token chunks and 2,056 slots (3.90 GiB).
 - `--spec 4 --spec-min-p 0.5`; built-in suffix drafting stayed enabled.
 - `--pool-workers 4`; **the engine default would be 15 on this machine.**
-- Environment: `STRATA_DEC_BATCH=1`, `STRATA_PF_FUSED=1`.
+- Environment: `NOSTROMA_DEC_BATCH=1`, `NOSTROMA_PF_FUSED=1`.
 - `--vision` on, 1,024 image tokens; no benchmark request contained an image.
 - Thinking was left at the server default (enabled) for every measurement below.
   No control vectors, no calibration, no experimental speed projection.
@@ -217,7 +217,7 @@ workloads across three runs each, so this is a scheduling change with no quality
 cost. On the ruler above, run-to-run output hashes differ because each run carries
 a different nonce; that is by construction, not a determinism failure.
 
-### `STRATA_PF_FUSED=1` with IQ3_S experts
+### `NOSTROMA_PF_FUSED=1` with IQ3_S experts
 
 Engine 0.1.38, four-workload ruler, ABBA, cold prefill from the dropped warm-up
 run of each workload, 5 arms (one discarded warm-up arm first).
@@ -230,7 +230,7 @@ run of each workload, 5 arms (one discarded warm-up arm first).
 | B2 | 0 | 1,958.4 | 2,050.8 | 2,053.9 | 2,035.6 | 2,024.7 |
 | A2 | 1 | 2,159.5 | 2,317.9 | 2,084.9 | 2,092.0 | 2,163.6 |
 
-`STRATA_PF_FUSED=1` = **+8.9%** cold prefill (2,195.2 vs 2,014.9), pairs
+`NOSTROMA_PF_FUSED=1` = **+8.9%** cold prefill (2,195.2 vs 2,014.9), pairs
 **+11.1%** and **+6.9%**, and **8 of 8** workload-by-pair cells positive.
 Same-configuration spread was 2.9% (PF=1) and 1.0% (PF=0). Decode was not
 distinguishable (PF=1 93.0 vs PF=0 95.8, with 6.6% spread on the PF=1 side).
@@ -239,8 +239,8 @@ re-measurement revises the size to +8.9%, which is the same order as the
 `+8% / 0%` the source comments record for the native IQ2_XS pack.
 
 The engine's banner names the path per run, which is the product-side check that
-the switch took effect: `strata: prompt experts on the fused int8 kernels
-(STRATA_PF_FUSED=1, #136)` appears in the fused arms and not in the others.
+the switch took effect: `nostroma: prompt experts on the fused int8 kernels
+(NOSTROMA_PF_FUSED=1, #136)` appears in the fused arms and not in the others.
 
 ### Context tier at a fixed prompt
 
@@ -259,7 +259,7 @@ Engine **0.1.39** (current configuration as the base):
 
 So 524,288 costs **+0.9…+6.3%** on the fresh read and **−0.5…−6.6%** on decode
 against 262,144 at the same prompt, and doubles pinned KV (3.09 → 6.19 GiB of
-95.78 GiB). `STRATA_RING_BYTES=0` (#583) was not faster than the default here.
+95.78 GiB). `NOSTROMA_RING_BYTES=0` (#583) was not faster than the default here.
 
 Engine **0.1.38**, same instrument and prompt, for the tier above:
 
@@ -334,7 +334,7 @@ The work counters are the same at all three tiers and the pure-compute stages mo
 
 **One negative result, reported as such.** The Windows counters suggested in #781 —
 `\GPU Process Memory(*)\Shared Usage` and `Dedicated Usage`, sampled once a second for
-`strata.exe` through all of the above — **do not separate the slow arm from the fast ones
+`nostroma.exe` through all of the above — **do not separate the slow arm from the fast ones
 on this machine**. `Shared` reads ~55.5 GB at 262/524K and ~62.4 GB at 1M in *every* arm;
 the +6.9 GB is our pinned K/V going from 6.19 to 12.38 GiB. The arm that ran at 13.7 tok/s
 read 62,931 MB, against 62,409 MB for the arm at 102–122 tok/s. On this box the counter

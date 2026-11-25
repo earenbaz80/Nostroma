@@ -4,7 +4,7 @@ Research tooling, not shipped with the app. It measures how many tokens per roun
 Qwen3.8-Flash-Next would accept on Nostroma's quantized target. The measurement is offline, from hidden states the
 engine dumps. It is for developers who want to repeat or extend the experiment.
 
-The scripts keep the paths of the original run (`C:\dflash2-work` on the development PC, `C:\strata-test\dflash2` on
+The scripts keep the paths of the original run (`C:\dflash2-work` on the development PC, `C:\nostroma-test\dflash2` on
 the test box). Edit the paths before you reuse them. The method and results are in the project's internal notes
 and are not part of this tree.
 
@@ -14,9 +14,9 @@ Both are off unless set.
 
 | Variable | Effect |
 | --- | --- |
-| `STRATA_TAP_FILE=<file>` | Writes `pos, token, taps` records. `Verifier::record_window` copies each verified row's completed layer output (the mean of the 4 hyper-connection streams, the quantity the drafter was trained on) and `Verifier::run` appends it. |
-| `STRATA_TAP_LAYERS` | Layers to tap, default `5,15,25,35,45`. Used with `STRATA_TAP_FILE`. |
-| `STRATA_SPEC_T_CYCLE=1,2,...,8` | CLI bench only. The verify window size cycles; the report line `window cost (ms/round)` gives the cost of each width. |
+| `NOSTROMA_TAP_FILE=<file>` | Writes `pos, token, taps` records. `Verifier::record_window` copies each verified row's completed layer output (the mean of the 4 hyper-connection streams, the quantity the drafter was trained on) and `Verifier::run` appends it. |
+| `NOSTROMA_TAP_LAYERS` | Layers to tap, default `5,15,25,35,45`. Used with `NOSTROMA_TAP_FILE`. |
+| `NOSTROMA_SPEC_T_CYCLE=1,2,...,8` | CLI bench only. The verify window size cycles; the report line `window cost (ms/round)` gives the cost of each width. |
 
 ## Scripts
 

@@ -2,7 +2,7 @@
 far from the reference?
 
   --from K [K ...]: start the f16op emulation from OUR stream after block K (txt_KK.bin + img_KK.bin of a
-      STRATA_DIT_TRACE_DIR dump; K = -1 = our prelude outputs txtin.bin + imgin.bin), run the rest of the blocks and the
+      NOSTROMA_DIT_TRACE_DIR dump; K = -1 = our prelude outputs txtin.bin + imgin.bin), run the rest of the blocks and the
       head in f16op, and give the velocity's rel L2 to the f32 reference velocity (dit_ref --out-dir npy).  The first K
       where this jumps from the emulation's own value to ours is where our arithmetic put the difference in.
   --acc32: also run the whole call with f16 inputs and FLOAT32 accumulation in every GEMM (numpy float32 matmul,

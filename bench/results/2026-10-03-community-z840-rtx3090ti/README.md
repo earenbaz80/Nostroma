@@ -17,7 +17,7 @@ first dual-socket Xeon / Z840 data point (asked for in #508).
   files, the other half swap), attached to NUMA node 1. System disk Samsung 870 QVO 2 TB SATA.
 - OS: Ubuntu 22.04.5 LTS, kernel 6.8.0-138-generic (HWE). NVIDIA driver 610.57.04 (open kernel
   modules). CUDA toolkit 12.3 used for the source build (nvcc), gcc 12.3.
-- Strata: v0.1.38, `main` checkout on 2026-10-03, source build (`CMAKE_CUDA_ARCHITECTURES=86`).
+- Nostroma: v0.1.38, `main` checkout on 2026-10-03, source build (`CMAKE_CUDA_ARCHITECTURES=86`).
 - Background: GNOME desktop on the same GPU (Xorg + gnome-shell, ~15 MiB VRAM idle), dockerd,
   JupyterLab idle. Expert arena in 2 MB hugetlb pages (`vm.nr_hugepages=28000`, all on node 0),
   `LimitMEMLOCK=infinity`, `kernel.numa_balancing=0`.
@@ -35,10 +35,10 @@ first dual-socket Xeon / Z840 data point (asked for in #508).
   (`temperature 0`); calibration run once (see below); experimental speed projection off.
 
 ```text
-numactl --cpunodebind=0 --membind=0 engine/strata --serve \
-  --pack /data/Strata-data/packs/iq3_s --native .../IQ3_S-00001-of-00002.gguf --ple-gguf .../IQ3_S-00002-of-00002.gguf \
+numactl --cpunodebind=0 --membind=0 engine/nostroma --serve \
+  --pack /data/Nostroma-data/packs/iq3_s --native .../IQ3_S-00001-of-00002.gguf --ple-gguf .../IQ3_S-00002-of-00002.gguf \
   --expert-profile data/expert-profile.bin --expert-cache auto --prefill auto --spec 4 --spec-min-p 0.70 \
-  --mtp /data/Strata-data/mtp/rt --max-context 262144 --kv int8 --kv-resident 32768 \
+  --mtp /data/Nostroma-data/mtp/rt --max-context 262144 --kv int8 --kv-resident 32768 \
   --vision --vram-reserve-mib 700 --pcie-frac 0.20
 ```
 
@@ -58,7 +58,7 @@ generated in ... ms (N tok/s)`), not total request time.
   (24 of 31 tokens) and the adaptive expert tier has swapped experts in.
 - **Long prompt:** a ~5,000-token prompt (one mixed Chinese/English paragraph repeated 70 times) with
   a different leading sentence per run so the prompt cache does not match; 32 generated tokens.
-- **NUMA A/B** (`strata-numa-ab.sh`, attached): for each placement the engine was started fresh
+- **NUMA A/B** (`nostroma-numa-ab.sh`, attached): for each placement the engine was started fresh
   (systemd service stopped), hugepages redistributed to match (28000/0 for node binding, 14000/14000
   otherwise), 2 warm-up decode requests, then 5 measured decode runs and 5 measured long-prompt runs;
   medians and ranges reported. Model load time is from service start to `/health` reporting loaded.

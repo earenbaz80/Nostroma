@@ -4,7 +4,7 @@
       "turn": 1,
       "assistant_seconds": 62.468,
       "polling_wall_seconds": 65.17466425895691,
-      "answer": "{\"start\":\"CLENEX-4181\",\"middle\":\"STRATA-8081\",\"end\":\"LONDON-9060\"}",
+      "answer": "{\"start\":\"CLENEX-4181\",\"middle\":\"NOSTROMA-8081\",\"end\":\"LONDON-9060\"}",
       "correct": true,
       "tokens": {
         "total": 22205,
@@ -40,7 +40,7 @@
       "turn": 3,
       "assistant_seconds": 1.181,
       "polling_wall_seconds": 5.044191360473633,
-      "answer": "STRATA-8081",
+      "answer": "NOSTROMA-8081",
       "correct": true,
       "tokens": {
         "total": 22322,

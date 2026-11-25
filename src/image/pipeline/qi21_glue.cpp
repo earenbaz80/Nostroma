@@ -1,4 +1,4 @@
-// src/image/pipeline/qi21_glue.cpp - see include/strata/image/qi21_image.hpp.  Contraction off for the file: every
+// src/image/pipeline/qi21_glue.cpp - see include/nostroma/image/qi21_image.hpp.  Contraction off for the file: every
 // product and sum rounds on its own, as sd.cpp's tensor operations do (one pass per operation).
 #if defined(__clang__)
 #pragma clang fp contract(off)
@@ -6,13 +6,13 @@
 #pragma GCC optimize("fp-contract=off")
 #endif
 
-#include "strata/image/qi21_image.hpp"
+#include "nostroma/image/qi21_image.hpp"
 
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
 
-namespace strata::image {
+namespace nostroma::image {
 
 std::vector<float> qi21_initial_latent(const std::vector<float>& noise, float sigma0) {
     const size_t n = noise.size();
@@ -72,8 +72,8 @@ std::string qi21_parameters_text(const std::string& prompt, int steps, uint64_t 
                                  const std::string& model_name) {
     char line[256];
     std::snprintf(line, sizeof line, "\nSteps: %d, CFG scale: 1, Seed: %llu, Size: %dx%d, Model: %s, Sampler: euler, "
-                  "Generator: strata-image", steps, (unsigned long long) seed, width, height, model_name.c_str());
+                  "Generator: nostroma-image", steps, (unsigned long long) seed, width, height, model_name.c_str());
     return prompt + line;
 }
 
-}  // namespace strata::image
+}  // namespace nostroma::image

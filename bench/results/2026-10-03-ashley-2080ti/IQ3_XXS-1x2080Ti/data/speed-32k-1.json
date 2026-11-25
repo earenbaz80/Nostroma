@@ -16,10 +16,10 @@
  "engine_prompt_tps": 523.4,
  "engine_decode_tps": 34.7,
  "log_lines": [
-  "strata serve: prompt 33140 tokens = 0 reused + 33140 read in 63319 ms (523.4 tok/s), 256 generated in 7381 ms (34.7 tok/s), drafts accepted 160 of 216, 3 checkpoints",
-  "strata serve: decode expert cache hit rate: 48.0% (60779 hits / 126566 lookups)"
+  "nostroma serve: prompt 33140 tokens = 0 reused + 33140 read in 63319 ms (523.4 tok/s), 256 generated in 7381 ms (34.7 tok/s), drafts accepted 160 of 216, 3 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 48.0% (60779 hits / 126566 lookups)"
  ],
- "answer_head": "I cannot provide a unified diff for `build-vision/CMakeCache.txt` because **this file is an auto-generated artifact, not source code.**\n\n### What this file does\n\n`build-vision/CMakeCache.txt` is the configuration cache for a specific CMake build directory (`/home/chris/src/Strata/build-vision`). Its",
+ "answer_head": "I cannot provide a unified diff for `build-vision/CMakeCache.txt` because **this file is an auto-generated artifact, not source code.**\n\n### What this file does\n\n`build-vision/CMakeCache.txt` is the configuration cache for a specific CMake build directory (`/home/chris/src/Nostroma/build-vision`). Its",
  "metrics_after": {
   "engine": {
    "model": "qwen3.8-flash-next-iq3_xxs",

@@ -32,11 +32,11 @@ def _runner():
     return r
 
 
-def _write_state(name: str = "iq3_s-32k", key: str = "sk-strata-OLD"):
+def _write_state(name: str = "iq3_s-32k", key: str = "sk-nostroma-OLD"):
     from nostroma_cli.launch.runner import launch_dir
     cfg = launch_dir() / f"{name}.json"
     cfg.write_text(json.dumps({"exe": "x", "args": [], "api_key": key}), encoding="utf-8")
-    pdir = Path(os.environ["STRATA_PROFILE_DIR"])
+    pdir = Path(os.environ["NOSTROMA_PROFILE_DIR"])
     pdir.mkdir(parents=True, exist_ok=True)
     prof = pdir / f"launch-{name}.json"
     prof.write_text(json.dumps({"schema_version": 1, "id": f"launch-{name}", "source_config": str(cfg), "overrides": {}}), encoding="utf-8")
@@ -79,7 +79,7 @@ class CheckSavedState(unittest.TestCase):
             finally:
                 os.chmod(prof, 0o600)
             self.assertIn("(Permission denied)", str(ctx.exception))
-            self.assertIn("sk-strata-OLD", cfg.read_text(encoding="utf-8"))
+            self.assertIn("sk-nostroma-OLD", cfg.read_text(encoding="utf-8"))
 
     @unittest.skipUnless(POSIX_NOT_ROOT, "needs permissions that deny the owner")
     def test_an_unreadable_run_config_stops_the_launch_instead_of_minting_a_key(self):
@@ -95,7 +95,7 @@ class CheckSavedState(unittest.TestCase):
             self.assertEqual(str(ctx.exception), f"The saved settings of this launch ({cfg}) cannot be read (Permission denied). Fix its permissions or move it away, "
                                                  "then run the launch again: writing a new one would drop its API key and your changes.")
             self.assertEqual(ctx.exception.code, 6)
-            self.assertIn("sk-strata-OLD", cfg.read_text(encoding="utf-8"))
+            self.assertIn("sk-nostroma-OLD", cfg.read_text(encoding="utf-8"))
 
     def test_an_unreadable_run_config_is_refused_on_every_platform(self):
         """The same, with the read failing the way a locked or permission-denied file fails (also testable on Windows)."""
@@ -126,7 +126,7 @@ class NewKeySentenceIsTrue(unittest.TestCase):
         events, order = [], []
         r = Runner(S.LaunchSettings(model="iq3_s", context=32768), emit=lambda e: events.append(e))
         r.key_written_notice = NEW_KEY
-        base = Path(os.environ["STRATA_INSTALL_DIR"]) / "base.json"
+        base = Path(os.environ["NOSTROMA_INSTALL_DIR"]) / "base.json"
 
         def build(self_, base_path):
             order.append("written")

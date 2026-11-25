@@ -156,12 +156,12 @@ def unpack_source(third_party: Path, sd_zip: Path, ggml_zip: Path) -> Path:
     shutil.rmtree(dst, ignore_errors=True)
     shutil.move(str(top), str(dst))
     shutil.rmtree(tmp, ignore_errors=True)
-    (dst / ".strata-pin").write_text(f"{SD_CPP_COMMIT}\n{SD_GGML_COMMIT}\n", encoding="utf-8")
+    (dst / ".nostroma-pin").write_text(f"{SD_CPP_COMMIT}\n{SD_GGML_COMMIT}\n", encoding="utf-8")
     return dst
 
 
 def source_ok(src: Path) -> bool:
-    pin = Path(src) / ".strata-pin"
+    pin = Path(src) / ".nostroma-pin"
     return pin.is_file() and pin.read_text(encoding="utf-8").split() == [SD_CPP_COMMIT, SD_GGML_COMMIT] \
         and (Path(src) / "ggml" / "CMakeLists.txt").is_file()
 
@@ -181,7 +181,7 @@ def native_hash() -> str:
 
 
 NOISE_DIR = Path(__file__).resolve().parent / "sdcpp_noise"     # Nostroma's noise generator for sd-cli (every backend)
-NOISE_FILES = ("apply.py", "strata_noise.hpp", "strata_noise_tables.inc", "strata_philox_rng.hpp", "strata_sin_exc.bin")
+NOISE_FILES = ("apply.py", "nostroma_noise.hpp", "nostroma_noise_tables.inc", "nostroma_philox_rng.hpp", "nostroma_sin_exc.bin")
 
 
 def noise_hash() -> str:
@@ -202,10 +202,10 @@ VAE_BACKENDS = NATIVE_BACKENDS
 
 def vae_hash(repo: Path | None = None) -> str:
     """A fingerprint of the VAE decoder's sources: apply.py and every file it copies into sd-cli's tree (src/image/vae,
-    the headers, include/strata/hip_compat); a change compiles sd-cli again, for a build that has the decoder."""
+    the headers, include/nostroma/hip_compat); a change compiles sd-cli again, for a build that has the decoder."""
     import hashlib
     import importlib.util
-    spec = importlib.util.spec_from_file_location("strata_sdcpp_vae_apply_hash", VAE_DIR / "apply.py")
+    spec = importlib.util.spec_from_file_location("nostroma_sdcpp_vae_apply_hash", VAE_DIR / "apply.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     repo = Path(repo) if repo is not None else mod.REPO
@@ -219,8 +219,8 @@ def vae_hash(repo: Path | None = None) -> str:
 
 def build_stamp(backend: str, arch, noise: bool = False, vae: bool = False) -> dict:
     """What a built sd-cli is stamped with (BUILD.json): the pins, the backend and, where it applies, a fingerprint of
-    the native runner's sources and, only when the noise generator is asked for (images "noise": "strata"), of the
-    noise generator's, and only when Nostroma's VAE decoder is asked for (images "vae_decoder": "strata", CUDA / HIP), of
+    the native runner's sources and, only when the noise generator is asked for (images "noise": "nostroma"), of the
+    noise generator's, and only when Nostroma's VAE decoder is asked for (images "vae_decoder": "nostroma", CUDA / HIP), of
     the decoder's: nobody compiles again unasked when they are off."""
     stamp = {"sd_cpp": SD_CPP_COMMIT, "ggml": SD_GGML_COMMIT, "backend": backend, "arch": str(arch or "")}
     if backend in NATIVE_BACKENDS:
@@ -243,9 +243,9 @@ def image_config(backend: str, quant: str, exe: Path, models_dir: Path, *, uma: 
     if backend in NATIVE_BACKENDS:
         cfg["native"] = bool(native)       # Nostroma's DiT runner (--model-args qwen_image_2_1_native=1)
     if noise:
-        cfg["noise"] = "strata"            # Nostroma's noise generator (--model-args strata_noise=1); absent = "sdcpp"
+        cfg["noise"] = "nostroma"            # Nostroma's noise generator (--model-args nostroma_noise=1); absent = "sdcpp"
     if vae and backend in VAE_BACKENDS:
-        cfg["vae_decoder"] = "strata"      # Nostroma's VAE decoder (--model-args strata_vae=1); absent = "sdcpp"
+        cfg["vae_decoder"] = "nostroma"      # Nostroma's VAE decoder (--model-args nostroma_vae=1); absent = "sdcpp"
     if gpu is not None:
         cfg["gpu"] = gpu
     if lib_dirs:

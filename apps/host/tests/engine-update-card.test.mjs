@@ -17,7 +17,7 @@ test('one card, one button, only when an engine is offered, and it runs the exis
   assert.equal((card.match(/<Btn /g) ?? []).length, 1, 'one button');
   assert.doesNotMatch(card, /fetch\(|api\.get|api\.post|XMLHttpRequest/, 'showing the card reads no network: only the kept state');
   assert.match(card, /disabled=\{busy \|\| pending \|\| running\}/, 'not while a job runs or a model is loaded');
-  assert.doesNotMatch(card, /process\.env|STRATA_|environment variable/i, 'no environment variables in the words');
+  assert.doesNotMatch(card, /process\.env|NOSTROMA_|environment variable/i, 'no environment variables in the words');
 });
 
 test('the card is on the Models screen once and nowhere else', () => {

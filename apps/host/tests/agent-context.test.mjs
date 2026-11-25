@@ -12,13 +12,13 @@ import { resolveHarness } from '../server/agent/harness-runtime.mjs';
 import { buildProfile } from '../server/agent/profile.mjs';
 import { clipMessage, densityOf, estimateMessage, isContextOverflow, pressureNow, promptTokensOf, splitMessages, summaryBudget, usageOfEvent, SUMMARY_LANGUAGE_RULE, withSummaryLanguage } from '../server/agent/context-budget.mjs';
 
-const HARNESS = process.env.STRATA_HARNESS_DIR;
-const skip = !HARNESS || !resolveHarness({ env: process.env }).ok ? 'STRATA_HARNESS_DIR is not set to a built Harness' : false;
+const HARNESS = process.env.NOSTROMA_HARNESS_DIR;
+const skip = !HARNESS || !resolveHarness({ env: process.env }).ok ? 'NOSTROMA_HARNESS_DIR is not set to a built Harness' : false;
 
 test('the profile loads the context plugin, so compaction and /compact read the measured prompt', () => {
   const profile = buildProfile({ local: [{ id: 'a', modelId: 'm', baseUrl: 'http://x', context: 65536 }], connections: [] });
-  assert.match(profile.patch, /"id": "strata-context"/);
-  assert.match(profile.patch, /strata-context\.mjs/);
+  assert.match(profile.patch, /"id": "nostroma-context"/);
+  assert.match(profile.patch, /nostroma-context\.mjs/);
 });
 
 test('density: the engine said 59,048 tokens for a prompt the Harness priced at 31,794', () => {
@@ -90,7 +90,7 @@ test('a summary request is split into pieces that fit, each message whole when i
 /** The scripted model server counting like the engine (3 characters a token here: logs and code) in a 32K window. */
 async function rig(t, { window = 32768, charsPerToken = 3, noCount = false } = {}) {
   const worker = await startScriptedWorker({ window, charsPerToken, noCount });
-  const dir = mkdtempSync(join(tmpdir(), 'strata-ctx-'));
+  const dir = mkdtempSync(join(tmpdir(), 'nostroma-ctx-'));
   const ws = join(dir, 'ws'); mkdirSync(ws, { recursive: true });
   const bridge = createAgentBridge({ dataDir: dir, localInstances: () => [{ id: 'i', label: 'S', baseUrl: worker.url, modelId: 'scripted-model', context: window, slots: 2 }], connections: () => [], env: process.env, startTimeoutMs: 90_000 });
   t.after(async () => { await bridge.close(); await worker.close(); try { rmSync(dir, { recursive: true, force: true, maxRetries: 3 }); } catch { /* best effort */ } });
@@ -105,7 +105,7 @@ test('the plugin loads in the real Harness (a plugin that fails to import would 
   const { send, harnessLog } = await rig(t);
   const frames = await send('SCRIPT:echo hello');
   assert.equal(frames.at(-1).type, 'done');
-  assert.doesNotMatch(harnessLog(), /did not activate|failed to import|strata-context/, harnessLog());
+  assert.doesNotMatch(harnessLog(), /did not activate|failed to import|nostroma-context/, harnessLog());
 });
 
 test('dense text compacts in time: no request is refused, and every message is answered', { skip }, async (t) => {

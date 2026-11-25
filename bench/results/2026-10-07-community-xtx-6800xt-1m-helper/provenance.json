@@ -45,7 +45,7 @@
     1281,
     786
   ],
-  "source_archive": "https://github.com/saikiran-rs/Strata",
+  "source_archive": "https://github.com/saikiran-rs/Nostroma",
   "measurement_dates": "2026-10-06/07; detailed timestamps in measurements.json",
   "historical_sequence": "For final tuned arm: short warmup/1536-token screens, cold depth fixtures and image check, coding1/prose1/coding2/prose2; later restore after other CPU/confidence trials, functional tool/thinking checks, coding3,400-question quality,full-window request. No timed compilation during inference."
 }

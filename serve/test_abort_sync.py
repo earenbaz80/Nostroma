@@ -64,7 +64,7 @@ class AbortSync(unittest.TestCase):
         real_popen = server.subprocess.Popen
         with mock.patch.object(server.subprocess, 'Popen', lambda cmd, **kw:
                                real_popen([sys.executable, str(script), *cmd[1:]], **kw)):
-            eng = server.StrataEngine('strata', ['--mode', mode])
+            eng = server.NostromaEngine('nostroma', ['--mode', mode])
         self.addCleanup(eng.close)
         return eng
 

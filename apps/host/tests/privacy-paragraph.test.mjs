@@ -16,7 +16,7 @@ test('Privacy is one compact paragraph with all six sentences, in order', () => 
 test('the paragraph is translated as a whole in all 9 languages', () => {
   const joined = SENTENCES.join(' ');
   const en = JSON.parse(readFileSync(resolve(root, 'src/locales/en.json'), 'utf8'));
-  const brand = (t) => String(t).replace(/\bStrata\b/g, 'Nostroma');   // the catalogues keep upstream's wording; i18n.ts swaps it on the way out
+  const brand = (t) => String(t).replace(/\bNostroma\b/g, 'Nostroma');   // the catalogues keep upstream's wording; i18n.ts swaps it on the way out
   const id = Object.keys(en).find(k => brand(en[k]) === brand(joined));
   assert.ok(id, 'the English catalog has the whole paragraph');
   for (const lang of ['zh', 'ja', 'de', 'es', 'ru', 'pt', 'ko', 'fr']) {

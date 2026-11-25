@@ -6,7 +6,7 @@ Nostroma as one of its models. It needs a [source checkout](SOURCE_INSTALL.md), 
 
 ## Quick start
 
-1. Set up Nostroma without starting it: `./setup.sh --no-start`. This writes `strata-<model>.json` in the checkout.
+1. Set up Nostroma without starting it: `./setup.sh --no-start`. This writes `nostroma-<model>.json` in the checkout.
 2. Add an entry to llama-swap's config. The start script that setup writes (`run-<model>.sh`) fixes the port at 8080,
    so call `serve/server.py` with llama-swap's port instead:
 
@@ -16,14 +16,14 @@ healthCheckTimeout: 300            # model loading takes minutes; give it room
 models:
   nostroma:
     cmd: >-
-      sh -c 'cd /path/to/Strata && exec .venv/bin/python serve/server.py
-      --engine strata --config strata-<model>.json --port ${PORT}'
-    env: ["STRATA_ALLOWED_HOSTS=my-server"]     # the host name your clients use, see below
+      sh -c 'cd /path/to/Nostroma && exec .venv/bin/python serve/server.py
+      --engine nostroma --config nostroma-<model>.json --port ${PORT}'
+    env: ["NOSTROMA_ALLOWED_HOSTS=my-server"]     # the host name your clients use, see below
     checkEndpoint: /health
     ttl: 1800
 ```
 
-3. If clients reach llama-swap by a host name, keep the `STRATA_ALLOWED_HOSTS` line and set it to that name
+3. If clients reach llama-swap by a host name, keep the `NOSTROMA_ALLOWED_HOSTS` line and set it to that name
    ([Host not allowed](#host-is-not-allowed)).
 
 ## The entry
@@ -48,8 +48,8 @@ local test can work while the same setup fails from another machine. Any one of 
 
 | Fix | Notes |
 | --- | --- |
-| `STRATA_ALLOWED_HOSTS=my-server` in the entry's `env` | Comma-separated names; ports are ignored. |
-| `"allowed_hosts": ["my-server"]` in `strata-<model>.json` | Same effect, stored in the config. |
+| `NOSTROMA_ALLOWED_HOSTS=my-server` in the entry's `env` | Comma-separated names; ports are ignored. |
+| `"allowed_hosts": ["my-server"]` in `nostroma-<model>.json` | Same effect, stored in the config. |
 | An `"api_key"` in the config | Turns the host check off. Every client must then send the key. |
 
 ## Nostroma's own pages through llama-swap
@@ -58,8 +58,8 @@ llama-swap forwards `/upstream/<model>/...` unchanged. Nostroma's status and hea
 also loads the model without sending a chat request:
 
 ```bash
-curl http://my-server:8040/upstream/strata/health
-curl http://my-server:8040/upstream/strata/v1/status
+curl http://my-server:8040/upstream/nostroma/health
+curl http://my-server:8040/upstream/nostroma/v1/status
 ```
 
 ## Claude Code and other Anthropic-API clients

@@ -1,7 +1,7 @@
 # Community benchmark: Tesla V100-PCIE-32GB + Tesla P100-PCIE-16GB, P100 as expert-helper card (mixed Volta/Pascal)
 
 Measured on 2026-10-07 by aleesposito85 (headless Proxmox container, LXC, LAN only).
-This is the first mixed Volta/Pascal (sm_70 + sm_60) report for Strata: the P100
+This is the first mixed Volta/Pascal (sm_70 + sm_60) report for Nostroma: the P100
 serves as the **expert-helper cache for the V100** (`--expert-cache-device1 auto
 --remote-expert-opt`), not a layer split. Engine 0.1.40.2, Flash-Next IQ3_XXS at
 a 262,144-token context, Qwen3.8-Flash-Next IQ3_XXS.
@@ -32,9 +32,9 @@ quality or performance on other workloads.
   the expert arena are read through the file cache; `--ple-io ram`).
 - **OS:** Debian 12 container (Proxmox host kernel 6.14.11-9-pve), NVIDIA
   driver 580.95.05, CUDA 12.8 (nvcc 12.8.61). Engine built from source on this
-  machine (`-DCMAKE_CUDA_ARCHITECTURES="70;60" -DSTRATA_EXPERIMENTAL_SM60=ON`;
+  machine (`-DCMAKE_CUDA_ARCHITECTURES="70;60" -DNOSTROMA_EXPERIMENTAL_SM60=ON`;
   CUDA 13 dropped Volta, so a CUDA 12.x toolkit is required).
-- **Strata:** commit `e8ca9af` (v0.1.40.2), engine 0.1.40.2, server 0.1.40.2.
+- **Nostroma:** commit `e8ca9af` (v0.1.40.2), engine 0.1.40.2, server 0.1.40.2.
   Engine binary SHA-256
   `40626ec2045c3a8f30e20e344969a9fd642eb8c55776dd411969f49b67c78baa`.
 - **Background workloads:** none on the GPUs; the LAN server was otherwise idle
@@ -56,7 +56,7 @@ Model: `ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF`, IQ3_XXS:
 
 See [model-sha256.txt](model-sha256.txt). The model and pack were prepared by
 the unmodified installer (v0.1.39-era `setup.py`; pack format v1). MTP draft
-files under `/mnt/llama/strata/mtp/rt`: experts.bin (707,788,800 B, SHA-256
+files under `/mnt/llama/nostroma/mtp/rt`: experts.bin (707,788,800 B, SHA-256
 `09398406be61f1f54c93861f449e48b8df0bfccbc9ec9b2b7636775a6ea9244f`), dense.bin
 (116,099,072 B, `c724dc0b0822ada5d2977bf5bde821605feabaa64ea2e0045b67ca656329070a`),
 draft_vocab.bin (425,196 B, `b1e1d3a7a9e4bf862dcd5923ce661fb59bbd07907e594df5cf86a62ac235cb91`).
@@ -72,7 +72,7 @@ The bundled expert profile was used without calibration (SHA-256
 - Prefill `auto:32768` (chosen deliberately; see below), 384-slot ring; the
   prompt path borrows 8,148 CUDA0 cache slots (13.27 GiB).
 - MTP `--spec 4 --spec-min-p 0.5` with `--remote-expert-opt`.
-- **`STRATA_PREFILL_CPU_SHARE=auto`** (new in 0.1.40.2, opt-in): for prompt
+- **`NOSTROMA_PREFILL_CPU_SHARE=auto`** (new in 0.1.40.2, opt-in): for prompt
   chunks under 1,024 tokens the CPU pool computes the least-routed experts.
 - Vision encoder enabled (GPU), warmed at 1,024 image tokens; not used by these
   benchmark prompts.
@@ -81,23 +81,23 @@ The bundled expert profile was used without calibration (SHA-256
 
 ```text
 # engine args (from the server config; env: CUDA_VISIBLE_DEVICES=0,1,
-# STRATA_PREFILL_CPU_SHARE=auto)
---serve --pack /mnt/llama/strata/packs/iq3_xxs \
-  --native /mnt/llama/strata/models/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf \
-  --ple-gguf /mnt/llama/strata/models/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00002-of-00002.gguf \
-  --expert-profile /opt/strata-src/data/expert-profile.bin \
+# NOSTROMA_PREFILL_CPU_SHARE=auto)
+--serve --pack /mnt/llama/nostroma/packs/iq3_xxs \
+  --native /mnt/llama/nostroma/models/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf \
+  --ple-gguf /mnt/llama/nostroma/models/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00002-of-00002.gguf \
+  --expert-profile /opt/nostroma-src/data/expert-profile.bin \
   --expert-cache auto --prefill auto:32768 --spec 4 --spec-min-p 0.5 \
-  --mtp /mnt/llama/strata/mtp/rt --max-context 262144 --kv int8 \
+  --mtp /mnt/llama/nostroma/mtp/rt --max-context 262144 --kv int8 \
   --kv-resident 32768 --vision --vram-reserve-mib 700 --ple-io ram \
   --expert-cache-device1 auto --remote-expert-opt
 ```
 
-The complete server config is [strata-iq3_xxs.json](strata-iq3_xxs.json).
+The complete server config is [nostroma-iq3_xxs.json](nostroma-iq3_xxs.json).
 
 ## Method
 
 - Script: [bench_report.py](bench_report.py) (also runnable unchanged against
-  any Strata server). It sends fresh salted prompts (a `[tag-nanoseconds]`
+  any Nostroma server). It sends fresh salted prompts (a `[tag-nanoseconds]`
   prefix guarantees **zero prompt reuse**; the engine logs confirm
   `0 reused + N read` on every run), output cap 256 tokens, temperature 0,
   `reasoning_effort: none`, streaming on.
@@ -147,7 +147,7 @@ timing lines: [engine-timings.txt](engine-timings.txt).
   in issue #1079). At 32768 the same prompts read in a single pass and the
   numbers above follow. This interaction is worth checking on other low-VRAM /
   helper-cache rigs.
-- `STRATA_PREFILL_CPU_SHARE=auto` (0.1.40.2) measured **−23% time-to-first-token
+- `NOSTROMA_PREFILL_CPU_SHARE=auto` (0.1.40.2) measured **−23% time-to-first-token
   on sub-1,024-token prompts** on this rig (off→auto→off interleaved: 1,905/1,880
   ms → 1,462/1,440 ms), with visible output byte-identical in a fixed-prompt
   parity check; ≥2K prompts unchanged. It is enabled for the runs above.

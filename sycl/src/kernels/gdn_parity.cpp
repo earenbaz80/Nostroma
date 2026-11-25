@@ -20,14 +20,14 @@
 // filled with a value that encodes its own coordinates.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 #include <dpct/dpct.hpp>
-#include "strata/kernels/gdn.hpp"
-#include "strata/kernels/fused_gdn.hpp"
-#include "strata/kernels/verify_kernels.hpp"
-#include "strata/core/geometry.hpp"
+#include "nostroma/kernels/gdn.hpp"
+#include "nostroma/kernels/fused_gdn.hpp"
+#include "nostroma/kernels/verify_kernels.hpp"
+#include "nostroma/core/geometry.hpp"
 
-#include "strata/prefill/kernels.hpp"
+#include "nostroma/prefill/kernels.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -101,7 +101,7 @@ double rel_l1(const std::vector<float>& a, const std::vector<float>& b) {
 // Fixtures have nonzero initial state, modulo-paired heads, signed q/k/v, and
 // both shallow and deep decay. A tolerance is diagnostic only, never a pass.
 int prefill_case(int T, int seed, int repeats) {
-    constexpr int S = strata::core::kCompiledGeometry.ssm_state_size, HK = strata::core::kCompiledGeometry.ssm_k_heads, HV = strata::core::kCompiledGeometry.ssm_v_heads, C = strata::core::kCompiledGeometry.ssm_conv_channels;   // the compiled shape
+    constexpr int S = nostroma::core::kCompiledGeometry.ssm_state_size, HK = nostroma::core::kCompiledGeometry.ssm_k_heads, HV = nostroma::core::kCompiledGeometry.ssm_v_heads, C = nostroma::core::kCompiledGeometry.ssm_conv_channels;   // the compiled shape
     sycl::queue q(dpct::get_in_order_queue().get_device(),
                   sycl::property_list{sycl::property::queue::in_order{}});
     // Variant 6 runs on Intel GPUs only (the engine throws elsewhere): skip, not fail, on any other device.
@@ -143,9 +143,9 @@ int prefill_case(int T, int seed, int repeats) {
         // Warm up the compiled kernel before measuring; every run resets state.
         q.memcpy(dst, st.data(), st.size() * sizeof(float)).wait_and_throw();
         if (variant == -1)
-            strata::prefill::gdn_recurrence(dst, dh, dg, db, dz, dgm, 1e-6f, dy, dy16, T, &q);
+            nostroma::prefill::gdn_recurrence(dst, dh, dg, db, dz, dgm, 1e-6f, dy, dy16, T, &q);
         else
-            strata::prefill::gdn_recurrence_variant(variant, dst, dh, dg, db, dz, dgm,
+            nostroma::prefill::gdn_recurrence_variant(variant, dst, dh, dg, db, dz, dgm,
                                                    1e-6f, dy, dy16, T, &q);
         q.wait_and_throw();
         double elapsed = 0;
@@ -153,9 +153,9 @@ int prefill_case(int T, int seed, int repeats) {
             q.memcpy(dst, st.data(), st.size() * sizeof(float)).wait_and_throw();
             const auto start = std::chrono::steady_clock::now();
             if (variant == -1)
-                strata::prefill::gdn_recurrence(dst, dh, dg, db, dz, dgm, 1e-6f, dy, dy16, T, &q);
+                nostroma::prefill::gdn_recurrence(dst, dh, dg, db, dz, dgm, 1e-6f, dy, dy16, T, &q);
             else
-                strata::prefill::gdn_recurrence_variant(variant, dst, dh, dg, db, dz, dgm,
+                nostroma::prefill::gdn_recurrence_variant(variant, dst, dh, dg, db, dz, dgm,
                                                        1e-6f, dy, dy16, T, &q);
             q.wait_and_throw();
             elapsed += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
@@ -183,7 +183,7 @@ int prefill_case(int T, int seed, int repeats) {
     for (size_t i = 0; i < ref16.size(); ++i) half_bad += ref16[i] != got16[i];
     std::printf("prefill T=%d seed=%d heads=%d: state=%zu y=%zu fp16=%zu mismatches; max_abs=%.9g max_rel=%.9g; baseline=%.3f ms xe=%.3f ms\n",
                 T, seed, HV, state_bad, y_bad, half_bad, max_abs, max_rel, base_ms, xe_ms);
-    // T=7 additionally checks the production entry point (variant 6 on Alchemist or under STRATA_GDN_XE=1,
+    // T=7 additionally checks the production entry point (variant 6 on Alchemist or under NOSTROMA_GDN_XE=1,
     // else variant 0) and T=0's no-op contract.
     int extra_bad = 0;
     if (T == 7) {
@@ -193,7 +193,7 @@ int prefill_case(int T, int seed, int repeats) {
         extra_bad += std::memcmp(refy.data(), goty.data(), refy.size() * sizeof(float)) != 0;
         extra_bad += ref16 != got16;
         q.memcpy(dst, st.data(), st.size() * sizeof(float)).wait_and_throw();
-        strata::prefill::gdn_recurrence_variant(6, dst, dh, dg, db, dz, dgm,
+        nostroma::prefill::gdn_recurrence_variant(6, dst, dh, dg, db, dz, dgm,
                                                1e-6f, dy, dy16, 0, &q);
         q.memcpy(gotst.data(), dst, st.size() * sizeof(float)).wait_and_throw();
         extra_bad += gotst != st;
@@ -242,7 +242,7 @@ int main(int argc, char** argv) {
         return prefill_bad ? 1 : 0;
     }
 
-    const int S = strata::core::kCompiledGeometry.ssm_state_size, h_k = strata::core::kCompiledGeometry.ssm_k_heads, h_v = strata::core::kCompiledGeometry.ssm_v_heads;      // the compiled shape (Flash-Next: the artifact's 128 / 16 / 48)
+    const int S = nostroma::core::kCompiledGeometry.ssm_state_size, h_k = nostroma::core::kCompiledGeometry.ssm_k_heads, h_v = nostroma::core::kCompiledGeometry.ssm_v_heads;      // the compiled shape (Flash-Next: the artifact's 128 / 16 / 48)
     std::mt19937 rng(2024);
     std::normal_distribution<float> gauss(0.0f, 1.0f);
     int bad = prefill_bad;
@@ -381,8 +381,8 @@ int main(int argc, char** argv) {
                   d_b, beta.data(), beta.size() * 4).wait()),
               "cb");
 
-        strata::kernels::GdnShapes sh{S, h_k, h_v};
-        strata::kernels::gdn_step(d_st, d_q, d_k, d_v, d_g, d_b, d_o, sh, nullptr);
+        nostroma::kernels::GdnShapes sh{S, h_k, h_v};
+        nostroma::kernels::gdn_step(d_st, d_q, d_k, d_v, d_g, d_b, d_o, sh, nullptr);
 
         std::vector<float> got_o((size_t) h_v * S), got_st(st_dev.size());
         check(DPCT_CHECK_ERROR((dpct::get_current_device().queues_wait_and_throw(), dpct::get_in_order_queue())
@@ -445,7 +445,7 @@ int main(int argc, char** argv) {
             check(DPCT_CHECK_ERROR((dpct::get_current_device().queues_wait_and_throw(), dpct::get_in_order_queue()).memcpy(
                       d_b, zb.data(), zb.size() * 4).wait()),
                   "z2");
-            strata::kernels::gdn_step(d_st, d_q, d_k, d_v, d_g, d_b, d_o, sh, nullptr);
+            nostroma::kernels::gdn_step(d_st, d_q, d_k, d_v, d_g, d_b, d_o, sh, nullptr);
             std::vector<float> zz(zero.size());
             check(DPCT_CHECK_ERROR((dpct::get_current_device().queues_wait_and_throw(), dpct::get_in_order_queue())
                                        .memcpy(zz.data(), d_st, zz.size() * 4)
@@ -566,7 +566,7 @@ int main(int argc, char** argv) {
         check(DPCT_CHECK_ERROR((dpct::get_current_device().queues_wait_and_throw(), dpct::get_in_order_queue()).memcpy(
                   d_w, kW.data(), kW.size() * 4).wait()),
               "ccw");
-        strata::kernels::gdn_conv_step(d_cs, d_x, d_w, d_o, C, dc, nullptr);
+        nostroma::kernels::gdn_conv_step(d_cs, d_x, d_w, d_o, C, dc, nullptr);
         std::vector<float> got((size_t) C), got_cs(cs.size());
         check(DPCT_CHECK_ERROR((dpct::get_current_device().queues_wait_and_throw(), dpct::get_in_order_queue())
                                    .memcpy(got.data(), d_o, got.size() * 4)
@@ -630,7 +630,7 @@ int main(int argc, char** argv) {
         check(DPCT_CHECK_ERROR((dpct::get_current_device().queues_wait_and_throw(), dpct::get_in_order_queue()).memcpy(d_x, x.data(),
                                                                  x.size() * 4).wait()),
               "lcx");
-        strata::kernels::gdn_l2_norm(d_x, rows, cols, eps, nullptr);
+        nostroma::kernels::gdn_l2_norm(d_x, rows, cols, eps, nullptr);
         std::vector<float> got(x.size());
         check(DPCT_CHECK_ERROR((dpct::get_current_device().queues_wait_and_throw(), dpct::get_in_order_queue())
                                    .memcpy(got.data(), d_x, got.size() * 4)
@@ -699,7 +699,7 @@ int main(int argc, char** argv) {
         check(DPCT_CHECK_ERROR((dpct::get_current_device().queues_wait_and_throw(), dpct::get_in_order_queue()).memcpy(
                   d_sn, sn.data(), sn.size() * 4).wait()),
               "ncs");
-        strata::kernels::gdn_out_norm(d_o, d_z, d_sn, d_y, hv2, S2, eps, nullptr);
+        nostroma::kernels::gdn_out_norm(d_o, d_z, d_sn, d_y, hv2, S2, eps, nullptr);
         std::vector<float> got(y_ref.size());
         check(DPCT_CHECK_ERROR((dpct::get_current_device().queues_wait_and_throw(), dpct::get_in_order_queue())
                                    .memcpy(got.data(), d_y, got.size() * 4)
@@ -736,7 +736,7 @@ int main(int argc, char** argv) {
     // token (verify_kernels.hpp). Every T from 1 to kVerifyMaxT is its own exact-T instantiation, so each is run,
     // and every output and the state are compared with memcmp (not a tolerance).
     {
-        const int n_embd = strata::core::kCompiledGeometry.n_embd, qk = S * h_k, C = 2 * qk + S * h_v, vd = S * h_v;
+        const int n_embd = nostroma::core::kCompiledGeometry.n_embd, qk = S * h_k, C = 2 * qk + S * h_v, vd = S * h_v;
         const float eps = 1e-6f;
         auto bf16_of = [](float f) {
             uint32_t u;
@@ -806,16 +806,16 @@ int main(int argc, char** argv) {
         auto d_sa = (float*) up(ssm_a.data(), ssm_a.size() * 4);
         auto d_gm = (float*) up(gamma.data(), gamma.size() * 4);
         int ab_bad = 0, sn_bad = 0, ab_n = 0, sn_n = 0;
-        for (int T = 1; T <= strata::kernels::kVerifyMaxT; ++T) {
+        for (int T = 1; T <= nostroma::kernels::kVerifyMaxT; ++T) {
             // --- alpha/beta
             std::vector<float> x((size_t) T * n_embd);
             for (auto& v : x) v = gauss(rng);
             auto d_x = (float*) up(x.data(), x.size() * 4);
             auto d_g = (float*) dev((size_t) T * h_v * 4), d_b = (float*) dev((size_t) T * h_v * 4);
             auto d_gr = (float*) dev((size_t) T * h_v * 4), d_br = (float*) dev((size_t) T * h_v * 4);
-            strata::kernels::gdn_ab_multi(d_x, d_wa, d_wb, d_dt, d_sa, d_g, d_b, n_embd, h_v, T, nullptr);
+            nostroma::kernels::gdn_ab_multi(d_x, d_wa, d_wb, d_dt, d_sa, d_g, d_b, n_embd, h_v, T, nullptr);
             for (int t = 0; t < T; ++t)
-                strata::kernels::fused_gdn_ab(d_x + (size_t) t * n_embd, d_wa, d_wb, d_dt, d_sa, d_gr + (size_t) t * h_v,
+                nostroma::kernels::fused_gdn_ab(d_x + (size_t) t * n_embd, d_wa, d_wb, d_dt, d_sa, d_gr + (size_t) t * h_v,
                                               d_br + (size_t) t * h_v, n_embd, h_v, nullptr);
             std::vector<float> g((size_t) T * h_v), b(g.size()), gr(g.size()), br(g.size());
             down(g, d_g); down(b, d_b); down(gr, d_gr); down(br, d_br);
@@ -858,7 +858,7 @@ int main(int argc, char** argv) {
                       d_sr, st0.data(), st0.size() * 4).wait()),
                   "r0");
                 for (int t = 0; t < n; ++t)
-                    strata::kernels::fused_gdn_step_norm(d_sr, d_h + (size_t) t * C, d_h + (size_t) t * C + qk,
+                    nostroma::kernels::fused_gdn_step_norm(d_sr, d_h + (size_t) t * C, d_h + (size_t) t * C + qk,
                                                          d_h + (size_t) t * C + 2 * qk, d_gate + (size_t) t * h_v,
                                                          d_beta + (size_t) t * h_v, d_z + (size_t) t * vd, d_gm, eps,
                                                          d_yr + (size_t) t * vd, h_k, h_v, nullptr);
@@ -899,7 +899,7 @@ int main(int argc, char** argv) {
                                                .memcpy(d_nk, &c.n_keep, 4)
                                                .wait()),
                           "nk");
-                strata::kernels::gdn_step_norm_multi(d_st, d_h, C, d_gate, d_beta, d_z, d_gm, eps, d_y, h_k, h_v, T,
+                nostroma::kernels::gdn_step_norm_multi(d_st, d_h, C, d_gate, d_beta, d_z, d_gm, eps, d_y, h_k, h_v, T,
                                                      c.n_keep >= 0 ? d_nk : nullptr, nullptr, c.tb);
                 run_ref(n);
                 down(y, d_y); down(yr, d_yr); down(st, d_st); down(sr, d_sr);
@@ -920,7 +920,7 @@ int main(int argc, char** argv) {
                                 std::memcmp(st.data(), (c.n_keep < 0 ? st0 : sr).data(), st.size() * 4) != 0 ? ", state too" : "");
                     ++sn_bad;
                 }
-                if (strata::env("NOSTROMA_GDN_VERIFY_BENCH")) {
+                if (nostroma::env("NOSTROMA_GDN_VERIFY_BENCH")) {
                     auto hash = [](const std::vector<float>& values) {
                         uint64_t h = 1469598103934665603ull;
                         for (float v : values) {
@@ -938,7 +938,7 @@ int main(int argc, char** argv) {
                         dpct::experimental::command_graph_ptr graph;
                         dpct::experimental::begin_recording(q);
                         for (int i = 0; i < calls; ++i)
-                            strata::kernels::gdn_step_norm_multi(
+                            nostroma::kernels::gdn_step_norm_multi(
                                 d_st, d_h, C, d_gate, d_beta, d_z, d_gm, eps,
                                 d_y, h_k, h_v, T, nullptr, q, 0);
                         dpct::experimental::end_recording(q, &graph);

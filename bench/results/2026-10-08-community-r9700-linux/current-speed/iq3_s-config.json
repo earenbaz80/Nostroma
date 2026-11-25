@@ -1,7 +1,7 @@
 {
   "backend": "hip",
   "gpu": 0,
-  "exe": "${MEASURED_REPO}/build-r9700-pr1107/strata",
+  "exe": "${MEASURED_REPO}/build-r9700-pr1107/nostroma",
   "cwd": "${MEASURED_REPO}",
   "args": [
     "--pack",
@@ -42,9 +42,9 @@
     "ROCR_VISIBLE_DEVICES": "GPU-1d9ca7a7f0a06a6d",
     "HIP_VISIBLE_DEVICES": "0",
     "ROCBLAS_USE_HIPBLASLT": "0",
-    "STRATA_PREFILL_MMQ": "1",
-    "STRATA_HIP_WMMA": "0",
-    "STRATA_HIPBLASLT_TUNING": ""
+    "NOSTROMA_PREFILL_MMQ": "1",
+    "NOSTROMA_HIP_WMMA": "0",
+    "NOSTROMA_HIPBLASLT_TUNING": ""
   },
   "lib_dirs": [
     "/opt/rocm/lib"

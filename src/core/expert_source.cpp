@@ -1,28 +1,28 @@
 // src/core/expert_source.cpp - the adapter.  See the header for the three clauses of the contract.
-#include "strata/core/expert_source.hpp"
-#include "strata/env.hpp"
-#include "strata/core/expert_nibble.hpp"
-#include "strata/core/conversation_memory.hpp"
-#include "strata/core/foresight_swap.hpp"
-#include "strata/core/on_device.hpp"
-#include "strata/core/page_cache_drop.hpp"
-#include "strata/core/ple_residency.hpp"
-#include "strata/core/resident_ram_copy.hpp"
-#include "strata/platform/aux_cpus.hpp"
-#include "strata/core/remote_experts.hpp"
-#include "strata/core/peer_experts.hpp"
-#include "strata/kernels/cpu/expert_layout.hpp"
-#include "strata/kernels/window_limits.hpp"
-#include "strata/artifact/gguf_reader.hpp"
+#include "nostroma/core/expert_source.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/core/expert_nibble.hpp"
+#include "nostroma/core/conversation_memory.hpp"
+#include "nostroma/core/foresight_swap.hpp"
+#include "nostroma/core/on_device.hpp"
+#include "nostroma/core/page_cache_drop.hpp"
+#include "nostroma/core/ple_residency.hpp"
+#include "nostroma/core/resident_ram_copy.hpp"
+#include "nostroma/platform/aux_cpus.hpp"
+#include "nostroma/core/remote_experts.hpp"
+#include "nostroma/core/peer_experts.hpp"
+#include "nostroma/kernels/cpu/expert_layout.hpp"
+#include "nostroma/kernels/window_limits.hpp"
+#include "nostroma/artifact/gguf_reader.hpp"
 
-#include "strata/core/pinned.hpp"
-#include "strata/platform/memory.hpp"
-#include "strata/kernels/elementwise.hpp"
-#include "strata/kernels/quantize_act.hpp"
-#include "strata/kernels/s2_expert_grouped.hpp"
-#include "strata/kernels/cpu/kq_avx1.hpp"
-#include "strata/kernels/cpu/kq_avx2.hpp"
-#include "strata/kernels/cpu/pool.hpp"
+#include "nostroma/core/pinned.hpp"
+#include "nostroma/platform/memory.hpp"
+#include "nostroma/kernels/elementwise.hpp"
+#include "nostroma/kernels/quantize_act.hpp"
+#include "nostroma/kernels/s2_expert_grouped.hpp"
+#include "nostroma/kernels/cpu/kq_avx1.hpp"
+#include "nostroma/kernels/cpu/kq_avx2.hpp"
+#include "nostroma/kernels/cpu/pool.hpp"
 
 #include <cuda_runtime.h>
 #ifndef _WIN32
@@ -74,11 +74,11 @@
 #endif
 
 // a 64-bit seek (as in pinned.cu): the 32-bit `fseek` wraps past 4 GiB, and the spelling differs per platform
-#ifndef STRATA_FSEEK64
+#ifndef NOSTROMA_FSEEK64
 #ifdef _WIN32
-#define STRATA_FSEEK64(f, o) _fseeki64((f), (long long) (o), SEEK_SET)
+#define NOSTROMA_FSEEK64(f, o) _fseeki64((f), (long long) (o), SEEK_SET)
 #else
-#define STRATA_FSEEK64(f, o) fseeko((f), (off_t) (o), SEEK_SET)
+#define NOSTROMA_FSEEK64(f, o) fseeko((f), (off_t) (o), SEEK_SET)
 #endif
 #endif
 
@@ -103,7 +103,7 @@ static bool arena_pid_alive(uint64_t pid) {
 #endif
 }
 
-namespace strata::core {
+namespace nostroma::core {
 
 namespace detail {
 
@@ -205,8 +205,8 @@ std::string page_cache_hint(const std::string& meminfo_text) {
     std::snprintf(msg, sizeof msg,
                   "; %.1f GiB of the RAM is file cache (earlier runs' model files, which Linux gives back on demand - "
                   "'free' showing little is normal). If the start still fails, free it with: "
-                  "sync; echo 1 | sudo tee /proc/sys/vm/drop_caches   (or start strata serve with "
-                  "STRATA_DROP_CACHE_ON_EXIT=1 so it releases its model files when it stops)",
+                  "sync; echo 1 | sudo tee /proc/sys/vm/drop_caches   (or start nostroma serve with "
+                  "NOSTROMA_DROP_CACHE_ON_EXIT=1 so it releases its model files when it stops)",
                   (double) cache / 1073741824.0);
     return msg;
 }
@@ -430,7 +430,7 @@ bool host_available_memory(HostMemory& m, const std::string& meminfo, const std:
         else if (key == "MemTotal:" && unit == "kB" && value <= std::numeric_limits<uint64_t>::max() / 1024) mem_total = value * 1024;
     }
     if (bytes == 0) return false;
-    const bool inactive_only = strata::core::mem_credit_inactive_only(strata::env("NOSTROMA_MEM_CREDIT_INACTIVE"));
+    const bool inactive_only = nostroma::core::mem_credit_inactive_only(nostroma::env("NOSTROMA_MEM_CREDIT_INACTIVE"));
     // Account for the tightest cgroup ancestor limit when its normal mount is visible.
     // This is a point-in-time guard, not a reservation against concurrent allocations.
     std::ifstream groups(self_cgroup);
@@ -472,8 +472,8 @@ bool host_available_memory(HostMemory& m, const std::string& meminfo, const std:
                     std::ifstream stat_file(path / "memory.stat");
                     std::ostringstream stat_text;
                     if (stat_file) stat_text << stat_file.rdbuf();
-                    const strata::core::ArenaCgroupRoom room =
-                        strata::core::arena_cgroup_room(cap, current, stat_text.str(), mem_total, inactive_only);
+                    const nostroma::core::ArenaCgroupRoom room =
+                        nostroma::core::arena_cgroup_room(cap, current, stat_text.str(), mem_total, inactive_only);
                     if (room.applies) cgroup_available = room.room;
                     bytes = std::min(bytes, cgroup_available);
                     m.cgroup_limit = std::min(m.cgroup_limit, cap);
@@ -585,7 +585,7 @@ void log_complement_memory(const char* stage, uint64_t requested) {
 }
 
 #if defined(__linux__)
-/// STRATA_NUMA_SPLIT step B: each NUMA slice of every complement slot (numa_slice_ranges) is first-touched by a helper
+/// NOSTROMA_NUMA_SPLIT step B: each NUMA slice of every complement slot (numa_slice_ranges) is first-touched by a helper
 /// thread pinned to one core of that slice's node, so the default local policy puts its pages there (no mbind: ~113k
 /// ranges would split the arena into more VMAs than vm.max_map_count allows).  Inactive (`place` false) unless the
 /// live pool split on real nodes; then the paced fault loop hands it each step to touch.
@@ -633,7 +633,7 @@ struct NumaComplementPlacement {
     void init(const std::vector<uint64_t>& offsets, int64_t n_expert, const std::vector<uint64_t>& blob_bytes,
               const std::vector<uint64_t>& role_bytes) {
         // relies on the pool being built first (generate.cpp: the ExpertPool at ~5632, the complement at ~7690)
-        const auto& plan = strata::kernels::cpu::active_numa_split();
+        const auto& plan = nostroma::kernels::cpu::active_numa_split();
         if (!plan.on || plan.test) return;
         free_before = node_free();
         const char* why = nullptr;
@@ -922,15 +922,15 @@ bool file_tier_probe(const std::vector<std::string>& paths, double& direct_bps, 
 /// #286/#577: whether the file tier reads its `read_bytes` unbuffered, beside `arena_bytes` of RAM copy still to be
 /// taken.  Windows times probe reads too (experts_unbuffered); on Linux the same rule as its `cache_counts = false`
 /// arm decides: whether the file cache could keep those bytes at all, from MemAvailable and the tightest cgroup
-/// limit (host_available_memory).  STRATA_UNBUFFERED_LOAD=1 / 0 forces it either way, as on Windows.
+/// limit (host_available_memory).  NOSTROMA_UNBUFFERED_LOAD=1 / 0 forces it either way, as on Windows.
 bool file_tier_unbuffered(const std::vector<std::string>& paths, uint64_t arena_bytes, uint64_t read_bytes,
                           std::string& why) {
 #if defined(_WIN32)
     return experts_unbuffered(paths, arena_bytes, why, /*cache_counts=*/false, read_bytes);
 #elif defined(__linux__)
     (void) paths;
-    if (const char* env = strata::env("NOSTROMA_UNBUFFERED_LOAD"); env != nullptr && env[0] != '\0') {
-        why = std::string("STRATA_UNBUFFERED_LOAD=") + env;
+    if (const char* env = nostroma::env("NOSTROMA_UNBUFFERED_LOAD"); env != nullptr && env[0] != '\0') {
+        why = std::string("NOSTROMA_UNBUFFERED_LOAD=") + env;
         return env[0] != '0';
     }
     uint64_t avail = 0;
@@ -938,15 +938,15 @@ bool file_tier_unbuffered(const std::vector<std::string>& paths, uint64_t arena_
         why = "the available RAM is unknown";
         return false;
     }
-    // The room the file cache can really have (on by default; STRATA_FILE_TIER_HONEST=0 turns it off; an I/O-path change only).  available_memory_bytes credits the group's whole `file`
+    // The room the file cache can really have (on by default; NOSTROMA_FILE_TIER_HONEST=0 turns it off; an I/O-path change only).  available_memory_bytes credits the group's whole `file`
     // counter as reclaimable (cgroup_available_bytes), and on a RAM-budget config that credit includes pages the engine itself holds
     // (P2003, v31, 22 GiB RAM copy: the room read 18.7 GiB while the group had limit 36 GiB, current 24.8 GiB, i.e. 11 GiB left).  The re-check
     // after the copy then saw held >= 0.5, skipped the drive probe and switched the file tier to the cache: 2-3x slower prompts.  The
     // conversation cache's sampler (only the clean inactive file cache is credited) is the honest figure; the smaller of the two decides.
     // The operator cap (--memory-limit-mib) is NOT applied: it bounds the engine's own allocations, not the page cache (counting it sent IQ3_S
     // unbuffered and cut its decode 2-3x).
-    if (const char* ho = strata::env("NOSTROMA_FILE_TIER_HONEST"); ho == nullptr || ho[0] != '0') {
-        if (const auto honest = strata::core::sample_host_memory(strata::core::MemoryProbePaths{}, 0); honest && honest->available < avail) avail = honest->available;
+    if (const char* ho = nostroma::env("NOSTROMA_FILE_TIER_HONEST"); ho == nullptr || ho[0] != '0') {
+        if (const auto honest = nostroma::core::sample_host_memory(nostroma::core::MemoryProbePaths{}, 0); honest && honest->available < avail) avail = honest->available;
     }
     // #1194: the experts read from the files are a skewed set: a cache holding a twentieth of them (at least 1.5 GiB)
     // serves most of the repeats, and beat the unbuffered reads at every room measured (it reads 2 to 7 times less from
@@ -954,15 +954,15 @@ bool file_tier_unbuffered(const std::vector<std::string>& paths, uint64_t arena_
     // #1752 (KevinX8): ROCm queues are suspended while the kernel reclaims around the process's HMM-tracked arena
     // (#1691) on an MI50 (gfx906): the cached reads churn the page cache and reclaim unmaps the arena, so the gfx906
     // backend keeps the old room >= read_bytes rule.  Other HIP cards (gfx1201 measured: not affected) keep the new
-    // rule; STRATA_FILE_CACHE_OLD_RULE=1 / 0 forces the old rule on / off on any Linux build.
+    // rule; NOSTROMA_FILE_CACHE_OLD_RULE=1 / 0 forces the old rule on / off on any Linux build.
     bool old_rule = false;
-#if defined(STRATA_HIP_GFX906)
+#if defined(NOSTROMA_HIP_GFX906)
     old_rule = true;
 #endif
-    if (const char* r = strata::env("NOSTROMA_FILE_CACHE_OLD_RULE"); r != nullptr && r[0] != '\0') old_rule = r[0] != '0';
+    if (const char* r = nostroma::env("NOSTROMA_FILE_CACHE_OLD_RULE"); r != nullptr && r[0] != '\0') old_rule = r[0] != '0';
     const bool keepable = old_rule
-        ? strata::platform::file_cache_keeps(avail, arena_bytes, read_bytes)
-        : strata::platform::file_cache_keeps(avail, arena_bytes, read_bytes, 1ull << 30, 0.05, 3ull << 29);
+        ? nostroma::platform::file_cache_keeps(avail, arena_bytes, read_bytes)
+        : nostroma::platform::file_cache_keeps(avail, arena_bytes, read_bytes, 1ull << 30, 0.05, 3ull << 29);
     char msg[256];
     std::snprintf(msg, sizeof msg, "%.1f GiB available, %.1f GiB of it still to be taken by the RAM copy, %.1f GiB "
                   "of experts read from the files: the file cache %s keep the ones that come back",
@@ -973,9 +973,9 @@ bool file_tier_unbuffered(const std::vector<std::string>& paths, uint64_t arena_
     // set, whether it pays depends on the drive: on a PCIe 5 NVMe (8 GB/s direct) the cached path read prompts at half
     // the speed and decoded 3-4x slower than unbuffered reads, on a 1.7-2.5 GB/s NVMe the cache decodes faster.  So time
     // both paths once at start and read unbuffered only when the drive is fast and serves direct reads clearly faster
-    // (platform::file_tier_prefers_direct).  STRATA_FILE_TIER_PROBE=0 keeps the room rule alone.
+    // (platform::file_tier_prefers_direct).  NOSTROMA_FILE_TIER_PROBE=0 keeps the room rule alone.
     if (keepable && !old_rule && read_bytes > 0) {
-        const char* pe = strata::env("NOSTROMA_FILE_TIER_PROBE");
+        const char* pe = nostroma::env("NOSTROMA_FILE_TIER_PROBE");
         const uint64_t margin = 1ull << 30;
         const double room = avail > arena_bytes + margin ? (double) (avail - arena_bytes - margin) : 0.0;
         const double held = room / (double) read_bytes;
@@ -983,7 +983,7 @@ bool file_tier_unbuffered(const std::vector<std::string>& paths, uint64_t arena_
             double d = 0, c = 0;
             char pm[256];
             if (file_tier_probe(paths, d, c)) {
-                const bool direct = strata::platform::file_tier_prefers_direct(held, d, c);
+                const bool direct = nostroma::platform::file_tier_prefers_direct(held, d, c);
                 std::snprintf(pm, sizeof pm, "; the cache holds %.0f%% of the read set, direct reads %.2f GB/s, cached-path reads "
                               "%.2f GB/s (%.2fx): %s", held * 100.0, d / 1e9, c / 1e9, d / c,
                               direct ? "the file tier reads unbuffered" : "the file cache stays");
@@ -1113,8 +1113,8 @@ FileExpertSource::IoCounters FileExpertSource::io_counters() const {
     return c;
 }
 
-// 149-prefetch: the speculative bytes a decode window may read ahead.  Fixed (STRATA_IO_PF_BUDGET_MB), or what the workers
-// measured they can read in one window (one worker's rate x the workers x the window's time) times STRATA_IO_PF_BUDGET_FRAC;
+// 149-prefetch: the speculative bytes a decode window may read ahead.  Fixed (NOSTROMA_IO_PF_BUDGET_MB), or what the workers
+// measured they can read in one window (one worker's rate x the workers x the window's time) times NOSTROMA_IO_PF_BUDGET_FRAC;
 // 256 MB until both rates are known.
 uint64_t FileExpertSource::io_budget_now() const {
     if (io_budget_fixed_ > 0) return io_budget_fixed_;
@@ -1133,7 +1133,7 @@ void FileExpertSource::io_window_tick() {
     io_win_t0_ = now;
     io_win_bytes_ = 0;
     // feedback: the share of the read-ahead bytes that a layer then used (the used count lags the reads by a window or
-    // so; an EWMA over windows evens that out).  Below STRATA_IO_PF_TARGET the budget shrinks (x0.7 a window, to 1/20),
+    // so; an EWMA over windows evens that out).  Below NOSTROMA_IO_PF_TARGET the budget shrinks (x0.7 a window, to 1/20),
     // above it it grows back (x1.1, to 1): a box whose page cache cannot hold what is read ahead stops paying for it.
     const uint64_t pf = io_pf_bytes_.load(std::memory_order_relaxed), used = io_pf_used_bytes_.load(std::memory_order_relaxed);
     const uint64_t dpf = pf - io_prev_pf_, du = used - io_prev_used_;
@@ -1205,26 +1205,26 @@ void FileExpertSource::set_io_prefetch(bool on, int threads) {
     }
     if (!warm_stamp_) warm_stamp_.reset(new std::atomic<uint32_t>[(size_t) (n_layers_ * n_expert_)]());
     io_threads_ = threads > 0 ? threads : 8;
-    if (const char* v = strata::env("NOSTROMA_IO_PF_AHEAD")) io_ahead_ = std::atoi(v) != 0;
-    {   // experts.bin: fill the page cache from the workers and let the kernels read the mapping (STRATA_IO_PF_STAGE=1: stage)
-        const char* v = strata::env("NOSTROMA_IO_PF_STAGE");
+    if (const char* v = nostroma::env("NOSTROMA_IO_PF_AHEAD")) io_ahead_ = std::atoi(v) != 0;
+    {   // experts.bin: fill the page cache from the workers and let the kernels read the mapping (NOSTROMA_IO_PF_STAGE=1: stage)
+        const char* v = nostroma::env("NOSTROMA_IO_PF_STAGE");
         io_fill_ = role_ptr_.empty() && !(v != nullptr && std::atoi(v) != 0);
     }
     io_pf_ = true;
     io_stats_ = true;
     io_quit_ = false;
-    {   // 149-prefetch: STRATA_IO_PF_SCHED=1 - deadlines, confidence admission and a per-window byte budget (off: as before)
-        const char* v = strata::env("NOSTROMA_IO_PF_SCHED");
+    {   // 149-prefetch: NOSTROMA_IO_PF_SCHED=1 - deadlines, confidence admission and a per-window byte budget (off: as before)
+        const char* v = nostroma::env("NOSTROMA_IO_PF_SCHED");
         io_sched_ = v != nullptr && std::atoi(v) != 0;
-        if (const char* m = strata::env("NOSTROMA_IO_PF_MINCONF")) io_minconf_ = (float) std::clamp(std::atof(m), 0.0, 1.0);
-        if (const char* m = strata::env("NOSTROMA_IO_PF_BUDGET_MB")) io_budget_fixed_ = (uint64_t) std::max(0.0, std::atof(m) * 1048576.0);
-        if (const char* m = strata::env("NOSTROMA_IO_PF_BUDGET_FRAC")) io_budget_frac_ = std::clamp(std::atof(m), 0.01, 4.0);
-        if (const char* m = strata::env("NOSTROMA_IO_PF_TARGET")) io_target_ = std::clamp(std::atof(m), 0.0, 1.0);
-        gate_on_ = true;   // 0.2.0: the decode gate comes with io prefetch; STRATA_IO_PF_GATE=0 turns it off
-        if (const char* m = strata::env("NOSTROMA_IO_PF_GATE"); m != nullptr && m[0] != '\0') gate_on_ = std::atoi(m) != 0;
-        if (const char* m = strata::env("NOSTROMA_IO_PF_GATE_LO")) gate_lo_ = std::clamp(std::atof(m), 0.0, 1.0);
-        if (const char* m = strata::env("NOSTROMA_IO_PF_GATE_HI")) gate_hi_ = std::clamp(std::atof(m), gate_lo_, 1.0);
-        if (const char* m = strata::env("NOSTROMA_IO_PF_GATE_USEFUL")) gate_min_useful_ = std::clamp(std::atof(m), 0.0, 1.0);
+        if (const char* m = nostroma::env("NOSTROMA_IO_PF_MINCONF")) io_minconf_ = (float) std::clamp(std::atof(m), 0.0, 1.0);
+        if (const char* m = nostroma::env("NOSTROMA_IO_PF_BUDGET_MB")) io_budget_fixed_ = (uint64_t) std::max(0.0, std::atof(m) * 1048576.0);
+        if (const char* m = nostroma::env("NOSTROMA_IO_PF_BUDGET_FRAC")) io_budget_frac_ = std::clamp(std::atof(m), 0.01, 4.0);
+        if (const char* m = nostroma::env("NOSTROMA_IO_PF_TARGET")) io_target_ = std::clamp(std::atof(m), 0.0, 1.0);
+        gate_on_ = true;   // 0.2.0: the decode gate comes with io prefetch; NOSTROMA_IO_PF_GATE=0 turns it off
+        if (const char* m = nostroma::env("NOSTROMA_IO_PF_GATE"); m != nullptr && m[0] != '\0') gate_on_ = std::atoi(m) != 0;
+        if (const char* m = nostroma::env("NOSTROMA_IO_PF_GATE_LO")) gate_lo_ = std::clamp(std::atof(m), 0.0, 1.0);
+        if (const char* m = nostroma::env("NOSTROMA_IO_PF_GATE_HI")) gate_hi_ = std::clamp(std::atof(m), gate_lo_, 1.0);
+        if (const char* m = nostroma::env("NOSTROMA_IO_PF_GATE_USEFUL")) gate_min_useful_ = std::clamp(std::atof(m), 0.0, 1.0);
     }
     if (!pf_mark_) {
         pf_mark_.reset(new std::atomic<uint8_t>[(size_t) (n_layers_ * n_expert_)]);
@@ -1271,7 +1271,7 @@ void FileExpertSource::io_enqueue(int64_t layer, int64_t expert, bool ahead) {
 // A read-ahead worker: takes a predicted (layer, expert), skips it when its pages are cached or it is already
 // staged, and otherwise reads the whole blob into a staging buffer (copy_from_files preads what is not cached).
 void FileExpertSource::io_worker() {
-    strata::platform::name_this_thread("strata-io");
+    nostroma::platform::name_this_thread("nostroma-io");
     for (;;) {
         int32_t layer, expert;
         bool ahead = true;   // a prediction (marked for the used / unused count), not a layer's own demand read
@@ -1423,7 +1423,7 @@ const uint8_t* FileExpertSource::io_blob(int64_t layer, int64_t expert) {
 bool FileExpertSource::open(const std::string& pack_dir, int64_t n_layers, int64_t n_expert, std::string& err) {
     close();
     if (n_layers <= 0 || n_expert <= 0) { err = "FileExpertSource: the geometry is empty"; return false; }
-    const auto& layout = strata::kernels::cpu::expert_layout();
+    const auto& layout = nostroma::kernels::cpu::expert_layout();
     if (layout.n_layers != n_layers || layout.n_expert != n_expert) {
         err = "FileExpertSource: the requested geometry does not match the loaded expert layout";
         return false;
@@ -1446,16 +1446,16 @@ bool FileExpertSource::open(const std::string& pack_dir, int64_t n_layers, int64
         return false;
     }
     if (!layout.native) {
-        if (blob_count > std::numeric_limits<uint64_t>::max() / (uint64_t) strata::kernels::cpu::BLOB) {
+        if (blob_count > std::numeric_limits<uint64_t>::max() / (uint64_t) nostroma::kernels::cpu::BLOB) {
             err = "FileExpertSource: the canonical expert size overflows";
             return false;
         }
-        const uint64_t canonical_size = blob_count * (uint64_t) strata::kernels::cpu::BLOB;
+        const uint64_t canonical_size = blob_count * (uint64_t) nostroma::kernels::cpu::BLOB;
         if (want != canonical_size) {
             err = "FileExpertSource: the canonical expert layout has an inconsistent size";
             return false;
         }
-        const uint64_t bytes = (uint64_t) strata::kernels::cpu::BLOB;
+        const uint64_t bytes = (uint64_t) nostroma::kernels::cpu::BLOB;
         const uint64_t layer_bytes = (uint64_t) n_expert * bytes;
         for (int64_t layer = 0; layer < n_layers; ++layer) {
             layer_offsets[(size_t) layer] = (uint64_t) layer * layer_bytes;
@@ -1516,7 +1516,7 @@ bool FileExpertSource::open(const std::string& pack_dir, int64_t n_layers, int64
     // 64 GB of DDR5 and `L9` measured the CPU path at 44.14 GB/s from DRAM.  `FILE_FLAG_RANDOM_ACCESS` tells
     // the cache manager the opposite: it disables read-ahead AND it lets the manager drop the pages again
     // quickly, on the assumption that a large randomly-accessed file will not be re-read.  Measured, on
-    // `strata generate --max-new 24`: **1.93 GB/s** - disk speed, 344 ms/token, and it never warmed up over 25
+    // `nostroma generate --max-new 24`: **1.93 GB/s** - disk speed, 344 ms/token, and it never warmed up over 25
     // tokens, because the pages were being evicted as fast as they were faulted in.
     //
     // The correct flag is NO flag.  The access pattern IS random (10 of 512 experts per layer, a different 10
@@ -1602,7 +1602,7 @@ void FileExpertSource::close() {
         else {
             if (complement_registered_) (void) cudaHostUnregister(complement_arena_);
             if (complement_locked_ > 0)
-                strata::platform::unlock_resident((uint8_t*) complement_arena_ + complement_lock_off_, complement_locked_);
+                nostroma::platform::unlock_resident((uint8_t*) complement_arena_ + complement_lock_off_, complement_locked_);
             std::free(complement_arena_);
         }
     }
@@ -1709,7 +1709,7 @@ void FileExpertSource::close() {
 bool ExpertSource::copy_blob(int64_t layer, int64_t expert, uint8_t* dst) {
     const uint8_t* b = blob(layer, expert);
     if (b == nullptr || dst == nullptr) return false;
-    std::memcpy(dst, b, (size_t) strata::kernels::cpu::expert_layout().blob_bytes(layer));
+    std::memcpy(dst, b, (size_t) nostroma::kernels::cpu::expert_layout().blob_bytes(layer));
     return true;
 }
 
@@ -1727,7 +1727,7 @@ bool ExpertSource::copy_blobs(const int32_t* layers, const int32_t* experts, uin
 // blob is assembled when it is asked for (`blob`, into a small pool of buffers) or copied where it is needed
 // (`copy_blob`: the RAM copy, the prompt path's pinned stager buffers).
 bool FileExpertSource::open_gguf(std::string& err) {
-    const auto& lay = strata::kernels::cpu::expert_layout();
+    const auto& lay = nostroma::kernels::cpu::expert_layout();
     if (!check_experts_gguf(gguf_, lay, err)) { err = "FileExpertSource: " + err; return false; }
     const size_t cut = gguf_.find_last_of("/\\");
     const std::string dir = cut == std::string::npos ? std::string() : gguf_.substr(0, cut + 1);
@@ -1857,7 +1857,7 @@ bool FileExpertSource::copy_from_files(int64_t layer, int64_t expert, uint8_t* d
     return true;
 }
 
-// Pinned stage buffers (PR 1237): opt-in (STRATA_STAGE_PIN=1).  On by default they corrupted IQ3_S decode after a 4096-token
+// Pinned stage buffers (PR 1237): opt-in (NOSTROMA_STAGE_PIN=1).  On by default they corrupted IQ3_S decode after a 4096-token
 // prompt in the 0.1.41 release gate (48 tokens of id 0; off = identical to 0.1.40.4): with page-locked buffers the cache-fill
 // copy is truly asynchronous, so a recycled stage buffer can be overwritten before its copy finishes.  Off until that is fixed.
 #define STAGE_PIN_DEFAULT 0
@@ -1902,10 +1902,10 @@ bool FileExpertSource::claim_stage(int64_t key, size_t& v, bool& fill, bool ahea
         // Pinned, where the driver allows: a stage buffer is the source of the cache fill's cudaMemcpyAsync,
         // and a pageable source is staged through the driver's bounce buffer - an extra copy at a fraction of
         // the transfer rate, on the calling thread.  A failure falls back to pageable for this buffer.
-        // STRATA_STAGE_PIN: 0 keeps them pageable (as before 0.1.41), 1 always tries to pin, unset (the default) pins while
+        // NOSTROMA_STAGE_PIN: 0 keeps them pageable (as before 0.1.41), 1 always tries to pin, unset (the default) pins while
         // the host has kStagePinFloor of RAM to spare beside this buffer (the pool grows to ~257 buffers, 0.4-0.6 GiB):
         // a low-RAM box keeps pageable ones instead of paying for the pinning (recommend, never force).
-        static const int pin_mode = [] { const char* v = strata::env("NOSTROMA_STAGE_PIN"); return v == nullptr ? -1 : (std::atoi(v) != 0 ? 1 : 0); }();
+        static const int pin_mode = [] { const char* v = nostroma::env("NOSTROMA_STAGE_PIN"); return v == nullptr ? -1 : (std::atoi(v) != 0 ? 1 : 0); }();
         bool want_pin = pin_mode != 0;
         if (pin_mode < 0) {
             uint64_t avail = 0;
@@ -1966,7 +1966,7 @@ bool FileExpertSource::claim_stage(int64_t key, size_t& v, bool& fill, bool ahea
     return false;
 }
 
-// 149 STRATA_IO_PF_GATE: whether this thread reads for the decode (the dispatch's thread, and the fetch threads it starts)
+// 149 NOSTROMA_IO_PF_GATE: whether this thread reads for the decode (the dispatch's thread, and the fetch threads it starts)
 namespace { thread_local bool tl_decode = false; }
 FileExpertSource::DecodeScope::DecodeScope() : prev(tl_decode) { tl_decode = true; }
 FileExpertSource::DecodeScope::~DecodeScope() { tl_decode = prev; }
@@ -2051,7 +2051,7 @@ void FileExpertSource::gate_capacity() {
     if (total == 0 || room == 0) return;   // unknown: the state stays
     gate_ratio_ = (double) room / (double) total;
     // and the read-ahead must pay: the share of its bytes a layer then used, over these 16 windows (64 MB at least read
-    // ahead to judge).  Below STRATA_IO_PF_GATE_USEFUL (0.10) it closes (a RAM tier holds what it would read: an 18 GiB
+    // ahead to judge).  Below NOSTROMA_IO_PF_GATE_USEFUL (0.10) it closes (a RAM tier holds what it would read: an 18 GiB
     // RAM tier, 0% used, -9..-15% decode); closed for that reason, it opens again for a probe every 256 windows.
     const uint64_t pf = io_pf_bytes_.load(std::memory_order_relaxed), used = io_pf_used_bytes_.load(std::memory_order_relaxed);
     const uint64_t dpf = pf - gate_prev_pf_, dused = used - gate_prev_used_;
@@ -2200,8 +2200,8 @@ void FileExpertSource::claim_todo(int64_t layer, const int64_t* experts, int64_t
     // the mapping (its three tensors' rows), not assembled into a stage buffer first.  Decided here, before the lock.
     zc_keys_.clear();
     std::vector<char> zc_ok;
-    if (zc && !role_ptr_.empty() && !unmapped_ && direct_.empty() && strata::kernels::cpu::expert_layout().native &&
-        strata::kernels::cpu::expert_layout().fmt[(size_t) layer].tail_off == 0) {
+    if (zc && !role_ptr_.empty() && !unmapped_ && direct_.empty() && nostroma::kernels::cpu::expert_layout().native &&
+        nostroma::kernels::cpu::expert_layout().fmt[(size_t) layer].tail_off == 0) {
         zc_ok.assign((size_t) n, 0);
         for (int64_t i = 0; i < n; ++i) {
             const int64_t e = experts[i];
@@ -2259,7 +2259,7 @@ void FileExpertSource::claim_todo(int64_t layer, const int64_t* experts, int64_t
     }
 }
 
-// 149-cold STRATA_COLD_OVERLAP=1: the claimed blobs are read on background threads (the decode thread computes the
+// 149-cold NOSTROMA_COLD_OVERLAP=1: the claimed blobs are read on background threads (the decode thread computes the
 // ready experts meanwhile); the same reads as fill_many, on as many threads, each blob published as it lands.
 int64_t FileExpertSource::prefetch_begin(int64_t layer, const int64_t* experts, int64_t n, uint8_t* pending) {
     for (int64_t i = 0; i < n; ++i) pending[i] = 0;
@@ -2272,7 +2272,7 @@ int64_t FileExpertSource::prefetch_begin(int64_t layer, const int64_t* experts, 
     async_todo_.clear();
     async_fill_us_ = 0;
     static const int mode_env = [] {   // as the dispatch reads it (0.2.0: unset = 4 for the GGUF read in place on Linux)
-        const char* v = strata::env("NOSTROMA_COLD_OVERLAP");
+        const char* v = nostroma::env("NOSTROMA_COLD_OVERLAP");
         return v == nullptr || v[0] == '\0' ? -1 : std::atoi(v);
     }();
     const int mode = mode_env >= 0 ? mode_env : (linux_file_defaults() ? 4 : 0);
@@ -2388,17 +2388,17 @@ void FileExpertSource::prefetch_pairs(const std::pair<int32_t, int32_t>* pairs, 
 }
 
 bool FileExpertSource::advise_pairs(const std::pair<int32_t, int32_t>* pairs, int64_t n) const {
-    if (base_ == nullptr || unmapped_ || !direct_.empty() || !strata::platform::read_ahead_enabled()) return false;
+    if (base_ == nullptr || unmapped_ || !direct_.empty() || !nostroma::platform::read_ahead_enabled()) return false;
     for (int64_t i = 0; pairs != nullptr && i < n; ++i) {
         const int64_t l = pairs[i].first, e = pairs[i].second;
         if (l < 0 || e < 0 || l >= n_layers_ || e >= n_expert_) continue;
         if (role_ptr_.empty()) {   // experts.bin: the blob is one contiguous range
-            if (const uint8_t* b = mapped_blob(l, e)) strata::platform::advise_willneed(b, layer_blob_bytes_[(size_t) l]);
+            if (const uint8_t* b = mapped_blob(l, e)) nostroma::platform::advise_willneed(b, layer_blob_bytes_[(size_t) l]);
             continue;
         }
         for (int r = 0; r < 3; ++r) {
             const size_t k = (size_t) (3 * l + r);
-            strata::platform::advise_willneed(role_ptr_[k] + (size_t) ((uint64_t) e * role_bytes_[k]), role_bytes_[k]);
+            nostroma::platform::advise_willneed(role_ptr_[k] + (size_t) ((uint64_t) e * role_bytes_[k]), role_bytes_[k]);
         }
     }
     return true;
@@ -2434,11 +2434,11 @@ void FileExpertSource::fill_many(const std::vector<Fill>& todo) {
 #if defined(_WIN32)
     // One PrefetchVirtualMemory call for every slice about to be copied: the memory manager reads them in large
     // requests, all queued at once, where the copies' page faults would read a few clusters each.  The copies below
-    // then find the pages resident (or in flight).  STRATA_FETCH_PVM=0 is the A/B arm.
+    // then find the pages resident (or in flight).  NOSTROMA_FETCH_PVM=0 is the A/B arm.
     {
         using Pvm = BOOL(WINAPI*)(HANDLE, ULONG_PTR, PWIN32_MEMORY_RANGE_ENTRY, ULONG);
         static const Pvm pvm = [] {
-            const char* v = strata::env("NOSTROMA_FETCH_PVM");
+            const char* v = nostroma::env("NOSTROMA_FETCH_PVM");
             if (v != nullptr && std::atoi(v) == 0) return (Pvm) nullptr;
             return (Pvm) (void*) GetProcAddress(GetModuleHandleW(L"kernel32.dll"), "PrefetchVirtualMemory");
         }();
@@ -2564,8 +2564,8 @@ bool FileExpertSource::set_unbuffered(uint64_t ram_bytes, std::string& why) {
 
 bool FileExpertSource::recheck_unbuffered(std::string& why) {
 #if defined(_WIN32) || defined(__linux__)
-    if (const char* env = strata::env("NOSTROMA_UNBUFFERED_LOAD"); env != nullptr && env[0] != '\0') {
-        why = std::string("STRATA_UNBUFFERED_LOAD=") + env;
+    if (const char* env = nostroma::env("NOSTROMA_UNBUFFERED_LOAD"); env != nullptr && env[0] != '\0') {
+        why = std::string("NOSTROMA_UNBUFFERED_LOAD=") + env;
         return !direct_.empty();
     }
     if (base_ == nullptr || paths_.empty()) {
@@ -2630,9 +2630,9 @@ bool FileExpertSource::drop_mapping(std::string& why) {
     why = "every expert outside RAM and VRAM is read unbuffered";
     return true;
 #else
-    // Linux's page cache has no such lock: only the tests close the GGUF views (STRATA_TEST_UNMAP_GGUF=1), to run the
+    // Linux's page cache has no such lock: only the tests close the GGUF views (NOSTROMA_TEST_UNMAP_GGUF=1), to run the
     // unmapped path the Windows file tier takes
-    const char* t = strata::env("NOSTROMA_TEST_UNMAP_GGUF");
+    const char* t = nostroma::env("NOSTROMA_TEST_UNMAP_GGUF");
     if (t == nullptr || t[0] == '\0' || std::atoi(t) == 0 || role_ptr_.empty()) { why = "not Windows"; return false; }
     if (direct_.empty()) { why = "the reads are not unbuffered"; return false; }
     if (unmapped_) { why = "already closed"; return true; }
@@ -2644,7 +2644,7 @@ bool FileExpertSource::drop_mapping(std::string& why) {
         m.fd = -1;
     }
     unmapped_ = true;
-    why = std::to_string(maps_.size()) + " GGUF shard(s) unmapped (STRATA_TEST_UNMAP_GGUF); every expert outside RAM and VRAM is read unbuffered";
+    why = std::to_string(maps_.size()) + " GGUF shard(s) unmapped (NOSTROMA_TEST_UNMAP_GGUF); every expert outside RAM and VRAM is read unbuffered";
     return true;
 #endif
 }
@@ -2688,8 +2688,8 @@ uint64_t FileExpertSource::drop_cached_pages(const std::function<bool(int64_t, i
 
 bool FileExpertSource::begin_startup_unbuffered(std::string& why) {
 #if defined(_WIN32)
-    if (const char* v = strata::env("NOSTROMA_STARTUP_UNBUFFERED"); v != nullptr && v[0] != '\0' && std::atoi(v) == 0) {
-        why = "STRATA_STARTUP_UNBUFFERED=0";
+    if (const char* v = nostroma::env("NOSTROMA_STARTUP_UNBUFFERED"); v != nullptr && v[0] != '\0' && std::atoi(v) == 0) {
+        why = "NOSTROMA_STARTUP_UNBUFFERED=0";
         return false;
     }
     if (base_ == nullptr || unmapped_ || startup_ub_ || !role_ptr_.empty() || !maps_.empty() || paths_.size() != 1 ||
@@ -3142,8 +3142,8 @@ bool RouterLookahead::start(std::vector<std::vector<uint16_t>> routers, int64_t 
     src_ = src;
     x_.assign((size_t) (8 * n_embd), 0.f);
     thread_ = std::thread([this] {
-        strata::platform::name_this_thread("strata-lookahead");
-        strata::aux_cpus::pin_current_thread();
+        nostroma::platform::name_this_thread("nostroma-lookahead");
+        nostroma::aux_cpus::pin_current_thread();
         run();
     });
     return true;
@@ -3238,7 +3238,7 @@ void RouterLookahead::stats_score(int64_t layer, const int32_t* ids, int64_t n, 
     }
     if (layer == (int64_t) routers_.size() - 1 && (++st_windows_ % 100) == 0) {
         const uint64_t scored = st_layers_ - st_nopred_;
-        std::fprintf(stderr, "strata lookahead stats: %llu windows, %llu layers scored, %llu without a prediction (%.1f%%); "
+        std::fprintf(stderr, "nostroma lookahead stats: %llu windows, %llu layers scored, %llu without a prediction (%.1f%%); "
                      "%.2f actual non-resident experts/layer;",
                      (unsigned long long) st_windows_, (unsigned long long) scored, (unsigned long long) st_nopred_,
                      st_layers_ ? 100.0 * (double) st_nopred_ / (double) st_layers_ : 0.0,
@@ -3294,18 +3294,18 @@ void RouterLookahead::run() {
         wconf.clear();
         const bool scored = src_->wants_scores();
         // The router dot is AVX2 (kq_avx2.cpp); a CPU without AVX2 (the experimental older-CPU builds) takes the AVX1
-        // one (kq_avx1.cpp) or, without AVX, the same sums in plain C++.  From the Strata_Dirigo fork (rwkeyes): an
+        // one (kq_avx1.cpp) or, without AVX, the same sums in plain C++.  From the Nostroma_Dirigo fork (rwkeyes): an
         // AVX-only Xeon E5-2687W died here (vpmovzxwd) on its first request.  An estimate only (which experts to
         // prefetch); the order of the additions differs between the three, the output does not depend on it.
-#if defined(__aarch64__) && !defined(STRATA_GPU_METAL)   // Metal (Apple silicon) keeps the plain loop below: its bf16_rows_dot_multi is a stub
-        strata::kernels::cpu::bf16_rows_dot_multi(routers_[(size_t) layer].data(), (int) n_expert_, (int) n_embd_,
+#if defined(__aarch64__) && !defined(NOSTROMA_GPU_METAL)   // Metal (Apple silicon) keeps the plain loop below: its bf16_rows_dot_multi is a stub
+        nostroma::kernels::cpu::bf16_rows_dot_multi(routers_[(size_t) layer].data(), (int) n_expert_, (int) n_embd_,
                                                   x_.data(), (int) nt, logits.data());
 #else
-        if (strata::kernels::cpu::cpu_avx2_ok()) {
-            strata::kernels::cpu::bf16_rows_dot_multi(routers_[(size_t) layer].data(), (int) n_expert_, (int) n_embd_,
+        if (nostroma::kernels::cpu::cpu_avx2_ok()) {
+            nostroma::kernels::cpu::bf16_rows_dot_multi(routers_[(size_t) layer].data(), (int) n_expert_, (int) n_embd_,
                                                       x_.data(), (int) nt, logits.data());
-        } else if (strata::kernels::cpu::cpu_avx1_ok()) {
-            strata::kernels::cpu::bf16_rows_dot_multi_avx1(routers_[(size_t) layer].data(), (int) n_expert_,
+        } else if (nostroma::kernels::cpu::cpu_avx1_ok()) {
+            nostroma::kernels::cpu::bf16_rows_dot_multi_avx1(routers_[(size_t) layer].data(), (int) n_expert_,
                                                            (int) n_embd_, x_.data(), (int) nt, logits.data());
         } else {
             // a mul and an add, not std::fma: without an FMA instruction that is a libm call per element (74x
@@ -3523,7 +3523,7 @@ const uint8_t* FileExpertSource::mapped_blob(int64_t layer, int64_t expert) cons
 uint64_t FileExpertSource::release(int64_t layer, int64_t expert) {
 #if defined(_WIN32)
     static const bool enabled = [] {
-        const char* v = strata::env("NOSTROMA_FILE_RELEASE");
+        const char* v = nostroma::env("NOSTROMA_FILE_RELEASE");
         return v != nullptr && std::strcmp(v, "1") == 0;
     }();
     if (!enabled || base_ == nullptr || unmapped_ || layer < 0 || expert < 0 || layer >= n_layers_ || expert >= n_expert_)
@@ -3798,14 +3798,14 @@ bool FileExpertSource::pin_cache_complement(
     uint64_t lock_off = 0;      ///< where the working-set lock starts (after the registered prefix)
     std::string note;
 #if defined(__linux__)
-    NumaComplementPlacement numa;   ///< STRATA_NUMA_SPLIT step B; inert unless the live pool split on real nodes
+    NumaComplementPlacement numa;   ///< NOSTROMA_NUMA_SPLIT step B; inert unless the live pool split on real nodes
 #endif
     auto release = [&]() {
         if (arena == nullptr) return;
         if (pinned_ok) (void) cudaFreeHost(arena);
         else {
             if (partial_pin > 0) (void) cudaHostUnregister(arena);
-            if (locked > 0) strata::platform::unlock_resident((uint8_t*) arena + lock_off, locked);
+            if (locked > 0) nostroma::platform::unlock_resident((uint8_t*) arena + lock_off, locked);
             std::free(arena);
         }
         arena = nullptr;
@@ -3841,22 +3841,22 @@ bool FileExpertSource::pin_cache_complement(
         // the cache of the model files the engine read itself in the way (MemFree low, MemAvailable high) a host was
         // OOM-killed here.  First give those pages back (the engine's own mappings); when what is really free still
         // does not cover the complement, register it in steps, each only while the RAM left stays above the reserve.
-        // STRATA_PIN_GUARD=0 pages-locks in one go as before, =2 always registers in steps (a test); STRATA_PIN_RESERVE_GIB
+        // NOSTROMA_PIN_GUARD=0 pages-locks in one go as before, =2 always registers in steps (a test); NOSTROMA_PIN_RESERVE_GIB
         // is the RAM that must stay above every step (default: the resident headroom, at least 2 GiB)
-        // STRATA_NUMA_SPLIT placement forces the drop and the paced path whatever the guard (STRATA_PIN_GUARD=0 included)
+        // NOSTROMA_NUMA_SPLIT placement forces the drop and the paced path whatever the guard (NOSTROMA_PIN_GUARD=0 included)
         const uint64_t pace_reserve = [&] {
-            const char* v = strata::env("NOSTROMA_PIN_RESERVE_GIB");
+            const char* v = nostroma::env("NOSTROMA_PIN_RESERVE_GIB");
             return v != nullptr && std::atof(v) > 0 ? (uint64_t) (std::atof(v) * 1073741824.0)
                                                      : std::max<uint64_t>(headroom_bytes, 2ull << 30);
         }();
 #if defined(__linux__)
         if (pin) {
             static const int guard = [] {
-                const char* v = strata::env("NOSTROMA_PIN_GUARD");
+                const char* v = nostroma::env("NOSTROMA_PIN_GUARD");
                 return v == nullptr ? 1 : std::atoi(v);
             }();
             uint64_t free_now = 0;
-            numa.init(offsets, n_expert_, layer_blob_bytes_, role_bytes_);   // STRATA_NUMA_SPLIT: placed by the paced loop
+            numa.init(offsets, n_expert_, layer_blob_bytes_, role_bytes_);   // NOSTROMA_NUMA_SPLIT: placed by the paced loop
             if (numa.place) {
                 // the engine's own mapped model pages sit on whichever node read them, and a toucher on a full node
                 // gets its pages from the other one (no local reclaim): give them back first, as the guard=1 path does
@@ -3869,13 +3869,13 @@ bool FileExpertSource::pin_cache_complement(
                 // carries the host's other allocations
                 numa.check_room(pace_reserve / 2);
                 if (guard == 0)
-                    std::fprintf(stderr, "FileExpertSource: STRATA_PIN_GUARD=0 overridden: NUMA placement needs the "
+                    std::fprintf(stderr, "FileExpertSource: NOSTROMA_PIN_GUARD=0 overridden: NUMA placement needs the "
                                          "paced path\n");
             }
             if (guard == 2 || numa.place) {
                 paced = true;
                 std::fprintf(stderr, "FileExpertSource: %s: page-locking the complement in steps\n",
-                             guard == 2 ? "STRATA_PIN_GUARD=2" : "STRATA_NUMA_SPLIT");
+                             guard == 2 ? "NOSTROMA_PIN_GUARD=2" : "NOSTROMA_NUMA_SPLIT");
             } else if (guard != 0 && free_memory_bytes(free_now) &&
                        detail::pin_depends_on_reclaim(free_now, bytes, pace_reserve)) {
                 drop_file_cache();
@@ -3890,7 +3890,7 @@ bool FileExpertSource::pin_cache_complement(
                     std::fprintf(stderr, "FileExpertSource: the rest comes from reclaimed cache of other files: "
                                          "page-locking it in steps, as far as the RAM allows (#1250)\n");
             }
-        } else if (strata::kernels::cpu::active_numa_split().on && !strata::kernels::cpu::active_numa_split().test) {
+        } else if (nostroma::kernels::cpu::active_numa_split().on && !nostroma::kernels::cpu::active_numa_split().test) {
             std::fprintf(stderr, "FileExpertSource: WARNING: NUMA placement FAILED: the complement is not page-locked, "
                                  "nothing placed\n");
         }
@@ -3933,7 +3933,7 @@ bool FileExpertSource::pin_cache_complement(
                 if (posix_memalign(&aligned, (size_t) page, (size_t) ((bytes + page - 1) / page * page)) == 0) arena = aligned;
 #endif
 #if defined(__linux__)
-                // STRATA_NUMA_SPLIT: a 2 MiB huge page would put several slices on its toucher's node, so the arena
+                // NOSTROMA_NUMA_SPLIT: a 2 MiB huge page would put several slices on its toucher's node, so the arena
                 // takes 4 KiB pages (one call, no VMA split)
                 if (arena != nullptr && numa.place) {
                     if (madvise(arena, (size_t) ((bytes + page - 1) / page * page), MADV_NOHUGEPAGE) != 0)
@@ -3958,17 +3958,17 @@ bool FileExpertSource::pin_cache_complement(
                 // read by the GPU over PCIe (--pcie-frac) and copied by DMA; only the rest is locked in the working
                 // set (the registered prefix is page-locked by the driver already - locking it twice made the next
                 // device allocation fail).
-                // opt-in (STRATA_PARTIAL_PIN=1): on the RTX 5070 PC the GPU's PCIe share of the misses measured no
+                // opt-in (NOSTROMA_PARTIAL_PIN=1): on the RTX 5070 PC the GPU's PCIe share of the misses measured no
                 // faster than the CPU computing them (7.30 / 7.44 tok/s with 24 / 16 GiB registered against 7.05-7.74
                 // unpinned at a 40 GiB budget), and registering adds startup time and driver memory pressure
                 static const bool partial_on = [] {
-                    const char* v = strata::env("NOSTROMA_PARTIAL_PIN");
+                    const char* v = nostroma::env("NOSTROMA_PARTIAL_PIN");
                     return v != nullptr && std::atoi(v) != 0;
                 }();
-                // at most STRATA_PARTIAL_PIN_GIB (default 24): registering 30 GiB of a 40 GiB arena left the driver
+                // at most NOSTROMA_PARTIAL_PIN_GIB (default 24): registering 30 GiB of a 40 GiB arena left the driver
                 // unable to page-lock the prompt path's small buffers afterwards (RTX 5070, WDDM)
                 static const uint64_t pin_cap = [] {
-                    const char* v = strata::env("NOSTROMA_PARTIAL_PIN_GIB");
+                    const char* v = nostroma::env("NOSTROMA_PARTIAL_PIN_GIB");
                     return (uint64_t) ((v != nullptr && std::atof(v) > 0 ? std::atof(v) : 24.0) * 1073741824.0);
                 }();
                 if (paced) {
@@ -4069,9 +4069,9 @@ bool FileExpertSource::pin_cache_complement(
                 }
                 if (!paced) lock_off = partial_pin;
                 // (paced: lock_off was set above)
-                const strata::platform::LockResult lr =
-                    lock_off < bytes ? strata::platform::lock_resident((uint8_t*) arena + lock_off, bytes - lock_off)
-                                     : strata::platform::LockResult{true, 0, ""};
+                const nostroma::platform::LockResult lr =
+                    lock_off < bytes ? nostroma::platform::lock_resident((uint8_t*) arena + lock_off, bytes - lock_off)
+                                     : nostroma::platform::LockResult{true, 0, ""};
                 locked = lr.locked_bytes;
                 note += (note.empty() ? "" : "; ") + lr.note;
             }
@@ -4206,7 +4206,7 @@ bool FileExpertSource::pin_cache_complement(
     if (maps_.empty() && !unmapped_) (void) VirtualUnlock((LPVOID) base_, (SIZE_T) mapped_bytes_);
     for (const Map& m : maps_) if (!m.closed) (void) VirtualUnlock((LPVOID) m.base, (SIZE_T) m.bytes);
 #endif
-    if (strata::env("NOSTROMA_VERIFY_COMPLEMENT") != nullptr && host != nullptr && bytes > 0) {
+    if (nostroma::env("NOSTROMA_VERIFY_COMPLEMENT") != nullptr && host != nullptr && bytes > 0) {
         // tests: the copy's checksum (FNV-1a of each 1 GiB piece on its own thread, then of those), any reader
         constexpr uint64_t kPiece = 1ull << 30;
         const size_t pieces = (size_t) ((bytes + kPiece - 1) / kPiece);
@@ -4262,7 +4262,7 @@ bool FileExpertSource::pin_cache_complement(
                              "during a long prompt; expect a slower prompt read on 50K+ token prompts (one measurement: 18%% uncovered "
                              "cost 26%%). %s and restart; the line above should read N of N.\n", missing, lendable,
                      100.0 * (double) missing / (double) std::max<long long>(1, lendable),
-                     lend ? "Free RAM or lower STRATA_RESIDENT_HEADROOM_GIB (now the RAM left free at start)"
+                     lend ? "Free RAM or lower NOSTROMA_RESIDENT_HEADROOM_GIB (now the RAM left free at start)"
                           : budget_automatic_ ? "Free more RAM for the automatic RAM copy (the lend region comes after the ranked experts)"
                                               : "Raise --resident-budget-gib (the lend region comes after the ranked experts)");
     }
@@ -4313,7 +4313,7 @@ bool FileExpertSource::reserve_exchanges(int64_t n, std::string& err, int64_t bo
     if ((uint64_t)n > std::numeric_limits<size_t>::max() / blob) {
         err = "FileExpertSource: exchange allocation size overflow"; return false;
     }
-    const char* rotate_env = strata::env("NOSTROMA_EXCHANGE_ROTATE");
+    const char* rotate_env = nostroma::env("NOSTROMA_EXCHANGE_ROTATE");
     const bool requested = rotate_env && std::strcmp(rotate_env, "1") == 0;
     // layers of several block sizes (a GGUF's mixed i-quants): spares of every size, see ExchangeStorage
     bounce = std::max<int64_t>(0, std::min(bounce, n));
@@ -4523,7 +4523,7 @@ bool FileExpertSource::ram_stage(int64_t layer, int64_t in, int64_t out) {
     {
         std::lock_guard<std::mutex> lk(ram_mu_);
         static const size_t cap = [] {
-            const char* v = strata::env("NOSTROMA_RAM_ADAPT_QUEUE");
+            const char* v = nostroma::env("NOSTROMA_RAM_ADAPT_QUEUE");
             return v != nullptr ? (size_t) std::max(1, std::atoi(v)) : (size_t) 64;
         }();
         if (ram_jobs_.size() >= cap) return false;
@@ -4549,7 +4549,7 @@ bool FileExpertSource::ram_queued(int64_t layer, int64_t expert) const {
 }
 
 void FileExpertSource::ram_worker() {
-    strata::platform::name_this_thread("strata-ram");
+    nostroma::platform::name_this_thread("nostroma-ram");
     for (;;) {
         RamJob* job = nullptr;
         {
@@ -4630,7 +4630,7 @@ int FileExpertSource::tier_of(int64_t layer, int64_t expert) const {
 
 void FileExpertSource::commit_copies() {
     fs_hold_staged(true);   // #2134: held until commit_flip has pointed `out` at its new place
-    if (exchange_storage_.active()) return;   // STRATA_EXCHANGE_ROTATE: ownership moves in commit_flip, nothing to copy
+    if (exchange_storage_.active()) return;   // NOSTROMA_EXCHANGE_ROTATE: ownership moves in commit_flip, nothing to copy
     for (const Exchange& x : staged_) {
         const uint8_t* src = override_.empty() ? nullptr : override_[x.out];
         const uint64_t at = complement_offsets_[x.in];
@@ -4645,7 +4645,7 @@ int64_t FileExpertSource::commit_flip() {
     fs_hold_staged(true);   // (already held by commit_copies; idempotent)
     for (const Exchange& x : staged_) {
         const uint8_t* src = override_[x.out];
-        if (exchange_storage_.active()) {   // STRATA_EXCHANGE_ROTATE: the same ownership transfer as commit_exchanges
+        if (exchange_storage_.active()) {   // NOSTROMA_EXCHANGE_ROTATE: the same ownership transfer as commit_exchanges
             if (!exchange_storage_.commit(x.in, x.out, (size_t) x.q, src, (size_t) x.bytes)) {
                 std::fprintf(stderr, "FileExpertSource: invalid exchange rotation commit; refusing corrupt residency\n");
                 std::abort();
@@ -4672,7 +4672,7 @@ const uint8_t* FileExpertSource::resident_blob(int64_t layer, int64_t expert) co
         expert >= n_expert_) return nullptr;
     const size_t index = (size_t) layer * (size_t) n_expert_ + (size_t) expert;
     if (index >= complement_offsets_.size()) return nullptr;
-    return resident_blob(index);   // through the rotation's ownership table when STRATA_EXCHANGE_ROTATE is on
+    return resident_blob(index);   // through the rotation's ownership table when NOSTROMA_EXCHANGE_ROTATE is on
 }
 
 const uint8_t* FileExpertSource::blob_stable(int64_t layer, int64_t expert) {
@@ -4690,7 +4690,7 @@ const uint8_t* FileExpertSource::blob_stable(int64_t layer, int64_t expert) {
 
 int FileExpertSource::blob_parts(int64_t layer, int64_t expert, BlobPart* out) {
     // the GGUF mapped in place only (three tensors per expert); the RAM copy, an exchange override, the unbuffered
-    // reads, a closed mapping and the I/O prefetch (STRATA_IO_PREFETCH: it preads the ranges the page cache lacks, which a copy out
+    // reads, a closed mapping and the I/O prefetch (NOSTROMA_IO_PREFETCH: it preads the ranges the page cache lacks, which a copy out
     // of the mapping would fault in one page at a time) keep going through blob(), which knows them
     if (role_ptr_.empty() || !direct_.empty() || io_pf_ || unmapped_ || base_ == nullptr || layer < 0 || expert < 0 ||
         layer >= n_layers_ || expert >= n_expert_)
@@ -4732,7 +4732,7 @@ const uint8_t* FileExpertSource::blob(int64_t layer, int64_t expert) {
             if (result != nullptr) {
                 file_read_bytes_.fetch_add(layer_blob_bytes_[(size_t) layer], std::memory_order_relaxed);
 #if defined(__linux__)
-                if (io_stats_) {   // STRATA_IO_STATS=1: what the page cache held when the kernels were handed the blob
+                if (io_stats_) {   // NOSTROMA_IO_STATS=1: what the page cache held when the kernels were handed the blob
                     uint64_t total = 0;
                     const uint64_t c = cached_bytes(layer, expert, total);
                     io_cached_.fetch_add(c, std::memory_order_relaxed);
@@ -4790,7 +4790,7 @@ void expert_pool_dispatch(void* user, const float* x_f, const int32_t* ids, cons
     ExpertDispatch& d = *(ExpertDispatch*) user;
     if (d.failed) return;   // a previous layer already failed; do not make it worse
 
-    using namespace strata::kernels::cpu;
+    using namespace nostroma::kernels::cpu;
     // Clause 3: the blob's internal offsets are compile-time constants, so a mismatched geometry does not
     // produce a wrong answer - it produces a walk off the end of the blob into the next expert's bytes, which
     // is finite and plausible.  Refuse, name the number, and let the driver report it.
@@ -4910,19 +4910,19 @@ namespace {
 // the verify window's per-entry tables in `expert_pool_dispatch_multi` (`kind`, `distinct`, `first_of`)
 // are fixed arrays of this many entries: a window's rows (kWindowMaxT) of the model's 10 routed experts must fit, and a
 // larger k is refused at run time rather than written past them.  128 for the 8-row window (as it was), 256 for 16.
-constexpr int64_t kMaxWindowEntries = strata::kernels::kWindowMaxT <= 8 ? 128 : 256;
-static_assert(strata::kernels::kWindowMaxT * 10 <= kMaxWindowEntries, "a verify window's entries overflow the tables");
+constexpr int64_t kMaxWindowEntries = nostroma::kernels::kWindowMaxT <= 8 ? 128 : 256;
+static_assert(nostroma::kernels::kWindowMaxT * 10 <= kMaxWindowEntries, "a verify window's entries overflow the tables");
 }  // namespace
 
 namespace {
-// STRATA_ROUTE_TAIL_SKIP: the rank from which a missed expert that every token of the window routes that low is skipped.  An
+// NOSTROMA_ROUTE_TAIL_SKIP: the rank from which a missed expert that every token of the window routes that low is skipped.  An
 // explicit environment value is read once; the serve start-up (generate.cpp) sets the CUDA default where it applies.
 std::atomic<int> g_tail_skip_rank{-1};   // -1: not resolved yet
 }  // namespace
 int tail_skip_rank() {
     int r = g_tail_skip_rank.load(std::memory_order_relaxed);
     if (r < 0) {
-        const char* v = strata::env("NOSTROMA_ROUTE_TAIL_SKIP");
+        const char* v = nostroma::env("NOSTROMA_ROUTE_TAIL_SKIP");
         r = v != nullptr ? std::atoi(v) : 0;
         r = r > 0 && r < 10 ? r : 0;
         g_tail_skip_rank.store(r, std::memory_order_relaxed);
@@ -4932,10 +4932,10 @@ int tail_skip_rank() {
 void set_tail_skip_rank(int r) { g_tail_skip_rank.store(r > 0 && r < 10 ? r : 0, std::memory_order_relaxed); }
 
 void expert_pool_dispatch_multi(ExpertDispatch& d, const float* x_f, const int32_t* ids, int64_t n_tok, int64_t k,
-                                float* out, strata::kernels::cpu::NativeArithmetic arithmetic) {
-    using namespace strata::kernels::cpu;
+                                float* out, nostroma::kernels::cpu::NativeArithmetic arithmetic) {
+    using namespace nostroma::kernels::cpu;
     if (d.failed) return;
-    if (n_tok < 1 || n_tok > strata::kernels::kWindowMaxT) {
+    if (n_tok < 1 || n_tok > nostroma::kernels::kWindowMaxT) {
         d.failed = true;
         d.fail = "a verify window has more tokens than the multi-token expert kernel takes";
         d.fail_layer = d.layers;
@@ -4954,23 +4954,23 @@ void expert_pool_dispatch_multi(ExpertDispatch& d, const float* x_f, const int32
         d.fail_layer = d.layers;
         return;
     }
-    if ((int64_t) d.act_multi.size() < n_tok) d.act_multi.resize((size_t) strata::kernels::kWindowMaxT);
+    if ((int64_t) d.act_multi.size() < n_tok) d.act_multi.resize((size_t) nostroma::kernels::kWindowMaxT);
     const ExpertLayout& lay = expert_layout();
     const bool native = lay.native;
-    if (native && d.nact_multi.size() < (size_t) strata::kernels::kWindowMaxT * kNativeActBytes)
-        d.nact_multi.resize((size_t) strata::kernels::kWindowMaxT * kNativeActBytes);
+    if (native && d.nact_multi.size() < (size_t) nostroma::kernels::kWindowMaxT * kNativeActBytes)
+        d.nact_multi.resize((size_t) nostroma::kernels::kWindowMaxT * kNativeActBytes);
     if (d.job_of.size() != (size_t) d.n_expert) d.job_of.assign((size_t) d.n_expert, (int16_t) -1);
-    if (d.jobs_multi.size() < (size_t) (n_tok * k)) d.jobs_multi.resize((size_t) (strata::kernels::kWindowMaxT * k));
-    static const bool ptrace = strata::env("NOSTROMA_POOL_TRACE") != nullptr;
+    if (d.jobs_multi.size() < (size_t) (n_tok * k)) d.jobs_multi.resize((size_t) (nostroma::kernels::kWindowMaxT * k));
+    static const bool ptrace = nostroma::env("NOSTROMA_POOL_TRACE") != nullptr;
     auto pt = [&](const char* what, long long a = -1) {
         if (ptrace) { std::fprintf(stderr, "pool trace: layer %lld %s %lld\n", (long long) d.layers, what, a); std::fflush(stderr); }
     };
     const auto c0 = std::chrono::steady_clock::now();
-    const FileExpertSource::DecodeScope decode_scope;   // 149 STRATA_IO_PF_GATE: this thread reads for the decode
-    // 149-cold STRATA_COLD_OVERLAP: 0 off, 1 overlap, 2 measure only, 3 overlap + zero-copy, 4 zero-copy only.
+    const FileExpertSource::DecodeScope decode_scope;   // 149 NOSTROMA_IO_PF_GATE: this thread reads for the decode
+    // 149-cold NOSTROMA_COLD_OVERLAP: 0 off, 1 overlap, 2 measure only, 3 overlap + zero-copy, 4 zero-copy only.
     // 0.2.0: unset, 4 for the GGUF read in place on Linux (zero-copy needs the page cache's residency query), else 0
     static const int cold_env = [] {
-        const char* v = strata::env("NOSTROMA_COLD_OVERLAP");
+        const char* v = nostroma::env("NOSTROMA_COLD_OVERLAP");
         return v == nullptr || v[0] == '\0' ? -1 : std::clamp(std::atoi(v), 0, 4);
     }();
     d.cold_mode = cold_env >= 0 ? cold_env : (d.src != nullptr && d.src->linux_file_defaults() ? 4 : 0);
@@ -5007,7 +5007,7 @@ void expert_pool_dispatch_multi(ExpertDispatch& d, const float* x_f, const int32
                     !(d.peer != nullptr && d.peer->has(d.layers, e)) && !helper_holds(e)) ++nmiss;
             }
         }
-        // STRATA_ROUTE_TAIL_SKIP=R (default 7 on CUDA serve, =0 off; changes the output): a missed expert that EVERY token of the window routes
+        // NOSTROMA_ROUTE_TAIL_SKIP=R (default 7 on CUDA serve, =0 off; changes the output): a missed expert that EVERY token of the window routes
         // only at rank >= R (the smallest weights of the top-10) is neither copied nor computed; its contribution is
         // zero, without renormalisation (the others keep the weight the router gave them).  Less PCIe and CPU work.
         const int tail_rank = tail_skip_rank();
@@ -5030,10 +5030,10 @@ void expert_pool_dispatch_multi(ExpertDispatch& d, const float* x_f, const int32
                 ++d.tail_experts;
             }
         }
-        // STRATA_ROUTE_DUMP=<file> (bench only, off by default): one text line per layer-window, "layer n_tok nd nmiss | e:rows:res ..." in routing
+        // NOSTROMA_ROUTE_DUMP=<file> (bench only, off by default): one text line per layer-window, "layer n_tok nd nmiss | e:rows:res ..." in routing
         // order (res 1 = resident in the GPU cache, 0 = a miss the CPU computes unless the PCIe share takes it, 2 = tail-skipped), for replaying placement
         // policies offline on the routing the engine really produced (round 0216 P3.1).
-        static std::FILE* const route_dump = [] { const char* f = strata::env("NOSTROMA_ROUTE_DUMP"); return f != nullptr && f[0] != '\0' ? std::fopen(f, "a") : nullptr; }();
+        static std::FILE* const route_dump = [] { const char* f = nostroma::env("NOSTROMA_ROUTE_DUMP"); return f != nullptr && f[0] != '\0' ? std::fopen(f, "a") : nullptr; }();
         if (route_dump != nullptr) {
             std::fprintf(route_dump, "%lld %lld %d %d |", (long long) d.layers, (long long) n_tok, nd, nmiss);
             for (int q = 0; q < nd; ++q) {
@@ -5045,19 +5045,19 @@ void expert_pool_dispatch_multi(ExpertDispatch& d, const float* x_f, const int32
             }
             std::fputc(10, route_dump);
         }
-        // STRATA_PCIE_BALANCE (opt-in, #1548): the count comes from the measured CPU and GPU costs instead of the share
+        // NOSTROMA_PCIE_BALANCE (opt-in, #1548): the count comes from the measured CPU and GPU costs instead of the share
         const bool pcie_ok = (d.pcie_num > 0 || d.pcie_model.on) && d.src->pcie_layer(d.layers);
         int m = pcie_ok ? d.pcie_model.pick(nmiss, (nmiss * d.pcie_num) >> 8) : 0;
-        // STRATA_PCIE_MIN1 (opt-in): the share rounds to 0 for 1-2 misses per layer, so the PCIe lane idles on the typical
+        // NOSTROMA_PCIE_MIN1 (opt-in): the share rounds to 0 for 1-2 misses per layer, so the PCIe lane idles on the typical
         // decode step; with >= 2 misses give it at least one (the last in routing order).  It only flies if its blob is
         // pinned (the fetch below checks), else it stays a CPU miss exactly as before.  Read once.
-        static const bool pcie_min1 = [] { const char* v = strata::env("NOSTROMA_PCIE_MIN1"); return v && std::atoi(v) != 0; }();
+        static const bool pcie_min1 = [] { const char* v = nostroma::env("NOSTROMA_PCIE_MIN1"); return v && std::atoi(v) != 0; }();
         if (pcie_min1 && pcie_ok && m < 1 && nmiss >= 2) m = 1;
         int miss_rank = 0, groups = 0, entries = 0, fetches = 0;
         GpuPlanSink& P = *d.plan;
         const uint8_t* dma_src[64];
         int64_t pcie_i0[64];
-        // STRATA_ADAPT_FETCH: the share is the layer's most-routed misses, and the ones the tier would swap in are copied
+        // NOSTROMA_ADAPT_FETCH: the share is the layer's most-routed misses, and the ones the tier would swap in are copied
         // into a slot as they are fetched (ExpertDispatch::fetch_admit)
         const bool fetch_on = m > 0 && d.fetch_can(d.layers);
         const float* use = d.usage.empty() ? nullptr : d.usage.data() + (size_t) d.layers * (size_t) d.n_expert;
@@ -5067,7 +5067,7 @@ void expert_pool_dispatch_multi(ExpertDispatch& d, const float* x_f, const int32
             for (int q = 0; q < nd; ++q) {
                 pick[q] = false;
                 const int32_t e = ids[distinct[q]];   // a tail-skipped miss is not fetched
-                // (an unpinned blob cannot be fetched: under STRATA_PIN_BY_NEED a PCIe layer is pinned in part)
+                // (an unpinned blob cannot be fetched: under NOSTROMA_PIN_BY_NEED a PCIe layer is pinned in part)
                 if (!skip_d[q] && e >= 0 && e < d.n_expert && d.host_res[(size_t) d.layers * (size_t) d.n_expert + (size_t) e] < 0 &&
                     d.src->pinned(d.layers, e))
                     mq[nm++] = q;
@@ -5080,7 +5080,7 @@ void expert_pool_dispatch_multi(ExpertDispatch& d, const float* x_f, const int32
             const int32_t e = ids[i0];
             int kd = -1;
             unsigned long long ptr = 0;
-            if (skip_d[q]) {                       // STRATA_ROUTE_TAIL_SKIP: neither copied nor computed
+            if (skip_d[q]) {                       // NOSTROMA_ROUTE_TAIL_SKIP: neither copied nor computed
                 for (int64_t i = i0; i < n; ++i)
                     if (first_of[i] == i0) kind[i] = -2;
                 continue;
@@ -5202,7 +5202,7 @@ void expert_pool_dispatch_multi(ExpertDispatch& d, const float* x_f, const int32
     if (d.peer != nullptr) {                 // multi-GPU: start the second GPU's share before the CPU's own work
         std::string perr;
         if (!d.peer->launch(d.layers, x_f, ids, n_tok, k, kind, perr, out)) {
-            std::fprintf(stderr, "strata: %s (layer %lld)\n", perr.c_str(), (long long) d.layers);
+            std::fprintf(stderr, "nostroma: %s (layer %lld)\n", perr.c_str(), (long long) d.layers);
             d.failed = true;
             d.fail = "the peer GPU's experts could not be launched";
             d.fail_layer = d.layers;
@@ -5218,15 +5218,15 @@ void expert_pool_dispatch_multi(ExpertDispatch& d, const float* x_f, const int32
             for (int64_t i = 0; i < n; ++i) if (d.remote[r]->owns(i)) kind[i] = 2;
         }
     }
-    static const bool dec_batch = [] { const char* v = strata::env("NOSTROMA_DEC_BATCH"); return v == nullptr || std::atoi(v) != 0; }();
-    // the GPU's copy_rows_from_mapped zeroes the rows it computed itself (dec_batch); STRATA_VERIFY_DEVICE_PLAN's
+    static const bool dec_batch = [] { const char* v = nostroma::env("NOSTROMA_DEC_BATCH"); return v == nullptr || std::atoi(v) != 0; }();
+    // the GPU's copy_rows_from_mapped zeroes the rows it computed itself (dec_batch); NOSTROMA_VERIFY_DEVICE_PLAN's
     // copy_or_zero_from_mapped copies every row, so there the host still zeroes them
-    static const bool device_plan = [] { const char* v = strata::env("NOSTROMA_VERIFY_DEVICE_PLAN"); return v != nullptr && std::atoi(v) != 0; }();
+    static const bool device_plan = [] { const char* v = nostroma::env("NOSTROMA_VERIFY_DEVICE_PLAN"); return v != nullptr && std::atoi(v) != 0; }();
     const bool gpu_zeroes_hits = (d.plan != nullptr && n <= kMaxWindowEntries && n <= d.plan->cap && dec_batch && !device_plan);
     bool any_cpu = false;
     for (int64_t i = 0; i < n; ++i)
-        if (kind[i] == -1) { any_cpu = true; break; }   // -2: skipped (STRATA_ROUTE_TAIL_SKIP), no work
-    if (d.dres_check != nullptr && any_cpu) {   // STRATA_ADAPT_CHECKRES
+        if (kind[i] == -1) { any_cpu = true; break; }   // -2: skipped (NOSTROMA_ROUTE_TAIL_SKIP), no work
+    if (d.dres_check != nullptr && any_cpu) {   // NOSTROMA_ADAPT_CHECKRES
         bool published = false;
         for (int64_t i = 0; i < n && !published; ++i)
             published = ids[i] < 0 || ids[i] >= d.n_expert ||
@@ -5239,7 +5239,7 @@ void expert_pool_dispatch_multi(ExpertDispatch& d, const float* x_f, const int32
         const bool ep = d.remote_count > 0 && d.remote[0]->optimized_decode();
         for (int64_t t = 0; t < n_tok; ++t) {
             if (ep && std::all_of(kind + t * k, kind + (t + 1) * k, [](int32_t v) { return v >= 0; })) continue;
-            if (native && strata::kernels::cpu::q2_native_kernels(lay.fmt[(size_t) d.layers].gu_type))   // a native Q2_0 pack: the Q2_0 kernels' activations
+            if (native && nostroma::kernels::cpu::q2_native_kernels(lay.fmt[(size_t) d.layers].gu_type))   // a native Q2_0 pack: the Q2_0 kernels' activations
                 act_quant_any(x_f + (size_t) t * H, H, d.act_multi[(size_t) t]);
             else if (native)
                 native_quant_act(lay.fmt[(size_t) d.layers], x_f + (size_t) t * H, d.nact_multi.data() + (size_t) t * kNativeActBytes);
@@ -5248,7 +5248,7 @@ void expert_pool_dispatch_multi(ExpertDispatch& d, const float* x_f, const int32
         }
     }
     const auto c2 = std::chrono::steady_clock::now();
-    // 149-cold STRATA_COLD_OVERLAP (d.cold_mode): which of the CPU's experts still have a blob to read.  Mode 1 reads
+    // 149-cold NOSTROMA_COLD_OVERLAP (d.cold_mode): which of the CPU's experts still have a blob to read.  Mode 1 reads
     // them in the background and computes the ready ones first, then each read one as it lands; every expert keeps
     // its own token rows (the pool splits rows, never a row's sum), and the weighted sum over a token's experts is
     // the GPU's, after the dispatch - so the result is the same bits in any batch order.  The stage buffers stay
@@ -5305,7 +5305,7 @@ void expert_pool_dispatch_multi(ExpertDispatch& d, const float* x_f, const int32
                 d.fail_expert = e;
                 return;
             }
-            if (kind[i] == -2) {            // STRATA_ROUTE_TAIL_SKIP: a skipped tail expert contributes zero
+            if (kind[i] == -2) {            // NOSTROMA_ROUTE_TAIL_SKIP: a skipped tail expert contributes zero
                 std::memset(row, 0, (size_t) H * sizeof(float));
                 ++d.tail_skipped;
                 continue;
@@ -5342,7 +5342,7 @@ void expert_pool_dispatch_multi(ExpertDispatch& d, const float* x_f, const int32
                 nj.fmt = nullptr;
                 if (zc) {   // 149-cold mode 3: the gate rows are the blob; up and down at their distance in the mapping
                     if (d.zc_fmt.size() < d.jobs_multi.size()) d.zc_fmt.resize(d.jobs_multi.size());
-                    strata::kernels::cpu::NativeFmt& f = d.zc_fmt[(size_t) jo];
+                    nostroma::kernels::cpu::NativeFmt& f = d.zc_fmt[(size_t) jo];
                     f = lay.fmt[(size_t) d.layers];
                     f.up_off = (size_t) ((uintptr_t) zp[1] - (uintptr_t) zp[0]);     // modular: the tensors' order
                     f.down_off = (size_t) ((uintptr_t) zp[2] - (uintptr_t) zp[0]);   // in the file does not matter
@@ -5431,7 +5431,7 @@ void expert_pool_dispatch_multi(ExpertDispatch& d, const float* x_f, const int32
     if (d.peer != nullptr) {                 // multi-GPU: the second GPU's rows, into the same mapped rows
         std::string perr;
         if (!d.peer->finish(out, perr)) {
-            std::fprintf(stderr, "strata: %s (layer %lld)\n", perr.c_str(), (long long) d.layers);
+            std::fprintf(stderr, "nostroma: %s (layer %lld)\n", perr.c_str(), (long long) d.layers);
             d.failed = true;
             d.fail = "the peer GPU's experts failed";
             d.fail_layer = d.layers;
@@ -5464,12 +5464,12 @@ void expert_hit_run(void* user, void* stream, HitPhase phase, const int32_t* ids
         d.hit_pending = false;
         if (!d.hits_ready() || ids == nullptr || k <= 0) return;
         if ((int64_t) d.is_hit.size() < k) d.is_hit.resize((size_t) k);
-        // STRATA_EXPERT_NIBBLE=1: this split computes a resident expert with the GGUF-block kernels and admits + fills
+        // NOSTROMA_EXPERT_NIBBLE=1: this split computes a resident expert with the GGUF-block kernels and admits + fills
         // a missed one with its GGUF blob - neither may meet a layer whose slots hold 4-bit codes (a native pack's
         // experts run in the verify windows, so this is the backstop, never the path)
-#if STRATA_EXPERT_NIBBLE_BUILT   // compiled out of every other build: nothing is added to the hit split there
-        if (strata::core::nibble::layer(d.layers).on)
-            strata::core::nibble::fatal(d.layers, "the expert source's hit split (expert_hit_run)",
+#if NOSTROMA_EXPERT_NIBBLE_BUILT   // compiled out of every other build: nothing is added to the hit split there
+        if (nostroma::core::nibble::layer(d.layers).on)
+            nostroma::core::nibble::fatal(d.layers, "the expert source's hit split (expert_hit_run)",
                                         "it computes resident experts as GGUF blocks and fills slots with GGUF blobs");
 #endif
 
@@ -5494,7 +5494,7 @@ void expert_hit_run(void* user, void* stream, HitPhase phase, const int32_t* ids
                 // count of distinct experts moved rather than of looks.
                 const uint8_t* b = d.src->blob(d.layers, e);
                 std::string ferr;
-                if (b == nullptr || !d.cache->fill_slot(cand, b, cs, ferr, (int64_t) strata::kernels::cpu::expert_layout().blob_bytes(d.layers))) {
+                if (b == nullptr || !d.cache->fill_slot(cand, b, cs, ferr, (int64_t) nostroma::kernels::cpu::expert_layout().blob_bytes(d.layers))) {
                     d.failed = true;
                     d.fail = "the expert cache could not fill a slot";
                     d.fail_layer = d.layers;
@@ -5541,13 +5541,13 @@ void expert_hit_run(void* user, void* stream, HitPhase phase, const int32_t* ids
             d.fail = "the hit path has no fp32 activation scales (R4.2h)";
             return;
         }
-        strata::kernels::quantize_q8_0_scaled(d.mixed, d.x_q8_0_hit, d.x_q8_0_hit_scale, strata::kernels::cpu::H,
+        nostroma::kernels::quantize_q8_0_scaled(d.mixed, d.x_q8_0_hit, d.x_q8_0_hit_scale, nostroma::kernels::cpu::H,
                                               cs);
         if (d.hit_cpu_order)
-            strata::kernels::moe_hit_grouped_s2_cpu_order(d.cache_base, d.d_slot, d.d_dst, d.n_hits,
+            nostroma::kernels::moe_hit_grouped_s2_cpu_order(d.cache_base, d.d_slot, d.d_dst, d.n_hits,
                 d.cache_blob, d.x_q8_0_hit, d.hit_scratch, d.hit_out, cs, d.x_q8_0_hit_scale);
         else
-            strata::kernels::moe_hit_grouped_s2(d.cache_base, d.d_slot, d.d_dst, d.n_hits, d.cache_blob,
+            nostroma::kernels::moe_hit_grouped_s2(d.cache_base, d.d_slot, d.d_dst, d.n_hits, d.cache_blob,
                 d.x_q8_0_hit, d.hit_scratch, d.hit_out, cs, d.x_q8_0_hit_scale);
         d.hit_pending = true;
         if (d.hit_done != nullptr) cudaEventRecord((cudaEvent_t) d.hit_done, cs);
@@ -5567,7 +5567,7 @@ void expert_hit_run(void* user, void* stream, HitPhase phase, const int32_t* ids
         if (cudaEventQuery((cudaEvent_t) d.hit_done) == cudaSuccess) ++d.hit_ready;
         else ++d.hit_late;
     }
-    strata::kernels::add_inplace(d.parts_out, d.hit_out, d.parts_elems, cs);
+    nostroma::kernels::add_inplace(d.parts_out, d.hit_out, d.parts_elems, cs);
 }
 
 // ================================ THE RESIDENT ARENA (R2.1) ================================
@@ -5638,10 +5638,10 @@ bool hash_sampled_file(const std::filesystem::path& path, uint64_t& h, std::stri
 }
 
 bool shared_arena_pack_hash(const std::string& pack_dir, const std::string& experts_path,
-                            const std::string& gguf, const strata::kernels::cpu::ExpertLayout& lay,
+                            const std::string& gguf, const nostroma::kernels::cpu::ExpertLayout& lay,
                             uint64_t& out, std::string& err) {
     uint64_t h = 1469598103934665603ull;
-    hash_text(h, "strata-shared-expert-arena-pack-v1");
+    hash_text(h, "nostroma-shared-expert-arena-pack-v1");
     hash_u64(h, (uint64_t) lay.n_layers);
     hash_u64(h, (uint64_t) lay.n_expert);
     hash_u64(h, lay.total);
@@ -5680,7 +5680,7 @@ bool shared_arena_pack_hash(const std::string& pack_dir, const std::string& expe
 namespace {
 /// The GGUF file that holds role `r` (0 gate, 1 up, 2 down) of layer `l`: a name beside the --native shard
 /// (native_experts.txt v3 per layer, v4 per role), or the --native shard itself.
-std::string expert_gguf_file(const std::string& gguf, const strata::kernels::cpu::ExpertLayout& lay, int64_t l, int r) {
+std::string expert_gguf_file(const std::string& gguf, const nostroma::kernels::cpu::ExpertLayout& lay, int64_t l, int r) {
     const size_t i = (size_t) (3 * l + r);
     if (lay.gguf_file.size() <= i || lay.gguf_file[i].empty()) return gguf;
     const size_t cut = gguf.find_last_of("/\\");
@@ -5689,7 +5689,7 @@ std::string expert_gguf_file(const std::string& gguf, const strata::kernels::cpu
 }  // namespace
 
 void ExpertSource::record_inputs(const std::string& pack_experts, const std::string& gguf,
-                                 const strata::kernels::cpu::ExpertLayout& lay, bool from_gguf) {
+                                 const nostroma::kernels::cpu::ExpertLayout& lay, bool from_gguf) {
     static const char* roles[3] = {"gate", "up", "down"};
     inputs_.clear();
     if (!from_gguf) { inputs_.push_back({"pack experts.bin", pack_experts}); return; }
@@ -5699,14 +5699,14 @@ void ExpertSource::record_inputs(const std::string& pack_experts, const std::str
             inputs_.push_back({"expert blk." + std::to_string(l) + ".ffn_" + roles[r], expert_gguf_file(gguf, lay, l, r)});
 }
 
-bool check_experts_gguf(const std::string& gguf, const strata::kernels::cpu::ExpertLayout& lay, std::string& err) {
+bool check_experts_gguf(const std::string& gguf, const nostroma::kernels::cpu::ExpertLayout& lay, std::string& err) {
     static const char* roles[3] = {"gate", "up", "down"};
     if (lay.gguf_off.size() != (size_t) (3 * lay.n_layers)) {
         err = "native_experts.txt has no GGUF offsets (a pack older than v2): repack it with tools/iq_pack.py";
         return false;
     }
     try {
-        std::map<std::string, std::unique_ptr<strata::GgufFile>> files;
+        std::map<std::string, std::unique_ptr<nostroma::GgufFile>> files;
         for (int64_t l = 0; l < lay.n_layers; ++l) {
             const auto& fm = lay.fmt[(size_t) l];
             const uint64_t blob = lay.bytes[(size_t) l];
@@ -5714,9 +5714,9 @@ bool check_experts_gguf(const std::string& gguf, const strata::kernels::cpu::Exp
             for (int r = 0; r < 3; ++r) {
                 const std::string path = expert_gguf_file(gguf, lay, l, r);
                 auto& f = files[path];
-                if (!f) f = std::make_unique<strata::GgufFile>(path);
+                if (!f) f = std::make_unique<nostroma::GgufFile>(path);
                 const std::string name = "blk." + std::to_string(l) + ".ffn_" + roles[r] + "_exps.weight";
-                const strata::TensorInfo* t = f->find(name);
+                const nostroma::TensorInfo* t = f->find(name);
                 const uint64_t want_type = (uint64_t) (r < 2 ? fm.gu_type : fm.d_type);
                 // GGUF order: dim 0 is the row (the input), dim 1 the rows, dim 2 the experts
                 const uint64_t cols = (uint64_t) (r < 2 ? fm.n_embd : fm.n_ff);
@@ -5731,7 +5731,7 @@ bool check_experts_gguf(const std::string& gguf, const strata::kernels::cpu::Exp
                          t->shape[2] != (uint64_t) lay.n_expert)
                     why = "is not [" + std::to_string(cols) + ", " + std::to_string(rows) + ", " +
                           std::to_string(lay.n_expert) + "]";
-                else if (strata::tensor_payload_bytes(*t) != bytes)
+                else if (nostroma::tensor_payload_bytes(*t) != bytes)
                     why = "is not " + std::to_string(per[r]) + " B per expert";
                 else if (f->data_start() + t->offset != lay.gguf_off[(size_t) (3 * l + r)])
                     why = "starts at byte " + std::to_string(f->data_start() + t->offset) + ", the pack says " +
@@ -5759,7 +5759,7 @@ bool check_experts_gguf(const std::string& gguf, const strata::kernels::cpu::Exp
 // #255, gopinath87607).  The caller checks the spans first (check_experts_gguf).
 // `unbuffered` (Windows, experts_unbuffered): each chunk's 4 KiB-aligned window is read with FILE_FLAG_NO_BUFFERING into
 // an aligned buffer and scattered into the blobs - no copy through the file cache when the drive is read anyway.
-LoadStats load_experts_gguf(const std::string& gguf, uint8_t* dst, const strata::kernels::cpu::ExpertLayout& lay,
+LoadStats load_experts_gguf(const std::string& gguf, uint8_t* dst, const nostroma::kernels::cpu::ExpertLayout& lay,
                             int threads, bool unbuffered, const std::atomic<int>* ready, const PadMap* pad) {
     // where blob (l, e) goes in `dst`: packed (experts.bin) or the padded layout of pin by need
     auto dst_blob = [&lay, pad](int64_t l, int64_t e) -> uint64_t {
@@ -5901,7 +5901,7 @@ LoadStats load_experts_gguf(const std::string& gguf, uint8_t* dst, const strata:
                 for (uint64_t done = 0; done < total; done += chunk) {
                     const uint64_t n = std::min<uint64_t>(chunk, total - done);
                     // 64-bit seek: a shard is tens of GB
-                    if (STRATA_FSEEK64(f, src + done) != 0) { bad = true; return; }
+                    if (NOSTROMA_FSEEK64(f, src + done) != 0) { bad = true; return; }
                     if (std::fread(buf.data(), 1, (size_t) n, f) != (size_t) n) { bad = true; return; }
                     for (uint64_t k = 0; k < n / per[r]; ++k) {
                         const uint64_t e = done / per[r] + k;
@@ -5934,7 +5934,7 @@ bool ArenaExpertSource::open(const std::string& pack_dir, int64_t n_layers, int6
     close();
     const std::string path = pack_dir + "/experts.bin";
     // plan v0.3 P6: the layout (canonical, or a native pack's per-layer blobs) was loaded by the driver
-    const strata::kernels::cpu::ExpertLayout& lay = strata::kernels::cpu::expert_layout();
+    const nostroma::kernels::cpu::ExpertLayout& lay = nostroma::kernels::cpu::expert_layout();
     if (lay.n_layers != n_layers || lay.n_expert != n_expert) {
         err = "ArenaExpertSource: the expert layout was loaded for a different geometry";
         return false;
@@ -5955,7 +5955,7 @@ bool ArenaExpertSource::open(const std::string& pack_dir, int64_t n_layers, int6
         std::ifstream f(path, std::ios::binary | std::ios::ate);
         if (!f) { err = "ArenaExpertSource: cannot open " + path; return false; }
         const uint64_t got = (uint64_t) f.tellg();
-        if (got != want && got != want + (uint64_t) blob) {   // + one blob: STRATA_ARENA_MMAP's padded file
+        if (got != want && got != want + (uint64_t) blob) {   // + one blob: NOSTROMA_ARENA_MMAP's padded file
             char buf[400];
             std::snprintf(buf, sizeof buf,
                           "ArenaExpertSource: %s is %llu B but %lld layers x %lld experts (blobs up to %lld B) "
@@ -5967,7 +5967,7 @@ bool ArenaExpertSource::open(const std::string& pack_dir, int64_t n_layers, int6
         }
     }
 
-    // STRATA_ARENA_MMAP=1 (a small-RAM machine whose GPUs hold most experts): the arena is the pack's experts.bin
+    // NOSTROMA_ARENA_MMAP=1 (a small-RAM machine whose GPUs hold most experts): the arena is the pack's experts.bin
     // mapped READ-ONLY - not locked, not pinned.  The page cache keeps what the CPU pool and the prompt path
     // actually read (the experts no VRAM cache holds) and gives back the rest under memory pressure; a page
     // dropped is re-read from the file, so a result never depends on what is resident.  The GPUs then get no
@@ -5976,7 +5976,7 @@ bool ArenaExpertSource::open(const std::string& pack_dir, int64_t n_layers, int6
 #if defined(_WIN32)
     static const bool arena_mmap = false;   // POSIX mmap/madvise: Linux only for now
 #else
-    static const bool arena_mmap = [] { const char* v = strata::env("NOSTROMA_ARENA_MMAP"); return v && v[0] == '1'; }();
+    static const bool arena_mmap = [] { const char* v = nostroma::env("NOSTROMA_ARENA_MMAP"); return v && v[0] == '1'; }();
     if (arena_mmap) {
         const uint64_t file_bytes = want + (uint64_t) blob;
         uint64_t have = 0;
@@ -5999,7 +5999,7 @@ bool ArenaExpertSource::open(const std::string& pack_dir, int64_t n_layers, int6
             blobs_ = n_layers * n_expert;
             n_expert_ = n_expert;
             reads_ = 0;
-            note_ = "mapped read-only from " + path + " (STRATA_ARENA_MMAP: not locked, not pinned)";
+            note_ = "mapped read-only from " + path + " (NOSTROMA_ARENA_MMAP: not locked, not pinned)";
             gib_per_s_ = 0.0;
             load_seconds_ = load_read_s_ = load_copy_s_ = 0.0;
             record_inputs(path, gguf_, lay, from_gguf);   // session files: the mapped experts.bin is a model input
@@ -6045,11 +6045,11 @@ bool ArenaExpertSource::open(const std::string& pack_dir, int64_t n_layers, int6
         }
         if (hm.available < need) {
             // #4051: the shortfall is often an engine that was still exiting (the code's own example), a few seconds
-            // from giving its RAM back: wait for it, not for ever, and say so.  STRATA_ARENA_RAM_WAIT_S changes the
+            // from giving its RAM back: wait for it, not for ever, and say so.  NOSTROMA_ARENA_RAM_WAIT_S changes the
             // seconds (0 loads at once, as before this wait).  Still short after it (and after the give-back below): the caller's
             // --mmap-experts fallback (#4846) when it asked for one, otherwise the load goes on and only warns.
             double wait_s = 20.0;
-            if (const char* w = strata::env("NOSTROMA_ARENA_RAM_WAIT_S"); w != nullptr && w[0] != '\0') {
+            if (const char* w = nostroma::env("NOSTROMA_ARENA_RAM_WAIT_S"); w != nullptr && w[0] != '\0') {
                 char* end = nullptr;
                 const double v = std::strtod(w, &end);
                 if (end != w && *end == '\0' && v >= 0.0 && v <= 3600.0) wait_s = v;
@@ -6062,14 +6062,14 @@ bool ArenaExpertSource::open(const std::string& pack_dir, int64_t n_layers, int6
                     [](uint64_t& a) { detail::HostMemory h; if (!detail::host_available_memory(h)) return false; a = h.available; return true; },
                     [](double s) { std::this_thread::sleep_for(std::chrono::duration<double>(s)); },
                     [&](double w, uint64_t a) {
-                        std::fprintf(stderr, "strata generate: the expert arena needs %.2f GiB of RAM%s and %.2f GiB is "
+                        std::fprintf(stderr, "nostroma generate: the expert arena needs %.2f GiB of RAM%s and %.2f GiB is "
                                              "available; waiting up to %.0f s for it (another engine still exiting?) - "
-                                             "%.0f s so far (STRATA_ARENA_RAM_WAIT_S changes this)\n",
+                                             "%.0f s so far (NOSTROMA_ARENA_RAM_WAIT_S changes this)\n",
                                      (double) need / gib, keep_note, (double) a / gib, wait_s, w);
                     },
                     waited, avail);
                 if (came)
-                    std::fprintf(stderr, "strata generate: %.2f GiB of RAM is available now (after %.1f s): loading the "
+                    std::fprintf(stderr, "nostroma generate: %.2f GiB of RAM is available now (after %.1f s): loading the "
                                          "expert arena\n", (double) avail / gib, waited);
                 hm.available = avail;
             }
@@ -6080,7 +6080,7 @@ bool ArenaExpertSource::open(const std::string& pack_dir, int64_t n_layers, int6
                 if (freed > 0) {
                     detail::HostMemory h2;
                     if (detail::host_available_memory(h2)) {
-                        std::fprintf(stderr, "strata generate: the expert arena needs %.2f GiB of RAM and %.2f GiB was available: "
+                        std::fprintf(stderr, "nostroma generate: the expert arena needs %.2f GiB of RAM and %.2f GiB was available: "
                                              "gave back %.2f GiB of locked RAM, %.2f GiB is available now\n",
                                      (double) need / gib, (double) hm.available / gib, (double) freed / gib, (double) h2.available / gib);
                         hm.available = h2.available;
@@ -6097,18 +6097,18 @@ bool ArenaExpertSource::open(const std::string& pack_dir, int64_t n_layers, int6
             // is the case 0.1.54/0.1.55 loaded anyway ("expert arena read through the file cache") at full decode
             // speed: credit the pool when it holds the whole arena (and free pages + droppable file pages, which the
             // kernel evicts as the arena reads - only a small margin beyond MemAvailable's own count) and load,
-            // LOUDLY (a service setup never sees stderr).  STRATA_ARENA_FILE_CACHE=0
+            // LOUDLY (a service setup never sees stderr).  NOSTROMA_ARENA_FILE_CACHE=0
             // refuses as since 0.1.56.  Not under a cgroup limit (the host's cache is not the container's to drop)
             // and not on Windows: the proceed path was never trusted there ("buffered (not Windows)", the mapped
             // view's trim needs the headroom the refusal keeps).
-            const bool file_cache_off = [] { const char* v = strata::env("NOSTROMA_ARENA_FILE_CACHE"); return v != nullptr && v[0] == '0'; }();
+            const bool file_cache_off = [] { const char* v = nostroma::env("NOSTROMA_ARENA_FILE_CACHE"); return v != nullptr && v[0] == '0'; }();
             bool file_cache_arena = false;
             uint64_t memfree_b = 0, droppable_b = 0, huge_free_b = 0;
             if (verdict == ArenaRamVerdict::FallBack && hm.cgroup_limit == ~uint64_t{0} && !file_cache_off) {
                 if (std::ifstream info("/proc/meminfo"); info) {
                     const std::string text((std::istreambuf_iterator<char>(info)), std::istreambuf_iterator<char>());
                     if (meminfo_free_and_droppable(text, memfree_b, droppable_b, &huge_free_b)) {
-                        // the pool serves the arena only if the MAP_HUGETLB try is made (STRATA_NO_LARGEPAGES skips it) and
+                        // the pool serves the arena only if the MAP_HUGETLB try is made (NOSTROMA_NO_LARGEPAGES skips it) and
                         // the pool holds the whole mapping, which is the padded arena plus the spare blob, not `want + blob`
                         uint64_t map_bytes = want + (uint64_t) blob;
                         if (pin_by_need_ && !pin_pairs_.empty() && !arena_mmap && shared_arena_file.empty()) {
@@ -6117,7 +6117,7 @@ bool ArenaExpertSource::open(const std::string& pack_dir, int64_t n_layers, int6
                                 at += ((lay.blob_bytes(l) + 4095) & ~(uint64_t) 4095) * (uint64_t) n_expert;
                             map_bytes = at + (uint64_t) blob;
                         }
-                        if (strata::env("NOSTROMA_NO_LARGEPAGES") != nullptr || huge_free_b < map_bytes) huge_free_b = 0;
+                        if (nostroma::env("NOSTROMA_NO_LARGEPAGES") != nullptr || huge_free_b < map_bytes) huge_free_b = 0;
                         file_cache_arena = arena_shortfall_served_by_file_cache(need, memfree_b, droppable_b, huge_free_b);
                     }
                 }
@@ -6125,12 +6125,12 @@ bool ArenaExpertSource::open(const std::string& pack_dir, int64_t n_layers, int6
             if (file_cache_arena) {
                 std::snprintf(buf, sizeof buf,
                               "the experts need %.2f GiB of RAM and %.2f GiB is free, but free memory, file cache and reserved huge "
-                              "pages can hold them, so they load anyway (same answers). STRATA_ARENA_FILE_CACHE=0 reads them from "
+                              "pages can hold them, so they load anyway (same answers). NOSTROMA_ARENA_FILE_CACHE=0 reads them from "
                               "the file instead.",
                               (double) need / gib, (double) hm.available / gib);
                 ram_warning_ = buf;   // the caller says it on stderr before the load's numbers
                 if (notices_on_stdout) {   // --serve only: a service setup never sees stderr (#5327); a plain run keeps its token stream clean
-                    std::printf("strata generate: WARNING: %s\n", buf);
+                    std::printf("nostroma generate: WARNING: %s\n", buf);
                     std::fflush(stdout);
                 }
             } else
@@ -6177,7 +6177,7 @@ bool ArenaExpertSource::open(const std::string& pack_dir, int64_t n_layers, int6
     bounds.push_back(want);
     // Pin by need: the arena gets a page-aligned blob STRIDE (blob rounded up to 4 KiB, ~+0.15 %), so every blob starts
     // on a page and any set of blobs can be registered exactly (a canonical blob is 337.5 pages: packed, an isolated
-    // blob could never be registered without its neighbours' bytes).  Not with the mapped arena file (STRATA_ARENA_MMAP
+    // blob could never be registered without its neighbours' bytes).  Not with the mapped arena file (NOSTROMA_ARENA_MMAP
     // writes experts.bin from the arena).  The file offsets (loff) stay packed; only the destination moves.
     padded_ = false;
     pad_ = PadMap{};
@@ -6227,12 +6227,12 @@ bool ArenaExpertSource::open(const std::string& pack_dir, int64_t n_layers, int6
     }
     // #285: on Windows the per-layer registration runs on a thread ahead of the readers, which wait for their
     // layer's slice (the whole arena registered before the load cost ~2.5 s at 33 GiB of 4 KB pages, not hidden).
-    // Only where the whole arena would be registered: no cap (STRATA_ARENA_PIN_GIB, multi-GPU), no shared arena.
-    // Linux keeps the whole-arena pin (#253). OPT-IN (STRATA_DEFERRED_REGISTER=1): on the RTX 5070 / Windows the
+    // Only where the whole arena would be registered: no cap (NOSTROMA_ARENA_PIN_GIB, multi-GPU), no shared arena.
+    // Linux keeps the whole-arena pin (#253). OPT-IN (NOSTROMA_DEFERRED_REGISTER=1): on the RTX 5070 / Windows the
     // arena registered per layer before it is filled decoded ~10% slower than the old order (whole-arena try, sliced
     // fallback after the load) with identical output; the start-time gain does not pay for that.
 #ifdef _WIN32
-    const char* defer_env = strata::env("NOSTROMA_DEFERRED_REGISTER");
+    const char* defer_env = nostroma::env("NOSTROMA_DEFERRED_REGISTER");
     const bool deferred = !by_need && max_pinned_bytes == 0 && arena_pin_cap_gib() == -1 && shared_arena_file.empty() &&
                           (defer_env != nullptr && defer_env[0] != 0 && defer_env[0] != '0');
 #else
@@ -6288,7 +6288,7 @@ bool ArenaExpertSource::open(const std::string& pack_dir, int64_t n_layers, int6
             const bool alive = arena_pid_alive(cur);
             if (!alive) {
                 if (arena_state->compare_exchange_strong(cur, me, std::memory_order_acq_rel)) {
-                    std::fprintf(stderr, "strata generate: shared expert arena: engine %llu died while reading it; reading it again\n",
+                    std::fprintf(stderr, "nostroma generate: shared expert arena: engine %llu died while reading it; reading it again\n",
                                  (unsigned long long) cur);
                     arena_leader = true;
                     break;
@@ -6298,7 +6298,7 @@ bool ArenaExpertSource::open(const std::string& pack_dir, int64_t n_layers, int6
             if (std::chrono::steady_clock::now() - t_begin > std::chrono::minutes(45)) break;   // (loads it on its own)
             if (!said) {
                 said = true;
-                std::fprintf(stderr, "strata generate: shared expert arena: engine %llu is reading the experts; waiting for it "
+                std::fprintf(stderr, "nostroma generate: shared expert arena: engine %llu is reading the experts; waiting for it "
                                      "instead of reading them again\n", (unsigned long long) cur);
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -6319,17 +6319,17 @@ bool ArenaExpertSource::open(const std::string& pack_dir, int64_t n_layers, int6
         st.ok = true;
         st.bytes = want;
         st.seconds = 0.0;
-        std::fprintf(stderr, "strata generate: shared expert arena: already filled by another engine; the read is skipped\n");
+        std::fprintf(stderr, "nostroma generate: shared expert arena: already filled by another engine; the read is skipped\n");
     } else if (from_gguf) {
         st = load_experts_gguf(gguf_, a->data(), lay, readers, unbuffered, rp, padded_ ? &pad_ : nullptr);
     } else {
         if (unbuffered && !padded_) st = load_experts_direct(path, a->data(), loff, lbytes, readers, /*chunk=*/8u << 20, rp);
         if (!unbuffered || padded_ || (!st.ok && st.error.empty()))   // unaligned ranges / the padded layout: the buffered reader
             st = load_experts_ranges(path, a->data(), loff, lbytes, threads, /*chunk=*/8u << 20, rp, padded_ ? &pad_ : nullptr,
-                                     /*drop_behind=*/strata::core::page_cache_drop::enabled());   // integrated gfx11 under Linux
+                                     /*drop_behind=*/nostroma::core::page_cache_drop::enabled());   // integrated gfx11 under Linux
     }
     if (reg.joinable()) reg.join();
-    std::fprintf(stderr, "strata generate: expert arena read %s (%s)\n", unbuffered ? "unbuffered" : "through the file cache",
+    std::fprintf(stderr, "nostroma generate: expert arena read %s (%s)\n", unbuffered ? "unbuffered" : "through the file cache",
                  why.c_str());
     if (!st.ok) {
         if (arena_leader) arena_state->store(0, std::memory_order_release);   // (somebody else may try)
@@ -6344,8 +6344,8 @@ bool ArenaExpertSource::open(const std::string& pack_dir, int64_t n_layers, int6
         return false;
     }
     if (arena_leader) arena_state->store(kArenaFilled, std::memory_order_release);   // the others may use (and skip reading) it
-    if (strata::env("NOSTROMA_VERIFY_ARENA") != nullptr) {   // tests: the loaded arena's checksum, any loader
-        std::fprintf(stderr, "strata generate: expert arena checksum %016llx (%.2f GiB)\n",
+    if (nostroma::env("NOSTROMA_VERIFY_ARENA") != nullptr) {   // tests: the loaded arena's checksum, any loader
+        std::fprintf(stderr, "nostroma generate: expert arena checksum %016llx (%.2f GiB)\n",
                      (unsigned long long) fnv1a64(a->data(), want), (double) want / (1ull << 30));
     }
     // the first start: write experts.bin for the mapped starts after this one - only when the drive has room for it
@@ -6355,7 +6355,7 @@ bool ArenaExpertSource::open(const std::string& pack_dir, int64_t n_layers, int6
         std::filesystem::path(path).parent_path(), space_ec).available : 0;
     const bool room = !space_ec && free_disk >= want + (uint64_t) blob + (2ull << 30);
     if (arena_mmap && from_gguf && !room)
-        std::fprintf(stderr, "strata generate: STRATA_ARENA_MMAP: NOT writing %s - %.1f GiB free on that drive, it needs "
+        std::fprintf(stderr, "nostroma generate: NOSTROMA_ARENA_MMAP: NOT writing %s - %.1f GiB free on that drive, it needs "
                              "%.1f GiB plus 2 GiB to spare; this start keeps the arena in RAM\n", path.c_str(),
                      (double) free_disk / 1073741824.0, (double) (want + (uint64_t) blob) / 1073741824.0);
     if (arena_mmap && from_gguf && room) {
@@ -6369,7 +6369,7 @@ bool ArenaExpertSource::open(const std::string& pack_dir, int64_t n_layers, int6
         if (f) ok = std::fclose(f) == 0 && ok;
         if (ok) ok = std::rename(tmp.c_str(), path.c_str()) == 0;
         if (!ok) std::remove(tmp.c_str());
-        std::fprintf(stderr, "strata generate: STRATA_ARENA_MMAP: %s %s (the next start maps it)\n",
+        std::fprintf(stderr, "nostroma generate: NOSTROMA_ARENA_MMAP: %s %s (the next start maps it)\n",
                      ok ? "wrote" : "could NOT write", path.c_str());
     }
     arena_ = a;
@@ -6450,7 +6450,7 @@ void ArenaExpertSource::prefetch(int64_t layer, int64_t expert) {
     (void) layer; (void) expert;
 #else
     if (map_ == nullptr || layer < 0 || expert < 0 || expert >= n_expert_) return;
-    const auto& lay = strata::kernels::cpu::expert_layout();
+    const auto& lay = nostroma::kernels::cpu::expert_layout();
     const uint64_t off = lay.blob_offset(layer, expert) & ~(uint64_t) 4095;
     const uint64_t end = lay.blob_offset(layer, expert) + lay.blob_bytes(layer);
     madvise((uint8_t*) map_ + off, (size_t) (end - off), MADV_WILLNEED);
@@ -6469,7 +6469,7 @@ uint64_t ArenaExpertSource::release(int64_t layer, int64_t expert) {
     return 0;
 #else
     if (map_ == nullptr || layer < 0 || expert < 0 || expert >= n_expert_) return 0;
-    const auto& lay = strata::kernels::cpu::expert_layout();
+    const auto& lay = nostroma::kernels::cpu::expert_layout();
     const uint64_t off = (lay.blob_offset(layer, expert) + 4095) & ~(uint64_t) 4095;
     const uint64_t end = (lay.blob_offset(layer, expert) + lay.blob_bytes(layer)) & ~(uint64_t) 4095;
     if (end <= off) return 0;
@@ -6488,7 +6488,7 @@ int64_t ArenaExpertSource::pin_range_of(uint64_t off, uint64_t len) const {
 }
 
 uint64_t ArenaExpertSource::arena_off(int64_t layer, int64_t expert) const {
-    return padded_ ? pad_.blob_off(layer, expert) : strata::kernels::cpu::expert_layout().blob_offset(layer, expert);
+    return padded_ ? pad_.blob_off(layer, expert) : nostroma::kernels::cpu::expert_layout().blob_offset(layer, expert);
 }
 
 bool ArenaExpertSource::pcie_layer(int64_t layer) const {
@@ -6498,7 +6498,7 @@ bool ArenaExpertSource::pcie_layer(int64_t layer) const {
 
 bool ArenaExpertSource::pinned(int64_t layer, int64_t expert) const {
     if (base_ == nullptr || layer < 0 || expert < 0 || expert >= n_expert_) return false;
-    const auto& lay = strata::kernels::cpu::expert_layout();
+    const auto& lay = nostroma::kernels::cpu::expert_layout();
     if (ranges_) return pin_range_of(arena_off(layer, expert), lay.blob_bytes(layer)) >= 0;   // the whole blob inside ONE registered range
     return lay.blob_offset(layer, expert) + lay.blob_bytes(layer) <= pinned_bytes_;
 }
@@ -6506,13 +6506,13 @@ bool ArenaExpertSource::pinned(int64_t layer, int64_t expert) const {
 const uint8_t* ArenaExpertSource::device_alias(int64_t layer, int64_t expert) const {
     if (ranges_) {   // pin by need: the range's device base + the blob's offset inside it
         if (base_ == nullptr || layer < 0 || expert < 0 || expert >= n_expert_) return nullptr;
-        const auto& rl = strata::kernels::cpu::expert_layout();
+        const auto& rl = nostroma::kernels::cpu::expert_layout();
         const uint64_t off = arena_off(layer, expert);
         const int64_t i = pin_range_of(off, rl.blob_bytes(layer));
         return i < 0 ? nullptr : pin_dev_[(size_t) i] + (off - pin_start_[(size_t) i]);
     }
     if (dev_slice_.empty() || !pinned(layer, expert)) return nullptr;
-    const auto& lay = strata::kernels::cpu::expert_layout();
+    const auto& lay = nostroma::kernels::cpu::expert_layout();
     if (slice_bytes_ == 0) return dev_slice_[0] + lay.blob_offset(layer, expert);
     // one registration slice per layer
     if ((size_t) layer >= dev_slice_.size()) return nullptr;
@@ -6537,10 +6537,10 @@ const uint8_t* ArenaExpertSource::blob_at(int64_t layer, int64_t expert) const {
     return base_ + arena_off(layer, expert);   // (the padded layout of pin by need too)
 }
 
-}  // namespace strata::core
+}  // namespace nostroma::core
 
-// ---- Foresight swap space (see include/strata/core/foresight_swap.hpp) ------------------------------------------
-namespace strata::core {
+// ---- Foresight swap space (see include/nostroma/core/foresight_swap.hpp) ------------------------------------------
+namespace nostroma::core {
 
 bool ForesightSwap::init(int slots_per_layer, int64_t layers, int64_t experts, const std::vector<int>& card_of_layer,
                          const std::vector<int>& devices, std::string& err) {
@@ -6559,7 +6559,7 @@ bool ForesightSwap::init(int slots_per_layer, int64_t layers, int64_t experts, c
     card_mem.assign(devices.size(), nullptr);
     card_round.assign(devices.size(), ~0ull);
     card_used.assign(devices.size(), 0);
-    const auto& lay = strata::kernels::cpu::expert_layout();
+    const auto& lay = nostroma::kernels::cpu::expert_layout();
     for (size_t c = 0; c < devices.size(); ++c) {
         uint64_t bytes = 0;
         for (int64_t l = 0; l < layers; ++l)
@@ -6618,7 +6618,7 @@ ForesightSwap::~ForesightSwap() {
 }
 
 void ForesightSwap::fill_loop() {
-    strata::platform::name_this_thread("strata-fill");
+    nostroma::platform::name_this_thread("nostroma-fill");
     int cur_dev = -1;
     for (;;) {
         int64_t idx;
@@ -6637,7 +6637,7 @@ void ForesightSwap::fill_loop() {
         if (cudaMemcpyAsync((void*) sl.dptr, sl.src, sl.bytes, cudaMemcpyHostToDevice, s) != cudaSuccess ||
             cudaEventRecord((cudaEvent_t) sl.ev, s) != cudaSuccess) {
             cudaGetLastError();
-            if (!failed.exchange(true)) std::fprintf(stderr, "strata serve: foresight swap: a copy failed - swap space off\n");
+            if (!failed.exchange(true)) std::fprintf(stderr, "nostroma serve: foresight swap: a copy failed - swap space off\n");
             continue;   // never marked issued: the slot is never used
         }
         sl.issued.store(true, std::memory_order_release);
@@ -6779,30 +6779,30 @@ std::string ForesightSwap::report() const {
 
 ForesightSwap* foresight_swap_from_env(int64_t layers, int64_t experts, const std::vector<int>& card_of_layer,
                                        const std::vector<int>& devices) {
-    const char* v = strata::env("NOSTROMA_FS_SLOTS");
+    const char* v = nostroma::env("NOSTROMA_FS_SLOTS");
     const int slots = v ? std::atoi(v) : 0;
     if (slots <= 0) return nullptr;
-    if (const char* dp = strata::env("NOSTROMA_VERIFY_DEVICE_PLAN"); dp && std::atoi(dp) != 0) {
-        std::fprintf(stderr, "strata serve: foresight swap: off beside STRATA_VERIFY_DEVICE_PLAN (the device would plan "
+    if (const char* dp = nostroma::env("NOSTROMA_VERIFY_DEVICE_PLAN"); dp && std::atoi(dp) != 0) {
+        std::fprintf(stderr, "nostroma serve: foresight swap: off beside NOSTROMA_VERIFY_DEVICE_PLAN (the device would plan "
                              "resident layers without the host)\n");
         return nullptr;
     }
     auto* f = new ForesightSwap();
     auto env_int = [](const char* name, int def, int lo) { const char* e = std::getenv(name); const int x = e ? std::atoi(e) : def; return x < lo ? lo : x; };
-    f->budget = env_int("STRATA_FS_BUDGET", 32, 1);
-    f->admit = env_int("STRATA_FS_ADMIT", 1, 1);
-    f->depth = env_int("STRATA_FS_DEPTH", 4, 2);
-    f->verify = env_int("STRATA_FS_VERIFY", 0, 0) != 0;
+    f->budget = env_int("NOSTROMA_FS_BUDGET", 32, 1);
+    f->admit = env_int("NOSTROMA_FS_ADMIT", 1, 1);
+    f->depth = env_int("NOSTROMA_FS_DEPTH", 4, 2);
+    f->verify = env_int("NOSTROMA_FS_VERIFY", 0, 0) != 0;
     std::string err;
     if (!f->init(std::min(slots, 64), layers, experts, card_of_layer, devices, err)) {
-        std::fprintf(stderr, "strata serve: foresight swap: %s - swap space off\n", err.c_str());
+        std::fprintf(stderr, "nostroma serve: foresight swap: %s - swap space off\n", err.c_str());
         delete f;
         return nullptr;
     }
-    std::fprintf(stderr, "strata serve: foresight swap: %d slots per layer on %zu card(s), up to %d copies per card and "
+    std::fprintf(stderr, "nostroma serve: foresight swap: %d slots per layer on %zu card(s), up to %d copies per card and "
                          "window, admit after %d miss(es), reuse after %d windows\n",
                  f->slots, devices.size(), f->budget, f->admit, f->depth);
     return f;
 }
 
-}  // namespace strata::core
+}  // namespace nostroma::core

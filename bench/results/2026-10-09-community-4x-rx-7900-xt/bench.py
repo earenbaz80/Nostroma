@@ -1,4 +1,4 @@
-"""Strata community bench driver: sends prompts.jsonl (from gen.py) one at a time, records engine timings.
+"""Nostroma community bench driver: sends prompts.jsonl (from gen.py) one at a time, records engine timings.
 
 usage: bench.py prompts.jsonl OUT.jsonl
 Streaming chat completions, temperature 0 (greedy), reasoning_effort none, 256-token cap. After each
@@ -11,7 +11,7 @@ import time
 import urllib.request
 
 URL = "http://127.0.0.1:8086"
-MODEL = "strata-ista-iq3s"
+MODEL = "nostroma-ista-iq3s"
 CAP = 256
 
 

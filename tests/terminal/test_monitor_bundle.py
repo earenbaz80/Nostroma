@@ -21,7 +21,7 @@ from nostroma_cli.cli import main as source_main
 
 ROOT = Path(__file__).resolve().parents[2]
 BUILDER = ROOT / "packaging/monitor_bundle.py"
-SPEC = importlib.util.spec_from_file_location("strata_monitor_bundle_builder", BUILDER)
+SPEC = importlib.util.spec_from_file_location("nostroma_monitor_bundle_builder", BUILDER)
 assert SPEC is not None and SPEC.loader is not None
 BUILDER_MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(BUILDER_MODULE)
@@ -120,7 +120,7 @@ class MonitorBundleTests(unittest.TestCase):
                     rollback(target, if_active_sha256=next_sha, if_rollback_sha256=old["sha256"])
             self.assertEqual(verify(target / "next-monitor.pyz")["sha256"], next_sha)
             self.assertEqual(verify(previous / "monitor.pyz")["sha256"], old["sha256"])
-            self.assertFalse(list(root.glob(".strata-monitor-swap-*")))
+            self.assertFalse(list(root.glob(".nostroma-monitor-swap-*")))
             restored = subprocess.run([sys.executable, str(BUILDER), "rollback", "--target", str(target),
                                        "--if-active-sha256", next_sha,
                                        "--if-rollback-sha256", old["sha256"]],
@@ -167,7 +167,7 @@ class MonitorBundleTests(unittest.TestCase):
                            if_candidate_sha256=next_sha)
             self.assertEqual(verify(target / "monitor.pyz")["sha256"], old["sha256"])
             self.assertFalse((root / "optional-monitor.previous").exists())
-            self.assertFalse(list(root.glob(".strata-monitor-install-*")))
+            self.assertFalse(list(root.glob(".nostroma-monitor-install-*")))
 
             original_stage = BUILDER_MODULE._stage_copy
 
@@ -188,7 +188,7 @@ class MonitorBundleTests(unittest.TestCase):
                            if_candidate_sha256=next_sha)
             self.assertNotEqual(verify(target / "monitor.pyz")["sha256"], old["sha256"])
             self.assertFalse((root / "optional-monitor.previous").exists())
-            self.assertFalse(list(root.glob(".strata-monitor-install-*")))
+            self.assertFalse(list(root.glob(".nostroma-monitor-install-*")))
 
     def test_offline_install_plan_and_remove_touch_only_monitor_files(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -256,7 +256,7 @@ class MonitorBundleTests(unittest.TestCase):
                 with self.assertRaisesRegex(OSError, "disk full"):
                     install(bundle, target, if_candidate_sha256=built["sha256"])
             self.assertFalse(target.exists())
-            self.assertFalse(list(root.glob(".strata-monitor-install-*")))
+            self.assertFalse(list(root.glob(".nostroma-monitor-install-*")))
 
     def test_bundle_verification_rejects_large_or_linked_input(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -432,7 +432,7 @@ class MonitorBundleTests(unittest.TestCase):
         thread.start()
         try:
             with tempfile.TemporaryDirectory() as directory:
-                bundle = Path(directory) / "strata-monitor.pyz"
+                bundle = Path(directory) / "nostroma-monitor.pyz"
                 subprocess.run([sys.executable, str(BUILDER), "build", str(bundle)], check=True,
                                capture_output=True, text=True)
                 subprocess.run([sys.executable, str(BUILDER), "verify", str(bundle)], check=True,
@@ -453,12 +453,12 @@ class MonitorBundleTests(unittest.TestCase):
                 with redirect_stdout(source_output):
                     self.assertEqual(source_main(["monitor", "--once", "--json", "--url", url]), 0)
                 clean_env = {k: v for k, v in os.environ.items() if k not in ("PYTHONPATH", "PYTHONHOME")}
-                clean_env["STRATA_CONNECTION_DIR"] = str(Path(directory) / "connections")
+                clean_env["NOSTROMA_CONNECTION_DIR"] = str(Path(directory) / "connections")
                 portable = subprocess.run([sys.executable, "-S", str(bundle), "monitor", "--once", "--json",
                                            "--url", url], cwd=directory, env=clean_env, check=True,
                                           capture_output=True, text=True)
                 self.assertEqual(json.loads(portable.stdout), json.loads(source_output.getvalue()))
-                bare_source = subprocess.run([sys.executable, "-S", str(ROOT / "strata.py"), "monitor",
+                bare_source = subprocess.run([sys.executable, "-S", str(ROOT / "nostroma.py"), "monitor",
                                               "--once", "--json", "--url", url], cwd=directory, env=clean_env,
                                              check=True, capture_output=True, text=True)
                 self.assertEqual(json.loads(bare_source.stdout), json.loads(portable.stdout))

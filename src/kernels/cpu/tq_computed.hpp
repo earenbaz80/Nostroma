@@ -15,7 +15,7 @@
 
 #include "tq_states.hpp"
 
-namespace strata::kernels::cpu::tq_detail {
+namespace nostroma::kernels::cpu::tq_detail {
 
 inline constexpr uint32_t kCompA[2] = {89226354u, 0x9E3779B1u};
 inline constexpr uint32_t kCompB[2] = {64248484u, 0x7F4A7C15u};
@@ -30,4 +30,4 @@ inline void comp_state4(uint32_t s, int16_t out[4]) {
     for (int j = 0; j < 4; ++j) out[j] = (int16_t) (tq_half_to_float(h[j]) * 8192.0f);
 }
 
-}  // namespace strata::kernels::cpu::tq_detail
+}  // namespace nostroma::kernels::cpu::tq_detail

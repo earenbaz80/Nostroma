@@ -62,7 +62,7 @@ def describe(pid: int) -> str:
 
 class StopEngine(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="strata-benchstop-")
+        self.temp = tempfile.TemporaryDirectory(prefix="nostroma-benchstop-")
         self.addCleanup(self.temp.cleanup)
         self.pidfile = Path(self.temp.name) / "kid.pid"
         self.procs = []
@@ -83,7 +83,7 @@ class StopEngine(unittest.TestCase):
             except subprocess.TimeoutExpired:
                 pass
         for proc in self.procs:
-            handle = getattr(proc, "_strata_log", None)
+            handle = getattr(proc, "_nostroma_log", None)
             if handle is not None and not handle.closed:
                 handle.close()
         time.sleep(0.5)
@@ -93,11 +93,11 @@ class StopEngine(unittest.TestCase):
         kwargs = {"creationflags": getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)} if WINDOWS else {"start_new_session": True}
         handle = open(Path(self.temp.name) / "engine.log", "wb")
         proc = subprocess.Popen([sys.executable, "-c", PARENT, str(self.pidfile)], stdout=handle, stderr=subprocess.STDOUT, **kwargs)
-        proc._strata_log = handle
+        proc._nostroma_log = handle
         self.procs.append(proc)
         if WINDOWS:
             from serve import winjob
-            proc._strata_job = winjob.contain(proc)
+            proc._nostroma_job = winjob.contain(proc)
         # wait for the whole pid, not only the file: under load the file can exist, still empty, for longer than a fixed pause
         deadline, kid = time.monotonic() + 60, None
         while kid is None and time.monotonic() < deadline:
@@ -151,7 +151,7 @@ class StopEngine(unittest.TestCase):
     def test_a_process_that_already_ended_is_nothing_to_stop(self):
         proc = subprocess.Popen([sys.executable, "-c", "pass"])
         proc.wait(20)
-        proc._strata_log = open(os.devnull, "wb")
+        proc._nostroma_log = open(os.devnull, "wb")
         self.assertIsNone(bench_standard.stop_engine(proc))
 
 

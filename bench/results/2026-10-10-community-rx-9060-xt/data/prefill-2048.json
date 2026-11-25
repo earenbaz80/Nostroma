@@ -66,7 +66,7 @@
         "draft_n_accepted": 83
       },
       "finish_reason": "stop",
-      "answer": "```json\n{\n  \"start\": \"CLENEX-4181\",\n  \"middle\": \"STRATA-8081\",\n  \"end\": \"LONDON-9060\"\n}\n```",
+      "answer": "```json\n{\n  \"start\": \"CLENEX-4181\",\n  \"middle\": \"NOSTROMA-8081\",\n  \"end\": \"LONDON-9060\"\n}\n```",
       "tool_calls": [],
       "available_ram_before_GiB": 9.627857208251953,
       "minimum_available_ram_GiB": 9.342979431152344,
@@ -103,7 +103,7 @@
         "draft_n_accepted": 84
       },
       "finish_reason": "stop",
-      "answer": "```json\n{\n  \"start\": \"CLENEX-4181\",\n  \"middle\": \"STRATA-8081\",\n  \"end\": \"LONDON-9060\"\n}\n```",
+      "answer": "```json\n{\n  \"start\": \"CLENEX-4181\",\n  \"middle\": \"NOSTROMA-8081\",\n  \"end\": \"LONDON-9060\"\n}\n```",
       "tool_calls": [],
       "available_ram_before_GiB": 9.603466033935547,
       "minimum_available_ram_GiB": 9.55563735961914,
@@ -140,7 +140,7 @@
         "draft_n_accepted": 84
       },
       "finish_reason": "stop",
-      "answer": "```json\n{\n  \"start\": \"CLENEX-4181\",\n  \"middle\": \"STRATA-8081\",\n  \"end\": \"LONDON-9060\"\n}\n```",
+      "answer": "```json\n{\n  \"start\": \"CLENEX-4181\",\n  \"middle\": \"NOSTROMA-8081\",\n  \"end\": \"LONDON-9060\"\n}\n```",
       "tool_calls": [],
       "available_ram_before_GiB": 9.897266387939453,
       "minimum_available_ram_GiB": 9.472877502441406,
@@ -177,7 +177,7 @@
         "draft_n_accepted": 84
       },
       "finish_reason": "stop",
-      "answer": "```json\n{\n  \"start\": \"CLENEX-4181\",\n  \"middle\": \"STRATA-8081\",\n  \"end\": \"LONDON-9060\"\n}\n```",
+      "answer": "```json\n{\n  \"start\": \"CLENEX-4181\",\n  \"middle\": \"NOSTROMA-8081\",\n  \"end\": \"LONDON-9060\"\n}\n```",
       "tool_calls": [],
       "available_ram_before_GiB": 9.651805877685547,
       "minimum_available_ram_GiB": 9.599807739257812,
@@ -214,7 +214,7 @@
         "draft_n_accepted": 84
       },
       "finish_reason": "stop",
-      "answer": "```json\n{\n  \"start\": \"CLENEX-4181\",\n  \"middle\": \"STRATA-8081\",\n  \"end\": \"LONDON-9060\"\n}\n```",
+      "answer": "```json\n{\n  \"start\": \"CLENEX-4181\",\n  \"middle\": \"NOSTROMA-8081\",\n  \"end\": \"LONDON-9060\"\n}\n```",
       "tool_calls": [],
       "available_ram_before_GiB": 9.871635437011719,
       "minimum_available_ram_GiB": 9.167980194091797,
@@ -251,7 +251,7 @@
         "draft_n_accepted": 79
       },
       "finish_reason": "stop",
-      "answer": "```json\n{\"start\": \"CLENEX-4181\", \"middle\": \"STRATA-8081\", \"end\": \"LONDON-9060\"}\n```",
+      "answer": "```json\n{\"start\": \"CLENEX-4181\", \"middle\": \"NOSTROMA-8081\", \"end\": \"LONDON-9060\"}\n```",
       "tool_calls": [],
       "available_ram_before_GiB": 9.514446258544922,
       "minimum_available_ram_GiB": 9.457550048828125,

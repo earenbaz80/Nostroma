@@ -1,7 +1,7 @@
 # A lab script, not a unit test: it needs the owner PC's work folder (the drafter's weights and config) and the reference model
 # file under phaseA-tests/ornith_tmp. pytest collects it as a module, so it says so and skips when they are not there.
 import os
-_LAB = (r"C:\dflash2-work", r"C:\Users\AI-Server\Desktop\Strata\phaseA-tests\ornith_tmp\gh_model.py")
+_LAB = (r"C:\dflash2-work", r"C:\Users\AI-Server\Desktop\Nostroma\phaseA-tests\ornith_tmp\gh_model.py")
 if not all(os.path.exists(p) for p in _LAB):
     try:
         import pytest
@@ -13,7 +13,7 @@ sys.path.insert(0, r"C:\dflash2-work")
 import dflash2_ref as R
 torch.manual_seed(0)
 # the reference (z-lab) model on transformers 4.57
-spec = importlib.util.spec_from_file_location("ghm", r"C:\Users\AI-Server\Desktop\Strata\phaseA-tests\ornith_tmp\gh_model.py")
+spec = importlib.util.spec_from_file_location("ghm", r"C:\Users\AI-Server\Desktop\Nostroma\phaseA-tests\ornith_tmp\gh_model.py")
 ghm = importlib.util.module_from_spec(spec); spec.loader.exec_module(ghm)
 from transformers.models.qwen3.modeling_qwen3 import Qwen3Config
 cfgd = json.load(open(r"C:\dflash2-work\drafter_config.json"))

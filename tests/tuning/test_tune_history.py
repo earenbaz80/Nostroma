@@ -24,7 +24,7 @@ from nostroma_control import tune_history as th  # noqa: E402
 
 class HistoryCase(unittest.TestCase):
     def setUp(self):
-        self.tmp = Path(tempfile.mkdtemp(prefix="strata-history-"))
+        self.tmp = Path(tempfile.mkdtemp(prefix="nostroma-history-"))
 
     def tearDown(self):
         import shutil
@@ -221,7 +221,7 @@ class TestPlanCarriesIdentity(HistoryCase):
 
     def test_plan_tuning_records_a_content_identity(self):
         from nostroma_control import tuning
-        engine = self.file("strata", b"#!/bin/sh\necho 'x' >&2\n")
+        engine = self.file("nostroma", b"#!/bin/sh\necho 'x' >&2\n")
         model = self.file("model.gguf", b"weights" * 1000)
         plan = tuning.plan_tuning(
             engine, "metal", "fixture", "generation",
@@ -237,7 +237,7 @@ class TestPlanCarriesIdentity(HistoryCase):
     def test_a_plan_without_a_model_path_is_incomparable_rather_than_falsely_comparable(self):
         """Not knowing the weights must be recorded as unknown, not as a match."""
         from nostroma_control import tuning
-        engine = self.file("strata", b"#!/bin/sh\necho 'x' >&2\n")
+        engine = self.file("nostroma", b"#!/bin/sh\necho 'x' >&2\n")
         plan = tuning.plan_tuning(
             engine, "metal", "fixture", "generation",
             {"prompt_tokens": 16, "max_new": 4, "seed": 1, "temperature": 0.0},

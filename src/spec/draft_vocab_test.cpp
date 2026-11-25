@@ -1,11 +1,11 @@
-// draft_vocab_test: the DFlash2-alone start's draft-vocabulary choice (include/strata/spec/draft_vocab.hpp).
-#include "strata/spec/draft_vocab.hpp"
+// draft_vocab_test: the DFlash2-alone start's draft-vocabulary choice (include/nostroma/spec/draft_vocab.hpp).
+#include "nostroma/spec/draft_vocab.hpp"
 
 #include <cstdio>
 #include <set>
 #include <string>
 
-using strata::spec::df2_vocab_resolve;
+using nostroma::spec::df2_vocab_resolve;
 
 static int g_fail = 0;
 #define CHECK(c) do { if (!(c)) { std::printf("FAIL line %d: %s\n", __LINE__, #c); ++g_fail; } } while (0)
@@ -29,7 +29,7 @@ int main() {
     { auto r = df2_vocab_resolve("/mtp/empty", "", "/nowhere/draft_vocab.bin", false, exists); CHECK(!r.ok && !r.packaged); }
     // a file the person named that does not exist is their mistake: no silent fallback to the default
     { auto r = df2_vocab_resolve("/mtp/with", "/typo.bin", "/pkg/data/draft_vocab.bin", false, exists); CHECK(!r.ok && r.why.find("/typo.bin") != std::string::npos); }
-    // the whole head asked for on purpose (STRATA_METAL_DRAFT_VOCAB=full) is not an error
+    // the whole head asked for on purpose (NOSTROMA_METAL_DRAFT_VOCAB=full) is not an error
     { auto r = df2_vocab_resolve("/mtp/empty", "", "", true, exists); CHECK(r.ok && r.whole_head); }
 
     if (g_fail == 0) std::printf("draft_vocab_test: all checks passed\n");

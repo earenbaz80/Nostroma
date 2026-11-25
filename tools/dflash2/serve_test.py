@@ -1,4 +1,4 @@
-"""Serve-API test of the DFlash2 drafter: runs `strata --serve` on one arm and a scenario of greedy requests, writes the tokens and the engine's DONE figures.
+"""Serve-API test of the DFlash2 drafter: runs `nostroma --serve` on one arm and a scenario of greedy requests, writes the tokens and the engine's DONE figures.
 
     python serve_test.py --exe ENGINE --arm df2 --scenario scenario.json --out out_df2.json --log arm.log -- <the engine arguments, as in the run config>
 

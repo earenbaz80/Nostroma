@@ -16,16 +16,16 @@ JavaScript functions. Every fresh prompt had zero reused KV tokens. Each fresh r
 request. Sampling was fixed at temperature 0, top-k 1, top-p 1, min-p 0 and seed 42, with reasoning disabled. Every
 measured request generated 128 tokens and stopped at the intentional length limit.
 
-The server was restarted between arms. `STRATA_SH_STREAM` defaults to enabled in this revision, so C and D are the
+The server was restarted between arms. `NOSTROMA_SH_STREAM` defaults to enabled in this revision, so C and D are the
 same effective configuration; D merely sets the default explicitly.
 
 | Arm | Runtime environment | Result file | Engine log |
 | --- | --- | --- | --- |
-| A | `STRATA_DENSE_MMQ=0`, no tuning table; SH stream default on | [`gfx1151-plain.json`](gfx1151-plain.json) | [`engine-A.log`](engine-A.log) |
+| A | `NOSTROMA_DENSE_MMQ=0`, no tuning table; SH stream default on | [`gfx1151-plain.json`](gfx1151-plain.json) | [`engine-A.log`](engine-A.log) |
 | B | A plus the `gfx1151` hipBLASLt tuning table | [`gfx1151-B-tuningTables.json`](gfx1151-B-tuningTables.json) | [`engine-B.log`](engine-B.log) |
-| C | B plus `STRATA_DENSE_MMQ=1`; SH stream default on | [`gfx1151-C-tuningTables-denseMMQ.json`](gfx1151-C-tuningTables-denseMMQ.json) | [`engine-C.log`](engine-C.log) |
-| D | C plus explicit `STRATA_SH_STREAM=1` | [`gfx1151-D-tuningTables-denseMMQ-PR826.json`](gfx1151-D-tuningTables-denseMMQ-PR826.json) | [`engine-D.log`](engine-D.log) |
-| E | C with `STRATA_SH_STREAM=0` | [`gfx1151-E-tuningTables-denseMMQ-noPR826.json`](gfx1151-E-tuningTables-denseMMQ-noPR826.json) | [`engine-E.log`](engine-E.log) |
+| C | B plus `NOSTROMA_DENSE_MMQ=1`; SH stream default on | [`gfx1151-C-tuningTables-denseMMQ.json`](gfx1151-C-tuningTables-denseMMQ.json) | [`engine-C.log`](engine-C.log) |
+| D | C plus explicit `NOSTROMA_SH_STREAM=1` | [`gfx1151-D-tuningTables-denseMMQ-PR826.json`](gfx1151-D-tuningTables-denseMMQ-PR826.json) | [`engine-D.log`](engine-D.log) |
+| E | C with `NOSTROMA_SH_STREAM=0` | [`gfx1151-E-tuningTables-denseMMQ-noPR826.json`](gfx1151-E-tuningTables-denseMMQ-noPR826.json) | [`engine-E.log`](engine-E.log) |
 
 The engine logs confirmed that B-E loaded 32 tuning rows for `gfx1151` / `100500`, and that C-E enabled dense MMQ.
 
@@ -55,7 +55,7 @@ run-to-run variation rather than a measurable prefill benefit from dense MMQ or 
 
 ## Shared-expert stream result
 
-D and E isolate `STRATA_SH_STREAM`: their prompts, generated responses and MTP draft behavior matched. Across all
+D and E isolate `NOSTROMA_SH_STREAM`: their prompts, generated responses and MTP draft behavior matched. Across all
 eight measured requests, excluding the warm-up:
 
 | Configuration | Generated tokens | Decode time | Weighted decode rate |

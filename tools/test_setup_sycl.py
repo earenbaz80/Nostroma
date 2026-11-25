@@ -102,8 +102,8 @@ class SyclBackend(unittest.TestCase):
 class CMakeOption(unittest.TestCase):
     def test_sycl_is_off_by_default_and_exclusive(self):
         src = (ROOT / "CMakeLists.txt").read_text(encoding="utf-8-sig")
-        self.assertIn('option(STRATA_ENABLE_SYCL "EXPERIMENTAL', src)
-        self.assertRegex(src, r'option\(STRATA_ENABLE_SYCL "[^"]*" OFF\)')
+        self.assertIn('option(NOSTROMA_ENABLE_SYCL "EXPERIMENTAL', src)
+        self.assertRegex(src, r'option\(NOSTROMA_ENABLE_SYCL "[^"]*" OFF\)')
         self.assertIn("add_subdirectory(sycl)", src)
 
 
@@ -124,11 +124,11 @@ class SyclVersion(unittest.TestCase):
     def test_version_follows_a_source_hotfix_with_a_variable_sycl_project(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
-            (root / "CMakeLists.txt").write_text("project(strata VERSION 0.1.41.2 LANGUAGES CXX)\n", encoding="utf-8")
+            (root / "CMakeLists.txt").write_text("project(nostroma VERSION 0.1.41.2 LANGUAGES CXX)\n", encoding="utf-8")
             (root / "sycl").mkdir()
             (root / "sycl" / "CMakeLists.txt").write_text(
-                "set(STRATA_SYCL_VERSION 0.1.40.2)\n"
-                "project(strata_sycl VERSION ${STRATA_SYCL_VERSION} LANGUAGES C CXX)\n", encoding="utf-8")
+                "set(NOSTROMA_SYCL_VERSION 0.1.40.2)\n"
+                "project(nostroma_sycl VERSION ${NOSTROMA_SYCL_VERSION} LANGUAGES C CXX)\n", encoding="utf-8")
             with mock.patch.object(self.mod, "ROOT", root), mock.patch.object(setup, "ROOT", root):
                 self.assertEqual(self.mod.sycl_version(), "0.1.41.2")
 
@@ -174,37 +174,37 @@ class ToSycl(unittest.TestCase):
 
     def test_b_series_streams_and_defaults_the_reserve(self):
         m = self.mod()
-        c = m.to_sycl(self.cfg(m), m.ROOT / "build-sycl-aot" / "strata", 64.0, {}, 32.0, "xe")
+        c = m.to_sycl(self.cfg(m), m.ROOT / "build-sycl-aot" / "nostroma", 64.0, {}, 32.0, "xe")
         self.assertIn("--stream-experts", c["args"])
         self.assertEqual(c["args"][c["args"].index("--vram-reserve-mib") + 1], "1024")
-        self.assertNotIn("STRATA_VERIFY_NO_HOST", c.get("env", {}))
+        self.assertNotIn("NOSTROMA_VERIFY_NO_HOST", c.get("env", {}))
 
     def test_xe_ranks_the_experts_with_the_sycl_profile_and_i915_keeps_the_shipped_one(self):
         m = self.mod()
         shipped = str(m.MOUNT / "data" / "expert-profile.bin")
         other = str(m.MOUNT / "mine" / "learned.bin")
-        c = m.to_sycl(self.cfg(m, ["--expert-profile", shipped]), m.ROOT / "build-sycl-aot" / "strata", 64.0, {}, 32.0, "xe")
+        c = m.to_sycl(self.cfg(m, ["--expert-profile", shipped]), m.ROOT / "build-sycl-aot" / "nostroma", 64.0, {}, 32.0, "xe")
         self.assertTrue(c["args"][c["args"].index("--expert-profile") + 1].endswith("expert-profile-sycl.bin"))
-        c = m.to_sycl(self.cfg(m, ["--expert-profile", other]), m.ROOT / "build-sycl-aot" / "strata", 64.0, {}, 32.0, "xe")
+        c = m.to_sycl(self.cfg(m, ["--expert-profile", other]), m.ROOT / "build-sycl-aot" / "nostroma", 64.0, {}, 32.0, "xe")
         self.assertTrue(c["args"][c["args"].index("--expert-profile") + 1].endswith("learned.bin"))   # the user's own file stays
-        c = m.to_sycl(self.cfg(m, ["--expert-profile", shipped]), m.ROOT / "build-sycl" / "strata", 64.0, {}, 8.0, "i915")
+        c = m.to_sycl(self.cfg(m, ["--expert-profile", shipped]), m.ROOT / "build-sycl" / "nostroma", 64.0, {}, 8.0, "i915")
         self.assertTrue(c["args"][c["args"].index("--expert-profile") + 1].endswith("expert-profile.bin"))   # the CPU computes the misses there
 
     def test_an_explicit_reserve_is_kept_on_both_drivers(self):
         m = self.mod()
         for vram, drv in ((32.0, "xe"), (8.0, "i915")):
-            c = m.to_sycl(self.cfg(m, ["--vram-reserve-mib", "500"]), m.ROOT / "build-sycl-aot" / "strata", 64.0, {}, vram, drv)
+            c = m.to_sycl(self.cfg(m, ["--vram-reserve-mib", "500"]), m.ROOT / "build-sycl-aot" / "nostroma", 64.0, {}, vram, drv)
             self.assertEqual(c["args"].count("--vram-reserve-mib"), 1)
             self.assertEqual(c["args"][c["args"].index("--vram-reserve-mib") + 1], "500")
 
     def test_a_series_loads_experts_into_ram_and_leaves_no_host_off(self):
         m = self.mod()
-        c = m.to_sycl(self.cfg(m), m.ROOT / "build-sycl" / "strata", 64.0, {}, 8.0, "i915")
+        c = m.to_sycl(self.cfg(m), m.ROOT / "build-sycl" / "nostroma", 64.0, {}, 8.0, "i915")
         self.assertNotIn("--stream-experts", c["args"])
         self.assertEqual(c["args"][c["args"].index("--ple-io") + 1], "ram")
         self.assertEqual(c["args"][c["args"].index("--vram-reserve-mib") + 1], "300")
-        self.assertEqual(c["env"]["STRATA_VERIFY_NO_HOST"], "0")
-        self.assertEqual(c["env"]["STRATA_SYCL_BIN"], "build-sycl/strata")
+        self.assertEqual(c["env"]["NOSTROMA_VERIFY_NO_HOST"], "0")
+        self.assertEqual(c["env"]["NOSTROMA_SYCL_BIN"], "build-sycl/nostroma")
 
     def test_gyro_memory_warning_reads_the_real_ram(self):
         # setup's RAM rule is fed 1024 GB on the Intel path; Gyro counts VRAM + RAM, so it must see the real RAM
@@ -224,9 +224,9 @@ class ToSycl(unittest.TestCase):
         m = self.mod()
         cfg = self.cfg(m)
         cfg["args"][cfg["args"].index("--native") + 1] = str(m.MOUNT / "d" / "Qwen3.8-Flash-Next-Gyro-S-TQ1_0.gguf")
-        c = m.to_sycl(cfg, m.ROOT / "build-sycl" / "strata", 64.0, {}, 8.0, "i915")
+        c = m.to_sycl(cfg, m.ROOT / "build-sycl" / "nostroma", 64.0, {}, 8.0, "i915")
         self.assertNotIn("--ple-io", c["args"])
-        self.assertEqual(c["env"]["STRATA_VERIFY_NO_HOST"], "0")
+        self.assertEqual(c["env"]["NOSTROMA_VERIFY_NO_HOST"], "0")
 
     def test_split_short_rule(self):
         # #1980: 2x B60 24 GB - IQ3_XXS (42.9 GB) was refused under NO_HOST=1, IQ2_XS (35.5 GB) loads fully
@@ -246,7 +246,7 @@ class ToSycl(unittest.TestCase):
         self.assertFalse(m.small_card(32.0, "xe"))
 
     def test_pictures_follow_the_one_reader_rule_and_the_vision_section_survives(self):
-        """Intel Arc: pictures on gives the CPU reader (strata-vision) on the host under 24 GB and, until a 24 GB+ Arc has run the SYCL reader,
+        """Intel Arc: pictures on gives the CPU reader (nostroma-vision) on the host under 24 GB and, until a 24 GB+ Arc has run the SYCL reader,
         also from 24 GB; only --vision gpu asks for the SYCL reader (nostroma_control/vision_reader.py is the one place for the rule)."""
         m = self.mod()
         for asked in (None, "yes", "cpu", "on"):
@@ -256,11 +256,11 @@ class ToSycl(unittest.TestCase):
         self.assertEqual(m.intel_vision("gpu", 32.0), "gpu")
         for asked in ("no", "none", "off"):
             self.assertEqual(m.intel_vision(asked, 32.0), "none")
-        section = {"exe": "/h/engine-sycl/strata-vision", "mmproj": "/h/models/mmproj.gguf", "model": "/h/models/m.gguf", "gpu": False,
+        section = {"exe": "/h/engine-sycl/nostroma-vision", "mmproj": "/h/models/mmproj.gguf", "model": "/h/models/m.gguf", "gpu": False,
                    "max_tokens": 300}
         cfg = self.cfg(m, ["--vision"])
         cfg["vision"] = section
-        c = m.to_sycl(cfg, m.ROOT / "build-sycl-aot" / "strata", 64.0, {}, 32.0, "xe")
+        c = m.to_sycl(cfg, m.ROOT / "build-sycl-aot" / "nostroma", 64.0, {}, 32.0, "xe")
         self.assertEqual(c["vision"], section)                              # host paths: the reader runs on the host, not in the container
         self.assertIn("--vision", c["args"])
 
@@ -292,9 +292,9 @@ class ToSycl(unittest.TestCase):
         self.assertIn("pictures are read on the CPU", warn.call_args[0][0])
 
     def test_the_container_shares_dev_shm_with_the_server_for_the_embeddings(self):
-        sh = (ROOT / "sycl" / "serve" / "strata-sycl.sh").read_text(encoding="utf-8")
+        sh = (ROOT / "sycl" / "serve" / "nostroma-sycl.sh").read_text(encoding="utf-8")
         self.assertIn("-v /dev/shm:/dev/shm", sh)
-        self.assertIn("STRATA_SYCL_SHM", sh)
+        self.assertIn("NOSTROMA_SYCL_SHM", sh)
 
     def test_a_picture_that_cannot_reach_the_container_is_said_once(self):
         import importlib.util

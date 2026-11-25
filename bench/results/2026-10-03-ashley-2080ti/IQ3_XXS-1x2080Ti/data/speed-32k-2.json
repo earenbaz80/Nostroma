@@ -16,10 +16,10 @@
  "engine_prompt_tps": 525.5,
  "engine_decode_tps": 34.8,
  "log_lines": [
-  "strata serve: prompt 31520 tokens = 0 reused + 31520 read in 59982 ms (525.5 tok/s), 256 generated in 7351 ms (34.8 tok/s), drafts accepted 154 of 214, 2 checkpoints",
-  "strata serve: decode expert cache hit rate: 51.1% (65580 hits / 128397 lookups)"
+  "nostroma serve: prompt 31520 tokens = 0 reused + 31520 read in 59982 ms (525.5 tok/s), 256 generated in 7351 ms (34.8 tok/s), drafts accepted 154 of 214, 2 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 51.1% (65580 hits / 128397 lookups)"
  ],
- "answer_head": "## What the last file does\n\n`build-vision/CMakeCache.txt` is **not source code** \u2014 it is a machine-generated cache file written by CMake for a *separate, secondary build tree* named `build-vision` (project name `strata_vision`, distinct from the top-level `strata` project in `CMakeLists.txt`).\n\nIts ",
+ "answer_head": "## What the last file does\n\n`build-vision/CMakeCache.txt` is **not source code** \u2014 it is a machine-generated cache file written by CMake for a *separate, secondary build tree* named `build-vision` (project name `nostroma_vision`, distinct from the top-level `nostroma` project in `CMakeLists.txt`).\n\nIts ",
  "metrics_after": {
   "engine": {
    "model": "qwen3.8-flash-next-iq3_xxs",

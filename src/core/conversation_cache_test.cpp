@@ -1,10 +1,10 @@
-#include "strata/core/conversation_cache.hpp"
+#include "nostroma/core/conversation_cache.hpp"
 
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
 
-using namespace strata::core;
+using namespace nostroma::core;
 
 namespace {
 int checks = 0;
@@ -746,7 +746,7 @@ int main() {
               "the slot's chain supersedes the richer copy");
     }
     {
-        // STRATA_PARK_SEGPOOL_MIB: the segment pool's idle bytes count against the budget beside the images, are given back
+        // NOSTROMA_PARK_SEGPOOL_MIB: the segment pool's idle bytes count against the budget beside the images, are given back
         // first, and never change what the cache evicts, refuses or parks
         struct FakePool final : SegmentPoolBudget {
             size_t idle = 0, shrinks = 0, shrunk = 0;

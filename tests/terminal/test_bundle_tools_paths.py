@@ -4,7 +4,7 @@
 "Preparing your model" with "can't open file .../tools/dsv41/pack_gguf.py".  This test reads the by-path references out of the source (an
 AST scan: `ROOT / "tools" / "x" / "y.py"` and the plain string "tools/x/y.py"), stages the bundle the way package_terminal does, and checks that
 each referenced file is in it.  It then runs the DeepSeek scripts from the BUNDLE with --help in a folder that holds nothing else, so an import
-they need (the sibling smoke.py, strata_tokenizer.py) must come from the bundle too."""
+they need (the sibling smoke.py, nostroma_tokenizer.py) must come from the bundle too."""
 from __future__ import annotations
 
 import ast

@@ -1,7 +1,7 @@
-"""The CUDA Linux package scripts build strata_kq only when the build tree has it (packaging/engine_targets.sh).
+"""The CUDA Linux package scripts build nostroma_kq only when the build tree has it (packaging/engine_targets.sh).
 
-A build configured with -DSTRATA_MMQ=OFF has no strata_kq target; `--target strata strata_kq` stopped such a package build with
-"ninja: error: unknown target 'strata_kq'". The scripts now ask the build tree; a build with MMQ builds the same two targets as before.
+A build configured with -DNOSTROMA_MMQ=OFF has no nostroma_kq target; `--target nostroma nostroma_kq` stopped such a package build with
+"ninja: error: unknown target 'nostroma_kq'". The scripts now ask the build tree; a build with MMQ builds the same two targets as before.
 
     python -m unittest tools.test_engine_targets -v
 """
@@ -23,10 +23,10 @@ SCRIPTS = {"packaging/build_cuda_linux.sh": "cmake", "spark/build_engine.sh": '"
 FAKE_CMAKE = """#!/bin/sh
 echo "$*" >> "$FAKE_ARGS"
 case "$FAKE_MODE" in
-  kq) echo "[1/3] Building CUDA object libstrata_kq.so"; exit 0 ;;
-  nokq) echo "ninja: error: unknown target 'strata_kq'"; exit 1 ;;
-  nokq_hint) echo "ninja: error: unknown target 'strata_kq', did you mean 'strata'?"; exit 1 ;;
-  make_nokq) echo "make: *** No rule to make target 'strata_kq'.  Stop."; exit 2 ;;
+  kq) echo "[1/3] Building CUDA object libnostroma_kq.so"; exit 0 ;;
+  nokq) echo "ninja: error: unknown target 'nostroma_kq'"; exit 1 ;;
+  nokq_hint) echo "ninja: error: unknown target 'nostroma_kq', did you mean 'nostroma'?"; exit 1 ;;
+  make_nokq) echo "make: *** No rule to make target 'nostroma_kq'.  Stop."; exit 2 ;;
   *) echo "ninja: error: loading 'build.ninja': No such file or directory"; exit 1 ;;
 esac
 """
@@ -53,16 +53,16 @@ class EngineTargetsFake(unittest.TestCase):
         env = dict(os.environ, FAKE_MODE=mode, FAKE_ARGS=str(self.args))
         return run_helper(str(self.cmake), "/b/build-x", env)
 
-    def test_a_tree_with_strata_kq_builds_both_targets_as_before(self):
+    def test_a_tree_with_nostroma_kq_builds_both_targets_as_before(self):
         r = self.call("kq")
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertEqual(r.stdout, "strata strata_kq\n")
-        self.assertEqual(self.args.read_text().split(), ["--build", "/b/build-x", "--target", "strata_kq", "--", "-n"])
+        self.assertEqual(r.stdout, "nostroma nostroma_kq\n")
+        self.assertEqual(self.args.read_text().split(), ["--build", "/b/build-x", "--target", "nostroma_kq", "--", "-n"])
 
-    def test_a_tree_without_strata_kq_builds_strata_alone(self):
+    def test_a_tree_without_nostroma_kq_builds_nostroma_alone(self):
         for mode in ("nokq", "nokq_hint", "make_nokq"):
             r = self.call(mode)
-            self.assertEqual((r.returncode, r.stdout), (0, "strata\n"), mode)
+            self.assertEqual((r.returncode, r.stdout), (0, "nostroma\n"), mode)
 
     def test_any_other_failure_stops_the_build_and_shows_why(self):
         r = self.call("broken")
@@ -74,16 +74,16 @@ class EngineTargetsFake(unittest.TestCase):
 
 @unittest.skipIf(os.name == "nt" or not (shutil.which("sh") and shutil.which("cmake") and shutil.which("ninja")), "sh, cmake and ninja")
 class EngineTargetsRealNinja(unittest.TestCase):
-    """A real CMake + Ninja tree with and without a strata_kq target: the dry run builds nothing."""
+    """A real CMake + Ninja tree with and without a nostroma_kq target: the dry run builds nothing."""
 
     def tree(self, with_kq: bool) -> Path:
         src = self.tmp / ("src-kq" if with_kq else "src")
         src.mkdir()
         made = self.tmp / ("made-kq" if with_kq else "made")
         lines = ["cmake_minimum_required(VERSION 3.16)", "project(t NONE)",
-                 "add_custom_target(strata COMMAND ${CMAKE_COMMAND} -E touch strata.out)"]
+                 "add_custom_target(nostroma COMMAND ${CMAKE_COMMAND} -E touch nostroma.out)"]
         if with_kq:
-            lines.append(f'add_custom_target(strata_kq COMMAND ${{CMAKE_COMMAND}} -E touch "{made.as_posix()}")')
+            lines.append(f'add_custom_target(nostroma_kq COMMAND ${{CMAKE_COMMAND}} -E touch "{made.as_posix()}")')
         (src / "CMakeLists.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
         build = self.tmp / ("build-kq" if with_kq else "build")
         subprocess.run(["cmake", "-G", "Ninja", "-S", str(src), "-B", str(build)], check=True, capture_output=True, timeout=600)
@@ -97,17 +97,17 @@ class EngineTargetsRealNinja(unittest.TestCase):
 
     def test_real_trees(self):
         r = run_helper("cmake", str(self.tree(True)))
-        self.assertEqual((r.returncode, r.stdout), (0, "strata strata_kq\n"), r.stderr)
+        self.assertEqual((r.returncode, r.stdout), (0, "nostroma nostroma_kq\n"), r.stderr)
         self.assertFalse((self.tmp / "made-kq").exists(), "the dry run ran a build command")
         r = run_helper("cmake", str(self.tree(False)))
-        self.assertEqual((r.returncode, r.stdout), (0, "strata\n"), r.stderr)
+        self.assertEqual((r.returncode, r.stdout), (0, "nostroma\n"), r.stderr)
 
 
 class ScriptsUseTheHelper(unittest.TestCase):
     def test_the_cuda_linux_scripts_ask_the_build_tree(self):
         for rel, cmake in SCRIPTS.items():
             text = (ROOT / rel).read_text(encoding="utf-8")
-            self.assertNotIn("--target strata strata_kq", text, rel)
+            self.assertNotIn("--target nostroma nostroma_kq", text, rel)
             self.assertIn('. "$repo/packaging/engine_targets.sh"', text, rel)
             self.assertIn(f'targets=$(engine_targets {cmake} "$build")', text, rel)
             self.assertIn('--target $targets', text, rel)

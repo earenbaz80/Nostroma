@@ -6,7 +6,7 @@
 #
 # Run it on the Spark (arm64 Linux, CUDA 13.0 toolkit, a Python 3 venv with requirements.txt and requirements-build.txt, cmake and
 # ninja on PATH; PYTHON=<that python>).  It runs spark/build_engine.sh, then makes the package in $OUT (default ./out-engine-cuda13-aarch64):
-#   <ver>-linux-aarch64-cuda-cuda13/       strata, libstrata_kq.so, strata-vision and the CUDA libraries  (feed member "engine")
+#   <ver>-linux-aarch64-cuda-cuda13/       nostroma, libnostroma_kq.so, nostroma-vision and the CUDA libraries  (feed member "engine")
 # Nothing is signed or uploaded: sign with packaging/feed_tool.py (sign-package, then pack-engine).
 #
 # PKGVER is the package version (default: the version in CMakeLists.txt); COMMIT names the source commit in the build id and is required
@@ -29,17 +29,17 @@ export COMMIT=$commit
 . "$repo/packaging/shape_build.sh"; shape_setup "$repo"
 req=""
 if [ -n "${SHAPE:-}" ]; then req=$shape_pkg; fi
-stage=$(mktemp -d "${TMPDIR:-/tmp}/strata-engine-stage.XXXXXX")
+stage=$(mktemp -d "${TMPDIR:-/tmp}/nostroma-engine-stage.XXXXXX")
 trap 'rm -rf "$stage"' EXIT
 OUT=$stage/engine BUILD_VISION=${BUILD_VISION:-1} sh spark/build_engine.sh
-shape_check "$stage/engine/strata"
+shape_check "$stage/engine/nostroma"
 cudafull=$(sed -n 's/.*"cuda": "\([^"]*\)".*/\1/p' "$stage/engine/BUILD.json")
 id="release-${ver}-cuda13-${cudafull}-aarch64-$(printf '%s' "$commit" | cut -c1-12)"
 mkdir -p "$out"
 # the engine package
 "$py" packaging/package_engine.py --src "$stage/engine" --backend cuda --version "$ver" --out "$out" --arch sm_121 --arch compute_121 \
     --min-driver nvidia=$mindriver --variant cuda13 --platform linux-aarch64 --build-id "$id" $req \
-    --include SYSTEM-LIBS.txt --include 'libstrata_kq*'
+    --include SYSTEM-LIBS.txt --include 'libnostroma_kq*'
 for d in "$out"/*/; do
   [ -f "$d/engine-component.json" ] || continue
   "$py" packaging/package_engine.py --verify "$d"

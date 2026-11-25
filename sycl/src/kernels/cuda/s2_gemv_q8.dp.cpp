@@ -14,19 +14,19 @@
 // indistinguishable from a fast one.
 //
 // Layout: activations are (n_in/32) ggml Q8_0 blocks, 34 bytes each - `fp16 d` then `int8 qs[32]` - produced by
-// `strata::kernels::quantize_q8_0`.  A quad of four elements lies inside one 32-element block, so the block
+// `nostroma::kernels::quantize_q8_0`.  A quad of four elements lies inside one 32-element block, so the block
 // scale is constant across it and is loaded once.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
-#include "strata/kprof.hpp"
+#include "nostroma/kprof.hpp"
 #include <dpct/dpct.hpp>
-#include "strata/sycl_queue.hpp"
-#include "strata/kernels/s2_gemv_q8.hpp"
+#include "nostroma/sycl_queue.hpp"
+#include "nostroma/kernels/s2_gemv_q8.hpp"
 
 #include <cstdio>
 #include <cstdlib>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 
 constexpr int QK_S2 = 64;
@@ -110,7 +110,7 @@ void s2_gemv_q8(const uint8_t* act, const uint8_t* codes, const float* scales, f
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->submit([&](sycl::handler &cgh) {
                 sycl::local_accessor<uint8_t, 1> dpct_local_acc_ct1(
                     sycl::range(smem), cgh);
@@ -139,4 +139,4 @@ void s2_gemv_q8(const uint8_t* act, const uint8_t* codes, const float* scales, f
     if (stream == nullptr) dpct::get_current_device().queues_wait_and_throw();
 }
 
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels

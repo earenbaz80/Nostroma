@@ -4,7 +4,7 @@ boxia 2026-11-15: the hip-rx6000 / rx9070 / rx7900 packages of 0.2.14 hold libro
 bundled it, because the old list called libatomic "a library every distribution has". A container without the libatomic1 package could not start
 the engine. Proves: the base list is glibc and the C++ runtime only; a finished archive is checked member by member (a symlink is not bundled,
 the install keeps none); collect_libs.py bundles libatomic.so.1 from the build machine as a real file under its soname, with its notice; and,
-on the owner PC where the published 0.2.14 files are (C:\\rc214\\FINAL4\\UPLOAD, read only, or STRATA_FINAL4_DIR), the archive check finds
+on the owner PC where the published 0.2.14 files are (C:\\rc214\\FINAL4\\UPLOAD, read only, or NOSTROMA_FINAL4_DIR), the archive check finds
 exactly today's gap: libatomic.so.1 in the three AMD packages, nothing in hip-halo or the CUDA ones. Tiny real ELF files, no toolchain needed."""
 
 import io
@@ -22,7 +22,7 @@ sys.path.insert(0, str(ROOT / "packaging"))
 import binary_deps  # noqa: E402
 import collect_libs  # noqa: E402
 
-FINAL4 = Path(os.environ.get("STRATA_FINAL4_DIR", r"C:\rc214\FINAL4\UPLOAD"))
+FINAL4 = Path(os.environ.get("NOSTROMA_FINAL4_DIR", r"C:\rc214\FINAL4\UPLOAD"))
 
 
 def make_elf(needed, soname=None) -> bytes:
@@ -84,7 +84,7 @@ class BaseList(unittest.TestCase):
     def test_a_package_folder_without_libatomic_is_refused_and_with_it_passes(self):
         with tempfile.TemporaryDirectory() as d:
             pkg = Path(d)
-            (pkg / "strata").write_bytes(make_elf(["librocm_sysdeps_numa.so.1", "libc.so.6", "libstdc++.so.6"]))
+            (pkg / "nostroma").write_bytes(make_elf(["librocm_sysdeps_numa.so.1", "libc.so.6", "libstdc++.so.6"]))
             (pkg / "librocm_sysdeps_numa.so.1").write_bytes(make_elf(["libatomic.so.1", "libc.so.6"]))
             self.assertEqual(binary_deps.uncovered(pkg), [("librocm_sysdeps_numa.so.1", "libatomic.so.1")])
             (pkg / "libatomic.so.1").write_bytes(make_elf(["libc.so.6"], soname="libatomic.so.1"))
@@ -96,7 +96,7 @@ class Archive(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.root = Path(tmp.name)
-        self.files = {"strata": make_elf(["librocm_sysdeps_numa.so.1", "libhsa-runtime64.so.1", "libc.so.6"]),
+        self.files = {"nostroma": make_elf(["librocm_sysdeps_numa.so.1", "libhsa-runtime64.so.1", "libc.so.6"]),
                       "librocm_sysdeps_numa.so.1": make_elf(["libatomic.so.1", "libc.so.6"]),
                       "BUILD.json": b"{}", "licenses/notice.txt": b"text"}
 
@@ -130,13 +130,13 @@ class Collect(unittest.TestCase):
             rocm = root / "rocm"
             rocm.mkdir()
             (rocm / "librocm_sysdeps_numa.so.1").write_bytes(make_elf(["libatomic.so.1", "libc.so.6"]))
-            binary = root / "strata"
+            binary = root / "nostroma"
             binary.write_bytes(make_elf(["librocm_sysdeps_numa.so.1", "libc.so.6"]))
             out = root / "stage"
 
             def deps(item, _search):
                 name = Path(item).name
-                if name == "strata":
+                if name == "nostroma":
                     return {"librocm_sysdeps_numa.so.1": str(rocm / "librocm_sysdeps_numa.so.1"), "libc.so.6": str(system / "libc.so.6")}, []
                 if name == "librocm_sysdeps_numa.so.1":
                     return {"libatomic.so.1": str(real), "libc.so.6": str(system / "libc.so.6")}, []
@@ -162,7 +162,7 @@ class Collect(unittest.TestCase):
         self.assertTrue((ROOT / "packaging" / "notices" / "libatomic.txt").is_file())
 
 
-@unittest.skipUnless(FINAL4.is_dir(), "the published 0.2.14 files are only on the owner PC (C:\\rc214\\FINAL4\\UPLOAD) or in STRATA_FINAL4_DIR")
+@unittest.skipUnless(FINAL4.is_dir(), "the published 0.2.14 files are only on the owner PC (C:\\rc214\\FINAL4\\UPLOAD) or in NOSTROMA_FINAL4_DIR")
 class PublishedPackages(unittest.TestCase):
     """The check on the real 0.2.14 Linux engine archives (read only): it would have refused the three AMD packages for libatomic.so.1."""
 
@@ -174,11 +174,11 @@ class PublishedPackages(unittest.TestCase):
 
     def test_the_three_amd_packages_lack_libatomic(self):
         for variant in ("rx6000", "rx9070", "rx7900"):
-            self.assertEqual(self.check(f"strata-engine-0.1.60-linux-x86_64-hip-{variant}.tar.gz"), [("librocm_sysdeps_numa.so.1", "libatomic.so.1")], variant)
+            self.assertEqual(self.check(f"nostroma-engine-0.1.60-linux-x86_64-hip-{variant}.tar.gz"), [("librocm_sysdeps_numa.so.1", "libatomic.so.1")], variant)
 
     def test_halo_and_cuda_need_nothing_else(self):
-        for name in ("strata-engine-0.1.60-linux-x86_64-hip-halo.tar.gz", "strata-engine-0.1.60-linux-x86_64-cuda-cuda13.tar.gz",
-                     "strata-engine-0.1.60-linux-x86_64-cuda-cuda12.tar.gz", "strata-engine-0.1.59-linux-aarch64-cuda-cuda13.tar.gz"):
+        for name in ("nostroma-engine-0.1.60-linux-x86_64-hip-halo.tar.gz", "nostroma-engine-0.1.60-linux-x86_64-cuda-cuda13.tar.gz",
+                     "nostroma-engine-0.1.60-linux-x86_64-cuda-cuda12.tar.gz", "nostroma-engine-0.1.59-linux-aarch64-cuda-cuda13.tar.gz"):
             self.assertEqual(self.check(name), [], name)
 
 

@@ -1,5 +1,5 @@
 // sycl/src/kernels/cuda/dflash2.dp.cpp - the small kernels of the DFlash2 drafter on SYCL (Intel Arc).  Hand port of src/kernels/cuda/dflash2.cu for the
-// Q4_0 drafter pack; the interface is include/strata/kernels/dflash2.hpp (a `stream` is a sycl::queue*, null = the default in-order queue).
+// Q4_0 drafter pack; the interface is include/nostroma/kernels/dflash2.hpp (a `stream` is a sycl::queue*, null = the default in-order queue).
 //
 // Differences from the CUDA file, all on purpose:
 //   * Q4_0 pack only (df2_gemm throws for a Q8 matrix, df2_q8_tile is absent).
@@ -12,11 +12,11 @@
 // Everything is asynchronous on the queue, allocates nothing and can be recorded into a sycl graph.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 #include <dpct/dpct.hpp>
-#include "strata/sycl_queue.hpp"
-#include "strata/kernels/dflash2.hpp"
-#include "strata/kernels/dp4a.hpp"
+#include "nostroma/sycl_queue.hpp"
+#include "nostroma/kernels/dflash2.hpp"
+#include "nostroma/kernels/dp4a.hpp"
 
 #include <cfloat>
 #include <cmath>
@@ -25,7 +25,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 
 constexpr int HD = kDf2Hd;
@@ -37,7 +37,7 @@ constexpr int HD = kDf2Hd;
 #endif
 int g_gemm_variant = 0;   // bench only (df2_gemm_variant)
 int g_attn_chunk = 0;     // bench only (df2_attention_chunk)
-int g_attn_variant = 0;   // 0: STRATA_DF2_ATTN or the default; 1: the CUDA file kernel (128 work-items); 2: 256 work-items, O[2][8]
+int g_attn_variant = 0;   // 0: NOSTROMA_DF2_ATTN or the default; 1: the CUDA file kernel (128 work-items); 2: 256 work-items, O[2][8]
 
 #define DF2_SG32 [[sycl::reqd_sub_group_size(32)]]
 #define DF2_SG16 [[sycl::reqd_sub_group_size(16)]]
@@ -103,18 +103,18 @@ inline float head_norm(const nd_item<2>& it, const sycl::local_accessor<float, 1
 }  // namespace
 
 void df2_conv(const float* x, const float* dyn, int dyn_stride, const float* base, const float* resid, float* out, int rows, int H, int group, void* stream) {
-    conv_launch(strata::q_of(stream), x, dyn, dyn_stride, base, resid, out, rows, H, group);
+    conv_launch(nostroma::q_of(stream), x, dyn, dyn_stride, base, resid, out, rows, H, group);
 }
 
 void df2_rope_inv(float theta, double* inv, void* stream) {
-    strata::q_of(stream)->parallel_for(sycl::nd_range<1>(64, 64), [=](nd_item<1> it) {
+    nostroma::q_of(stream)->parallel_for(sycl::nd_range<1>(64, 64), [=](nd_item<1> it) {
         const int i = (int) it.get_local_id(0);
         inv[i] = sycl::pow((double) theta, -(double) (2 * i) / (double) HD);
     });
 }
 
 void df2_rope_table(const int32_t* pos, int rows, float theta, float* table, void* stream) {
-    strata::q_of(stream)->parallel_for(sycl::nd_range<1>((size_t) rows * 64, 64), [=](nd_item<1> it) {
+    nostroma::q_of(stream)->parallel_for(sycl::nd_range<1>((size_t) rows * 64, 64), [=](nd_item<1> it) {
         const int r = (int) it.get_group(0), i = (int) it.get_local_id(0);
         const double inv = sycl::pow((double) theta, -(double) (2 * i) / (double) HD);
         float c, s;
@@ -125,7 +125,7 @@ void df2_rope_table(const int32_t* pos, int rows, float theta, float* table, voi
 }
 
 void df2_rope_table_inv(const int32_t* pos, int rows, const double* inv_tab, float* table, void* stream) {
-    strata::q_of(stream)->parallel_for(sycl::nd_range<1>((size_t) rows * 64, 64), [=](nd_item<1> it) {
+    nostroma::q_of(stream)->parallel_for(sycl::nd_range<1>((size_t) rows * 64, 64), [=](nd_item<1> it) {
         const int r = (int) it.get_group(0), i = (int) it.get_local_id(0);
         float c, s;
         rope_cs(inv_tab[i], pos[r], c, s);
@@ -149,7 +149,7 @@ void df2_rope_table_cpu(const int32_t* pos, int rows, float theta, float* table)
 
 void df2_norm_rope(const float* in, int in_stride, const float* gamma, const int32_t* pos, const float* rope_table, float* out, int slot_mod, int rows, int heads,
                    float eps, void* stream) {
-    sycl::queue* q = strata::q_of(stream);
+    sycl::queue* q = nostroma::q_of(stream);
     q->submit([&](sycl::handler& h) {
         sycl::local_accessor<float, 1> red(4, h), y(HD, h);
         h.parallel_for(sycl::nd_range<2>({(size_t) heads, (size_t) rows * HD}, {1, HD}), [=](nd_item<2> it) DF2_SG32 {
@@ -173,7 +173,7 @@ void df2_norm_rope(const float* in, int in_stride, const float* gamma, const int
 
 void df2_copy_rows(const float* in, float* out, const int32_t* pos, int slot_mod, int rows, int cols, void* stream) {
     const int n = rows * cols;
-    strata::q_of(stream)->parallel_for(sycl::nd_range<1>((size_t) ((n + 255) / 256) * 256, 256), [=](nd_item<1> it) {
+    nostroma::q_of(stream)->parallel_for(sycl::nd_range<1>((size_t) ((n + 255) / 256) * 256, 256), [=](nd_item<1> it) {
         const int i = (int) it.get_global_id(0);
         if (i >= n) return;
         const int r = i / cols, c = i % cols;
@@ -191,10 +191,10 @@ constexpr int PS4 = 9;    // stride of the transposed probabilities P[key][query
 
 void df2_attention(const float* q, const float* kring, const float* vring, const float* kblk, const float* vblk, const int32_t* anchor_pos, int ring_slots,
                    int window, float* part, void* xq, float* xd, void* stream, const int64_t* tag, const int32_t* epoch_ptr) {
-    sycl::queue* qu = strata::q_of(stream);
-    static const int env_v = [] { const char* e = strata::env("NOSTROMA_DF2_ATTN"); return e ? std::atoi(e) : 0; }();
+    sycl::queue* qu = nostroma::q_of(stream);
+    static const int env_v = [] { const char* e = nostroma::env("NOSTROMA_DF2_ATTN"); return e ? std::atoi(e) : 0; }();
     const int av = g_attn_variant != 0 ? g_attn_variant : env_v != 0 ? env_v : DF2_ATTN_AUTO;
-    static const int env_ck = [] { const char* e = strata::env("NOSTROMA_DF2_ATTN_CHUNK"); return e ? std::atoi(e) : 0; }();
+    static const int env_ck = [] { const char* e = nostroma::env("NOSTROMA_DF2_ATTN_CHUNK"); return e ? std::atoi(e) : 0; }();
     const int CK = g_attn_chunk != 0 ? g_attn_chunk : env_ck == 128 ? 128 : DF2_ATTN_CHUNK_AUTO;   // keys per work-group: 64 (33 chunks) or 128 (17)
     const int nch = CK == 128 ? kDf2MaxChunks : kDf2PartChunks;
     if (av == 2) {
@@ -551,10 +551,10 @@ void gemm4_launch(sycl::queue* q, const Df2Segs& segs, const int8_t* xq, const f
                 const sycl::int4 x = xv[(size_t) c * (n_in / 16) + st * 32];
                 #pragma unroll
                 for (int r = 0; r < R; ++r) {
-                    int isum = STRATA_DP4A(w[r][0], x.x(), 0);
-                    isum = STRATA_DP4A(w[r][1], x.y(), isum);
-                    isum = STRATA_DP4A(w[r][2], x.z(), isum);
-                    isum = STRATA_DP4A(w[r][3], x.w(), isum);
+                    int isum = NOSTROMA_DP4A(w[r][0], x.x(), 0);
+                    isum = NOSTROMA_DP4A(w[r][1], x.y(), isum);
+                    isum = NOSTROMA_DP4A(w[r][2], x.z(), isum);
+                    isum = NOSTROMA_DP4A(w[r][3], x.w(), isum);
                     acc[r][c] = sycl::fma(dw[r] * xs[c], (float) isum, acc[r][c]);
                 }
             }
@@ -639,10 +639,10 @@ void gemm4p_launch(sycl::queue* q, const Df2Segs& segs, const int8_t* xq, const 
                     const sycl::int4 x = xv[(size_t) c * (n_in / 16) + st * 32];
 #pragma unroll
                     for (int r = 0; r < R; ++r) {
-                        int isum = STRATA_DP4A(w[r][0], x.x(), 0);
-                        isum = STRATA_DP4A(w[r][1], x.y(), isum);
-                        isum = STRATA_DP4A(w[r][2], x.z(), isum);
-                        isum = STRATA_DP4A(w[r][3], x.w(), isum);
+                        int isum = NOSTROMA_DP4A(w[r][0], x.x(), 0);
+                        isum = NOSTROMA_DP4A(w[r][1], x.y(), isum);
+                        isum = NOSTROMA_DP4A(w[r][2], x.z(), isum);
+                        isum = NOSTROMA_DP4A(w[r][3], x.w(), isum);
                         acc[r][c] = sycl::fma(dw[r] * xs[c], (float) isum, acc[r][c]);
                     }
                 }
@@ -713,8 +713,8 @@ void df2_gemm(const Df2Mat* mats, int n, const void* xq, const float* xd, int n_
     }
     segs.n = n;
     const int8_t* xqp = static_cast<const int8_t*>(xq);
-    sycl::queue* q = strata::q_of(stream);
-    static const int env_v = [] { const char* e = strata::env("NOSTROMA_DF2_GEMM4"); return e ? std::atoi(e) : 0; }();
+    sycl::queue* q = nostroma::q_of(stream);
+    static const int env_v = [] { const char* e = nostroma::env("NOSTROMA_DF2_GEMM4"); return e ? std::atoi(e) : 0; }();
     const int v = g_gemm_variant != 0 ? g_gemm_variant : env_v != 0 ? env_v : DF2_Q4_AUTO(rows);
     switch (v) {   // the ids are the CUDA file's (W warps a block, R rows a warp)
         case 10: gemm4_nc<4, 4, 2>(q, segs, xqp, xd, n_in, rows, ncols); break;
@@ -738,12 +738,12 @@ void df2_attention_variant(int v) { g_attn_variant = v; }
 void df2_attention_chunk(int ck) { g_attn_chunk = ck; }
 
 void df2_quant_rows(const float* x, int K, int ncols, void* xq, float* xd, void* stream) {
-    quant_rows_launch(strata::q_of(stream), x, K, ncols, static_cast<int8_t*>(xq), xd);
+    quant_rows_launch(nostroma::q_of(stream), x, K, ncols, static_cast<int8_t*>(xq), xd);
 }
 
 // RMS norm of row `col` (N values) then the planar quantization of the normalized values; also writes them when xn != null.  One group of 256 per row.
 void df2_rms_quant(const float* h, const float* gamma, float* xn, int rows, int N, float eps, void* xq, float* xd, void* stream) {
-    sycl::queue* q = strata::q_of(stream);
+    sycl::queue* q = nostroma::q_of(stream);
     int8_t* xqi = static_cast<int8_t*>(xq);
     q->submit([&](sycl::handler& hd) {
         sycl::local_accessor<float, 1> red(8, hd);
@@ -772,7 +772,7 @@ void df2_rms_quant(const float* h, const float* gamma, float* xn, int rows, int 
 // conv (as df2_conv, no residual) then the planar quantization: grid (ceil(H / 32 / 8), rows), 256 work-items
 void df2_conv_quant(const float* x, const float* dyn, int dyn_stride, const float* base, int rows, int H, int group, void* xq, float* xd, void* stream) {
     int8_t* xqi = static_cast<int8_t*>(xq);
-    strata::q_of(stream)->parallel_for(sycl::nd_range<2>({(size_t) rows, (size_t) ((H / 32 + 7) / 8) * 256}, {1, 256}), [=](nd_item<2> it) DF2_SG32 {
+    nostroma::q_of(stream)->parallel_for(sycl::nd_range<2>({(size_t) rows, (size_t) ((H / 32 + 7) / 8) * 256}, {1, 256}), [=](nd_item<2> it) DF2_SG32 {
         const sycl::sub_group sg = it.get_sub_group();
         const int b = (int) it.get_group(0), blk = (int) it.get_group(1) * 8 + (int) (it.get_local_id(1) >> 5), lane = (int) sg.get_local_linear_id();
         if (blk * 32 >= H) return;
@@ -794,7 +794,7 @@ void df2_conv_rms_quant(const float* x, const float* dyn, int dyn_stride, const 
                         float eps, void* xq, float* xd, void* stream) {
     constexpr int MAXJ = 12;   // H <= 3072 -> 96 blocks -> 12 per sub-group
     if (H > 3072) throw std::invalid_argument("df2_conv_rms_quant: H too large");
-    sycl::queue* q = strata::q_of(stream);
+    sycl::queue* q = nostroma::q_of(stream);
     int8_t* xqi = static_cast<int8_t*>(xq);
     q->submit([&](sycl::handler& hd) {
         sycl::local_accessor<float, 1> red(8, hd);
@@ -846,7 +846,7 @@ void df2_conv_rms_quant(const float* x, const float* dyn, int dyn_stride, const 
 // q and k of the block: per (row, head) RMS norm and rope; group y < q_heads is a q head (-> qo, row-major rows), the rest k heads (-> ko)
 void df2_norm_rope_qk(const float* q, const float* k, const float* gq, const float* gk, const float* table, float* qo, float* ko, int rows, int q_heads, int k_heads,
                       float eps, void* stream) {
-    sycl::queue* qu = strata::q_of(stream);
+    sycl::queue* qu = nostroma::q_of(stream);
     qu->submit([&](sycl::handler& hd) {
         sycl::local_accessor<float, 1> red(4, hd), y(HD, hd);
         hd.parallel_for(sycl::nd_range<2>({(size_t) (q_heads + k_heads), (size_t) rows * HD}, {1, HD}), [=](nd_item<2> it) DF2_SG32 {
@@ -871,7 +871,7 @@ void df2_norm_rope_qk(const float* q, const float* k, const float* gq, const flo
 // the context update's ring write: K norm + rope of (row, head) and the V copy, both into the head-major ring slot pos % slots
 void df2_kv_ring(const float* kin, const float* vin, const float* gk, const int32_t* pos, const float* table, float* kring, float* vring, int slots, int rows, int heads,
                  float eps, void* stream, int64_t* tag, const int32_t* epoch_ptr) {
-    sycl::queue* qu = strata::q_of(stream);
+    sycl::queue* qu = nostroma::q_of(stream);
     qu->submit([&](sycl::handler& hd) {
         sycl::local_accessor<float, 1> red(4, hd), y(HD, hd);
         hd.parallel_for(sycl::nd_range<2>({(size_t) heads, (size_t) rows * HD}, {1, HD}), [=](nd_item<2> it) DF2_SG32 {
@@ -895,7 +895,7 @@ void df2_kv_ring(const float* kin, const float* vin, const float* gk, const int3
 // silu(gate) * up then the planar quantization: grid (ceil(I / 32 / 8), rows), 256 work-items
 void df2_swiglu_quant(const float* gate, const float* up, int rows, int I, void* xq, float* xd, void* stream) {
     int8_t* xqi = static_cast<int8_t*>(xq);
-    strata::q_of(stream)->parallel_for(sycl::nd_range<2>({(size_t) rows, (size_t) ((I / 32 + 7) / 8) * 256}, {1, 256}), [=](nd_item<2> it) DF2_SG32 {
+    nostroma::q_of(stream)->parallel_for(sycl::nd_range<2>({(size_t) rows, (size_t) ((I / 32 + 7) / 8) * 256}, {1, 256}), [=](nd_item<2> it) DF2_SG32 {
         const sycl::sub_group sg = it.get_sub_group();
         const int b = (int) it.get_group(0), blk = (int) it.get_group(1) * 8 + (int) (it.get_local_id(1) >> 5), lane = (int) sg.get_local_linear_id();
         if (blk * 32 >= I) return;
@@ -911,7 +911,7 @@ void df2_q4_tile(const void* blocks_, void* qs_, void* dpl_, int n_in, int64_t c
     const uint8_t* blocks = static_cast<const uint8_t*>(blocks_);
     uint8_t* qs = static_cast<uint8_t*>(qs_);
     uint16_t* dpl = static_cast<uint16_t*>(dpl_);
-    strata::q_of(stream)->parallel_for(sycl::nd_range<1>((size_t) ((count + 255) / 256) * 256, 256), [=](nd_item<1> it) {
+    nostroma::q_of(stream)->parallel_for(sycl::nd_range<1>((size_t) ((count + 255) / 256) * 256, 256), [=](nd_item<1> it) {
         const int64_t b = (int64_t) it.get_global_id(0);
         if (b >= count) return;
         const int nb = n_in / 32;
@@ -955,7 +955,7 @@ void df2_topk(const float* logits, int n, const int32_t* idx_map, int rows, uint
     if ((n + kDf2TopBlocks - 1) / kDf2TopBlocks > TK_CHUNK_MAX) throw std::invalid_argument("df2_topk: too many logits per row");
     float* cval = reinterpret_cast<float*>(scratch);
     int32_t* cidx = reinterpret_cast<int32_t*>(scratch + (size_t) rows * kDf2TopBlocks * kDf2TopK);
-    sycl::queue* q = strata::q_of(stream);
+    sycl::queue* q = nostroma::q_of(stream);
     q->submit([&](sycl::handler& hd) {
         sycl::local_accessor<float, 1> vals(TK_CHUNK_MAX, hd), wv(8, hd);
         sycl::local_accessor<int, 1> wi(8, hd);
@@ -1034,7 +1034,7 @@ void df2_select(const float* hp, const float* unary, const int32_t* tok, const u
                 const int32_t* anchor_tok, int32_t* out_tok, float* out_prob, void* stream, bool cb_q4) {
     if (cb_q4) throw std::invalid_argument("df2_select: Q4_0 selector codebooks are not on SYCL (the loader keeps the bf16 pack)");
     if (rank != 256) throw std::invalid_argument("df2_select: the selector rank must be 256");
-    sycl::queue* q = strata::q_of(stream);
+    sycl::queue* q = nostroma::q_of(stream);
     q->submit([&](sycl::handler& hd) {
         sycl::local_accessor<float, 1> vp(256, hd), sc(kDf2TopK, hd);
         sycl::local_accessor<int, 1> prev(1, hd);
@@ -1078,7 +1078,7 @@ void df2_select(const float* hp, const float* unary, const int32_t* tok, const u
 }
 
 void df2_tap_rows(const float* R, float* out, int64_t out_stride, int64_t n_embd, int hc, int rows, void* stream) {
-    strata::q_of(stream)->parallel_for(sycl::nd_range<2>({(size_t) rows, (size_t) ((n_embd + 255) / 256) * 256}, {1, 256}), [=](nd_item<2> it) {
+    nostroma::q_of(stream)->parallel_for(sycl::nd_range<2>({(size_t) rows, (size_t) ((n_embd + 255) / 256) * 256}, {1, 256}), [=](nd_item<2> it) {
         const int64_t i = (int64_t) it.get_group(1) * 256 + (int64_t) it.get_local_id(1);
         const int r = (int) it.get_group(0);
         if (i >= n_embd) return;
@@ -1090,7 +1090,7 @@ void df2_tap_rows(const float* R, float* out, int64_t out_stride, int64_t n_embd
 
 void df2_tap_gr(const float* R, int64_t R_stride, const float* bo, int64_t bo_stride, const float* inject, int64_t inj_stride, float* out, int64_t out_stride, int rows,
                 int64_t n_embd, int hc, void* stream) {
-    strata::q_of(stream)->parallel_for(sycl::nd_range<2>({(size_t) rows, (size_t) ((n_embd + 255) / 256) * 256}, {1, 256}), [=](nd_item<2> it) {
+    nostroma::q_of(stream)->parallel_for(sycl::nd_range<2>({(size_t) rows, (size_t) ((n_embd + 255) / 256) * 256}, {1, 256}), [=](nd_item<2> it) {
         const int64_t i = (int64_t) it.get_group(1) * 256 + (int64_t) it.get_local_id(1);
         const int r = (int) it.get_group(0);
         if (i >= n_embd) return;
@@ -1104,4 +1104,4 @@ void df2_tap_gr(const float* R, int64_t R_stride, const float* bo, int64_t bo_st
     });
 }
 
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels

@@ -2,7 +2,7 @@
 # The speed matrix, with its own telemetry. (The first attempt in run_all.sh failed at start: the host venv lacked
 # the `regex` module; the needle test of that run completed and is kept as needles.json.)
 set -u
-ROOT=/home/gpf/code/Strata
+ROOT=/home/gpf/code/Nostroma
 OUT=$ROOT/bench/results/2026-10-05-community-rx-6700-xt
 PACK=/media/gpf/DDrive1/dev/models/packs/iq2_xs
 cd "$ROOT"

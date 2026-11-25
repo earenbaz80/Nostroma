@@ -20,7 +20,7 @@ test('version text is read and compared against the minimum', () => {
 test('Linux search order: own folder, component, PATH, then the usual places', () => {
   const list = connectorCandidates({ directory: '/h/engine/cloudflare', componentDirectory: '/h/components/cloudflared', platform: 'linux', env: { PATH: '/usr/bin:/opt/x/bin:/usr/bin' }, home: '/home/tester' });
   assert.deepEqual(list.slice(0, 4).map(c => [c.path, c.source]), [
-    ['/h/engine/cloudflare/cloudflared', 'strata'], ['/h/components/cloudflared/cloudflared', 'component'],
+    ['/h/engine/cloudflare/cloudflared', 'nostroma'], ['/h/components/cloudflared/cloudflared', 'component'],
     ['/usr/bin/cloudflared', 'path'], ['/opt/x/bin/cloudflared', 'path']]);
   const places = list.filter(c => c.source === 'system').map(c => c.path);
   for (const want of ['/usr/local/bin/cloudflared', '/opt/homebrew/bin/cloudflared', '/home/tester/.local/bin/cloudflared']) assert.ok(places.includes(want), want);
@@ -61,15 +61,15 @@ test('Nostroma’s own copy wins over a system one; an old or broken copy is ski
   assert.equal(skippedMessage(none.skipped), null);
 });
 
-test('STRATA_CLOUDFLARED picks exactly one file; STRATA_CLOUDFLARED_SEARCH=own keeps to Nostroma’s folders', async () => {
-  const one = connectorCandidates({ directory: '/h/cf', platform: 'linux', env: { PATH: '/usr/bin', STRATA_CLOUDFLARED: '/opt/mine/cloudflared' }, home: '/h' });
+test('NOSTROMA_CLOUDFLARED picks exactly one file; NOSTROMA_CLOUDFLARED_SEARCH=own keeps to Nostroma’s folders', async () => {
+  const one = connectorCandidates({ directory: '/h/cf', platform: 'linux', env: { PATH: '/usr/bin', NOSTROMA_CLOUDFLARED: '/opt/mine/cloudflared' }, home: '/h' });
   assert.deepEqual(one, [{ path: '/opt/mine/cloudflared', source: 'setting' }]);
-  const own = connectorCandidates({ directory: '/h/cf', componentDirectory: '/h/c', platform: 'linux', env: { PATH: '/usr/bin', STRATA_CLOUDFLARED_SEARCH: 'own' }, home: '/h' });
-  assert.deepEqual(own.map(c => c.source), ['strata', 'component']);
+  const own = connectorCandidates({ directory: '/h/cf', componentDirectory: '/h/c', platform: 'linux', env: { PATH: '/usr/bin', NOSTROMA_CLOUDFLARED_SEARCH: 'own' }, home: '/h' });
+  assert.deepEqual(own.map(c => c.source), ['nostroma', 'component']);
 });
 
 test('a real executable on PATH is found and run (a user-local copy, never a system install)', { skip: process.platform === 'win32' && 'needs a POSIX executable file to run as cloudflared (not on Windows)' }, async () => {
-  const dir = await mkdtemp(join(tmpdir(), 'strata-cf-path-'));
+  const dir = await mkdtemp(join(tmpdir(), 'nostroma-cf-path-'));
   try {
     const bin = join(dir, 'bin'); await mkdir(bin);
     await writeFile(join(bin, 'cloudflared'), '#!/bin/sh\necho "cloudflared version 2026.5.0 (built 2026-05-12)"\n');

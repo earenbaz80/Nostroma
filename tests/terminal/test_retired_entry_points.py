@@ -37,18 +37,18 @@ def ds_install(d: Path, *, model_bytes: int = 3_000_000) -> tuple[Path, Path, Pa
     (pack / "ds4.txt").write_text(f"format gguf\nmodel_dir {models_dir}\n", encoding="utf-8")
     eng = d / "engine-dsv41" / "0.1.59-linux-x86_64-cuda-cuda13"
     eng.mkdir(parents=True)
-    exe = eng / "strata-dsv41"
+    exe = eng / "nostroma-dsv41"
     exe.write_text("#!/bin/sh\necho started > \"$0.ran\"\n", encoding="utf-8")
     cfg = {"exe": str(exe), "args": ["--pack", str(pack), "--max-context", "131072", "--eos", "1"], "cwd": str(d),
            "tokenizer": str(pack / "tokenizer"), "model_name": "deepseek-v4.1-flash", "arch": "deepseek41", "port": 8080,
            "lib_dirs": [str(d / "components" / "engine" / "0.1.50-linux-x86_64-cuda" / "lib")]}
-    path = d / "strata-deepseek-v4.1-flash-ist-das-2.00bpw.json"
+    path = d / "nostroma-deepseek-v4.1-flash-ist-das-2.00bpw.json"
     path.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
     return path, models_dir, pack
 
 
 class StartRefused(unittest.TestCase):
-    """The app and `strata start` (and a saved `nostroma launch` profile) start through runtime.start."""
+    """The app and `nostroma start` (and a saved `nostroma launch` profile) start through runtime.start."""
 
     def test_runtime_start_refuses_before_anything_is_written(self):
         with tempfile.TemporaryDirectory() as d:
@@ -69,8 +69,8 @@ class StartRefused(unittest.TestCase):
 
     def test_a_qwen_profile_is_not_stopped_here(self):
         with tempfile.TemporaryDirectory() as d:
-            path = Path(d) / "strata-iq3_s.json"
-            path.write_text(json.dumps({"exe": "/x/strata", "args": [], "arch": "qwen3next", "model_name": "q"}), encoding="utf-8")
+            path = Path(d) / "nostroma-iq3_s.json"
+            path.write_text(json.dumps({"exe": "/x/nostroma", "args": [], "arch": "qwen3next", "model_name": "q"}), encoding="utf-8")
             profile = {"schema_version": 1, "id": "app-1", "source_config": str(path), "overrides": {}}
             with mock.patch.object(runtime.profiles, "load", return_value=(profile, "0" * 16)):
                 runtime._refuse_deepseek("app-1")        # no error
@@ -125,7 +125,7 @@ class Server(unittest.TestCase):
             return code, out.getvalue()
 
     def test_arch(self):
-        code, out = self.run_server({"exe": "/nowhere/strata-dsv41", "args": [], "arch": "deepseek41"})
+        code, out = self.run_server({"exe": "/nowhere/nostroma-dsv41", "args": [], "arch": "deepseek41"})
         self.assertEqual(code, 2)
         self.assertIn("this config runs a DeepSeek model (arch deepseek41)", out)
         self.assertIn("so the server stops here. The model files were not changed.", out)
@@ -135,7 +135,7 @@ class Server(unittest.TestCase):
             tok = Path(d) / "tok"
             tok.mkdir()
             (tok / "tokenizer.json").write_text(json.dumps({"pre": "deepseek3"}), encoding="utf-8")
-            code, out = self.run_server({"exe": "/nowhere/strata", "args": [], "tokenizer": str(tok)})
+            code, out = self.run_server({"exe": "/nowhere/nostroma", "args": [], "tokenizer": str(tok)})
         self.assertEqual(code, 2)
         self.assertIn("(DeepSeek tokenizer)", out)
 
@@ -159,8 +159,8 @@ class Setup(unittest.TestCase):
         import setup
         with tempfile.TemporaryDirectory() as d:
             path, _m, _p = ds_install(Path(d))
-            qwen = Path(d) / "strata-iq3_s.json"
-            qwen.write_text(json.dumps({"exe": "/x/strata", "args": ["--model", "/m/q.gguf"], "model_name": "q"}), encoding="utf-8")
+            qwen = Path(d) / "nostroma-iq3_s.json"
+            qwen.write_text(json.dumps({"exe": "/x/nostroma", "args": ["--model", "/m/q.gguf"], "model_name": "q"}), encoding="utf-8")
             before = sha(path)
             with mock.patch.object(setup, "home", return_value=Path(d)):
                 self.assertEqual(setup.installed_configs(), [qwen])

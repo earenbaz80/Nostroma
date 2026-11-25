@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run the fixed EVO-X2 report protocol. Requires exclusive GPU use, a prepared pack/MTP, and HIP build.
 
-This script controls only the Strata processes it starts. Stop other GPU servers first.
+This script controls only the Nostroma processes it starts. Stop other GPU servers first.
 """
 import argparse
 import hashlib
@@ -22,10 +22,10 @@ for name in ['model','build','sdk','out']:ap.add_argument('--'+name,type=pathlib
 ap.add_argument('--port',type=int,default=18741)
 a=ap.parse_args();a.out.mkdir(parents=True,exist_ok=True)
 url=f'http://127.0.0.1:{a.port}'
-base_env={**os.environ,'PYTHONUNBUFFERED':'1','ROCM_PATH':str(a.sdk),'HIP_PATH':str(a.sdk),'HIP_PLATFORM':'amd','LD_LIBRARY_PATH':':'.join(str(a.sdk/x) for x in ['lib','lib/rocm_sysdeps/lib','lib/llvm/lib']),'STRATA_HIPBLASLT_TUNING':str(ROOT/'tools/hip/gfx1151-hipblaslt-100401.txt')}
+base_env={**os.environ,'PYTHONUNBUFFERED':'1','ROCM_PATH':str(a.sdk),'HIP_PATH':str(a.sdk),'HIP_PLATFORM':'amd','LD_LIBRARY_PATH':':'.join(str(a.sdk/x) for x in ['lib','lib/rocm_sysdeps/lib','lib/llvm/lib']),'NOSTROMA_HIPBLASLT_TUNING':str(ROOT/'tools/hip/gfx1151-hipblaslt-100401.txt')}
 # Avoid inheriting unrelated engine experiments from the caller.
-base_env={k:v for k,v in base_env.items() if not k.startswith('STRATA_') or k=='STRATA_HIPBLASLT_TUNING'}
-FAST=dict(STRATA_PF_FUSED='1',STRATA_PF_GEMM='1',STRATA_HC_UPMIX='1',STRATA_PA_FAST='1',STRATA_HIP_WMMA='1',STRATA_SELECT_WMMA='1',STRATA_HC_Q8='1',STRATA_PF_SWITCH_MIN_T='4096',STRATA_PREFILL_STREAM_MIN='128')
+base_env={k:v for k,v in base_env.items() if not k.startswith('NOSTROMA_') or k=='NOSTROMA_HIPBLASLT_TUNING'}
+FAST=dict(NOSTROMA_PF_FUSED='1',NOSTROMA_PF_GEMM='1',NOSTROMA_HC_UPMIX='1',NOSTROMA_PA_FAST='1',NOSTROMA_HIP_WMMA='1',NOSTROMA_SELECT_WMMA='1',NOSTROMA_HC_Q8='1',NOSTROMA_PF_SWITCH_MIN_T='4096',NOSTROMA_PREFILL_STREAM_MIN='128')
 server=None;server_log=None;phase='initial';events=[];stop_event=threading.Event()
 def gtt_bytes():
     return sum(int(p.read_text()) for p in pathlib.Path('/sys/class/drm').glob('card*/device/mem_info_gtt_used'))
@@ -59,7 +59,7 @@ def stop_server():
             except FileNotFoundError:continue
         if not alive and gtt_bytes() <= initial_gtt + 512*1024**2:return
         time.sleep(1)
-    raise RuntimeError('Strata GPU mappings/GTT were not released')
+    raise RuntimeError('Nostroma GPU mappings/GTT were not released')
 
 def get(path):
     with urllib.request.urlopen(url+path,timeout=10) as response:return json.load(response)
@@ -69,7 +69,7 @@ def config(name,ctx,fast=False,parallel=1,borrow=True):
     if ctx>=65536:args+=['--kv-resident','32768']
     if fast:args+=['--lookup-chain','3','--mtp-q4','all']
     if not borrow:args+=['--no-prefill-borrow']
-    cfg=dict(exe=str(a.build/'strata'),args=args,cwd=str(ROOT),tokenizer=str(a.model/'pack/tokenizer'),model_name='strata',log=str(a.out/(name+'-engine.log')),host='127.0.0.1',port=a.port,parallel=parallel,open_browser=False)
+    cfg=dict(exe=str(a.build/'nostroma'),args=args,cwd=str(ROOT),tokenizer=str(a.model/'pack/tokenizer'),model_name='nostroma',log=str(a.out/(name+'-engine.log')),host='127.0.0.1',port=a.port,parallel=parallel,open_browser=False)
     path=a.out/(name+'-config.json');path.write_text(json.dumps(cfg,indent=2));return path
 
 def start(name,ctx,fast=False,parallel=1,borrow=True,qfuse=None):
@@ -77,10 +77,10 @@ def start(name,ctx,fast=False,parallel=1,borrow=True,qfuse=None):
     stop_server();phase=name
     cfg=config(name,ctx,fast,parallel,borrow)
     env={**base_env,**(FAST if fast else {})}
-    if qfuse is not None:env['STRATA_QFUSE']=str(qfuse)
-    (a.out/(name+'-env.json')).write_text(json.dumps({k:v for k,v in env.items() if k.startswith('STRATA_')},indent=2))
+    if qfuse is not None:env['NOSTROMA_QFUSE']=str(qfuse)
+    (a.out/(name+'-env.json')).write_text(json.dumps({k:v for k,v in env.items() if k.startswith('NOSTROMA_')},indent=2))
     server_log=(a.out/(name+'-server.log')).open('w')
-    server=subprocess.Popen([sys.executable,str(ROOT/'serve/server.py'),'--engine','strata','--config',str(cfg),'--host','127.0.0.1','--port',str(a.port)],cwd=ROOT,env=env,stdout=server_log,stderr=subprocess.STDOUT,start_new_session=True)
+    server=subprocess.Popen([sys.executable,str(ROOT/'serve/server.py'),'--engine','nostroma','--config',str(cfg),'--host','127.0.0.1','--port',str(a.port)],cwd=ROOT,env=env,stdout=server_log,stderr=subprocess.STDOUT,start_new_session=True)
     event('server-start',pid=server.pid,config=str(cfg))
     deadline=time.monotonic()+600
     while time.monotonic()<deadline:
@@ -125,7 +125,7 @@ signal.signal(signal.SIGTERM,interrupted)
 try:
     # Cold process, speed repeats in the same order/state as the public P40 study.
     start('default-32k',32768)
-    shared=['--engine','openai','--base',url,'--model','strata','--arm','evo-x2-ud-iq4xs','--think','off','--out',str(a.out/'quality')]
+    shared=['--engine','openai','--base',url,'--model','nostroma','--arm','evo-x2-ud-iq4xs','--think','off','--out',str(a.out/'quality')]
     run('p40-speed',HERE/'quality.py',shared+['--suite','speed','--reps','3'])
     run('quality-69x2',HERE/'quality.py',shared+['--suite','reasoning,code,tools,complete,longctx','--reps','2'])
     # Same public tokenizer-counted 4K/32K/128K workload in both arms, each with its own warmup.
@@ -140,7 +140,7 @@ try:
     run('needle-native',HERE/'needle.py',['--url',url,'--lengths','256k','--depths','10,50,90','--out',a.out/'needles-native.json'],extra={'NEEDLE_REQUEST_DIR':str(a.out/'needle-native-requests')},allowed=(0,1))
     stop_server();phase='batch-exact'
     cfg=config('batch-exact',131072,parallel=1,borrow=False)
-    run('batch-exact',ROOT/'tools/batch_test.py',['--exe',a.build/'strata','--config',cfg,'--batch','2','--n','2','--max-new','150','--dump',a.out/'batch-exact.json','--extra','--pcie-frac 0 --adapt-every 1000000 --no-prefill-borrow'],timeout=1200,extra={'BATCH_TEST_LOG':str(a.out/'batch-exact-engine.log'),'STRATA_QFUSE':'1'},allowed=(0,2,124))
+    run('batch-exact',ROOT/'tools/batch_test.py',['--exe',a.build/'nostroma','--config',cfg,'--batch','2','--n','2','--max-new','150','--dump',a.out/'batch-exact.json','--extra','--pcie-frac 0 --adapt-every 1000000 --no-prefill-borrow'],timeout=1200,extra={'BATCH_TEST_LOG':str(a.out/'batch-exact-engine.log'),'NOSTROMA_QFUSE':'1'},allowed=(0,2,124))
     # All four cells retained. QFUSE off is diagnostic, never silently made the baseline.
     for qfuse in [1,0]:
         for borrow in [True,False]:

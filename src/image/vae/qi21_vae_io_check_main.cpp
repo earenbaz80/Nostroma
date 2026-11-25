@@ -1,13 +1,13 @@
-// src/image/vae/qi21_vae_io_check_main.cpp - test program strata-vae-io-check (not shipped): the two byte-comparable
+// src/image/vae/qi21_vae_io_check_main.cpp - test program nostroma-vae-io-check (not shipped): the two byte-comparable
 // steps around the VAE decoder against stable-diffusion.cpp's own stage dumps (tools/image/gate/stage_hooks.py):
 //   latent.bin -> wan_vae_denormalize -> must equal vae_in.bin (what sd.cpp's VAE decoder got);
 //   vae_out.bin (sd.cpp's decoded float picture) -> qi21_picture_to_u8 -> written to <out dir>/<tag>.rgb for the
 //   comparison with the pixels of sd-cli's own PNG (tools/image/gate/png_pixels.py); a fused-multiply-add variant
 //   (v * 255 + 0.5 in one rounding, how GCC may compile sd.cpp on aarch64) is written beside it as <tag>.fma.rgb.
 //
-//   strata-vae-io-check <out dir> <dump dir> [<dump dir> ...]
-#include "strata/image/qi21_pixels.hpp"
-#include "strata/image/wan_vae.hpp"
+//   nostroma-vae-io-check <out dir> <dump dir> [<dump dir> ...]
+#include "nostroma/image/qi21_pixels.hpp"
+#include "nostroma/image/wan_vae.hpp"
 
 #include <cmath>
 #include <cstdio>
@@ -18,7 +18,7 @@
 #include <vector>
 
 namespace fs = std::filesystem;
-using namespace strata::image;
+using namespace nostroma::image;
 
 namespace {
 
@@ -49,7 +49,7 @@ uint8_t fused_u8(float v) {   // the aarch64 GCC reading of sd.cpp's expression
 
 int main(int argc, char** argv) {
     if (argc < 3) {
-        std::fprintf(stderr, "usage: strata-vae-io-check <out dir> <dump dir> [...]\n");
+        std::fprintf(stderr, "usage: nostroma-vae-io-check <out dir> <dump dir> [...]\n");
         return 2;
     }
     const fs::path out(argv[1]);

@@ -18,8 +18,8 @@ class WorkDir(unittest.TestCase):
                                wait=lambda timeout=None: 0, poll=lambda: None)
         with tempfile.TemporaryDirectory() as tmp:
             v = server.Vision.__new__(server.Vision)
-            v.spawn = (["strata-vision"], None, None)
-            v.dir = Path(tmp) / "strata-vision-gone"
+            v.spawn = (["nostroma-vision"], None, None)
+            v.dir = Path(tmp) / "nostroma-vision-gone"
             v.cache = {"k": (v.dir / "k.sve", 4)}
             seen = []
 

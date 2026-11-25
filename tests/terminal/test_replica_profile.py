@@ -24,10 +24,10 @@ class Request(unittest.TestCase):
     def test_opt_in_only(self):
         self.assertFalse(P.requested({}, {}))
         self.assertTrue(P.requested({"replica_profile": True}, {}))
-        self.assertTrue(P.requested({}, {"STRATA_REPLICA_PROFILE": "1"}))
+        self.assertTrue(P.requested({}, {"NOSTROMA_REPLICA_PROFILE": "1"}))
 
     def test_an_explicit_no_wins(self):
-        self.assertFalse(P.requested({"replica_profile": False}, {"STRATA_REPLICA_PROFILE": "1"}))
+        self.assertFalse(P.requested({"replica_profile": False}, {"NOSTROMA_REPLICA_PROFILE": "1"}))
 
     def test_without_the_request_nothing_changes(self):
         c = cfg(replica_profile=None)
@@ -57,8 +57,8 @@ class Apply(unittest.TestCase):
         self.assertEqual(c["replicas"], [{"gpus": [0]}, {"gpus": [1]}, {"gpus": [2]}, {"gpus": [3]}])
         self.assertIs(c["replica_shared_arena"], True)
         self.assertEqual(c["parallel"], 4)
-        self.assertEqual(c["env"]["STRATA_CKPT_POOL"], "1")
-        self.assertEqual(c["env"]["STRATA_QSA_SLOTS"], "1")
+        self.assertEqual(c["env"]["NOSTROMA_CKPT_POOL"], "1")
+        self.assertEqual(c["env"]["NOSTROMA_QSA_SLOTS"], "1")
 
     def test_two_cards_get_eight_slots_each(self):
         c = cfg(gpu=[0, 1])
@@ -115,9 +115,9 @@ class Apply(unittest.TestCase):
 
     def test_parallel_and_environment_variables_of_the_person_win(self):
         c = cfg(parallel=6)
-        P.apply(cards(4), c, 251.0, platform="linux", environ={"STRATA_CKPT_POOL": "0"})
+        P.apply(cards(4), c, 251.0, platform="linux", environ={"NOSTROMA_CKPT_POOL": "0"})
         self.assertEqual(c["parallel"], 6)
-        self.assertNotIn("STRATA_CKPT_POOL", c["env"])
+        self.assertNotIn("NOSTROMA_CKPT_POOL", c["env"])
         c = cfg()
         P.apply(cards(4), c, 251.0, parallel_given=True, platform="linux", environ={})
         self.assertNotIn("parallel", c)

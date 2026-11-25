@@ -36,7 +36,7 @@ class ProbeLib:
         self.WIN = m.os == "windows"
         self.CONTROL = False
         suffix = ".exe" if self.WIN else ""
-        self.EXE, self.VEXE = "strata" + suffix, "strata-vision" + suffix          # the simulated class decides, not the host the test runs on
+        self.EXE, self.VEXE = "nostroma" + suffix, "nostroma-vision" + suffix          # the simulated class decides, not the host the test runs on
         self._over = {
             "gpu_compute_mode": lambda index: "Default",
             "gpu_drives_display": lambda g: False,

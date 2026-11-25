@@ -158,10 +158,10 @@
     "willow-474<|im_end|>"
    ],
    "engine": [
-    "strata generate: PCIe probe: 6.4 GB/s host->device -> pcie_frac 0.14 (default 0.55)",
-    "strata generate: expert cache auto: 17.31 GiB free, 700 MiB reserved -> 6704 slots",
-    "strata generate: expert cache 8730 slots, 16.62 GiB of VRAM; policy is",
-    "strata serve: prompt chunk auto: 8192 tokens"
+    "nostroma generate: PCIe probe: 6.4 GB/s host->device -> pcie_frac 0.14 (default 0.55)",
+    "nostroma generate: expert cache auto: 17.31 GiB free, 700 MiB reserved -> 6704 slots",
+    "nostroma generate: expert cache 8730 slots, 16.62 GiB of VRAM; policy is",
+    "nostroma serve: prompt chunk auto: 8192 tokens"
    ]
   },
   "dev-5080": {
@@ -218,10 +218,10 @@
     "willow-474<|im_end|>"
    ],
    "engine": [
-    "strata generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
-    "strata generate: expert cache auto: 9.15 GiB free, 700 MiB reserved -> 3415 slots",
-    "strata generate: expert cache 4293 slots, 8.17 GiB of VRAM; policy is",
-    "strata serve: prompt chunk auto: 8192 tokens"
+    "nostroma generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
+    "nostroma generate: expert cache auto: 9.15 GiB free, 700 MiB reserved -> 3415 slots",
+    "nostroma generate: expert cache 4293 slots, 8.17 GiB of VRAM; policy is",
+    "nostroma serve: prompt chunk auto: 8192 tokens"
    ]
   },
   "ks-k18": {
@@ -266,15 +266,15 @@
     "juniper-766<|im_end|>"
    ],
    "engine": [
-    "strata generate: layer split across 2 GPUs: CUDA0, then CUDA1 (split 18)",
-    "strata generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
-    "strata generate: layer split: CUDA1 PCIe probe 6.4 GB/s -> pcie_frac 0.14",
-    "strata generate: layer split: CUDA1 holds its weights, session and head; 18.13 GiB free",
-    "strata generate: expert cache auto: 10.46 GiB free, 700 MiB reserved -> 3345 slots",
-    "strata generate: expert cache 4608 slots, 8.24 GiB of VRAM; policy is",
-    "strata generate: layer split: CUDA1 runs layers 18-47, expert cache 7152 slots (14.14 GiB), 7152 of its 7680 profiled pairs; slot 0 verified",
-    "strata generate: layer split: CUDA0 runs layers 0-17",
-    "strata serve: layer split: layers 0-17 (CUDA0), 18-47 (CUDA1), one hand-off per window"
+    "nostroma generate: layer split across 2 GPUs: CUDA0, then CUDA1 (split 18)",
+    "nostroma generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
+    "nostroma generate: layer split: CUDA1 PCIe probe 6.4 GB/s -> pcie_frac 0.14",
+    "nostroma generate: layer split: CUDA1 holds its weights, session and head; 18.13 GiB free",
+    "nostroma generate: expert cache auto: 10.46 GiB free, 700 MiB reserved -> 3345 slots",
+    "nostroma generate: expert cache 4608 slots, 8.24 GiB of VRAM; policy is",
+    "nostroma generate: layer split: CUDA1 runs layers 18-47, expert cache 7152 slots (14.14 GiB), 7152 of its 7680 profiled pairs; slot 0 verified",
+    "nostroma generate: layer split: CUDA0 runs layers 0-17",
+    "nostroma serve: layer split: layers 0-17 (CUDA0), 18-47 (CUDA1), one hand-off per window"
    ]
   },
   "ks-k19": {
@@ -319,15 +319,15 @@
     "juniper-766<|im_end|>"
    ],
    "engine": [
-    "strata generate: layer split across 2 GPUs: CUDA0, then CUDA1 (split 19)",
-    "strata generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
-    "strata generate: layer split: CUDA1 PCIe probe 6.4 GB/s -> pcie_frac 0.14",
-    "strata generate: layer split: CUDA1 holds its weights, session and head; 18.13 GiB free",
-    "strata generate: expert cache auto: 10.46 GiB free, 700 MiB reserved -> 3345 slots",
-    "strata generate: expert cache 4606 slots, 8.29 GiB of VRAM; policy is",
-    "strata generate: layer split: CUDA1 runs layers 19-47, expert cache 7160 slots (14.14 GiB), 7160 of its 7424 profiled pairs; slot 0 verified",
-    "strata generate: layer split: CUDA0 runs layers 0-18",
-    "strata serve: layer split: layers 0-18 (CUDA0), 19-47 (CUDA1), one hand-off per window"
+    "nostroma generate: layer split across 2 GPUs: CUDA0, then CUDA1 (split 19)",
+    "nostroma generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
+    "nostroma generate: layer split: CUDA1 PCIe probe 6.4 GB/s -> pcie_frac 0.14",
+    "nostroma generate: layer split: CUDA1 holds its weights, session and head; 18.13 GiB free",
+    "nostroma generate: expert cache auto: 10.46 GiB free, 700 MiB reserved -> 3345 slots",
+    "nostroma generate: expert cache 4606 slots, 8.29 GiB of VRAM; policy is",
+    "nostroma generate: layer split: CUDA1 runs layers 19-47, expert cache 7160 slots (14.14 GiB), 7160 of its 7424 profiled pairs; slot 0 verified",
+    "nostroma generate: layer split: CUDA0 runs layers 0-18",
+    "nostroma serve: layer split: layers 0-18 (CUDA0), 19-47 (CUDA1), one hand-off per window"
    ]
   },
   "ks-k20": {
@@ -372,15 +372,15 @@
     "juniper-766<|im_end|>"
    ],
    "engine": [
-    "strata generate: layer split across 2 GPUs: CUDA0, then CUDA1 (split 20)",
-    "strata generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
-    "strata generate: layer split: CUDA1 PCIe probe 6.4 GB/s -> pcie_frac 0.14",
-    "strata generate: layer split: CUDA1 holds its weights, session and head; 18.13 GiB free",
-    "strata generate: expert cache auto: 10.46 GiB free, 700 MiB reserved -> 3345 slots",
-    "strata generate: expert cache 4603 slots, 8.29 GiB of VRAM; policy is",
-    "strata generate: layer split: CUDA1 runs layers 20-47, expert cache 7142 slots (14.14 GiB), 7142 of its 7168 profiled pairs; slot 0 verified",
-    "strata generate: layer split: CUDA0 runs layers 0-19",
-    "strata serve: layer split: layers 0-19 (CUDA0), 20-47 (CUDA1), one hand-off per window"
+    "nostroma generate: layer split across 2 GPUs: CUDA0, then CUDA1 (split 20)",
+    "nostroma generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
+    "nostroma generate: layer split: CUDA1 PCIe probe 6.4 GB/s -> pcie_frac 0.14",
+    "nostroma generate: layer split: CUDA1 holds its weights, session and head; 18.13 GiB free",
+    "nostroma generate: expert cache auto: 10.46 GiB free, 700 MiB reserved -> 3345 slots",
+    "nostroma generate: expert cache 4603 slots, 8.29 GiB of VRAM; policy is",
+    "nostroma generate: layer split: CUDA1 runs layers 20-47, expert cache 7142 slots (14.14 GiB), 7142 of its 7168 profiled pairs; slot 0 verified",
+    "nostroma generate: layer split: CUDA0 runs layers 0-19",
+    "nostroma serve: layer split: layers 0-19 (CUDA0), 20-47 (CUDA1), one hand-off per window"
    ]
   },
   "ks-k21": {
@@ -425,15 +425,15 @@
     "juniper-766<|im_end|>"
    ],
    "engine": [
-    "strata generate: layer split across 2 GPUs: CUDA0, then CUDA1 (split 21)",
-    "strata generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
-    "strata generate: layer split: CUDA1 PCIe probe 6.4 GB/s -> pcie_frac 0.14",
-    "strata generate: layer split: CUDA1 holds its weights, session and head; 18.13 GiB free",
-    "strata generate: expert cache auto: 10.46 GiB free, 700 MiB reserved -> 3345 slots",
-    "strata generate: expert cache 4627 slots, 8.29 GiB of VRAM; policy is",
-    "strata generate: layer split: CUDA1 runs layers 21-47, expert cache 6912 slots (13.78 GiB), 6912 of its 6912 profiled pairs; slot 0 verified",
-    "strata generate: layer split: CUDA0 runs layers 0-20",
-    "strata serve: layer split: layers 0-20 (CUDA0), 21-47 (CUDA1), one hand-off per window"
+    "nostroma generate: layer split across 2 GPUs: CUDA0, then CUDA1 (split 21)",
+    "nostroma generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
+    "nostroma generate: layer split: CUDA1 PCIe probe 6.4 GB/s -> pcie_frac 0.14",
+    "nostroma generate: layer split: CUDA1 holds its weights, session and head; 18.13 GiB free",
+    "nostroma generate: expert cache auto: 10.46 GiB free, 700 MiB reserved -> 3345 slots",
+    "nostroma generate: expert cache 4627 slots, 8.29 GiB of VRAM; policy is",
+    "nostroma generate: layer split: CUDA1 runs layers 21-47, expert cache 6912 slots (13.78 GiB), 6912 of its 6912 profiled pairs; slot 0 verified",
+    "nostroma generate: layer split: CUDA0 runs layers 0-20",
+    "nostroma serve: layer split: layers 0-20 (CUDA0), 21-47 (CUDA1), one hand-off per window"
    ]
   },
   "ks-k22": {
@@ -478,15 +478,15 @@
     "juniper-766<|im_end|>"
    ],
    "engine": [
-    "strata generate: layer split across 2 GPUs: CUDA0, then CUDA1 (split 22)",
-    "strata generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
-    "strata generate: layer split: CUDA1 PCIe probe 6.4 GB/s -> pcie_frac 0.14",
-    "strata generate: layer split: CUDA1 holds its weights, session and head; 18.13 GiB free",
-    "strata generate: expert cache auto: 10.46 GiB free, 700 MiB reserved -> 3345 slots",
-    "strata generate: expert cache 4640 slots, 8.29 GiB of VRAM; policy is",
-    "strata generate: layer split: CUDA1 runs layers 22-47, expert cache 6656 slots (13.34 GiB), 6656 of its 6656 profiled pairs; slot 0 verified",
-    "strata generate: layer split: CUDA0 runs layers 0-21",
-    "strata serve: layer split: layers 0-21 (CUDA0), 22-47 (CUDA1), one hand-off per window"
+    "nostroma generate: layer split across 2 GPUs: CUDA0, then CUDA1 (split 22)",
+    "nostroma generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
+    "nostroma generate: layer split: CUDA1 PCIe probe 6.4 GB/s -> pcie_frac 0.14",
+    "nostroma generate: layer split: CUDA1 holds its weights, session and head; 18.13 GiB free",
+    "nostroma generate: expert cache auto: 10.46 GiB free, 700 MiB reserved -> 3345 slots",
+    "nostroma generate: expert cache 4640 slots, 8.29 GiB of VRAM; policy is",
+    "nostroma generate: layer split: CUDA1 runs layers 22-47, expert cache 6656 slots (13.34 GiB), 6656 of its 6656 profiled pairs; slot 0 verified",
+    "nostroma generate: layer split: CUDA0 runs layers 0-21",
+    "nostroma serve: layer split: layers 0-21 (CUDA0), 22-47 (CUDA1), one hand-off per window"
    ]
   },
   "ks-k23": {
@@ -531,15 +531,15 @@
     "juniper-766<|im_end|>"
    ],
    "engine": [
-    "strata generate: layer split across 2 GPUs: CUDA0, then CUDA1 (split 23)",
-    "strata generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
-    "strata generate: layer split: CUDA1 PCIe probe 6.4 GB/s -> pcie_frac 0.14",
-    "strata generate: layer split: CUDA1 holds its weights, session and head; 18.13 GiB free",
-    "strata generate: expert cache auto: 10.46 GiB free, 700 MiB reserved -> 3345 slots",
-    "strata generate: expert cache 4609 slots, 8.29 GiB of VRAM; policy is",
-    "strata generate: layer split: CUDA1 runs layers 23-47, expert cache 6400 slots (12.82 GiB), 6400 of its 6400 profiled pairs; slot 0 verified",
-    "strata generate: layer split: CUDA0 runs layers 0-22",
-    "strata serve: layer split: layers 0-22 (CUDA0), 23-47 (CUDA1), one hand-off per window"
+    "nostroma generate: layer split across 2 GPUs: CUDA0, then CUDA1 (split 23)",
+    "nostroma generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
+    "nostroma generate: layer split: CUDA1 PCIe probe 6.4 GB/s -> pcie_frac 0.14",
+    "nostroma generate: layer split: CUDA1 holds its weights, session and head; 18.13 GiB free",
+    "nostroma generate: expert cache auto: 10.46 GiB free, 700 MiB reserved -> 3345 slots",
+    "nostroma generate: expert cache 4609 slots, 8.29 GiB of VRAM; policy is",
+    "nostroma generate: layer split: CUDA1 runs layers 23-47, expert cache 6400 slots (12.82 GiB), 6400 of its 6400 profiled pairs; slot 0 verified",
+    "nostroma generate: layer split: CUDA0 runs layers 0-22",
+    "nostroma serve: layer split: layers 0-22 (CUDA0), 23-47 (CUDA1), one hand-off per window"
    ]
   },
   "ks-k24": {
@@ -584,15 +584,15 @@
     "juniper-766<|im_end|>"
    ],
    "engine": [
-    "strata generate: layer split across 2 GPUs: CUDA0, then CUDA1 (split 24)",
-    "strata generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
-    "strata generate: layer split: CUDA1 PCIe probe 6.4 GB/s -> pcie_frac 0.14",
-    "strata generate: layer split: CUDA1 holds its weights, session and head; 18.13 GiB free",
-    "strata generate: expert cache auto: 10.46 GiB free, 700 MiB reserved -> 3345 slots",
-    "strata generate: expert cache 4603 slots, 8.29 GiB of VRAM; policy is",
-    "strata generate: layer split: CUDA1 runs layers 24-47, expert cache 6144 slots (12.35 GiB), 6144 of its 6144 profiled pairs; slot 0 verified",
-    "strata generate: layer split: CUDA0 runs layers 0-23",
-    "strata serve: layer split: layers 0-23 (CUDA0), 24-47 (CUDA1), one hand-off per window"
+    "nostroma generate: layer split across 2 GPUs: CUDA0, then CUDA1 (split 24)",
+    "nostroma generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
+    "nostroma generate: layer split: CUDA1 PCIe probe 6.4 GB/s -> pcie_frac 0.14",
+    "nostroma generate: layer split: CUDA1 holds its weights, session and head; 18.13 GiB free",
+    "nostroma generate: expert cache auto: 10.46 GiB free, 700 MiB reserved -> 3345 slots",
+    "nostroma generate: expert cache 4603 slots, 8.29 GiB of VRAM; policy is",
+    "nostroma generate: layer split: CUDA1 runs layers 24-47, expert cache 6144 slots (12.35 GiB), 6144 of its 6144 profiled pairs; slot 0 verified",
+    "nostroma generate: layer split: CUDA0 runs layers 0-23",
+    "nostroma serve: layer split: layers 0-23 (CUDA0), 24-47 (CUDA1), one hand-off per window"
    ]
   },
   "ks-single": {
@@ -637,10 +637,10 @@
     "juniper-766<|im_end|>"
    ],
    "engine": [
-    "strata generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
-    "strata generate: expert cache auto: 9.15 GiB free, 700 MiB reserved -> 3415 slots",
-    "strata generate: expert cache 4293 slots, 8.17 GiB of VRAM; policy is",
-    "strata serve: prompt chunk auto: 8192 tokens"
+    "nostroma generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
+    "nostroma generate: expert cache auto: 9.15 GiB free, 700 MiB reserved -> 3415 slots",
+    "nostroma generate: expert cache 4293 slots, 8.17 GiB of VRAM; policy is",
+    "nostroma serve: prompt chunk auto: 8192 tokens"
    ]
   },
   "rel-5080": {
@@ -697,10 +697,10 @@
     "willow-474<|im_end|>"
    ],
    "engine": [
-    "strata generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
-    "strata generate: expert cache auto: 9.15 GiB free, 700 MiB reserved -> 3415 slots",
-    "strata generate: expert cache 4293 slots, 8.17 GiB of VRAM; policy is",
-    "strata serve: prompt chunk auto: 8192 tokens"
+    "nostroma generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
+    "nostroma generate: expert cache auto: 9.15 GiB free, 700 MiB reserved -> 3415 slots",
+    "nostroma generate: expert cache 4293 slots, 8.17 GiB of VRAM; policy is",
+    "nostroma serve: prompt chunk auto: 8192 tokens"
    ]
   },
   "t75-5080": {
@@ -745,10 +745,10 @@
     "juniper-766<|im_end|>"
    ],
    "engine": [
-    "strata generate: PCIe probe: 57.8 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
-    "strata generate: expert cache auto: 9.15 GiB free, 700 MiB reserved -> 3415 slots",
-    "strata generate: expert cache 4294 slots, 8.18 GiB of VRAM; policy is",
-    "strata serve: prompt chunk auto: 8192 tokens"
+    "nostroma generate: PCIe probe: 57.8 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
+    "nostroma generate: expert cache auto: 9.15 GiB free, 700 MiB reserved -> 3415 slots",
+    "nostroma generate: expert cache 4294 slots, 8.18 GiB of VRAM; policy is",
+    "nostroma serve: prompt chunk auto: 8192 tokens"
    ]
   },
   "x2-auto-c1024": {
@@ -805,16 +805,16 @@
     "willow-474<|im_end|>"
    ],
    "engine": [
-    "strata generate: layer split across 2 GPUs: CUDA0, then CUDA1 (split auto)",
-    "strata generate: PCIe probe: 57.8 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
-    "strata generate: layer split: CUDA1 PCIe probe 6.4 GB/s -> pcie_frac 0.14",
-    "strata generate: layer split: CUDA1 holds its weights, session and head; 18.13 GiB free",
-    "strata generate: layer split auto: K=19 - the caches hold 12288 of 12288 profiled pairs (fullest device 99%)",
-    "strata generate: expert cache auto: 10.46 GiB free, 700 MiB reserved -> 3613 slots",
-    "strata generate: expert cache 4864 slots, 8.76 GiB of VRAM; policy is",
-    "strata generate: layer split: CUDA1 runs layers 19-47, expert cache 7424 slots (14.66 GiB), 7424 of its 7424 profiled pairs; slot 0 verified",
-    "strata generate: layer split: CUDA0 runs layers 0-18",
-    "strata serve: layer split: layers 0-18 (CUDA0), 19-47 (CUDA1), one hand-off per window"
+    "nostroma generate: layer split across 2 GPUs: CUDA0, then CUDA1 (split auto)",
+    "nostroma generate: PCIe probe: 57.8 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
+    "nostroma generate: layer split: CUDA1 PCIe probe 6.4 GB/s -> pcie_frac 0.14",
+    "nostroma generate: layer split: CUDA1 holds its weights, session and head; 18.13 GiB free",
+    "nostroma generate: layer split auto: K=19 - the caches hold 12288 of 12288 profiled pairs (fullest device 99%)",
+    "nostroma generate: expert cache auto: 10.46 GiB free, 700 MiB reserved -> 3613 slots",
+    "nostroma generate: expert cache 4864 slots, 8.76 GiB of VRAM; policy is",
+    "nostroma generate: layer split: CUDA1 runs layers 19-47, expert cache 7424 slots (14.66 GiB), 7424 of its 7424 profiled pairs; slot 0 verified",
+    "nostroma generate: layer split: CUDA0 runs layers 0-18",
+    "nostroma serve: layer split: layers 0-18 (CUDA0), 19-47 (CUDA1), one hand-off per window"
    ]
   },
   "x2-auto": {
@@ -871,16 +871,16 @@
     "willow-474<|im_end|>"
    ],
    "engine": [
-    "strata generate: layer split across 2 GPUs: CUDA0, then CUDA1 (split auto)",
-    "strata generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
-    "strata generate: layer split: CUDA1 PCIe probe 6.4 GB/s -> pcie_frac 0.14",
-    "strata generate: layer split: CUDA1 holds its weights, session and head; 18.13 GiB free",
-    "strata generate: layer split auto: K=19 - the caches hold 11767 of 12288 profiled pairs (fullest device 100%)",
-    "strata generate: expert cache auto: 10.46 GiB free, 700 MiB reserved -> 3345 slots",
-    "strata generate: expert cache 4606 slots, 8.29 GiB of VRAM; policy is",
-    "strata generate: layer split: CUDA1 runs layers 19-47, expert cache 7160 slots (14.14 GiB), 7160 of its 7424 profiled pairs; slot 0 verified",
-    "strata generate: layer split: CUDA0 runs layers 0-18",
-    "strata serve: layer split: layers 0-18 (CUDA0), 19-47 (CUDA1), one hand-off per window"
+    "nostroma generate: layer split across 2 GPUs: CUDA0, then CUDA1 (split auto)",
+    "nostroma generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
+    "nostroma generate: layer split: CUDA1 PCIe probe 6.4 GB/s -> pcie_frac 0.14",
+    "nostroma generate: layer split: CUDA1 holds its weights, session and head; 18.13 GiB free",
+    "nostroma generate: layer split auto: K=19 - the caches hold 11767 of 12288 profiled pairs (fullest device 100%)",
+    "nostroma generate: expert cache auto: 10.46 GiB free, 700 MiB reserved -> 3345 slots",
+    "nostroma generate: expert cache 4606 slots, 8.29 GiB of VRAM; policy is",
+    "nostroma generate: layer split: CUDA1 runs layers 19-47, expert cache 7160 slots (14.14 GiB), 7160 of its 7424 profiled pairs; slot 0 verified",
+    "nostroma generate: layer split: CUDA0 runs layers 0-18",
+    "nostroma serve: layer split: layers 0-18 (CUDA0), 19-47 (CUDA1), one hand-off per window"
    ]
   },
   "x2-k16": {
@@ -937,15 +937,15 @@
     "willow-474<|im_end|>"
    ],
    "engine": [
-    "strata generate: layer split across 2 GPUs: CUDA0, then CUDA1 (split 16)",
-    "strata generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
-    "strata generate: layer split: CUDA1 PCIe probe 6.4 GB/s -> pcie_frac 0.14",
-    "strata generate: layer split: CUDA1 holds its weights, session and head; 18.13 GiB free",
-    "strata generate: expert cache auto: 10.46 GiB free, 700 MiB reserved -> 3345 slots",
-    "strata generate: expert cache 4096 slots, 7.17 GiB of VRAM; policy is",
-    "strata generate: layer split: CUDA1 runs layers 16-47, expert cache 7124 slots (14.14 GiB), 7124 of its 8192 profiled pairs; slot 0 verified",
-    "strata generate: layer split: CUDA0 runs layers 0-15",
-    "strata serve: layer split: layers 0-15 (CUDA0), 16-47 (CUDA1), one hand-off per window"
+    "nostroma generate: layer split across 2 GPUs: CUDA0, then CUDA1 (split 16)",
+    "nostroma generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
+    "nostroma generate: layer split: CUDA1 PCIe probe 6.4 GB/s -> pcie_frac 0.14",
+    "nostroma generate: layer split: CUDA1 holds its weights, session and head; 18.13 GiB free",
+    "nostroma generate: expert cache auto: 10.46 GiB free, 700 MiB reserved -> 3345 slots",
+    "nostroma generate: expert cache 4096 slots, 7.17 GiB of VRAM; policy is",
+    "nostroma generate: layer split: CUDA1 runs layers 16-47, expert cache 7124 slots (14.14 GiB), 7124 of its 8192 profiled pairs; slot 0 verified",
+    "nostroma generate: layer split: CUDA0 runs layers 0-15",
+    "nostroma serve: layer split: layers 0-15 (CUDA0), 16-47 (CUDA1), one hand-off per window"
    ]
   },
   "x2-k22": {
@@ -1002,15 +1002,15 @@
     "willow-474<|im_end|>"
    ],
    "engine": [
-    "strata generate: layer split across 2 GPUs: CUDA0, then CUDA1 (split 22)",
-    "strata generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
-    "strata generate: layer split: CUDA1 PCIe probe 6.4 GB/s -> pcie_frac 0.14",
-    "strata generate: layer split: CUDA1 holds its weights, session and head; 18.13 GiB free",
-    "strata generate: expert cache auto: 10.46 GiB free, 700 MiB reserved -> 3345 slots",
-    "strata generate: expert cache 4640 slots, 8.29 GiB of VRAM; policy is",
-    "strata generate: layer split: CUDA1 runs layers 22-47, expert cache 6656 slots (13.34 GiB), 6656 of its 6656 profiled pairs; slot 0 verified",
-    "strata generate: layer split: CUDA0 runs layers 0-21",
-    "strata serve: layer split: layers 0-21 (CUDA0), 22-47 (CUDA1), one hand-off per window"
+    "nostroma generate: layer split across 2 GPUs: CUDA0, then CUDA1 (split 22)",
+    "nostroma generate: PCIe probe: 57.7 GB/s host->device -> pcie_frac 0.55 (default 0.55)",
+    "nostroma generate: layer split: CUDA1 PCIe probe 6.4 GB/s -> pcie_frac 0.14",
+    "nostroma generate: layer split: CUDA1 holds its weights, session and head; 18.13 GiB free",
+    "nostroma generate: expert cache auto: 10.46 GiB free, 700 MiB reserved -> 3345 slots",
+    "nostroma generate: expert cache 4640 slots, 8.29 GiB of VRAM; policy is",
+    "nostroma generate: layer split: CUDA1 runs layers 22-47, expert cache 6656 slots (13.34 GiB), 6656 of its 6656 profiled pairs; slot 0 verified",
+    "nostroma generate: layer split: CUDA0 runs layers 0-21",
+    "nostroma serve: layer split: layers 0-21 (CUDA0), 22-47 (CUDA1), one hand-off per window"
    ]
   },
   "x2r-auto": {
@@ -1067,16 +1067,16 @@
     "willow-474<|im_end|>"
    ],
    "engine": [
-    "strata generate: layer split across 2 GPUs: CUDA0, then CUDA1 (split auto)",
-    "strata generate: PCIe probe: 6.4 GB/s host->device -> pcie_frac 0.14 (default 0.55)",
-    "strata generate: layer split: CUDA1 PCIe probe 57.7 GB/s -> pcie_frac 0.55",
-    "strata generate: layer split: CUDA1 holds its weights, session and head; 9.98 GiB free",
-    "strata generate: layer split auto: K=36 - the caches hold 11775 of 12288 profiled pairs (fullest device 100%)",
-    "strata generate: expert cache auto: 18.62 GiB free, 700 MiB reserved -> 6634 slots",
-    "strata generate: expert cache 8828 slots, 16.45 GiB of VRAM; policy is",
-    "strata generate: layer split: CUDA1 runs layers 36-47, expert cache 2945 slots (5.99 GiB), 2945 of its 3072 profiled pairs; slot 0 verified",
-    "strata generate: layer split: CUDA0 runs layers 0-35",
-    "strata serve: layer split: layers 0-35 (CUDA0), 36-47 (CUDA1), one hand-off per window"
+    "nostroma generate: layer split across 2 GPUs: CUDA0, then CUDA1 (split auto)",
+    "nostroma generate: PCIe probe: 6.4 GB/s host->device -> pcie_frac 0.14 (default 0.55)",
+    "nostroma generate: layer split: CUDA1 PCIe probe 57.7 GB/s -> pcie_frac 0.55",
+    "nostroma generate: layer split: CUDA1 holds its weights, session and head; 9.98 GiB free",
+    "nostroma generate: layer split auto: K=36 - the caches hold 11775 of 12288 profiled pairs (fullest device 100%)",
+    "nostroma generate: expert cache auto: 18.62 GiB free, 700 MiB reserved -> 6634 slots",
+    "nostroma generate: expert cache 8828 slots, 16.45 GiB of VRAM; policy is",
+    "nostroma generate: layer split: CUDA1 runs layers 36-47, expert cache 2945 slots (5.99 GiB), 2945 of its 3072 profiled pairs; slot 0 verified",
+    "nostroma generate: layer split: CUDA0 runs layers 0-35",
+    "nostroma serve: layer split: layers 0-35 (CUDA0), 36-47 (CUDA1), one hand-off per window"
    ]
   }
  }

@@ -17,7 +17,7 @@ from pathlib import Path
 from unittest import mock
 
 from serve.replicas import ReplicaEngine
-from serve.server import StrataEngine
+from serve.server import NostromaEngine
 from serve.test_parallel import FAKE_BATCH
 
 CANARY_REPEAT = 60
@@ -93,12 +93,12 @@ def foreign(tokens, own: str) -> list[bytes]:
 
 
 class FakeEngines:
-    """Real StrataEngine objects (the reader/pump, the generate paths) over the canary fake process."""
+    """Real NostromaEngine objects (the reader/pump, the generate paths) over the canary fake process."""
 
     def make_engines(self, n, batch=0, step=0.004):
         import serve.server as server
         self.tmp = tempfile.TemporaryDirectory()
-        script = Path(self.tmp.name) / "fake_strata.py"
+        script = Path(self.tmp.name) / "fake_nostroma.py"
         script.write_text(canary_script(step), encoding="utf-8")
         real = server.subprocess.Popen
         # kept for the whole test: restart() starts the fake again
@@ -108,7 +108,7 @@ class FakeEngines:
         engines = []
         for i in range(n):
             extra = (["--batch", str(batch)] if batch else [])
-            engines.append(StrataEngine("strata", extra))
+            engines.append(NostromaEngine("nostroma", extra))
         for e in engines:
             e.silence_s = 20
         return engines

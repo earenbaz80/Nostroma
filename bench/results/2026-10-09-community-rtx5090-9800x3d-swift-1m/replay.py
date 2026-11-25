@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Replay frozen requests against an already configured, running Strata server.
+"""Replay frozen requests against an already configured, running Nostroma server.
 
 No launch, restart, model selection, or configuration changes are performed.
-Set STRATA_BENCHMARK_API_KEY if the server needs a bearer token.
+Set NOSTROMA_BENCHMARK_API_KEY if the server needs a bearer token.
 """
 import argparse
 from datetime import datetime, timezone
@@ -21,7 +21,7 @@ import time
 from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parent
-SECRET = os.environ.get("STRATA_BENCHMARK_API_KEY", "")
+SECRET = os.environ.get("NOSTROMA_BENCHMARK_API_KEY", "")
 
 
 def sha(data):

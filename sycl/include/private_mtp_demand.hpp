@@ -1,11 +1,11 @@
 #pragma once
 #include <chrono>
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 #include <cstdlib>
 // Only the pipeline owner thread calls these chain methods. The state belongs
 // to its current MtpDrafter and is reset before every chain and request. No
 // class definition or layout differs from the normal engine's archives.
-namespace strata::private_demand {
+namespace nostroma::private_demand {
 struct State {
     const void* owner = nullptr;
     bool enabled = false, final = false;
@@ -28,7 +28,7 @@ inline State* get(const void* p) {
 inline void begin(const void* p, bool on) {
     auto& s = state(); const int ordinal = s.ordinal + int(on); s = State{};
     s.owner = p; s.enabled = on; s.ordinal = ordinal;
-    s.metrics = strata::env("NOSTROMA_PRIVATE_MTP_DEMAND_LOG") || strata::env("NOSTROMA_PRIVATE_MTP_DEMAND_MICRO");
+    s.metrics = nostroma::env("NOSTROMA_PRIVATE_MTP_DEMAND_LOG") || nostroma::env("NOSTROMA_PRIVATE_MTP_DEMAND_MICRO");
 }
 inline bool can_enqueue_s1(const void* p) {
     auto* s = get(p); return !s || s->submitted == 0 || s->final;
@@ -36,4 +36,4 @@ inline bool can_enqueue_s1(const void* p) {
 inline void drain(const void* p) {
     if (auto* s = get(p)) { s->target = s->limit; s->final = true; }
 }
-} // namespace strata::private_demand
+} // namespace nostroma::private_demand

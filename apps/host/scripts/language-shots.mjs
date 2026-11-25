@@ -21,11 +21,11 @@ if (!existsSync(join(root, 'dist/index.html'))) { console.error('Run npm run bui
 const chrome = process.env.CHROME ?? ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', '/usr/bin/google-chrome', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'].find(existsSync);
 if (!chrome) { console.error('No Chrome or Edge found; set CHROME.'); process.exit(1); }
 
-const home = mkdtempSync(join(tmpdir(), 'strata-language-shots-'));
+const home = mkdtempSync(join(tmpdir(), 'nostroma-language-shots-'));
 const hostPort = 8830 + Math.floor(Math.random() * 40), webPort = hostPort + 100;
-const scratch = { STRATA_HOME: home, STRATA_MODELS_DIR: join(home, 'models'), STRATA_WORKSPACE: home, STRATA_REAL_ENGINE: '0', STRATA_NATIVE_REPO: join(home, 'no-native-installation'),
-  STRATA_SETTINGS_FILE: join(home, 'app-settings.json'), STRATA_COMPONENTS_DIR: join(home, 'components'), LOCALAPPDATA: join(home, 'Local'), APPDATA: join(home, 'Roaming'),
-  XDG_DATA_HOME: join(home, 'xdg-data'), XDG_STATE_HOME: join(home, 'xdg-state'), XDG_CONFIG_HOME: join(home, 'xdg-config'), STRATA_PORT: String(hostPort) };
+const scratch = { NOSTROMA_HOME: home, NOSTROMA_MODELS_DIR: join(home, 'models'), NOSTROMA_WORKSPACE: home, NOSTROMA_REAL_ENGINE: '0', NOSTROMA_NATIVE_REPO: join(home, 'no-native-installation'),
+  NOSTROMA_SETTINGS_FILE: join(home, 'app-settings.json'), NOSTROMA_COMPONENTS_DIR: join(home, 'components'), LOCALAPPDATA: join(home, 'Local'), APPDATA: join(home, 'Roaming'),
+  XDG_DATA_HOME: join(home, 'xdg-data'), XDG_STATE_HOME: join(home, 'xdg-state'), XDG_CONFIG_HOME: join(home, 'xdg-config'), NOSTROMA_PORT: String(hostPort) };
 const children = [];
 const run = (args, extra = {}) => { const child = spawn(process.execPath, args, { cwd: root, env: { ...process.env, ...scratch, ...extra }, stdio: 'ignore' }); children.push(child); return child; };
 const stop = () => { for (const child of children) { try { child.kill(); } catch {} } try { rmSync(home, { recursive: true, force: true }); } catch {} };
@@ -37,7 +37,7 @@ for (let attempt = 0; ; attempt++) {
   if (attempt > 200) { console.error('The preview host did not start.'); process.exit(1); }
   await new Promise(done => setTimeout(done, 150));
 }
-run(['tests/fixtures/onboarding-ui-host.mjs'], { STRATA_UI_PREVIEW: '1', STRATA_ONBOARDING_UPSTREAM: `http://127.0.0.1:${hostPort}`, STRATA_ONBOARDING_PORT: String(webPort), STRATA_ONBOARDING_START: 'ready', STRATA_ONBOARDING_SCENARIO: 'telemetry', STRATA_ONBOARDING_PREVIEW: '1' });
+run(['tests/fixtures/onboarding-ui-host.mjs'], { NOSTROMA_UI_PREVIEW: '1', NOSTROMA_ONBOARDING_UPSTREAM: `http://127.0.0.1:${hostPort}`, NOSTROMA_ONBOARDING_PORT: String(webPort), NOSTROMA_ONBOARDING_START: 'ready', NOSTROMA_ONBOARDING_SCENARIO: 'telemetry', NOSTROMA_ONBOARDING_PREVIEW: '1' });
 for (let attempt = 0; ; attempt++) {
   try { if ((await fetch(`http://127.0.0.1:${webPort}/`)).ok) break; } catch {}
   if (attempt > 200) { console.error('The preview page did not start.'); process.exit(1); }
@@ -47,7 +47,7 @@ for (let attempt = 0; ; attempt++) {
 mkdirSync(resolve(outDir), { recursive: true });
 const browser = await chromium.launch({ executablePath: chrome, headless: true, args: ['--no-sandbox', '--disable-gpu', '--force-device-scale-factor=1'] });
 const page = await browser.newPage({ viewport: { width: Number(process.env.WIDTH ?? 1280), height: Number(process.env.HEIGHT ?? 800) }, deviceScaleFactor: 1 });
-await page.addInitScript(code => { try { localStorage.setItem('strata.prefs.v2', JSON.stringify({ language: code, onboardingSeen: true })); } catch {} }, language);
+await page.addInitScript(code => { try { localStorage.setItem('nostroma.prefs.v2', JSON.stringify({ language: code, onboardingSeen: true })); } catch {} }, language);
 const problems = [];
 page.on('pageerror', error => problems.push(`pageerror: ${error.message}`));
 for (const screen of screens) {

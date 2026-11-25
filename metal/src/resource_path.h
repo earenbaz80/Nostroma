@@ -1,16 +1,16 @@
 // Where the Metal engine finds the files it reads at run time: the .metal kernel sources it compiles when it starts,
-// strata-quant-common.h (formerly ggml-common.h), and the default expert-profile / draft-vocabulary tables.
+// nostroma-quant-common.h (formerly ggml-common.h), and the default expert-profile / draft-vocabulary tables.
 //
-// A build used from its own source tree finds them through the paths compiled in (STRATA_*_DEFAULT). A component package
+// A build used from its own source tree finds them through the paths compiled in (NOSTROMA_*_DEFAULT). A component package
 // (nostroma_control/engine_component.py) is moved away from the tree that built it, so the engine also looks beside its
 // own executable first:
 //
 //     <exe dir>/metal/kernels/*.metal            the kernel sources (metal/kernels)
 //     <exe dir>/metal/engine-msl/*.metal         the engine's own kernels (metal/src/engine/msl)
-//     <exe dir>/metal/strata-quant-common.h      (a package of an earlier release has it as <exe dir>/metal/ggml-common.h: read as the second choice)
+//     <exe dir>/metal/nostroma-quant-common.h      (a package of an earlier release has it as <exe dir>/metal/ggml-common.h: read as the second choice)
 //     <exe dir>/metal/data/expert-profile.bin  draft_vocab.bin
 //
-// Order: the environment variable (STRATA_METAL_KERNELS, ...), then that folder when it exists, then the compiled-in
+// Order: the environment variable (NOSTROMA_METAL_KERNELS, ...), then that folder when it exists, then the compiled-in
 // path. Nothing here touches a build run from its source tree: the folder does not exist there.
 #pragma once
 
@@ -22,7 +22,7 @@
 #include <cstdlib>
 #include <string>
 
-namespace strata_metal {
+namespace nostroma_metal {
 
 inline std::string exe_dir() {
     char raw[PATH_MAX * 2];
@@ -53,7 +53,7 @@ inline std::string resource(const char* env, const char* sub, const char* compil
     return compiled;
 }
 
-// The same for a file that has two names (own-stack phase 1B: strata-quant-common.h, formerly ggml-common.h): the environment variable, then the new name
+// The same for a file that has two names (own-stack phase 1B: nostroma-quant-common.h, formerly ggml-common.h): the environment variable, then the new name
 // beside the executable, then the old name beside the executable (a package of an earlier release), then the compiled-in path.
 inline std::string resource2(const char* env, const char* sub, const char* old_sub, const char* compiled) {
     if (env) {
@@ -69,4 +69,4 @@ inline std::string resource2(const char* env, const char* sub, const char* old_s
     return compiled;
 }
 
-}  // namespace strata_metal
+}  // namespace nostroma_metal

@@ -20,9 +20,9 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include "strata/kernels/native_moe.hpp"
-#include "strata/kernels/verify_kernels.hpp"
-#include "strata/core/geometry.hpp"
+#include "nostroma/kernels/native_moe.hpp"
+#include "nostroma/kernels/verify_kernels.hpp"
+#include "nostroma/core/geometry.hpp"
 #include <cuda_runtime.h>
 #include <atomic>
 #include <cstddef>
@@ -30,12 +30,12 @@
 #include <limits>
 #include <stdexcept>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
-constexpr int KU = strata::core::kCompiledGeometry.n_expert_used;   // 10 for Flash-Next: the combine kernels below are written for exactly this many ranks (<= 16: the hit mask is an int)
+constexpr int KU = nostroma::core::kCompiledGeometry.n_expert_used;   // 10 for Flash-Next: the combine kernels below are written for exactly this many ranks (<= 16: the hit mask is an int)
 static_assert(KU >= 1 && KU <= 16, "native_moe: top-k must be 1..16");
 std::atomic<bool> enabled{false};
-// GATED (S26 STRATA_LFUSE): `shared` is the shared expert's unscaled output and sg its raw gate logit per token;
+// GATED (S26 NOSTROMA_LFUSE): `shared` is the shared expert's unscaled output and sg its raw gate logit per token;
 // the row is scaled here as shared_expert_multi did (native_scalar_sigmoid_multi_kernel's expression, then one
 // rounded multiply = scale_rows_kernel's `out *= g`), then added as before
 template<bool ZADD = false, bool GATED = false>

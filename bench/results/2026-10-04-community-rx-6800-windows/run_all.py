@@ -1,6 +1,6 @@
 """bench-local/run_all.py - the full local benchmark: quality suites, speed per configuration, the longest contexts.
 
-Runs detached; restarts the Strata server with other settings between phases and restores 128K / 2048 MiB at the
+Runs detached; restarts the Nostroma server with other settings between phases and restores 128K / 2048 MiB at the
 end.  Progress: run_all.log; numbers: run_all.json.
 """
 from __future__ import annotations
@@ -24,7 +24,7 @@ HERE = Path(__file__).parent
 ROOT = HERE.parent
 PY = sys.executable
 BASE = "http://127.0.0.1:8080"
-CFG = ROOT / "strata-iq2_xs.json"
+CFG = ROOT / "nostroma-iq2_xs.json"
 LOG = HERE / "run_all.log"
 RES: dict = {"speed": [], "longctx": [], "vision": [], "config": [], "suites": []}
 
@@ -41,7 +41,7 @@ def stop_server():
     for p in psutil.process_iter(["name", "cmdline"]):
         try:
             cl = " ".join(p.info["cmdline"] or [])
-            if p.info["name"] in ("strata.exe", "strata-vision.exe") or ("serve" in cl and "server.py" in cl):
+            if p.info["name"] in ("nostroma.exe", "nostroma-vision.exe") or ("serve" in cl and "server.py" in cl):
                 p.kill()
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
@@ -58,7 +58,7 @@ def health():
 def start_server():
     out = open(ROOT / "server.out", "w")
     err = open(ROOT / "server.err", "w")
-    proc = subprocess.Popen([PY, "serve/server.py", "--engine", "strata", "--config", str(CFG), "--port", "8080"],
+    proc = subprocess.Popen([PY, "serve/server.py", "--engine", "nostroma", "--config", str(CFG), "--port", "8080"],
                             cwd=ROOT, stdout=out, stderr=err, creationflags=subprocess.CREATE_NO_WINDOW)
     t = time.time()
     while time.time() - t < 1200:
@@ -71,7 +71,7 @@ def start_server():
 
 
 def engine_facts():
-    text = (ROOT / "strata-iq2_xs.log").read_text(encoding="utf-8", errors="replace")[-200000:]
+    text = (ROOT / "nostroma-iq2_xs.log").read_text(encoding="utf-8", errors="replace")[-200000:]
     slots = re.findall(r"expert cache (\d+) slots, ([\d.]+) GiB", text)
     free = re.findall(r"(\d+) MiB of VRAM free with everything loaded", text)
     return {"expert_slots": int(slots[-1][0]) if slots else None, "cache_gib": float(slots[-1][1]) if slots else None,
@@ -82,7 +82,7 @@ def configure(ctx, reserve, vision_tokens=None):
     stop_server()
     p = subprocess.run([PY, "setup.py", "--setup", "--yes", "--family", "qwen", "--model", "IQ2_XS", "--context",
                         str(ctx), "--vram-reserve-mib", str(reserve), "--vision", "cpu", "--data-dir",
-                        r"D:\Strata-data", "--no-start"], cwd=ROOT, stdin=subprocess.DEVNULL, capture_output=True,
+                        r"D:\Nostroma-data", "--no-start"], cwd=ROOT, stdin=subprocess.DEVNULL, capture_output=True,
                        text=True, encoding="utf-8", errors="replace")
     notes = [ln.strip()[:220] for ln in p.stdout.splitlines() if "[!]" in ln or "context" in ln.lower() or "rope" in ln.lower()]
     if vision_tokens:
@@ -105,7 +105,7 @@ def ask(content, max_tokens=300, effort="none", timeout=7200):
     t = time.time()
     try:
         r = requests.post(BASE + "/v1/chat/completions", timeout=timeout, json={
-            "model": "strata", "messages": [{"role": "user", "content": content}], "max_tokens": max_tokens,
+            "model": "nostroma", "messages": [{"role": "user", "content": content}], "max_tokens": max_tokens,
             "reasoning_effort": effort, "temperature": 0}).json()
     except Exception as e:
         return {"error": f"{type(e).__name__}: {e}"[:300]}
@@ -231,8 +231,8 @@ def main():
         # 1. the everyday configuration: 128K, 2048 MiB kept free
         # (the 128K speed test and the round-1 suites were measured before; only what is still missing runs here)
         vision("300 image tokens")
-        suite("strata_eval2.py", "eval2-qa", ["qa"])
-        suite("strata_eval2.py", "eval2-hard", ["hard"])
+        suite("nostroma_eval2.py", "eval2-qa", ["qa"])
+        suite("nostroma_eval2.py", "eval2-hard", ["hard"])
         longctx(118000, "128K config")
         # 2. the upper speed limit: a small context and the smallest VRAM reserve
         if configure(8192, 700):

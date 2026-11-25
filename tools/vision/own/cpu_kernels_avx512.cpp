@@ -6,7 +6,7 @@
 #include <immintrin.h>
 
 
-namespace strata_vit {
+namespace nostroma_vit {
 namespace {
 namespace kn {
 
@@ -19,8 +19,8 @@ template <class T> inline T kmax(T a, T b) { return a < b ? b : a; }
 inline void kcopy(float* d, const float* s, int n) { for (int i = 0; i < n; ++i) d[i] = s[i]; }
 inline void kzero(float* d, int n) { for (int i = 0; i < n; ++i) d[i] = 0.0f; }
 
-// The vector of the elementwise code (cpu_kernels_impl.h, STRATA_KN_RAW): raw __m512 and free inline functions, no wrapper struct (as the AVX2 tier).
-#define STRATA_KN_RAW 1
+// The vector of the elementwise code (cpu_kernels_impl.h, NOSTROMA_KN_RAW): raw __m512 and free inline functions, no wrapper struct (as the AVX2 tier).
+#define NOSTROMA_KN_RAW 1
 constexpr int VW = 16;
 typedef __m512 VR;
 inline VR vr_load(const float* p) { return _mm512_loadu_ps(p); }
@@ -38,7 +38,7 @@ inline float vr_hadd(VR a) { return _mm512_reduce_add_ps(a); }
 inline float vr_hmax(VR a) { return _mm512_reduce_max_ps(a); }
 
 // The product's micro-kernel on raw __m512 (as the AVX2 tier's; same operations, same order, bit-identical to the generic micro of cpu_kernels_impl.h).
-#define STRATA_KN_HAS_MICRO 1
+#define NOSTROMA_KN_HAS_MICRO 1
 template <int MR>
 inline void micro(const float* A, size_t lda, const float* B, size_t ldb, int K, float* C, size_t ldc, int init, const float* bias) {
     __m512 acc[MR][2];
@@ -111,19 +111,19 @@ inline void conv16(const void* Wm, int kind, size_t off, int n, float* out) {
 
 }  // namespace kn
 }  // namespace
-}  // namespace strata_vit
+}  // namespace nostroma_vit
 
-#define STRATA_KN_MR 12
+#define NOSTROMA_KN_MR 12
 #define KN_MIN(a, b) kmin(a, b)
 #define KN_MAX(a, b) kmax(a, b)
 #define KN_COPY(d, s, n) kcopy((d), (s), (n))
 #define KN_ZERO(d, n) kzero((d), (n))
-#define STRATA_KN_NAME "avx512"
-#define STRATA_KN_GETTER cpu_ops_avx512
+#define NOSTROMA_KN_NAME "avx512"
+#define NOSTROMA_KN_GETTER cpu_ops_avx512
 #include "cpu_kernels_impl.h"
 
 #else
-namespace strata_vit {
+namespace nostroma_vit {
 const CpuOps& cpu_ops_avx512() { return cpu_ops_scalar(); }
 }
 #endif

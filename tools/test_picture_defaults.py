@@ -89,11 +89,11 @@ class MacPictureDefaults(unittest.TestCase):
     def test_a_folder_without_the_reader_turns_pictures_off(self):
         import tempfile
         d = Path(tempfile.mkdtemp(prefix="macvis-"))
-        (d / "strata").write_bytes(b"x")
+        (d / "nostroma").write_bytes(b"x")
         self.assertEqual(setup.mac_reader(d, "gpu").mode, "none")
-        (d / "strata-vision").write_bytes(b"x")
+        (d / "nostroma-vision").write_bytes(b"x")
         r = setup.mac_reader(d, "gpu")
-        self.assertEqual((r.mode, r.exe.name), ("gpu", "strata-vision"))
+        self.assertEqual((r.mode, r.exe.name), ("gpu", "nostroma-vision"))
 
 
 if __name__ == "__main__":

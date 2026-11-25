@@ -19,7 +19,7 @@ class PackagedSetupWithoutCMake(unittest.TestCase):
     def test_source_version_is_zero_without_a_source_tree(self):
         with tempfile.TemporaryDirectory() as tmp, mock.patch.object(S, "ROOT", Path(tmp)):
             self.assertEqual(S.source_version(), "0")
-            (Path(tmp) / "CMakeLists.txt").write_text("project(strata VERSION 0.1.52 LANGUAGES C)\n", encoding="utf-8")
+            (Path(tmp) / "CMakeLists.txt").write_text("project(nostroma VERSION 0.1.52 LANGUAGES C)\n", encoding="utf-8")
             self.assertEqual(S.source_version(), "0.1.52")
             (Path(tmp) / "CMakeLists.txt").write_bytes(b"\xff\xfe\x00 not text")
             self.assertEqual(S.source_version(), "0")
@@ -27,7 +27,7 @@ class PackagedSetupWithoutCMake(unittest.TestCase):
     def test_prebuilt_bases_names_the_latest_release_when_there_is_no_source_tree(self):
         with tempfile.TemporaryDirectory() as tmp, mock.patch.object(S, "ROOT", Path(tmp)):
             self.assertEqual(S.prebuilt_bases(S.PREBUILT_URL), [S.PREBUILT_URL])
-            (Path(tmp) / "CMakeLists.txt").write_text("project(strata VERSION 0.1.52)\n", encoding="utf-8")
+            (Path(tmp) / "CMakeLists.txt").write_text("project(nostroma VERSION 0.1.52)\n", encoding="utf-8")
             bases = S.prebuilt_bases(S.PREBUILT_URL)
             self.assertEqual(len(bases), 2)
             self.assertIn("v0.1.52", bases[0])
@@ -37,14 +37,14 @@ class PackagedSetupWithoutCMake(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp, mock.patch.object(S, "ROOT", Path(tmp)), \
                 mock.patch.object(S, "binary_engine_version", return_value="0.1.50"):
             self.assertFalse(S.stale_binary("x"))
-            (Path(tmp) / "CMakeLists.txt").write_text("project(strata VERSION 0.1.52)\n", encoding="utf-8")
+            (Path(tmp) / "CMakeLists.txt").write_text("project(nostroma VERSION 0.1.52)\n", encoding="utf-8")
             self.assertTrue(S.stale_binary("x"))
 
 
 class InstallForwardsSetupOptions(unittest.TestCase):
-    """#4188: `nostroma install --source modelscope --family qwen ...` was refused by strata's own parser."""
+    """#4188: `nostroma install --source modelscope --family qwen ...` was refused by nostroma's own parser."""
 
-    def test_the_options_of_setup_go_behind_a_double_dash_and_update_stays_strata_s(self):
+    def test_the_options_of_setup_go_behind_a_double_dash_and_update_stays_nostroma_s(self):
         self.assertEqual(cli._install_argv(["install", "--source", "modelscope", "--yes"]), ["install", "--", "--source", "modelscope", "--yes"])
         self.assertEqual(cli._install_argv(["install", "--family", "qwen", "--update"]), ["install", "--update", "--", "--family", "qwen"])
         self.assertEqual(cli._install_argv(["install"]), ["install", "--"])
@@ -64,7 +64,7 @@ class InstallForwardsSetupOptions(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             (Path(tmp) / "setup.py").write_text("# stand-in\n", encoding="utf-8")
             calls = []
-            with mock.patch.dict(os.environ, {"STRATA_INSTALL_DIR": tmp}), \
+            with mock.patch.dict(os.environ, {"NOSTROMA_INSTALL_DIR": tmp}), \
                     mock.patch.object(subprocess, "call", side_effect=lambda argv, **kw: calls.append(argv) or 0):
                 code = cli.main(["install", "--source", "modelscope", "--family", "qwen", "--model", "IQ3_XXS", "--context", "32k", "--yes"])
                 self.assertEqual(code, 0)

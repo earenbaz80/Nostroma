@@ -1,11 +1,11 @@
 """Qwen4 day on an Intel Arc card: a model of the signed feed (nostroma_control/feed_models.py) gets an Arc run config, in the Terminal (nostroma_cli/launch/adopt.py,
-runner.adopt_prepared_files) and in the app (setup.py --backend sycl in CONTROL mode, tools/strata_mcp.py's install plan).
+runner.adopt_prepared_files) and in the app (setup.py --backend sycl in CONTROL mode, tools/nostroma_mcp.py's install plan).
 
 Found by the Q4-READY rehearsal on the A750 (11-09): `nostroma launch` of a feed model stopped with "Nostroma can write the settings itself only for the Qwen3.8-Flash-Next,
 Swift, Coder and Gyro files, not for q4rehearsal-a", for a model on the Nostroma engine and for one on its own shape's engine alike. What these tests pin:
   * a feed model is laid out like Unsloth's sets: --native the first file, no --ple-gguf (the engine finds the n-gram table by its tensor name), its one GGUF when it is one file;
   * no Flash-Next draft layer for it; an entry that says drafter: none writes "mtp": false and "drafting": "off" (as setup_config writes it);
-  * a model of its own shape names its engine component (component:strata-q4-lite) and the model's title for the engine's refusal;
+  * a model of its own shape names its engine component (component:nostroma-q4-lite) and the model's title for the engine's refusal;
   * the expert profile comes from setup_config.neutral_profile_if_other_shape (the shipped one, or a neutral one for another shape);
   * a family that is neither built in nor of the feed is refused with the same words as before, and the built-in families' configs are what they were.
 Offline: nothing runs but Python."""
@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 import setup  # noqa: E402
-import strata_mcp as M  # noqa: E402
+import nostroma_mcp as M  # noqa: E402
 from nostroma_cli.launch import adopt  # noqa: E402
 from nostroma_control import intel_app, setup_config  # noqa: E402
 
@@ -44,7 +44,7 @@ class Tree:
 
     def __init__(self, root: Path, pack_name: str, files: list[str]):
         self.root = root
-        self.data = root / "Strata-data"
+        self.data = root / "Nostroma-data"
         self.pack = self.data / "packs" / pack_name
         (self.pack / "tokenizer").mkdir(parents=True)
         (self.pack / "tokenizer" / "vocab.json").write_text("{}")
@@ -84,13 +84,13 @@ class AdoptFeedModels(unittest.TestCase):
         p.start()
         self.addCleanup(p.stop)
 
-    def test_a_feed_model_on_the_strata_engine_is_laid_out_like_unsloths_sets(self):
+    def test_a_feed_model_on_the_nostroma_engine_is_laid_out_like_unsloths_sets(self):
         t = Tree(self.root, "iq3_xxs-q4rehearsal-a", ["Q4R-IQ3_XXS-00001-of-00002.gguf", "Q4R-IQ3_XXS-00002-of-00002.gguf"])
         notes = []
         cfg, problems = t.plan("q4rehearsal-a", "IQ3_XXS-q4rehearsal-a", feed_family("q4rehearsal-a"), notes)
         self.assertEqual(problems, [])
         a = cfg["args"]
-        self.assertEqual(cfg["exe"], "component:strata-engine")
+        self.assertEqual(cfg["exe"], "component:nostroma-engine")
         self.assertEqual(a[a.index("--native") + 1], str(t.files[0]))
         self.assertNotIn("--ple-gguf", a)
         self.assertNotIn("--mtp", a, "the Flash-Next draft layer is not a feed model's own")
@@ -106,7 +106,7 @@ class AdoptFeedModels(unittest.TestCase):
         fam = feed_family("q4rehearsal-b", shape="q4_lite")
         cfg, problems = t.plan("q4rehearsal-b", "UD-Q4_K_XL-q4rehearsal-b", fam)
         self.assertEqual(problems, [])
-        self.assertEqual(cfg["exe"], "component:strata-q4-lite")
+        self.assertEqual(cfg["exe"], "component:nostroma-q4-lite")
         self.assertEqual(cfg["shape_title"], "Qwen4 Rehearsal")
         self.assertEqual(cfg["args"][cfg["args"].index("--native") + 1], str(t.files[0]))
         self.assertEqual(adopt.model_files(t.models, "q4rehearsal-b", fam), t.files)
@@ -137,7 +137,7 @@ class AdoptFeedModels(unittest.TestCase):
 
 
 class AppArcPath(unittest.TestCase):
-    """The app: tools/strata_mcp.py plans `--backend sycl` for a feed model on an Arc, and setup.py's CONTROL mode fetches a shape engine, packs and writes the config."""
+    """The app: tools/nostroma_mcp.py plans `--backend sycl` for a feed model on an Arc, and setup.py's CONTROL mode fetches a shape engine, packs and writes the config."""
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -159,7 +159,7 @@ class AppArcPath(unittest.TestCase):
             (folder / f"Q4R-IQ3_XXS-{i:05d}-of-00002.gguf").write_bytes(b"x")
         self.assertTrue(intel_app.can_set_up("q4rehearsal-a", setup.FAMILIES["q4rehearsal-a"]))
         self.assertFalse(intel_app.can_set_up("deepseek41", {"title": "DeepSeek"}))
-        s = M.Strata(ROOT)
+        s = M.Nostroma(ROOT)
         s._setup, s._setup_tried = setup, True                              # the tables with the feed models in them (as feed_models_setup adds them)
         s.hardware = lambda fresh=False: {"ram_gb": 64.0, "gpus": [dict(A750)], "cpu": {"avx2": True}, "engine_vendor": "intel"}
         s.disk_free = lambda p: 1000.0
@@ -170,7 +170,7 @@ class AppArcPath(unittest.TestCase):
         self.assertNotIn("--drafter", args)
 
     def test_setup_control_mode_fetches_the_shape_engine_and_writes_its_config(self):
-        folder, data, home = self.root / "b", self.root / "Strata-data", self.root / "install"
+        folder, data, home = self.root / "b", self.root / "Nostroma-data", self.root / "install"
         for d in (folder, data, home):
             d.mkdir()
         (folder / "q4lite4.gguf").write_bytes(b"x")
@@ -193,8 +193,8 @@ class AppArcPath(unittest.TestCase):
                 mock.patch.object(intel_app, "supported_here", lambda platform=None: True):
             self.assertEqual(setup.intel_control_setup(a), 0)
         self.assertEqual(fetched, [{"shape": "q4_lite", "title": "Qwen4 Rehearsal"}])
-        cfg = json.loads((home / "strata-q4rehearsal-b-ud-q4_k_xl-q4rehearsal-b.json").read_text(encoding="utf-8"))
-        self.assertEqual((cfg["exe"], cfg["backend"], cfg["drafting"], cfg["mtp"]), ("component:strata-q4-lite", "sycl", "off", False))
+        cfg = json.loads((home / "nostroma-q4rehearsal-b-ud-q4_k_xl-q4rehearsal-b.json").read_text(encoding="utf-8"))
+        self.assertEqual((cfg["exe"], cfg["backend"], cfg["drafting"], cfg["mtp"]), ("component:nostroma-q4-lite", "sycl", "off", False))
         self.assertEqual(cfg["shape_title"], "Qwen4 Rehearsal")
 
 

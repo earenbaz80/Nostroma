@@ -54,7 +54,7 @@ def main():
     cpath = out / f"{a.tag}.config.json"
     cpath.write_text(json.dumps(cfg, indent=1))
     log = open(out / f"{a.tag}.jsonl", "a", encoding="utf-8")
-    proc = subprocess.Popen([sys.executable, str(ROOT / "serve" / "server.py"), "--engine", "strata", "--config",
+    proc = subprocess.Popen([sys.executable, str(ROOT / "serve" / "server.py"), "--engine", "nostroma", "--config",
                              str(cpath), "--port", str(a.port)], cwd=str(ROOT),
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:

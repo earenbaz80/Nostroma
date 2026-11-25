@@ -30,14 +30,14 @@ export function installFakeHostFetch(store, { events = [] } = {}) {
     const reply = (status, body) => ({ ok: status < 200 || status >= 300 ? false : true, status, json: async () => (typeof body === 'string' ? JSON.parse(body) : body), text: async () => (typeof body === 'string' ? body : JSON.stringify(body)) });
     const m = /^\/api\/chats(?:\/([^/?]+))?/.exec(path);
     if (!m) throw new TypeError('fetch failed');
-    if (!headers['x-strata-client']) return reply(403, { error: 'Not allowed.' });
+    if (!headers['x-nostroma-client']) return reply(403, { error: 'Not allowed.' });
     const id = m[1] ? decodeURIComponent(m[1]) : null;
     try {
       if (!id && method === 'GET') return reply(200, store.list());
       if (id === 'import' && method === 'POST') { const r = await store.importMany(JSON.parse(init.body).sessions); return reply(200, r); }
       if (id && method === 'GET') { const t = await store.read(id); return t === null ? reply(404, { error: 'No such chat.', code: 'not-found' }) : reply(200, t); }
-      if (id && method === 'PUT') { const base = headers['x-strata-base-rev']; const r = await store.save(id, init.body, { baseRev: base !== undefined ? Number(base) : null }); events.push({ id, rev: r.rev, from: headers['x-strata-window'] }); return reply(200, r); }
-      if (id && method === 'DELETE') { const r = await store.remove(id); events.push({ id, deleted: true, from: headers['x-strata-window'] }); return reply(200, r); }
+      if (id && method === 'PUT') { const base = headers['x-nostroma-base-rev']; const r = await store.save(id, init.body, { baseRev: base !== undefined ? Number(base) : null }); events.push({ id, rev: r.rev, from: headers['x-nostroma-window'] }); return reply(200, r); }
+      if (id && method === 'DELETE') { const r = await store.remove(id); events.push({ id, deleted: true, from: headers['x-nostroma-window'] }); return reply(200, r); }
     } catch (e) { const f = e instanceof ChatStoreError ? e : storeFailure(e); return reply(f.status, { error: f.message, code: f.code }); }
     return reply(405, { error: 'Method not allowed.' });
   };

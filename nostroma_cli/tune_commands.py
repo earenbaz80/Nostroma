@@ -37,7 +37,7 @@ def add_tune_auto(tune_sp: argparse._SubParsersAction) -> None:
     p.add_argument("--name", default=None, help="the preset's name (default: model, context and your wish)")
     p.add_argument("--time", dest="minutes", type=float, default=None, help="time to spend, in minutes")
     p.add_argument("--no-save", action="store_true", help="measure and report, but do not save a preset")
-    p.add_argument("--gpu-lock", default=os.environ.get("NOSTROMA_TUNE_GPU_LOCK", os.environ.get("STRATA_TUNE_GPU_LOCK")),
+    p.add_argument("--gpu-lock", default=os.environ.get("NOSTROMA_TUNE_GPU_LOCK", os.environ.get("NOSTROMA_TUNE_GPU_LOCK")),
                    help="a lock file held around every engine run (shared boxes)")
     p.add_argument("--no-quiet-check", action="store_true", help="do not wait for other engines or a busy CPU")
     p.add_argument("--serve-dir", default=None, help="the folder that holds serve/ (default: this installation)")
@@ -83,7 +83,7 @@ def add_presets(sp: argparse._SubParsersAction) -> None:
     rc = common(psp.add_parser("recheck", help="a short check (about 2 minutes) that a preset is still as fast"))
     rc.add_argument("preset")
     rc.add_argument("target", help="the profile name or run configuration the preset belongs to")
-    rc.add_argument("--gpu-lock", default=os.environ.get("NOSTROMA_TUNE_GPU_LOCK", os.environ.get("STRATA_TUNE_GPU_LOCK")))
+    rc.add_argument("--gpu-lock", default=os.environ.get("NOSTROMA_TUNE_GPU_LOCK", os.environ.get("NOSTROMA_TUNE_GPU_LOCK")))
     rc.add_argument("--serve-dir", default=None)
     rc.add_argument("--work-dir", default=None)
     rc.add_argument("--status-file", default=None)
@@ -105,7 +105,7 @@ def _fail(message: str, code: int, machine: bool) -> int:
     if machine:
         print(json.dumps({"schema_version": 1, "ok": False, "error": {"code": code, "message": message}}))
     else:
-        print(f"strata: {message}", file=sys.stderr)
+        print(f"nostroma: {message}", file=sys.stderr)
     return code
 
 
@@ -215,7 +215,7 @@ def auto(a: argparse.Namespace) -> int:
         _write_status(a.status_file, state)
         say(f"[{p.get('elapsed_s', 0) // 60:>3d}m] {p['message']}" + (f"  ({minutes_text(p['eta_s'])})" if p.get("eta_s") else ""))
 
-    workdir = Path(a.work_dir) if a.work_dir else Path(tempfile.mkdtemp(prefix="strata-tune-"))
+    workdir = Path(a.work_dir) if a.work_dir else Path(tempfile.mkdtemp(prefix="nostroma-tune-"))
     if not a.work_dir:
         atexit.register(shutil.rmtree, workdir, True)       # its own scratch folder goes with the run (--work-dir keeps the logs)
     session = WorkerSession(base_config=cfg, python=sys.executable, serve_dir=_serve_dir(a), workdir=workdir,
@@ -428,7 +428,7 @@ def _recheck(a: argparse.Namespace, machine: bool) -> int:
     ctx = autotune.context_from_config(cfg, engine_backend=(ident.get("engine") or {}).get("backend"), opts=opts,
                                        engine_flags=tuning.engine_flag_inventory(Path(exe)))
     say = (lambda s: None) if machine else (lambda s: print(s, file=sys.stderr, flush=True))
-    workdir = Path(a.work_dir) if a.work_dir else Path(tempfile.mkdtemp(prefix="strata-recheck-"))
+    workdir = Path(a.work_dir) if a.work_dir else Path(tempfile.mkdtemp(prefix="nostroma-recheck-"))
     if not a.work_dir:
         atexit.register(shutil.rmtree, workdir, True)       # its own scratch folder goes with the run (--work-dir keeps the logs)
     session = WorkerSession(base_config=cfg, python=sys.executable, serve_dir=_serve_dir(a), workdir=workdir,

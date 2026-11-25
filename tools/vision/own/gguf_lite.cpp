@@ -5,12 +5,12 @@
 #include <cstdlib>
 
 #if defined(_WIN32)
-#define STRATA_FSEEK _fseeki64
+#define NOSTROMA_FSEEK _fseeki64
 #else
-#define STRATA_FSEEK fseeko
+#define NOSTROMA_FSEEK fseeko
 #endif
 
-namespace strata_vit {
+namespace nostroma_vit {
 
 float gguf_f16_to_f32(uint16_t h) {
     const uint32_t sign = (uint32_t) (h & 0x8000u) << 16;
@@ -109,7 +109,7 @@ bool Gguf::open(const std::string& path, std::string& err) {
     path_ = path;
     File file(path);
     if (!file.f) { err = "cannot open " + path; return false; }
-    STRATA_FSEEK(file.f, 0, SEEK_END);
+    NOSTROMA_FSEEK(file.f, 0, SEEK_END);
     const long long end = (long long) (
 #if defined(_WIN32)
         _ftelli64(file.f)
@@ -117,7 +117,7 @@ bool Gguf::open(const std::string& path, std::string& err) {
         ftello(file.f)
 #endif
     );
-    STRATA_FSEEK(file.f, 0, SEEK_SET);
+    NOSTROMA_FSEEK(file.f, 0, SEEK_SET);
     if (end < 24) { err = "not a GGUF file (too small)"; return false; }
     file_size_ = (uint64_t) end;
     Cursor c{file.f, 0, file_size_, {}};
@@ -236,7 +236,7 @@ const GgufTensorInfo* Gguf::tensor(const std::string& name) const {
 bool Gguf::read_at(uint64_t pos, void* dst, uint64_t n, std::string& err) const {
     File file(path_);
     if (!file.f) { err = "cannot open " + path_; return false; }
-    if (STRATA_FSEEK(file.f, (long long) pos, SEEK_SET) != 0) { err = "cannot seek in " + path_; return false; }
+    if (NOSTROMA_FSEEK(file.f, (long long) pos, SEEK_SET) != 0) { err = "cannot seek in " + path_; return false; }
     // in steps, so one huge read cannot fail on a platform that limits it
     unsigned char* p = (unsigned char*) dst;
     while (n) {
@@ -275,4 +275,4 @@ bool Gguf::read_f32(const GgufTensorInfo& t, float* dst, std::string& err) const
     return true;
 }
 
-}  // namespace strata_vit
+}  // namespace nostroma_vit

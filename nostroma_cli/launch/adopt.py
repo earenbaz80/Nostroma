@@ -3,7 +3,7 @@
 setup.py's Linux paths know NVIDIA (CUDA) and AMD (HIP); an Intel Arc card goes to a different, container-based setup (`--backend sycl`, docs/INTEL_ARC.md)
 that this Terminal does not run. When setup says it cannot set this card up, and the model's files AND its prepared pack are already on disk (a box that was
 prepared before, "use model files I already have"), the run config is simple enough to write here: the same arguments setup writes for the GSQ-RCO models,
-with the engine named as the component (`component:strata-engine`). Nothing is downloaded, prepared or compiled; if a file is missing the person is told which.
+with the engine named as the component (`component:nostroma-engine`). Nothing is downloaded, prepared or compiled; if a file is missing the person is told which.
 
 Only the GSQ-RCO families (qwen, swift, coder), Gyro (one GGUF with its n-gram table inside), Unsloth's sets and the models of the signed feed (nostroma_control/feed_models.py:
 a qwen4exp model laid out like Unsloth's sets, or a model of its own shape on that shape's engine component) are adopted this way; images stay off.
@@ -22,7 +22,7 @@ UNSUPPORTED = ("no nvidia gpu found", "no amd gpu", "nvidia gpu", "not supported
 
 def setup_cannot_handle_this_card(message: str) -> bool:
     low = (message or "").lower()
-    return ("no nvidia gpu found" in low or "no amd gpu strata can use" in low or "no amd gpu nostroma can use" in low
+    return ("no nvidia gpu found" in low or "no amd gpu nostroma can use" in low or "no amd gpu nostroma can use" in low
             or "nvidia-smi did not answer" in low
             or "no mac model installer" in low)
 
@@ -131,14 +131,14 @@ def plan(*, family: str, model: str, model_dir: Path, data_dir: Path, src: Path,
                 args += ["--ple-io", "ram", "--vram-reserve-mib", reserve]
             else:
                 args += ["--stream-experts", "--vram-reserve-mib", reserve]
-    exe = "component:strata-engine"
+    exe = "component:nostroma-engine"
     if feed and family_def.get("shape"):
         from nostroma_control import shape_engine
         exe = shape_engine.reference(family_def["shape"])          # the engine of the model's shape (nostroma_control/shape_engine.py), installed beside the Nostroma engine
     cfg = {"exe": exe, "args": args, "cwd": str(src), "tokenizer": str(tokenizer), "model_name": model_name,
            "log": str(log), "lib_dirs": [], "port": 8080}
     if backend == "metal":
-        cfg["env"] = {"STRATA_METAL_STREAM": "1"}
+        cfg["env"] = {"NOSTROMA_METAL_STREAM": "1"}
     if feed and family_def.get("shape") and family_def.get("title"):
         cfg["shape_title"] = family_def["title"]                  # the engine's refusal at a start names the model (as setup.py writes it)
     if feed and family_def.get("drafter") == "none":

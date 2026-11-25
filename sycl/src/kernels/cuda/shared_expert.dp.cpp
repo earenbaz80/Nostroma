@@ -1,5 +1,5 @@
 #include "b60_layout_state.hpp"
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 // src/kernels/cuda/shared_expert.cu - P2.S2: the shared expert.
 //
 // `ref/moe.py::shared_expert`, transcribed:
@@ -22,17 +22,17 @@
 // an FP32 sigmoid. Native projection overrides independently select CUDA Q8_1 MMVQ and FP32 SwiGLU.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
-#include "strata/kprof.hpp"
+#include "nostroma/kprof.hpp"
 #include <dpct/dpct.hpp>
-#include "strata/sycl_queue.hpp"
-#include "strata/kernels/shared_expert.hpp"
-#include "strata/kernels/bf16_gemv.hpp"
-#include "strata/kernels/bf16_bits.hpp"
-#include "strata/kernels/f16_bits.hpp"
-#include "strata/kernels/quantize_act.hpp"
-#include "strata/kernels/s2_gemv_q8.hpp"
-#include "strata/kernels/s_gemv.hpp"
-#include "strata/kernels/native_mmvq.hpp"
+#include "nostroma/sycl_queue.hpp"
+#include "nostroma/kernels/shared_expert.hpp"
+#include "nostroma/kernels/bf16_gemv.hpp"
+#include "nostroma/kernels/bf16_bits.hpp"
+#include "nostroma/kernels/f16_bits.hpp"
+#include "nostroma/kernels/quantize_act.hpp"
+#include "nostroma/kernels/s2_gemv_q8.hpp"
+#include "nostroma/kernels/s_gemv.hpp"
+#include "nostroma/kernels/native_mmvq.hpp"
 
 #include <cmath>
 #include <climits>
@@ -42,7 +42,7 @@
 #include <cstring>
 #include <stdexcept>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 
 constexpr int THREADS = 128;
@@ -275,7 +275,7 @@ void launch_sigmoid_scale_rows(float *out, const float *g, int n_embd,
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
 
-            strata::kprof::kp(cs, __FILE__, __func__, __LINE__)->template parallel_for<
+            nostroma::kprof::kp(cs, __FILE__, __func__, __LINE__)->template parallel_for<
                 dpct_kernel_name<class sigmoid_scale_rows_vec4_kernel_723a94>>(
                 sycl::nd_range<3>(
                     sycl::range(1, (unsigned)n_tok,
@@ -291,7 +291,7 @@ void launch_sigmoid_scale_rows(float *out, const float *g, int n_embd,
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(cs, __FILE__, __func__, __LINE__)->template parallel_for<
+        nostroma::kprof::kp(cs, __FILE__, __func__, __LINE__)->template parallel_for<
             dpct_kernel_name<class sigmoid_scale_rows_kernel_26f4a0>>(
             sycl::nd_range<3>(
                 sycl::range(1, (unsigned)n_tok,
@@ -306,7 +306,7 @@ void launch_sigmoid_scale_rows(float *out, const float *g, int n_embd,
 
 bool fused_swiglu_q81_enabled() {
     static const bool on = [] {
-        const char* v = strata::env("NOSTROMA_FUSED_SWIGLU_Q81");
+        const char* v = nostroma::env("NOSTROMA_FUSED_SWIGLU_Q81");
         return v == nullptr || std::atoi(v) != 0;
     }();
     return on;
@@ -319,14 +319,14 @@ void shared_expert_multi(int n_tok, const float* x, const uint16_t* x_bf16, cons
     const bool gate_deferred = (lfuse & 1) != 0, pair = (lfuse & 2) != 0;
     if (n_tok < 1 || n_tok > 8 || !nw.q8_1 || !nw.gate_data || !nw.up_data || !nw.down_data || !stream)
         throw std::invalid_argument("shared_expert_multi: needs 1..8 tokens, native weights, scratch and a stream");
-    dpct::queue_ptr cs = strata::q_of(stream);
-    // the activation's q8_1: the caller's (STRATA_VERIFY_QDEDUP, x_q8_1_ready) or the descriptor's, else quantized here
+    dpct::queue_ptr cs = nostroma::q_of(stream);
+    // the activation's q8_1: the caller's (NOSTROMA_VERIFY_QDEDUP, x_q8_1_ready) or the descriptor's, else quantized here
     const void* x_q8_1 = x_q8_1_ready ? x_q8_1_ready : nw.x_q8_1;
     if (!x_q8_1) {
         native_quantize_q8_1(x, nw.q8_1, (int) n_embd, n_tok, stream);
         x_q8_1 = nw.q8_1;
     }
-    // S26 STRATA_LFUSE (gate_deferred): gate and up in one launch where the pair applies (bitwise the two calls)
+    // S26 NOSTROMA_LFUSE (gate_deferred): gate and up in one launch where the pair applies (bitwise the two calls)
     if (!(pair && nw.gate_type == nw.up_type &&
           native_mmvq_pair(nw.gate_type, nw.gate_data, nw.up_data, x_q8_1, gate, up, (int) n_embd, (int) n_ff, n_tok, stream))) {
         native_mmvq(nw.gate_type, nw.gate_data, x_q8_1, gate, (int) n_embd, (int) n_ff, n_tok, stream);
@@ -340,7 +340,7 @@ void shared_expert_multi(int n_tok, const float* x, const uint16_t* x_bf16, cons
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
 
-            strata::kprof::kp(cs, __FILE__, __func__, __LINE__)->template parallel_for<
+            nostroma::kprof::kp(cs, __FILE__, __func__, __LINE__)->template parallel_for<
                 dpct_kernel_name<class native_swiglu_kernel_c4e755>>(
                 sycl::nd_range<3>(
                     sycl::range(1, 1, (unsigned)((n + THREADS - 1) / THREADS)) *
@@ -377,7 +377,7 @@ void shared_expert_multi(int n_tok, const float* x, const uint16_t* x_bf16, cons
                                         dpct::get_error_string_dummy(e));
         return;
     }
-    static const bool batch = [] { const char* v = strata::env("NOSTROMA_DEC_BATCH"); return v == nullptr || std::atoi(v) != 0; }();
+    static const bool batch = [] { const char* v = nostroma::env("NOSTROMA_DEC_BATCH"); return v == nullptr || std::atoi(v) != 0; }();
     if (native_bf16 && batch && n_tok > 1) {   // one gemv for all rows (outputs identical), fused sigmoid+scale
         bf16_gemv_fp32_mmvf_multi(x, n_embd, gate_inp_bf16, g, 1, n_embd, 1, n_tok, stream);
         launch_sigmoid_scale_rows(out, g, (int) n_embd, n_tok, cs);
@@ -393,7 +393,7 @@ void shared_expert_multi(int n_tok, const float* x, const uint16_t* x_bf16, cons
                         sycl::ext::oneapi::experimental::properties{
                             sycl::ext::oneapi::experimental::use_root_sync};
 
-                    strata::kprof::kp(cs, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+                    nostroma::kprof::kp(cs, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
                         auto g_t_ct0 = g + t;
 
                         cgh.parallel_for<dpct_kernel_name<
@@ -411,7 +411,7 @@ void shared_expert_multi(int n_tok, const float* x, const uint16_t* x_bf16, cons
                 dpct::has_capability_or_fail(cs->get_device(),
                                              {sycl::aspect::fp64});
 
-                strata::kprof::kp(cs, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+                nostroma::kprof::kp(cs, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
                     auto x_bf16_size_t_t_n_embd_ct0 =
                         x_bf16 + (size_t)t * n_embd;
                     auto g_t_ct2 = g + t;
@@ -434,7 +434,7 @@ void shared_expert_multi(int n_tok, const float* x, const uint16_t* x_bf16, cons
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
 
-            strata::kprof::kp(cs, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class scale_rows_kernel_4f17ec>>(
+            nostroma::kprof::kp(cs, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class scale_rows_kernel_4f17ec>>(
                 sycl::nd_range<3>(
                     sycl::range(1, (unsigned)n_tok,
                                 (unsigned)((n_embd + THREADS - 1) / THREADS)) *
@@ -555,7 +555,7 @@ void shared_expert(const uint8_t *x_q8_0, const uint8_t *x_q8k,
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
 
-            strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+            nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
                 ->template parallel_for<
                     dpct_kernel_name<class native_swiglu_kernel_75dcdc>>(
                     sycl::nd_range<3>(sycl::range(1, 1, g_ff) *
@@ -568,10 +568,10 @@ void shared_expert(const uint8_t *x_q8_0, const uint8_t *x_q8k,
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
             dpct::has_capability_or_fail(
-                strata::q_of(stream)->get_device(),
+                nostroma::q_of(stream)->get_device(),
                 {sycl::aspect::fp64});
 
-            strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+            nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
                 ->template parallel_for<dpct_kernel_name<class swiglu_kernel_fbfcfe>>(
                     sycl::nd_range<3>(sycl::range(1, 1, g_ff) *
                                           sycl::range(1, 1, THREADS),
@@ -612,16 +612,16 @@ void shared_expert(const uint8_t *x_q8_0, const uint8_t *x_q8k,
     if (use_native) {
         bf16_gemv_fp32_mmvf(x_f32, gate_inp_bf16, g, n_embd, 1, stream);
         launch_sigmoid_scale_rows(out, g, (int)n_embd, 1,
-                                  strata::q_of(stream));
+                                  nostroma::q_of(stream));
     } else {
         {
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
             dpct::has_capability_or_fail(
-                strata::q_of(stream)->get_device(),
+                nostroma::q_of(stream)->get_device(),
                 {sycl::aspect::fp64});
 
-            strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+            nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
                 ->template parallel_for<
                     dpct_kernel_name<class scalar_gate_kernel_82de77>>(
                     sycl::nd_range<3>(sycl::range(1, 1, 256),
@@ -637,7 +637,7 @@ void shared_expert(const uint8_t *x_q8_0, const uint8_t *x_q8k,
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
 
-            strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+            nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
                 ->template parallel_for<dpct_kernel_name<class scale_kernel_a41a71>>(
                     sycl::nd_range<3>(sycl::range(1, 1, g_embd) *
                                           sycl::range(1, 1, THREADS),
@@ -673,10 +673,10 @@ void moe_combine(const float *parts, const float *weights, const float *shared,
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
         dpct::has_capability_or_fail(
-            strata::q_of(stream)->get_device(),
+            nostroma::q_of(stream)->get_device(),
             {sycl::aspect::fp64});
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->submit([&](sycl::handler &cgh) {
                 int shared_nullptr_ct6 = shared != nullptr;
 
@@ -703,4 +703,4 @@ catch (sycl::exception const &exc) {
   std::exit(1);
 }
 
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels

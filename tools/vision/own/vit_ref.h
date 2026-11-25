@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-namespace strata_vit {
+namespace nostroma_vit {
 
 class VitRef {
 public:
@@ -35,7 +35,7 @@ private:
         std::vector<float> ln1_w, ln1_b, ln2_w, ln2_b, qkv_w, qkv_b, o_w, o_b, up_w, up_b, down_w, down_b;
     };
     VitGeometry g_;
-    // STRATA_VIT_REF_ROUND=1 (a diagnostic): each matrix product's input is rounded to its weight's 16-bit type (BF16 or F16) first, as ggml's CPU
+    // NOSTROMA_VIT_REF_ROUND=1 (a diagnostic): each matrix product's input is rounded to its weight's 16-bit type (BF16 or F16) first, as ggml's CPU
     // and CUDA backends do; it shows how much of a difference to mtmd is that rounding and how much is the maths.  0: no rounding (the reference).
     int act_round_ = 0;               // 0 none, 1 BF16, 2 F16
     std::vector<float> patch_w_;      // [width][3 * patch * patch], the taps summed
@@ -46,4 +46,4 @@ private:
 // small helpers the tests and the GPU checks share
 double cosine(const float* a, const float* b, size_t n);
 
-}  // namespace strata_vit
+}  // namespace nostroma_vit

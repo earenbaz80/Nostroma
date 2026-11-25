@@ -1,5 +1,5 @@
 {
-  "engine": "Strata",
+  "engine": "Nostroma",
   "model_name": "qwen3.8-flash-next-iq2_xs",
   "host": "Shin-BlackMamba",
   "started_at_utc": 1791229219,

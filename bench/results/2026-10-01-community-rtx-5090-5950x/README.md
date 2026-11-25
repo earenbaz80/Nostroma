@@ -4,15 +4,15 @@ Measured on 2026-10-01 to 2026-10-04 by [brenoperucchi](https://github.com/breno
 across engine versions. Findings:
 
 - UD-Q4_K_XL, every expert in VRAM + RAM: 0.1.32 to 0.1.34 read prompts 4-10% slower than 0.1.31, and the 0.1.31 stager
-  values (`STRATA_STAGER_THREADS=4 STRATA_STAGER_RING=16`) recover most of it.
+  values (`NOSTROMA_STAGER_THREADS=4 NOSTROMA_STAGER_RING=16`) recover most of it.
 - UD-Q4_K_XL on 0.1.38: prompts 15-40% slower than on 0.1.34, because the file tier now reads unbuffered on this PC
-  (#357/#362). `STRATA_UNBUFFERED_LOAD=0` brings them back, slightly above 0.1.34 (reported in #577).
+  (#357/#362). `NOSTROMA_UNBUFFERED_LOAD=0` brings them back, slightly above 0.1.34 (reported in #577).
 - `--prefill auto:32768` reads the 14.7K prompt 35% faster than the default on UD-Q4_K_XL (0.1.34) and 14-31% faster on
   IQ3_S at 14.7-28.9K (0.1.34 and 0.1.38). Prompts of 2.7K do not change, and neither does decode.
 - 0.1.38 reads prompts 11-20% faster than earlier versions on the packs (IQ3_S at 14.7-28.9K, Swift IQ3_XXS at every
   size), with the same decode.
 - UD-Q4_K_XL on 0.1.39: the file tier fix (#577) brings both budgets back without the variable (14.7K prompt: 2,043
-  tok/s at 72 GiB and 1,896 at 40 GiB, within 2% of 0.1.38 with `STRATA_UNBUFFERED_LOAD=0`).
+  tok/s at 72 GiB and 1,896 at 40 GiB, within 2% of 0.1.38 with `NOSTROMA_UNBUFFERED_LOAD=0`).
 - On 0.1.39 `--prefill auto:32768` still reads IQ3_S's 14.7K and 28.9K prompts 14% and 25% faster than `auto`, the same
   gain as on 0.1.38, so the new ring sizing (#583) does not change it on this PC.
 
@@ -44,18 +44,18 @@ UD-Q4_K_XL:
   file cache holds those reads, so this does not reproduce a 64 GB PC's SSD traffic.
 
 ```text
-strata.exe --serve --pack <packs>\ud-q4_k_xl --native <UD-Q4_K_XL shard 1> --resident-budget-gib 72|40
+nostroma.exe --serve --pack <packs>\ud-q4_k_xl --native <UD-Q4_K_XL shard 1> --resident-budget-gib 72|40
   --expert-profile data\expert-profile.bin --expert-cache auto --prefill auto|auto:32768 --spec 4
   --spec-min-p 0.5 --mtp <mtp>\rt --max-context 32768 --kv int8
 ```
 
 IQ3_S (0.1.34, 0.1.38 and 0.1.39): ISTA-DASLab Flash-Next GSQ-RCO IQ3_S (2 shards + PLE): `--expert-cache auto
 --prefill auto|auto:32768 --spec 4 --spec-min-p 0.70 --mtp <mtp>\rt --max-context 65536 --kv int8 --pcie-frac 0.55` and
-`STRATA_IQ_MT_MIN=1` in `env`.
+`NOSTROMA_IQ_MT_MIN=1` in `env`.
 
 Swift IQ3_XXS (0.1.34 to 0.1.39): Swift 1.5 IQ3_XXS pack, with the config this PC serves in production:
 `--expert-cache auto --prefill auto:32768 --spec 4 --spec-min-p 0.70 --mtp <mtp>\rt --max-context 32768 --kv int8
---pcie-frac 0.20` and `STRATA_IQ_MT_MIN=1` (expert cache 14,864 of the 24,576 experts). The `STRATA_PF_FUSED=1` row is
+--pcie-frac 0.20` and `NOSTROMA_IQ_MT_MIN=1` (expert cache 14,864 of the 24,576 experts). The `NOSTROMA_PF_FUSED=1` row is
 for speed only: with that flag the answers change, see #519.
 
 The "setup's defaults" rows (0.1.39, IQ3_S and Swift IQ3_XXS) use the arguments setup 0.1.39 writes for this PC, read
@@ -64,7 +64,7 @@ from its `setup.py` (setup itself was not run): `--expert-cache auto --prefill a
 setup's defaults for 96 GB.
 
 Every server config is in [configs/](configs/) (paths as on this PC). The `stager4` configs add
-`STRATA_STAGER_THREADS=4` and `STRATA_STAGER_RING=16` to `env`, the `buffered` ones `STRATA_UNBUFFERED_LOAD=0`.
+`NOSTROMA_STAGER_THREADS=4` and `NOSTROMA_STAGER_RING=16` to `env`, the `buffered` ones `NOSTROMA_UNBUFFERED_LOAD=0`.
 
 ## Method
 
@@ -110,13 +110,13 @@ UD-Q4_K_XL:
 | 0.1.38, 72 GiB | short | 99 | 0 | 230, 222, 241 | 3 | 99.1 [95.3-100.7] | 72.2 [69.3-75.4] | not measured |
 | 0.1.38, 72 GiB | medium | 2,680 | 0 | 256, 256, 256 | 3 | 757 [752-764] | 71.3 [63.2-73.7] | not measured |
 | 0.1.38, 72 GiB | long | 14,685 | 0 | 256, 256, 256 | 3 | 1,658 [1,645-1,681] | 87.9 [84.4-93.8] | not measured |
-| 0.1.38, 72 GiB, `STRATA_UNBUFFERED_LOAD=0` | medium | 2,682 | 0 | 256, 256, 256 | 3 | 899 [891-916] | 67.9 [53.7-69.3] | not measured |
-| 0.1.38, 72 GiB, `STRATA_UNBUFFERED_LOAD=0` | long | 14,687 | 0 | 256, 256, 256 | 3 | 2,038 [2,010-2,065] | 78.3 [77.0-82.3] | not measured |
+| 0.1.38, 72 GiB, `NOSTROMA_UNBUFFERED_LOAD=0` | medium | 2,682 | 0 | 256, 256, 256 | 3 | 899 [891-916] | 67.9 [53.7-69.3] | not measured |
+| 0.1.38, 72 GiB, `NOSTROMA_UNBUFFERED_LOAD=0` | long | 14,687 | 0 | 256, 256, 256 | 3 | 2,038 [2,010-2,065] | 78.3 [77.0-82.3] | not measured |
 | 0.1.39, 72 GiB | short | 99 | 0 | 222, 227, 210 | 3 | 87.3 [81.1-87.4] | 65.9 [59.4-68.5] | not measured |
 | 0.1.39, 72 GiB | medium | 2,680 | 0 | 256, 256, 256 | 3 | 916 [914-961] | 74.2 [67.9-87.6] | not measured |
 | 0.1.39, 72 GiB | long | 14,685 | 0 | 256, 256, 256 | 3 | 2,043 [2,040-2,059] | 81.3 [77.8-92.0] | not measured |
-| 0.1.39, 72 GiB, `STRATA_UNBUFFERED_LOAD=0` | medium | 2,682 | 0 | 256, 256, 256 | 3 | 941 [911-943] | 67.2 [66.2-75.3] | not measured |
-| 0.1.39, 72 GiB, `STRATA_UNBUFFERED_LOAD=0` | long | 14,687 | 0 | 256, 256, 256 | 3 | 2,062 [2,002-2,106] | 86.0 [84.8-87.2] | not measured |
+| 0.1.39, 72 GiB, `NOSTROMA_UNBUFFERED_LOAD=0` | medium | 2,682 | 0 | 256, 256, 256 | 3 | 941 [911-943] | 67.2 [66.2-75.3] | not measured |
+| 0.1.39, 72 GiB, `NOSTROMA_UNBUFFERED_LOAD=0` | long | 14,687 | 0 | 256, 256, 256 | 3 | 2,062 [2,002-2,106] | 86.0 [84.8-87.2] | not measured |
 | 0.1.32, 72 GiB, old stager values | medium | 2,687 | 0 | 256, 256, 256 | 3 | 942 [931-945] | 70.7 [60.1-71.3] | not measured |
 | 0.1.32, 72 GiB, old stager values | long | 14,692 | 0 | 256, 256, 256 | 3 | 2,116 [2,059-2,137] | 79.6 [72.0-81.0] | not measured |
 | 0.1.33, 72 GiB, old stager values | medium | 2,687 | 0 | 256, 256, 256 | 3 | 947 [943-947] | 69.5 [57.5-72.7] | not measured |
@@ -148,13 +148,13 @@ UD-Q4_K_XL:
 | 0.1.38, 40 GiB | short | 99 | 0 | 235, 231, 144 | 3 | 66.0 [64.1-70.8] | 47.8 [46.9-48.6] | not measured |
 | 0.1.38, 40 GiB | medium | 2,680 | 0 | 256, 256, 256 | 3 | 472 [472-474] | 45.3 [40.4-55.8] | not measured |
 | 0.1.38, 40 GiB | long | 14,685 | 0 | 256, 256, 256 | 3 | 1,105 [1,103-1,105] | 68.0 [56.0-68.6] | not measured |
-| 0.1.38, 40 GiB, `STRATA_UNBUFFERED_LOAD=0` | medium | 2,682 | 0 | 256, 256, 256 | 3 | 844 [818-846] | 62.0 [61.8-66.4] | not measured |
-| 0.1.38, 40 GiB, `STRATA_UNBUFFERED_LOAD=0` | long | 14,687 | 0 | 256, 256, 256 | 3 | 1,913 [1,887-1,930] | 72.9 [66.9-73.9] | not measured |
+| 0.1.38, 40 GiB, `NOSTROMA_UNBUFFERED_LOAD=0` | medium | 2,682 | 0 | 256, 256, 256 | 3 | 844 [818-846] | 62.0 [61.8-66.4] | not measured |
+| 0.1.38, 40 GiB, `NOSTROMA_UNBUFFERED_LOAD=0` | long | 14,687 | 0 | 256, 256, 256 | 3 | 1,913 [1,887-1,930] | 72.9 [66.9-73.9] | not measured |
 | 0.1.39, 40 GiB | short | 99 | 0 | 160, 233, 208 | 3 | 89.9 [79.4-92.2] | 60.4 [58.9-60.8] | not measured |
 | 0.1.39, 40 GiB | medium | 2,680 | 0 | 256, 256, 256 | 3 | 857 [822-866] | 70.8 [69.1-79.1] | not measured |
 | 0.1.39, 40 GiB | long | 14,685 | 0 | 256, 256, 256 | 3 | 1,896 [1,888-1,953] | 78.3 [74.5-80.4] | not measured |
-| 0.1.39, 40 GiB, `STRATA_UNBUFFERED_LOAD=0` | medium | 2,682 | 0 | 256, 256, 256 | 3 | 842 [814-860] | 68.5 [61.9-69.7] | not measured |
-| 0.1.39, 40 GiB, `STRATA_UNBUFFERED_LOAD=0` | long | 14,687 | 0 | 256, 256, 256 | 3 | 1,954 [1,927-1,968] | 80.3 [73.0-83.1] | not measured |
+| 0.1.39, 40 GiB, `NOSTROMA_UNBUFFERED_LOAD=0` | medium | 2,682 | 0 | 256, 256, 256 | 3 | 842 [814-860] | 68.5 [61.9-69.7] | not measured |
+| 0.1.39, 40 GiB, `NOSTROMA_UNBUFFERED_LOAD=0` | long | 14,687 | 0 | 256, 256, 256 | 3 | 1,954 [1,927-1,968] | 80.3 [73.0-83.1] | not measured |
 
 IQ3_S:
 
@@ -192,9 +192,9 @@ Swift IQ3_XXS:
 | 0.1.36 | medium | 2,677 | 0 | 256, 256, 256 | 3 | 2,690 [2,668-2,700] | 169.3 [151.0-169.5] | not measured |
 | 0.1.36 | long | 14,682 | 0 | 256, 256, 256 | 3 | 5,534 [5,516-5,549] | 159.9 [158.9-178.3] | not measured |
 | 0.1.36 | xlong | 28,880 | 0 | 256, 256, 256 | 3 | 6,231 [6,224-6,240] | 158.2 [146.3-159.5] | not measured |
-| 0.1.36, `STRATA_PF_FUSED=1` | medium | 2,679 | 0 | 256, 256, 256 | 3 | 3,192 [3,181-3,199] | 191.8 [177.6-196.1] | not measured |
-| 0.1.36, `STRATA_PF_FUSED=1` | long | 14,684 | 0 | 256, 256, 256 | 3 | 6,784 [6,777-6,786] | 159.1 [156.5-173.4] | not measured |
-| 0.1.36, `STRATA_PF_FUSED=1` | xlong | 28,882 | 0 | 256, 256, 256 | 3 | 7,043 [7,030-7,045] | 158.0 [155.6-159.3] | not measured |
+| 0.1.36, `NOSTROMA_PF_FUSED=1` | medium | 2,679 | 0 | 256, 256, 256 | 3 | 3,192 [3,181-3,199] | 191.8 [177.6-196.1] | not measured |
+| 0.1.36, `NOSTROMA_PF_FUSED=1` | long | 14,684 | 0 | 256, 256, 256 | 3 | 6,784 [6,777-6,786] | 159.1 [156.5-173.4] | not measured |
+| 0.1.36, `NOSTROMA_PF_FUSED=1` | xlong | 28,882 | 0 | 256, 256, 256 | 3 | 7,043 [7,030-7,045] | 158.0 [155.6-159.3] | not measured |
 | 0.1.37 | medium | 2,676 | 0 | 256, 256, 256 | 3 | 2,675 [2,655-2,680] | 169.8 [167.8-193.7] | not measured |
 | 0.1.37 | long | 14,681 | 0 | 256, 256, 256 | 3 | 5,534 [5,514-5,541] | 171.0 [162.4-181.7] | not measured |
 | 0.1.38 | medium | 2,677 | 0 | 256, 256, 256 | 3 | 3,148 [3,144-3,152] | 165.1 [154.8-191.9] | not measured |
@@ -219,7 +219,7 @@ SSD. When nothing comes from the SSD it seems to cost a little.
 On 0.1.38 the engine logs `the file tier reads unbuffered (... 83.0 GiB available, 103.7 GiB of files)` for both
 budgets, and every UD-Q4_K_XL configuration reads prompts slower than on 0.1.34 (the
 14.7K prompt: 1,658 instead of 1,949 tok/s at 72 GiB, 1,105 instead of 1,844 at 40 GiB). With
-`STRATA_UNBUFFERED_LOAD=0` it reads through the file cache again: 2,038 and 1,913 tok/s.
+`NOSTROMA_UNBUFFERED_LOAD=0` it reads through the file cache again: 2,038 and 1,913 tok/s.
 
 `--prefill auto:32768`: on 0.1.34, UD-Q4_K_XL reads the 14.7K prompt at 2,623 tok/s against 1,949 with `auto` (+35%);
 IQ3_S goes from 4,610 to 5,406 at 14.7K (+17%) and from 4,682 to 6,150 at 28.9K (+31%), in line with #440 on a
@@ -230,11 +230,11 @@ IQ3_S goes from 4,610 to 5,406 at 14.7K (+17%) and from 4,682 to 6,150 at 28.9K 
 `auto` reads 14.7K and 28.9K 20% and 17% faster than on 0.1.34. Decode is unchanged.
 
 0.1.39: UD-Q4_K_XL reads the 2.7K / 14.7K prompts at 916 / 2,043 tok/s (72 GiB) and 857 / 1,896 (40 GiB) with no
-variable, where 0.1.38 needed `STRATA_UNBUFFERED_LOAD=0` for 899 / 2,038 and 844 / 1,913; the variable now changes
+variable, where 0.1.38 needed `NOSTROMA_UNBUFFERED_LOAD=0` for 899 / 2,038 and 844 / 1,913; the variable now changes
 nothing beyond the run-to-run range. Swift IQ3_XXS reads within 1-2% of 0.1.38 (3,187 / 6,454 / 6,999 tok/s). IQ3_S
 with `--prefill auto:32768` reads 14.7K and 28.9K at 6,362 and 6,941 tok/s against 5,573 and 5,533 with `auto`.
 Against setup's defaults, this PC's Swift config (which also sets `--pcie-frac 0.20`, `--spec-min-p 0.70` and
-`STRATA_IQ_MT_MIN=1`) reads 14.7K and 28.9K 10% and 18% faster and 2.7K the same; setup's defaults decode as fast or
+`NOSTROMA_IQ_MT_MIN=1`) reads 14.7K and 28.9K 10% and 18% faster and 2.7K the same; setup's defaults decode as fast or
 faster in these runs (215 against 178 tok/s at 2.7K), within wide ranges.
 
 Decode does not show a consistent difference between the engines or prefill settings; its run-to-run range is wide
@@ -242,7 +242,7 @@ Decode does not show a consistent difference between the engines or prefill sett
 
 ## Correctness and limitations
 
-No quality checks here: answers were only hashed (for Swift with `STRATA_PF_FUSED=1`, see #519). One machine, one
+No quality checks here: answers were only hashed (for Swift with `NOSTROMA_PF_FUSED=1`, see #519). One machine, one
 request at a time, greedy decoding, 3 runs per cell, one 72 GiB configuration for 0.1.31, IQ3_S on 0.1.34, 0.1.38 and
 0.1.39 only, Windows with the GPU also driving the display. Time to first token was not measured separately; the engine's
 prompt time (`prompt_ms`) is in the run JSON.

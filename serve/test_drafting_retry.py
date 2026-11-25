@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from serve.server import EngineDied, StrataEngine
+from serve.server import EngineDied, NostromaEngine
 from nostroma_control import drafting
 
 FAKE = r'''
@@ -16,16 +16,16 @@ from pathlib import Path
 args = sys.argv[1:]
 Path(args[args.index('--starts') + 1]).open('a').write(' '.join(args) + '\n')
 if '--draft' in args and '--die-on-draft' in args:
-    sys.stderr.write('strata generate: --draft dflash2 drafts without the MTP layer and needs --draft-model PACK, --spec 2 or more and --mtp DIR (for DIR/draft_vocab.bin)\n')
+    sys.stderr.write('nostroma generate: --draft dflash2 drafts without the MTP layer and needs --draft-model PACK, --spec 2 or more and --mtp DIR (for DIR/draft_vocab.bin)\n')
     sys.stderr.flush()
     raise SystemExit(2)
 if '--die-short' in args and ('--draft' in args or '--mtp' in args):
     sys.stderr.write('ggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected'+chr(10))
-    sys.stderr.write('strata generate: layer split, CUDA1 expert cache: no room'+chr(10))
+    sys.stderr.write('nostroma generate: layer split, CUDA1 expert cache: no room'+chr(10))
     sys.stderr.flush()
     raise SystemExit(1)
 if '--die-always' in args:
-    sys.stderr.write('strata generate: something else is wrong\n')
+    sys.stderr.write('nostroma generate: something else is wrong\n')
     sys.stderr.flush()
     raise SystemExit(2)
 print('READY 4096 stop', flush=True)
@@ -61,7 +61,7 @@ class AutoRetriesWithTheMtp(unittest.TestCase):
         return self.starts.read_text().splitlines() if self.starts.exists() else []
 
     def test_auto_that_picked_dflash2_starts_again_with_the_mtp_and_says_so_quietly(self):
-        engine = StrataEngine(str(self.script), self.first, log=self.log, retry_args=self.mtp)
+        engine = NostromaEngine(str(self.script), self.first, log=self.log, retry_args=self.mtp)
         self.addCleanup(engine.close)
         self.assertTrue(engine.alive())
         starts = self.started()
@@ -78,7 +78,7 @@ class AutoRetriesWithTheMtp(unittest.TestCase):
     def test_a_start_with_no_retry_arguments_fails_with_the_engines_reason(self):
         """Named by the person (or nothing to retry with): a real error that says why."""
         with self.assertRaises(EngineDied) as caught:
-            StrataEngine(str(self.script), self.first, log=self.log)
+            NostromaEngine(str(self.script), self.first, log=self.log)
         self.assertIn("exited before it was ready", str(caught.exception))
         self.assertIn("needs --draft-model PACK", str(caught.exception))
         self.assertEqual(len(self.started()), 1)
@@ -87,13 +87,13 @@ class AutoRetriesWithTheMtp(unittest.TestCase):
         both = [*self.first, "--die-always"]
         retry = [*self.mtp, "--die-always"]
         with self.assertRaises(EngineDied) as caught:
-            StrataEngine(str(self.script), both, log=self.log, retry_args=retry)
+            NostromaEngine(str(self.script), both, log=self.log, retry_args=retry)
         self.assertIn("something else is wrong", str(caught.exception), "the second start's reason, not the first one's")
         self.assertEqual(len(self.started()), 2)
 
     def test_a_start_that_works_is_not_started_twice(self):
         ok = ["--pack", "/d/packs/g", "--starts", str(self.starts)]
-        engine = StrataEngine(str(self.script), ok, log=self.log, retry_args=self.mtp)
+        engine = NostromaEngine(str(self.script), ok, log=self.log, retry_args=self.mtp)
         self.addCleanup(engine.close)
         self.assertEqual(len(self.started()), 1)
         self.assertEqual(engine.info.get("drafting_note", ""), "")
@@ -103,7 +103,7 @@ class AutoRetriesWithTheMtp(unittest.TestCase):
         first = [a for a in self.first if a != "--die-on-draft"] + ["--die-short"]
         mtp = [a for a in self.mtp if a != "--die-on-draft"] + ["--die-short"]
         nodraft = ["--pack", "/d/packs/g", "--starts", str(self.starts), "--die-short"]
-        engine = StrataEngine(str(self.script), first, log=self.log, retry_args=mtp, retry_vram_args=nodraft)
+        engine = NostromaEngine(str(self.script), first, log=self.log, retry_args=mtp, retry_vram_args=nodraft)
         self.addCleanup(engine.close)
         self.assertTrue(engine.alive())
         starts = self.started()
@@ -121,13 +121,13 @@ class AutoRetriesWithTheMtp(unittest.TestCase):
     def test_a_memory_stop_without_a_no_drafter_retry_fails_with_the_engines_reason_and_does_not_try_the_mtp(self):
         first = [a for a in self.first if a != "--die-on-draft"] + ["--die-short"]
         with self.assertRaises(EngineDied) as caught:
-            StrataEngine(str(self.script), first, log=self.log, retry_args=[*self.mtp, "--die-short"])
+            NostromaEngine(str(self.script), first, log=self.log, retry_args=[*self.mtp, "--die-short"])
         self.assertIn("expert cache: no room", str(caught.exception))
         self.assertEqual(len(self.started()), 1)
 
     def test_the_same_arguments_are_not_a_retry(self):
         with self.assertRaises(EngineDied):
-            StrataEngine(str(self.script), self.first, log=self.log, retry_args=list(self.first))
+            NostromaEngine(str(self.script), self.first, log=self.log, retry_args=list(self.first))
         self.assertEqual(len(self.started()), 1)
 
 

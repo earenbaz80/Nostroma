@@ -48,7 +48,7 @@ test('the Models screen offers the choice next to context, DFlash2 only for Qwen
 
 test('the host asks Control before a load, and Control decides (the app never reads the table)', async () => {
   const calls = [];
-  const control = createControl({ control: { dir: 'C:/c', python: 'py', cli: 'strata.py' }, run: async (args, options) => {
+  const control = createControl({ control: { dir: 'C:/c', python: 'py', cli: 'nostroma.py' }, run: async (args, options) => {
     calls.push({ args, options });
     return args[1] === 'plan'
       ? { code: 0, json: { ok: true, needed: true, gb: 1.2, line: 'Drafting: DFlash2' }, text: '', stderr: '' }
@@ -62,7 +62,7 @@ test('the host asks Control before a load, and Control decides (the app never re
   assert.deepEqual(calls[1].args, ['drafting', 'fetch', '--config', 'C:/w/cfg.json', '--mode', 'dflash2', '--if-needed', '--output', 'jsonl']);
   assert.equal(calls[1].options.acquire, true, 'only this explicit step may reach the network');
   assert.equal(calls[0].options.acquire, undefined, 'planning never does');
-  const failing = createControl({ control: { dir: 'C:/c', python: 'py', cli: 'strata.py' }, run: async () => ({ code: 5, json: { ok: false, error: { code: 'drafting_failed', message: 'The DFlash2 download did not finish.' } }, text: '', stderr: '' }) });
+  const failing = createControl({ control: { dir: 'C:/c', python: 'py', cli: 'nostroma.py' }, run: async () => ({ code: 5, json: { ok: false, error: { code: 'drafting_failed', message: 'The DFlash2 download did not finish.' } }, text: '', stderr: '' }) });
   await assert.rejects(failing.draftingFetch({ configPath: 'x' }), /DFlash2 download did not finish/);
 });
 
@@ -260,7 +260,7 @@ test('the MTP fetch the app makes names the folder of the model own files, so th
 
 test('0.2.10.1: the app plans and fetches like the Terminal (no --no-split), and Auto on a computer where Control says split is the MTP in the label and the fit', async () => {
   const calls = [];
-  const control = createControl({ control: { dir: 'C:/c', python: 'py', cli: 'strata.py' }, run: async args => { calls.push({ args }); return { code: 0, json: { ok: true, event: 'result', serves: true }, text: '', stderr: '' }; } });
+  const control = createControl({ control: { dir: 'C:/c', python: 'py', cli: 'nostroma.py' }, run: async args => { calls.push({ args }); return { code: 0, json: { ok: true, event: 'result', serves: true }, text: '', stderr: '' }; } });
   await control.draftingPlan({ mode: 'auto' });
   await control.draftingPlan({ configPath: 'C:/w/cfg.json', mode: 'auto', family: 'unsloth', dataDir: 'C:/d' });
   await control.draftingFetch({ configPath: 'C:/w/cfg.json', mode: 'auto' });

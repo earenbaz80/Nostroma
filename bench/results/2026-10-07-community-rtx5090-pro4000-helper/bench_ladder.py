@@ -2,7 +2,7 @@ import json, random, string, time, urllib.request, sys
 
 URL = "http://127.0.0.1:8081/v1/chat/completions"
 corpus = ""
-for p in [r"C:\Strata\docs\DETAILS.md", r"C:\Strata\serve\server.py", r"C:\Strata\src\core\verify.cpp"]:
+for p in [r"C:\Nostroma\docs\DETAILS.md", r"C:\Nostroma\serve\server.py", r"C:\Nostroma\src\core\verify.cpp"]:
     try:
         corpus += open(p, encoding="utf-8", errors="ignore").read() + "\n"
     except OSError:

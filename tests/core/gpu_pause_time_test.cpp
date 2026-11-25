@@ -1,7 +1,7 @@
-// The GPU pause counter (strata/core/gpu_pause_time.hpp): the reader against a fake KFD tree (present, missing,
+// The GPU pause counter (nostroma/core/gpu_pause_time.hpp): the reader against a fake KFD tree (present, missing,
 // unreadable, garbage, several GPUs) and the two lines.  No GPU, no driver.  Off Linux the reader is always "not
 // available", which is checked instead.
-#include "strata/core/gpu_pause_time.hpp"
+#include "nostroma/core/gpu_pause_time.hpp"
 
 #include <chrono>
 #include <cstdio>
@@ -13,7 +13,7 @@
 #include <unistd.h>
 #endif
 
-using namespace strata::core;
+using namespace nostroma::core;
 
 namespace {
 int failed = 0;
@@ -139,10 +139,10 @@ int main() {
     CHECK(gpu_pause_request_line(1000, 1015).empty());               // the usual 15 ms: no line
     CHECK(gpu_pause_request_line(1000, 1099).empty());
     CHECK(gpu_pause_request_line(1000, 1100) ==
-          "strata serve: the graphics driver paused the GPU for 100 ms during this request while Linux moved memory "
+          "nostroma serve: the graphics driver paused the GPU for 100 ms during this request while Linux moved memory "
           "the GPU uses; the request was slower by up to that much");
     CHECK(gpu_pause_request_line(15, 969) ==
-          "strata serve: the graphics driver paused the GPU for 954 ms during this request while Linux moved memory "
+          "nostroma serve: the graphics driver paused the GPU for 954 ms during this request while Linux moved memory "
           "the GPU uses; the request was slower by up to that much");
 
     // the gap line: the same bar, from READY or the end of the previous request to the next request's begin
@@ -151,7 +151,7 @@ int main() {
     CHECK(gpu_pause_between_line(100, 50).empty());                  // a counter that went back (a new process): no line
     CHECK(gpu_pause_between_line(1000, 1099).empty());
     CHECK(gpu_pause_between_line(1000, 1100) ==
-          "strata serve: the graphics driver paused the GPU for 100 ms between requests while Linux moved memory the GPU uses");
+          "nostroma serve: the graphics driver paused the GPU for 100 ms between requests while Linux moved memory the GPU uses");
 
     // the bookkeeping over a sequence, as the request loop calls it
     {
@@ -163,7 +163,7 @@ int main() {
         CHECK(idle.begin(900).empty());                              // the next one began at once: no gap
         idle.idle(950);                                              // it ended
         CHECK(idle.begin(1450) ==                                    // 500 ms of driver pause while idle
-              "strata serve: the graphics driver paused the GPU for 500 ms between requests while Linux moved memory the GPU uses");
+              "nostroma serve: the graphics driver paused the GPU for 500 ms between requests while Linux moved memory the GPU uses");
         CHECK(idle.begin(1450) == idle.begin(1450));                 // begin() does not move the mark: only idle() does
         idle.idle(-1);                                               // a failed read at an end: no gap is made from unrelated counters
         CHECK(idle.begin(5000).empty());

@@ -40,7 +40,7 @@ class StopClosesAdmission(unittest.TestCase):
             states.append(svc.reserve_inference())        # what a request arriving now gets: None = 503 server_draining
             return pending
 
-        env = {k: v for k, v in os.environ.items() if k not in ("STRATA_API_KEY", "STRATA_TELEMETRY_KEY")}
+        env = {k: v for k, v in os.environ.items() if k not in ("NOSTROMA_API_KEY", "NOSTROMA_TELEMETRY_KEY")}
         with mock.patch.dict(os.environ, env, clear=True), \
                 mock.patch.object(server, "time", _Clock()), \
                 mock.patch.object(server.lifeline, "install_stop_handlers", lambda *a, **k: None), \
@@ -51,7 +51,7 @@ class StopClosesAdmission(unittest.TestCase):
 
     def test_stop_without_shutdown_timeout_refuses_new_requests(self):
         code, drains, states, out = self.run_stop([])
-        self.assertIn("[strata] stopped", out)
+        self.assertIn("[nostroma] stopped", out)
         self.assertEqual(len(drains), 1, "the stop closes admission even without --shutdown-timeout")
         self.assertEqual(states, [None])
         self.assertNotIn("draining", out)                 # no wait and no drain line: only admission is closed

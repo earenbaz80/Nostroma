@@ -20,7 +20,7 @@ import feed_tool  # noqa: E402
 from nostroma_control import feed as feedmod, transfer  # noqa: E402
 
 BASE = "https://github.com/earenbaz80/Nostroma/releases/download/v0.2.13.1/"
-FEED_URL = "https://github.com/earenbaz80/Nostroma/releases/latest/download/strata-feed.json"
+FEED_URL = "https://github.com/earenbaz80/Nostroma/releases/latest/download/nostroma-feed.json"
 
 
 def entry(url):
@@ -30,8 +30,8 @@ def entry(url):
 
 
 def previous(folder: Path, packages) -> Path:
-    p = folder / "strata-feed.json"
-    p.write_text(json.dumps({"schema_version": 1, "feed": "strata-updates", "sequence": 122, "engine": {"packages": []},
+    p = folder / "nostroma-feed.json"
+    p.write_text(json.dumps({"schema_version": 1, "feed": "nostroma-updates", "sequence": 122, "engine": {"packages": []},
                              "dsv41": {"packages": packages}}), encoding="utf-8")
     return p
 
@@ -39,12 +39,12 @@ def previous(folder: Path, packages) -> Path:
 class Carry(unittest.TestCase):
     def test_relative_urls_become_absolute_and_the_rest_is_kept(self):
         with tempfile.TemporaryDirectory() as d:
-            flat = entry("strata-dsv41-0.1.59-linux-x86_64-cuda-cuda13.tar.gz")
-            local = entry("dsv41/strata-dsv41-0.1.59-linux-x86_64-cuda-cuda13.tar.gz")
-            absolute = entry("https://example.org/x/strata-dsv41-0.1.59-macos-arm64-metal-folder.tar.gz")
+            flat = entry("nostroma-dsv41-0.1.59-linux-x86_64-cuda-cuda13.tar.gz")
+            local = entry("dsv41/nostroma-dsv41-0.1.59-linux-x86_64-cuda-cuda13.tar.gz")
+            absolute = entry("https://example.org/x/nostroma-dsv41-0.1.59-macos-arm64-metal-folder.tar.gz")
             member = feed_tool.carried_dsv41(previous(Path(d), [flat, local, absolute]), BASE)
         urls = [p["url"] for p in member["packages"]]
-        self.assertEqual(urls, [BASE + "strata-dsv41-0.1.59-linux-x86_64-cuda-cuda13.tar.gz"] * 2 + [absolute["url"]])
+        self.assertEqual(urls, [BASE + "nostroma-dsv41-0.1.59-linux-x86_64-cuda-cuda13.tar.gz"] * 2 + [absolute["url"]])
         for got, was in zip(member["packages"], (flat, local, absolute)):
             self.assertEqual({k: v for k, v in got.items() if k != "url"}, {k: v for k, v in was.items() if k != "url"})
 
@@ -81,16 +81,16 @@ class OlderControlReadsIt(unittest.TestCase):
 
     def test_the_carried_entry_is_a_valid_package_with_an_absolute_https_url(self):
         with tempfile.TemporaryDirectory() as d:
-            member = feed_tool.carried_dsv41(previous(Path(d), [entry("strata-dsv41-0.1.59-linux-x86_64-cuda-cuda13.tar.gz")]), BASE)
+            member = feed_tool.carried_dsv41(previous(Path(d), [entry("nostroma-dsv41-0.1.59-linux-x86_64-cuda-cuda13.tar.gz")]), BASE)
         item = member["packages"][0]
         skipped: list = []
         pkg = feedmod._engine_package(item, skipped)
         self.assertIsNotNone(pkg, skipped)
         self.assertEqual(skipped, [])
         base = transfer.base_of(FEED_URL)
-        self.assertEqual(transfer.resolve_ref(base, pkg.url), BASE + "strata-dsv41-0.1.59-linux-x86_64-cuda-cuda13.tar.gz")
+        self.assertEqual(transfer.resolve_ref(base, pkg.url), BASE + "nostroma-dsv41-0.1.59-linux-x86_64-cuda-cuda13.tar.gz")
         # the relative form would have pointed at the NEW release, which does not hold the archive
-        self.assertTrue(transfer.resolve_ref(base, "strata-dsv41-0.1.59-linux-x86_64-cuda-cuda13.tar.gz").startswith(
+        self.assertTrue(transfer.resolve_ref(base, "nostroma-dsv41-0.1.59-linux-x86_64-cuda-cuda13.tar.gz").startswith(
             "https://github.com/earenbaz80/Nostroma/releases/latest/download/"))
 
     def test_this_control_ignores_the_member(self):

@@ -1,13 +1,13 @@
 {
  "gguf": "/data/models/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf",
  "llama_server": "/data/1402-h/llama.cpp-src/build/bin/llama-server",
- "strata_cfg": "/data/cfg/strata-iq3_xxs-140-resident.json",
- "serve": "/data/strata/serve",
- "cwd": "/data/strata-140",
+ "nostroma_cfg": "/data/cfg/nostroma-iq3_xxs-140-resident.json",
+ "serve": "/data/nostroma/serve",
+ "cwd": "/data/nostroma-140",
  "configs": [
   {
-   "name": "strata-setup",
-   "kind": "strata",
+   "name": "nostroma-setup",
+   "kind": "nostroma",
    "args": [
     "--kv",
     "int8",

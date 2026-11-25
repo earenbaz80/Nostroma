@@ -11,7 +11,7 @@ function unfitWords(engine: InstalledEngine): string {
   switch (engine.why_code) {
     case 'os': return tr("This engine was made for a different operating system.");
     case 'gpu_make': return tr("This engine was made for a different kind of graphics card than this computer has.");
-    case 'strata': return tr("This engine needs Nostroma {0} or newer.", [a[0] ?? '']);
+    case 'nostroma': return tr("This engine needs Nostroma {0} or newer.", [a[0] ?? '']);
     case 'gpu_arch': return tr("This engine doesn't support this computer's graphics card.");
     case 'driver': return tr("This engine needs NVIDIA driver {0} or newer. This computer has {1}.", [a[0] ?? '', a[1] ?? '']);
     case 'files': return tr("Some of this engine's files are missing or changed, so it can't be started.");

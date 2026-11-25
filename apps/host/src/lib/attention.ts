@@ -75,7 +75,7 @@ export async function showNotice(notice: Notice, deps: { post?: (body: Notice) =
 function pageNotification(notice: Notice): boolean {
   try {
     if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return false;
-    new Notification(notice.title, { body: notice.body, tag: 'strata-approval' });
+    new Notification(notice.title, { body: notice.body, tag: 'nostroma-approval' });
     return true;
   } catch {
     return false;

@@ -351,7 +351,7 @@ class ParallelServiceYield(tp.FakeEngineCase):
         finally:
             self.svc.fifo.release()
         import serve.server as server
-        script, real = Path(self.tmp.name) / "fake_strata.py", server.subprocess.Popen
+        script, real = Path(self.tmp.name) / "fake_nostroma.py", server.subprocess.Popen
         patch = mock.patch.object(server.subprocess, "Popen",      # the reload starts the fake again
                                   lambda cmd, **kw: real([sys.executable, str(script), *cmd[1:]], **kw))
         patch.start()

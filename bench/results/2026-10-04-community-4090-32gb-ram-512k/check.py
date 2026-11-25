@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Live check (0.1.39 rerun of 2026-10-03/strata-512k-live) of the running Strata 512K server (127.0.0.1:8080): long-prompt speed and recall at
+"""Live check (0.1.39 rerun of 2026-10-03/nostroma-512k-live) of the running Nostroma 512K server (127.0.0.1:8080): long-prompt speed and recall at
 32K/120K/240K/480K, then short follow-ups for stability (upstream #606), with RAM sampled. Reuses
-scripts/strata/ctx_sweep.py's haystack and chat helpers against the live port."""
+scripts/nostroma/ctx_sweep.py's haystack and chat helpers against the live port."""
 import json, sys, threading, time
 sys.path.insert(0, "~/bench-scripts")
 import ctx_sweep as cs

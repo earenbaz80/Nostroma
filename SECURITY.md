@@ -20,9 +20,9 @@ Nostroma runs a model on your PC and serves it over HTTP (`serve/server.py`). Ou
 this PC only. The details and every setting are in [docs/DETAILS.md](docs/DETAILS.md) ("From other devices",
 "Host names", "Web pages without an API key", "Tools from MCP servers").
 
-- **Where it listens.** `127.0.0.1` by default. `--host 0.0.0.0` (or `"host"` in `strata-<model>.json`) opens it to
+- **Where it listens.** `127.0.0.1` by default. `--host 0.0.0.0` (or `"host"` in `nostroma-<model>.json`) opens it to
   your network, and the server then warns when no API key is set.
-- **API key.** `"api_key"` in the run config (or `STRATA_API_KEY`) is required on `/v1/*` and on every endpoint
+- **API key.** `"api_key"` in the run config (or `NOSTROMA_API_KEY`) is required on `/v1/*` and on every endpoint
   that shows the model's state, requests or answers (`/status`, `/metrics`, `/metrics/prometheus`, `/settings`,
   `/mcp`, `/props`, `/slots`, `/api/requests`, `/config`) and on every `POST`. It is compared in constant time.
   Set one before you open the
@@ -52,7 +52,7 @@ the model. The section above is about the engine's HTTP server. This is what the
 - **The app's host listens on this PC only.** The app serves its page from a local host process on `127.0.0.1` (port 8791 unless
   changed). A request to its `/api/` endpoints that carries a browser `Origin` from any other site gets 403. It also checks the
   `Host` the way the engine does (DNS rebinding): only an IP address, `localhost`, `*.localhost`, this PC's own names (when it
-  listens beyond this PC) and the names in `STRATA_ALLOWED_HOSTS` (an exact name, `.example.com` for the names below it, or `*`,
+  listens beyond this PC) and the names in `NOSTROMA_ALLOWED_HOSTS` (an exact name, `.example.com` for the names below it, or `*`,
   which leaves the `Origin` check below as the guard on `/api/*`). A page of another site whose name its DNS points here gets 403 on
   every route, its own page included. The app shell holds a random secret (32 characters or more, compared in constant time) that
   is needed to quit the host or tell it which window is open,
@@ -67,7 +67,7 @@ the model. The section above is about the engine's HTTP server. This is what the
   token (`nostroma_control/owner_transport.py`). The bridge between the app shell and the host (used for the app update) is also loopback and protected by a token.
 - **Starting a model and serving never download anything.** Downloads and updates are one explicit step: `nostroma update`, or "Update
   engine" and "Update Nostroma" in the app's Settings. Models and saved tuning are never replaced by an update.
-- **Updates come from a signed feed.** The release publishes `strata-feed.json` and `strata-feed.json.sig` (Ed25519). An installed
+- **Updates come from a signed feed.** The release publishes `nostroma-feed.json` and `nostroma-feed.json.sig` (Ed25519). An installed
   Nostroma checks the signature against the public key it carries (`nostroma_control/update_keys.json`), refuses a feed older than the last
   one it accepted (a replayed old feed) or expired, and checks every engine package against its SHA-256, its signed manifest and the
   card in your PC before it test-starts it and switches to it. Any failure keeps the engine you had. The app installer itself is signed

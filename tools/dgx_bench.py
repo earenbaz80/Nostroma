@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """dgx_bench - the DGX Spark benchmark family for Nostroma (Qwen3.8-Flash-Next first).
 
-    python tools/dgx_bench.py --config strata-iq3_s.json --tag base
-    python tools/dgx_bench.py --config strata-iq3_s.json --tag gu-swiglu --env STRATA_GU_SWIGLU=1
-    python tools/dgx_bench.py --config strata-iq3_s.json --tag base --cells 4096:0:256,4096:0.7:256 --rounds 3
+    python tools/dgx_bench.py --config nostroma-iq3_s.json --tag base
+    python tools/dgx_bench.py --config nostroma-iq3_s.json --tag gu-swiglu --env NOSTROMA_GU_SWIGLU=1
+    python tools/dgx_bench.py --config nostroma-iq3_s.json --tag base --cells 4096:0:256,4096:0.7:256 --rounds 3
 
 It starts the server on the model's own config (serve/server.py, the path setup writes), waits for it, sends the cells
 through the real HTTP API, restarts the server between arms, and writes every request plus a summary.
@@ -18,7 +18,7 @@ Per request it records the client's own time to first content token (TTFT), the 
 GET /v1/status right after the streamed answer.  Medians over rounds; nothing is retried or filtered except requests
 that failed (they are kept and reported as failures).
 
-Standard library only, like tools/strata_bench.py and tools/ab_engine.py.
+Standard library only, like tools/nostroma_bench.py and tools/ab_engine.py.
 """
 from __future__ import annotations
 
@@ -158,7 +158,7 @@ def run_arm(cfg_path: Path, tag: str, cells, rounds: int, port: int, env: dict, 
     penv = dict(os.environ, **env)
     for rnd in range(rounds):
         srvlog = open(out / f"{tag}.server.log", "a", encoding="utf-8")
-        proc = subprocess.Popen([sys.executable, str(ROOT / "serve" / "server.py"), "--engine", "strata", "--config",
+        proc = subprocess.Popen([sys.executable, str(ROOT / "serve" / "server.py"), "--engine", "nostroma", "--config",
                                  str(cpath), "--port", str(port)], cwd=str(ROOT), env=penv,
                                 stdout=srvlog, stderr=srvlog)
         try:

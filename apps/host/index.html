@@ -10,7 +10,7 @@
     <script>
       // Set the saved appearance before CSS and logo images are painted.
       try {
-        const saved = JSON.parse(localStorage.getItem('strata.prefs.v2') || localStorage.getItem('strata.prefs.v1') || '{}');
+        const saved = JSON.parse(localStorage.getItem('nostroma.prefs.v2') || localStorage.getItem('nostroma.prefs.v1') || '{}');
         const choice = saved.theme ?? 'system';
         const theme = choice === 'dark' || (choice === 'system' && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
         document.documentElement.dataset.theme = theme;

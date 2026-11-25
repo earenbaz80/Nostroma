@@ -23,7 +23,7 @@ def scaled():
     """The rule with sub-second limits: 0.4 s, 0.1 s gap, 0.8 s; the waiting line after 0.2 s, then every 0.3 s."""
     return [mock.patch.object(netpolicy, "CONNECT_LIMITS", (0.4, 0.8)), mock.patch.object(netpolicy, "RETRY_GAP_S", 0.1),
             mock.patch.object(netpolicy, "WAIT_LINE_AFTER_S", 0.2), mock.patch.object(netpolicy, "WAIT_LINE_EVERY_S", 0.3),
-            mock.patch.dict("os.environ", {"STRATA_SOURCE": "huggingface"})]
+            mock.patch.dict("os.environ", {"NOSTROMA_SOURCE": "huggingface"})]
 
 
 class SetupDownloadWaits(unittest.TestCase):
@@ -37,7 +37,7 @@ class SetupDownloadWaits(unittest.TestCase):
         p = mock.patch.object(netpolicy, "HOSTS", self.memory)
         p.start()
         self.addCleanup(p.stop)
-        t = tempfile.TemporaryDirectory(prefix="strata-netwait-")
+        t = tempfile.TemporaryDirectory(prefix="nostroma-netwait-")
         self.addCleanup(t.cleanup)
         self.dir = Path(t.name)
 
@@ -77,7 +77,7 @@ class SetupDownloadWaits(unittest.TestCase):
         hole = BlackHole()
         self.addCleanup(hole.close)
         with self.assertRaises(transfer.TransferError):
-            transfer.read_small(f"http://127.0.0.1:{hole.port}/strata-feed.json", timeout=0.2)
+            transfer.read_small(f"http://127.0.0.1:{hole.port}/nostroma-feed.json", timeout=0.2)
         self.assertEqual(len(hole.held), 2)
         code, out, took = self.download(f"http://127.0.0.1:{hole.port}/m/model-00001-of-00002.gguf")
         self.assertEqual(code, 1)

@@ -46,7 +46,7 @@ class GlueMatchesSdcpp(unittest.TestCase):
         rng = np.random.default_rng(7)
         with tempfile.TemporaryDirectory() as td:
             t = Path(td)
-            exe = t / "strata-glue-check"
+            exe = t / "nostroma-glue-check"
             r = subprocess.run([CXX, "-std=c++17", *flags, "-I", str(ROOT / "include"),
                                 str(ROOT / "src" / "image" / "pipeline" / "qi21_glue.cpp"),
                                 str(ROOT / "src" / "image" / "pipeline" / "qi21_glue_check_main.cpp"), "-o", str(exe)],

@@ -48,92 +48,92 @@ class Choose(unittest.TestCase):
             self.assertEqual(VR.default_mode(8, "intel"), "cpu")              # with the exception off, the 24 GB rule is the same as for every make
 
     def test_the_sycl_reader_is_the_gpu_reader_of_an_intel_folder(self):
-        d = folder("strata-vision", "strata-vision-sycl")
+        d = folder("nostroma-vision", "nostroma-vision-sycl")
         r = VR.choose(d, "gpu", windows=False)
-        self.assertEqual((r.mode, r.exe.name, r.cpu_exe.name), ("gpu", "strata-vision-sycl", "strata-vision"))
+        self.assertEqual((r.mode, r.exe.name, r.cpu_exe.name), ("gpu", "nostroma-vision-sycl", "nostroma-vision"))
         self.assertEqual(VR.vision_section(r, {"mmproj": "m"})["gpu"], True)
-        r = VR.choose(folder("strata-vision"), "gpu", windows=False)         # no SYCL reader built: the CPU one, said
-        self.assertEqual((r.mode, r.exe.name), ("cpu", "strata-vision"))
+        r = VR.choose(folder("nostroma-vision"), "gpu", windows=False)         # no SYCL reader built: the CPU one, said
+        self.assertEqual((r.mode, r.exe.name), ("cpu", "nostroma-vision"))
         self.assertIn("no GPU picture reader", r.note)
-        self.assertEqual(VR.choose(d, "cpu", windows=False).exe.name, "strata-vision")
+        self.assertEqual(VR.choose(d, "cpu", windows=False).exe.name, "nostroma-vision")
 
     def test_hip_present_gives_the_gpu_reader_with_the_cpu_one_to_fall_back_on(self):
-        d = folder("strata-vision", "strata-vision-hip")
+        d = folder("nostroma-vision", "nostroma-vision-hip")
         for ask in ("yes", "on", "gpu"):
             r = VR.choose(d, ask, windows=False, gpu_arch="gfx1201", archs=["gfx1200", "gfx1201"])
-            self.assertEqual((r.mode, r.exe.name, r.cpu_exe.name), ("gpu", "strata-vision-hip", "strata-vision"), ask)
+            self.assertEqual((r.mode, r.exe.name, r.cpu_exe.name), ("gpu", "nostroma-vision-hip", "nostroma-vision"), ask)
             self.assertEqual(r.note, "")
 
     def test_hip_missing_gives_the_cpu_reader(self):
-        d = folder("strata-vision")
+        d = folder("nostroma-vision")
         r = VR.choose(d, "yes", windows=False, gpu_arch="gfx1201")
-        self.assertEqual((r.mode, r.exe.name, r.cpu_exe), ("cpu", "strata-vision", None))
+        self.assertEqual((r.mode, r.exe.name, r.cpu_exe), ("cpu", "nostroma-vision", None))
         self.assertEqual(r.note, "")                               # "yes" never asked for the GPU in particular
         self.assertIn("no GPU picture reader", VR.choose(d, "gpu", windows=False).note)   # --vision gpu: said once
 
     def test_card_not_in_the_build_gives_the_cpu_reader(self):
-        d = folder("strata-vision", "strata-vision-hip")
+        d = folder("nostroma-vision", "nostroma-vision-hip")
         r = VR.choose(d, "yes", windows=False, gpu_arch="gfx1100", archs=["gfx1200", "gfx1201"])
-        self.assertEqual((r.mode, r.exe.name), ("cpu", "strata-vision"))
+        self.assertEqual((r.mode, r.exe.name), ("cpu", "nostroma-vision"))
         self.assertIn("gfx1100", r.note)
 
     def test_unknown_card_tries_the_gpu_reader(self):
-        d = folder("strata-vision", "strata-vision-hip")
+        d = folder("nostroma-vision", "nostroma-vision-hip")
         self.assertEqual(VR.choose(d, "yes", windows=False, gpu_arch="", archs=["gfx1201"]).mode, "gpu")
         self.assertEqual(VR.choose(d, "yes", windows=False, gpu_arch="gfx1100", archs=None).mode, "gpu")
 
     def test_gcn_arch_names_with_features_match(self):
         self.assertEqual(VR.gfx_of("gfx1201:sramecc-:xnack-"), "gfx1201")
-        d = folder("strata-vision", "strata-vision-hip")
+        d = folder("nostroma-vision", "nostroma-vision-hip")
         self.assertEqual(VR.choose(d, "yes", windows=False, gpu_arch="gfx1151:sramecc+:xnack-", archs=["gfx1151"]).mode, "gpu")
 
     def test_cpu_asked_and_off(self):
-        d = folder("strata-vision", "strata-vision-hip")
-        self.assertEqual(VR.choose(d, "cpu", windows=False).exe.name, "strata-vision")
+        d = folder("nostroma-vision", "nostroma-vision-hip")
+        self.assertEqual(VR.choose(d, "cpu", windows=False).exe.name, "nostroma-vision")
         for ask in ("no", "none", "off", None):
             self.assertEqual(VR.choose(d, ask, windows=False).mode, "none")
 
     def test_no_reader_at_all(self):
-        d = folder("strata")
+        d = folder("nostroma")
         for ask in ("yes", "cpu", "gpu"):
             r = VR.choose(d, ask, windows=False)
             self.assertEqual(r.mode, "none", ask)
             self.assertIn("no picture reader", r.note)
 
     def test_windows_names(self):
-        d = folder("strata-vision.exe", "strata-vision-hip.exe")
+        d = folder("nostroma-vision.exe", "nostroma-vision-hip.exe")
         r = VR.choose(d, "yes", windows=True, gpu_arch="gfx1201", archs=["gfx1201"])
-        self.assertEqual((r.mode, r.exe.name, r.cpu_exe.name), ("gpu", "strata-vision-hip.exe", "strata-vision.exe"))
-        self.assertEqual(VR.choose(folder("strata-vision-hip"), "yes", windows=True).mode, "none")   # a Linux name on Windows
+        self.assertEqual((r.mode, r.exe.name, r.cpu_exe.name), ("gpu", "nostroma-vision-hip.exe", "nostroma-vision.exe"))
+        self.assertEqual(VR.choose(folder("nostroma-vision-hip"), "yes", windows=True).mode, "none")   # a Linux name on Windows
 
     def test_run_config_section(self):
-        d = folder("strata-vision", "strata-vision-hip")
+        d = folder("nostroma-vision", "nostroma-vision-hip")
         base = {"mmproj": "m.gguf", "model": "t.gguf", "max_tokens": 1024}
         sec = VR.vision_section(VR.choose(d, "yes", windows=False), base)
         self.assertTrue(sec["gpu"])
-        self.assertEqual(Path(sec["exe"]).name, "strata-vision-hip")
-        self.assertEqual(Path(sec["cpu_exe"]).name, "strata-vision")
+        self.assertEqual(Path(sec["exe"]).name, "nostroma-vision-hip")
+        self.assertEqual(Path(sec["cpu_exe"]).name, "nostroma-vision")
         cpu = VR.cpu_fallback(sec)
         self.assertFalse(cpu["gpu"])
-        self.assertEqual(Path(cpu["exe"]).name, "strata-vision")
+        self.assertEqual(Path(cpu["exe"]).name, "nostroma-vision")
         self.assertNotIn("cpu_exe", cpu)
         self.assertEqual(cpu["mmproj"], "m.gguf")
-        cpu_only = VR.vision_section(VR.choose(folder("strata-vision"), "yes", windows=False), base)
+        cpu_only = VR.vision_section(VR.choose(folder("nostroma-vision"), "yes", windows=False), base)
         self.assertFalse(cpu_only["gpu"])
         self.assertNotIn("cpu_exe", cpu_only)
         self.assertIsNone(VR.cpu_fallback(cpu_only))
         self.assertIsNone(VR.cpu_fallback({**sec, "cpu_exe": ""}))
-        self.assertIsNone(VR.cpu_fallback({"exe": "strata-vision", "gpu": True}))   # an NVIDIA config has no fallback
+        self.assertIsNone(VR.cpu_fallback({"exe": "nostroma-vision", "gpu": True}))   # an NVIDIA config has no fallback
         # an on-demand reader (vision.elastic) always has one: the NVIDIA program without --gpu, with the same picture tokens
-        nv = VR.cpu_fallback({"exe": "/e/strata-vision", "gpu": True, "max_tokens": 1024, "elastic": True}, same_program=True)
-        self.assertEqual((nv["exe"], nv["gpu"], nv["max_tokens"], "elastic" in nv), ("/e/strata-vision", False, 1024, False))
-        self.assertIsNotNone(VR.cpu_fallback({"exe": "C:/e/strata-vision.exe", "gpu": True}, same_program=True))
-        self.assertIsNone(VR.cpu_fallback({"exe": "/e/strata-vision-hip", "gpu": True}, same_program=True))   # AMD names its own
-        self.assertIsNone(VR.cpu_fallback({"exe": "/e/strata-vision", "gpu": False}, same_program=True))
+        nv = VR.cpu_fallback({"exe": "/e/nostroma-vision", "gpu": True, "max_tokens": 1024, "elastic": True}, same_program=True)
+        self.assertEqual((nv["exe"], nv["gpu"], nv["max_tokens"], "elastic" in nv), ("/e/nostroma-vision", False, 1024, False))
+        self.assertIsNotNone(VR.cpu_fallback({"exe": "C:/e/nostroma-vision.exe", "gpu": True}, same_program=True))
+        self.assertIsNone(VR.cpu_fallback({"exe": "/e/nostroma-vision-hip", "gpu": True}, same_program=True))   # AMD names its own
+        self.assertIsNone(VR.cpu_fallback({"exe": "/e/nostroma-vision", "gpu": False}, same_program=True))
 
 
 class MacReader(unittest.TestCase):
-    """A Mac has one picture program, strata-vision with Metal built in: --gpu reads on the GPU, without it on the CPU."""
+    """A Mac has one picture program, nostroma-vision with Metal built in: --gpu reads on the GPU, without it on the CPU."""
 
     def test_a_mac_reads_on_the_gpu_by_default_whatever_its_memory(self):
         for ram in (16, 32, 64, 128, None):
@@ -145,10 +145,10 @@ class MacReader(unittest.TestCase):
         self.assertEqual(VR.default_mode(16), "cpu")                           # a 16 GB card of a PC still follows the 24 GB rule
 
     def test_the_one_program_is_both_readers_and_its_own_fallback(self):
-        d = folder("strata", "strata-vision")
+        d = folder("nostroma", "nostroma-vision")
         for ask in ("yes", "on", "gpu"):
             r = VR.choose(d, ask, windows=False, mac=True)
-            self.assertEqual((r.mode, r.exe.name, r.cpu_exe.name, r.note), ("gpu", "strata-vision", "strata-vision", ""), ask)
+            self.assertEqual((r.mode, r.exe.name, r.cpu_exe.name, r.note), ("gpu", "nostroma-vision", "nostroma-vision", ""), ask)
         sec = VR.vision_section(VR.choose(d, "yes", windows=False, mac=True), {"mmproj": "m.gguf", "model": "t.gguf", "max_tokens": 1024})
         self.assertTrue(sec["gpu"])
         self.assertEqual(sec["exe"], sec["cpu_exe"])
@@ -157,20 +157,20 @@ class MacReader(unittest.TestCase):
         self.assertEqual(fallback["exe"], sec["exe"])
 
     def test_cpu_asked_is_kept_with_the_time_it_takes(self):
-        r = VR.choose(folder("strata-vision"), "cpu", windows=False, mac=True)
-        self.assertEqual((r.mode, r.exe.name, r.cpu_exe), ("cpu", "strata-vision", None))
+        r = VR.choose(folder("nostroma-vision"), "cpu", windows=False, mac=True)
+        self.assertEqual((r.mode, r.exe.name, r.cpu_exe), ("cpu", "nostroma-vision", None))
         self.assertIn("50 seconds", r.note)
         self.assertFalse(VR.vision_section(r, {})["gpu"])
 
     def test_an_engine_without_the_reader_gets_pictures_off(self):
         for ask in ("yes", "gpu", "cpu"):
-            r = VR.choose(folder("strata"), ask, windows=False, mac=True)
+            r = VR.choose(folder("nostroma"), ask, windows=False, mac=True)
             self.assertEqual(r.mode, "none", ask)
             self.assertIn("no picture reader", r.note)
-        self.assertEqual(VR.choose(folder("strata-vision"), "off", windows=False, mac=True).mode, "none")
+        self.assertEqual(VR.choose(folder("nostroma-vision"), "off", windows=False, mac=True).mode, "none")
 
     def test_a_hip_program_is_not_a_mac_reader(self):
-        r = VR.choose(folder("strata-vision-hip"), "yes", windows=False, mac=True)
+        r = VR.choose(folder("nostroma-vision-hip"), "yes", windows=False, mac=True)
         self.assertEqual(r.mode, "none")
 
 
@@ -195,7 +195,7 @@ def make_vision(cfg: dict) -> "server.Vision":
 
 
 class Fallback(unittest.TestCase):
-    CFG = {"exe": "/e/strata-vision-hip", "cpu_exe": "/e/strata-vision", "gpu": True, "mmproj": "/m/mm.gguf",
+    CFG = {"exe": "/e/nostroma-vision-hip", "cpu_exe": "/e/nostroma-vision", "gpu": True, "mmproj": "/m/mm.gguf",
            "model": "/m/t.gguf", "max_tokens": 1024, "threads": 6}
 
     def run_start(self, answers: dict, cfg: dict | None = None):
@@ -221,18 +221,18 @@ class Fallback(unittest.TestCase):
         return v, started, out.getvalue(), err
 
     def test_hip_present_and_starts(self):
-        v, started, log, err = self.run_start({"strata-vision-hip": "READY 2048\n"})
+        v, started, log, err = self.run_start({"nostroma-vision-hip": "READY 2048\n"})
         self.assertIsNone(err)
-        self.assertEqual([Path(a[0]).name for a in started], ["strata-vision-hip"])
+        self.assertEqual([Path(a[0]).name for a in started], ["nostroma-vision-hip"])
         self.assertIn("--gpu", started[0])
         self.assertEqual(log, "")
         self.assertFalse(v.stopped)
 
     def test_hip_start_failure_falls_back_to_cpu_with_one_line(self):
-        v, started, log, err = self.run_start({"strata-vision-hip": "ERR this GPU (gfx1100) is not in the picture reader's build (gfx1200,gfx1201)\n",
-                                               "strata-vision": "READY 2048\n"})
+        v, started, log, err = self.run_start({"nostroma-vision-hip": "ERR this GPU (gfx1100) is not in the picture reader's build (gfx1200,gfx1201)\n",
+                                               "nostroma-vision": "READY 2048\n"})
         self.assertIsNone(err)
-        self.assertEqual([Path(a[0]).name for a in started], ["strata-vision-hip", "strata-vision"])
+        self.assertEqual([Path(a[0]).name for a in started], ["nostroma-vision-hip", "nostroma-vision"])
         self.assertNotIn("--gpu", started[1])
         self.assertIn("--threads", started[1])
         self.assertEqual(log.count("\n"), 1)
@@ -242,67 +242,67 @@ class Fallback(unittest.TestCase):
         self.assertIsNone(v.fallback)
 
     def test_hip_process_that_dies_silently_falls_back(self):                  # a GPU runtime that aborts: stdout closes empty
-        v, started, log, err = self.run_start({"strata-vision-hip": "", "strata-vision": "READY 2048\n"})
+        v, started, log, err = self.run_start({"nostroma-vision-hip": "", "nostroma-vision": "READY 2048\n"})
         self.assertIsNone(err)
         self.assertEqual(len(started), 2)
         self.assertEqual(log.count("\n"), 1)
 
     def test_hip_missing_file_falls_back(self):                               # popen raises (exe gone, not executable)
-        v, started, log, err = self.run_start({"strata-vision-hip": FileNotFoundError("strata-vision-hip"),
-                                               "strata-vision": "READY 2048\n"})
+        v, started, log, err = self.run_start({"nostroma-vision-hip": FileNotFoundError("nostroma-vision-hip"),
+                                               "nostroma-vision": "READY 2048\n"})
         self.assertIsNone(err)
         self.assertEqual(len(started), 2)
 
     def test_restart_after_a_fallback_stays_on_the_cpu_reader(self):
-        v, started, log, err = self.run_start({"strata-vision-hip": "ERR nope\n", "strata-vision": "READY 2048\n"})
+        v, started, log, err = self.run_start({"nostroma-vision-hip": "ERR nope\n", "nostroma-vision": "READY 2048\n"})
         started.clear()
         with mock.patch.object(server, "popen", lambda what, args, **kw: started.append(args) or FakeProc("READY 2048\n")):
             v.restart()
-        self.assertEqual([Path(a[0]).name for a in started], ["strata-vision"])
+        self.assertEqual([Path(a[0]).name for a in started], ["nostroma-vision"])
 
     def test_cpu_failure_after_the_fallback_is_an_error(self):
-        v, started, log, err = self.run_start({"strata-vision-hip": "ERR nope\n", "strata-vision": "ERR cannot load the vision encoder\n"})
+        v, started, log, err = self.run_start({"nostroma-vision-hip": "ERR nope\n", "nostroma-vision": "ERR cannot load the vision encoder\n"})
         self.assertIsNotNone(err)
         self.assertIn("cannot load", str(err))
 
     def test_a_config_without_cpu_exe_has_no_fallback(self):                  # NVIDIA: the error is shown as before
         cfg = {k: v for k, v in self.CFG.items() if k != "cpu_exe"}
-        v, started, log, err = self.run_start({"strata-vision-hip": "ERR nope\n"}, cfg)
+        v, started, log, err = self.run_start({"nostroma-vision-hip": "ERR nope\n"}, cfg)
         self.assertIsNotNone(err)
         self.assertEqual(len(started), 1)
         self.assertEqual(log, "")
 
     def test_the_ready_line_names_the_reader_and_older_readers_still_start(self):
-        """strata-vision says which reader runs ("READY <n> own" / "READY <n> mtmd"); an older one says "READY <n>" and starts as before."""
-        cpu = {"exe": "/e/strata-vision", "gpu": False, "mmproj": "/m/mm.gguf", "model": "/m/t.gguf"}
+        """nostroma-vision says which reader runs ("READY <n> own" / "READY <n> mtmd"); an older one says "READY <n>" and starts as before."""
+        cpu = {"exe": "/e/nostroma-vision", "gpu": False, "mmproj": "/m/mm.gguf", "model": "/m/t.gguf"}
         for line, reader in (("READY 2560 own\n", "own"), ("READY 2560 mtmd\n", "mtmd"), ("READY 2048\n", None)):
-            v, started, log, err = self.run_start({"strata-vision": line}, cpu)
+            v, started, log, err = self.run_start({"nostroma-vision": line}, cpu)
             self.assertIsNone(err, line)
             self.assertEqual(v.reader, reader, line)
             self.assertEqual(log, "", line)                              # nothing said when the chosen reader started
 
     def test_a_fallback_to_llama_cpps_reader_is_said_once(self):
-        cpu = {"exe": "/e/strata-vision", "gpu": False, "mmproj": "/m/mm.gguf", "model": "/m/t.gguf"}
-        v, started, log, err = self.run_start({"strata-vision": "READY 2560 mtmd fallback\n"}, cpu)
+        cpu = {"exe": "/e/nostroma-vision", "gpu": False, "mmproj": "/m/mm.gguf", "model": "/m/t.gguf"}
+        v, started, log, err = self.run_start({"nostroma-vision": "READY 2560 mtmd fallback\n"}, cpu)
         self.assertIsNone(err)
         self.assertEqual((v.reader, len(started)), ("mtmd", 1))           # the same process: no second start
-        self.assertEqual(log.count("[strata] Nostroma's picture reader did not start; pictures are read with llama.cpp's reader."), 1)
+        self.assertEqual(log.count("[nostroma] Nostroma's picture reader did not start; pictures are read with llama.cpp's reader."), 1)
 
     def test_the_reader_choice_reaches_the_reader_through_the_run_configs_env(self):
-        """The settings write STRATA_VISION_TOWER=mtmd into the model's run config "env" (nostroma_control/speed_switches.py picture_reader); the server
+        """The settings write NOSTROMA_VISION_TOWER=mtmd into the model's run config "env" (nostroma_control/speed_switches.py picture_reader); the server
         hands that env to the picture reader as to the engine, so no reader argument changes (an older reader ignores the variable)."""
-        cfg = {"env": {"STRATA_VISION_TOWER": "mtmd"}, "vision": {"exe": "/e/strata-vision", "mmproj": "/m/mm.gguf", "model": "/m/t.gguf"}}
+        cfg = {"env": {"NOSTROMA_VISION_TOWER": "mtmd"}, "vision": {"exe": "/e/nostroma-vision", "mmproj": "/m/mm.gguf", "model": "/m/t.gguf"}}
         env = server.vision_env(cfg, server.child_env(cfg))
-        self.assertEqual(env.get("STRATA_VISION_TOWER"), "mtmd")
+        self.assertEqual(env.get("NOSTROMA_VISION_TOWER"), "mtmd")
         self.assertNotIn("--tower", server.Vision.reader_args(cfg["vision"]))
         with mock.patch.dict("os.environ", {}, clear=False):
             import os
-            os.environ.pop("STRATA_VISION_TOWER", None)
-            self.assertNotIn("STRATA_VISION_TOWER", server.vision_env({}, server.child_env({})))   # a default file carries nothing
+            os.environ.pop("NOSTROMA_VISION_TOWER", None)
+            self.assertNotIn("NOSTROMA_VISION_TOWER", server.vision_env({}, server.child_env({})))   # a default file carries nothing
 
     def test_cpu_config_is_unchanged(self):
-        cfg = {"exe": "/e/strata-vision", "gpu": False, "mmproj": "/m/mm.gguf", "model": "/m/t.gguf"}
-        v, started, log, err = self.run_start({"strata-vision": "READY 2048\n"}, cfg)
+        cfg = {"exe": "/e/nostroma-vision", "gpu": False, "mmproj": "/m/mm.gguf", "model": "/m/t.gguf"}
+        v, started, log, err = self.run_start({"nostroma-vision": "READY 2048\n"}, cfg)
         self.assertIsNone(err)
         self.assertNotIn("--gpu", started[0])
 

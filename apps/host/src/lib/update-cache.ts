@@ -5,7 +5,7 @@ import type { UpdateCheckResult } from './types';
  * person presses "Check for updates" (or "Update engine" / "Update Nostroma"). The result is kept together with the versions it was
  * for, and it is ignored once the installed version changes (an update, a roll back), so an old "Update available" never lingers.
  */
-const KEY = 'strata.update-check.v1';
+const KEY = 'nostroma.update-check.v1';
 
 interface Stored { result: UpdateCheckResult; appVersion: string | null; engineVersion: string | null; controlVersion?: string | null }
 export interface InstalledVersions { appVersion?: string | null; engineVersion?: string | null; controlVersion?: string | null }
@@ -15,7 +15,7 @@ const same = (a: string | null | undefined, b: string | null | undefined) => (a 
 export function readUpdateCache(now: InstalledVersions): UpdateCheckResult | null {
   try {
     const stored = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Stored | null;
-    if (!stored?.result?.strata?.status || !stored.result.engine?.status || !stored.result.checkedAt) return null;
+    if (!stored?.result?.nostroma?.status || !stored.result.engine?.status || !stored.result.checkedAt) return null;
     // Still loading (no app version yet): show nothing rather than a result that may belong to the version before an update.
     if (!now.appVersion) return null;
     if (!same(stored.appVersion, now.appVersion) || !same(stored.engineVersion, now.engineVersion) || !same(stored.controlVersion, now.controlVersion)) return null;

@@ -24,7 +24,7 @@ class CyrillicFolder(unittest.TestCase):
 
     def test_run_config_in_a_cyrillic_folder_is_found_and_read(self):
         from nostroma_control import discovery
-        cfg = self.dir / "strata-q2_0.json"
+        cfg = self.dir / "nostroma-q2_0.json"
         cfg.write_text(json.dumps({"exe": "x", "args": ["--native", str(self.dir / "m.gguf")]}, ensure_ascii=False), encoding="utf-8")
         place = discovery.places(explicit=self.dir)[0]
         self.assertEqual(place.configs, 1)
@@ -45,7 +45,7 @@ class CyrillicFolder(unittest.TestCase):
         self.assertEqual(out[1], "True")
 
     def test_windows_launchers_set_utf8_mode(self):
-        for name in ("START-HERE.bat", "bin/strata.cmd", "bin/strata.ps1"):
+        for name in ("START-HERE.bat", "bin/nostroma.cmd", "bin/nostroma.ps1"):
             text = (ROOT / name).read_text(encoding="utf-8")
             self.assertIn("PYTHONUTF8", text, name)
 

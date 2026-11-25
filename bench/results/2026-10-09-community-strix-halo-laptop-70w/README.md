@@ -1,6 +1,6 @@
 # Community benchmark on Radeon 8060S (Strix Halo laptop, 70 W)
 
-Measured on 2026-10-09 by nsbradley88. Strata v0.1.41 with the `docs/STRIX_HALO.md` §5 fast config on a **laptop** Strix
+Measured on 2026-10-09 by nsbradley88. Nostroma v0.1.41 with the `docs/STRIX_HALO.md` §5 fast config on a **laptop** Strix
 Halo that holds a 70 W package limit under load. Main limitation: prompt throughput is power-limited (see below); every run
 is a fresh engine process (no prompt reuse, cold expert cache start).
 
@@ -11,7 +11,7 @@ is a fresh engine process (no prompt reuse, cold expert cache start).
 - Machine: HP ZBook Ultra G1a 14" laptop, platform profile `performance`, on AC
 - OS: Ubuntu 26.04, kernel 7.0.0-38, kernel args `amd_iommu=off amdgpu.lockup_timeout=10000,60000,10000,10000`
 - ROCm: 7.14.1 (`therock-dist-linux-gfx1151-7.14.1.tar.gz`); hipBLASLt table `tools/hip/gfx1151-hipblaslt-100401.txt`
-- Strata: tag v0.1.41 (`fb58e0d`), source build per `docs/STRIX_HALO.md` §2 (`-DSTRATA_PREFILL_MMQ=ON`, gfx1151 only)
+- Nostroma: tag v0.1.41 (`fb58e0d`), source build per `docs/STRIX_HALO.md` §2 (`-DNOSTROMA_PREFILL_MMQ=ON`, gfx1151 only)
 - Background workloads: GNOME desktop session (idle); no other GPU jobs
 - Power: package power median 66–69 W, **max 70 W** in every run; GPU clock median ~2,070 MHz (max 2,900); measured from
   amdgpu hwmon (`power1_average`, `freq1_input`) every 0.5 s
@@ -27,9 +27,9 @@ is a fresh engine process (no prompt reuse, cold expert cache start).
 - Calibration / experimental speed projection: off
 
 ```text
-STRATA_HIPBLASLT_TUNING=tools/hip/gfx1151-hipblaslt-100401.txt STRATA_PF_FUSED=1 STRATA_PF_GEMM=1 STRATA_HC_UPMIX=1 \
-STRATA_PA_FAST=1 STRATA_HIP_WMMA=1 STRATA_SELECT_WMMA=1 STRATA_HC_Q8=1 STRATA_PF_SWITCH_MIN_T=4096 STRATA_PREFILL_STREAM_MIN=128 \
-build-halo/strata --pack <pack> --native <UD-IQ4_XS shard 1> --expert-profile data/expert-profile.bin \
+NOSTROMA_HIPBLASLT_TUNING=tools/hip/gfx1151-hipblaslt-100401.txt NOSTROMA_PF_FUSED=1 NOSTROMA_PF_GEMM=1 NOSTROMA_HC_UPMIX=1 \
+NOSTROMA_PA_FAST=1 NOSTROMA_HIP_WMMA=1 NOSTROMA_SELECT_WMMA=1 NOSTROMA_HC_Q8=1 NOSTROMA_PF_SWITCH_MIN_T=4096 NOSTROMA_PREFILL_STREAM_MIN=128 \
+build-halo/nostroma --pack <pack> --native <UD-IQ4_XS shard 1> --expert-profile data/expert-profile.bin \
   --expert-cache 24576 --resident-budget-gib 55 --prefill auto:16384 --spec 5 --spec-min-p 0.5 --mtp <mtp/rt> \
   --mtp-window 8192 --max-context <prompt+512> --kv int8 --max-new 256 --tokens-file <prompt tokens> --stats
 ```
@@ -37,7 +37,7 @@ build-halo/strata --pack <pack> --native <UD-IQ4_XS shard 1> --expert-profile da
 ## Method
 
 - Prompts: the first 8,192 / 32,768 / 131,072 tokens of llama.cpp's `src/**/*.cpp` sources (C++), tokenized with
-  `tools/strata_tokenizer.py`; 256 generated tokens (cap reached in every run).
+  `tools/nostroma_tokenizer.py`; 256 generated tokens (cap reached in every run).
 - One fresh engine process per run; model loading excluded (the engine's own `prefill` / `decode` timing lines).
 - Runs from two sessions on the same build and config (2026-10-09, after the reboot that set the kernel args); 4–6 runs
   per length, interleaved with other configurations. Per-run data: [runs.json](runs.json) (ms and tok/s from the engine).
@@ -81,4 +81,4 @@ caused a global OOM on this 128 GB machine; reported as issue #1715. All runs ab
 - Prompt throughput is ~20% below the §6 desktop table because of the 70 W limit (config, pack, ROCm runtime and kernel
   args were A/B'd; none closes it); decode matches or exceeds it.
 - Greedy engine runs only; 128K has 4 runs (one low decode outlier at 38.0).
-- Full write-up and configs: https://github.com/nsbradley88/halo-tuning (qwen-strata/)
+- Full write-up and configs: https://github.com/nsbradley88/halo-tuning (qwen-nostroma/)

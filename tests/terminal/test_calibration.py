@@ -32,17 +32,17 @@ class CalibrationFlowTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        patcher = mock.patch.dict(os.environ, {"STRATA_PROFILE_DIR": str(self.root / "profiles"),
-                                           "STRATA_RUNTIME_DIR": str(self.root / "runtime"),
+        patcher = mock.patch.dict(os.environ, {"NOSTROMA_PROFILE_DIR": str(self.root / "profiles"),
+                                           "NOSTROMA_RUNTIME_DIR": str(self.root / "runtime"),
                                            "XDG_CONFIG_HOME": str(self.root / "settings"),
                                            "APPDATA": str(self.root / "settings"),
-                                           "STRATA_API_KEY": ""})
+                                           "NOSTROMA_API_KEY": ""})
         patcher.start()
         self.addCleanup(patcher.stop)
-        # setup's own answer: <XDG_CONFIG_HOME>/strata/settings.json, or %APPDATA%/Strata/settings.json on Windows
+        # setup's own answer: <XDG_CONFIG_HOME>/nostroma/settings.json, or %APPDATA%/Nostroma/settings.json on Windows
         self.settings_file = setup.settings_path()
         self.assertTrue(str(self.settings_file).startswith(str(self.root)), "settings must stay in the temp tree")
-        engine = self.root / "strata-engine"
+        engine = self.root / "nostroma-engine"
         engine.write_bytes(b"fake engine")
         engine.chmod(0o700)
         tokenizer = self.root / "tokenizer"
@@ -549,7 +549,7 @@ class CalibrationFlowTests(unittest.TestCase):
         previous = self.config.read_bytes()
         elsewhere = self.root / "elsewhere"
         elsewhere.mkdir()
-        (self.root / ".strata-calibration-backups").symlink_to(elsewhere, target_is_directory=True)
+        (self.root / ".nostroma-calibration-backups").symlink_to(elsewhere, target_is_directory=True)
         with self.assertRaisesRegex(profiles.ProfileError, "owner-only and not a symlink"):
             calibration.apply_result("local", report_path, exclusive_ack=True, smoke=lambda cfg: 2)
         self.assertEqual(self.config.read_bytes(), previous)

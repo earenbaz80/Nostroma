@@ -1,11 +1,11 @@
-// Host test for include/strata/prefill/copy_events.hpp (#4005): the copied-event rules of the streamed prompt walk.
-#include "strata/prefill/copy_events.hpp"
+// Host test for include/nostroma/prefill/copy_events.hpp (#4005): the copied-event rules of the streamed prompt walk.
+#include "nostroma/prefill/copy_events.hpp"
 
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
 
-using namespace strata::prefill;
+using namespace nostroma::prefill;
 
 static int g_fail = 0;
 static void check(bool ok, const char* what) {

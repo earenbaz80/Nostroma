@@ -236,7 +236,7 @@ def other_engines(own_pids: set[int] | None = None) -> list[str]:
     try:
         if os.name == "nt":
             text = _run(["powershell", "-NoProfile", "-Command",
-                         "Get-CimInstance Win32_Process -Filter \"Name='strata.exe'\" | "
+                         "Get-CimInstance Win32_Process -Filter \"Name='nostroma.exe'\" | "
                          "Select-Object ProcessId,CommandLine | ConvertTo-Json -Compress"], timeout=20)
             if text and text.strip():
                 data = json.loads(text)
@@ -247,7 +247,7 @@ def other_engines(own_pids: set[int] | None = None) -> list[str]:
             text = _run(["ps", "-eo", "pid=,args="]) or ""
             for line in text.splitlines():
                 pid_s, _, args = line.strip().partition(" ")
-                if pid_s.isdigit() and int(pid_s) not in own and re.search(r"(^|/)strata(\s|$)", args.split(" --serve")[0]) \
+                if pid_s.isdigit() and int(pid_s) not in own and re.search(r"(^|/)nostroma(\s|$)", args.split(" --serve")[0]) \
                         and " --serve" in args:
                     found.append(args[:160])
     except Exception:  # noqa: BLE001

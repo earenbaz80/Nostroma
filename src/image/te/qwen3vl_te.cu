@@ -1,4 +1,4 @@
-// src/image/te/qwen3vl_te.cu - Nostroma's Qwen-Image-2.1 text encoder (see include/strata/image/qwen3vl_te.hpp).
+// src/image/te/qwen3vl_te.cu - Nostroma's Qwen-Image-2.1 text encoder (see include/nostroma/image/qwen3vl_te.hpp).
 //
 // Layout: activations are token-major, [T][width] (a token is a row).  Per layer:
 //   h16  = f16(RMSNorm(x) * attn_norm)                                    rms_f16_kernel
@@ -12,17 +12,17 @@
 // The rope angles are computed in double on the device (positions are the token indices; Qwen3-VL's IMROPE with
 // sections 24/20/20 and equal text positions is the plain NEOX rotation of the two halves), so no host maths library
 // enters the result.  Fixed-order reductions everywhere: the same prompt gives the same bytes run to run.
-#include "strata/image/qwen3vl_te.hpp"
+#include "nostroma/image/qwen3vl_te.hpp"
 
-#include "strata/image/te_dequant.hpp"
-#include "strata/kernels/f16_bits.hpp"
+#include "nostroma/image/te_dequant.hpp"
+#include "nostroma/kernels/f16_bits.hpp"
 
-#define STRATA_GGUF_MAIN_DISABLED 1
-#include "strata/artifact/gguf_reader.hpp"
+#define NOSTROMA_GGUF_MAIN_DISABLED 1
+#include "nostroma/artifact/gguf_reader.hpp"
 
 #if defined(__HIP__) || defined(__HIPCC__) || defined(__HIP_PLATFORM_AMD__)
-#include "strata/hip_compat/cuda_runtime.h"
-#include "strata/hip_compat/cublas_v2.h"
+#include "nostroma/hip_compat/cuda_runtime.h"
+#include "nostroma/hip_compat/cublas_v2.h"
 #else
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
@@ -38,7 +38,7 @@
 #include <thread>
 #include <vector>
 
-namespace strata::image {
+namespace nostroma::image {
 namespace {
 
 constexpr int QCHUNK = 256;               // queries per attention chunk (fixed: see the file comment)
@@ -60,7 +60,7 @@ constexpr int HD = 128;                   // head dim (checked against the file)
         if (!r_.empty()) return r_;                                                                        \
     } while (0)
 
-using strata::kernels::f16_from_f32;
+using nostroma::kernels::f16_from_f32;
 
 // ---------------------------------------------------------------------------------------------------------------
 // kernels (256 threads; fixed-order block reductions)
@@ -189,13 +189,13 @@ struct Layer {
 }  // namespace
 
 struct Qwen3VlTe {
-    std::unique_ptr<strata::GgufFile> file;
+    std::unique_ptr<nostroma::GgufFile> file;
     int device = 0;
     int n_layer = 0, C = 0, F = 0, H = 0, KV = 0;
     float eps = 1e-6f;
     double theta = 5e6;
     std::vector<Layer> layers;
-    const strata::TensorInfo* embd = nullptr;
+    const nostroma::TensorInfo* embd = nullptr;
     cudaStream_t stream = nullptr;
     cublasHandle_t blas = nullptr;
     uint8_t* d_w = nullptr;            // resident: every layer weight, raw blocks; streamed: two layer slots
@@ -206,7 +206,7 @@ struct Qwen3VlTe {
     double read_ms = 0, upload_ms = 0;
     // uploads: the file's bytes go through two pinned chunks (copied into them by several threads), then async copies
     bool streamed = false;
-    std::vector<std::pair<const strata::TensorInfo*, size_t>> plan;   // tensor, offset in the resident layout
+    std::vector<std::pair<const nostroma::TensorInfo*, size_t>> plan;   // tensor, offset in the resident layout
     std::vector<size_t> layer_base;    // resident offset of each layer's first weight; a layer's weights are contiguous
     size_t slot_bytes = 0;             // the largest layer
     cudaStream_t copy = nullptr;
@@ -218,8 +218,8 @@ struct Qwen3VlTe {
 namespace {
 
 std::string find_weight(Qwen3VlTe* te, const std::string& name, int64_t ne0, int64_t rows, WeightRef& w, size_t& off,
-                        std::vector<std::pair<const strata::TensorInfo*, size_t>>& plan) {
-    const strata::TensorInfo* t = te->file->find(name);
+                        std::vector<std::pair<const nostroma::TensorInfo*, size_t>>& plan) {
+    const nostroma::TensorInfo* t = te->file->find(name);
     if (!t) return "qwen3vl_te: tensor " + name + " missing";
     if (t->shape.size() != 2 || (int64_t) t->shape[0] != ne0 || (int64_t) t->shape[1] != rows)
         return "qwen3vl_te: tensor " + name + " has an unexpected shape";
@@ -232,7 +232,7 @@ std::string find_weight(Qwen3VlTe* te, const std::string& name, int64_t ne0, int
 }
 
 std::string find_norm(Qwen3VlTe* te, const std::string& name, int64_t n, size_t& at, std::vector<float>& host) {
-    const strata::TensorInfo* t = te->file->find(name);
+    const nostroma::TensorInfo* t = te->file->find(name);
     if (!t) return "qwen3vl_te: tensor " + name + " missing";
     if ((int64_t) t->elements() != n) return "qwen3vl_te: tensor " + name + " has an unexpected size";
     at = host.size();
@@ -282,8 +282,8 @@ std::string issue_layer(Qwen3VlTe* te, int li) {
     return std::string();
 }
 
-std::string meta_int(const strata::GgufFile& f, const std::string& key, int& v) {
-    const strata::MetaValue* m = f.get(key);
+std::string meta_int(const nostroma::GgufFile& f, const std::string& key, int& v) {
+    const nostroma::MetaValue* m = f.get(key);
     if (!m || !m->is_num()) return "qwen3vl_te: metadata " + key + " missing";
     v = (int) m->num();
     return std::string();
@@ -291,9 +291,9 @@ std::string meta_int(const strata::GgufFile& f, const std::string& key, int& v) 
 
 std::string open_impl(Qwen3VlTe* te, const std::string& path, int device, int mode) {
     const auto t0 = std::chrono::steady_clock::now();
-    te->file = std::make_unique<strata::GgufFile>(path);
-    const strata::GgufFile& f = *te->file;
-    const strata::MetaValue* arch = f.get("general.architecture");
+    te->file = std::make_unique<nostroma::GgufFile>(path);
+    const nostroma::GgufFile& f = *te->file;
+    const nostroma::MetaValue* arch = f.get("general.architecture");
     if (!arch || arch->s != "qwen3vl") return "qwen3vl_te: " + path + " is not a qwen3vl GGUF";
     int hd = 0;
     TE_TRY(meta_int(f, "qwen3vl.block_count", te->n_layer));
@@ -302,14 +302,14 @@ std::string open_impl(Qwen3VlTe* te, const std::string& path, int device, int mo
     TE_TRY(meta_int(f, "qwen3vl.attention.head_count", te->H));
     TE_TRY(meta_int(f, "qwen3vl.attention.head_count_kv", te->KV));
     TE_TRY(meta_int(f, "qwen3vl.attention.key_length", hd));
-    if (const strata::MetaValue* m = f.get("qwen3vl.rope.freq_base")) te->theta = m->num();
+    if (const nostroma::MetaValue* m = f.get("qwen3vl.rope.freq_base")) te->theta = m->num();
     if (hd != HD || te->H * HD != te->C || te->H % te->KV != 0) return "qwen3vl_te: unexpected attention geometry";
     te->eps = 1e-6f;   // sd.cpp llm.hpp: config.rms_norm_eps for QWEN3_VL (the file says 9.99999997e-07, the same f32)
     te->embd = f.find("token_embd.weight");
     if (!te->embd || te_row_bytes(te->embd->type, te->C) == 0) return "qwen3vl_te: token_embd.weight missing or unreadable";
 
     const int C = te->C, F = te->F, Q = te->H * HD, K = te->KV * HD;
-    std::vector<std::pair<const strata::TensorInfo*, size_t>>& plan = te->plan;
+    std::vector<std::pair<const nostroma::TensorInfo*, size_t>>& plan = te->plan;
     std::vector<float> norms;
     size_t off = 0;
     te->layers.resize(te->n_layer);
@@ -554,4 +554,4 @@ void qwen3vl_te_close(Qwen3VlTe* te) {
     delete te;
 }
 
-}  // namespace strata::image
+}  // namespace nostroma::image

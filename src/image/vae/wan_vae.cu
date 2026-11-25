@@ -1,4 +1,4 @@
-// src/image/vae/wan_vae.cu - Nostroma's Qwen-Image-2.1 VAE decoder (see include/strata/image/wan_vae.hpp).
+// src/image/vae/wan_vae.cu - Nostroma's Qwen-Image-2.1 VAE decoder (see include/nostroma/image/wan_vae.hpp).
 //
 // Layout: every activation is pixel-major float32, [H][W][C] (a pixel is a row of C channels).  A convolution is
 //   gather   -> f16 operand rows for a band of PB output pixels: per pixel the k*k taps x C channels, each value
@@ -12,16 +12,16 @@
 // picture size: the value of a pixel does not depend on the picture size or the memory of the card.
 // The mid-block attention (one head, dim 1152, over all latent pixels) is f32 SGEMM / softmax / SGEMM, like sd.cpp's
 // VAE (it does not use flash attention there).
-#include "strata/image/wan_vae.hpp"
+#include "nostroma/image/wan_vae.hpp"
 
 #include "convert.hpp"
 #include "safetensors_lite.hpp"
-#include "strata/kernels/bf16_bits.hpp"
-#include "strata/kernels/f16_bits.hpp"
+#include "nostroma/kernels/bf16_bits.hpp"
+#include "nostroma/kernels/f16_bits.hpp"
 
 #if defined(__HIP__) || defined(__HIPCC__) || defined(__HIP_PLATFORM_AMD__)
-#include "strata/hip_compat/cuda_runtime.h"   // the engine's CUDA -> HIP names (cuBLAS -> hipBLAS)
-#include "strata/hip_compat/cublas_v2.h"
+#include "nostroma/hip_compat/cuda_runtime.h"   // the engine's CUDA -> HIP names (cuBLAS -> hipBLAS)
+#include "nostroma/hip_compat/cublas_v2.h"
 #else
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
@@ -38,7 +38,7 @@
 #include <string>
 #include <vector>
 
-namespace strata::image {
+namespace nostroma::image {
 namespace {
 
 constexpr int PB = 8192;                  // pixels per GEMM band (fixed: see the file comment)
@@ -128,7 +128,7 @@ __global__ void gather_kernel(const float* __restrict__ src, int Hs, int Ws, int
                     atomicAdd(&hist[b ? (b >> 23) : 256], 1u);
                     atomicMax(&hist[257], b);
                 }
-                h[i] = strata::kernels::f16_from_f32(q);
+                h[i] = nostroma::kernels::f16_from_f32(q);
             }
         }
     }
@@ -361,7 +361,7 @@ std::string convert_and_upload(WanVae* v, Loader& L, double* convert_ms, double*
 // The fixed operand shift of each convolution (input x 2^-shift -> f16; output x 2^shift, both exact): stable-
 // diffusion.cpp's 2^-7 everywhere, except the layers listed here.  Fixed per layer, never from the picture's data (a
 // data-dependent scale would differ between a band and the whole picture and break the byte-identity gate).
-// Chosen from the measured ranges (strata-vae-decode --stats over the 16 gate latents, 11-10, Spark; RESULTS-OWN-5):
+// Chosen from the measured ranges (nostroma-vae-decode --stats over the 16 gate latents, 11-10, Spark; RESULTS-OWN-5):
 // every layer whose largest input came within 16x of the f16 maximum after 2^-7 gets at least 16x headroom.
 //   decoder.up_blocks.4.resnets.0.conv_shortcut: largest input 3.48e6 (1024 p4), 2.4x headroom at shift 7;
 //     shift 11 -> 38.5x.  Share of its nonzero inputs that are f16-subnormal: 0.08% at shift 7, 1.24% at shift 11
@@ -832,4 +832,4 @@ void wan_vae_close(WanVae* v) {
     delete v;
 }
 
-}  // namespace strata::image
+}  // namespace nostroma::image

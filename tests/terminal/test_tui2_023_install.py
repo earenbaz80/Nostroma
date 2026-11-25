@@ -39,8 +39,8 @@ def stub_release(folder: Path, body: str) -> str:
     folder.mkdir(parents=True)
     archive = folder / "terminal.zip"
     with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as z:
-        z.writestr("strata-terminal-0.1.48-windows-x86_64/bin/strata.cmd", body)
-        z.writestr("strata-terminal-0.1.48-windows-x86_64/strata.py", "# stub\n")
+        z.writestr("nostroma-terminal-0.1.48-windows-x86_64/bin/nostroma.cmd", body)
+        z.writestr("nostroma-terminal-0.1.48-windows-x86_64/nostroma.py", "# stub\n")
     (folder / "install-manifest.txt").write_text(
         f"windows-x86_64 0.1.48 terminal.zip {hashlib.sha256(archive.read_bytes()).hexdigest()} {archive.stat().st_size}\n")
     return "file:///" + folder.as_posix()
@@ -49,14 +49,14 @@ def stub_release(folder: Path, body: str) -> str:
 @unittest.skipUnless(POWERSHELL, "the Windows installer runs only on Windows")
 class WindowsInstaller(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="strata-inst-")
+        self.temp = tempfile.TemporaryDirectory(prefix="nostroma-inst-")
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
 
     def run_installer(self, feed: str, data: Path):
         runner = self.root / "run.ps1"
         runner.write_text("$ErrorActionPreference = 'Continue'\n"
-                          f"$env:STRATA_FEED = '{feed}'; $env:STRATA_DATA_DIR = '{data}'; $env:STRATA_NO_PATH = '1'\n"
+                          f"$env:NOSTROMA_FEED = '{feed}'; $env:NOSTROMA_DATA_DIR = '{data}'; $env:NOSTROMA_NO_PATH = '1'\n"
                           f"try {{ Invoke-Expression (Get-Content -Raw -LiteralPath '{INSTALL_PS1}') }} catch {{ Write-Host \"STOPPED\" }}\n",
                           encoding="utf-8-sig")
         done = subprocess.run([POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(runner)], capture_output=True, text=True,
@@ -68,11 +68,11 @@ class WindowsInstaller(unittest.TestCase):
         data = self.root / "Ünï test"
         out = self.run_installer(feed, data)
         self.assertIn("Installed. Run: nostroma launch", out, out)
-        self.assertTrue((data / "terminal" / "0.1.48" / "bin" / "strata.cmd").is_file())
+        self.assertTrue((data / "terminal" / "0.1.48" / "bin" / "nostroma.cmd").is_file())
         self.assertEqual([p.name for p in (data / "terminal").iterdir() if p.name.startswith("u") and p.suffix in ("", ".zip")], [])
 
     def test_the_whole_cause_is_printed_not_the_first_six_lines(self):
-        lines = ["echo strata update: this update source is older than the one already accepted (its sequence is 107, the accepted one is 108)."]
+        lines = ["echo nostroma update: this update source is older than the one already accepted (its sequence is 107, the accepted one is 108)."]
         lines += [f"echo detail {i}" for i in range(2, 9)] + ["echo the last line of the cause"]
         feed = stub_release(self.root / "feed2", "@echo off\r\n" + "\r\n".join(lines) + "\r\nexit /b 5\r\n")
         out = self.run_installer(feed, self.root / "data")

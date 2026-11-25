@@ -2,7 +2,7 @@
 
 测量日期：2026-10-08。单张 Radeon AI PRO R9700 32 GB，双 EPYC 9334，约 503 GiB 系统 RAM，
 Linux / ROCm 7.2.3。主测原版 ISTA GSQ-RCO Qwen3.8-Flash-Next IQ3_S，IQ2_XS 作独立对照。
-测试使用冻结的实验版 Strata 0.1.40.3，未测量本 PR 所在的新 upstream 引擎。
+测试使用冻结的实验版 Nostroma 0.1.40.3，未测量本 PR 所在的新 upstream 引擎。
 
 本 PR 提交报告和必要复现材料；归档补丁不会应用到当前引擎，也不改变运行默认值。
 完整方法、配置和限制见 [英文报告](README.md)。
@@ -39,5 +39,5 @@ IQ2_XS 两对分别降低 16.21% / 14.96%，样本数较少。
 复现命令见 [REPRODUCE.md](REPRODUCE.md)，验证脚本可校验数据、统计量及冻结源码。
 
 历史正确性诊断、未采纳调优和 HTTP 回归保留在
-[原始完整归档](https://github.com/zihaomu/Strata/tree/17006083063b4443458f6f0b3f5c8325cf9cca2a/bench/results/2026-10-08-community-r9700-linux)。
+[原始完整归档](https://github.com/zihaomu/Nostroma/tree/17006083063b4443458f6f0b3f5c8325cf9cca2a/bench/results/2026-10-08-community-r9700-linux)。
 本报告没有测试 Windows、其他 GPU、多并发或新版 upstream。

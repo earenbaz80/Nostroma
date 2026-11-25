@@ -26,9 +26,9 @@
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "strata/kernels/f16_bits.hpp"
-#include "strata/kernels/s2_expert_grouped.hpp"
-#include "strata/core/geometry.hpp"
+#include "nostroma/kernels/f16_bits.hpp"
+#include "nostroma/kernels/s2_expert_grouped.hpp"
+#include "nostroma/core/geometry.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -42,11 +42,11 @@
 #include <string>
 #include <vector>
 
-namespace k = strata::kernels;
+namespace k = nostroma::kernels;
 
 namespace {
 // The blob geometry, `cpu/expert.hpp`'s (restated as in the kernel).
-constexpr int H = strata::core::kCompiledGeometry.n_embd, FF = strata::core::kCompiledGeometry.n_ff, NCH_GU = H / 32, NCH_D = FF / 32;   // the compiled shape (Q4-SYCL; Flash-Next 2560 x 640)
+constexpr int H = nostroma::core::kCompiledGeometry.n_embd, FF = nostroma::core::kCompiledGeometry.n_ff, NCH_GU = H / 32, NCH_D = FF / 32;   // the compiled shape (Q4-SYCL; Flash-Next 2560 x 640)
 constexpr size_t ROW_GU = H / 4, ROW_D = FF / 4, SC_GU = H / 64, SC_D = FF / 64;
 constexpr size_t O_D_CODES = 2ull * FF * ROW_GU;
 constexpr size_t O_GU_SCALES = O_D_CODES + (size_t) H * ROW_D;
@@ -690,7 +690,7 @@ void bench() {
     };
 
     // per-hit path, decode: 9 hits of 10 (5090-like residency), 5 of 10, and the low-residency 1-3 hits, where the
-    // new kernels' grid (80 gate/up blocks per hit) is below one block per SM - see `STRATA_GROUPED_PAIR_MIN_HITS`
+    // new kernels' grid (80 gate/up blocks per hit) is below one block per SM - see `NOSTROMA_GROUPED_PAIR_MIN_HITS`
     for (const int n_hits : {9, 5, 3, 2, 1}) {
         std::vector<int32_t> slots((size_t) SETS * n_hits), dst(K);
         for (auto& v : slots) v = (int32_t) (rng() % nb);

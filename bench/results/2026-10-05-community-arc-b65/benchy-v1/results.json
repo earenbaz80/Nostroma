@@ -38,13 +38,13 @@
       "cancelled_write_bytes": 0
     },
     "numeric_trace": [
-      "strata trace: prompt chunk 0 of 2184",
-      "strata trace: prompt chunk 256 of 2184",
-      "strata trace: prompt chunk 768 of 2184",
-      "strata trace: prompt chunk 1280 of 2184",
-      "strata trace: prompt chunk 1792 of 2184",
-      "strata trace: read 2184 tokens (batched) in 7074.9 ms",
-      "strata serve: prompt 2185 tokens = 0 reused + 2185 read in 7076 ms (308.8 tok/s), 256 generated in 5380 ms (47.6 tok/s), drafts accepted 168 of 217, 0 checkpoints"
+      "nostroma trace: prompt chunk 0 of 2184",
+      "nostroma trace: prompt chunk 256 of 2184",
+      "nostroma trace: prompt chunk 768 of 2184",
+      "nostroma trace: prompt chunk 1280 of 2184",
+      "nostroma trace: prompt chunk 1792 of 2184",
+      "nostroma trace: read 2184 tokens (batched) in 7074.9 ms",
+      "nostroma serve: prompt 2185 tokens = 0 reused + 2185 read in 7076 ms (308.8 tok/s), 256 generated in 5380 ms (47.6 tok/s), drafts accepted 168 of 217, 0 checkpoints"
     ],
     "valid": true,
     "prefixes": {
@@ -106,9 +106,9 @@
       "cancelled_write_bytes": 0
     },
     "numeric_trace": [
-      "strata trace: prompt chunk 0 of 19",
-      "strata trace: read 19 tokens (batched) in 377.2 ms",
-      "strata serve: prompt 20 tokens = 0 reused + 20 read in 378 ms (52.9 tok/s), 256 generated in 5366 ms (47.7 tok/s), drafts accepted 170 of 234, 0 checkpoints"
+      "nostroma trace: prompt chunk 0 of 19",
+      "nostroma trace: read 19 tokens (batched) in 377.2 ms",
+      "nostroma serve: prompt 20 tokens = 0 reused + 20 read in 378 ms (52.9 tok/s), 256 generated in 5366 ms (47.7 tok/s), drafts accepted 170 of 234, 0 checkpoints"
     ],
     "valid": true,
     "prefixes": {
@@ -170,9 +170,9 @@
       "cancelled_write_bytes": 0
     },
     "numeric_trace": [
-      "strata trace: prompt chunk 0 of 22",
-      "strata trace: read 22 tokens (batched) in 391.9 ms",
-      "strata serve: prompt 23 tokens = 0 reused + 23 read in 392 ms (58.6 tok/s), 8 generated in 178 ms (45.0 tok/s), drafts accepted 6 of 6, 0 checkpoints"
+      "nostroma trace: prompt chunk 0 of 22",
+      "nostroma trace: read 22 tokens (batched) in 391.9 ms",
+      "nostroma serve: prompt 23 tokens = 0 reused + 23 read in 392 ms (58.6 tok/s), 8 generated in 178 ms (45.0 tok/s), drafts accepted 6 of 6, 0 checkpoints"
     ],
     "valid": true,
     "prefixes": {},
@@ -217,13 +217,13 @@
       "cancelled_write_bytes": 0
     },
     "numeric_trace": [
-      "strata trace: prompt chunk 0 of 2184",
-      "strata trace: prompt chunk 256 of 2184",
-      "strata trace: prompt chunk 768 of 2184",
-      "strata trace: prompt chunk 1280 of 2184",
-      "strata trace: prompt chunk 1792 of 2184",
-      "strata trace: read 2184 tokens (batched) in 6869.1 ms",
-      "strata serve: prompt 2185 tokens = 0 reused + 2185 read in 6870 ms (318.1 tok/s), 256 generated in 5305 ms (48.3 tok/s), drafts accepted 168 of 217, 0 checkpoints"
+      "nostroma trace: prompt chunk 0 of 2184",
+      "nostroma trace: prompt chunk 256 of 2184",
+      "nostroma trace: prompt chunk 768 of 2184",
+      "nostroma trace: prompt chunk 1280 of 2184",
+      "nostroma trace: prompt chunk 1792 of 2184",
+      "nostroma trace: read 2184 tokens (batched) in 6869.1 ms",
+      "nostroma serve: prompt 2185 tokens = 0 reused + 2185 read in 6870 ms (318.1 tok/s), 256 generated in 5305 ms (48.3 tok/s), drafts accepted 168 of 217, 0 checkpoints"
     ],
     "valid": true,
     "prefixes": {
@@ -286,9 +286,9 @@
       "cancelled_write_bytes": 0
     },
     "numeric_trace": [
-      "strata trace: prompt chunk 0 of 19",
-      "strata trace: read 19 tokens (batched) in 367.9 ms",
-      "strata serve: prompt 20 tokens = 0 reused + 20 read in 369 ms (54.3 tok/s), 256 generated in 5183 ms (49.4 tok/s), drafts accepted 170 of 234, 0 checkpoints"
+      "nostroma trace: prompt chunk 0 of 19",
+      "nostroma trace: read 19 tokens (batched) in 367.9 ms",
+      "nostroma serve: prompt 20 tokens = 0 reused + 20 read in 369 ms (54.3 tok/s), 256 generated in 5183 ms (49.4 tok/s), drafts accepted 170 of 234, 0 checkpoints"
     ],
     "valid": true,
     "prefixes": {
@@ -351,9 +351,9 @@
       "cancelled_write_bytes": 0
     },
     "numeric_trace": [
-      "strata trace: prompt chunk 0 of 22",
-      "strata trace: read 22 tokens (batched) in 381.8 ms",
-      "strata serve: prompt 23 tokens = 0 reused + 23 read in 382 ms (60.1 tok/s), 8 generated in 165 ms (48.4 tok/s), drafts accepted 6 of 6, 0 checkpoints"
+      "nostroma trace: prompt chunk 0 of 22",
+      "nostroma trace: read 22 tokens (batched) in 381.8 ms",
+      "nostroma serve: prompt 23 tokens = 0 reused + 23 read in 382 ms (60.1 tok/s), 8 generated in 165 ms (48.4 tok/s), drafts accepted 6 of 6, 0 checkpoints"
     ],
     "valid": true,
     "prefixes": {},
@@ -399,13 +399,13 @@
       "cancelled_write_bytes": 0
     },
     "numeric_trace": [
-      "strata trace: prompt chunk 0 of 2184",
-      "strata trace: prompt chunk 256 of 2184",
-      "strata trace: prompt chunk 768 of 2184",
-      "strata trace: prompt chunk 1280 of 2184",
-      "strata trace: prompt chunk 1792 of 2184",
-      "strata trace: read 2184 tokens (batched) in 7158.5 ms",
-      "strata serve: prompt 2185 tokens = 0 reused + 2185 read in 7159 ms (305.2 tok/s), 256 generated in 5421 ms (47.2 tok/s), drafts accepted 168 of 217, 0 checkpoints"
+      "nostroma trace: prompt chunk 0 of 2184",
+      "nostroma trace: prompt chunk 256 of 2184",
+      "nostroma trace: prompt chunk 768 of 2184",
+      "nostroma trace: prompt chunk 1280 of 2184",
+      "nostroma trace: prompt chunk 1792 of 2184",
+      "nostroma trace: read 2184 tokens (batched) in 7158.5 ms",
+      "nostroma serve: prompt 2185 tokens = 0 reused + 2185 read in 7159 ms (305.2 tok/s), 256 generated in 5421 ms (47.2 tok/s), drafts accepted 168 of 217, 0 checkpoints"
     ],
     "valid": true,
     "prefixes": {
@@ -468,9 +468,9 @@
       "cancelled_write_bytes": 0
     },
     "numeric_trace": [
-      "strata trace: prompt chunk 0 of 19",
-      "strata trace: read 19 tokens (batched) in 381.2 ms",
-      "strata serve: prompt 20 tokens = 0 reused + 20 read in 382 ms (52.4 tok/s), 256 generated in 5436 ms (47.1 tok/s), drafts accepted 170 of 234, 0 checkpoints"
+      "nostroma trace: prompt chunk 0 of 19",
+      "nostroma trace: read 19 tokens (batched) in 381.2 ms",
+      "nostroma serve: prompt 20 tokens = 0 reused + 20 read in 382 ms (52.4 tok/s), 256 generated in 5436 ms (47.1 tok/s), drafts accepted 170 of 234, 0 checkpoints"
     ],
     "valid": true,
     "prefixes": {
@@ -533,9 +533,9 @@
       "cancelled_write_bytes": 0
     },
     "numeric_trace": [
-      "strata trace: prompt chunk 0 of 22",
-      "strata trace: read 22 tokens (batched) in 395.5 ms",
-      "strata serve: prompt 23 tokens = 0 reused + 23 read in 396 ms (58.1 tok/s), 8 generated in 183 ms (43.8 tok/s), drafts accepted 6 of 6, 0 checkpoints"
+      "nostroma trace: prompt chunk 0 of 22",
+      "nostroma trace: read 22 tokens (batched) in 395.5 ms",
+      "nostroma serve: prompt 23 tokens = 0 reused + 23 read in 396 ms (58.1 tok/s), 8 generated in 183 ms (43.8 tok/s), drafts accepted 6 of 6, 0 checkpoints"
     ],
     "valid": true,
     "prefixes": {},

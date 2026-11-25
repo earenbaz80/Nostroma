@@ -1,10 +1,10 @@
-// pick_window_victim (include/strata/core/window_evict.hpp): CPU only (#3702).
-#include "strata/core/window_evict.hpp"
+// pick_window_victim (include/nostroma/core/window_evict.hpp): CPU only (#3702).
+#include "nostroma/core/window_evict.hpp"
 
 #include <cstdio>
 #include <cstdlib>
 
-using strata::core::pick_window_victim;
+using nostroma::core::pick_window_victim;
 
 namespace {
 int checks = 0;

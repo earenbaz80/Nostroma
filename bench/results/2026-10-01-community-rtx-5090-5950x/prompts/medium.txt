@@ -1,17 +1,17 @@
-Review the following C++ source file from the Strata engine (v0.1.32, src/core/expert_source.cpp, first 9,000 bytes). List the three most important correctness risks you see, with line references.
+Review the following C++ source file from the Nostroma engine (v0.1.32, src/core/expert_source.cpp, first 9,000 bytes). List the three most important correctness risks you see, with line references.
 
 // src/core/expert_source.cpp - the adapter.  See the header for the three clauses of the contract.
-#include "strata/core/expert_source.hpp"
-#include "strata/core/remote_experts.hpp"
-#include "strata/kernels/cpu/expert_layout.hpp"
-#include "strata/artifact/gguf_reader.hpp"
+#include "nostroma/core/expert_source.hpp"
+#include "nostroma/core/remote_experts.hpp"
+#include "nostroma/kernels/cpu/expert_layout.hpp"
+#include "nostroma/artifact/gguf_reader.hpp"
 
-#include "strata/core/pinned.hpp"
-#include "strata/platform/memory.hpp"
-#include "strata/kernels/elementwise.hpp"
-#include "strata/kernels/quantize_act.hpp"
-#include "strata/kernels/s2_expert_grouped.hpp"
-#include "strata/kernels/cpu/kq_avx2.hpp"
+#include "nostroma/core/pinned.hpp"
+#include "nostroma/platform/memory.hpp"
+#include "nostroma/kernels/elementwise.hpp"
+#include "nostroma/kernels/quantize_act.hpp"
+#include "nostroma/kernels/s2_expert_grouped.hpp"
+#include "nostroma/kernels/cpu/kq_avx2.hpp"
 
 #include <cuda_runtime.h>
 
@@ -46,15 +46,15 @@ Review the following C++ source file from the Strata engine (v0.1.32, src/core/e
 #endif
 
 // a 64-bit seek (as in pinned.cu): the 32-bit `fseek` wraps past 4 GiB, and the spelling differs per platform
-#ifndef STRATA_FSEEK64
+#ifndef NOSTROMA_FSEEK64
 #ifdef _WIN32
-#define STRATA_FSEEK64(f, o) _fseeki64((f), (long long) (o), SEEK_SET)
+#define NOSTROMA_FSEEK64(f, o) _fseeki64((f), (long long) (o), SEEK_SET)
 #else
-#define STRATA_FSEEK64(f, o) fseeko((f), (off_t) (o), SEEK_SET)
+#define NOSTROMA_FSEEK64(f, o) fseeko((f), (off_t) (o), SEEK_SET)
 #endif
 #endif
 
-namespace strata::core {
+namespace nostroma::core {
 
 namespace detail {
 

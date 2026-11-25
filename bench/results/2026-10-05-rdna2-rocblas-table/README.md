@@ -10,7 +10,7 @@ to 38 TFLOPS (1.6 ms), and the best of the 237 solutions `rocblas_gemm_ex_get_so
 
 `tools/hip/tune_rocblas.cpp` enumerates rocBLAS's solutions per shape and token bucket, times them, checks the fastest
 against the default kernel's output and writes the winners as a table; `Gemm::f16_inplace` runs the table's solution for
-a shape in place of rocBLAS's choice (`STRATA_ROCBLAS_TUNING`; docs/AMD_HIP.md, "rocBLAS table"). The table shipped,
+a shape in place of rocBLAS's choice (`NOSTROMA_ROCBLAS_TUNING`; docs/AMD_HIP.md, "rocBLAS table"). The table shipped,
 `tools/hip/gfx1030-rocblas-5.6.0.8d1ae90e.txt`, is calibrated against rocBLAS 5.6.0.8d1ae90e (ROCm 10.0.0,
 `/opt/rocm/lib`); its indices are valid for that build only, and the engine refuses any other.
 
@@ -25,8 +25,8 @@ a shape in place of rocBLAS's choice (`STRATA_ROCBLAS_TUNING`; docs/AMD_HIP.md, 
 - Model: Qwen3.8-Flash-Next GSQ-RCO IQ3_S (2 shards, `--native`), MTP draft, `--kv int8 --kv-resident 32768
   --max-context 131072 --expert-cache auto --prefill auto --spec 4 --spec-min-p 0.5 --adapt-every 100000` (the last the
   #884 workaround; it does not touch the prompt path).
-- Engine: `6f32ec0` (0.1.39) + #835 + this change, `-DSTRATA_ENABLE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1030
-  -DSTRATA_PREFILL_MMQ=ON`. #849 is not in this build, so the `qsa attn` phase is the slow pre-#849 kernel here (the same
+- Engine: `6f32ec0` (0.1.39) + #835 + this change, `-DNOSTROMA_ENABLE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1030
+  -DNOSTROMA_PREFILL_MMQ=ON`. #849 is not in this build, so the `qsa attn` phase is the slow pre-#849 kernel here (the same
   in both arms).
 
 ## Table
@@ -41,10 +41,10 @@ buckets. At T >= 2048 most shapes keep the default (1.0-1.2x where a solution st
 
 ## Method
 
-One server per arm, the same binary; `STRATA_PREFILL_TIMING=1` (the engine's prompt-phase timing),
-`STRATA_ROCBLAS_VERBOSE=1`; the on arm with `STRATA_ROCBLAS_TUNING` pointing at the directory holding the table. Four
+One server per arm, the same binary; `NOSTROMA_PREFILL_TIMING=1` (the engine's prompt-phase timing),
+`NOSTROMA_ROCBLAS_VERBOSE=1`; the on arm with `NOSTROMA_ROCBLAS_TUNING` pointing at the directory holding the table. Four
 prompts from four different offsets of one text (no prefix reuse between them), "Reply with one word", `max_tokens` 8,
-temperature 0; the answer text compared between arms. The GPU timeline is the engine's `strata prefill timing` line; the
+temperature 0; the answer text compared between arms. The GPU timeline is the engine's `nostroma prefill timing` line; the
 per-phase numbers are its phases ([timing-off.txt](timing-off.txt), [timing-on.txt](timing-on.txt)). One run per arm; the off
 arm repeated an earlier run of the same prompts the same day (with the table's first version) to within 10 ms on every
 prompt, and the on arm's gains repeated within 100 ms.
@@ -59,8 +59,8 @@ prompt, and the on arm's gains repeated within 100 ms.
 | 502 (495) | **table** | **2,139** | 146 | 52 | 1,075 | Incomplete |
 | 1,115 (1,108) | default | 3,391 | 598 | 158 | 1,144 | Incomplete |
 | 1,115 (1,108) | table | 3,395 | 201 | 99 | 1,637 | Incomplete |
-| 8,881 (8,874) | default | 11,978 | 1,346 | 1,200 | 1,683 | Strata |
-| 8,881 (8,874) | **table** | **11,459** | 1,128 | 898 | 1,670 | Strata |
+| 8,881 (8,874) | default | 11,978 | 1,346 | 1,200 | 1,683 | Nostroma |
+| 8,881 (8,874) | **table** | **11,459** | 1,128 | 898 | 1,670 | Nostroma |
 
 - 799 tokens: -10.3%; 495 tokens: -13.6%; 8,874 tokens: -4.3% (the 682-token tail chunk's projections, and `hc read`
   at both chunks).

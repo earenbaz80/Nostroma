@@ -1,5 +1,5 @@
 // AGENT-LOST (11-01): a reply the length limit cut inside a tool call used to vanish: no file, no card, no sentence.
-// Pure parts always run; the end-to-end ones need a built Harness (STRATA_HARNESS_DIR) and use the scripted model server.
+// Pure parts always run; the end-to-end ones need a built Harness (NOSTROMA_HARNESS_DIR) and use the scripted model server.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, rmSync, existsSync, readFileSync } from 'node:fs';
@@ -12,8 +12,8 @@ import { createAgentBridge, MAX_CUT_RETRIES } from '../server/agent/agent-bridge
 import { resolveHarness } from '../server/agent/harness-runtime.mjs';
 import { localOutputBudget } from '../server/agent/profile.mjs';
 
-const HARNESS = process.env.STRATA_HARNESS_DIR;
-const skip = !HARNESS || !resolveHarness({ env: process.env }).ok ? 'STRATA_HARNESS_DIR is not set to a built Harness' : false;
+const HARNESS = process.env.NOSTROMA_HARNESS_DIR;
+const skip = !HARNESS || !resolveHarness({ env: process.env }).ok ? 'NOSTROMA_HARNESS_DIR is not set to a built Harness' : false;
 
 test('the reply ceiling is half the window up to 64K tokens and never below what compaction reserves', () => {
   assert.equal(replyCap(65536, localOutputBudget(65536)), 32768);
@@ -119,7 +119,7 @@ test('a call nobody writes a card for (a helper agent) makes no draft', () => {
 
 async function rig(t, { window = 65536 } = {}) {
   const worker = await startScriptedWorker({ chunkDelayMs: 5 });
-  const dir = mkdtempSync(join(tmpdir(), 'strata-lost-'));
+  const dir = mkdtempSync(join(tmpdir(), 'nostroma-lost-'));
   const ws = join(dir, 'ws'); mkdirSync(ws, { recursive: true });
   const logs = [];
   const bridge = createAgentBridge({ dataDir: dir, localInstances: () => [{ id: 'i', label: 'S', baseUrl: worker.url, modelId: 'scripted-model', context: window, slots: 2 }], connections: () => [],

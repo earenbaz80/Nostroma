@@ -6,7 +6,7 @@ Research tool for the parallelism program.  One call = one server start = one ar
 (effective engine lines, PSS/RSS of the engine tree, GPU memory, ready time, the cmd/env).
 
     python3 tools/par_run.py --box boston --tag base1g --gpus 0 --work "w1;w2:4,8" --out /path/dir
-    python3 tools/par_run.py --box boston --tag s8g4 --gpus 0,1 --parallel 8 --groups 4 --env "STRATA_PIPED_CONCURRENT=1" \
+    python3 tools/par_run.py --box boston --tag s8g4 --gpus 0,1 --parallel 8 --groups 4 --env "NOSTROMA_PIPED_CONCURRENT=1" \
         --extra "--foo bar" --work "w2:4,8;w4:4" --out dir
 
 --work items are workload[:conc list] separated by ';', optionally with par_load flags after '@' (e.g. "w4:4@--joiner-tokens 16384").
@@ -23,10 +23,10 @@ BOXES = {
         "profile": "{repo}/data/expert-profile.bin",
     },
     "z440": {
-        "py": "/data/Strata/.venv/bin/python", "libs": ["/usr/local/cuda-12.9/lib64"],
-        "pack": "/data/strata-models/IQ3_S/pack", "mtp": "/data/Strata-data/mtp/rt",
-        "gguf1": "/data/strata-models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf",
-        "gguf2": "/data/strata-models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf",
+        "py": "/data/Nostroma/.venv/bin/python", "libs": ["/usr/local/cuda-12.9/lib64"],
+        "pack": "/data/nostroma-models/IQ3_S/pack", "mtp": "/data/Nostroma-data/mtp/rt",
+        "gguf1": "/data/nostroma-models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf",
+        "gguf2": "/data/nostroma-models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf",
         "profile": "{repo}/data/expert-profile.bin",
     },
 }
@@ -130,13 +130,13 @@ def main():
         cfg["replicas"] = a.replicas
     cpath = os.path.join(a.out, f"{a.tag}-cfg.json")
     json.dump(cfg, open(cpath, "w"), indent=1)
-    env = {k: v for k, v in os.environ.items() if not k.startswith("STRATA_")}
+    env = {k: v for k, v in os.environ.items() if not k.startswith("NOSTROMA_")}
     env["LD_LIBRARY_PATH"] = ":".join(B["libs"] + [env.get("LD_LIBRARY_PATH", "")])
     for kv in a.env.split(";"):
         if kv.strip():
             k, v = kv.split("=", 1)
             env[k.strip()] = v.strip()
-    cmd = [B["py"], f"{a.repo}/serve/server.py", "--engine", "strata", "--config", cpath, "--port", str(a.port)]
+    cmd = [B["py"], f"{a.repo}/serve/server.py", "--engine", "nostroma", "--config", cpath, "--port", str(a.port)]
     if a.parallel is not None:
         cmd += ["--parallel", str(a.parallel)]
     if a.groups:
@@ -203,7 +203,7 @@ def main():
             pass
     text = open(log, errors="replace").read() if os.path.exists(log) else ""
     keys = ("batch_slots", "batch_groups", "expert cache", "slot sessions", "groups of", "pipelined", "VRAM free", "layer split", "layer-split",
-            "strata p4", "strata par", "mtp", "adapt")
+            "nostroma p4", "nostroma par", "mtp", "adapt")
     rec["engine_lines"] = [l[:220] for l in text.splitlines() if any(k in l for k in keys)][:60]
     rec["errors_in_log"] = len([1 for l in text.splitlines() if any(k in l for k in ("illegal instruction", "Traceback", " ERR ", "segfault", "Segmentation", "out of memory"))])
     json.dump(rec, open(os.path.join(a.out, f"{a.tag}-run.json"), "w"), indent=1)

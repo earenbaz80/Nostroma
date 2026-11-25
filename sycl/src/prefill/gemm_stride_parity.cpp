@@ -1,5 +1,5 @@
-#include "strata/prefill/gemm.hpp"
-#include "strata/sycl_queue.hpp"
+#include "nostroma/prefill/gemm.hpp"
+#include "nostroma/sycl_queue.hpp"
 
 #include <bit>
 #include <cmath>
@@ -20,7 +20,7 @@ uint16_t bf16(float value) {
 
 bool run(bool native, int64_t ldx, float beta, int64_t scratch_rows) {
     auto& queue = dpct::get_in_order_queue();
-    strata::prefill::Gemm gemm;
+    nostroma::prefill::Gemm gemm;
     std::string error;
     if (!gemm.init(&queue, scratch_rows * K, error)) {
         std::fprintf(stderr, "%s\n", error.c_str());

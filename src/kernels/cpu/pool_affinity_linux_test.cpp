@@ -2,7 +2,7 @@
 #define _GNU_SOURCE
 #endif
 
-#include "strata/kernels/cpu/pool.hpp"
+#include "nostroma/kernels/cpu/pool.hpp"
 
 #include <algorithm>
 #include <cerrno>
@@ -21,7 +21,7 @@
 #include <sched.h>
 #include <unistd.h>
 
-namespace cpu = strata::kernels::cpu;
+namespace cpu = nostroma::kernels::cpu;
 
 class DynamicCpuSet {
 public:

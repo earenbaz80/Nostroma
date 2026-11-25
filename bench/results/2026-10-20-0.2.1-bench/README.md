@@ -1,7 +1,7 @@
-# First real `strata bench run` on the released 0.2.1 (terminal 0.2.1, engine 0.1.46 cuda12 Linux packages)
+# First real `nostroma bench run` on the released 0.2.1 (terminal 0.2.1, engine 0.1.46 cuda12 Linux packages)
 
 Model Qwen3.8-Flash-Next IQ3_XXS (hand-written run config that mirrors setup: int8 KV, MTP spec 4; z440 layer split auto, P2003 resident experts),
-`strata bench run --profile` (the runner starts and stops the engine), protocol `strata-qwen38-thinking-v1-draft.1`, track `custom`. Dated 2026-10-20.
+`nostroma bench run --profile` (the runner starts and stops the engine), protocol `nostroma-qwen38-thinking-v1-draft.1`, track `custom`. Dated 2026-10-20.
 
 | | P2003 (RTX 3060 12 GB, Core Ultra 7 265) | z440 (2x RTX A4000, Xeon E5-2643 v3) |
 |---|---|---|
@@ -21,7 +21,7 @@ Numbers are from `run3-with-fixes` on each box (run1 and run2 agree within a few
 
 ## What the protocol and the runner got wrong (fixed on this branch unless marked)
 
-1. The release archive carried no COMMIT, so every release run was nonconforming. `package_terminal.py` takes `--commit` / `STRATA_COMMIT` and refuses to build a distributable archive without one. The release must be rebuilt (or a COMMIT file added) for a conforming result.
+1. The release archive carried no COMMIT, so every release run was nonconforming. `package_terminal.py` takes `--commit` / `NOSTROMA_COMMIT` and refuses to build a distributable archive without one. The release must be rebuilt (or a COMMIT file added) for a conforming result.
 2. The drive of the model files was not found on an LVM volume (`lsblk -s` nests two levels): "Storage: not measured" on z440.
 3. No CUDA runtime on P2003: driver 615 prints `CUDA UMD Version`. Also `nvidia-smi` reports the newest CUDA the driver supports (13.0 / 13.4), not the library the engine ran on (12.9). Now: runtime = the engine's build runtime from `engine-component.json`, plus `cuda-driver-supports`.
 4. `engine.log` in the result was empty (`serve --quiet`). Now the run config's log from the start of the run.

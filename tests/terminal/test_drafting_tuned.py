@@ -46,7 +46,7 @@ class Base(unittest.TestCase):
         (self.data / "dflash2" / drafting.VOCAB_NAME).write_bytes(b"v" * 100)
         (self.data / "mtp" / "rt" / "experts.bin").write_bytes(b"e" * 100)
         (self.data / "mtp" / "rt" / drafting.VOCAB_NAME).write_bytes(b"v" * 100)
-        self.exe = self.root / "strata"
+        self.exe = self.root / "nostroma"
         self.exe.write_bytes(b"--mtp-draft-vocab FILE (or --mtp DIR ... --draft-fallback ... selector codebooks: Q4_0 rows")   # a Metal engine of this tree
         self.args = ["--native", "m.gguf", "--pack", str(self.data / "packs" / "tag"), "--mtp", str(self.data / "mtp" / "rt"), "--spec", "2", "--max-context", "65536"]
         self.pins = mock.patch.multiple(drafting, TUNED_BYTES=len(TUNED_BYTES), TUNED_SHA256=hashlib.sha256(TUNED_BYTES).hexdigest())
@@ -171,7 +171,7 @@ class MetalPerSet(Base):
 
     def test_the_tuned_pack_needs_an_engine_that_reads_the_q4_selector(self):
         self.put_tuned()
-        old = self.root / "strata-old"
+        old = self.root / "nostroma-old"
         old.write_bytes(b"--mtp-draft-vocab FILE (or --mtp DIR ... --draft-fallback")      # no selector text
         cfg = self.cfg(Q4)
         d = drafting.apply(cfg, data_dir=self.data, backend="metal", archs=[], engine=old)
@@ -227,16 +227,16 @@ class Fetch(Base):
         self.host.mkdir()
         (self.host / drafting.TUNED_NAME).write_bytes(TUNED_BYTES)
         self.url = (self.host / drafting.TUNED_NAME).as_uri()
-        env = {k: v for k, v in __import__("os").environ.items() if k not in (drafting.TUNED_URL_ENV, "STRATA_UPDATE_FEED", "STRATA_UPDATE_TRUSTED_KEYS")}
-        env["STRATA_UPDATE_FEED"] = str(self.root / "no-feed-here")       # nothing in these tests reaches the network
-        env["STRATA_COMPONENTS_DIR"] = str(self.root / "components")      # the feed sequence this computer accepted is the test's, not the PC's own
+        env = {k: v for k, v in __import__("os").environ.items() if k not in (drafting.TUNED_URL_ENV, "NOSTROMA_UPDATE_FEED", "NOSTROMA_UPDATE_TRUSTED_KEYS")}
+        env["NOSTROMA_UPDATE_FEED"] = str(self.root / "no-feed-here")       # nothing in these tests reaches the network
+        env["NOSTROMA_COMPONENTS_DIR"] = str(self.root / "components")      # the feed sequence this computer accepted is the test's, not the PC's own
         patcher = mock.patch.dict("os.environ", env, clear=True)
         patcher.start()
         self.addCleanup(patcher.stop)
         self.keys = self.root / "keys"
         self.pub = ft.keygen(self.keys, allow_git=True)
         (self.root / "trust.json").write_text((self.keys / "feed-key.pub.json").read_text(encoding="utf-8"), encoding="utf-8")
-        __import__("os").environ["STRATA_UPDATE_TRUSTED_KEYS"] = str(self.root / "trust.json")
+        __import__("os").environ["NOSTROMA_UPDATE_TRUSTED_KEYS"] = str(self.root / "trust.json")
 
     def make_feed(self, sub="feed", listed=True, backends=("metal",), pin_sha=None, sequence=1):
         """A local, test-signed release folder: the feed and the drafter beside it as a flat asset (what the GitHub release would hold)."""
@@ -319,17 +319,17 @@ class Fetch(Base):
         # the environment names the feed too, and ensure_for takes the tuned pack from it without touching the stock download
         out.unlink()
         out.with_name(out.name + ".ok").unlink()
-        with mock.patch.dict("os.environ", {"STRATA_UPDATE_FEED": str(feed)}), mock.patch.object(drafting_fetch, "ensure", side_effect=AssertionError("stock fetched")):
+        with mock.patch.dict("os.environ", {"NOSTROMA_UPDATE_FEED": str(feed)}), mock.patch.object(drafting_fetch, "ensure", side_effect=AssertionError("stock fetched")):
             self.assertEqual(drafting_fetch.ensure_for(self.data, model_name=Q4, backend="metal"), out)
 
     def test_the_feed_entry_is_a_drafters_member_and_older_clients_ignore_it(self):
         feed = self.make_feed()
-        doc = json.loads((feed / "strata-feed.json").read_text(encoding="utf-8"))
+        doc = json.loads((feed / "nostroma-feed.json").read_text(encoding="utf-8"))
         entry = doc["drafters"]["packages"][0]
         self.assertEqual((entry["name"], entry["backends"], entry["size"], entry["sha256"]),
                          (drafting.TUNED_NAME, ["metal"], len(TUNED_BYTES), hashlib.sha256(TUNED_BYTES).hexdigest()))
         self.assertEqual(entry["url"], drafting.TUNED_NAME, "a flat release asset")
-        parsed = drafting_fetch.feedmod.parse((feed / "strata-feed.json").read_bytes(), source=str(feed / "strata-feed.json"), key_id="k")
+        parsed = drafting_fetch.feedmod.parse((feed / "nostroma-feed.json").read_bytes(), source=str(feed / "nostroma-feed.json"), key_id="k")
         self.assertEqual([d.name for d in parsed.drafters], [drafting.TUNED_NAME])
         doc.pop("drafters")
         self.assertEqual(drafting_fetch.feedmod.parse(json.dumps(doc).encode(), source="x", key_id="k").drafters, ())
@@ -353,8 +353,8 @@ class Fetch(Base):
 
     def test_a_feed_with_a_bad_signature_is_refused_in_a_line(self):
         feed = self.make_feed()
-        text = (feed / "strata-feed.json").read_text(encoding="utf-8")
-        (feed / "strata-feed.json").write_text(text.replace('"sequence": 1', '"sequence": 2'), encoding="utf-8")
+        text = (feed / "nostroma-feed.json").read_text(encoding="utf-8")
+        (feed / "nostroma-feed.json").write_text(text.replace('"sequence": 1', '"sequence": 2'), encoding="utf-8")
         with self.assertRaises(drafting_fetch.DraftingError) as caught:
             drafting_fetch.ensure_tuned(self.data, feed=str(feed))
         self.assertIn("could not be trusted", str(caught.exception))
@@ -365,7 +365,7 @@ class Fetch(Base):
     def test_a_feed_that_cannot_be_read_or_a_build_with_no_key_is_silent(self):
         self.assertIsNone(drafting_fetch.ensure_tuned(self.data, feed=str(self.root / "no-such-feed")))
         feed = self.make_feed()
-        with mock.patch.dict("os.environ", {"STRATA_UPDATE_TRUSTED_KEYS": ""}), mock.patch("nostroma_control.signing.load_trusted_keys", return_value={}):
+        with mock.patch.dict("os.environ", {"NOSTROMA_UPDATE_TRUSTED_KEYS": ""}), mock.patch("nostroma_control.signing.load_trusted_keys", return_value={}):
             self.assertIsNone(drafting_fetch.ensure_tuned(self.data, feed=str(feed)))
 
     def test_a_feed_nobody_answers_for_is_silent_offline_refused_or_never_answering(self):
@@ -559,7 +559,7 @@ class CudaAndHip(Fetch):
         """The SYCL 0.2.11 engine reads bf16 selector codebooks only and refuses the Q4_0-selector pack (DF-VAL): SYCL must never see the tuned file. Arc, if it is enabled later, needs a
         second, bf16-selector tuned pack with its own name, size and SHA-256 in the feed (not added now)."""
         self.put_stock()
-        sycl_exe = self.root / "strata-sycl"
+        sycl_exe = self.root / "nostroma-sycl"
         sycl_exe.write_bytes(b"--mtp-draft-vocab FILE (or --mtp DIR ... --draft-fallback")          # this build has no Q4_0-selector text
         for name in (IQ3S, Q4, V31, OLD_XS):
             runs = []
@@ -620,7 +620,7 @@ class CudaAndHip(Fetch):
         for hardware, name, fetched in ((L620, IQ3S, True), (SPARK, V31, True), (STRIX, Q4, True), (STRIX, V31, True), (P2003, IQ3S, False), (R9700, IQ3S, False), (ARC, IQ3S, False),
                                         (TWO_CARDS, IQ3S, False), (L620, Q4, False)):
             (self.data / "dflash2").mkdir(parents=True, exist_ok=True)
-            for f in (self.data / "dflash2").glob("*strata1*"):
+            for f in (self.data / "dflash2").glob("*nostroma1*"):
                 f.unlink()
             _label, backend, archs, vram = hardware
             where = (hardware[0], name)
@@ -700,7 +700,7 @@ class Arc(Fetch):
         pins = mock.patch.multiple(drafting, TUNED_BF16_BYTES=len(BF16_BYTES), TUNED_BF16_SHA256=hashlib.sha256(BF16_BYTES).hexdigest())
         pins.start()
         self.addCleanup(pins.stop)
-        self.sycl_exe = self.root / "strata-sycl"
+        self.sycl_exe = self.root / "nostroma-sycl"
         self.sycl_exe.write_bytes(b"--mtp-draft-vocab FILE (or --mtp DIR ... --draft-fallback")         # reads bf16 selector codebooks only
 
     def put_bf16(self, content=BF16_BYTES):
@@ -725,7 +725,7 @@ class Arc(Fetch):
         return out
 
     def test_the_pins(self):
-        self.assertEqual(drafting.tuned_pack("bf16sel").name, "qwen3.8-flash-next-dflash2.strata1.q4_0-bf16sel.pack")
+        self.assertEqual(drafting.tuned_pack("bf16sel").name, "qwen3.8-flash-next-dflash2.nostroma1.q4_0-bf16sel.pack")
         self.assertNotEqual(drafting.tuned_pack("bf16sel").name, drafting.tuned_pack("selq4").name)
         self.assertEqual(drafting.tuned_pack("selq4").name, drafting.TUNED_NAME)
         self.assertEqual(drafting.tuned_pack(None), drafting.tuned_pack("selq4"))
@@ -825,12 +825,12 @@ class Arc(Fetch):
     def test_the_other_platforms_fetch_their_own_file_from_the_same_feed(self):
         feed = self.two_entry_feed(sub="both")
         for hardware, name in ((L620, IQ3S), (STRIX, Q4)):
-            for f in (self.data / "dflash2").glob("*strata1*"):
+            for f in (self.data / "dflash2").glob("*nostroma1*"):
                 f.unlink()
             got = drafting_fetch.ensure_for(self.data, model_name=name, backend=hardware[1], archs=hardware[2], args=self.args, vram_mib=hardware[3], feed=str(feed))
             self.assertEqual(got, drafting.tuned_path(self.data), hardware[0])
             self.assertFalse(drafting.tuned_path(self.data, "bf16sel").exists(), hardware[0])
-        for f in (self.data / "dflash2").glob("*strata1*"):
+        for f in (self.data / "dflash2").glob("*nostroma1*"):
             f.unlink()
         mac = drafting_fetch.ensure_for(self.data, model_name=Q4, backend="metal", feed=str(feed))
         self.assertEqual(mac, drafting.tuned_path(self.data))

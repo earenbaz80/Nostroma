@@ -9,11 +9,11 @@ import time
 import urllib.error
 import urllib.request
 
-sys.path.insert(0, os.environ.get("STRATA_TOOLS", "tools"))   # run from the repository root
+sys.path.insert(0, os.environ.get("NOSTROMA_TOOLS", "tools"))   # run from the repository root
 import needle_bench as nb  # noqa: E402
 
-URL = os.environ.get("STRATA_URL", "http://127.0.0.1:8081").rstrip("/") + "/v1/chat/completions"
-KEY = os.environ.get("STRATA_KEY", "")
+URL = os.environ.get("NOSTROMA_URL", "http://127.0.0.1:8081").rstrip("/") + "/v1/chat/completions"
+KEY = os.environ.get("NOSTROMA_KEY", "")
 TARGET = int(512 * 1024 * 0.98)          # 工具的口径：512k × 0.98
 # ⚠️ 官方工具按 CHARS_PER_TOKEN=3.2 估算**偏乐观**：512k 档目标 513,802 tok 实造 1,644,166 字符，
 #    服务端实测 **524,392 tokens**（真实比率 ≈3.135）⇒ prompt+40 > 524,288，被 **400 拒**（never truncated）。
@@ -28,7 +28,7 @@ prompt = (text[:cut] + needle + text[cut:] +
           "\n\nWhat is the secret code word mentioned in the text above? Reply with the code word only.")
 print(f"目标 {TARGET:,} tok · haystack {CHARS:,} 字符 · 实际 prompt {len(prompt):,} 字符", flush=True)
 
-body = {"model": "strata", "max_tokens": 40, "temperature": 0,
+body = {"model": "nostroma", "max_tokens": 40, "temperature": 0,
         "chat_template_kwargs": {"enable_thinking": False},
         "messages": [{"role": "user", "content": prompt}]}
 data = json.dumps(body).encode()

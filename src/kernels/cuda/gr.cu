@@ -1,6 +1,6 @@
 // src/kernels/cuda/gr.cu - P2.S2: the gated residual / hyper-connection, `gr_read` and `gr_write`.
 //
-// See include/strata/kernels/gr.hpp for the semantics, for why the weights are bf16, and for the history of
+// See include/nostroma/kernels/gr.hpp for the semantics, for why the weights are bf16, and for the history of
 // this kernel's 134x-off-the-floor first version.  The short form: it was launched `<<<1, 256>>>` so that
 // `xn`/`xq` fit in shared memory, which used ONE of 48 SMs and cost 262 ms/token.
 //
@@ -21,12 +21,12 @@
 // `w_down[k][i]` with i contiguous - `ref/gr.py`'s (hc_lr, hc*n_embd) row-major.  `hc_attn_up.weight` is
 // [320, 10240] so it holds `w_up[i][k]` with k contiguous - `ref/gr.py`'s (hc*n_embd, hc_lr) row-major.  Both
 // index with no permutation at all.
-#include "strata/kernels/gr.hpp"
-#include "strata/env.hpp"
-#include "strata/kernels/bf16_bits.hpp"
-#include "strata/kernels/bf16_gemv.hpp"
-#include "strata/kernels/native_gr_norm.hpp"
-#include "strata/kernels/native_gr_postops.hpp"
+#include "nostroma/kernels/gr.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kernels/bf16_bits.hpp"
+#include "nostroma/kernels/bf16_gemv.hpp"
+#include "nostroma/kernels/native_gr_norm.hpp"
+#include "nostroma/kernels/native_gr_postops.hpp"
 
 #include <cuda_runtime.h>
 
@@ -36,7 +36,7 @@
 #include <cstring>
 #include <stdexcept>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 
 constexpr int THREADS = 256;
@@ -44,7 +44,7 @@ constexpr int WARPS = THREADS / 32;
 bool fp32_activations = false;
 bool native_mmvf = false;
 
-/// The bf16 conversions live in `strata/kernels/bf16_bits.hpp`, and this file used to carry its own copies.
+/// The bf16 conversions live in `nostroma/kernels/bf16_bits.hpp`, and this file used to carry its own copies.
 /// Two files with a private copy of a conversion whose failure mode is silent wrong bits is one too many -
 /// and the reason the shared header exists is that `bf16` and `fp16` are NOT two spellings of one idea, so a
 /// routine written for one and reused for the other is wrong in a way that still produces numbers.
@@ -466,7 +466,7 @@ void gr_read(const float* R, const float* w_norm, const uint16_t* w_down, const 
 
 static bool no_multi_gr() {
     static const bool off = [] {
-        const char* v = strata::env("NOSTROMA_NO_MULTI_GR");
+        const char* v = nostroma::env("NOSTROMA_NO_MULTI_GR");
         return v != nullptr && v[0] != '\0' && v[0] != '0';
     }();
     return off;
@@ -550,4 +550,4 @@ void gr_write_multi(const float* R, const float* block_out, const float* inject,
     }
 }
 
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels

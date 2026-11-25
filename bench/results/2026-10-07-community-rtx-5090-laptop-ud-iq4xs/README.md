@@ -1,6 +1,6 @@
 # Community benchmark: RTX 5090 Laptop, Core Ultra 9 275HX, 188 GB RAM — Unsloth UD-IQ4_XS (first NVIDIA measurement)
 
-Measured on 2026-10-06/07 on a laptop called s18. This tests Strata 0.1.40 (commit
+Measured on 2026-10-06/07 on a laptop called s18. This tests Nostroma 0.1.40 (commit
 `1735d64`) with **Unsloth UD-IQ4_XS** (`unsloth/Qwen3.8-Flash-Next-GGUF`, revision `38bb39e`),
 one GPU, 262,144-token context. Per docs/UNSLOTH_Q4.md this pack had "not been measured on
 NVIDIA yet"; this is a first data point.
@@ -17,14 +17,14 @@ not the CPU expert pool, not PCIe, and not RAM residency.
 - Intel Core Ultra 9 275HX: 24 cores (8 P + 16 E, no HT). The engine picks AVX2 (no AVX-512).
 - 192 GB RAM installed; 188 GiB usable. NVMe SSDs (the GGUFs on one, the OS on another).
 - Ubuntu 24.04.5 LTS, kernel 7.0.0-38-generic; CUDA 13.3 toolkit; locally compiled engine
-  (`CMAKE_CUDA_ARCHITECTURES=120`). Strata commit `1735d64`, engine 0.1.40.
+  (`CMAKE_CUDA_ARCHITECTURES=120`). Nostroma commit `1735d64`, engine 0.1.40.
 
 ## Model and configuration
 
 Three shards, 93.7 GB, all SHA-256-verified against the table in docs/UNSLOTH_Q4.md
 (`5ce89370…`, `577a38a2…`, `d4634e6d…`). The installer prepared the pack with `--compat-bf16`
 and reused the shared MTP draft layer with the CJK draft vocabulary (106,299 ids, 212.9 MiB
-draft head). Launch configuration: [strata-unsloth-ud-iq4_xs.json](strata-unsloth-ud-iq4_xs.json).
+draft head). Launch configuration: [nostroma-unsloth-ud-iq4_xs.json](nostroma-unsloth-ud-iq4_xs.json).
 
 - Context 262,144; INT8 KV; 32,768 KV cells per QSA layer resident on GPU.
 - Expert cache `auto`: 6,030 slots, 13.59 GiB VRAM (IQ3_S on the same box: 8,000 slots, 15.17 GiB).
@@ -52,7 +52,7 @@ after every server start is ~20% slower here):
 - Chinese prose: "请用中文写一份关于上海城市发展的详细介绍，分五个部分展开，每部分至少一百五十字。" (temperature 1.0, and greedy runs of the same prompt)
 - English code: "Write a Python module implementing a red-black tree with insert, delete and search, with detailed comments explaining each step." (temperature 1.0)
 
-All tok/s figures are the engine's own `strata serve: prompt …` log lines, decode only
+All tok/s figures are the engine's own `nostroma serve: prompt …` log lines, decode only
 (prefill reported separately there). Raw lines in [bench.log](bench.log).
 
 ## Results
@@ -80,7 +80,7 @@ Calibration sweep (`./setup.sh --calibrate`, engine 0.1.40, this pack):
 With `--pcie-frac 0.55 --spec-min-p 0.70` applied, warm greedy runs of the Chinese prompt:
 **27.0, 28.8, 33.0 tok/s**.
 
-Decode-time breakdown (`STRATA_DECODE_TIMING=1`, warm run at 33.0 tok/s):
+Decode-time breakdown (`NOSTROMA_DECODE_TIMING=1`, warm run at 33.0 tok/s):
 
 ```
 291 windows, 1.76 tokens/window, 53.39 ms/window =
@@ -105,15 +105,15 @@ two prompts, 8,000 VRAM expert slots, ~1.6 GiB VRAM free.
    whole tuning run failed and kept defaults:
 
    ```
-   strata mtp: the draft head over 106299 tokens needs 213 MiB of VRAM and 274 MiB is free.
-   strata serve: mtp: the draft head does not fit): the default settings stay
+   nostroma mtp: the draft head over 106299 tokens needs 213 MiB of VRAM and 274 MiB is free.
+   nostroma serve: mtp: the draft head does not fit): the default settings stay
    ```
 
    Workaround: apply the sweep winners by hand (they are printed before the failure), or
    start once with a smaller `--draft-vocab` and re-run calibration. It may be worth making
    the sweep treat a non-fitting restart as "this setting loses" instead of failing the run.
 
-2. **`STRATA_EXCHANGE_ROTATE=1` is unavailable for this pack** ("requires equal-size expert
+2. **`NOSTROMA_EXCHANGE_ROTATE=1` is unavailable for this pack** ("requires equal-size expert
    blocks and a fully mapped/pinned RAM complement" — the blocks are IQ3_S/IQ4_NL mixes), so
    swaps keep the host copy path. Fine, just noted since the doc says rotation helps swap
    churn; something to know for mixed-format packs.
@@ -137,10 +137,10 @@ two prompts, 8,000 VRAM expert slots, ~1.6 GiB VRAM free.
 
 ```bash
 ./setup.sh --setup --family unsloth --model UD-IQ4_XS --yes --no-start --context 262144 --kv int8
-# start script: run-unsloth-ud-iq4_xs.sh (config strata-unsloth-ud-iq4_xs.json)
+# start script: run-unsloth-ud-iq4_xs.sh (config nostroma-unsloth-ud-iq4_xs.json)
 # bench: POST /v1/chat/completions, the two prompts above, max_tokens 512;
-# read decode tok/s from strata-unsloth-ud-iq4_xs.log ("strata serve: prompt ...")
+# read decode tok/s from nostroma-unsloth-ud-iq4_xs.log ("nostroma serve: prompt ...")
 ```
 
 Trial logs: [bench.log](bench.log) (startup + bench lines + decode timing), config:
-[strata-unsloth-ud-iq4_xs.json](strata-unsloth-ud-iq4_xs.json).
+[nostroma-unsloth-ud-iq4_xs.json](nostroma-unsloth-ud-iq4_xs.json).

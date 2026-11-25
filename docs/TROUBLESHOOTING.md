@@ -19,11 +19,11 @@ nostroma launch --status
 Open the installed Nostroma app, or run `nostroma launch`. Those wrappers are in the source repository and are not the
 startup path for the app. For a fresh desktop install, download the one installer for your system
 (`Nostroma-0.2.15-windows-x64-setup.exe`, `Nostroma-0.2.15-linux-x86_64.AppImage` or `Nostroma-0.2.15-macos-arm64.dmg`), not a
-`strata-engine-…` archive.
+`nostroma-engine-…` archive.
 
 **`nostroma` is not found.**
 On Windows, open a new PowerShell window after installing. On Linux or Mac, use the full path the installer printed,
-normally `~/.local/bin/strata`, and add `~/.local/bin` to PATH if needed. Check `nostroma --version`.
+normally `~/.local/bin/nostroma`, and add `~/.local/bin` to PATH if needed. Check `nostroma --version`.
 
 **A warning says Nostroma "couldn't find an engine for this computer".**
 The engine is the part that talks to your graphics card. Nostroma only warns and still downloads the model, and the model
@@ -101,7 +101,7 @@ checkout uses `START-HERE.bat` / `./setup.sh` to resume source setup; it continu
 **Setup says the engine does not match GitHub's checksum.**
 Setup checks the downloaded ready-made engine against the SHA-256 GitHub publishes. On a mismatch the file is corrupt or
 was changed on the way, so setup deletes it and stops; run `nostroma install` again to download it afresh. If GitHub gives no checksum
-(offline, rate limited, your own mirror), setup warns and installs anyway. `STRATA_SKIP_SHA256=1` skips the check, only if
+(offline, rate limited, your own mirror), setup warns and installs anyway. `NOSTROMA_SKIP_SHA256=1` skips the check, only if
 you insist.
 
 **The engine stops at the start with no line in its log, and the error says `the engine process ended: ...`.**
@@ -117,8 +117,8 @@ cache. Watch progress and the engine log. If memory pressure is high, close memo
 smaller model or context.
 Started from Task Scheduler, a start can be 24x slower: see [Running it at startup](DETAILS.md#running-it-at-startup-task-scheduler).
 On Linux the engine asks the kernel to read the model files ahead (a cold start went from ~920 s to 70 s on one PC);
-`STRATA_READ_AHEAD=0` turns that off. With transparent huge pages on `always`, the arena does not ask for `MADV_HUGEPAGE`
-on top (a fragmented machine spent minutes compacting memory, #771); `STRATA_NO_ARENA_THP=1` skips that request on any setting.
+`NOSTROMA_READ_AHEAD=0` turns that off. With transparent huge pages on `always`, the arena does not ask for `MADV_HUGEPAGE`
+on top (a fragmented machine spent minutes compacting memory, #771); `NOSTROMA_NO_ARENA_THP=1` skips that request on any setting.
 
 **The NVIDIA driver is too old.**
 Use the driver required by the engine package. CUDA 13 needs driver 580 or newer; older cards use the
@@ -142,11 +142,11 @@ it off for one model: in the app, the model's Drafting setting in Expert setting
 nostroma launch --family qwen --model q2_0 --context 32k --mtp off
 ```
 
-(older Terminals: `--set mtp=off --set spec-min-p=off`); by hand, add `"mtp": false` to the model's `strata-<model>.json`.
+(older Terminals: `--set mtp=off --set spec-min-p=off`); by hand, add `"mtp": false` to the model's `nostroma-<model>.json`.
 The choice is kept per model and applied on every start. Use `--restart` if replacing an active run. Also try a smaller
 pack or context. Keep some VRAM free for the display; setting the reserve to zero is not a general speed fix.
 
-**I changed `strata-<model>.json` by hand and the change came back.**
+**I changed `nostroma-<model>.json` by hand and the change came back.**
 Engine options you add to `args` by hand (control vectors, `--spec`, `--vram-reserve-mib 0`, anything the app does not offer)
 are kept. The file has two helper keys for this. `user_args` lists your options; every start and every setup run puts them
 over the ones the app generates, and for the same option your value wins. `args_written` is a copy of `args` as the app last
@@ -157,7 +157,7 @@ supported overrides.
 
 Two things the app still chooses itself: the context size, KV type, picture reading and draft layer. Set them in the Models
 screen or with the matching `nostroma launch` flags, or `"mtp": false` (draft layer). The app keeps the earlier file as
-`strata-<model>.json.bak`. Inspect the effective config rather than assuming a saved preference was applied.
+`nostroma-<model>.json.bak`. Inspect the effective config rather than assuming a saved preference was applied.
 
 **The app keeps more graphics memory free than I want (decode is slower than in 0.1.45).**
 Without a value of yours the app keeps graphics memory free for the desktop: 1536 MiB on a card of 16 GB or less that drives
@@ -177,14 +177,14 @@ wherever a model can read them, and `--vision off` (source setup: `--vision no`)
 optional [image generation](IMAGES.md). The reader runs on the CPU under 24 GB of graphics memory and on the card from
 24 GB, on NVIDIA and AMD cards. Pictures that take several seconds (about 3 s at 300 image tokens on 8 cores, more with more
 tokens) are read by the encoder on the CPU; `--vision gpu` (NVIDIA and AMD, ~1.4 GB of VRAM) makes it 0.1-0.5 s. On AMD the
-card's reader is `strata-vision-hip`; if it cannot start, the server prints "the GPU picture reader did not start (...);
+card's reader is `nostroma-vision-hip`; if it cannot start, the server prints "the GPU picture reader did not start (...);
 pictures are read on the CPU" and goes on with the CPU reader. On a Mac the reader runs on the GPU; `--vision cpu` takes
 about 50 s per picture there. On Intel Arc the CPU reader is the default. The model, backend and installed engine package
 must include a compatible picture reader; inspect the startup error and the model guide.
 
 **"Windows blocked the Nostroma engine (or the image encoder) ... Smart App Control".**
-On a clean Windows 11, Smart App Control refuses programs that are not signed, and Nostroma's `strata.exe` and
-`strata-vision.exe` are not signed yet (#735). Verify that the file is from the official release and that the message names
+On a clean Windows 11, Smart App Control refuses programs that are not signed, and Nostroma's `nostroma.exe` and
+`nostroma-vision.exe` are not signed yet (#735). Verify that the file is from the official release and that the message names
 a Nostroma component. The choices are to turn Smart App Control off (Windows Security > App & browser control > Smart App
 Control settings; it cannot be turned back on without a reset of Windows) or, if only the image encoder is blocked, to run
 without pictures: `nostroma launch --vision off` (source checkout: `START-HERE.bat --setup --vision no`), which lets text
@@ -213,7 +213,7 @@ carries Python; a missing system Python is not a reason to install a compiler fo
   `CXX=g++-14 ./setup.sh` (CC, CXX and CUDAHOSTCXX name the build's compilers; setup passes them to CMake itself,
   so an already-configured build folder picks them up too, #1645).
 - glibc 2.43 with CUDA 12.9: the toolkit's math headers clash with glibc's, already in CMake's first test compile.
-  Use CUDA 12.8 or 13.x instead. Setup takes the newest toolkit it finds; `STRATA_NVCC=/usr/local/cuda-12.8/bin/nvcc
+  Use CUDA 12.8 or 13.x instead. Setup takes the newest toolkit it finds; `NOSTROMA_NVCC=/usr/local/cuda-12.8/bin/nvcc
   ./setup.sh` makes it use that one (only that one).
 
 ## While it answers
@@ -246,10 +246,10 @@ rated speed (enable EXPO/XMP in the BIOS) slows the CPU half.
 
 **An earlier reply that came back empty is gone from the chat history (0.1.40, #843).**
 The server leaves out finished assistant turns that have no text, so the next reply does not copy the empty ones.
-`STRATA_KEEP_EMPTY_TURNS=1` in the server's environment renders them as before.
+`NOSTROMA_KEEP_EMPTY_TURNS=1` in the server's environment renders them as before.
 
 **A Turing card (RTX 20) reads prompts above ~90K tokens differently (0.1.40, #743).**
-The prompt's top-k selection takes a wider kernel there, with the same ids. `STRATA_TOPK_STREAM=0` restores the old one.
+The prompt's top-k selection takes a wider kernel there, with the same ids. `NOSTROMA_TOPK_STREAM=0` restores the old one.
 
 **Decode is several times slower with `--expert-cache N` than with `auto` (#781, #831).**
 An explicit N is a byte budget that is not checked against the free VRAM once the slots are written. On a card it
@@ -257,7 +257,7 @@ fills (the log says `0 MiB of VRAM free with everything loaded - LOW`), Windows 
 from 100 to 14 tok/s with only a few hundred slots too many. Use `--expert-cache auto`, or a smaller N.
 
 **A low-RAM PC (about 32 GB) stalls with `--resident-budget-gib N` (#649).**
-The budget is pinned (locked) in RAM, which leaves the OS and the CPU workers little room. `STRATA_RESIDENT_PIN=0` keeps
+The budget is pinned (locked) in RAM, which leaves the OS and the CPU workers little room. `NOSTROMA_RESIDENT_PIN=0` keeps
 it pageable (also the RAM copy the engine makes on its own when the expert arena does not fit); a smaller budget works too.
 
 **Decode got slower in 0.1.40 on a 32 GB PC with `--resident-budget-gib N`, and the drive is read hard (#1194, #1116, #1085).**
@@ -265,7 +265,7 @@ The start line "the file tier reads unbuffered" means the experts outside the RA
 0.1.40 chose that whenever the free RAM could not hold all of them; but the same few come back token after token, and
 a cache a twentieth of their size serves most of the repeats. 0.1.40.2 asks for that much (at least 1.5 GiB beside the
 4 GiB headroom) and reads through the cache otherwise, which measured 7% to 118% faster decode with a third to a sixth of
-the drive traffic on a 20 to 32 GB box. On 0.1.40 / 0.1.40.1: `STRATA_UNBUFFERED_LOAD=0` does the same, `=1` forces the
+the drive traffic on a 20 to 32 GB box. On 0.1.40 / 0.1.40.1: `NOSTROMA_UNBUFFERED_LOAD=0` does the same, `=1` forces the
 unbuffered reads.
 
 **Linux: the start is OOM-killed while the engine allocates the page-locked expert copy (#1250).**
@@ -275,8 +275,8 @@ gives back the cached pages of the model files it mapped before it page-locks th
 does not cover it, it takes the pages in 1 GiB steps while the RAM available (cgroup limits included) stays above the
 headroom, page-locks what it has, and keeps the rest resident but pageable with a warning ("only N of M GiB could be
 page-locked"): the answers are the same, only the copies of the pageable part to the GPU go through the CPU.
-`STRATA_PIN_GUARD=0` turns this off, `STRATA_PIN_RESERVE_GIB=N` sets the RAM that must stay free (default:
-`STRATA_RESIDENT_HEADROOM_GIB`, 4 GiB).
+`NOSTROMA_PIN_GUARD=0` turns this off, `NOSTROMA_PIN_RESERVE_GIB=N` sets the RAM that must stay free (default:
+`NOSTROMA_RESIDENT_HEADROOM_GIB`, 4 GiB).
 
 **The Windows display driver resets, then the PC blue-screens (0x141, then 0x116 in `nvlddmkm`) during an answer (#961).**
 This is the NVIDIA driver, not Nostroma: the report shows the same wedge with other CUDA programs on that driver (610.88,
@@ -287,7 +287,7 @@ more and cannot turn speculation off).
 **An RTX 50 card (a source build with CUDA 13.2) answers with nonsense, or reads prompts wrongly (#892, #968).**
 CUDA 13.2.0 and 13.2.1's compiler (nvcc 13.2.51) miscompile some of the engine's kernels for sm_120: on our RTX 5070 the IQ2_S and IQ3_S
 products are wrong (relative error 0.5 to 1.0 in the tests) with 13.2 and right with 13.0. The ready-made engine is built
-with 13.0. If you compile it yourself, use CUDA 13.0, 13.1 or 13.2.2 (13.2.2, nvcc build 13.2.86, fixes it; an older one can sit next to a newer: `STRATA_NVCC=<path to its nvcc>`);
+with 13.0. If you compile it yourself, use CUDA 13.0, 13.1 or 13.2.2 (13.2.2, nvcc build 13.2.86, fixes it; an older one can sit next to a newer: `NOSTROMA_NVCC=<path to its nvcc>`);
 setup warns when it finds 13.2.0 or 13.2.1 for such a card, and takes an older 13.x when one is installed.
 
 ## AMD cards
@@ -305,7 +305,7 @@ architecture.
 Two things in your environment can cause it, and the server repairs both before it starts the engine (it says so in
 the log): `HIP_PATH`, `HIP_DEVICE_LIB_PATH` or `LLVM_PATH` naming a ROCm folder that no longer exists (a deleted build),
 and a `TEMP`/`TMP` folder the engine cannot create files in (AMD's runtime compiles its first kernels through temporary
-files). If you start `strata.exe` by hand, fix them yourself: `set HIP_PATH=`, and point `TEMP` and `TMP` at a normal
+files). If you start `nostroma.exe` by hand, fix them yourself: `set HIP_PATH=`, and point `TEMP` and `TMP` at a normal
 folder such as `C:\Temp`.
 
 **Windows AMD: the driver resets (VIDEO_ENGINE_TIMEOUT_DETECTED / screen flicker / the engine dies mid-answer).**
@@ -314,15 +314,15 @@ flickers, the engine dies, and the Event Viewer shows `VIDEO_ENGINE_TIMEOUT_DETE
 Linux). Nostroma 0.1.39 and newer say "the GPU stopped responding" in the log. It was seen with KV streaming on
 (`--kv-resident 32768`, which setup turns on from 64K context) while reading a long prompt on a gfx1201 card. Try these
 in order, one at a time, and tell us what changed:
-1. **Send us the evidence.** The last ~80 lines of the engine log (`strata-<model>.log` in the Nostroma folder of a source checkout; the server window
+1. **Send us the evidence.** The last ~80 lines of the engine log (`nostroma-<model>.log` in the Nostroma folder of a source checkout; the server window
    shows the same lines), your AMD driver version (AMD Software > System), your card and Windows version, the Nostroma
    version, and the exact steps (context size, how long the prompt was, which app sent it). If Windows wrote a
    dump, the newest `.dmp` in `C:\Windows\LiveKernelReports\WATCHDOG` (or `C:\Windows\Minidump`) helps; it holds no
    chats, only the driver state.
-2. **Find the step that hangs:** add `"STRATA_PF_STEP_SYNC": "1"` to the `"env"` block of the model's run config (`strata-<model>.json`
+2. **Find the step that hangs:** add `"NOSTROMA_PF_STEP_SYNC": "1"` to the `"env"` block of the model's run config (`nostroma-<model>.json`
    in a source checkout) and restart. The prompt path then waits for the GPU after each step and logs any step over 250 ms, so the log names
    the step. It is slower; use it to diagnose, then take it out.
-3. **`"STRATA_KV_HOST_DMA": "1"`** in the same `"env"` block: no GPU kernel writes the RAM copy of the K/V during a
+3. **`"NOSTROMA_KV_HOST_DMA": "1"`** in the same `"env"` block: no GPU kernel writes the RAM copy of the K/V during a
    prompt, it is copied by DMA instead. Same answers. On AMD and Intel Arc this is off until you set it. NVIDIA cards do it by
    default; setting it to `"0"` there goes back to the earlier way of writing.
 4. **No KV streaming:** run `nostroma install` and pick 32K context (or remove `--kv-resident` and its number from
@@ -357,14 +357,14 @@ overwrite local branches or edits just to make `git pull` succeed.
 
 **Sending logs for a bug report.**
 - **App:** Settings → Engine → Diagnostics → View logs → Save logs. It writes one text file,
-  `strata-diagnostics-<date>.txt`, into your Downloads folder and shows where. It holds the engine's messages, the failed
+  `nostroma-diagnostics-<date>.txt`, into your Downloads folder and shows where. It holds the engine's messages, the failed
   steps and the end of each model's server log.
 - **Terminal:** include `nostroma --version`, `nostroma doctor --live`, `nostroma launch --status`, and the relevant log excerpt.
 - **Windows app crash:** if the app closes right after you start it, it shows a message with the reason and writes
   `desktop-crash-<date>.log` in `%LOCALAPPDATA%\Nostroma\logs`; Save logs includes it, and so can you, by hand.
 - **Linux app crash:** if the window crashes or will not open, run the AppImage with `--save-logs` in a terminal; it writes
   the crash log and the other logs to one file in Downloads.
-- **Installer or source checkout:** `strata-<model>.log` from the Nostroma folder.
+- **Installer or source checkout:** `nostroma-<model>.log` from the Nostroma folder.
 
 Look through a log before you send it, and never send an API key. Include model and quantization, OS, GPU/VRAM, RAM,
 driver, install route (app, Terminal or the installer), Nostroma and engine versions, exact command, expected result and

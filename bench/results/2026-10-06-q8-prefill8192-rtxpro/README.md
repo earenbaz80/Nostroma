@@ -1,6 +1,6 @@
 # Q8 prefill: 6.7x faster with 8,192-token chunks
 
-**Unmodified Strata v0.1.40, Unsloth Qwen3.8-Flash-Next Q8_0, RTX PRO 6000
+**Unmodified Nostroma v0.1.40, Unsloth Qwen3.8-Flash-Next Q8_0, RTX PRO 6000
 Blackwell Workstation Edition 96 GB, Ryzen 9 7950X, 128 GB RAM.** GPU power
 limit: 400 W. Measured 2026-10-06.
 
@@ -56,7 +56,7 @@ sudo prlimit --pid $$ --memlock=unlimited:unlimited
 python configs/rtxpro-q8-prefill8192/launch.py --serve
 ```
 
-The launcher clears inherited Strata experiment variables and sets the recorded
+The launcher clears inherited Nostroma experiment variables and sets the recorded
 environment. The benchmark overrides EOS to force 1,024 outputs; the runtime
 example keeps normal stopping.
 

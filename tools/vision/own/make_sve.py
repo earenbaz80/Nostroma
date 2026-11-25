@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Runs one strata-vision reader over pictures and keeps the embeddings: <out dir>/<picture name>.sve.
+"""Runs one nostroma-vision reader over pictures and keeps the embeddings: <out dir>/<picture name>.sve.
 
-    python3 make_sve.py --helper <strata-vision> --mmproj <mmproj.gguf> --model <text model or x> --tower own|mtmd [--gpu] [--max-tokens 1024] [--threads N]
+    python3 make_sve.py --helper <nostroma-vision> --mmproj <mmproj.gguf> --model <text model or x> --tower own|mtmd [--gpu] [--max-tokens 1024] [--threads N]
                         [--env NAME=VALUE ...] --out <dir> <image> [<image> ...]
-Used to make the embedding sets the answers runs read (for instance our tower with STRATA_VIT_REF_ROUND=1).  Standard library only.
+Used to make the embedding sets the answers runs read (for instance our tower with NOSTROMA_VIT_REF_ROUND=1).  Standard library only.
 """
 import argparse
 import os

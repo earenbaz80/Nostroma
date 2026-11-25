@@ -17,7 +17,7 @@ plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 11,
                     "axes.spines.left": False, "axes.spines.bottom": False,
                     "svg.fonttype": "none", "svg.hashsalt": "q8-prefill8192"})
 fig = plt.figure(figsize=(14, 7.8), facecolor="#f7f9fc")
-fig.text(.04, .954, "NATIVE STRATA 0.1.40 / Q8_0 CONFIGURATION EXPERIMENT",
+fig.text(.04, .954, "NATIVE NOSTROMA 0.1.40 / Q8_0 CONFIGURATION EXPERIMENT",
          fontsize=10, fontweight="bold", color=colors["chunk8192"])
 fig.text(.04, .901, "6.7× faster Q8 prefill", fontsize=31, fontweight="bold")
 fig.text(.04, .862, "1,024 → 8,192-token chunks · Same model and expert cache · FP16 KV · MTP T4",

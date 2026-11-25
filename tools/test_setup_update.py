@@ -24,7 +24,7 @@ class Update(unittest.TestCase):
     def config(self, d: Path, **extra) -> Path:
         rt = d / "mtp" / "rt"
         rt.mkdir(parents=True)
-        p = d / "strata-iq3_s.json"
+        p = d / "nostroma-iq3_s.json"
         p.write_text(json.dumps({"model_name": "Qwen IQ3_S", "exe": str(d / "engine" / setup.EXE),
                                  "args": ["--native", "x", "--mtp", str(rt)], **extra}), encoding="utf-8")
         return p
@@ -82,17 +82,17 @@ class Update(unittest.TestCase):
         self.assertIn("START-HERE.bat", out)
 
     def test_a_json_that_is_no_model_config_is_skipped(self):
-        """#549: a strata-*.json without "args" (not written by setup) stopped update.sh with KeyError: 'args'."""
+        """#549: a nostroma-*.json without "args" (not written by setup) stopped update.sh with KeyError: 'args'."""
         with tempfile.TemporaryDirectory() as d:
             p = self.config(Path(d))
-            other = Path(d) / "strata-notes.json"
+            other = Path(d) / "nostroma-notes.json"
             other.write_text(json.dumps({"note": "mine"}), encoding="utf-8")
-            broken = Path(d) / "strata-cut.json"
+            broken = Path(d) / "nostroma-cut.json"
             broken.write_text("{\"args\": [", encoding="utf-8")
             rc, pip, eng, dv, start, call, out = self.run_update([other, broken, p])
         self.assertEqual(rc, 0, out)
-        self.assertIn('skipped strata-notes.json (no "exe" or "args"): it is not a Nostroma model config', out)
-        self.assertIn("skipped strata-cut.json (not valid JSON)", out)
+        self.assertIn('skipped nostroma-notes.json (no "exe" or "args"): it is not a Nostroma model config', out)
+        self.assertIn("skipped nostroma-cut.json (not valid JSON)", out)
         dv.assert_called_once()                                     # the real model is still refreshed
         self.assertIn("Qwen IQ3_S: up to date", out)
         self.assertIn("Nostroma is updated", out)
@@ -100,7 +100,7 @@ class Update(unittest.TestCase):
     def test_installed_configs_lists_only_model_configs(self):
         with tempfile.TemporaryDirectory() as d:
             p = self.config(Path(d))
-            (Path(d) / "strata-notes.json").write_text("{}", encoding="utf-8")
+            (Path(d) / "nostroma-notes.json").write_text("{}", encoding="utf-8")
             with mock.patch.object(setup, "ROOT", Path(d)), contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(setup.installed_configs(), [p])
 
@@ -120,10 +120,10 @@ class Update(unittest.TestCase):
 
 class SettingsLine(unittest.TestCase):
     """#564: a start prints the settings it uses (the engine options without the model's paths, and the server's
-    fields), so a change made by hand to strata-<model>.json shows without reading the log."""
+    fields), so a change made by hand to nostroma-<model>.json shows without reading the log."""
 
     CFG = {"exe": "x", "host": "0.0.0.0", "port": 8081, "api_key": "secret", "gpu": [0, 1], "fit_max_tokens": True,
-           "args": ["--native", "E:\\Strata\\packs\\iq3_s", "--mtp", "/s/mtp/rt", "m.gguf", "--kv", "int8",
+           "args": ["--native", "E:\\Nostroma\\packs\\iq3_s", "--mtp", "/s/mtp/rt", "m.gguf", "--kv", "int8",
                     "--kv-resident", "32768", "--spec-min-p", "0.5", "--vram-reserve-mib", "2048", "--mmap-experts",
                     "--prefill", "auto"]}
 
@@ -136,9 +136,9 @@ class SettingsLine(unittest.TestCase):
 
     def test_a_start_prints_it(self):
         with tempfile.TemporaryDirectory() as d:
-            exe = Path(d) / "strata.exe"
+            exe = Path(d) / "nostroma.exe"
             exe.write_bytes(b"")
-            p = Path(d) / "strata-iq3_s.json"
+            p = Path(d) / "nostroma-iq3_s.json"
             args = [x for x in self.CFG["args"] if x != "m.gguf"]           # no model file here
             p.write_text(json.dumps({**self.CFG, "exe": str(exe), "gpu": 0, "args": args}), encoding="utf-8")
             out = io.StringIO()
@@ -149,7 +149,7 @@ class SettingsLine(unittest.TestCase):
                     contextlib.redirect_stdout(out):
                 setup.start(p, None, open_browser=False, yes=True)
         text = " ".join(out.getvalue().split())
-        self.assertIn("Settings (strata-iq3_s.json): --kv int8 --kv-resident 32768", text)
+        self.assertIn("Settings (nostroma-iq3_s.json): --kv int8 --kv-resident 32768", text)
         self.assertIn("--vram-reserve-mib 2048", text)
 
 

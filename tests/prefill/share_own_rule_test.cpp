@@ -1,14 +1,14 @@
-// share_layer_keeps_own_kernels (include/strata/prefill/share_own_rule.hpp): a layer whose CPU share took experts keeps the staged fused entry and the int8 kernels for the GPU's own
+// share_layer_keeps_own_kernels (include/nostroma/prefill/share_own_rule.hpp): a layer whose CPU share took experts keeps the staged fused entry and the int8 kernels for the GPU's own
 // experts in a build without MMQ, and leaves them (as before) in a build with MMQ.  No GPU, no model.
 #include <cstdint>
 #include <cstdio>
 #include <initializer_list>
 
-#include "strata/prefill/share_own_rule.hpp"
+#include "nostroma/prefill/share_own_rule.hpp"
 
-using strata::prefill::share_layer_keeps_own_kernels;
-using strata::prefill::share_own_off;
-using strata::prefill::share_own_switch;
+using nostroma::prefill::share_layer_keeps_own_kernels;
+using nostroma::prefill::share_own_off;
+using nostroma::prefill::share_own_switch;
 
 static int failed = 0;
 #define CHECK(x) do { if (!(x)) { std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #x); ++failed; } } while (0)

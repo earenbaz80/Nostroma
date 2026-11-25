@@ -29,7 +29,7 @@ Choose a model that fits the combined memory. A split can add capacity without a
 | `--layer-split auto` | The default. Or the first layer of each later card, for example `18` or `16,32`. |
 | `--gpu-roles 1=main,0=helper` | Roles, saved. |
 
-Or edit an existing run config (`strata-*.json`) and restart. Merge these fields into the config; this is not a complete config:
+Or edit an existing run config (`nostroma-*.json`) and restart. Merge these fields into the config; this is not a complete config:
 
 ```json
 {
@@ -134,7 +134,7 @@ order under `auto` as well. The log line `layer split: card order ...` says when
 each card owns at least its share of the layers by its room for experts. The log line says which rule chose the split. Prefill
 that stays flat from 4K to 16K tokens is the sign of an idle card. On an unequal pair, sweep `"layer_split"` once, because a
 4K-only benchmark cannot see it. On x16 plus x4 rigs the link-miss scaling can move `auto` off the balanced placement;
-`STRATA_SPLIT_UNIFORM=1` (with `"gpu_order": "as_given"`) prices every link the same.
+`NOSTROMA_SPLIT_UNIFORM=1` (with `"gpu_order": "as_given"`) prices every link the same.
 
 ## Tuning options
 
@@ -144,14 +144,14 @@ restart. Defaults are off unless the table says otherwise.
 | Setting | What it does | Notes |
 | --- | --- | --- |
 | `"split_skip_if_fits": true` (flag `--split-skip-if-fits`) | Runs on the first card alone when it holds every profiled expert plus the context's KV, the draft layer and the reserve. Otherwise the split stays. | Opt-in. Needs `--layer-split auto`. |
-| `STRATA_SPLIT_OWN=1` or `auto` | Gives every card its own prompt buffers. `auto` does it only where the buffers are at most 12% of each card's VRAM. | Output differs from the default's (stable and coherent). |
-| `STRATA_PREFILL_HELP=1` | The idle card computes a share of the streamed experts of a one-chunk prompt. `STRATA_PREFILL_HELP_FRAC=f` fixes the share. | Helps prompts up to about 3.3K tokens on slow links only; not bit-identical; native packs on the MMQ prompt path only. |
-| `STRATA_SPLIT_MTP_BATCH=1` | The last card fills the draft layer's prompt K/V in batches, as on one card. | Needs a `--native` pack and a paged or ring draft K/V; says why once if it declines. |
+| `NOSTROMA_SPLIT_OWN=1` or `auto` | Gives every card its own prompt buffers. `auto` does it only where the buffers are at most 12% of each card's VRAM. | Output differs from the default's (stable and coherent). |
+| `NOSTROMA_PREFILL_HELP=1` | The idle card computes a share of the streamed experts of a one-chunk prompt. `NOSTROMA_PREFILL_HELP_FRAC=f` fixes the share. | Helps prompts up to about 3.3K tokens on slow links only; not bit-identical; native packs on the MMQ prompt path only. |
+| `NOSTROMA_SPLIT_MTP_BATCH=1` | The last card fills the draft layer's prompt K/V in batches, as on one card. | Needs a `--native` pack and a paged or ring draft K/V; says why once if it declines. |
 | `--vram-reserve-later-mib N` | A separate VRAM reserve for the later cards (default: `--vram-reserve-mib`). Use it when the display sits on the last card. | `--vram-reserve-mib 300 --vram-reserve-later-mib 1800` gives the first card that VRAM. |
-| `--prefill-pipe R` (or `STRATA_PREFILL_PIPE=R`) | Reads each prompt in the chunk count with the least pipeline time for b/a = R tokens. `1` evens out today's chunk count. | Opt-in. `./setup.sh --calibrate` measures it per PC and writes it to the config. |
-| `STRATA_SPLIT_RING=N` | Sets the prompt path's streamed ring to N slots (`0`: the pinned-share rule). A split uses 96 when at least 75% of the (layer, expert) pairs sit in some card's cache. | The startup line `lend sizing: ...` shows the result. |
-| `STRATA_SPLIT_CHUNK16K=1` | Keeps the 16384-token auto chunk on AMD gfx12 splits (default 8192). | |
-| `STRATA_SPLIT_OVERLAP=1` | Overlapped hand-off between stages on different cards. | Helps AMD; no gain on NVIDIA. See [below](#overlapped-hand-off). |
+| `--prefill-pipe R` (or `NOSTROMA_PREFILL_PIPE=R`) | Reads each prompt in the chunk count with the least pipeline time for b/a = R tokens. `1` evens out today's chunk count. | Opt-in. `./setup.sh --calibrate` measures it per PC and writes it to the config. |
+| `NOSTROMA_SPLIT_RING=N` | Sets the prompt path's streamed ring to N slots (`0`: the pinned-share rule). A split uses 96 when at least 75% of the (layer, expert) pairs sit in some card's cache. | The startup line `lend sizing: ...` shows the result. |
+| `NOSTROMA_SPLIT_CHUNK16K=1` | Keeps the 16384-token auto chunk on AMD gfx12 splits (default 8192). | |
+| `NOSTROMA_SPLIT_OVERLAP=1` | Overlapped hand-off between stages on different cards. | Helps AMD; no gain on NVIDIA. See [below](#overlapped-hand-off). |
 | `--split-device D1[,D2..]` | The later stages' devices (default: the next visible ones). `--layer-split K --split-device 0` runs both stages on one card; a bit-exact hand-off check, not a speed mode. | |
 
 **The resident RAM mode works on a split.** `--resident-experts` (the low-RAM mode) leaves out of the RAM copy the experts any
@@ -160,20 +160,20 @@ card's cache holds. An adaptive swap copies the evicted expert back into RAM fro
 split's greedy output is the same in either mode.
 
 **Under WDDM (Windows and WSL2)** only 8 GiB of the expert arena is pinned on a multi-GPU run; the rest streams through the
-pinned staging ring. Linux pins the whole arena. `STRATA_ARENA_PIN_GIB=N` pins at most N GiB, `0` the whole arena, on any OS.
+pinned staging ring. Linux pins the whole arena. `NOSTROMA_ARENA_PIN_GIB=N` pins at most N GiB, `0` the whole arena, on any OS.
 
 ### Turning a default off
 
 | Setting | What it does | Notes |
 | --- | --- | --- |
-| `STRATA_STAGE_TRIM=0` (or `--no-trim-stage-weights`) | Every card of a layer split keeps the dense weights of all the layers, as before. By default each card, explicit split or `auto`, loads only its own layers' dense weights and the freed VRAM goes to its expert cache. | Output can differ slightly from the default, which caches more experts. |
+| `NOSTROMA_STAGE_TRIM=0` (or `--no-trim-stage-weights`) | Every card of a layer split keeps the dense weights of all the layers, as before. By default each card, explicit split or `auto`, loads only its own layers' dense weights and the freed VRAM goes to its expert cache. | Output can differ slightly from the default, which caches more experts. |
 
 ### Overlapped hand-off
 
-By default each verify window runs the stages one after another. `STRATA_SPLIT_OVERLAP=1` (stages on different cards only) gives
+By default each verify window runs the stages one after another. `NOSTROMA_SPLIT_OVERLAP=1` (stages on different cards only) gives
 the hand-off a ready flag, so the next stage's graph is launched while the earlier stage still runs and waits on the flag on
 its GPU. It takes one stream sync and one graph launch per window off the critical path. Batch windows keep the serial order, and
-it is off beside `--pipeline-windows`. The wait is bounded by `STRATA_SPLIT_WAIT_MS` (default 30000, `0` = no bound); on timeout
+it is off beside `--pipeline-windows`. The wait is bounded by `NOSTROMA_SPLIT_WAIT_MS` (default 30000, `0` = no bound); on timeout
 the window fails with an error naming the setting and the server restarts the engine.
 
 ## Pipeline windows
@@ -185,12 +185,12 @@ tokens. The tokens are the serial loop's, up to CPU rounding.
 
 - **Default:** on for AMD RDNA4 (gfx1200 / gfx1201) with `--serve`, the draft layer, and a split of two or more stages when the
   drafter can sit on the first card, otherwise three or more. The log says "is on by default for a layer split of N stages".
-  `--pipeline-windows 0` or `STRATA_PIPELINE_AUTO=0` turns it off. NVIDIA builds keep it opt-in (`--pipeline-windows 2`).
+  `--pipeline-windows 0` or `NOSTROMA_PIPELINE_AUTO=0` turns it off. NVIDIA builds keep it opt-in (`--pipeline-windows 2`).
   The Intel Arc engine turns it on for exactly two Arc B-series (Battlemage) cards, with `--serve` and the draft layer (`--spec 2`
   or more): on 2x Arc Pro B65 decode is 17% to 23% faster, and setup writes `--spec 2` for those cards ([INTEL_ARC.md](INTEL_ARC.md)).
   It runs exactly two cards, so one card, Arc A-series cards and three or more cards stay serial.
 - **Draft layer placement:** with the pipeline on, the draft layer loads on the first card, whose window has finished when the
-  chain starts. `STRATA_MTP_STAGE0=0` keeps the old place.
+  chain starts. `NOSTROMA_MTP_STAGE0=0` keeps the old place.
 - **Off, with one log line saying why:** `--batch` slots, `--peer-device`, the helper caches (`--expert-cache-device1..3`, which
   `--remote-expert-opt` builds on), a split onto one GPU, no draft layer, and on three or more stages `--pipeline-windows 1` and
   `--adapt-async 1`. A request with repetition penalties or coupled draft sampling decodes serially.
@@ -199,7 +199,7 @@ tokens. The tokens are the serial loop's, up to CPU rounding.
 - **Config:** `"args": [ ..., "--pipeline-windows", "2" ]` with `"layer_split": "20"`.
 
 `--remote-expert-opt` does something only with a helper cache; on a plain layer split it is inert.
-The `STRATA_PIPELINE_*` tuning and test variables are read only with `STRATA_PIPELINE_DEBUG=1`.
+The `NOSTROMA_PIPELINE_*` tuning and test variables are read only with `NOSTROMA_PIPELINE_DEBUG=1`.
 
 ## Two models on two cards
 
@@ -220,16 +220,16 @@ number of requests are never changed; the cost is speed. A card with room never 
 greedy answers as before (5 of 5 hashes); a card that holds only part of them has a cache 256 MiB smaller (the last paragraph), which can change the last bits.
 
 1. **Trim**: a card that is too short for a full copy of the dense weights loads only the weights of its own layers (`--trim-stage-weights`, bit-exact in itself). Under `auto`
-   the split is then chosen from what each card has free, so every card gets the same cache bytes per layer. `STRATA_STAGE_TRIM=0` keeps the copies.
+   the split is then chosen from what each card has free, so every card gets the same cache bytes per layer. `NOSTROMA_STAGE_TRIM=0` keeps the copies.
 2. **KV window**: when no placement can start the prompt path, the search runs again with 20480, 8192, then 4096 cells of the KV window in VRAM (the rest streams from RAM).
-3. **Drafter**: the draft layer (or DFlash2) is dropped on the card that holds it when that card cannot hold it and a working cache. `STRATA_MTP_KEEP=1` keeps it.
+3. **Drafter**: the draft layer (or DFlash2) is dropped on the card that holds it when that card cannot hold it and a working cache. `NOSTROMA_MTP_KEEP=1` keeps it.
 4. **Prompt buffers**: a stage whose cache cannot lend the prompt path a 256-token chunk keeps 16 slots behind the loan instead of 128; CUDA0 reads prompts with its own small buffers.
 5. **Head**: the output head moves to pinned host memory on the card that holds it (about 3x slower logits), only when the cache would otherwise have no room.
 6. **Fewer cards**: under `auto`, a card with under 3 GiB free is left out of the split, and so is the card with the least room when even the whole walk cannot pay for every
    layer on the cards that are left; with none left, the start is the single card's, with the rest of the experts in RAM.
 
 A later stage also keeps 256 MiB free for what it allocates after its cache (cuBLAS, the MMQ pool, as the single card has done since 0.2.7): two 16 GB cards used to start and then
-run out of memory in the first long prompt. `STRATA_SPILL_OFF=1` turns every step off; `STRATA_DEFAULTS=026` keeps the 0.2.6 reserve.
+run out of memory in the first long prompt. `NOSTROMA_SPILL_OFF=1` turns every step off; `NOSTROMA_DEFAULTS=026` keeps the 0.2.6 reserve.
 
 When a start still ends because a card ran out of memory, `nostroma launch` and the server repeat it once without a drafter (never with the MTP in place of DFlash2, which takes more
 memory), and the last line shown is the engine's own reason.
@@ -248,7 +248,7 @@ memory), and the last line shown is the engine's own reason.
   window and can make a good pair slower.
 - **The split pays most when the CPU pool is the bottleneck.** On two identical RTX 2080 Ti 22 GB over a dual-socket Xeon E5-2696 v4 (AVX2 only,
   88 logical CPUs), a plain split moved decode from 35.2 to 51.0 tok/s (+45%) and an 11.6K-token prompt from 672 to 908 tok/s (+35%) at 180 W,
-  engine 0.1.49, six 300-token coding prompts. `STRATA_DECODE_TIMING=1` shows why: the window fell from 70.06 to 37.96 ms, almost entirely
+  engine 0.1.49, six 300-token coding prompts. `NOSTROMA_DECODE_TIMING=1` shows why: the window fell from 70.06 to 37.96 ms, almost entirely
   because the CPU pool fell from 9.52 to 0.79 ms per window. The 5080 + 3090 measurement below, where decode with the second card is on par
   with the 5080 alone, was taken over a fast CPU (Ryzen 9 9950X3D). When the CPU pool is what the window waits on, moving half the layers to a
   second identical card removes that work. This is one pair of cards and one CPU, so there is no threshold, and the window breakdown from the
@@ -282,14 +282,14 @@ A third card (RTX 2080 Ti) made that pair slower: 68 / 90 tok/s decode.
 | Unequal pair, hand sweep of `"layer_split"` | 4060 Ti 16 GB + 3060 12 GB, IQ3_S | K=12/18/24/28/32: 582 / 693 / 762 / 802 / 803 prompt tok/s; the old rule chose K=3: 452 |
 | x16 + x4 link scaling | 2x RTX 3090, x16 + x4 | K=31: 114-119 tok/s decode, K=27: 130-136 |
 | `split_skip_if_fits` | R9700 32 GB + RX 9070 XT, Coder | 4K prompts 1,244 -> 1,776 tok/s, decode ~51 -> ~60; 16K prompts ~5% slower |
-| `STRATA_SPLIT_OWN=1` | R9700 + RX 9070 XT | 2K prompts 1,450 and 16K 2,227 tok/s (default 1,265 and 1,950) |
-| `STRATA_PREFILL_HELP=1` | 2x RTX 3090, UD-Q4_K_XL, no P2P | prompt tok/s without / with: 1.1K 496 / 723, 2K 878 / 1,128, 3K 1,260 / 1,440; 4K and 8K unchanged |
-| `STRATA_PREFILL_HELP=1` | 2x R9700 (16 GB each), Q2_0, PCIe 4.0 x16 | 700 tokens 638 -> 672; 1.5K 839 -> 809; 3K 1,105 -> 929; slower from 1.5K, so it stays off |
-| `STRATA_SPLIT_MTP_BATCH=1` | 2x RTX 3080 20 GB, Xeon E5-2696 v4, UD-Q4_K_XL, `--layer-split 23` | prompt read +6.7% at 25K, +4.3% at 51K, +3.3% at 104K; decode not shown unchanged (about 3% lower, within restart noise) |
-| `STRATA_STAGE_TRIM=1` | 2x MI50 16 GB, Coder | experts in VRAM 8,819 -> 10,626; decode 39.2 -> 41.7 tok/s |
+| `NOSTROMA_SPLIT_OWN=1` | R9700 + RX 9070 XT | 2K prompts 1,450 and 16K 2,227 tok/s (default 1,265 and 1,950) |
+| `NOSTROMA_PREFILL_HELP=1` | 2x RTX 3090, UD-Q4_K_XL, no P2P | prompt tok/s without / with: 1.1K 496 / 723, 2K 878 / 1,128, 3K 1,260 / 1,440; 4K and 8K unchanged |
+| `NOSTROMA_PREFILL_HELP=1` | 2x R9700 (16 GB each), Q2_0, PCIe 4.0 x16 | 700 tokens 638 -> 672; 1.5K 839 -> 809; 3K 1,105 -> 929; slower from 1.5K, so it stays off |
+| `NOSTROMA_SPLIT_MTP_BATCH=1` | 2x RTX 3080 20 GB, Xeon E5-2696 v4, UD-Q4_K_XL, `--layer-split 23` | prompt read +6.7% at 25K, +4.3% at 51K, +3.3% at 104K; decode not shown unchanged (about 3% lower, within restart noise) |
+| `NOSTROMA_STAGE_TRIM=1` | 2x MI50 16 GB, Coder | experts in VRAM 8,819 -> 10,626; decode 39.2 -> 41.7 tok/s |
 | Prompt chunk on a split, AMD gfx12 | 2x / 3x / 4x R9700 | 16K prompt +36% / +45% / +53%; 32K +18% / +21% / +29%; 64K +4% / +12% / +17% |
-| `STRATA_SPLIT_OVERLAP=1` | 2x RX 7900 XTX, Swift 1.5 IQ3_XXS, 128K, median of 8 | code decode 53 -> 70.1 tok/s (one card ~70); prose 45 -> 55.9 (one card ~68) |
-| `STRATA_SPLIT_OVERLAP=1` | 2x RTX A4000, IQ3_XXS | +0.3% story, +2.1% code, -0.3% facts, inside the noise |
+| `NOSTROMA_SPLIT_OVERLAP=1` | 2x RX 7900 XTX, Swift 1.5 IQ3_XXS, 128K, median of 8 | code decode 53 -> 70.1 tok/s (one card ~70); prose 45 -> 55.9 (one card ~68) |
+| `NOSTROMA_SPLIT_OVERLAP=1` | 2x RTX A4000, IQ3_XXS | +0.3% story, +2.1% code, -0.3% facts, inside the noise |
 | Two Tesla P40, layer split | community report, IQ2_XS (#1028), experimental | decode 19.6 tok/s on one card, 34.8 on both |
 
 **Resident RAM mode on a split.** Measured on: RTX 4060 Ti (layers 0-19) + RTX 5080 (20-47), i9-14900KF, 32 GB RAM, Windows 11,
@@ -331,5 +331,5 @@ cold 19.9K prompt; one run per arm (community report #1447, not repeated here).
 | setup defaults | 137.0 | 1,798 |
 | `--adapt-async 1` | 144.5 | 1,799 |
 | `--pipeline-windows 2` | 136.7 | 2,097 |
-| `STRATA_PF_FUSED=1` | 137.2 | 1,913 |
+| `NOSTROMA_PF_FUSED=1` | 137.2 | 1,913 |
 | pipeline-windows 2 + async + lag 2 + rotate + pf_fused | 142.0 | 2,302 |

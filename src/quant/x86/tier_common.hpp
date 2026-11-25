@@ -5,7 +5,7 @@
 // file compiled without those flags.
 #pragma once
 
-#define STRATA_QUANT_TABLES
+#define NOSTROMA_QUANT_TABLES
 #include "../internal.hpp"
 
 #include <immintrin.h>
@@ -17,14 +17,14 @@
 
 // Keeps a float product a separate rounded value, so the compiler cannot fuse it with the add that follows (where ggml-cpu's build does not).
 #if defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__))
-#define STRATA_NOFUSE(v) __asm__("" : "+x"(v))
+#define NOSTROMA_NOFUSE(v) __asm__("" : "+x"(v))
 #else
-#define STRATA_NOFUSE(v) (void) (v)   // MSVC: checked by the Windows run of tests/quant/quant_parity (RESULTS-OWN-2A.md)
+#define NOSTROMA_NOFUSE(v) (void) (v)   // MSVC: checked by the Windows run of tests/quant/quant_parity (RESULTS-OWN-2A.md)
 #endif
 
 // ggml's own choice: F16C hardware conversions where the flavour has them (same values as the software ones for every finite input), software otherwise.
 #if defined(__F16C__) || (defined(_MSC_VER) && defined(__AVX2__))
-namespace strata::quant {
+namespace nostroma::quant {
 #if defined(_MSC_VER)   // MSVC has no scalar _cvtsh_ss / _cvtss_sh: the packed ones on one lane (the same VCVTPH2PS / VCVTPS2PH)
 inline float h2f(uint16_t h) { return _mm_cvtss_f32(_mm_cvtph_ps(_mm_cvtsi32_si128((int) h))); }
 inline uint16_t f2h(float f) { return (uint16_t) _mm_cvtsi128_si32(_mm_cvtps_ph(_mm_set_ss(f), 0)); }
@@ -32,10 +32,10 @@ inline uint16_t f2h(float f) { return (uint16_t) _mm_cvtsi128_si32(_mm_cvtps_ph(
 inline float h2f(uint16_t h) { return _cvtsh_ss(h); }
 inline uint16_t f2h(float f) { return _cvtss_sh(f, 0); }
 #endif
-}  // namespace strata::quant
+}  // namespace nostroma::quant
 #else
-namespace strata::quant {
+namespace nostroma::quant {
 inline float h2f(uint16_t h) { return fp16_to_fp32(h); }
 inline uint16_t f2h(float f) { return fp32_to_fp16(f); }
-}  // namespace strata::quant
+}  // namespace nostroma::quant
 #endif

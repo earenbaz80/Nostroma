@@ -1,4 +1,4 @@
-/** One short headless render of the Skills page and the New skill dialog (closed when done).  STRATA_URL, SHOTS */
+/** One short headless render of the Skills page and the New skill dialog (closed when done).  NOSTROMA_URL, SHOTS */
 import { chromium } from 'playwright-core';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';

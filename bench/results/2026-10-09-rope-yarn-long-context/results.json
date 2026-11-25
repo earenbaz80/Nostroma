@@ -36,7 +36,7 @@
     "conversation_cache_mib": 0,
     "temperature": 0,
     "env": {
-      "STRATA_PREFILL_CPU_SHARE": "0"
+      "NOSTROMA_PREFILL_CPU_SHARE": "0"
     },
     "vram_reserve_mib": 1024,
     "capacity": 1048832

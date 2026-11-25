@@ -13,7 +13,7 @@ uploads anything by itself.
 - **The build boxes.** An engine package is built on the system it runs on: Linux x86_64 (CUDA 12 and 13, one HIP
   package per card family, SYCL), Linux aarch64 (DGX Spark), Windows x86_64 (CUDA and HIP) and an Apple Silicon Mac.
   A Control package is built on its target OS too.
-- **The previous `strata-feed.json`**, if the frozen DeepSeek (`dsv41`) packages are carried into this release. Without
+- **The previous `nostroma-feed.json`**, if the frozen DeepSeek (`dsv41`) packages are carried into this release. Without
   it, build the feed with `--no-dsv41-carry` and leave those six archives out.
 - **The release notes.** `docs/release-notes-<version>.md` does not exist for 0.2.15 yet; the release page needs it.
 
@@ -21,11 +21,11 @@ uploads anything by itself.
 
 | Entry point | Files it reads | When one is missing |
 | --- | --- | --- |
-| `install.sh` | `install-manifest.txt`; the line for `linux-x86_64`, `linux-aarch64` or `macos-arm64`; that Control package; `strata-feed.json` and its `.sig` | "this release has no Terminal for <platform>", or the signature check refuses the release |
+| `install.sh` | `install-manifest.txt`; the line for `linux-x86_64`, `linux-aarch64` or `macos-arm64`; that Control package; `nostroma-feed.json` and its `.sig` | "this release has no Terminal for <platform>", or the signature check refuses the release |
 | `install.ps1` | The same for `windows-x86_64`, unpacked with `Expand-Archive` (a `.zip`) | The same |
-| `nostroma update` | `strata-feed.json` and its `.sig` (`strata-feed-linux-aarch64.json` on Linux ARM64) | A 404, or a feed that does not verify |
+| `nostroma update` | `nostroma-feed.json` and its `.sig` (`nostroma-feed-linux-aarch64.json` on Linux ARM64) | A 404, or a feed that does not verify |
 | The app | Nothing: its own updater is off in this build (no endpoint and no key in `tauri.conf.json`) | The app never checks |
-| `UPDATE.bat`, `update.sh` | Nothing of their own: they run `git pull` and `setup.py --update`, which asks the signed feed for this PC's engine (`engine_from_feed`) | Since 0.2 there are no flat `strata-windows-x64.zip` assets; these two need the signed feed |
+| `UPDATE.bat`, `update.sh` | Nothing of their own: they run `git pull` and `setup.py --update`, which asks the signed feed for this PC's engine (`engine_from_feed`) | Since 0.2 there are no flat `nostroma-windows-x64.zip` assets; these two need the signed feed |
 
 ## The assets
 
@@ -33,19 +33,19 @@ Every name below is flat in the release: GitHub release assets have no folders.
 
 | Asset | Made by | Notes |
 | --- | --- | --- |
-| `strata-feed.json`, `strata-feed.json.sig` | `packaging/feed_tool.py build-feed` | The signed feed every client reads |
-| `strata-feed-linux-aarch64.json`, `.sig` | A second `build-feed` with only the `linux-aarch64` entries | Its own `sequence`, which must never go down |
+| `nostroma-feed.json`, `nostroma-feed.json.sig` | `packaging/feed_tool.py build-feed` | The signed feed every client reads |
+| `nostroma-feed-linux-aarch64.json`, `.sig` | A second `build-feed` with only the `linux-aarch64` entries | Its own `sequence`, which must never go down |
 | `install-manifest.txt` | `build-feed`, from `RELEASE/control/*.entry.json` | One line per Control package: `platform version url sha256 size` |
 | `install.sh`, `install.ps1` | Copies of `packaging/install.sh` and `packaging/install.ps1`, unchanged | Their built-in address is the release folder |
-| `strata-control-<control version>-<platform>.tar.gz` | `apps/desktop/scripts/stage-control.py` stages the folder, `feed_tool.py pack-control` packs it | `--format zip` for `windows-x86_64`; the archive must hold `bin/strata`. The folder is the same bundle `packaging/package_terminal.py` writes as `strata-terminal-<version>-<platform>.tar.gz`, which is not uploaded |
-| `strata-engine-<engine version>-<platform>-<backend>[-<variant>].tar.gz` | The build script for the box, then `packaging/package_engine.py`, `feed_tool.py sign-package`, `feed_tool.py pack-engine --url-prefix=` | See the per-platform list below. 0.2.15 builds none: all 14 are the ones v0.2.14 published (`engines_from`), 12 at 0.1.60 and `linux-aarch64` cuda13 and `linux-x86_64` sycl at 0.1.59 |
+| `nostroma-control-<control version>-<platform>.tar.gz` | `apps/desktop/scripts/stage-control.py` stages the folder, `feed_tool.py pack-control` packs it | `--format zip` for `windows-x86_64`; the archive must hold `bin/nostroma`. The folder is the same bundle `packaging/package_terminal.py` writes as `nostroma-terminal-<version>-<platform>.tar.gz`, which is not uploaded |
+| `nostroma-engine-<engine version>-<platform>-<backend>[-<variant>].tar.gz` | The build script for the box, then `packaging/package_engine.py`, `feed_tool.py sign-package`, `feed_tool.py pack-engine --url-prefix=` | See the per-platform list below. 0.2.15 builds none: all 14 are the ones v0.2.14 published (`engines_from`), 12 at 0.1.60 and `linux-aarch64` cuda13 and `linux-x86_64` sycl at 0.1.59 |
 | `Nostroma-<product version>-windows-x64-setup.exe` (+ `.sig`) | `npx tauri build --bundles nsis --config src-tauri/tauri.update.conf.json`, then `npx tauri signer sign` | No engine inside |
 | `Nostroma-<product version>-linux-x86_64.AppImage` (+ `.sig`) | `npx tauri build --bundles appimage --config src-tauri/tauri.update.conf.json`, then `npx tauri signer sign` | No engine inside |
 | `Nostroma-<product version>-macos-arm64.dmg` | `npx tauri build --bundles dmg`, then `packaging/mac/sign-and-notarize.sh` | Downloaded by hand; it is not in the feed's app member |
 | `Nostroma.app.tar.gz` (+ `.sig`) | `packaging/mac/sign-and-notarize.sh --updater-archive`, then `npx tauri signer sign` | The Mac updater archive; it must hold the signed, notarised app |
-| `qwen3.8-flash-next-dflash2.strata1.q4_0-selq4.pack` | `tools/dflash2_pack.py --q4_0 --q4_0-selector`, then `feed_tool.py pack-drafter` | 339,694,592 bytes; `--backends metal,cuda,hip` |
-| `qwen3.8-flash-next-dflash2.strata1.q4_0-bf16sel.pack` | `tools/dflash2_pack.py --q4_0`, then `pack-drafter` | 522,458,112 bytes; `--backends sycl` |
-| `strata-dsv41-<version>-<platform>-<backend>[-<variant>].tar.gz` | Nothing: `build-feed --carry-dsv41 <previous feed> --carry-dsv41-base <URL of the release that holds them>` | Only for 0.2.13 and earlier clients |
+| `qwen3.8-flash-next-dflash2.nostroma1.q4_0-selq4.pack` | `tools/dflash2_pack.py --q4_0 --q4_0-selector`, then `feed_tool.py pack-drafter` | 339,694,592 bytes; `--backends metal,cuda,hip` |
+| `qwen3.8-flash-next-dflash2.nostroma1.q4_0-bf16sel.pack` | `tools/dflash2_pack.py --q4_0`, then `pack-drafter` | 522,458,112 bytes; `--backends sycl` |
+| `nostroma-dsv41-<version>-<platform>-<backend>[-<variant>].tar.gz` | Nothing: `build-feed --carry-dsv41 <previous feed> --carry-dsv41-base <URL of the release that holds them>` | Only for 0.2.13 and earlier clients |
 | `SHA256SUMS.txt` | `packaging/sha256sums.py` | Run it last: it lists every file in the folder |
 
 `build-feed` also writes `RELEASE/app/latest.json`. It is not an asset: the feed carries it as its `app` member, which
@@ -117,14 +117,14 @@ download of the files, not a build. When one did change, build it on its box, th
    python packaging/feed_tool.py build-feed --out RELEASE --sequence <N> --key feed-key.json \
      --engine RELEASE/engine --control RELEASE/control --app-json RELEASE/tauri-latest.json \
      --drafters RELEASE/drafters \
-     --carry-dsv41 <previous strata-feed.json> --carry-dsv41-base https://github.com/earenbaz80/Nostroma/releases/download/<tag>/
+     --carry-dsv41 <previous nostroma-feed.json> --carry-dsv41-base https://github.com/earenbaz80/Nostroma/releases/download/<tag>/
    ```
 
    Use `--no-dsv41-carry` instead when those packages are not carried. `build-feed` writes the feed, its signature,
    `install-manifest.txt` and `app/latest.json`.
 
 6. **Feed for Linux ARM64.** A second `build-feed` with only the `linux-aarch64` engine and Control entries, its own
-   `sequence`, and the output renamed to `strata-feed-linux-aarch64.json` (plus its `.sig`). Every release publishes
+   `sequence`, and the output renamed to `nostroma-feed-linux-aarch64.json` (plus its `.sig`). Every release publishes
    both files until every client skips platforms it does not know.
 
 7. **Verify.** Before uploading anything:
@@ -156,7 +156,7 @@ download of the files, not a build. When one did change, build it on its box, th
    ```sh
    https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh
    https://github.com/earenbaz80/Nostroma/releases/latest/download/install.ps1
-   https://github.com/earenbaz80/Nostroma/releases/latest/download/strata-feed.json
+   https://github.com/earenbaz80/Nostroma/releases/latest/download/nostroma-feed.json
    ```
 
 ## What this tree does not have

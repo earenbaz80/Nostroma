@@ -16,8 +16,8 @@
  "engine_prompt_tps": 3205.2,
  "engine_decode_tps": 93.5,
  "log_lines": [
-  "strata serve: prompt 31635 tokens = 0 reused + 31635 read in 9870 ms (3205.2 tok/s), 45 generated in 481 ms (93.5 tok/s), drafts accepted 31 of 36, 2 checkpoints",
-  "strata serve: decode expert cache hit rate: 100.0% (25440 hits / 25440 lookups)"
+  "nostroma serve: prompt 31635 tokens = 0 reused + 31635 read in 9870 ms (3205.2 tok/s), 45 generated in 481 ms (93.5 tok/s), drafts accepted 31 of 36, 2 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 100.0% (25440 hits / 25440 lookups)"
  ],
  "answer_head": "I'll start by exploring the repository structure to understand what the last file does.",
  "metrics_after": {

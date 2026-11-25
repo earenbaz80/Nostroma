@@ -232,12 +232,12 @@ class ReadOnlyModelFolderMark(unittest.TestCase):
         real_write = Path.write_text
 
         def write(self, *a, **k):
-            if self.name.endswith(".done") and "strata_marks" not in str(self):
+            if self.name.endswith(".done") and "nostroma_marks" not in str(self):
                 raise PermissionError(13, "read-only")
             return real_write(self, *a, **k)
 
         with tempfile.TemporaryDirectory() as tmp:
-            root, share = Path(tmp) / "strata_marks", Path(tmp) / "share"
+            root, share = Path(tmp) / "nostroma_marks", Path(tmp) / "share"
             share.mkdir()
             f = share / "engram.gguf"
             f.write_bytes(b"abc" * 10)
@@ -263,13 +263,13 @@ class OfflineStart(unittest.TestCase):
     """0.2.10: a PC with every file and no internet starts a model that is already prepared."""
 
     def test_preparing_a_model_never_fetches_llama_cpp(self):
-        """OWN-1B/2B: the preparation tools have their own GGUF code (tools/strata_gguf.py), so neither starting a prepared model nor running a
-        preparation tool reaches github.com, and the tools are not told to use gguf-py unless the user set STRATA_GGUF_PY."""
+        """OWN-1B/2B: the preparation tools have their own GGUF code (tools/nostroma_gguf.py), so neither starting a prepared model nor running a
+        preparation tool reaches github.com, and the tools are not told to use gguf-py unless the user set NOSTROMA_GGUF_PY."""
         fetched = []
-        env = {k: v for k, v in os.environ.items() if k not in ("STRATA_GGUF_PY", "STRATA_GGML_DIR")}
+        env = {k: v for k, v in os.environ.items() if k not in ("NOSTROMA_GGUF_PY", "NOSTROMA_GGML_DIR")}
         with mock.patch.dict(os.environ, env, clear=True), mock.patch.object(setup, "get_llama_cpp", lambda: fetched.append(1)):
             self.assertIsNone(setup.llama_cpp_if_here(), "no override tree by default")
-            self.assertEqual(setup.gguf_py_dir(), setup.ROOT / "third_party" / "strata-gguf-py")
+            self.assertEqual(setup.gguf_py_dir(), setup.ROOT / "third_party" / "nostroma-gguf-py")
             self.assertTrue((setup.gguf_py_dir() / "gguf").is_dir())
             self.assertEqual(setup.gguf_py_env(), {}, "the tools use their own GGUF code by default")
             with mock.patch.object(setup.subprocess, "run", lambda *a, **k: mock.Mock(returncode=0)), \
@@ -278,16 +278,16 @@ class OfflineStart(unittest.TestCase):
             self.assertEqual(fetched, [], "nothing is downloaded")
 
     def test_the_overrides_are_kept(self):
-        """STRATA_GGUF_PY and STRATA_GGML_DIR still name another copy (kept for two releases)."""
+        """NOSTROMA_GGUF_PY and NOSTROMA_GGML_DIR still name another copy (kept for two releases)."""
         with tempfile.TemporaryDirectory() as tmp:
             (Path(tmp) / "gguf").mkdir()
             (Path(tmp) / "ggml").mkdir()
             (Path(tmp) / "ggml" / "CMakeLists.txt").write_text("", encoding="utf-8")
-            with mock.patch.dict(os.environ, {"STRATA_GGUF_PY": tmp, "STRATA_GGML_DIR": tmp}):
+            with mock.patch.dict(os.environ, {"NOSTROMA_GGUF_PY": tmp, "NOSTROMA_GGML_DIR": tmp}):
                 self.assertEqual(setup.gguf_py_dir(), Path(tmp))
-                self.assertEqual(setup.gguf_py_env(), {"STRATA_GGUF_PY": tmp}, "the override is passed on to the tools")
+                self.assertEqual(setup.gguf_py_env(), {"NOSTROMA_GGUF_PY": tmp}, "the override is passed on to the tools")
                 self.assertEqual(setup.llama_override(), Path(tmp))
-                self.assertEqual(setup.ggml_defs(setup.llama_override()), [f"-DSTRATA_GGML_DIR={tmp}"])
+                self.assertEqual(setup.ggml_defs(setup.llama_override()), [f"-DNOSTROMA_GGML_DIR={tmp}"])
             self.assertEqual(setup.ggml_defs(None), [], "nothing is passed by default")
 
     def test_a_pinned_file_copied_in_by_hand_is_checked_here_without_the_network(self):
@@ -320,40 +320,40 @@ class VsRange(unittest.TestCase):
 
 
     def test_vcvars_by_hand(self):
-        """#881: STRATA_VCVARS names a vcvars64.bat directly, for an install vswhere cannot use."""
+        """#881: NOSTROMA_VCVARS names a vcvars64.bat directly, for an install vswhere cannot use."""
         import tempfile
         with tempfile.TemporaryDirectory() as d:
             bat = Path(d) / "vcvars64.bat"
             bat.write_text("rem")
-            with mock.patch.dict(os.environ, {"STRATA_VCVARS": str(bat)}):
+            with mock.patch.dict(os.environ, {"NOSTROMA_VCVARS": str(bat)}):
                 self.assertEqual(setup.find_vcvars(), bat)
-            with mock.patch.dict(os.environ, {"STRATA_VCVARS": str(Path(d) / "missing.bat")}):
+            with mock.patch.dict(os.environ, {"NOSTROMA_VCVARS": str(Path(d) / "missing.bat")}):
                 self.assertIsNone(setup.find_vcvars())
 
 class ExperimentalSm60(unittest.TestCase):
-    """#295: Pascal (6.x) and Volta (7.0) only with STRATA_EXPERIMENTAL_SM60=1, built with -DSTRATA_EXPERIMENTAL_SM60=ON
+    """#295: Pascal (6.x) and Volta (7.0) only with NOSTROMA_EXPERIMENTAL_SM60=1, built with -DNOSTROMA_EXPERIMENTAL_SM60=ON
     and a CUDA 12.x toolkit; nothing changes without the variable."""
 
     def card(self, arch):
         return {"arch": arch, "vram_gb": 11.0, "index": 0, "name": "card"}
 
     def test_the_gate(self):
-        with mock.patch.dict(os.environ, {"STRATA_EXPERIMENTAL_SM60": ""}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_EXPERIMENTAL_SM60": ""}):
             for arch in ("60", "61", "70"):
                 p = setup.gpu_problem(self.card(arch))
                 self.assertIn("not supported", p)
                 self.assertIn("choose it with --gpu 0", p)              # the CUDA 12 engine (docs/OLDER_GPUS.md)
             self.assertNotIn("--gpu", setup.gpu_problem(self.card("52")))
             self.assertIsNone(setup.gpu_problem(self.card("75")))
-        with mock.patch.dict(os.environ, {"STRATA_EXPERIMENTAL_SM60": "1"}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_EXPERIMENTAL_SM60": "1"}):
             for arch in ("60", "61", "70", "75", "120"):
                 self.assertIsNone(setup.gpu_problem(self.card(arch)), arch)
             for arch in ("52", "72"):
                 self.assertIsNotNone(setup.gpu_problem(self.card(arch)), arch)
 
     def test_the_build_flag(self):
-        self.assertEqual(setup.engine_defs([61]), ["-DSTRATA_EXPERIMENTAL_SM60=ON"])
-        self.assertEqual(setup.engine_defs([70, 86]), ["-DSTRATA_EXPERIMENTAL_SM60=ON"])
+        self.assertEqual(setup.engine_defs([61]), ["-DNOSTROMA_EXPERIMENTAL_SM60=ON"])
+        self.assertEqual(setup.engine_defs([70, 86]), ["-DNOSTROMA_EXPERIMENTAL_SM60=ON"])
         self.assertEqual(setup.engine_defs([75, 86, 120]), [])
 
     def test_find_nvcc_below(self):
@@ -369,14 +369,14 @@ class ExperimentalSm60(unittest.TestCase):
                     mock.patch.object(setup, "out", lambda cmd: versions.get(cmd[0], "")):  # #414
                 self.assertEqual(setup.find_nvcc(), (str(new), (13, 0)))
                 self.assertEqual(setup.find_nvcc(below=(13, 0)), (str(old), (12, 9)))
-                # #601: STRATA_NVCC is the only one considered; CUDA_HOME is a candidate like CUDA_PATH
-                with mock.patch.dict(os.environ, {"STRATA_NVCC": str(old)}):
+                # #601: NOSTROMA_NVCC is the only one considered; CUDA_HOME is a candidate like CUDA_PATH
+                with mock.patch.dict(os.environ, {"NOSTROMA_NVCC": str(old)}):
                     self.assertEqual(setup.find_nvcc(), (str(old), (12, 9)))
-                with mock.patch.dict(os.environ, {"STRATA_NVCC": str(new)}):
+                with mock.patch.dict(os.environ, {"NOSTROMA_NVCC": str(new)}):
                     got, text = quiet(setup.find_nvcc, below=(13, 0))
                     self.assertEqual(got, (None, None))
                     self.assertIn("needs one older than 13.0", text)
-                with mock.patch.dict(os.environ, {"STRATA_NVCC": str(Path(d) / "missing")}):
+                with mock.patch.dict(os.environ, {"NOSTROMA_NVCC": str(Path(d) / "missing")}):
                     got, text = quiet(setup.find_nvcc)
                     self.assertEqual(got, (str(new), (13, 0)))
                     self.assertIn("no such file", text)
@@ -415,7 +415,7 @@ class ExperimentalSm60(unittest.TestCase):
         got, seen = self.tools([120], nvcc)
         self.assertEqual(got[0], "nvcc130")
         self.assertEqual(seen, [None, (13, 2)])
-        with mock.patch.dict(os.environ, {"STRATA_NVCC": "x"}):          # the user's own pick is kept
+        with mock.patch.dict(os.environ, {"NOSTROMA_NVCC": "x"}):          # the user's own pick is kept
             got, seen = self.tools([120], nvcc)
             self.assertEqual((got[0], seen), ("nvcc132", [None]))
         only132 = lambda below: (None, None) if below == (13, 2) else ("nvcc132", (13, 2))
@@ -472,14 +472,14 @@ class HipVision(unittest.TestCase):
 
     def test_the_cpu_encoder_is_built_once(self):
         built, meta, have = self.build({}, "cpu")
-        self.assertEqual([t for t, _ in built], ["strata-vision"])
-        self.assertIn("-DSTRATA_VISION_CUDA=OFF", built[0][1])
-        self.assertIn("-DSTRATA_PORTABLE=OFF", built[0][1])            # built for this PC (#411: portable is the default)
+        self.assertEqual([t for t, _ in built], ["nostroma-vision"])
+        self.assertIn("-DNOSTROMA_VISION_CUDA=OFF", built[0][1])
+        self.assertIn("-DNOSTROMA_PORTABLE=OFF", built[0][1])            # built for this PC (#411: portable is the default)
         self.assertEqual((meta["vision"], meta["vision_src"], have), ("cpu", "V", True))
         built, meta, _ = self.build({"vision": "cpu", "vision_src": "V"}, "cpu", vexe=True)
         self.assertEqual(built, [])                                    # built and unchanged: nothing to do
         built, meta, _ = self.build({"vision": "cpu", "vision_src": "old"}, "cpu", vexe=True)
-        self.assertEqual([t for t, _ in built], ["strata-vision"])     # its source changed: again
+        self.assertEqual([t for t, _ in built], ["nostroma-vision"])     # its source changed: again
 
     def test_without_images_nothing_changes(self):
         built, meta, have = self.build({}, "none")
@@ -586,7 +586,7 @@ class VramReserve(unittest.TestCase):
 
     def test_kept_from_an_earlier_install(self):
         with tempfile.TemporaryDirectory() as d:
-            p = Path(d) / "strata-q2_0.json"
+            p = Path(d) / "nostroma-q2_0.json"
             p.write_text(json.dumps({"args": ["--max-context", "8192", "--vram-reserve-mib", "2048"]}))
             self.assertEqual(setup.choices_from_config(p)["vram_reserve_mib"], 2048)
             p.write_text(json.dumps({"args": ["--vision", "--vram-reserve-mib", "700"], "vision": {"gpu": True}}))
@@ -596,9 +596,9 @@ class VramReserve(unittest.TestCase):
 
     def test_given_on_a_start(self):
         with tempfile.TemporaryDirectory() as d:
-            exe = Path(d) / "strata.exe"
+            exe = Path(d) / "nostroma.exe"
             exe.write_bytes(b"")
-            p = Path(d) / "strata-q2_0.json"
+            p = Path(d) / "nostroma-q2_0.json"
             p.write_text(json.dumps({"exe": str(exe), "args": ["--kv", "int8"], "gpu": 0, "gpus_asked": True}))
             call = mock.Mock(return_value=0)
             with mock.patch.object(setup, "gpus", lambda: self.found), \
@@ -693,9 +693,9 @@ class CudaVision(unittest.TestCase):
                         mock.patch.object(setup, "cpu_info", lambda: ("Test CPU", True, False)), \
                         mock.patch.object(setup, "source_version", lambda: "test"):      # no real card of the box (#4662), an AVX2 CPU
                     quiet(setup.build_engine, {"arch": "86"}, vision, True, "llama")
-                self.assertEqual([t for t, _ in built], ["strata-vision"])
-                self.assertIn("-DSTRATA_PORTABLE=OFF", built[0][1])
-                self.assertIn(f"-DSTRATA_VISION_CUDA={'ON' if vision == 'gpu' else 'OFF'}", built[0][1])
+                self.assertEqual([t for t, _ in built], ["nostroma-vision"])
+                self.assertIn("-DNOSTROMA_PORTABLE=OFF", built[0][1])
+                self.assertIn(f"-DNOSTROMA_VISION_CUDA={'ON' if vision == 'gpu' else 'OFF'}", built[0][1])
 
 
 class ProxyHint(unittest.TestCase):
@@ -789,7 +789,7 @@ class CalibrateWithModel(unittest.TestCase):
         self.addCleanup(tmp.cleanup)
         cfgs = []
         for tag in installed:
-            p = Path(tmp.name) / f"strata-{tag}.json"
+            p = Path(tmp.name) / f"nostroma-{tag}.json"
             p.write_text(json.dumps({"exe": "x", "args": ["--max-context", "8192"], "model_name": tag}))
             cfgs.append(p)
         tuned = []
@@ -808,7 +808,7 @@ class CalibrateWithModel(unittest.TestCase):
 
     def test_model_is_the_target(self):
         code, tuned = self.run_main("--calibrate", "--model", "IQ3_XXS", "--yes", "--no-start")
-        self.assertEqual((code, tuned), (0, ["strata-iq3_xxs.json"]))
+        self.assertEqual((code, tuned), (0, ["nostroma-iq3_xxs.json"]))
 
     def test_a_model_not_installed_is_an_error(self):
         code, tuned = self.run_main("--calibrate", "--model", "IQ3_S", "--yes", "--no-start")
@@ -818,7 +818,7 @@ class CalibrateWithModel(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             ps = []
             for tag in ("iq3_xxs", "q2_0"):
-                p = Path(d) / f"strata-{tag}.json"
+                p = Path(d) / f"nostroma-{tag}.json"
                 p.write_text(json.dumps({"args": []}))
                 ps.append(p)
             self.assertEqual(setup.calibration_targets(ps, None, None), ps)

@@ -15,8 +15,8 @@ ALLOC = "ggml_backend_cuda_buffer_type_alloc_buffer: allocating 865.48 MiB on de
 BUFFER = "alloc_tensor_range: failed to allocate CUDA0 buffer of size 907524736"
 ASSERT = "/data/split-pkg/llama.cpp/ggml/src/ggml-backend.cpp:188: GGML_ASSERT(buffer) failed"
 GDB = ["[New LWP 477206]", "❌️ Couldn't get registers: No such process.", "Python Exception <class 'gdb.error'>: Couldn't get registers: No such process."]
-MAC = ["WARNING: Using native backtrace. Set GGML_BACKTRACE_LLDB for more info.", "3   strata-vision   0x0000000102a4c9b8 ggml_abort + 132",
-       "4   strata-vision   0x0000000102a2f1c0 ggml_backend_alloc_ctx_tensors_from_buft + 220"]
+MAC = ["WARNING: Using native backtrace. Set GGML_BACKTRACE_LLDB for more info.", "3   nostroma-vision   0x0000000102a4c9b8 ggml_abort + 132",
+       "4   nostroma-vision   0x0000000102a2f1c0 ggml_backend_alloc_ctx_tensors_from_buft + 220"]
 
 
 class Find(unittest.TestCase):
@@ -47,7 +47,7 @@ class Find(unittest.TestCase):
 
     def test_lines_that_are_not_about_memory_are_not_found(self):
         for line in ("ggml_cuda_init: failed to initialize CUDA: no CUDA-capable device",       # the harmless one: the reader runs on the processor then
-                     "CUDA error: device kernel image is invalid", "strata generate: CUDA error: out of memory",
+                     "CUDA error: device kernel image is invalid", "nostroma generate: CUDA error: out of memory",
                      "cudaMalloc failed: CUDA-capable device(s) is/are busy or unavailable", ""):
             with self.subTest(line=line):
                 self.assertIsNone(reader_room.find([line]))
@@ -157,7 +157,7 @@ class LaunchSaysIt(unittest.TestCase):
         self.assertNotIn("Exception", text + nxt)
 
     def test_linux_without_a_debugger_the_backtrace_frames_follow(self):
-        frames = ["/opt/strata/strata-vision(ggml_abort+0xd0) [0x55d7c4a1f0d0]", "/opt/strata/strata-vision(+0x3f1a2) [0x55d7c4a3f1a2]"]
+        frames = ["/opt/nostroma/nostroma-vision(ggml_abort+0xd0) [0x55d7c4a1f0d0]", "/opt/nostroma/nostroma-vision(+0x3f1a2) [0x55d7c4a3f1a2]"]
         text, nxt, _ = self.explain([ALLOC, BUFFER, ASSERT] + frames)
         self.assertEqual(text, self.NEW2)
         self.assertTrue(nxt.startswith(self.STEP))
@@ -207,7 +207,7 @@ class LaunchSaysIt(unittest.TestCase):
         self.assertIn("(it needs about 2.5 GB;", text)
 
     def test_the_engines_own_out_of_memory_later_in_the_log_wins(self):
-        text, nxt, _ = self.explain([ALLOC, BUFFER, "strata serve: the GPU has too little free VRAM for the prompt path: turn images off (setup: --vision no)"])
+        text, nxt, _ = self.explain([ALLOC, BUFFER, "nostroma serve: the GPU has too little free VRAM for the prompt path: turn images off (setup: --vision no)"])
         self.assertIn("too little free VRAM", text)
         self.assertEqual(nxt.split(" The engine's log")[0], R.VRAM_STOP_NEXT)
 

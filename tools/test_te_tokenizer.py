@@ -28,7 +28,7 @@ class TokenizerMatchesSdcpp(unittest.TestCase):
     def setUpClass(cls):
         cls.tmp = tempfile.TemporaryDirectory()
         d = Path(cls.tmp.name)
-        cls.exe = d / "strata-te-tokens"
+        cls.exe = d / "nostroma-te-tokens"
         r = subprocess.run([CXX, "-std=c++17", "-O2", "-I", str(ROOT / "include"), "-I", str(ROOT / "src" / "image" / "te"),
                             str(ROOT / "src" / "image" / "te" / "qwen2_tok.cpp"),
                             str(ROOT / "src" / "image" / "te" / "qwen2_tok_main.cpp"), "-o", str(cls.exe)],

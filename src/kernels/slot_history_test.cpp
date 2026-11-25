@@ -1,8 +1,8 @@
-// Penalty-history rows of a BATCH window, per slot (strata::kernels::slot_penalty_rows).  Header-only, CPU, no model.
+// Penalty-history rows of a BATCH window, per slot (nostroma::kernels::slot_penalty_rows).  Header-only, CPU, no model.
 //
 // Row t of a batch window feeds tokens[t] into slot rows[t]; its history is the slot's reply tail followed by that slot's tokens in this window up to
 // and including row t - what penalty_rows gives a solo window of that slot, whatever the other slots do.
-#include "strata/kernels/sampler.hpp"
+#include "nostroma/kernels/sampler.hpp"
 
 #include <cstdio>
 #include <algorithm>
@@ -10,8 +10,8 @@
 #include <random>
 #include <vector>
 
-using strata::kernels::penalty_rows;
-using strata::kernels::slot_penalty_rows;
+using nostroma::kernels::penalty_rows;
+using nostroma::kernels::slot_penalty_rows;
 
 namespace {
 int checks = 0;

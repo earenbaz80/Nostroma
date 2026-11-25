@@ -65,13 +65,13 @@
   },
   "qwen_pictures": {
    "vision": {
-    "exe": "strata-vision"
+    "exe": "nostroma-vision"
    }
   },
   "qwen36_pictures": {
    "arch": "qwen35moe",
    "vision": {
-    "exe": "strata-vision"
+    "exe": "nostroma-vision"
    }
   }
  },

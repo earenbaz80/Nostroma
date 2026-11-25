@@ -16,9 +16,9 @@
  "engine_prompt_tps": 6358.6,
  "engine_decode_tps": 150.7,
  "log_lines": [
-  "strata serve: conversation cache: parked 31609 tokens in 131.1 ms; parked=4 bytes=2420189948 evictions=4 snapshot_bytes=837037784 reused_kv_bytes=0",
-  "strata serve: prompt 31617 tokens = 0 reused + 31617 read in 4972 ms (6358.6 tok/s), 256 generated in 1699 ms (150.7 tok/s), drafts accepted 131 of 178, 2 checkpoints",
-  "strata serve: decode expert cache hit rate: 94.7% (137670 hits / 145440 lookups)"
+  "nostroma serve: conversation cache: parked 31609 tokens in 131.1 ms; parked=4 bytes=2420189948 evictions=4 snapshot_bytes=837037784 reused_kv_bytes=0",
+  "nostroma serve: prompt 31617 tokens = 0 reused + 31617 read in 4972 ms (6358.6 tok/s), 256 generated in 1699 ms (150.7 tok/s), drafts accepted 131 of 178, 2 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 94.7% (137670 hits / 145440 lookups)"
  ],
  "answer_head": "I can't explain or improve `build-vision/CMakeCache.txt` as a source file, because it is a **generated build artifact**, not part of the project's source code.\n\n### What `build-vision/CMakeCache.txt` is\n\nThis file is automatically created by CMake when you configure a build directory (in this case, ",
  "metrics_after": {

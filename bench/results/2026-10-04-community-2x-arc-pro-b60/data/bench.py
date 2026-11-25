@@ -27,13 +27,13 @@ if mode=="short":
     print("gcd tests:",run_tests(code(c),"assert gcd(48,18)==6; assert gcd(17,5)==1; assert gcd(0,9)==9; assert gcd(270,192)==6"))
     d=ask([{"role":"user","content":"What is the output of this Python code? print(sum(i*i for i in range(1,11)))  Answer with just the number."}],20); show("known",d); print(d["choices"][0]["message"]["content"], "(expected 385)")
 if mode=="long":
-    src="".join(open(f).read() for f in sorted(glob.glob("<strata checkout>/tools/*.py"))[:6])[:int(sys.argv[2])]
+    src="".join(open(f).read() for f in sorted(glob.glob("<nostroma checkout>/tools/*.py"))[:6])[:int(sys.argv[2])]
     msgs=[{"role":"user","content":"Here is some Python source:\n\n"+src+"\n\nIn one paragraph, say what this code is for, then write a short Python function that reverses a string."}]
     for i in range(2):
         d=ask(msgs,256); show(f"long run{i}",d)
     print(d["choices"][0]["message"]["content"][:1200])
 if mode=="long2":
-    fs=sorted(glob.glob("<strata checkout>/tools/*.py"))
+    fs=sorted(glob.glob("<nostroma checkout>/tools/*.py"))
     src="".join(open(f).read() for f in fs[6:12])[:7000]
     msgs=[{"role":"user","content":"Here is some Python source:\n\n"+src+"\n\nWrite a Python implementation of a binary search tree class with insert, search, delete and in-order traversal methods, with docstrings."}]
     d=ask(msgs,256); show("long2 BST",d)

@@ -55,7 +55,7 @@ class TroubleshootingPage(unittest.TestCase):
         details = (ROOT / "docs" / "DETAILS.md").read_text(encoding="utf-8")
         for line in details.splitlines():
             if "TROUBLESHOOTING.md" in line:
-                for name in re.findall(r"STRATA_[A-Z0-9_]+", line):
+                for name in re.findall(r"NOSTROMA_[A-Z0-9_]+", line):
                     self.assertIn(name, self.text, f"DETAILS.md sends readers here for {name}")
 
     def test_links_into_the_page_and_out_of_it_resolve(self):

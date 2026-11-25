@@ -24,7 +24,7 @@ function tool(dir, tracker, name, marker) {
 }
 
 test('two chats in one folder: each turn reports only the files its own tools wrote, interleaved, and a script file nobody can own is withheld', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'strata-5008-'));
+  const dir = mkdtempSync(join(tmpdir(), 'nostroma-5008-'));
   try {
     const claims = new FolderClaims();
     const A = new DeliverableTracker(dir, { claims, owner: 'chat-A' });
@@ -49,7 +49,7 @@ test('two chats in one folder: each turn reports only the files its own tools wr
 });
 
 test('a chat working alone still gets the files its scripts made (nothing changes without a second chat)', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'strata-5008b-'));
+  const dir = mkdtempSync(join(tmpdir(), 'nostroma-5008b-'));
   try {
     const claims = new FolderClaims();
     const A = new DeliverableTracker(dir, { claims, owner: 'chat-A' });
@@ -67,7 +67,7 @@ test('a chat working alone still gets the files its scripts made (nothing change
 });
 
 test('a chat that is stopped or fails still lets go of the folder, and another folder is never affected', () => {
-  const one = mkdtempSync(join(tmpdir(), 'strata-5008c-')), two = mkdtempSync(join(tmpdir(), 'strata-5008d-'));
+  const one = mkdtempSync(join(tmpdir(), 'nostroma-5008c-')), two = mkdtempSync(join(tmpdir(), 'nostroma-5008d-'));
   try {
     const claims = new FolderClaims();
     const A = new DeliverableTracker(one, { claims, owner: 'chat-A' });
@@ -85,7 +85,7 @@ test('a chat that is stopped or fails still lets go of the folder, and another f
 });
 
 test('a file both chats wrote with their file tools is reported to each chat that wrote it', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'strata-5008e-'));
+  const dir = mkdtempSync(join(tmpdir(), 'nostroma-5008e-'));
   try {
     const claims = new FolderClaims();
     const A = new DeliverableTracker(dir, { claims, owner: 'chat-A' });
@@ -107,7 +107,7 @@ async function bundle(entry, plugins = []) {
 }
 
 test('two live chats in one workspace keep their messages, tool cards and saved copies apart, interleaved, and after a restart', async () => {
-  const hostDir = mkdtempSync(join(tmpdir(), 'strata-5008-host-'));
+  const hostDir = mkdtempSync(join(tmpdir(), 'nostroma-5008-host-'));
   const chatStore = createChatStore({ dir: hostDir });
   const fakeHost = installFakeHostFetch(chatStore);
   try {

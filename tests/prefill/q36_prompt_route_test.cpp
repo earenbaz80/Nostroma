@@ -1,10 +1,10 @@
-// q36_prompt_route (include/strata/kernels/q36_prompt_route.hpp): which kernels carry the prompt experts of one Qwen3.6 layer: fused > int8 (switch set to 1) > MMQ > int8 > grouped.
+// q36_prompt_route (include/nostroma/kernels/q36_prompt_route.hpp): which kernels carry the prompt experts of one Qwen3.6 layer: fused > int8 (switch set to 1) > MMQ > int8 > grouped.
 // No GPU, no model.
 #include <cstdio>
 
-#include "strata/kernels/q36_prompt_route.hpp"
+#include "nostroma/kernels/q36_prompt_route.hpp"
 
-using namespace strata::kernels;
+using namespace nostroma::kernels;
 
 static int failed = 0;
 #define CHECK(x) do { if (!(x)) { std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #x); ++failed; } } while (0)
@@ -16,23 +16,23 @@ int main() {
     CHECK(q36_layer_route(false, -1, false, true, false) == Q36Route::Mmq);
     CHECK(q36_layer_route(false, -1, false, false, true) == Q36Route::Int8);
     CHECK(q36_layer_route(false, -1, false, false, false) == Q36Route::Grouped);
-    // the build WITH MMQ, STRATA_EXPERT_I8=1: int8 before MMQ where it covers the layer (the A/B arm), MMQ where it does not; the fused kernels still come first
+    // the build WITH MMQ, NOSTROMA_EXPERT_I8=1: int8 before MMQ where it covers the layer (the A/B arm), MMQ where it does not; the fused kernels still come first
     CHECK(q36_layer_route(false, 1, false, true, true) == Q36Route::Int8);
     CHECK(q36_layer_route(false, 1, false, true, false) == Q36Route::Mmq);
     CHECK(q36_layer_route(true, 1, false, true, true) == Q36Route::Fused);
-    // the build WITH MMQ, STRATA_EXPERT_I8=0: never int8
+    // the build WITH MMQ, NOSTROMA_EXPERT_I8=0: never int8
     CHECK(q36_layer_route(false, 0, false, true, true) == Q36Route::Mmq);
     CHECK(q36_layer_route(false, 0, false, false, true) == Q36Route::Grouped);
-    // STRATA_Q36_NO_MMQ in a build with MMQ (mmq_takes false), nothing set: int8 where it covers (it used to be the grouped kernels), grouped otherwise
+    // NOSTROMA_Q36_NO_MMQ in a build with MMQ (mmq_takes false), nothing set: int8 where it covers (it used to be the grouped kernels), grouped otherwise
     CHECK(q36_layer_route(false, -1, false, false, true) == Q36Route::Int8);
     // the build WITHOUT MMQ, nothing set (reads as 1): fused > int8 > grouped, whatever the card
     CHECK(q36_layer_route(true, -1, true, false, true) == Q36Route::Fused);
     CHECK(q36_layer_route(false, -1, true, false, true) == Q36Route::Int8);
     CHECK(q36_layer_route(false, -1, true, false, false) == Q36Route::Grouped);
-    // the build WITHOUT MMQ, STRATA_EXPERT_I8=0: the way back to the grouped kernels; =1 is the same as unset
+    // the build WITHOUT MMQ, NOSTROMA_EXPERT_I8=0: the way back to the grouped kernels; =1 is the same as unset
     CHECK(q36_layer_route(false, 0, true, false, true) == Q36Route::Grouped);
     CHECK(q36_layer_route(false, 1, true, false, true) == Q36Route::Int8);
-    CHECK(q36_layer_route(true, 0, true, false, true) == Q36Route::Fused);   // STRATA_PF_FUSED decides the fused kernels, not this switch
+    CHECK(q36_layer_route(true, 0, true, false, true) == Q36Route::Fused);   // NOSTROMA_PF_FUSED decides the fused kernels, not this switch
     // one layer on the grouped kernels sends the whole prompt path there
     CHECK(q36_prompt_path_ok(41, 0));
     CHECK(!q36_prompt_path_ok(41, 1));

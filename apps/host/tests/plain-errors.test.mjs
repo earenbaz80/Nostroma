@@ -23,7 +23,7 @@ const cases = [
   ['server_exited (exit code 0xC000007B)', 'dll-bad', /does not fit this computer or is damaged/],
   ['server_exited (exit code 0xC0000005)', 'crash', /crashed while starting/],
   ['server_exited (exit code 0xC000001D)', 'cpu-unsupported', /newer processor feature/],
-  ['spawn C:/x/strata.exe ENOENT', 'file-missing', /could not find a file/],
+  ['spawn C:/x/nostroma.exe ENOENT', 'file-missing', /could not find a file/],
   ['server_exited (exit code 0xC0000022)', 'blocked', /security software stopped/],
   ['server_exited: memory guard: 5.1 GiB of RAM free is under the 6 GiB limit', 'memory', /ran low on memory/],
   ['server_exited (exit code 137): Killed', 'memory', /ran low on memory/],
@@ -36,8 +36,8 @@ const cases = [
   ['component-missing', 'assistant-missing', /coding assistant/],
   ['Nostroma Control did not answer within 60 s (models list).', 'control', /couldn’t read its own components/],
   ['Prepare this model’s vision files before enabling picture reading.', 'picture-reading', /Picture reading isn’t available/],
-  ['server_exited (exit code 1): strata generate: GPU 0 (AMD Radeon 760M Graphics, gfx1103) is not an architecture this Nostroma engine was compiled for (gfx1200,gfx1201); compile it for this card', 'gpu-no-code', /no code for the graphics card/],
-  ['server_exited (exit code 1): [strata] none of this computer\'s graphics cards has code in this Nostroma engine (it is built for gfx1200,gfx1201). Cards found: AMD Radeon RX 6800 XT (gfx1030).', 'gpu-no-code', /no code for the graphics card/],
+  ['server_exited (exit code 1): nostroma generate: GPU 0 (AMD Radeon 760M Graphics, gfx1103) is not an architecture this Nostroma engine was compiled for (gfx1200,gfx1201); compile it for this card', 'gpu-no-code', /no code for the graphics card/],
+  ['server_exited (exit code 1): [nostroma] none of this computer\'s graphics cards has code in this Nostroma engine (it is built for gfx1200,gfx1201). Cards found: AMD Radeon RX 6800 XT (gfx1030).', 'gpu-no-code', /no code for the graphics card/],
   ['Traceback (most recent call last):\n  File "x.py", line 3', 'technical', /Something went wrong/],
 ];
 
@@ -54,7 +54,7 @@ for (const [raw, kind, message] of cases) {
 
 test('a DeepSeek model of an earlier Nostroma: Control’s own words, the folder and size kept, the next step apart (English only until the owner approves translations)', () => {
   const d1 = 'DeepSeek-V4.1-Flash ISTA-DAS 2.00 bpw is a DeepSeek model. This version of Nostroma no longer runs DeepSeek models, so it was not started.';
-  const files = ' Its files are still on this computer: 257 GB in /home/me/Strata-data/models/deepseek-v4.1-flash-ist-das-2.00bpw. Nothing was changed or deleted.';
+  const files = ' Its files are still on this computer: 257 GB in /home/me/Nostroma-data/models/deepseek-v4.1-flash-ist-das-2.00bpw. Nothing was changed or deleted.';
   const next = 'Choose a Qwen model to run instead. If you no longer need the DeepSeek files, you can delete that folder to free the space.';
   for (const message of [d1, d1 + files]) {
     const f = plainFailure(message + ' ' + next);
@@ -75,7 +75,7 @@ test('an ordinary sentence is left as it is and gets no Details', () => {
 
 test('every plain message and next step is translated in all nine languages', () => {
   const en = catalogs.en;
-  const brand = (t) => String(t).replace(/\bStrata\b/g, 'Nostroma');   // the catalogues keep upstream's wording; i18n.ts swaps it on the way out
+  const brand = (t) => String(t).replace(/\bNostroma\b/g, 'Nostroma');   // the catalogues keep upstream's wording; i18n.ts swaps it on the way out
   const ids = Object.fromEntries(Object.entries(en).flatMap(([id, text]) => [[text, id], [brand(text), id]]));
   for (const [raw] of cases) {
     const f = plainFailure(raw);
@@ -94,7 +94,7 @@ test('every plain message and next step is translated in all nine languages', ()
 
 test('missing model files are named, in every language, with a next step (#3478)', async () => {
   const { missingFilesError, missingNames } = await import('../server/missing-files.mjs');
-  const names = missingNames([{ part: 'engine', file: 'strata.exe', status: 'missing' }, { part: 'native', file: 'Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf', status: 'missing' }, { part: 'vision/mmproj', file: 'mmproj-F16.gguf', status: 'missing' }],
+  const names = missingNames([{ part: 'engine', file: 'nostroma.exe', status: 'missing' }, { part: 'native', file: 'Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf', status: 'missing' }, { part: 'vision/mmproj', file: 'mmproj-F16.gguf', status: 'missing' }],
     [['C:', 'models', 'Qwen3.6-35B-A3B-UD-Q4_K_XL-00002-of-00003.gguf'].join(String.fromCharCode(92)), '/data/models/mmproj-F16.gguf']);
   assert.deepEqual(names, ['Qwen3.6-35B-A3B-UD-Q4_K_XL-00002-of-00003.gguf', 'mmproj-F16.gguf', 'the engine program', 'Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf']);
   const error = missingFilesError('qwen36-q4', names);
@@ -122,5 +122,5 @@ test('missing model files are named, in every language, with a next step (#3478)
 
 test('the engine component is named in words, once (#3900)', async () => {
   const { missingNames } = await import('../server/missing-files.mjs');
-  assert.deepEqual(missingNames([{ part: 'engine', file: 'component:strata-engine' }], ['component:strata-engine']), ['the engine program']);
+  assert.deepEqual(missingNames([{ part: 'engine', file: 'component:nostroma-engine' }], ['component:nostroma-engine']), ['the engine program']);
 });

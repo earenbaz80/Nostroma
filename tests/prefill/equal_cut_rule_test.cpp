@@ -5,14 +5,14 @@
 #include <initializer_list>
 #include <limits>
 
-#include "strata/prefill/equal_cut_rule.hpp"
+#include "nostroma/prefill/equal_cut_rule.hpp"
 
-namespace ec = strata::prefill::equal_cut;
+namespace ec = nostroma::prefill::equal_cut;
 
 static int failed = 0;
 #define CHECK(x) do { if (!(x)) { std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #x); ++failed; } } while (0)
 
-// The older opt-in's lambda as it stands in generate.cpp (equal_chunk with STRATA_PREFILL_EQUAL=1), kept here as the reference
+// The older opt-in's lambda as it stands in generate.cpp (equal_chunk with NOSTROMA_PREFILL_EQUAL=1), kept here as the reference
 static int64_t old_request_chunk(int64_t tokens, int64_t max_chunk) {
     if (tokens <= 0 || max_chunk <= 0) return 0;
     const int64_t rounded = tokens > std::numeric_limits<int64_t>::max() - 255 ? tokens : ((tokens + 255) / 256) * 256;

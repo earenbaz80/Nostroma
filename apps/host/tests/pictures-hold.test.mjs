@@ -25,7 +25,7 @@ test('the host: a load with Read pictures off on a model without picture files s
   const f = nativeFixture();
   try {
     await f.control.refresh();
-    const path = join(f.repo, 'strata-iq2_xs.json');
+    const path = join(f.repo, 'nostroma-iq2_xs.json');
     const { vision, ...noFiles } = JSON.parse(readFileSync(path, 'utf8'));
     assert.ok(vision, 'the fixture had picture files');
     writeFileSync(path, JSON.stringify(noFiles));                       // set up without the picture files (the Strix model)
@@ -48,7 +48,7 @@ test('the host: a load while the engine has no reader still saves nothing, the m
   const f = nativeFixture();
   try {
     await f.control.refresh();
-    const path = join(f.repo, 'strata-iq2_xs.json');
+    const path = join(f.repo, 'nostroma-iq2_xs.json');
     const none = await finishJob(f.control, f.control.operation('load', { model: 'iq2_xs', vision: 'no', visionUnavailable: true }).id);
     assert.equal(none.state, 'done', none.error);
     const saved = JSON.parse(readFileSync(path, 'utf8'));

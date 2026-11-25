@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The measurement run for this report: telemetry in the background, then the speed matrix, then the needle test.
 set -u
-ROOT=/home/gpf/code/Strata
+ROOT=/home/gpf/code/Nostroma
 OUT=$ROOT/bench/results/2026-10-05-community-rx-6700-xt
 PACK=/media/gpf/DDrive1/dev/models/packs/iq2_xs
 URL=http://127.0.0.1:8080

@@ -13,8 +13,8 @@ mkdir -p out
 nvidia-smi --query-gpu=timestamp,index,clocks.sm,power.draw,temperature.gpu,utilization.gpu,pcie.link.gen.current,pcie.link.width.current,clocks_throttle_reasons.active --format=csv -l 2 > out/gpu.csv &
 GP=$!
 date -u +"harness start %F %T UTC" > run.log
-/opt/strata-swift/.venv/bin/python -u run_harness.py "$KEY_FILE" /root/prbench/benchmark.py \
-  --root /opt/strata-bmtp --pack /opt/strata-ssd/packs/ud-q4_k_xl --url http://127.0.0.1:8000 \
+/opt/nostroma-swift/.venv/bin/python -u run_harness.py "$KEY_FILE" /root/prbench/benchmark.py \
+  --root /opt/nostroma-bmtp --pack /opt/nostroma-ssd/packs/ud-q4_k_xl --url http://127.0.0.1:8000 \
   --targets 4096,25000,51000,104000,127000 --runs 3 --out /root/prbench/out >> run.log 2>&1
 echo "harness exit $?" >> run.log
 date -u +"harness end %F %T UTC" >> run.log

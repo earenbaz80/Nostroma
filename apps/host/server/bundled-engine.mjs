@@ -27,7 +27,7 @@ export function compareVersions(a, b) {
 async function readManifest(folder) {
   try {
     const data = JSON.parse((await readFile(join(folder, MANIFEST), 'utf8')).replace(/^﻿/, ''));
-    if (!data || data.id !== 'strata-engine' || typeof data.version !== 'string' || typeof data.platform !== 'string' || typeof data.backend !== 'string') return null;
+    if (!data || data.id !== 'nostroma-engine' || typeof data.version !== 'string' || typeof data.platform !== 'string' || typeof data.backend !== 'string') return null;
     if (!Array.isArray(data.files) || !data.files.length || typeof data.entrypoint !== 'string') return null;
     return data;
   } catch { return null; }
@@ -101,11 +101,11 @@ export function windowsDisplayVendors({ platform = process.platform, run = execF
 const BACKEND_OF_VENDOR = [['10de', 'cuda'], ['1002', 'hip'], ['8086', 'sycl']];
 
 /**
- * Every engine family this PC's graphics cards can run, in the order NVIDIA, AMD, Intel; STRATA_ENGINE_BACKEND wins. A PC with two
+ * Every engine family this PC's graphics cards can run, in the order NVIDIA, AMD, Intel; NOSTROMA_ENGINE_BACKEND wins. A PC with two
  * makes lists both, so a build for either make is accepted (recommend, never force).
  */
 export function gpuBackendsHere(env = process.env, { vendors = windowsDisplayVendors() } = {}) {
-  const forced = String((env.NOSTROMA_ENGINE_BACKEND ?? env.STRATA_ENGINE_BACKEND) ?? '').trim().toLowerCase();
+  const forced = String((env.NOSTROMA_ENGINE_BACKEND ?? env.NOSTROMA_ENGINE_BACKEND) ?? '').trim().toLowerCase();
   if (forced) return ['cuda', 'hip', 'sycl'].includes(forced) ? [forced] : [];
   if (vendors.size) {
     const list = BACKEND_OF_VENDOR.filter(([vendor]) => vendors.has(vendor)).map(([, backend]) => backend);
@@ -127,7 +127,7 @@ export function gpuBackendsHere(env = process.env, { vendors = windowsDisplayVen
 
 /**
  * The engine family this PC's graphics card needs ('cuda', 'hip', 'sycl'), or null when it cannot be told. The same order as Control
- * (NVIDIA first, then AMD, then Intel); STRATA_ENGINE_BACKEND wins. Reads only the driver and (Linux) the PCI vendor of the display adapters.
+ * (NVIDIA first, then AMD, then Intel); NOSTROMA_ENGINE_BACKEND wins. Reads only the driver and (Linux) the PCI vendor of the display adapters.
  */
 export function gpuBackendHere(env = process.env, options = {}) {
   return gpuBackendsHere(env, options)[0] ?? null;

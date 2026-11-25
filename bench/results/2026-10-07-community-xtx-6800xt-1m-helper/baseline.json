@@ -1,5 +1,5 @@
 {
-  "exe": "${RESEARCH_ROOT}/llama.cpp-cuda/strata-01401-hip-fullvram-20261006/build-hip-102-fullvram/strata",
+  "exe": "${RESEARCH_ROOT}/llama.cpp-cuda/nostroma-01401-hip-fullvram-20261006/build-hip-102-fullvram/nostroma",
   "backend": "hip",
   "gpu": 0,
   "args": [
@@ -8,7 +8,7 @@
     "--native",
     "${MODELS}/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf",
     "--expert-profile",
-    "${RESEARCH_ROOT}/llama.cpp-cuda/strata-0136-q40-20261002/data/expert-profile.bin",
+    "${RESEARCH_ROOT}/llama.cpp-cuda/nostroma-0136-q40-20261002/data/expert-profile.bin",
     "--expert-cache",
     "auto",
     "--prefill",
@@ -52,26 +52,26 @@
     "--remote-expert-opt",
     "--vision"
   ],
-  "cwd": "${RESEARCH_ROOT}/llama.cpp-cuda/strata-01401-serve-contract-20261006",
+  "cwd": "${RESEARCH_ROOT}/llama.cpp-cuda/nostroma-01401-serve-contract-20261006",
   "tokenizer": "${PACK}/tokenizer",
   "model_name": "default-big",
   "log": "${OUTPUT}/engine.log",
   "host": "127.0.0.1",
   "port": 8080,
   "env": {
-    "STRATA_PREFILL_MMQ": "1",
-    "STRATA_PREFILL_RING": "48",
-    "STRATA_IO_THREADS": "32",
-    "STRATA_HIPBLASLT_TUNING": "${RESEARCH_ROOT}/llama.cpp-cuda/strata-0139-hip-20261005/tools/hip/gfx1100-hipblaslt-100500.txt",
+    "NOSTROMA_PREFILL_MMQ": "1",
+    "NOSTROMA_PREFILL_RING": "48",
+    "NOSTROMA_IO_THREADS": "32",
+    "NOSTROMA_HIPBLASLT_TUNING": "${RESEARCH_ROOT}/llama.cpp-cuda/nostroma-0139-hip-20261005/tools/hip/gfx1100-hipblaslt-100500.txt",
     "HIP_VISIBLE_DEVICES": "0,1",
-    "STRATA_SH_STREAM": "0",
-    "STRATA_HIP_WMMA": "1",
-    "STRATA_ADAPT_LAG": "2",
-    "STRATA_REMOTE_RESERVE_MIB": "128"
+    "NOSTROMA_SH_STREAM": "0",
+    "NOSTROMA_HIP_WMMA": "1",
+    "NOSTROMA_ADAPT_LAG": "2",
+    "NOSTROMA_REMOTE_RESERVE_MIB": "128"
   },
   "lib_dirs": [
-    "${RESEARCH_ROOT}/llama.cpp-cuda/strata-0139-hip-20261005/.venv102/lib/python3.12/site-packages/_rocm_sdk_devel/lib",
-    "${RESEARCH_ROOT}/llama.cpp-cuda/strata-0139-hip-20261005/.venv102/lib/python3.12/site-packages/_rocm_sdk_libraries/lib"
+    "${RESEARCH_ROOT}/llama.cpp-cuda/nostroma-0139-hip-20261005/.venv102/lib/python3.12/site-packages/_rocm_sdk_devel/lib",
+    "${RESEARCH_ROOT}/llama.cpp-cuda/nostroma-0139-hip-20261005/.venv102/lib/python3.12/site-packages/_rocm_sdk_libraries/lib"
   ],
   "sampling": {
     "temperature": 1.0,
@@ -81,7 +81,7 @@
     "presence_penalty": 0.0
   },
   "vision": {
-    "exe": "${RESEARCH_ROOT}/llama.cpp-cuda/strata-01401-serve-contract-20261006/build-vision-cpu/bin/strata-vision",
+    "exe": "${RESEARCH_ROOT}/llama.cpp-cuda/nostroma-01401-serve-contract-20261006/build-vision-cpu/bin/nostroma-vision",
     "mmproj": "${MODELS}/mmproj-F16.gguf",
     "model": "${MODELS}/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf",
     "gpu": false,

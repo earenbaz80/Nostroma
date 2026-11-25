@@ -1,4 +1,4 @@
-// src/kernels/iq_nibble_parity.cpp - STRATA_EXPERT_NIBBLE (strata/core/expert_nibble.hpp): the 4-bit gate/up expert
+// src/kernels/iq_nibble_parity.cpp - NOSTROMA_EXPERT_NIBBLE (nostroma/core/expert_nibble.hpp): the 4-bit gate/up expert
 // slots against the production kernels and the GGUF blobs, bit for bit.
 //
 //     build/iq_nibble_parity --header                    the host half of expert_nibble.hpp (no GPU)
@@ -32,12 +32,12 @@
 // `--synthetic-only`: the synthetic experts alone, for every gate/up format x both down types (IQ4_NL, Q2_0), the down rows
 // random bytes with ordinary fp16 scales: checks (1)-(7) with no model file (a GP100 is still needed).
 // `--negative`: the control - one code byte per slot changed after the transcode; (6) and (7) must then report differences.
-// Exit 0 when every check is equal; 1 otherwise; 2 on a usage or setup error.  A build without STRATA_EXPERT_NIBBLE_BUILT
-// (the CUDA build with STRATA_EXPERIMENTAL_SM60) has no 4-bit kernels: --header only.
-#include "strata/artifact/gguf_reader.hpp"
-#include "strata/core/expert_nibble.hpp"
-#include "strata/kernels/cpu/native_expert.hpp"
-#include "strata/kernels/iq_kernels.hpp"
+// Exit 0 when every check is equal; 1 otherwise; 2 on a usage or setup error.  A build without NOSTROMA_EXPERT_NIBBLE_BUILT
+// (the CUDA build with NOSTROMA_EXPERIMENTAL_SM60) has no 4-bit kernels: --header only.
+#include "nostroma/artifact/gguf_reader.hpp"
+#include "nostroma/core/expert_nibble.hpp"
+#include "nostroma/kernels/cpu/native_expert.hpp"
+#include "nostroma/kernels/iq_kernels.hpp"
 
 #include "ggml.h"
 
@@ -57,9 +57,9 @@
 
 namespace {
 
-namespace nib = strata::core::nibble;
-namespace K = strata::kernels;
-namespace cpu = strata::kernels::cpu;
+namespace nib = nostroma::core::nibble;
+namespace K = nostroma::kernels;
+namespace cpu = nostroma::kernels::cpu;
 
 int fails = 0;
 void expect(bool ok, const char* what) {
@@ -151,7 +151,7 @@ struct Layer {
     uint8_t* slots = nullptr;    // ne x V.slot_bytes (the last one only `hashed` long: nothing past it is readable)
 };
 
-bool layer_fmt(const strata::GgufModel& m, int l, int& gt, int& dt) {
+bool layer_fmt(const nostroma::GgufModel& m, int l, int& gt, int& dt) {
     const auto* g = m.find("blk." + std::to_string(l) + ".ffn_gate_exps.weight");
     const auto* d = m.find("blk." + std::to_string(l) + ".ffn_down_exps.weight");
     if (g == nullptr || d == nullptr) return false;
@@ -161,9 +161,9 @@ bool layer_fmt(const strata::GgufModel& m, int l, int& gt, int& dt) {
 }
 
 // The blobs of experts [0, ne) of layer l.
-bool read_layer(const strata::GgufModel& m, int l, int ne, Layer& Y) {
+bool read_layer(const nostroma::GgufModel& m, int l, int ne, Layer& Y) {
     const char* roles[3] = { "gate", "up", "down" };
-    const strata::TensorInfo* t[3] = {};
+    const nostroma::TensorInfo* t[3] = {};
     size_t sh[3] = {};
     for (int r = 0; r < 3; ++r) t[r] = m.find("blk." + std::to_string(l) + ".ffn_" + roles[r] + "_exps.weight", &sh[r]);
     if (!t[0] || !t[1] || !t[2]) return false;
@@ -661,7 +661,7 @@ long long grouped_parity(const Layer& Y, std::mt19937& rng, int plans, const voi
     const Var vars[] = { { -1, -1, false, "default, card" }, { 0, -1, false, "S, card" }, { 1, -1, false, "P, card" },
                          { -1, -1, true, "default, card, V1" }, { -1, 0, false, "default, mode 0" },
                          { 0, 0, false, "S, mode 0" }, { 1, 0, false, "P, mode 0" }, { -1, 0, true, "default, mode 0, V1" },
-                         // STRATA_NIB_GU_PROTO (nib_gu_proto.cuh): the staged-once kernel, id 31
+                         // NOSTROMA_NIB_GU_PROTO (nib_gu_proto.cuh): the staged-once kernel, id 31
                          { 31, -1, false, "gu-proto 31, card" }, { 31, 0, false, "gu-proto 31, mode 0" },
                          { 31, 0, true, "gu-proto 31, mode 0, V1" } };
     constexpr int NV = (int) (sizeof vars / sizeof vars[0]);
@@ -828,7 +828,7 @@ int main(int argc, char** argv) {
                      prop.major, prop.minor);
         return 77;
     }
-    if (!STRATA_EXPERT_NIBBLE_BUILT || nib::prepare(nullptr) != 0) {
+    if (!NOSTROMA_EXPERT_NIBBLE_BUILT || nib::prepare(nullptr) != 0) {
         std::fprintf(stderr, "iq_nibble_parity: no 4-bit kernels in this build, or the GGUF codebooks are not unique\n");
         return 2;
     }
@@ -881,9 +881,9 @@ int main(int argc, char** argv) {
     int layers_done = 0;
     std::vector<int> syn_done;
     for (size_t si = 0; si < shards.size(); ++si) {
-        std::unique_ptr<strata::GgufModel> model;
+        std::unique_ptr<nostroma::GgufModel> model;
         try {
-            model = std::make_unique<strata::GgufModel>(strata::GgufModel::open(shards[si]));
+            model = std::make_unique<nostroma::GgufModel>(nostroma::GgufModel::open(shards[si]));
         } catch (const std::exception& ex) {
             std::fprintf(stderr, "iq_nibble_parity: %s\n", ex.what());
             return 2;

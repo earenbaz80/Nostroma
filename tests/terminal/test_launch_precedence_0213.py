@@ -23,7 +23,7 @@ class Launches(Base):
             return engine_args(cfg, str(self.exe), announce=False)
 
     def base(self, **extra):
-        return {"exe": "component:strata-engine", "model_name": "qwen3.8-flash-next-iq3_s", "port": 8080, "args": list(self.args), **extra}
+        return {"exe": "component:nostroma-engine", "model_name": "qwen3.8-flash-next-iq3_s", "port": 8080, "args": list(self.args), **extra}
 
     def launch(self, base=None, extra=None, prev=None, **settings):
         """What `Runner.build_config` writes: derive, stamp, and a round trip through the file."""

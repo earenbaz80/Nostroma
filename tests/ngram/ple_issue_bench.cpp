@@ -9,7 +9,7 @@
 // the next, and prints: heap allocations made by the calling thread inside issue() per call, thread CPU time inside issue()
 // per call, and dedup_rows per call (the same on both builds: the rows that share a page).  Allocation counting replaces the
 // global operator new, so the numbers are exact for this thread.
-#include "strata/ngram/ple_reader.hpp"
+#include "nostroma/ngram/ple_reader.hpp"
 
 #include <time.h>
 
@@ -26,7 +26,7 @@
 #include <string>
 #include <vector>
 
-namespace ng = strata::ngram;
+namespace ng = nostroma::ngram;
 
 static thread_local uint64_t t_allocs = 0;
 void* operator new(size_t n) {

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare local web assets from the supplied Strata logo masters.
+"""Prepare local web assets from the supplied Nostroma logo masters.
 
 Requires fontTools only while preparing the outlined wordmark. The checked-in
 exports have no font or Python dependency at app runtime. Source files stay
@@ -19,7 +19,7 @@ from fontTools.ttLib import TTFont
 
 
 APP = Path(__file__).resolve().parent.parent
-MASTERS = APP.parent / "Strata-Logo-DesignFiles"
+MASTERS = APP.parent / "Nostroma-Logo-DesignFiles"
 PUBLIC = APP / "public"
 BRAND = PUBLIC / "brand"
 FONT = APP / "scripts" / "fonts" / "GTWalsheimPro-Bold.woff2"   # the masters' face; the app serves Exo 2
@@ -75,7 +75,7 @@ def outlined_wordmark(font: TTFont) -> str:
     tracking_units = 1.54 / scale
     cursor = 0.0
     paths = []
-    letters = "strata"
+    letters = "nostroma"
     names = [cmap[ord(letter)] for letter in letters]
     for index, name in enumerate(names):
         pen = SVGPathPen(glyphs)
@@ -122,7 +122,7 @@ def pair_kerning(font: TTFont, left: str, right: str) -> int:
 
 
 def prepare_lockup(entries: list[dict[str, str]], theme: str, font: TTFont) -> None:
-    master = f"logo/strata-lockup-{theme}.svg"
+    master = f"logo/nostroma-lockup-{theme}.svg"
     output = BRAND / f"nostroma-lockup-{theme}.svg"
     output.write_text(
         '<svg xmlns="http://www.w3.org/2000/svg" width="182" height="48" '
@@ -172,7 +172,7 @@ def main() -> None:
     BRAND.mkdir(parents=True, exist_ok=True)
     entries: list[dict[str, str]] = []
     for theme in ("light", "dark"):
-        copy(entries, f"logo/strata-mark-{theme}.svg", BRAND / f"nostroma-mark-{theme}.svg")
+        copy(entries, f"logo/nostroma-mark-{theme}.svg", BRAND / f"nostroma-mark-{theme}.svg")
     font = TTFont(FONT)
     for theme in ("light", "dark"):
         prepare_lockup(entries, theme, font)

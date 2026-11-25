@@ -20,7 +20,7 @@ examples:
                                                    set everything on the command line, serve, print the address
   nostroma launch --model-path /data/models/IQ3_XXS --no-tui
                                                    use model files you already have (a folder or one .gguf)
-  nostroma launch --preset Office --set prefill=65536 --set STRATA_PIN_BY_NEED=1 --no-tui
+  nostroma launch --preset Office --set prefill=65536 --set NOSTROMA_PIN_BY_NEED=1 --no-tui
                                                    change one advanced setting for this start
   nostroma launch --plan --model q2_0                show what would happen, change nothing
   nostroma launch --list-presets | --delete-preset NAME | --status | --stop [--preset NAME]
@@ -127,7 +127,7 @@ def add_parsers(sp: argparse._SubParsersAction) -> list[argparse.ArgumentParser]
     g.add_argument("--tune-allow-small", action="store_true", help="let the tuner also try settings that can change answers very slightly")
     g.add_argument("--dspark", metavar="WORD", help=argparse.SUPPRESS)               # DeepSeek (no longer run): accepted, answered in plain words
     g.add_argument("--set", action="append", default=[], metavar="KEY=VALUE",
-                   help="an advanced engine setting or STRATA_* variable, e.g. prefill=65536 (repeat); unknown names get a warning, not a refusal")
+                   help="an advanced engine setting or NOSTROMA_* variable, e.g. prefill=65536 (repeat); unknown names get a warning, not a refusal")
     g.add_argument("--pool-cores", metavar="LIST",
                    help="experimental: pin the CPU workers to exactly these logical processors, e.g. 2,4,6,8 or 2-14:2 (the numbers Task Manager or "
                         "lscpu show). The default is one worker per physical core, which the engine's start line names; "
@@ -152,7 +152,7 @@ def add_parsers(sp: argparse._SubParsersAction) -> list[argparse.ArgumentParser]
     o.add_argument("--open", action="store_true", help="open the server's web page in your browser once it is serving (nothing opens a browser without this)")
     o.add_argument("--yes", action="store_true", help="do not ask questions (for one: whether to download the model on a computer with no engine yet)")
     o.add_argument("--plan", action="store_true", help="show what would happen and exit; nothing is changed")
-    o.add_argument("--feed", metavar="URL|DIR", help="where the signed update feed (engine downloads) is; default: STRATA_UPDATE_FEED or the project's")
+    o.add_argument("--feed", metavar="URL|DIR", help="where the signed update feed (engine downloads) is; default: NOSTROMA_UPDATE_FEED or the project's")
     o.add_argument("--output", choices=("human", "json"), default="human")
     m = p.add_argument_group("manage")
     m.add_argument("--list-presets", action="store_true", help="list saved presets")
@@ -488,7 +488,7 @@ def _interrupted_move_notice() -> None:
     """One line when a move of the models folder was left unfinished (never blocks the launch)."""
     try:
         from nostroma_control import discovery, models_move
-        st = models_move.interrupted(discovery.data_dir(Path.home() / "Strata")[0])
+        st = models_move.interrupted(discovery.data_dir(Path.home() / "Nostroma")[0])
     except Exception:
         return
     if st:
@@ -548,7 +548,7 @@ def _can_ask() -> bool:
     through the environment. A pipe from a script or CI does not."""
     if sys.stdin is None or sys.stdin.closed:
         return False
-    if os.environ.get("CI") or os.environ.get("NOSTROMA_NO_PROMPT", os.environ.get("STRATA_NO_PROMPT")):
+    if os.environ.get("CI") or os.environ.get("NOSTROMA_NO_PROMPT", os.environ.get("NOSTROMA_NO_PROMPT")):
         return False
     return bool(os.environ.get("MSYSTEM") or os.environ.get("TERM_PROGRAM") or os.environ.get("TERM") or os.environ.get("WT_SESSION"))
 
@@ -625,7 +625,7 @@ def _tui(run, *args, **kw) -> int:
     except KeyboardInterrupt:
         raise
     except Exception as e:                                   # noqa: BLE001
-        print(f"strata: The launch screens stopped because of an unexpected problem ({type(e).__name__}: {e}), and nothing was started. "
+        print(f"nostroma: The launch screens stopped because of an unexpected problem ({type(e).__name__}: {e}), and nothing was started. "
               "Run the same command with --no-tui to see the steps as plain lines.", file=sys.stderr)
         return 1
 
@@ -690,12 +690,12 @@ def launch_info(name: str | None = None) -> dict | None:
         return None
     port = (pick or {}).get("port") or (preset.port if preset else S.DEFAULT_PORT)
     return {"url": (pick or {}).get("url") or f"http://127.0.0.1:{port}", "key": (cfg.get("api_key") if str(cfg.get("api_key") or "").strip().lower() != "none" else None) or (preset.api_key if preset else None),
-            "model": cfg.get("model_name") or "strata", "context": _cfg_context(cfg), "running": bool(pick), "name": (pick or {}).get("name") or (preset.name if preset else None),
+            "model": cfg.get("model_name") or "nostroma", "context": _cfg_context(cfg), "running": bool(pick), "name": (pick or {}).get("name") or (preset.name if preset else None),
             "port": port, "access": preset.access if preset else None}
 
 
 def setup_config_keys(wanted: str | None = None) -> list[tuple[str, Path, str]]:
-    """(model id, config file, API key) for the models setup.py set up (strata-<model>.json in the install folders) that carry a key, #3570.
+    """(model id, config file, API key) for the models setup.py set up (nostroma-<model>.json in the install folders) that carry a key, #3570.
     `wanted` keeps the model whose id is that name or ends with it (coder-iq1_m for IQ1_M); case does not matter."""
     from nostroma_control import models
     try:
@@ -729,7 +729,7 @@ def run_launch(a: argparse.Namespace) -> int:
         if machine:
             print(json.dumps({"schema_version": 1, "ok": False, "error": {"code": code, "message": text}}))
         else:
-            print(f"strata: {text}", file=sys.stderr)
+            print(f"nostroma: {text}", file=sys.stderr)
         return code
 
     try:
@@ -767,7 +767,7 @@ def run_launch(a: argparse.Namespace) -> int:
                 _say(info["key"])
                 return 0
             if not a.preset:
-                # not a launch: a model set up by setup.py keeps its key in its own strata-<model>.json (#3570)
+                # not a launch: a model set up by setup.py keeps its key in its own nostroma-<model>.json (#3570)
                 found = setup_config_keys(getattr(a, "model", None))
                 if len(found) == 1:
                     _say(found[0][2])
@@ -962,9 +962,9 @@ def run_launch(a: argparse.Namespace) -> int:
         if a.open and local:
             open_page(local)
         if result.key and os.name == "nt":
-            _say(f"  Watch it:    $env:STRATA_API_KEY = nostroma launch --show-key; nostroma monitor --url {local} --credential-env STRATA_API_KEY")
+            _say(f"  Watch it:    $env:NOSTROMA_API_KEY = nostroma launch --show-key; nostroma monitor --url {local} --credential-env NOSTROMA_API_KEY")
         elif result.key:
-            _say(f"  Watch it:    STRATA_API_KEY=$(nostroma launch --show-key) nostroma monitor --url {local} --credential-env STRATA_API_KEY")
+            _say(f"  Watch it:    NOSTROMA_API_KEY=$(nostroma launch --show-key) nostroma monitor --url {local} --credential-env NOSTROMA_API_KEY")
         else:
             _say(f"  Watch it:    nostroma monitor --url {local}")
         for line in final_hint_lines(s, bool(a.preset or a.save_preset)):
@@ -1000,12 +1000,12 @@ def run_connect(a: argparse.Namespace) -> int:
         near = harness.closest_name(a.harness)
         msg = f"There is no app called '{a.harness}'." + (f" Did you mean '{near}'?" if near else "") + \
               " Apps: " + ", ".join(x.id for x in harness.HARNESSES) + "."
-        print(f"strata: {msg}", file=sys.stderr)
+        print(f"nostroma: {msg}", file=sys.stderr)
         return 2
     info = launch_info(a.preset) or {}
     url = a.url or info.get("url") or f"http://127.0.0.1:{S.DEFAULT_PORT}"
     key = a.key or (os.environ.get(a.key_env) if a.key_env else None) or info.get("key") or ""
-    model = a.model or info.get("model") or "strata"
+    model = a.model or info.get("model") or "nostroma"
     context = a.context or info.get("context") or 32768
     tgt = harness.target(url, key, model, context)
     out = harness.render(h, tgt)
@@ -1074,7 +1074,7 @@ def run_connect(a: argparse.Namespace) -> int:
             return 0
         if not a.yes:
             if not sys.stdin.isatty():
-                print("strata: --write asks first; run it in a terminal or add --yes.", file=sys.stderr)
+                print("nostroma: --write asks first; run it in a terminal or add --yes.", file=sys.stderr)
                 return 2
             try:
                 ans = input("\nWrite these files now? A file that exists is copied to a backup first. [y/N] ").strip().lower()

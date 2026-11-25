@@ -37,7 +37,7 @@ class Base(unittest.TestCase):
         (self.data / "dflash2" / drafting.VOCAB_NAME).write_bytes(b"v" * 100)
         (self.data / "mtp" / "rt" / "experts.bin").write_bytes(b"e" * 100)
         (self.data / "mtp" / "rt" / drafting.VOCAB_NAME).write_bytes(b"v" * 100)
-        self.exe = self.root / "strata"
+        self.exe = self.root / "nostroma"
         self.exe.write_bytes(b"--mtp-draft-vocab FILE (or --mtp DIR ... --draft-fallback ... selector codebooks: Q4_0 rows")
         self.args = ["--native", "m.gguf", "--pack", str(self.data / "packs" / "tag"), "--mtp", str(self.data / "mtp" / "rt"), "--spec", "4", "--max-context", "65536"]
         patcher = mock.patch.object(drafting, "ENGINE_SERVES_DFLASH2", True)

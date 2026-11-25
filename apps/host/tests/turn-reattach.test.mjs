@@ -66,7 +66,7 @@ async function pageOn(chatStore, { active = [], attach }) {
 const until = async (check, what) => { for (let i = 0; i < 300; i++) { if (check()) return; await new Promise((r) => setTimeout(r, 10)); } assert.fail(`timed out waiting for ${what} (attach calls: ${JSON.stringify(globalThis.__attachCalls)})`); };
 
 test('reload in the middle of an agent turn: the chat shows as running with a Stop button, streams the rest, keeps the approval card, and ends whole', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'strata-reattach-'));
+  const dir = mkdtempSync(join(tmpdir(), 'nostroma-reattach-'));
   const chatStore = createChatStore({ dir });
   let page;
   try {
@@ -118,7 +118,7 @@ test('reload in the middle of an agent turn: the chat shows as running with a St
 });
 
 test('a turn that ended while the page was away is shown whole; a chat with nothing to take over keeps its reply and gets no error', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'strata-reattach2-'));
+  const dir = mkdtempSync(join(tmpdir(), 'nostroma-reattach2-'));
   const chatStore = createChatStore({ dir });
   let page;
   try {

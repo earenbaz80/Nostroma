@@ -1,11 +1,11 @@
-# Method detail and disclosures — R9700 / Windows / Strata 0.1.38 benchmark
+# Method detail and disclosures — R9700 / Windows / Nostroma 0.1.38 benchmark
 
 This file carries the full method detail, the complete disclosure list and every known
 anomaly of the packet `bench/results/2026-10-03-community-r9700-windows/`. The report itself
 (`README.md`) states the results and their limits in brief and points here.
 
 Everything below is derived from the attached files (`benchmark.py`, the nine
-`bench-output*.json`, `engine-0.1.38.log`, `strata-iq2_xs.json`, the three launchers, the
+`bench-output*.json`, `engine-0.1.38.log`, `nostroma-iq2_xs.json`, the three launchers, the
 `pilot-0.1.36-*` files) or from the upstream repository.
 
 ## 1. What the harness does, exactly
@@ -39,9 +39,9 @@ Everything below is derived from the attached files (`benchmark.py`, the nine
 6. **Readiness wait off.** `--wait-ready` exists but its default is 0, so no readiness poll
    ran in these runs; the harness started issuing requests as soon as the script ran.
 7. **Model detection can fall back.** `detect_model` reads `/v1/models` and falls back to the
-   literal string `strata`; the standard/240K/void files carry
-   `qwen3.8-flash-next-iq2_xs`, the six A/B files carry `strata`, i.e. the endpoint did not
-   answer `/v1/models` in those six runs. `strata` is not a model id.
+   literal string `nostroma`; the standard/240K/void files carry
+   `qwen3.8-flash-next-iq2_xs`, the six A/B files carry `nostroma`, i.e. the endpoint did not
+   answer `/v1/models` in those six runs. `nostroma` is not a model id.
 8. **An HTTP-200 with empty content counts as success.** A variant is retried only on
    400/404/415/422; `ok: true` therefore does **not** imply an answer was produced. In the
    void attempt 13 of the 15 rows are empty (`answer_len: 0`, `ttft_s: null` on the 7 empty
@@ -119,15 +119,15 @@ Everything below is derived from the attached files (`benchmark.py`, the nine
   is the only line in the file with reuse), and line 55, `246933 tokens = 0 reused + 246933`
   (a 0.1.38 request the harness did not produce). 71 log requests = 69 recorded + these 2.
 - **A/B legs and their launchers.** Only three launchers were saved:
-  `run-iq2_xs-default.bat` (no env var), `run-iq2_xs-fused.bat` (`STRATA_PF_FUSED=1`) and
-  `run-iq2_xs-plebatch0.bat` (`STRATA_PLE_BATCH=0`). The other three legs
+  `run-iq2_xs-default.bat` (no env var), `run-iq2_xs-fused.bat` (`NOSTROMA_PF_FUSED=1`) and
+  `run-iq2_xs-plebatch0.bat` (`NOSTROMA_PLE_BATCH=0`). The other three legs
   (`default2`, `default4k`, `fused4k`) have no launcher, and no JSON records the environment
   of any leg — the `tag` string does not name a variable, and the engine log never echoes
   either variable. `default` and `default2` are two sessions of the *same* configuration and
   differ by >10 %; `default4k`/`fused4k` ran only the 4K target, and there is no plebatch0-4K
   leg.
 - **The shipped log is named `engine-0.1.38.log`, but every JSON's `engine_log` field points
-  at `strata-iq2_xs.log`** (the engine's own rolling log name, also in `strata-iq2_xs.json`).
+  at `nostroma-iq2_xs.log`** (the engine's own rolling log name, also in `nostroma-iq2_xs.json`).
   The file here is a copy of that log.
 - **Two data anomalies, both disclosed rather than hidden:** in the void file the run at
   128K rep1/rep2 has `total_s` smaller than `ttft_s + gen_ms` (107.769 vs 111.002, and
@@ -143,11 +143,11 @@ Everything below is derived from the attached files (`benchmark.py`, the nine
 `docs/COMMUNITY_BENCHMARKS.md` asks for fields this run cannot supply from the artefacts.
 They are stated as missing in the report rather than guessed:
 
-- **Windows-AMD bundle:** the `strata-device --list-devices` / `--selftest` output and the
+- **Windows-AMD bundle:** the `nostroma-device --list-devices` / `--selftest` output and the
   tail of the engine log that the Windows-AMD reporting note asks for.
 - **hipBLASLt discipline:** the tuning table and version are recorded
   (`32 rows, gfx1201, version 100500`) but the table was not verified with
-  `STRATA_HIPBLASLT_VERBOSE=1` / `fallbacks=0`, and no untuned control was run, so its effect
+  `NOSTROMA_HIPBLASLT_VERBOSE=1` / `fallbacks=0`, and no untuned control was run, so its effect
   here is not isolable (`docs/AMD_HIP.md` measured +3.9 % on 4,210-token prompts).
 - **Identity hashes:** both GGUF shards and `data/expert-profile.bin` now have SHA-256 in
   `PROVENANCE.txt`; the IQ2_XS expert pack, the MTP draft tensors and the engine binary have
@@ -169,8 +169,8 @@ They are stated as missing in the report rather than guessed:
   acceptance counts live only in the log.
 - **Not measured at all:** vision (off; unavailable on Windows AMD), `--low-ram` (not set),
   384K/512K contexts, concurrency, multi-hour stability, sampled decoding or thinking modes,
-  output-quality baselines, and the opt-in RDNA4 matrix-core paths (`STRATA_HIP_WMMA=1`,
-  `STRATA_SELECT_WMMA=1`) that `docs/AMD_HIP.md` records as taking R9700 4K prompts from
+  output-quality baselines, and the opt-in RDNA4 matrix-core paths (`NOSTROMA_HIP_WMMA=1`,
+  `NOSTROMA_SELECT_WMMA=1`) that `docs/AMD_HIP.md` records as taking R9700 4K prompts from
   1,784 to 2,427 tok/s.
 - **Answer quality, outside this packet:** in the same work session on the *previous* engine
   (0.1.36), and outside this harness, the model produced accurate Traditional-Chinese summaries
@@ -215,7 +215,7 @@ Of these, 56 are non-void requests.
   with ROCm 10.2.0a20260914 … hipBLASLt 1.5.0, library build `d3164197`. 16 dense GEMM
   geometries at T=4096 and T=8192, 32 rows", measured "+3.9% prompt speed on 4,210-token
   prompts (1,590 vs 1,531 tok/s), a modest gain", and "Run it with
-  `STRATA_HIPBLASLT_VERBOSE=1` and look for `fallbacks=0`" — that verification is **not** in
+  `NOSTROMA_HIPBLASLT_VERBOSE=1` and look for `fallbacks=0`" — that verification is **not** in
   this packet.
 - **0.1.38 notes:** Windows short-on-RAM change "#357 #362 … the experts are read past the
   file cache when it cannot keep them anyway, at start and in the RAM-budget tier"; HIP
@@ -239,11 +239,11 @@ Of these, 56 are non-void requests.
   length are three distinct prompts of the same nominal size; the median/range mixes
   prompt-to-prompt variation with run-to-run noise.
 - **Clean-A/B switches not used:** `docs/DETAILS.md` says that for byte-identical repeats one
-  adds `--prompt-cache 0 --adapt-swaps 0 --pcie-frac 0` (and `STRATA_IQ_MT_MIN=1` for
+  adds `--prompt-cache 0 --adapt-swaps 0 --pcie-frac 0` (and `NOSTROMA_IQ_MT_MIN=1` for
   reproducible greedy output), noting that "without `--pcie-frac 0` 2 of 4" repeats differed
   and that `--pcie-frac 0` should be kept "for A/B runs". None of those switches was set here,
   so cache adaptation and PCIe-fraction rounding can move results between requests and arms.
-- **Config provenance:** `strata-iq2_xs.json` is a **hand-tuned local config**, not a
+- **Config provenance:** `nostroma-iq2_xs.json` is a **hand-tuned local config**, not a
   setup-generated profile — `--resident-budget-gib 16`, `--mmap-experts`, `--kv int8`,
   `--kv-resident 32768`, `--spec 4`, `--expert-profile`, the MTP runtime and the hipBLASLt
   env var are all explicit choices, so call it "measured configuration", not "the default

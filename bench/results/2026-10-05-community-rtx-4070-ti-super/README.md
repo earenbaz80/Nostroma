@@ -1,7 +1,7 @@
 # Community benchmark: RTX 4070 Ti SUPER, Ryzen 7 9800X3D
 
 Measured on 2026-10-05 by [lfontanez](https://github.com/lfontanez), on a Linux
-machine called Shin-BlackMamba. This tests Strata at upstream-main commit
+machine called Shin-BlackMamba. This tests Nostroma at upstream-main commit
 `6f32ec07` with both Qwen3.8-Flash-Next IQ2_XS and IQ3_XXS, a single GPU, and
 context ceilings from 32 768 to 262 144 tokens. The bench measures **wall-clock
 prefill (cold)**, **streamed prefill (TTFT-aligned)**, and **decode throughput**
@@ -30,11 +30,11 @@ two metrics mean different things, see Methodology.
   selected 23 expert-pool workers plus its host thread.
 - **RAM**: 94 GiB installed; Linux reported 90.43 GiB usable. 8 GiB system swap.
 - **Storage**: Samsung 990 PRO 2 TB NVMe (`/dev/nvme0n1p2`, ext4, rootfs).
-  Local model volumes: `strata-data` named Docker volume mounted at `/data`.
+  Local model volumes: `nostroma-data` named Docker volume mounted at `/data`.
 - **OS**: Ubuntu 24.04.5 LTS, kernel 6.8.0-146-generic.
 - **Stack**: NVIDIA driver 595.91.07 (CUDA 13.2); nvidia-container-toolkit 1.20.1
   with the `nvidia` runtime as Docker's default; Docker 29.8.1.
-- **Strata commit**: `6f32ec070f23ced9f50e704d854d775da52591ab`
+- **Nostroma commit**: `6f32ec070f23ced9f50e704d854d775da52591ab`
   ([earenbaz80/Nostroma](https://github.com/earenbaz80/Nostroma) main, 2026-10-05).
 - **Engine build**: locally compiled CUDA architecture **89** (RTX 40 only,
   fat-binary with a single cubin), `BUILD_VISION=0` so the image-encoder
@@ -43,7 +43,7 @@ two metrics mean different things, see Methodology.
 - **Workload isolation**: 8 other containers remained running on the host
   (voicebox, supabase stack, n8n, qdrant, langfuse, open-webui, portainer, flowise).
   All but voicebox are CPU- and RAM-bound; voicebox is TTS-bound at idle. The
-  GPU was dedicated to the Strata container throughout this run. This was not
+  GPU was dedicated to the Nostroma container throughout this run. This was not
   a completely isolated operating system.
 
 ## Model and configuration
@@ -66,7 +66,7 @@ experts were selected, as configured in the install.sh defaults.
 
 The unmodified installer (`-e VISION=no`) prepared the native IQ2_XS and IQ3_XXS
 packs. The executable and prepared-packs are in the image at
-`/opt/strata/engine/strata` and in the `/data` Docker volume.
+`/opt/nostroma/engine/nostroma` and in the `/data` Docker volume.
 
 The 8 configurations tested:
 
@@ -88,7 +88,7 @@ because --kv-resident 32768 keeps the live KV slice in RAM, not VRAM.
 Common settings across all 8:
 
 - `--expert-cache auto`, `--prefill auto`, `--spec 4 --spec-min-p 0.5`.
-- `--expert-profile /opt/strata/data/expert-profile.bin` (bundled, shipped from the image).
+- `--expert-profile /opt/nostroma/data/expert-profile.bin` (bundled, shipped from the image).
 - MTP draft layer at `/data/mtp/rt` (Q2_0 tensor range, default).
 - Reasoning `minimal`, temperature 0, `max_tokens 192` for streamed runs.
 - Cold-prefill probes use `max_tokens 1` non-stream after `POST /unload`.
@@ -96,35 +96,35 @@ Common settings across all 8:
 - Low-RAM detector chose **resident experts** at boot (94 GiB > model experts).
 
 The complete measured configurations are in
-[`strata-iq2_xs.json`](strata-iq2_xs.json) (CONTEXT=262144, KV=int8, KV-streaming)
-and [`strata-iq3_xxs.json`](strata-iq3_xxs.json) (CONTEXT=262144, KV=k8v4). All
+[`nostroma-iq2_xs.json`](nostroma-iq2_xs.json) (CONTEXT=262144, KV=int8, KV-streaming)
+and [`nostroma-iq3_xxs.json`](nostroma-iq3_xxs.json) (CONTEXT=262144, KV=k8v4). All
 other CONTEXTs were applied at relaunch with `-e REINSTALL=1`.
 
 ## Method and reproduction
 
-Use the attached [`strata-iq2_xs.json`](strata-iq2_xs.json) and
-[`strata-iq3_xxs.json`](strata-iq3_xxs.json) — they are valid because each
+Use the attached [`nostroma-iq2_xs.json`](nostroma-iq2_xs.json) and
+[`nostroma-iq3_xxs.json`](nostroma-iq3_xxs.json) — they are valid because each
 container's start-up regenerated the config on `/data/config/` and `docker run`
 with `REINSTALL=1` re-applied model settings without re-downloading.
 
 ```bash
 # From the repo root, with an empty GPU + toolkit (verified above)
-docker build -t strata \
+docker build -t nostroma \
   --build-arg CUDA_ARCHITECTURES=89 \
   --build-arg BUILD_VISION=0 \
   .
 
-docker volume create strata-data
+docker volume create nostroma-data
 
 # IQ2_XS @ 32k for example. Swap MODEL/CONTEXT/KV for the other 7 configs.
-docker rm -f strata 2>/dev/null
-docker run -d --name strata --network host --gpus all \
+docker rm -f nostroma 2>/dev/null
+docker run -d --name nostroma --network host --gpus all \
   --ulimit memlock=-1 --shm-size=4g \
-  -v strata-data:/data \
+  -v nostroma-data:/data \
   -e FAMILY=qwen -e MODEL=IQ2_XS -e CONTEXT=32768 \
   -e VISION=no -e KV=int8 -e REINSTALL=1 \
   -e HOST=127.0.0.1 -e PORT=8090 \
-  --restart unless-stopped strata
+  --restart unless-stopped nostroma
 
 # 1 cold-prefill probe + 3 SSE stream calls per row → matrix
 pip install requests
@@ -238,9 +238,9 @@ intelligence recall this card's exact 16 GiB ceiling pinches at the heavy end.
 ## Files in this folder
 
 - `README.md` (this file).
-- `strata-iq2_xs.json` — container config as recorded by the image at boot of
+- `nostroma-iq2_xs.json` — container config as recorded by the image at boot of
   the IQ2_XS @ 262 144 cold run.
-- `strata-iq3_xxs.json` — container config for IQ3_XXS @ 262 144 (K=k8v4).
+- `nostroma-iq3_xxs.json` — container config for IQ3_XXS @ 262 144 (K=k8v4).
 - `recall_iq2_xs_32k.json` — output of `tools/needle_bench.py --lengths 32k
   --depths 10,50,90` against the live IQ2_XS server.
 - `recall_iq3_xxs_32k.json` — same, against IQ3_XXS.

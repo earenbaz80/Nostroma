@@ -39,7 +39,7 @@ class VisionGateRuleTest(unittest.TestCase):
 
     def test_mtmd_is_information_only(self):
         src = GATE.read_text(encoding="utf-8")
-        self.assertIn('"STRATA_VIT_CPU": "ref"', src)            # the reference reader the gate starts where --ref-dir lacks a picture
+        self.assertIn('"NOSTROMA_VIT_CPU": "ref"', src)            # the reference reader the gate starts where --ref-dir lacks a picture
         self.assertIn("own/mtmdC", src)                          # mtmd's CPU path stays a printed column
 
 

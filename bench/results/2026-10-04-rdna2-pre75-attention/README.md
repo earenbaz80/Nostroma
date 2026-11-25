@@ -6,7 +6,7 @@ and used below sm_75. On HIP the default kernel ran, whose score loop is bound o
 `__shfl_xor_sync` compiles to `ds_bpermute_b32`, which shares that pipe with the shared-memory q reads. This change builds
 the pre75 kernel for HIP wave32 and runs it on gfx103x by default, with 8 cells per step (`NC_`, CUDA keeps 2) and the
 lane exchanges in registers (`DPP_`: `row_xmask` within a 16-lane row, `v_permlanex16` across the two rows; CUDA keeps
-`__shfl_xor_sync`). `STRATA_ATTN_PRE75=0` is the default kernel, so the main numbers below are one binary with and
+`__shfl_xor_sync`). `NOSTROMA_ATTN_PRE75=0` is the default kernel, so the main numbers below are one binary with and
 without that switch.
 
 ## Rig
@@ -14,10 +14,10 @@ without that switch.
 - One AMD Radeon RX 6900 XT 16 GB (gfx1030, PCIe 4.0 x8) of the two in the machine; the other card idle. AMD Ryzen 5
   5600X, 128 GB DDR4-3200.
 - Ubuntu 26.04, kernel 7.0.0-38-generic, ROCm 10.0.0 (HIP 7.15.26333, rocBLAS 5.6).
-- Engine: `origin/main` at `6f32ec0` (0.1.39) with this change (`a649e42`), `-DSTRATA_ENABLE_HIP=ON
-  -DCMAKE_HIP_ARCHITECTURES=gfx1030 -DSTRATA_PREFILL_MMQ=ON` (as setup builds it).
+- Engine: `origin/main` at `6f32ec0` (0.1.39) with this change (`a649e42`), `-DNOSTROMA_ENABLE_HIP=ON
+  -DCMAKE_HIP_ARCHITECTURES=gfx1030 -DNOSTROMA_PREFILL_MMQ=ON` (as setup builds it).
 - Model: Qwen3.8-Flash-Next GSQ-RCO IQ3_S (2 shards, `--native`), MTP draft layer on, `--kv int8 --kv-resident 32768
-  --max-context 131072 --expert-cache auto`; [strata-1gpu.json](strata-1gpu.json) (`/m` the model directory, `/work`
+  --max-context 131072 --expert-cache auto`; [nostroma-1gpu.json](nostroma-1gpu.json) (`/m` the model directory, `/work`
   the build). Not one of setup's models.
 
 ## Why: the score loop on gfx1030
@@ -43,10 +43,10 @@ primitives against `__shfl_xor` matched bit for bit before the kernel was change
 ## Prompt speed, this branch
 
 Cold server per run; three chats whose first message is 9,427 / 34,659 / 105,811 tokens of this repository's docs and
-sources, read by the batched prompt path; the server's own line `strata serve: prompt N tokens = 0 reused + N read in T
+sources, read by the batched prompt path; the server's own line `nostroma serve: prompt N tokens = 0 reused + N read in T
 ms`. One run per arm (the two are the exactness runs below):
 
-| prompt tokens | default kernel (`STRATA_ATTN_PRE75=0`) | this change | gain | read time |
+| prompt tokens | default kernel (`NOSTROMA_ATTN_PRE75=0`) | this change | gain | read time |
 | ---: | ---: | ---: | ---: | ---: |
 | 9,427 | 440.7 tok/s | 459.1 tok/s | +4.2% | 21.4 s -> 20.5 s |
 | 34,659 | 466.9 tok/s | 493.6 tok/s | +5.7% | 74.2 s -> 70.2 s |
@@ -59,7 +59,7 @@ changes that); the gain grows with the prompt because the attention's share does
 
 With #835 applied the GEMMs are about twice as fast and attention is a larger share, so the kernel variants are easier to
 tell apart. These runs are a test build of `6f32ec0` + #835 with the variants selectable by environment variables
-(`STRATA_ATTN_PRE75=1`, `STRATA_ATTN_NC`, `STRATA_ATTN_DPP`), not the binary of this branch; same card, same three
+(`NOSTROMA_ATTN_PRE75=1`, `NOSTROMA_ATTN_NC`, `NOSTROMA_ATTN_DPP`), not the binary of this branch; same card, same three
 chats, cold server per run, one run per row except NC 2 (two runs, 778.9 / 981.1 / 998.0 and 779.0 / 981.6 / 996.9 tok/s,
 within 0.2%):
 
@@ -82,7 +82,7 @@ With both changes a prompt reads at 1.82x / 2.19x / 2.26x `6f32ec0` on this card
 
 ## Exactness
 
-Teacher-forced log-probabilities (`STRATA_LOGPOS`, top 256, the method of `bench/results/2026-10-03-v100-prompt-attn`):
+Teacher-forced log-probabilities (`NOSTROMA_LOGPOS`, top 256, the method of `bench/results/2026-10-03-v100-prompt-attn`):
 the three chats above, each with a fixed assistant reply and a last message of about 580 tokens read through the verify
 windows, every position scored: 578 / 519 / 481 = 1,578 positions. This change against the default kernel, same binary:
 KL 0 at every position, argmax and top-10 agreement 100%. The same held for every NC variant and for the DPP variant in
@@ -93,7 +93,7 @@ the same pairing order; the kernel only moves them differently.
 
 The verify window runs the same attention kernel over its few rows. Measured on 2026-10-05, one card, this branch's binary,
 greedy, 256-token cap (the answers stopped at 128-145 tokens) to a 2,267-token prompt and three of 3,906-4,919 tokens,
-`STRATA_DECODE_TIMING=1`, two rounds alternating the arms with a fresh server each:
+`NOSTROMA_DECODE_TIMING=1`, two rounds alternating the arms with a fresh server each:
 
 | prompt tokens | default kernel, ms / window (round 1 / 2) | this change | difference |
 | ---: | ---: | ---: | ---: |
@@ -112,5 +112,5 @@ on the GPU in one run and on the CPU in the other, and the two round differently
 One machine, one model (IQ3_S packed from a non-setup GGUF), one corpus; one run per arm on this branch. The step-by-step
 series was measured on a test build with #835, not on this branch alone. CUDA builds were not run (no CUDA here): the
 CUDA path is unchanged by construction, since the template defaults equal the old constants and `shfl_x<false>` is
-`__shfl_xor_sync`. Other wave32 AMD cards (gfx1031 / gfx1032, RDNA3, RDNA4) were not run; `STRATA_ATTN_PRE75=1` turns
+`__shfl_xor_sync`. Other wave32 AMD cards (gfx1031 / gfx1032, RDNA3, RDNA4) were not run; `NOSTROMA_ATTN_PRE75=1` turns
 the kernel on there.

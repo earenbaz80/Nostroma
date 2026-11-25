@@ -1,10 +1,10 @@
-"""strata-split: when the all-cards split engine may run, and the run config for it. AUTOMATIC by default (mode "auto"), with an off switch.
+"""nostroma-split: when the all-cards split engine may run, and the run config for it. AUTOMATIC by default (mode "auto"), with an off switch.
 
-`strata-split-N` (src/split, from sFNX, MIT, Copyright (c) 2026 John Fink) gives every card a share of EVERY layer instead of some
+`nostroma-split-N` (src/split, from sFNX, MIT, Copyright (c) 2026 John Fink) gives every card a share of EVERY layer instead of some
 layers, and the cards exchange the layer sums through page-locked host memory (no peer access anywhere). On two RTX A6000 with
 UD-Q4_K_XL it decodes 40-95% faster than the normal layer split (phaseA-tests/sfnx/RESULTS.md). The owner's decision: it runs by itself whenever the
 rule below says yes ("auto", the default), and `nostroma launch --split-engine off` (or "split_engine": "off" in the run config, or
-STRATA_SPLIT_ENGINE=0) turns it off; "on" asks for it and says why in one line when it cannot run. In auto a "no" is silent: the normal
+NOSTROMA_SPLIT_ENGINE=0) turns it off; "on" asks for it and says why in one line when it cannot run. In auto a "no" is silent: the normal
 layer split starts, as before.
 
 This module is pure (no I/O besides reading GGUF directories): the launcher passes it facts and gets a Decision. The rule, from what
@@ -265,7 +265,7 @@ def decide(*, enabled: bool, system: str, cards: list[Card], ram_total_gib: floa
 
 def split_config(base: dict, decision: Decision, *, exe: str, native: str, mtp_dir: str | None, draft_vocab: str, context: int,
                  lanes: int = DEFAULT_LANES, vision: bool = False, cache_mib: int = CONVERSATION_CACHE_MIB, dflash2_pack: str | None = None) -> dict:
-    """The run config for strata-split: `base` is the normal run config (its tokenizer, port, log, model name, GPUs and everything else
+    """The run config for nostroma-split: `base` is the normal run config (its tokenizer, port, log, model name, GPUs and everything else
     stay), and it is kept whole under "split_fallback" so the server can start the normal layer split if this engine refuses."""
     if not decision.use_split:
         raise ValueError("split_config: the decision is not to use the split engine")
@@ -391,11 +391,11 @@ def _flag(args: list, name: str) -> str | None:
 
 def mode(cfg: dict, environ: dict | None = None) -> str:
     """"auto" (the default), "on" or "off". The run config's "split_engine" (true/false or the word; `nostroma launch --split-engine X` writes it)
-    and, over it, STRATA_SPLIT_ENGINE in the environment (testers). Anything it does not know is auto."""
+    and, over it, NOSTROMA_SPLIT_ENGINE in the environment (testers). Anything it does not know is auto."""
     import os
 
     env = environ if environ is not None else os.environ
-    raw = env.get("STRATA_SPLIT_ENGINE")
+    raw = env.get("NOSTROMA_SPLIT_ENGINE")
     if raw is None or not str(raw).strip():
         raw = cfg.get("split_engine")
     if raw is True:
@@ -436,7 +436,7 @@ def expected(cfg: dict, *, indexes: list[int] | None = None, native: str | None 
     """Would the launch start the all-cards split engine? The answer of the rule apply_to_config uses, asked BEFORE the model's files, the engine package or the
     draft layer are on the computer (the plan and the fetch: the split runs the model's draft layer, the MTP, so a start that will use it has to fetch that and not
     DFlash2's drafter). Facts that are not there yet are assumed in the split's favour: the model (ASSUMED_MODEL, unless `native` is a readable file), the engine
-    package (unless exe_for_cards is given and finds no strata-split-N). Mode "off", a person's own DFlash2 / off choice, engine arguments of their own and
+    package (unless exe_for_cards is given and finds no nostroma-split-N). Mode "off", a person's own DFlash2 / off choice, engine arguments of their own and
     replicas say no, as in apply_to_config. Never raises."""
     import os
     import sys
@@ -473,7 +473,7 @@ def expected(cfg: dict, *, indexes: list[int] | None = None, native: str | None 
 def apply_to_config(cfg: dict, *, exe_for_cards, system: str | None = None, allow_untested: bool = False, probe=None, ram=None,
                     scan=None, data_dir: str | None = None, mode_: str | None = None) -> Decision:
     """Turn a normal run config into the split engine's config IN PLACE when the mode and the rule say yes, and say what was decided.
-    exe_for_cards(n, cc) -> the path of the strata-split-n built for compute capability cc, or None (the engine package has none);
+    exe_for_cards(n, cc) -> the path of the nostroma-split-n built for compute capability cc, or None (the engine package has none);
     probe(indexes) -> [Card]; ram() -> (total, available) GiB; scan(first_shard) -> ModelFacts: the facts of this PC and model, replaceable
     for tests. Mode "off": nothing happens, silently. Mode "auto": a refusal is `quiet` (the normal layer split starts without a word)."""
     m = mode_ or mode(cfg)
@@ -497,12 +497,12 @@ def auto_rule(d: Decision) -> dict | None:
 
 
 def record_launch_manifest(d: Decision, mode_: str, environ: dict | None = None) -> bool:
-    """STRATA_MANIFEST=<file> (a diagnostic, off unless set): the engine choice and why, in <file>.launch.json, next to the engine's own <file>. Sorted keys, no
+    """NOSTROMA_MANIFEST=<file> (a diagnostic, off unless set): the engine choice and why, in <file>.launch.json, next to the engine's own <file>. Sorted keys, no
     timestamps, so two matched launches give the same text. Never raises and never changes the launch. True when a file was written."""
     import json
     import os
 
-    target = (os.environ if environ is None else environ).get("STRATA_MANIFEST")
+    target = (os.environ if environ is None else environ).get("NOSTROMA_MANIFEST")
     if not target:
         return False
     try:
@@ -565,10 +565,10 @@ def _apply(cfg: dict, *, exe_for_cards, system, allow_untested, probe, ram, scan
     if gate is not None:
         return gate
     amd = cards[0].vendor == "amd"
-    # NVIDIA: strata-split-N-sm<cc> or strata-split-N; AMD: strata-split-N-<arch> (gfx1201), the third argument
+    # NVIDIA: nostroma-split-N-sm<cc> or nostroma-split-N; AMD: nostroma-split-N-<arch> (gfx1201), the third argument
     exe = exe_for_cards(d.cards, cards[0].cc, cards[0].arch_name) if amd else exe_for_cards(d.cards, cards[0].cc)
     if not exe:
-        return Decision(False, [f"this engine package has no strata-split-{d.cards}" + (f"-{cards[0].arch_name}" if amd else "")], d.cards)
+        return Decision(False, [f"this engine package has no nostroma-split-{d.cards}" + (f"-{cards[0].arch_name}" if amd else "")], d.cards)
     df2_pack = None
     mtp = _flag(args, "--mtp")
     if chosen == "dflash2":                                  # (mode "on"): the drafter is DFlash2's pack, the MTP layer is not loaded and not needed
@@ -598,13 +598,13 @@ def _apply(cfg: dict, *, exe_for_cards, system, allow_untested, probe, ram, scan
 
 #: Why the split engine is not started when DFlash2 was chosen by name with --split-engine on and its drafter file is not on this computer.
 NO_DF2_PACK = "the DFlash2 drafter isn't downloaded yet"       # (the same words as drafting.NOT_DOWNLOADED, already in the catalog)
-#: Text the split engine program carries when it takes `--draft dflash2` (src/split/tools/sfnx.cpp); an older strata-split-N has none and would stop at start on the flag.
+#: Text the split engine program carries when it takes `--draft dflash2` (src/split/tools/sfnx.cpp); an older nostroma-split-N has none and would stop at start on the flag.
 _MARK_SPLIT_DF2 = b"--draft dflash2 needs --native, --draft-model PACK"
 _split_df2: dict[tuple[str, int, int], bool] = {}
 
 
 def exe_takes_dflash2(exe) -> bool:
-    """Does the strata-split-N program at `exe` take `--draft dflash2 --draft-model PACK`? Read from the file's text (it is never started for this), once per path, size and time."""
+    """Does the nostroma-split-N program at `exe` take `--draft dflash2 --draft-model PACK`? Read from the file's text (it is never started for this), once per path, size and time."""
     import mmap
 
     if not exe:
@@ -623,8 +623,8 @@ def exe_takes_dflash2(exe) -> bool:
 
 # ---- the engine package and the draft layer (the Terminal's launcher and the app's start share these) ---------------------------------------
 def exe_finder(cfg: dict):
-    """exe_for_cards(n, cc=None, arch=None) for a run config: the strata-split-N build that sits beside the run config's engine, or None.
-    One build per architecture (FNX_ARCH is compile time): NVIDIA strata-split-N-sm<cc> then strata-split-N; AMD strata-split-N-<arch>, then strata-split-N-amd
+    """exe_for_cards(n, cc=None, arch=None) for a run config: the nostroma-split-N build that sits beside the run config's engine, or None.
+    One build per architecture (FNX_ARCH is compile time): NVIDIA nostroma-split-N-sm<cc> then nostroma-split-N; AMD nostroma-split-N-<arch>, then nostroma-split-N-amd
     (one binary with a code object for each RDNA architecture)."""
     import pathlib
 
@@ -635,7 +635,7 @@ def exe_finder(cfg: dict):
             real = EC.expand(exe, cfg, full=False) if EC.is_reference(exe) else exe
         except Exception:                                    # noqa: BLE001 - no engine to look beside: no split
             return None
-        for name in ((f"strata-split-{n}-{arch}", f"strata-split-{n}-amd") if arch else ((f"strata-split-{n}-sm{cc}",) if cc else ()) + (f"strata-split-{n}",)):
+        for name in ((f"nostroma-split-{n}-{arch}", f"nostroma-split-{n}-amd") if arch else ((f"nostroma-split-{n}-sm{cc}",) if cc else ()) + (f"nostroma-split-{n}",)):
             p = pathlib.Path(str(real)).parent / name
             if p.is_file():
                 return str(p)

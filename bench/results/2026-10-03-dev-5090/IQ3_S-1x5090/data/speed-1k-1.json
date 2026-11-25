@@ -16,8 +16,8 @@
  "engine_prompt_tps": 1385.0,
  "engine_decode_tps": 151.2,
  "log_lines": [
-  "strata serve: prompt 1081 tokens = 0 reused + 1081 read in 781 ms (1385.0 tok/s), 94 generated in 622 ms (151.2 tok/s), drafts accepted 66 of 74, 1 checkpoints",
-  "strata serve: decode expert cache hit rate: 84.5% (42593 hits / 50400 lookups)"
+  "nostroma serve: prompt 1081 tokens = 0 reused + 1081 read in 781 ms (1385.0 tok/s), 94 generated in 622 ms (151.2 tok/s), drafts accepted 66 of 74, 1 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 84.5% (42593 hits / 50400 lookups)"
  ],
  "answer_head": "I'll start by exploring the repository structure to understand the context better.",
  "metrics_after": {

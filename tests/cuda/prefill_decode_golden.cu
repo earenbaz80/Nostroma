@@ -3,7 +3,7 @@
 //
 // What it checks.  The fused prompt-expert kernels (src/prefill/moe_fused_iq.cu: CUDA's native_kernel, HIP's native_w11_kernel)
 // share one decode: load_unit<T> reads a 32-value sub-block's bytes into registers and convert<T> turns them into 32 int8 and the
-// sub-block's two scales.  This test compiles that decode as it is (moe_fused_iq.cu included with STRATA_FUSED_DECODE_ONLY: the
+// sub-block's two scales.  This test compiles that decode as it is (moe_fused_iq.cu included with NOSTROMA_FUSED_DECODE_ONLY: the
 // file up to grid_src, nothing else), runs it on the card over seeded blocks of every format the build decodes, and hashes the
 // outputs: the 8 int8 words, then the bits of s0 and s1, per sub-block, in block order.  Where CUDA and HIP take different code
 // for the same result (the i-quants' signs: signed8 vs the gfx11 / gfx12 table; IQ4's 16-entry table: byte_perm vs amdgcn_perm)
@@ -22,7 +22,7 @@
 //   prefill_decode_golden <file>            check: every format this build decodes must match the file (exit 1 if not, 77 without a card)
 //   prefill_decode_golden --write <file>    write the file (only if the oracle holds)
 //   prefill_decode_golden --print           print the lines
-#define STRATA_FUSED_DECODE_ONLY 1
+#define NOSTROMA_FUSED_DECODE_ONLY 1
 #include "../../src/prefill/moe_fused_iq.cu"
 
 #include <cinttypes>
@@ -34,7 +34,7 @@
 #include <string>
 #include <vector>
 
-namespace strata::prefill::fused {
+namespace nostroma::prefill::fused {
 namespace {
 
 constexpr int kBlocks = 2048;   // blocks per format
@@ -228,10 +228,10 @@ int64_t oracle(const Fmt& f, const std::vector<uint8_t>& m, const std::vector<ui
 }
 
 }  // namespace
-}  // namespace strata::prefill::fused
+}  // namespace nostroma::prefill::fused
 
 int main(int argc, char** argv) {
-    using namespace strata::prefill::fused;
+    using namespace nostroma::prefill::fused;
     std::string file;
     bool write = false, print = false;
     for (int i = 1; i < argc; ++i) {
@@ -291,7 +291,7 @@ int main(int argc, char** argv) {
         if (write) {
             if (oracle_bad) { std::fprintf(stderr, "not written: the oracle does not hold\n"); return 1; }
             std::ofstream out(file, std::ios::binary);
-            out << "# strata fused prompt kernels: weight decode digests (tests/cuda/prefill_decode_golden.cu), v1\n"
+            out << "# nostroma fused prompt kernels: weight decode digests (tests/cuda/prefill_decode_golden.cu), v1\n"
                 << "# format group blocks input-fnv64 output-fnv64 (output: per 32-value sub-block 8 int8 words + the bits of s0, s1)\n";
             for (const Line& l : lines) out << str(l) << "\n";
             std::printf("written %s: %zu lines\n", file.c_str(), lines.size());

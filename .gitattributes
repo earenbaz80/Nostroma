@@ -6,7 +6,7 @@ bench/prompts/** -text
 *.bat text eol=crlf
 *.cmd text eol=crlf
 *.ps1 text eol=crlf
-bin/strata text eol=lf
+bin/nostroma text eol=lf
 
 # copies of real packs' native_experts.txt, parsed byte for byte by tests/core/expert_layout_test.cpp
 tests/data/native_experts/** -text
@@ -28,9 +28,9 @@ docker/compose/* text eol=lf
 
 # vendored KaTeX (serve/web/vendor): the files are hashed byte for byte (PROVENANCE.json), never convert their line endings.
 serve/web/vendor/** -text
-third_party/strata-ggml/** text eol=lf
-third_party/strata-gguf-py/** text eol=lf
-third_party/strata-llama/** text eol=lf
+third_party/nostroma-ggml/** text eol=lf
+third_party/nostroma-gguf-py/** text eol=lf
+third_party/nostroma-llama/** text eol=lf
 
 # chat templates are read and hashed byte for byte (the served prompt, tools/test_qwen4_intake): LF wherever the repository is cloned
 *.jinja text eol=lf

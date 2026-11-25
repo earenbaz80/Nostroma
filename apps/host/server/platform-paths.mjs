@@ -3,7 +3,7 @@
  *
  * The host used to assume POSIX in three places: it called /usr/bin/tar and /usr/bin/env, and it kept the tuning
  * and Time-skip state under $HOME/.local/state. On Windows those paths do not exist. State goes to
- * %LOCALAPPDATA%\Strata (the same place the Python side uses: nostroma_control/paths.py), and the system tools are
+ * %LOCALAPPDATA%\Nostroma (the same place the Python side uses: nostroma_control/paths.py), and the system tools are
  * the ones Windows ships (System32\tar.exe, System32\where.exe). POSIX behavior is unchanged.
  *
  * Every function takes the environment and platform as arguments so tests can exercise both without a second OS.
@@ -17,19 +17,19 @@ const winPath = (...parts) => parts.join('\\');
 export function stateRoot(env = process.env, platform = process.platform, home = homedir()) {
   if (platform === 'win32') {
     const local = env.LOCALAPPDATA || winPath(env.USERPROFILE || home, 'AppData', 'Local');
-    return winPath(local, 'Strata');
+    return winPath(local, 'Nostroma');
   }
-  return posix.join(env.XDG_STATE_HOME || posix.join(env.HOME || '.', '.local', 'state'), 'strata');
+  return posix.join(env.XDG_STATE_HOME || posix.join(env.HOME || '.', '.local', 'state'), 'nostroma');
 }
 
 const under = (root, platform, name) => (platform === 'win32' ? winPath(root, name) : posix.join(root, name));
 
 export function tuningDir(env = process.env, platform = process.platform, home = homedir()) {
-  return (env.NOSTROMA_TUNE_DIR ?? env.STRATA_TUNE_DIR) || under(stateRoot(env, platform, home), platform, 'tuning');
+  return (env.NOSTROMA_TUNE_DIR ?? env.NOSTROMA_TUNE_DIR) || under(stateRoot(env, platform, home), platform, 'tuning');
 }
 
 export function timeSkipDir(env = process.env, platform = process.platform, home = homedir()) {
-  return (env.NOSTROMA_TIMESKIP_DIR ?? env.STRATA_TIMESKIP_DIR) || under(stateRoot(env, platform, home), platform, 'time-skip');
+  return (env.NOSTROMA_TIMESKIP_DIR ?? env.NOSTROMA_TIMESKIP_DIR) || under(stateRoot(env, platform, home), platform, 'time-skip');
 }
 
 function systemRoot(env) {

@@ -34,7 +34,7 @@ export function ServingScreen() {
     const [keyDraft, setKeyDraft] = useState('');
     const [pending, setPending] = useState(false);
     const [error, setError] = useState('');
-    function generateKey() { setKeyVisible(false); const bytes = crypto.getRandomValues(new Uint8Array(32)); setKeyDraft('sk-strata-' + Array.from(bytes, v => v.toString(16).padStart(2, '0')).join('')); setGenerated(true); }
+    function generateKey() { setKeyVisible(false); const bytes = crypto.getRandomValues(new Uint8Array(32)); setKeyDraft('sk-nostroma-' + Array.from(bytes, v => v.toString(16).padStart(2, '0')).join('')); setGenerated(true); }
     function closeKey() {
         setKeyVisible(false);
         setKeyOpen(false);

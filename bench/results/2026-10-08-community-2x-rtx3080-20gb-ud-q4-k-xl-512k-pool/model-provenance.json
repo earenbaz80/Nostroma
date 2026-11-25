@@ -33,8 +33,8 @@
   },
   "mmproj_repository_in_setup_py": "ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF",
   "packs": {
-    "pack": "/opt/strata-ssd/packs/ud-q4_k_xl",
-    "mtp_runtime": "/opt/strata-ssd/mtp/rt",
-    "expert_profile": "/opt/strata-bmtp/data/expert-profile.bin (24576 ranked pairs per the engine log); not hashed"
+    "pack": "/opt/nostroma-ssd/packs/ud-q4_k_xl",
+    "mtp_runtime": "/opt/nostroma-ssd/mtp/rt",
+    "expert_profile": "/opt/nostroma-bmtp/data/expert-profile.bin (24576 ranked pairs per the engine log); not hashed"
   }
 }

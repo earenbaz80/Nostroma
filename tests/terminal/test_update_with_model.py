@@ -246,7 +246,7 @@ class WithAModel(ModelCase):
         self.assertEqual((self.state(), self.resolved()), ("ready", "0.1.45"))
 
     # ---- a server nobody here started (a service)
-    def test_a_server_that_strata_did_not_start_is_never_stopped_even_with_stop_model(self):
+    def test_a_server_that_nostroma_did_not_start_is_never_stopped_even_with_stop_model(self):
         with self.assertRaises(updater.UpdateError) as caught:
             self.update(self.gate(nobody=True, allow_stop=True), serving=lambda: [{"profile": "a running Nostroma server", "state": "serving"}])
         self.assertEqual(caught.exception.exit_code, 7)
@@ -257,7 +257,7 @@ class WithAModel(ModelCase):
 
     # ---- offline and a feed that does not answer
     def test_an_unreachable_feed_is_said_before_anything_is_stopped(self):
-        for dead in ("http://127.0.0.1:9/strata-feed.json", str(self.root / "no-such-feed")):
+        for dead in ("http://127.0.0.1:9/nostroma-feed.json", str(self.root / "no-such-feed")):
             with self.assertRaises(Exception) as caught:
                 self.update(self.gate(True, True), source=dead)
             self.assertTrue("could not be read" in str(caught.exception) or "so the update check could not run" in str(caught.exception),
@@ -272,7 +272,7 @@ class WithAModel(ModelCase):
         self.addCleanup(hang.close)
         started = time.monotonic()
         with self.assertRaises(Exception) as caught:
-            self.update(self.gate(True, True), source=f"http://127.0.0.1:{hang.getsockname()[1]}/strata-feed.json", feed_timeout=1.0)
+            self.update(self.gate(True, True), source=f"http://127.0.0.1:{hang.getsockname()[1]}/nostroma-feed.json", feed_timeout=1.0)
         self.assertLess(time.monotonic() - started, 20)
         self.assertIn("did not answer within", str(caught.exception))       # the network rule (W7): the host, and that nothing was changed
         self.assertIn("so the update check could not run", str(caught.exception))
@@ -373,7 +373,7 @@ class WithoutAGate(ModelCase):
     def bundle(self):
         folder = self.root / "control-bundle"
         (folder / "nostroma_control").mkdir(parents=True)
-        (folder / "strata.py").write_text("print('strata 0.1.46 (python stub)')\n")
+        (folder / "nostroma.py").write_text("print('nostroma 0.1.46 (python stub)')\n")
         (folder / "nostroma_control" / "__init__.py").write_text("")
         from feed_tool import build_feed, pack_control
         (self.release / "control").mkdir()
@@ -415,7 +415,7 @@ class TheCommand(ModelCase):
         self.parser = sp
 
     def run_cmd(self, *flags, asks=None):
-        argv = ["update", "--feed", self.server.url + "/strata-feed.json", "--components-dir", str(self.components), "--no-control",
+        argv = ["update", "--feed", self.server.url + "/nostroma-feed.json", "--components-dir", str(self.components), "--no-control",
                 "--model-config", str(self.config), *flags]
         a = self.parser.choices["update"].parse_args(argv[1:])
         a.command, a.components_command = "update", None

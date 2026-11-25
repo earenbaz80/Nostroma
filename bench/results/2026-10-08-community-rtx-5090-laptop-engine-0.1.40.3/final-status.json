@@ -1,5 +1,5 @@
 {
-  "service": "strata",
+  "service": "nostroma",
   "model": "qwen3.8-flash-next-q2_0",
   "loaded": true,
   "auto_load": true,

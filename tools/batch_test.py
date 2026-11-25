@@ -2,14 +2,14 @@
 """Batching test: the same prompts decoded alone (GEN, the usual path with drafts) and together in the batch
 windows (BGEN), greedy.  Every slot's tokens must equal its solo tokens; prints the aggregate decode rate.
 
-  python3 tools/batch_test.py --exe engine/strata --config strata-<model>.json --batch 4 --n 4 \
+  python3 tools/batch_test.py --exe engine/nostroma --config nostroma-<model>.json --batch 4 --n 4 \
       --extra "--layer-split 12,24,36 --trim-stage-weights --pcie-frac 0 --adapt-every 1000000"
 """
 import argparse, json, os, subprocess, sys, tempfile, threading, time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import strata_tokenizer as ST  # noqa: E402
+import nostroma_tokenizer as ST  # noqa: E402
 
 QUESTIONS = [
     "Explique en detail le fonctionnement d'un B-tree.",
@@ -90,11 +90,11 @@ def main():
                          "beside the earlier slots' windows (the prompt path lends experts then)")
     ap.add_argument("--co", action="store_true",
                     help="PAR-H: before the first BGEN send BCO lines for the other prompts, so the engine reads every prompt "
-                         "in one layer-major pass (the engine needs STRATA_PREFILL_LM_FORCE=1 for prompts this short to be "
+                         "in one layer-major pass (the engine needs NOSTROMA_PREFILL_LM_FORCE=1 for prompts this short to be "
                          "layer-major in the arm without --co)")
     ap.add_argument("--seq", action="store_true", help="PAR-H: admit the prompts one at a time, each run to its end (no batch composition)")
     ap.add_argument("--pad", type=int, default=0, help="PAR-H: every prompt gets about this many tokens of its own filler text first")
-    ap.add_argument("--mt-min", default="1", help="STRATA_IQ_MT_MIN for the engine (1: exact; empty: the default)")
+    ap.add_argument("--mt-min", default="1", help="NOSTROMA_IQ_MT_MIN for the engine (1: exact; empty: the default)")
     a = ap.parse_args()
     cfg = json.loads(Path(a.config).read_text())
     tok = tokenizer(cfg["tokenizer"])
@@ -115,9 +115,9 @@ def main():
             filler = "".join(para % (qi, i, (i * 7 + qi) % 97, i * 13 + qi) for i in range(a.pad // per + 1))
             text = f"<|im_start|>user\n{filler}\n\n{q}<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n"
         prompts.append(tok.encode(text, parse_special=True))
-    env = {"STRATA_DECODE_TIMING": "1", **({"STRATA_VERIFY_PROFILE": "1"} if os.environ.get("PROF") else {})}
+    env = {"NOSTROMA_DECODE_TIMING": "1", **({"NOSTROMA_VERIFY_PROFILE": "1"} if os.environ.get("PROF") else {})}
     if a.mt_min:
-        env["STRATA_IQ_MT_MIN"] = a.mt_min
+        env["NOSTROMA_IQ_MT_MIN"] = a.mt_min
     eng = Engine(a.exe, cfg, a.batch, env, a.extra.split())
     out = eng.lines()
 

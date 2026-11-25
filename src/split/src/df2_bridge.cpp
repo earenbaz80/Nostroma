@@ -1,8 +1,8 @@
-// See df2_bridge.hpp. Compiled with the strata tree's headers (not the fnx ones).
+// See df2_bridge.hpp. Compiled with the nostroma tree's headers (not the fnx ones).
 #include "df2_bridge.hpp"
 
-#include "strata/core/dflash2.hpp"
-#include "strata/kernels/dflash2.hpp"
+#include "nostroma/core/dflash2.hpp"
+#include "nostroma/kernels/dflash2.hpp"
 
 #include <cuda_runtime.h>
 
@@ -12,7 +12,7 @@
 namespace fnx {
 namespace df2 {
 
-using strata::core::Dflash2Drafter;
+using nostroma::core::Dflash2Drafter;
 
 struct Bridge::Impl {
     int device = -1;
@@ -47,7 +47,7 @@ bool Bridge::load(const std::string& pack, int device, int lanes, const std::vec
     I.device = device;
     I.embed = std::move(embed);
     // the ring log (host copies of the activation rows for a rebuild) is the main engine's way of resuming a conversation; the split starts a lane's ring over instead
-    ::setenv("STRATA_DF2_RING_LOG", "0", 0);
+    ::setenv("NOSTROMA_DF2_RING_LOG", "0", 0);
     if (cudaSetDevice(device) != cudaSuccess) { err = "dflash2: cannot select the card"; return false; }
     I.d.emplace_back(new Dflash2Drafter);
     Dflash2Drafter& parent = *I.d[0];
@@ -98,7 +98,7 @@ uint64_t Bridge::vram_bytes() const {
 }
 
 void Bridge::tap(const float* R, const float* bo, const float* inj, int rows, int slot, float* out, int64_t out_stride, void* stream) {
-    strata::kernels::df2_tap_gr(R, 4 * kNEmbd, bo, kNEmbd, inj, 4, out + (size_t) slot * kNEmbd, out_stride, rows, kNEmbd, 4, stream);
+    nostroma::kernels::df2_tap_gr(R, 4 * kNEmbd, bo, kNEmbd, inj, 4, out + (size_t) slot * kNEmbd, out_stride, rows, kNEmbd, 4, stream);
 }
 
 float* Bridge::landing(int lane) const { return p_->d[(size_t) lane]->landing(); }

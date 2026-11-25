@@ -1,13 +1,13 @@
-// src/kernels/cuda/dequant_bf16.cu - see include/strata/kernels/dequant_bf16.hpp.
+// src/kernels/cuda/dequant_bf16.cu - see include/nostroma/kernels/dequant_bf16.hpp.
 //
 // Arithmetic transcribed from ggml/src/ggml-quants.c at the pinned llama.cpp (MIT License, Copyright (c) 2023-2026
 // The ggml authors): dequantize_row_q2_0/q4_0/q5_0/q8_0/q3_K/q4_K/q5_K/q6_K/iq4_nl/iq4_xs.
-#include "strata/kernels/dequant_bf16.hpp"
-#include "strata/env.hpp"
-#include "strata/core/tc_sm75.hpp"
-#include "strata/kernels/iq_kernels.hpp"
-#include "strata/core/defaults_026.hpp"
-#include "strata/core/sm120_series.hpp"
+#include "nostroma/kernels/dequant_bf16.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/core/tc_sm75.hpp"
+#include "nostroma/kernels/iq_kernels.hpp"
+#include "nostroma/core/defaults_026.hpp"
+#include "nostroma/core/sm120_series.hpp"
 
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
@@ -16,7 +16,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 
 __device__ __forceinline__ float h2f(const uint8_t* p) {
@@ -203,7 +203,7 @@ __global__ void dequant_kernel(const uint8_t* __restrict__ blocks, int64_t row_b
 // the same expression on the same operands - so the output is bitwise the same (dequant_wide_parity).  On the P40:
 // Q6_K 7.2 -> 0.33 ms (227 GB/s), Q4_K 1.67 -> 0.32 ms, Q5_K 1.24 -> 0.33 ms, IQ4_XS 1.21 -> 0.34 ms for that shape.
 // Q4_K, Q5_K, Q6_K and IQ4_XS.  On by default on compute capability 6.1, where it was measured;
-// STRATA_DEQUANT_WIDE=0 / =1 turns it off / on for every card.
+// NOSTROMA_DEQUANT_WIDE=0 / =1 turns it off / on for every card.
 __device__ __forceinline__ uint64_t ld8(const uint8_t* p) {   // 8 bytes at a 2-byte aligned address
     const uint16_t* q = reinterpret_cast<const uint16_t*>(p);
     return (uint64_t) q[0] | ((uint64_t) q[1] << 16) | ((uint64_t) q[2] << 32) | ((uint64_t) q[3] << 48);
@@ -283,9 +283,9 @@ __global__ void dequant_wide_kernel(const uint8_t* __restrict__ blocks, int64_t 
     for (int k = 0; k < (int) (8 * sizeof(T) / 16); ++k) o[k] = ((const uint4*) v)[k];
 }
 bool wide_type(int type) { return type == 12 || type == 13 || type == 14 || type == 23; }
-int g_dequant_wide = -1;   // dequant_set_wide (the parity test); -1 = STRATA_DEQUANT_WIDE, else the card's default
+int g_dequant_wide = -1;   // dequant_set_wide (the parity test); -1 = NOSTROMA_DEQUANT_WIDE, else the card's default
 bool dequant_wide_on() {
-    static const int env = [] { const char* v = strata::env("NOSTROMA_DEQUANT_WIDE"); return v != nullptr && v[0] != '\0' ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
+    static const int env = [] { const char* v = nostroma::env("NOSTROMA_DEQUANT_WIDE"); return v != nullptr && v[0] != '\0' ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
     if (g_dequant_wide >= 0) return g_dequant_wide != 0;
     if (env >= 0) return env != 0;
     // 0 unknown, 1 no, 2 yes: sm_61 (measured on a Tesla P40), sm_86 (RTX 3060 / A4000, 0.1.45: short-prompt TTFT -12..-17%,
@@ -297,9 +297,9 @@ bool dequant_wide_on() {
         int major = 0, minor = 0;
         if (cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, dev) != cudaSuccess ||
             cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, dev) != cudaSuccess) { (void) cudaGetLastError(); return false; }
-        // sm_80 is the 0.2.7 addition (#3779): STRATA_DEFAULTS=026 gives it the per-group kernels again, as 0.2.6 had
+        // sm_80 is the 0.2.7 addition (#3779): NOSTROMA_DEFAULTS=026 gives it the per-group kernels again, as 0.2.6 had
         per_dev[dev] = (major == 6 && minor == 1) || (major == 8 && minor == 6) ||
-                       (major == 8 && minor == 0 && strata::sm80_default_on(nullptr, strata::qwen_defaults_026())) ? 2 : 1;
+                       (major == 8 && minor == 0 && nostroma::sm80_default_on(nullptr, nostroma::qwen_defaults_026())) ? 2 : 1;
     }
     return per_dev[dev] == 2;
 }
@@ -370,14 +370,14 @@ void launch(int type, const void* blocks, int64_t row0, int64_t rows, int64_t co
     if (wide_type(type) && (reinterpret_cast<uintptr_t>(blocks) & 1) == 0 && (reinterpret_cast<uintptr_t>(out) & 15) == 0 &&
         ((size_t) ld * sizeof(T)) % 16 == 0 && 4 * total < (1ll << 31) && dequant_wide_on()) {
         const unsigned wgrid = (unsigned) ((4 * total + 255) / 256);
-#define STRATA_DQW(TY) dequant_wide_kernel<TY, T><<<wgrid, 256, 0, st>>>(p, row_bytes, row0, (uint32_t) rows, (uint32_t) gpr, ld, out); break
+#define NOSTROMA_DQW(TY) dequant_wide_kernel<TY, T><<<wgrid, 256, 0, st>>>(p, row_bytes, row0, (uint32_t) rows, (uint32_t) gpr, ld, out); break
         switch (type) {
-        case 12: STRATA_DQW(12);
-        case 13: STRATA_DQW(13);
-        case 14: STRATA_DQW(14);
-        case 23: STRATA_DQW(23);
+        case 12: NOSTROMA_DQW(12);
+        case 13: NOSTROMA_DQW(13);
+        case 14: NOSTROMA_DQW(14);
+        case 23: NOSTROMA_DQW(23);
         }
-#undef STRATA_DQW
+#undef NOSTROMA_DQW
         const cudaError_t e = cudaGetLastError();
         if (e != cudaSuccess) { std::fprintf(stderr, "dequant launch: %s\n", cudaGetErrorString(e)); std::exit(1); }
         return;
@@ -389,26 +389,26 @@ void launch(int type, const void* blocks, int64_t row0, int64_t rows, int64_t co
                      cudaGetDevice(&dev) == cudaSuccess &&
                      cudaDeviceGetAttribute(&cmaj, cudaDevAttrComputeCapabilityMajor, dev) == cudaSuccess &&
                      cudaDeviceGetAttribute(&cmin, cudaDevAttrComputeCapabilityMinor, dev) == cudaSuccess &&
-                     strata::core::tc_sm75_enabled(cmaj, cmin);
+                     nostroma::core::tc_sm75_enabled(cmaj, cmin);
     if (!vec) cudaGetLastError();
-#define STRATA_DQ(TY)                                                                                     \
+#define NOSTROMA_DQ(TY)                                                                                     \
     if (vec) dequant_kernel<TY, T, true><<<grid, 256, 0, st>>>(p, row_bytes, row0, rows, gpr, ld, out);    \
     else dequant_kernel<TY, T, false><<<grid, 256, 0, st>>>(p, row_bytes, row0, rows, gpr, ld, out);       \
     break
     switch (type) {
-    case 2: STRATA_DQ(2);
-    case 6: STRATA_DQ(6);
-    case 7: STRATA_DQ(7);
-    case 8: STRATA_DQ(8);
-    case 11: STRATA_DQ(11);
-    case 12: STRATA_DQ(12);
-    case 13: STRATA_DQ(13);
-    case 14: STRATA_DQ(14);
-    case 20: STRATA_DQ(20);
-    case 23: STRATA_DQ(23);
-    case 42: STRATA_DQ(42);
+    case 2: NOSTROMA_DQ(2);
+    case 6: NOSTROMA_DQ(6);
+    case 7: NOSTROMA_DQ(7);
+    case 8: NOSTROMA_DQ(8);
+    case 11: NOSTROMA_DQ(11);
+    case 12: NOSTROMA_DQ(12);
+    case 13: NOSTROMA_DQ(13);
+    case 14: NOSTROMA_DQ(14);
+    case 20: NOSTROMA_DQ(20);
+    case 23: NOSTROMA_DQ(23);
+    case 42: NOSTROMA_DQ(42);
     }
-#undef STRATA_DQ
+#undef NOSTROMA_DQ
     const cudaError_t e = cudaGetLastError();
     if (e != cudaSuccess) { std::fprintf(stderr, "dequant launch: %s\n", cudaGetErrorString(e)); std::exit(1); }
 }
@@ -460,4 +460,4 @@ void dequant_f32(int ggml_type, const void* blocks, int64_t row0, int64_t rows, 
     launch<float>(ggml_type, blocks, row0, rows, cols, out, stream);
 }
 
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels

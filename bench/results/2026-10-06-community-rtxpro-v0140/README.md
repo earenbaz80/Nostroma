@@ -1,4 +1,4 @@
-# Community results: Strata 0.1.39 versus 0.1.40 on RTX PRO 6000
+# Community results: Nostroma 0.1.39 versus 0.1.40 on RTX PRO 6000
 
 Measured on **2026-10-06** with unmodified release engines, Unsloth Flash-Next
 **UD-Q4_K_XL / Q8_0**, FP16 KV, **8,192 actual input tokens + 512 output tokens**,
@@ -7,7 +7,7 @@ artifacts to the exact v0.1.40 source tree.
 
 ## Native 0.1.40: ngram follow-up
 
-![Four decoding paths on native Strata 0.1.40](ngram.png)
+![Four decoding paths on native Nostroma 0.1.40](ngram.png)
 
 The same 8K coding prompt and 512-output cap were run with ngram-only and with
 MTP plus ngram. No engine changes were made.
@@ -114,7 +114,7 @@ revision and whole-GGUF hashes were not captured for this screen.
 | Expert complement | None | About 44.28 GiB in RAM; 56 GiB budget |
 | PLE placement | RAM | RAM, about 50.66 GiB |
 | Adaptation | Disabled | Every 4 steps, 96 swaps, decay 0.7 |
-| New release adaptation flags | Not used | `--adapt-async 1`, `STRATA_EXCHANGE_ROTATE=1` |
+| New release adaptation flags | Not used | `--adapt-async 1`, `NOSTROMA_EXCHANGE_ROTATE=1` |
 
 Both modes allocated **16,384 tokens**, used FP16 KV, temperature 0, thinking off,
 prefill chunk 1,024, a 2,048 MiB VRAM reserve, and the same expert profile. Prompt
@@ -154,15 +154,15 @@ Build each exact tag separately using:
 
 ```sh
 cmake -S SOURCE -B BUILD -G Ninja -DCMAKE_BUILD_TYPE=Release \
-  -DSTRATA_ENABLE_CUDA=ON -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc \
-  -DCMAKE_CUDA_ARCHITECTURES=120 -DSTRATA_NATIVE_EXPERTS=ON \
-  -DSTRATA_BUILD_TESTS=OFF -DSTRATA_GGML_DIR=/path/to/ggml-3cf03257
-cmake --build BUILD --parallel 8 --target strata
+  -DNOSTROMA_ENABLE_CUDA=ON -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc \
+  -DCMAKE_CUDA_ARCHITECTURES=120 -DNOSTROMA_NATIVE_EXPERTS=ON \
+  -DNOSTROMA_BUILD_TESTS=OFF -DNOSTROMA_GGML_DIR=/path/to/ggml-3cf03257
+cmake --build BUILD --parallel 8 --target nostroma
 ```
 
 The request harness used one frozen tokenizer/template and native-protocol
 Python client for both binaries, from fork commit
-[`70ed61f`](https://github.com/CC-David-CC/Strata-a5500/tree/70ed61f158f0ef6364557cc1ba8d1ab03178d2f1).
+[`70ed61f`](https://github.com/CC-David-CC/Nostroma-a5500/tree/70ed61f158f0ef6364557cc1ba8d1ab03178d2f1).
 That client revision is not an engine comparator. HTTP serving was not tested.
 
 To repeat the workload, copy [plan.example.json](plan.example.json) to

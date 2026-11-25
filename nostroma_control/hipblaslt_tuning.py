@@ -10,11 +10,11 @@ one per architecture of the package that has a table for the hipBLASLt version t
 The files are listed (and hashed, and signed) in engine-component.json like every other file of the package.
 
 Start side (serve/server.py with_component_engine, setup.py in the app): ``resolve`` reads the package, the GPUs in this PC and the switch,
-and returns the table to use or the reason there is none. Nobody sets STRATA_HIPBLASLT_TUNING by hand:
+and returns the table to use or the reason there is none. Nobody sets NOSTROMA_HIPBLASLT_TUNING by hand:
 
-* ``STRATA_HIPBLASLT_TABLE`` (or ``"hipblaslt_table"`` in the run config): ``off`` / false never uses the packaged table, ``on`` / true
+* ``NOSTROMA_HIPBLASLT_TABLE`` (or ``"hipblaslt_table"`` in the run config): ``off`` / false never uses the packaged table, ``on`` / true
   uses it when it matches, ``auto`` (unset) follows ``AUTO_USES_TABLE`` below;
-* a ``STRATA_HIPBLASLT_TUNING`` the person set themselves (environment or run config) always wins and is not touched;
+* a ``NOSTROMA_HIPBLASLT_TUNING`` the person set themselves (environment or run config) always wins and is not touched;
 * a table for another hipBLASLt version than the package bundles is not used, and the log says which versions it has.
 """
 from __future__ import annotations
@@ -25,7 +25,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-SWITCH = "STRATA_HIPBLASLT_TABLE"            # on | auto | off
+SWITCH = "NOSTROMA_HIPBLASLT_TABLE"            # on | auto | off
 #: What "auto" (the switch unset) does. A table changes which hipBLASLt solution runs the prompt's dense GEMMs, so their floating-point sums
 #: round differently: on an R9700 (gfx1201, Q2_0) the answers with a table are NOT bit-identical to plain hipBLAS, see phaseA-tests/notes-021-hip.md.
 #: A default that changes bits needs the owner's decision, so the packages carry their tables and the switch ("on") uses them, but "auto" is
@@ -34,9 +34,9 @@ AUTO_USES_TABLE = False
 #: The owner's decision (2026-10-19): "auto" uses the table on these architectures only. gfx1151 (Strix Halo): a community A/B measured
 #: 251 -> 529 prompt tok/s (2.11x) with the table; on gfx1201 the gain was ~1% and decode lost ~2% (notes-021-hip.md), so it stays opt-in there.
 AUTO_ARCHS = ("gfx1151",)
-ENGINE_VAR = "STRATA_HIPBLASLT_TUNING"       # what the engine reads: the path of one table
+ENGINE_VAR = "NOSTROMA_HIPBLASLT_TUNING"       # what the engine reads: the path of one table
 TABLE_DIR = "tuning"                         # inside an engine package
-HEADER = "STRATA_HIPBLASLT_TUNING_V1"
+HEADER = "NOSTROMA_HIPBLASLT_TUNING_V1"
 OFF_WORDS = ("off", "0", "no", "false", "none", "disable", "disabled")
 ON_WORDS = ("on", "1", "yes", "true", "force", "enable", "enabled")
 _NAME = re.compile(r"^(gfx[0-9a-f]+)-hipblaslt-(\d+)\.txt$")
@@ -173,7 +173,7 @@ def package_version(folder) -> int | None:
 
 
 def user_choice(environ=None, cfg: dict | None = None) -> str | None:
-    """A STRATA_HIPBLASLT_TUNING the person set (environment first, then the run config's env): theirs to keep, even if the file is gone."""
+    """A NOSTROMA_HIPBLASLT_TUNING the person set (environment first, then the run config's env): theirs to keep, even if the file is gone."""
     environ = os.environ if environ is None else environ
     for source in (environ, (cfg or {}).get("env") or {}):
         value = source.get(ENGINE_VAR)
@@ -222,8 +222,8 @@ def resolve(folder, archs_present, *, environ=None, cfg: dict | None = None) -> 
 def apply(cfg: dict, folder, archs_present=None, *, environ=None, say=print) -> dict:
     """``cfg`` for a start from engine package ``folder``. One log line through ``say`` for an AMD package (nothing for other backends).
     The engine finds ``tuning/<arch>-hipblaslt-<version>.txt`` beside itself (src/prefill/gemm.cu: gfx1151 on its own, any card with
-    ``STRATA_HIPBLASLT_TABLE=on``), so no table path is put in the config any more.  What the engine cannot see is the run config's
-    ``"hipblaslt_table"``: a true / false there is passed as ``env[STRATA_HIPBLASLT_TABLE]`` = on / off (a copy; the shell's own switch
+    ``NOSTROMA_HIPBLASLT_TABLE=on``), so no table path is put in the config any more.  What the engine cannot see is the run config's
+    ``"hipblaslt_table"``: a true / false there is passed as ``env[NOSTROMA_HIPBLASLT_TABLE]`` = on / off (a copy; the shell's own switch
     and a table the person named are left as they are)."""
     if cfg.get("backend") not in (None, "hip"):
         return cfg
@@ -234,7 +234,7 @@ def apply(cfg: dict, folder, archs_present=None, *, environ=None, say=print) -> 
         archs_present = present_archs(cfg)
     decision = resolve(folder, archs_present, environ=environ, cfg=cfg)
     if decision.message:
-        say(("[strata] " if decision.level == "info" else "[strata] note: ") + decision.message)
+        say(("[nostroma] " if decision.level == "info" else "[nostroma] note: ") + decision.message)
     value = cfg.get("hipblaslt_table")
     env_now = os.environ if environ is None else environ
     if isinstance(value, bool) and SWITCH not in (cfg.get("env") or {}) and not str(env_now.get(SWITCH, "")).strip() and not user_choice(environ, cfg):

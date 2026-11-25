@@ -14,8 +14,8 @@ session during the runs, and TTFT is measured at the client on a FIFO server, so
 
 ## Model and configuration
 
-Qwen3.8-Flash-Next GSQ-RCO **IQ3_S** (2 GGUF shards + PLE shard), pack `Strata-data/packs/iq3_s`,
-expert-profile `Strata/data/expert-profile.bin`, MTP `Strata-data/mtp/rt`, vision on CPU (16 threads).
+Qwen3.8-Flash-Next GSQ-RCO **IQ3_S** (2 GGUF shards + PLE shard), pack `Nostroma-data/packs/iq3_s`,
+expert-profile `Nostroma/data/expert-profile.bin`, MTP `Nostroma-data/mtp/rt`, vision on CPU (16 threads).
 
 ```text
 --pack packs/iq3_s --native ...-00001-of-00002.gguf --ple-gguf ...-00002-of-00002.gguf

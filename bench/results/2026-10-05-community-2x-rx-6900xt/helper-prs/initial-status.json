@@ -1,6 +1,6 @@
 {
-  "service": "strata",
-  "model": "strata-helper",
+  "service": "nostroma",
+  "model": "nostroma-helper",
   "loaded": true,
   "auto_load": true,
   "structured_output": {

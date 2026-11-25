@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-namespace strata::image {
+namespace nostroma::image {
 
 struct StTensor {
     std::string dtype;               // "BF16", "F16", "F32", ...
@@ -207,4 +207,4 @@ inline std::string st_read_tensor(const std::string& path, const StFile& file, c
     return got == bytes.size() ? "" : "short read in " + path;
 }
 
-}  // namespace strata::image
+}  // namespace nostroma::image

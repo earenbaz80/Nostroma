@@ -6,7 +6,7 @@
  *
  *   npx vite build && node scripts/ui-do-drive.mjs <shots-dir> [case ...]
  *
- * Never point it at a real install: the host it starts uses a fresh STRATA_HOME in the temp folder and a random port.
+ * Never point it at a real install: the host it starts uses a fresh NOSTROMA_HOME in the temp folder and a random port.
  * Light and dark, at a normal and a narrow window. Prints "ok" / "FAIL" lines and exits 1 on a failure.
  */
 import { spawn, spawnSync } from 'node:child_process';
@@ -28,11 +28,11 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 let failed = false;
 export const check = (ok, label, extra = '') => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${label}${extra ? '  ' + extra : ''}`); if (!ok) failed = true; };
 
-const home = mkdtempSync(join(tmpdir(), 'strata-ui-do-'));
+const home = mkdtempSync(join(tmpdir(), 'nostroma-ui-do-'));
 const ws = join(home, 'workspace'); mkdirSync(ws, { recursive: true });
 const port = await freePort();
-const env = { ...process.env, STRATA_HOME: home, STRATA_PORT: String(port), STRATA_WORKSPACE: ws, STRATA_REAL_ENGINE: '0', STRATA_COMPONENTS_DIR: join(home, 'components'), STRATA_SETTINGS_FILE: join(home, 'app-settings.json'), LOCALAPPDATA: join(home, 'Local'), APPDATA: join(home, 'Roaming'), XDG_DATA_HOME: join(home, 'xdg-data'), XDG_CONFIG_HOME: join(home, 'xdg-config'), XDG_STATE_HOME: join(home, 'xdg-state') };
-delete (env.NOSTROMA_HARNESS_DIR ?? env.STRATA_HARNESS_DIR);
+const env = { ...process.env, NOSTROMA_HOME: home, NOSTROMA_PORT: String(port), NOSTROMA_WORKSPACE: ws, NOSTROMA_REAL_ENGINE: '0', NOSTROMA_COMPONENTS_DIR: join(home, 'components'), NOSTROMA_SETTINGS_FILE: join(home, 'app-settings.json'), LOCALAPPDATA: join(home, 'Local'), APPDATA: join(home, 'Roaming'), XDG_DATA_HOME: join(home, 'xdg-data'), XDG_CONFIG_HOME: join(home, 'xdg-config'), XDG_STATE_HOME: join(home, 'xdg-state') };
+delete (env.NOSTROMA_HARNESS_DIR ?? env.NOSTROMA_HARNESS_DIR);
 const child = spawn(process.execPath, [join(HOST_DIR, 'server', 'index.mjs')], { cwd: HOST_DIR, env, stdio: 'ignore', windowsHide: true });
 export const base = `http://127.0.0.1:${port}`;
 for (let i = 0; i < 100; i++) { try { if ((await fetch(`${base}/api/health`)).ok) break; } catch { /* starting */ } await sleep(200); }
@@ -63,8 +63,8 @@ export async function open(scheme, width, height, sessions, { hash = '#/chat', p
       if (sessionStorage.getItem('ui-do-seeded')) return;
       sessionStorage.setItem('ui-do-seeded', '1');
       // The chats are files on the host: put the seed there (a synchronous request, so it is in place before the page starts).
-      for (const chat of sessions ?? []) { const request = new XMLHttpRequest(); request.open('PUT', '/api/chats/' + encodeURIComponent(chat.id), false); request.setRequestHeader('x-strata-client', 'ui'); request.send(JSON.stringify({ messages: [], ...chat })); }
-      if (Object.keys(prefs).length) localStorage.setItem('strata.prefs.v1', JSON.stringify(prefs));
+      for (const chat of sessions ?? []) { const request = new XMLHttpRequest(); request.open('PUT', '/api/chats/' + encodeURIComponent(chat.id), false); request.setRequestHeader('x-nostroma-client', 'ui'); request.send(JSON.stringify({ messages: [], ...chat })); }
+      if (Object.keys(prefs).length) localStorage.setItem('nostroma.prefs.v1', JSON.stringify(prefs));
     } catch { /* storage refused */ }
   }, { sessions, prefs });
   if (before) await before(page);
@@ -421,7 +421,7 @@ cases.width = async () => {
 cases.firstrun = async () => {
   const setupStep = dismissed => fetch(`${base}/api/setup/step`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ step: 1, dismissed, flowVersion: 2 }) });
   await setupStep(false);
-  // A computer set to a language Strata does not have: English.
+  // A computer set to a language Nostroma does not have: English.
   const page = await open('light', 1280, 860, null, { hash: '#/setup', locale: 'sv-SE', keepSetup: true });
   await page.locator('.onboard-language').waitFor({ timeout: 20000 });
   check(/English/.test(await page.locator('.onboard-language').innerText()), 'Swedish computer: English');
@@ -465,7 +465,7 @@ cases.kv = async () => {
     const page = await open(scheme, w, h, sessions, { hash: '#/models', origin: t.origin });
     await page.route(/\/api\/native(\?.*)?$/, async route => {
       const r = await route.fetch(); const j = await r.json();
-      j.jobs = [...(j.jobs ?? []), { id: 'job-f', kind: 'load', model: 'iq2_xs', state: 'error', startedAt: new Date().toISOString(), summary: 'Load failed', error: "server_exited (exit code 1): EngineDied: the engine exited before it was ready | the engine process ended: exit code 1: \nthe engine log's last lines:\n  strata generate: expert cache auto: 1.92 GiB free, 2048 MiB reserved -> 0 slots\n  strata generate: no VRAM is left for the expert cache: it needs at least 332 slots (737 MiB), about 1000 MiB more than this card has free.", result: null, progress: null }];
+      j.jobs = [...(j.jobs ?? []), { id: 'job-f', kind: 'load', model: 'iq2_xs', state: 'error', startedAt: new Date().toISOString(), summary: 'Load failed', error: "server_exited (exit code 1): EngineDied: the engine exited before it was ready | the engine process ended: exit code 1: \nthe engine log's last lines:\n  nostroma generate: expert cache auto: 1.92 GiB free, 2048 MiB reserved -> 0 slots\n  nostroma generate: no VRAM is left for the expert cache: it needs at least 332 slots (737 MiB), about 1000 MiB more than this card has free.", result: null, progress: null }];
       return route.fulfill({ response: r, json: j });
     });
     await page.reload();

@@ -30,7 +30,7 @@ def _detect_backend(environ=None):
 
 def _pkg(backend, variant, archs):
     return feedmod.EnginePackage(version="0.1.60", platform="linux-x86_64", backend=backend, variant=variant, archs=tuple(archs), min_driver={},
-                                 min_runtime=None, build_id="x", url=f"strata-engine-0.1.60-linux-x86_64-{backend}-{variant}.tar.gz", format="tar.gz",
+                                 min_runtime=None, build_id="x", url=f"nostroma-engine-0.1.60-linux-x86_64-{backend}-{variant}.tar.gz", format="tar.gz",
                                  size=1, sha256="0" * 64, manifest_sha256="0" * 64, installed_bytes=1)
 
 

@@ -114,7 +114,7 @@ class DFlash2Only(Base):
         cfg = self.config(choice="fr")
         setup.refresh_shared_draft_vocab(cfg, set())                       # setup.py --update, the saved config names fr
         self.assertEqual(sha(vocab_arg(self.applied())), sha(shipped("fr")))
-        drafting.provide_vocab(self.data)                                  # the fetch (Load, `strata drafting fetch`) never overwrites a copy that is there
+        drafting.provide_vocab(self.data)                                  # the fetch (Load, `nostroma drafting fetch`) never overwrites a copy that is there
         self.assertEqual(sha(vocab_arg(self.applied())), sha(shipped("fr")))
 
     def test_an_update_applies_the_saved_choice_to_an_older_copy(self):

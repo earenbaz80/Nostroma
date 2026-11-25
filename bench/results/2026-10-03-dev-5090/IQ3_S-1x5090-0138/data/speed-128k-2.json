@@ -16,11 +16,11 @@
  "engine_prompt_tps": 5861.9,
  "engine_decode_tps": 150.3,
  "log_lines": [
-  "strata serve: conversation cache: parked 130514 tokens in 460.7 ms; parked=4 bytes=5479893124 evictions=6 snapshot_bytes=2821196088 reused_kv_bytes=0",
-  "strata serve: prompt 130764 tokens = 0 reused + 130764 read in 22307 ms (5861.9 tok/s), 256 generated in 1703 ms (150.3 tok/s), drafts accepted 121 of 149, 6 checkpoints",
-  "strata serve: decode expert cache hit rate: 97.0% (132206 hits / 136320 lookups)"
+  "nostroma serve: conversation cache: parked 130514 tokens in 460.7 ms; parked=4 bytes=5479893124 evictions=6 snapshot_bytes=2821196088 reused_kv_bytes=0",
+  "nostroma serve: prompt 130764 tokens = 0 reused + 130764 read in 22307 ms (5861.9 tok/s), 256 generated in 1703 ms (150.3 tok/s), drafts accepted 121 of 149, 6 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 97.0% (132206 hits / 136320 lookups)"
  ],
- "answer_head": "The last file shown is `build-vision/CMakeFiles/4.2.3/CompilerIdCUDA/CMakeCUDACompilerId.cu`.\n\n### What it does\nThis is an auto-generated CMake compiler identification file. It is not part of the Strata source code but rather a temporary file created by CMake during the configuration phase to detect",
+ "answer_head": "The last file shown is `build-vision/CMakeFiles/4.2.3/CompilerIdCUDA/CMakeCUDACompilerId.cu`.\n\n### What it does\nThis is an auto-generated CMake compiler identification file. It is not part of the Nostroma source code but rather a temporary file created by CMake during the configuration phase to detect",
  "metrics_after": {
   "engine": {
    "model": "qwen3.8-flash-next-iq3_s",

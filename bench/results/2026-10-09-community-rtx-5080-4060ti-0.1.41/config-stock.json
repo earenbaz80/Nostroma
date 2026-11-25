@@ -33,7 +33,7 @@
   "--expert-cache-device1",
   "3300"
  ],
- "model_name": "strata-qwen3.8-flash-next-iq3s",
+ "model_name": "nostroma-qwen3.8-flash-next-iq3s",
  "port": 8081,
  "sampling": {
   "temperature": 0.6,
@@ -43,13 +43,13 @@
  },
  "host": "127.0.0.1",
  "env": {
-  "STRATA_IO_THREADS": "64",
+  "NOSTROMA_IO_THREADS": "64",
   "CUDA_MODULE_LOADING": "LAZY",
   "CUDA_VISIBLE_DEVICES": "<RTX 5080>,<RTX 4060 Ti>",
-  "STRATA_GR_V3": "1",
-  "STRATA_PF_FUSED": "1",
-  "STRATA_MMVQ_IL": "1",
-  "STRATA_ADAPT_LAG": "2",
-  "STRATA_DISJOINT_ADAPT": "1"
+  "NOSTROMA_GR_V3": "1",
+  "NOSTROMA_PF_FUSED": "1",
+  "NOSTROMA_MMVQ_IL": "1",
+  "NOSTROMA_ADAPT_LAG": "2",
+  "NOSTROMA_DISJOINT_ADAPT": "1"
  }
 }

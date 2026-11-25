@@ -165,7 +165,7 @@ def run_benchmark(manifest: dict, data_root: Path, engine: Path,
     env = os.environ.copy()
     env.update(manifest["primary_command"]["environment"])
     # The source installer records CUDA runtime DLL directories in BUILD.json.
-    # A bare strata.exe launch requires those directories on PATH on Windows.
+    # A bare nostroma.exe launch requires those directories on PATH on Windows.
     build_json = engine.parent / "BUILD.json"
     dll_dirs = []
     if build_json.is_file():
@@ -248,7 +248,7 @@ def main() -> int:
     p.add_argument("--data-root", type=Path, required=True,
                    help="Folder containing models/, packs/, mtp/, profiles/, prompts/")
     p.add_argument("--engine", type=Path, required=True,
-                   help="Path to the compiled strata.exe executable")
+                   help="Path to the compiled nostroma.exe executable")
     p.add_argument("--source-root", type=Path,
                    help="The pinned Git checkout to verify with git rev-parse HEAD")
     p.add_argument("--hash-mode", choices=["sha256", "size"],

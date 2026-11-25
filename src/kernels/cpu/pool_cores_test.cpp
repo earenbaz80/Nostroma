@@ -1,7 +1,7 @@
 // pool_cores_test: where the CPU pool's workers are placed, and --pool-cores (experimental, off by default).
 // Builds real pools (no model, no GPU).  The default placement must be what detect_cpu_topology() says (one logical
 // processor per physical core, the host's core left out); a list given to set_pool_cores() must be taken as it is.
-#include "strata/kernels/cpu/pool.hpp"
+#include "nostroma/kernels/cpu/pool.hpp"
 
 #include <algorithm>
 #include <cstdio>
@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace cpu = strata::kernels::cpu;
+namespace cpu = nostroma::kernels::cpu;
 
 static int g_fail = 0;
 
@@ -31,9 +31,9 @@ int main() {
     // default and takes cores from each, so its workers no longer follow the topology's order: this test is about that
     // order, so the split is switched off here (pool_tasks_test covers the split).
 #if defined(_WIN32)
-    _putenv_s("STRATA_NUMA_POOL", "0");
+    _putenv_s("NOSTROMA_NUMA_POOL", "0");
 #else
-    setenv("STRATA_NUMA_POOL", "0", 1);
+    setenv("NOSTROMA_NUMA_POOL", "0", 1);
 #endif
     const std::vector<cpu::LogicalCpuInfo> layout = cpu::logical_cpu_layout();
     std::printf("pool_cores_test: %zu logical processors\n", layout.size());

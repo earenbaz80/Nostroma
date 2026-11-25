@@ -32,7 +32,7 @@ export async function openPage(browser, mock, { width = 1280, height = 800, seed
     if (window !== window.top) return;                  // not in the preview frames: they have no storage
     if (sessionStorage.getItem("seeded")) return;
     sessionStorage.setItem("seeded", "1");
-    for (const [k, v] of Object.entries(s)) localStorage.setItem("strata." + k, JSON.stringify(v));
+    for (const [k, v] of Object.entries(s)) localStorage.setItem("nostroma." + k, JSON.stringify(v));
   }, seed);
   await page.goto(mock.url + "/" + query + hash, { waitUntil: "networkidle0" });
   return page;

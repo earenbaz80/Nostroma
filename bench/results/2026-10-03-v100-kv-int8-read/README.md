@@ -26,7 +26,7 @@ The KV-streaming copy is already wide: `copy_kernel`, `src/kernels/cuda/kv_strea
 ## 2. Vectorization
 
 The gather (`kv_gather_q8_kernel`) was 4 values/thread: two `char4` (4 B) loads + two `ushort4` (8 B) stores.  The
-experimental build (`-DSTRATA_EXPERIMENTAL_SM60=ON`, Pascal/Volta) adds an 8-wide `kv_gather_q8_wide_kernel`: one
+experimental build (`-DNOSTROMA_EXPERIMENTAL_SM60=ON`, Pascal/Volta) adds an 8-wide `kv_gather_q8_wide_kernel`: one
 `uint2` (8 B) load of codes, one `uint4` (16 B) store of the dequantized fp16, one scale per thread instead of two.
 The 8 values lie in one 64-value group, and the arithmetic is unchanged (`(float) code * scale -> f16_from_f32`,
 packed two halfs per 32-bit word), so the output is byte-identical.  The ready-made engine keeps exactly the

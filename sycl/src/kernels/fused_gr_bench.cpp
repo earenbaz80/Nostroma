@@ -1,4 +1,4 @@
-// src/kernels/fused_gr_bench.cpp - fused_gr_read_multi: the AMD fast kernels (STRATA_GR_FAST) against the old
+// src/kernels/fused_gr_bench.cpp - fused_gr_read_multi: the AMD fast kernels (NOSTROMA_GR_FAST) against the old
 // ones, bit for bit on every output (lo, rs, inject, mixed, the in-place R), and each one's time.
 //
 //     build/fused_gr_bench [iters] [T min] [T max]
@@ -6,7 +6,7 @@
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "strata/kernels/fused_gr.hpp"
+#include "nostroma/kernels/fused_gr.hpp"
 
 #include <cmath>
 #include <cstdint>
@@ -16,7 +16,7 @@
 #include <random>
 #include <vector>
 
-namespace K = strata::kernels;
+namespace K = nostroma::kernels;
 
 static uint16_t bf16(float x) {
     uint32_t u;

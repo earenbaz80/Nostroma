@@ -7,7 +7,7 @@
 // integer forms, 4 = 3 at 5 blocks a SM, 2 / 5 = 3 / 4 with a ring) are each bit-checked against native_mmvq, and with
 // --bench timed interleaved per (case, T, rows): N rounds
 // (default 5) of 100 calls each, variant after variant, the median of the rounds printed per variant (PFBENCH lines; the
-// table cells take the first listed variant).  Without --pf every call takes STRATA_MMVQ_IL_PF (unset: today's kernel).
+// table cells take the first listed variant).  Without --pf every call takes NOSTROMA_MMVQ_IL_PF (unset: today's kernel).
 //
 // --hot times one copy of the weights (they sit in L2 after the first call: the ceiling of an L2
 // prefetch); --gap MB reads MB megabytes of OTHER weights (native_mmvq over other copies) before every timed call, as
@@ -23,11 +23,11 @@
 // The same Q8_1 bytes feed both paths (quantize_q8_1_rows, then native_q8_1_interleave). Weights are random bytes with
 // the block scales rewritten as normal fp16 values, so every output is finite (a NaN would compare equal whatever
 // produced it). The bench cycles through enough copies of the weights to miss the L2 cache, as a layer's call does.
-#include "strata/kernels/iq_kernels.hpp"
-#include "strata/env.hpp"
-#include "strata/core/defaults_026.hpp"
-#include "strata/core/sm120_series.hpp"
-#include "strata/kernels/native_mmvq.hpp"
+#include "nostroma/kernels/iq_kernels.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/core/defaults_026.hpp"
+#include "nostroma/core/sm120_series.hpp"
+#include "nostroma/kernels/native_mmvq.hpp"
 
 #include <cuda_runtime.h>
 
@@ -43,7 +43,7 @@
 #include <vector>
 
 namespace {
-using namespace strata::kernels;
+using namespace nostroma::kernels;
 
 struct Cell { int type, T, n_out, pf; double ref; double il[5]; };   // pf: the variant the il[] times ran (-1: the environment's)
 std::vector<Cell> g_cells;
@@ -86,7 +86,7 @@ double time_us(F fn, int reps, cudaStream_t s, G gap) {
 }
 // --persist: the matrix `w` (wbytes) persisting in L2 for every kernel on `s`; off: the window cleared
 void persist_window(cudaStream_t s, void* w, std::size_t wbytes, bool on) {
-#if !defined(STRATA_HIP_GFX906)
+#if !defined(NOSTROMA_HIP_GFX906)
     cudaStreamAttrValue v{};
     v.accessPolicyWindow.base_ptr = on ? w : nullptr;
     v.accessPolicyWindow.num_bytes = on ? wbytes : 0;
@@ -402,9 +402,9 @@ const int kAda4080[5][3][5] = {
     {{0, 0, 1, 1, 1}, {0, 1, 1, 1, 1}, {0, 1, 1, 1, 1}}};
 int check_tables() {
     int bad = 0;
-    const char* e89 = strata::env("NOSTROMA_MMVQ_IL_89");
-    // sm_89's own tables are ON by default (#3453, 0.2.7) unless STRATA_MMVQ_IL_89=0 or STRATA_DEFAULTS=026
-    const bool opt89 = strata::mmvq_il_89_resolve(e89, false, 89, strata::qwen_defaults_026());
+    const char* e89 = nostroma::env("NOSTROMA_MMVQ_IL_89");
+    // sm_89's own tables are ON by default (#3453, 0.2.7) unless NOSTROMA_MMVQ_IL_89=0 or NOSTROMA_DEFAULTS=026
+    const bool opt89 = nostroma::mmvq_il_89_resolve(e89, false, 89, nostroma::qwen_defaults_026());
     for (int type : {23, 12, 13, 14, 11})
         for (int nc = 2; nc <= 4; ++nc)
             for (int n_out : {512, 2560, 6144, 10240, 12288, 248320}) {
@@ -414,7 +414,7 @@ int check_tables() {
                 const int cls = n_out < 2048 ? 0 : n_out < 4096 ? 1 : n_out < 8192 ? 2 : n_out < 12288 ? 3 : 4;
                 const int ti = type == 23 ? 0 : type == 12 ? 1 : type == 13 ? 2 : type == 14 ? 3 : 4;
                 const int b = native_mmvq_il_rows_for(89, type, nc, n_out);
-                // tables on (the default): the agreement; off (=0 or STRATA_DEFAULTS=026): what sm_89 answered before #3453 (the shared table, which is
+                // tables on (the default): the agreement; off (=0 or NOSTROMA_DEFAULTS=026): what sm_89 answered before #3453 (the shared table, which is
                 // sm_86's except Q3_K, a type the shared table has no row for)
                 const int want = opt89 ? (kAda4070[ti][nc - 2][cls] == kAda4080[ti][nc - 2][cls] ? kAda4070[ti][nc - 2][cls] : 0)
                                        : (type == 11 ? 0 : a);
@@ -440,7 +440,7 @@ int check_tables() {
         ++bad;
         std::printf("FAIL table: the sm_89 one-column row is not Q3_K only\n");
     }
-    // sm_80 has its own tables (kIlRows_80 / kIlRows58_80 / kIl1Rows_80: a CMP 170HX's); the key 81 is what STRATA_MMVQ_IL_SM80=0
+    // sm_80 has its own tables (kIlRows_80 / kIlRows58_80 / kIl1Rows_80: a CMP 170HX's); the key 81 is what NOSTROMA_MMVQ_IL_SM80=0
     // gives an sm_80 card: no table of its own, so the shared one (and no one-column table).  Every answer is 0, 1, 2 or 4.
     {
         bool differs = false;
@@ -491,7 +491,7 @@ int main(int argc, char** argv) {
     }
     cudaStream_t s;
     cudaStreamCreate(&s);
-#if !defined(STRATA_HIP_GFX906)
+#if !defined(NOSTROMA_HIP_GFX906)
     if (g_persist || g_ab) {
         int dev = 0, l2 = 0, maxp = 0, maxw = 0;
         cudaGetDevice(&dev);

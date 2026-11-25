@@ -155,7 +155,7 @@ class WindowsRuntimeFolderRefused(unittest.TestCase):
             def restrict(path, directory=None):
                 state["fixed"] = True
 
-            env = {"STRATA_RUNTIME_DIR": str(base)}
+            env = {"NOSTROMA_RUNTIME_DIR": str(base)}
             with self.mock.patch.dict(os.environ, env), self.mock.patch.object(pf, "dacl_sddl", side_effect=sddl), \
                     self.mock.patch.object(pf, "restrict_to_current_user", side_effect=restrict) as r, \
                     self.mock.patch.object(pf, "private_mkdir"), self.mock.patch.object(runtime, "_private_mkdir"):
@@ -168,7 +168,7 @@ class WindowsRuntimeFolderRefused(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp) / "runtime"
             base.mkdir()
-            with self.mock.patch.dict(os.environ, {"STRATA_RUNTIME_DIR": str(base)}), \
+            with self.mock.patch.dict(os.environ, {"NOSTROMA_RUNTIME_DIR": str(base)}), \
                     self.mock.patch.object(pf, "dacl_sddl", return_value="D:PAI(A;OICI;FA;;;S-1-5-21-1-2-3-1001)(A;OICI;FR;;;BU)"), \
                     self.mock.patch.object(pf, "restrict_to_current_user", side_effect=OSError("denied")), \
                     self.mock.patch.object(runtime, "_private_mkdir"):
@@ -201,7 +201,7 @@ class WindowsRuntimeFolderMoreCases(unittest.TestCase):
             def rp(path, tree=True):
                 calls["repair"] += 1
                 return repair(calls) if repair else False
-            with mock.patch.dict(os.environ, {"STRATA_RUNTIME_DIR": str(base)}), \
+            with mock.patch.dict(os.environ, {"NOSTROMA_RUNTIME_DIR": str(base)}), \
                     mock.patch.object(pf, "current_user_sid", return_value=self.ME), \
                     mock.patch.object(pf, "dacl_sddl", side_effect=sddl), \
                     mock.patch.object(pf, "restrict_to_current_user", side_effect=r), \
@@ -269,25 +269,25 @@ class WindowsRuntimeFolderMoreCases(unittest.TestCase):
 class Issue3410TrashIsNotAnInstall(unittest.TestCase):
     def test_trash_folders_are_recognised(self):
         from nostroma_control.discovery import in_trash
-        for p in ("/home/u/.local/share/Trash/files/strata", "/mnt/d/.Trash-1000/files/Strata", "/Users/u/.Trash/Strata",
-                  "C:\\$Recycle.Bin\\S-1-5-21\\$R123\\Strata", "/home/u/.local/share/trash/files/strata/x"):
+        for p in ("/home/u/.local/share/Trash/files/nostroma", "/mnt/d/.Trash-1000/files/Nostroma", "/Users/u/.Trash/Nostroma",
+                  "C:\\$Recycle.Bin\\S-1-5-21\\$R123\\Nostroma", "/home/u/.local/share/trash/files/nostroma/x"):
             self.assertTrue(in_trash(p), p)
-        for p in ("/home/u/bin/strata", "/home/u/Trash-talk/strata", "/home/u/trash/strata", "/opt/Strata",
-                  "C:\\Users\\u\\Strata"):
+        for p in ("/home/u/bin/nostroma", "/home/u/Trash-talk/nostroma", "/home/u/trash/nostroma", "/opt/Nostroma",
+                  "C:\\Users\\u\\Nostroma"):
             self.assertFalse(in_trash(p), p)
 
     def test_remembered_installs_in_the_trash_are_not_listed(self):
         from nostroma_control import discovery
         with tempfile.TemporaryDirectory() as tmp:
-            good = Path(tmp) / "bin" / "strata"
-            trash = Path(tmp) / ".local" / "share" / "Trash" / "files" / "strata"
+            good = Path(tmp) / "bin" / "nostroma"
+            trash = Path(tmp) / ".local" / "share" / "Trash" / "files" / "nostroma"
             got = discovery._installs_in({"installs": [str(trash), str(good)]})
             self.assertEqual(got, [good])
 
     def test_setup_does_not_pass_a_trash_folder_on(self):
         import setup
         with tempfile.TemporaryDirectory() as tmp:
-            trash = Path(tmp) / ".local" / "share" / "Trash" / "files" / "strata"
+            trash = Path(tmp) / ".local" / "share" / "Trash" / "files" / "nostroma"
             trash.mkdir(parents=True)
             (trash / "setup.py").write_text("x")
             from unittest import mock
@@ -318,18 +318,18 @@ class Issue2971WebToolRowFitsPhones(unittest.TestCase):
 
 
 class Issue3188BenchStartsItsOwnServer(unittest.TestCase):
-    """tools/strata_bench.py named `port` in the start-a-server branch without ever setting it."""
+    """tools/nostroma_bench.py named `port` in the start-a-server branch without ever setting it."""
 
     def test_the_start_branch_runs_with_the_config_port(self):
         from unittest import mock
-        from tools import strata_bench as sb
+        from tools import nostroma_bench as sb
         import io
         from contextlib import redirect_stdout
         with tempfile.TemporaryDirectory() as tmp:
             cfg = Path(tmp) / "run.json"
             cfg.write_text(json.dumps({"port": 18999, "args": []}), encoding="utf-8")
             started = []
-            with mock.patch.object(sb, "is_strata", return_value=False), \
+            with mock.patch.object(sb, "is_nostroma", return_value=False), \
                     mock.patch.object(sb, "try_json", return_value=None), \
                     mock.patch.object(sb, "start_server", side_effect=lambda c, p, g, log: started.append(p) or object()), \
                     mock.patch.object(sb, "wait_ready", return_value=False), \
@@ -414,9 +414,9 @@ class Issue3501TrashOnPosix(unittest.TestCase):
         from unittest import mock
         from nostroma_control import discovery
         with mock.patch.object(discovery, "Path", PurePosixPath):
-            self.assertTrue(discovery.in_trash(r"C:\$Recycle.Bin\S-1-5-21\$R123\Strata"))
-            self.assertTrue(discovery.in_trash("/mnt/d/$RECYCLE.BIN/S-1/Strata"))
-            self.assertFalse(discovery.in_trash(r"C:\Users\a\Strata"))
+            self.assertTrue(discovery.in_trash(r"C:\$Recycle.Bin\S-1-5-21\$R123\Nostroma"))
+            self.assertTrue(discovery.in_trash("/mnt/d/$RECYCLE.BIN/S-1/Nostroma"))
+            self.assertFalse(discovery.in_trash(r"C:\Users\a\Nostroma"))
 
 
 

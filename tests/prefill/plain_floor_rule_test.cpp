@@ -4,12 +4,12 @@
 #include <cstdio>
 #include <initializer_list>
 
-#include "strata/prefill/plain_floor_rule.hpp"
+#include "nostroma/prefill/plain_floor_rule.hpp"
 
-using strata::prefill::floor_with_share;
-using strata::prefill::kPlainDiscreteFloor;
-using strata::prefill::plain_floor_off;
-using strata::prefill::plain_takes_discrete_floor;
+using nostroma::prefill::floor_with_share;
+using nostroma::prefill::kPlainDiscreteFloor;
+using nostroma::prefill::plain_floor_off;
+using nostroma::prefill::plain_takes_discrete_floor;
 
 static int failed = 0;
 #define CHECK(x) do { if (!(x)) { std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #x); ++failed; } } while (0)

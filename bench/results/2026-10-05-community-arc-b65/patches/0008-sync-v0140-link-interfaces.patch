@@ -45,7 +45,7 @@
 +
      if (n_tok < 1 || n_tok > 8 || !nw.q8_1 || !nw.gate_data || !nw.up_data || !nw.down_data || !stream)
          throw std::invalid_argument("shared_expert_multi: needs 1..8 tokens, native weights, scratch and a stream");
-     dpct::queue_ptr cs = strata::q_of(stream);
+     dpct::queue_ptr cs = nostroma::q_of(stream);
 --- a/sycl/src/prefill/kernels.dp.cpp
 +++ b/sycl/src/prefill/kernels.dp.cpp
 @@ -1501,7 +1501,9 @@
@@ -78,7 +78,7 @@
 +                    const float* gamma, float eps, float* y, uint16_t* y16, int64_t T, void* stream, int64_t ld16) {
 +    if (ld16 != 0) { std::fprintf(stderr, "gdn_recurrence: new optional path is not ported to SYCL\n"); std::exit(1); }
 +
-     static const bool serial = std::getenv("STRATA_GDN_REC_HEADS") != nullptr;   // the one-block-per-head kernel (A/B)
+     static const bool serial = std::getenv("NOSTROMA_GDN_REC_HEADS") != nullptr;   // the one-block-per-head kernel (A/B)
      if (serial || T <= 0) {
          /*
 @@ -2062,7 +2068,9 @@
@@ -127,17 +127,17 @@
 +}
 +
 +bool FileExpertSource::advise_pairs(const std::pair<int32_t, int32_t>* pairs, int64_t n) const {
-+    if (base_ == nullptr || !direct_.empty() || !strata::platform::read_ahead_enabled()) return false;
++    if (base_ == nullptr || !direct_.empty() || !nostroma::platform::read_ahead_enabled()) return false;
 +    for (int64_t i = 0; pairs != nullptr && i < n; ++i) {
 +        const int64_t l = pairs[i].first, e = pairs[i].second;
 +        if (l < 0 || e < 0 || l >= n_layers_ || e >= n_expert_) continue;
 +        if (role_ptr_.empty()) {   // experts.bin: the blob is one contiguous range
-+            if (const uint8_t* b = mapped_blob(l, e)) strata::platform::advise_willneed(b, layer_blob_bytes_[(size_t) l]);
++            if (const uint8_t* b = mapped_blob(l, e)) nostroma::platform::advise_willneed(b, layer_blob_bytes_[(size_t) l]);
 +            continue;
 +        }
 +        for (int r = 0; r < 3; ++r) {
 +            const size_t k = (size_t) (3 * l + r);
-+            strata::platform::advise_willneed(role_ptr_[k] + (size_t) ((uint64_t) e * role_bytes_[k]), role_bytes_[k]);
++            nostroma::platform::advise_willneed(role_ptr_[k] + (size_t) ((uint64_t) e * role_bytes_[k]), role_bytes_[k]);
 +        }
 +    }
 +    return true;
@@ -152,9 +152,9 @@
 --- a/sycl/src/core/vmm_stub.cpp
 +++ b/sycl/src/core/vmm_stub.cpp
 @@ -0,0 +1,16 @@
-+#include "strata/core/vmm.hpp"
++#include "nostroma/core/vmm.hpp"
 +// SYCL has no CUDA VMM; elastic KV remains unavailable, as on HIP.
-+namespace strata::core {
++namespace nostroma::core {
 +bool vmm_available() { return false; }
 +uint64_t vmm_granularity() { return 0; }
 +VmmChunk vmm_chunk_new() { return 0; }
@@ -166,16 +166,16 @@
 +bool VmmRange::set_access(int64_t, int64_t) { return false; }
 +bool VmmRange::commit_run(int64_t, int64_t) { return false; }
 +VmmChunk VmmRange::unmap(int64_t) { return 0; }
-+}  // namespace strata::core
++}  // namespace nostroma::core
 +
 --- a/sycl/CMakeLists.txt
 +++ b/sycl/CMakeLists.txt
 @@ -135,7 +135,7 @@
  # --- the GPU engine ------------------------------------------------------------------------------------------------
- strata_resolve(_core src/core/device.cu src/core/pinned.cu src/platform/memory.cpp src/core/graph.cpp
+ nostroma_resolve(_core src/core/device.cu src/core/pinned.cu src/platform/memory.cpp src/core/graph.cpp
                       src/core/weights.cpp src/core/layout.cpp)
--add_library(strata_core STATIC ${_core})
-+add_library(strata_core STATIC ${_core} ${CMAKE_CURRENT_SOURCE_DIR}/src/core/vmm_stub.cpp)
- target_link_libraries(strata_core PUBLIC strata_includes)
+-add_library(nostroma_core STATIC ${_core})
++add_library(nostroma_core STATIC ${_core} ${CMAKE_CURRENT_SOURCE_DIR}/src/core/vmm_stub.cpp)
+ target_link_libraries(nostroma_core PUBLIC nostroma_includes)
  
  set(_kernel_cu dequant_s2 s2_gemv s_gemv s2_gemv_quads s2_gemv_fast router_top10 quantize_act rope sampler s2_gemv_q8

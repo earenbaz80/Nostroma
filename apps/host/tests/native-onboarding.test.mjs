@@ -7,11 +7,11 @@ import {markPictures,runtimeVision} from '../server/native-vision.mjs';
 import {nativeFixture,finishJob} from './helpers/native-fixture.mjs';
 
 test('new native downloads use the selected model root without adding a legacy subfolder',async()=>{
- const directory='/fixture/Documents/Strata/Models',f=nativeFixture({modelsDirectory:()=>directory});try{
+ const directory='/fixture/Documents/Nostroma/Models',f=nativeFixture({modelsDirectory:()=>directory});try{
   await f.control.refresh();f.installed.models.length=0;await f.control.refresh(true);
   assert.equal(f.control.state().downloadDirectory,directory);
   await f.control.plan({family:'qwen',model:'IQ2_XS'});
-  assert.equal(f.rpcCalls.find(c=>c.name==='strata_install').arguments.data_dir,directory);
+  assert.equal(f.rpcCalls.find(c=>c.name==='nostroma_install').arguments.data_dir,directory);
  }finally{await f.cleanup();}
 });
 
@@ -36,15 +36,15 @@ test('guided tuning targets the prepared model, persists headroom and opens one 
   await finishJob(f.control,f.control.operation('load',{model:'iq3_s'}).id);
   const tuned=await finishJob(f.control,f.control.operation('tune',{model:'iq2_xs',profile:'work',calibrate:true}).id);
   assert.equal(tuned.state,'done',tuned.error);
-  assert.ok(f.calls.find(call=>call.args[0]==='-c'&&call.args[2].endsWith('strata-iq2_xs.json')));
+  assert.ok(f.calls.find(call=>call.args[0]==='-c'&&call.args[2].endsWith('nostroma-iq2_xs.json')));
   assert.equal(f.control.state().instances.length,1);
   assert.equal(f.control.state().instances[0].model,'iq2_xs');
   assert.equal(tuned.result.outputTps,41);
-  const config=JSON.parse(readFileSync(join(f.repo,'strata-iq2_xs.json')));
+  const config=JSON.parse(readFileSync(join(f.repo,'nostroma-iq2_xs.json')));
   assert.equal(config.ui_resource_profile,'work');assert.equal(config.vram_reserve_mib,4915);
   assert.deepEqual(config.unknown_native_key,{preserve:true});
   assert.equal(config.args[config.args.indexOf('--pool-workers')+1],'8');
-  assert.ok(readFileSync(join(f.repo,'strata-iq2_xs.json.bak')));
+  assert.ok(readFileSync(join(f.repo,'nostroma-iq2_xs.json.bak')));
  }finally{await f.cleanup();}
 });
 
@@ -64,7 +64,7 @@ test('an existing native model folder is persisted and used by the installer wit
   f.control.setDownloadDirectory(f.directory);
   assert.equal(f.control.state().downloadDirectory,realpathSync(f.directory));
   await f.control.plan({family:'qwen',model:'IQ2_XS'});
-  assert.equal(f.rpcCalls.find(c=>c.name==='strata_install').arguments.data_dir,realpathSync(f.directory));
+  assert.equal(f.rpcCalls.find(c=>c.name==='nostroma_install').arguments.data_dir,realpathSync(f.directory));
   assert.throws(()=>f.control.setDownloadDirectory(join(f.repo,'setup.py')),/folder/);
  }finally{await f.cleanup();}
 });
@@ -86,7 +86,7 @@ test('stopping long tuning retains files and does not continue into loading',asy
   await f.control.cancel(job.id);await new Promise(r=>setTimeout(r,10));
   assert.equal(f.control.state().jobs.find(j=>j.id===job.id).state,'cancelled');
   assert.equal(f.control.state().instances.length,0);
-  assert.ok(readFileSync(join(f.repo,'strata-iq2_xs.json')));
+  assert.ok(readFileSync(join(f.repo,'nostroma-iq2_xs.json')));
   assert.equal(f.calls.some(c=>c.args[0]?.replaceAll('\\','/').endsWith('serve/server.py')),false);
  }finally{await f.cleanup();}
 });
@@ -99,7 +99,7 @@ test('the consumer can change resource preference later and restore full perform
   assert.equal(f.control.state().installed.models[0].resourceProfile,'work');
   const performance=await finishJob(f.control,f.control.operation('load',{model:'iq2_xs',resourceProfile:'performance'}).id);
   assert.equal(performance.state,'done',performance.error);assert.equal(f.control.state().instances.length,1);
-  const config=JSON.parse(readFileSync(join(f.repo,'strata-iq2_xs.json')));
+  const config=JSON.parse(readFileSync(join(f.repo,'nostroma-iq2_xs.json')));
   assert.equal(config.ui_resource_profile,'performance');assert.equal(config.vram_reserve_mib,1024); // the fixture's picture reader is the CPU one (gpu:0): no VRAM, so the 24 GB card's 1024 floor
   assert.equal(config.args.includes('--pool-workers'),false);
  }finally{await f.cleanup();}
@@ -121,7 +121,7 @@ test('vision can be disabled at load without losing the prepared encoder config 
   await f.control.refresh();
   const off=await finishJob(f.control,f.control.operation('tune',{model:'iq2_xs',profile:'work',calibrate:false,vision:'no'}).id);
   assert.equal(off.state,'done',off.error);assert.equal(f.control.state().instances[0].vision,false);
-  const source=JSON.parse(readFileSync(join(f.repo,'strata-iq2_xs.json')));
+  const source=JSON.parse(readFileSync(join(f.repo,'nostroma-iq2_xs.json')));
   assert.deepEqual(source.vision,{gpu:0});assert.equal(source.ui_vision_enabled,false);
   assert.equal(f.control.state().installed.models[0].visionEnabled,false);
   const proc=f.calls.findLast(c=>c.args[0]?.replaceAll('\\','/').endsWith('serve/server.py'));
@@ -134,7 +134,7 @@ test('vision can be disabled at load without losing the prepared encoder config 
   assert.equal(JSON.parse(readFileSync(runtime.args[runtime.args.indexOf('--config')+1])).vision.gpu,false);
   assert.equal(f.control.state().installed.models[0].visionEnabled,true);
   assert.equal(f.control.state().installed.models[0].visionDevice,'cpu');
-  assert.equal(f.rpcCalls.some(c=>c.name==='strata_install'),false);
+  assert.equal(f.rpcCalls.some(c=>c.name==='nostroma_install'),false);
  }finally{await f.cleanup();}
 });
 
@@ -144,7 +144,7 @@ test('a load while the engine has no picture reader runs without pictures and sa
   const first=await finishJob(f.control,f.control.operation('load',{model:'iq2_xs',vision:'no',visionUnavailable:true}).id);
   assert.equal(first.state,'done',first.error);
   assert.equal(f.control.state().instances[0].vision,false,'no picture reading for this run');
-  const source=JSON.parse(readFileSync(join(f.repo,'strata-iq2_xs.json')));
+  const source=JSON.parse(readFileSync(join(f.repo,'nostroma-iq2_xs.json')));
   assert.equal(source.ui_vision_enabled,undefined,'no off was saved');
   assert.deepEqual(source.vision,{gpu:0},'the prepared picture files stay');
   assert.equal(f.control.state().installed.models[0].visionEnabled,false,'while it runs without pictures the state says so');
@@ -156,14 +156,14 @@ test('a context the person picked is saved with a marker and read back (32K incl
   await plainFixture.control.refresh();
   const plain=await finishJob(plainFixture.control,plainFixture.control.operation('load',{model:'iq2_xs'}).id);
   assert.equal(plain.state,'done',plain.error);
-  assert.equal(JSON.parse(readFileSync(join(plainFixture.repo,'strata-iq2_xs.json'))).ui_context_chosen,undefined);
+  assert.equal(JSON.parse(readFileSync(join(plainFixture.repo,'nostroma-iq2_xs.json'))).ui_context_chosen,undefined);
   assert.equal(plainFixture.control.state().installed.models[0].contextChosen,false);
  }finally{await plainFixture.cleanup();}
  const f=nativeFixture();try{
   await f.control.refresh();
   const picked=await finishJob(f.control,f.control.operation('load',{model:'iq2_xs',contextChosen:true}).id);
   assert.equal(picked.state,'done',picked.error);
-  assert.equal(JSON.parse(readFileSync(join(f.repo,'strata-iq2_xs.json'))).ui_context_chosen,true);
+  assert.equal(JSON.parse(readFileSync(join(f.repo,'nostroma-iq2_xs.json'))).ui_context_chosen,true);
   assert.equal(f.control.state().installed.models[0].contextChosen,true);
  }finally{await f.cleanup();}
 });
@@ -175,9 +175,9 @@ test('runtime vision checks prepared files, validates mode, and leaves the sourc
  assert.equal(runtimeVision(config,'cpu').gpu,false);
  assert.equal(runtimeVision(config,'yes').mmproj,config.vision.mmproj);
  assert.deepEqual(config,before);
- const amd={vision:{exe:'/e/strata-vision-hip',cpu_exe:'/e/strata-vision',mmproj:'/m.gguf',gpu:true}};
- assert.deepEqual(runtimeVision(amd,'cpu'),{exe:'/e/strata-vision',mmproj:'/m.gguf',gpu:false});
- assert.equal(runtimeVision(amd,'gpu').exe,'/e/strata-vision-hip');assert.equal(runtimeVision(amd,'gpu').cpu_exe,'/e/strata-vision');
+ const amd={vision:{exe:'/e/nostroma-vision-hip',cpu_exe:'/e/nostroma-vision',mmproj:'/m.gguf',gpu:true}};
+ assert.deepEqual(runtimeVision(amd,'cpu'),{exe:'/e/nostroma-vision',mmproj:'/m.gguf',gpu:false});
+ assert.equal(runtimeVision(amd,'gpu').exe,'/e/nostroma-vision-hip');assert.equal(runtimeVision(amd,'gpu').cpu_exe,'/e/nostroma-vision');
  assert.equal(runtimeVision(amd,'yes').gpu,true);
  assert.throws(()=>runtimeVision({},'yes'),/Prepare/);
  assert.throws(()=>runtimeVision(config,'invalid'),/picture reading/);
@@ -188,10 +188,10 @@ test('download-and-load prepares vision automatically while loading text only wh
   await f.control.refresh();
   const job=await finishJob(f.control,f.control.operation('install',{family:'qwen',model:'IQ2_XS',vision:'yes',loadVision:'no',loadAfter:true}).id);
   assert.equal(job.state,'done',job.error);
-  const install=f.rpcCalls.find(c=>c.name==='strata_install'&&c.arguments.confirm);
+  const install=f.rpcCalls.find(c=>c.name==='nostroma_install'&&c.arguments.confirm);
   assert.equal(install.arguments.vision,'yes');assert.equal(install.arguments.loadVision,undefined);
   assert.equal(f.control.state().instances[0].vision,false);
-  assert.deepEqual(JSON.parse(readFileSync(join(f.repo,'strata-iq2_xs.json'))).vision,{gpu:0});
+  assert.deepEqual(JSON.parse(readFileSync(join(f.repo,'nostroma-iq2_xs.json'))).vision,{gpu:0});
  }finally{await f.cleanup();}
 });
 
@@ -204,7 +204,7 @@ test('a card that shares the PC memory does not hold back a fifth of the shared 
  assert.equal(discrete.vram_reserve_mib,Math.floor(82*1024*.2),'a card with its own memory keeps its fifth');
 });
 
-test('picture readiness: Qwen needs strata-vision in the engine folder',()=>{
+test('picture readiness: Qwen needs nostroma-vision in the engine folder',()=>{
  const catalog={families:[
   {family:'flash-next',images:true,sizes:[{id:'q',images:true}]},
   {family:'text',images:false,sizes:[{id:'t',images:false}]}]};

@@ -1,44 +1,44 @@
 #include "b60_mtp_q8_cache.hpp"
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 #include "b60_weight_cache.hpp"
-#include "strata/core/on_device.hpp"
+#include "nostroma/core/on_device.hpp"
 #include "b60_layout_state.hpp"
 #include "private_mtp_demand.hpp"
-// src/core/mtp.cpp - see include/strata/core/mtp.hpp.
+// src/core/mtp.cpp - see include/nostroma/core/mtp.hpp.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "strata/sycl_queue.hpp"
-#include "strata/core/mtp.hpp"
-#include "strata/core/coupled_draft.hpp"
-#include "strata/core/on_device.hpp"
+#include "nostroma/sycl_queue.hpp"
+#include "nostroma/core/mtp.hpp"
+#include "nostroma/core/coupled_draft.hpp"
+#include "nostroma/core/on_device.hpp"
 
-#include "strata/core/native_head.hpp"
-#include "strata/workload_trace.hpp"
-#include "strata/core/peer_experts.hpp"
-#include "strata/platform/memory.hpp"
-#include "strata/kernels/bf16_gemv.hpp"
-#include "strata/kernels/cpu/expert.hpp"
-#include "strata/kernels/elementwise.hpp"
-#include "strata/kernels/fused_gr.hpp"
-#include "strata/kernels/gr.hpp"
-#include "strata/kernels/kv_q4.hpp"
-#include "strata/kernels/kv_q8.hpp"
-#include "strata/kernels/native_moe.hpp"
-#include "strata/kernels/native_mmvq.hpp"
-#include "strata/kernels/native_qsa.hpp"
-#include "strata/kernels/native_rope.hpp"
-#include "strata/kernels/native_router.hpp"
-#include "strata/kernels/qsa.hpp"
-#include "strata/kernels/qsa_decode_attn.hpp"
-#include "strata/kernels/quantize_act.hpp"
-#include "strata/kernels/rope.hpp"
-#include "strata/kernels/router_top10.hpp"
-#include "strata/kernels/s2_expert_grouped.hpp"
-#include "strata/kernels/sampler.hpp"
-#include "strata/kernels/shared_expert.hpp"
-#include "strata/kernels/verify_kernels.hpp"
-#include "strata/kernels/ngram.hpp"
+#include "nostroma/core/native_head.hpp"
+#include "nostroma/workload_trace.hpp"
+#include "nostroma/core/peer_experts.hpp"
+#include "nostroma/platform/memory.hpp"
+#include "nostroma/kernels/bf16_gemv.hpp"
+#include "nostroma/kernels/cpu/expert.hpp"
+#include "nostroma/kernels/elementwise.hpp"
+#include "nostroma/kernels/fused_gr.hpp"
+#include "nostroma/kernels/gr.hpp"
+#include "nostroma/kernels/kv_q4.hpp"
+#include "nostroma/kernels/kv_q8.hpp"
+#include "nostroma/kernels/native_moe.hpp"
+#include "nostroma/kernels/native_mmvq.hpp"
+#include "nostroma/kernels/native_qsa.hpp"
+#include "nostroma/kernels/native_rope.hpp"
+#include "nostroma/kernels/native_router.hpp"
+#include "nostroma/kernels/qsa.hpp"
+#include "nostroma/kernels/qsa_decode_attn.hpp"
+#include "nostroma/kernels/quantize_act.hpp"
+#include "nostroma/kernels/rope.hpp"
+#include "nostroma/kernels/router_top10.hpp"
+#include "nostroma/kernels/s2_expert_grouped.hpp"
+#include "nostroma/kernels/sampler.hpp"
+#include "nostroma/kernels/shared_expert.hpp"
+#include "nostroma/kernels/verify_kernels.hpp"
+#include "nostroma/kernels/ngram.hpp"
 
 #include <algorithm>
 #include <atomic>
@@ -56,24 +56,24 @@
 #include <immintrin.h>
 #endif
 
-// --mtp-q4: the head rows' and projections' formats, dequantized and requantized at load: with the Strata quant layer (STRATA_OWN_CPU_QUANT) or, as
+// --mtp-q4: the head rows' and projections' formats, dequantized and requantized at load: with the Nostroma quant layer (NOSTROMA_OWN_CPU_QUANT) or, as
 // before, with ggml-base
-#if defined(STRATA_OWN_CPU_QUANT)
-#include "strata/quant/act.hpp"
-#include "strata/quant/dequant.hpp"
-#define STRATA_MTP_Q4 1
-#elif defined(STRATA_NATIVE_EXPERTS)
+#if defined(NOSTROMA_OWN_CPU_QUANT)
+#include "nostroma/quant/act.hpp"
+#include "nostroma/quant/dequant.hpp"
+#define NOSTROMA_MTP_Q4 1
+#elif defined(NOSTROMA_NATIVE_EXPERTS)
 #include "ggml.h"
-#define STRATA_MTP_Q4 1
+#define NOSTROMA_MTP_Q4 1
 #endif
 
-#ifdef STRATA_MTP_Q4
+#ifdef NOSTROMA_MTP_Q4
 namespace {
-#if defined(STRATA_OWN_CPU_QUANT)
+#if defined(NOSTROMA_OWN_CPU_QUANT)
 bool mtp_to_float(int type, const void* src, float* dst, int64_t n) {
-    return strata::quant::dequant_row((strata::quant::Type) type, src, dst, n);
+    return nostroma::quant::dequant_row((nostroma::quant::Type) type, src, dst, n);
 }
-void mtp_quant_q4_0(const float* x, void* dst, int64_t n) { strata::quant::quantize_q4_0_ref(x, dst, n); }
+void mtp_quant_q4_0(const float* x, void* dst, int64_t n) { nostroma::quant::quantize_q4_0_ref(x, dst, n); }
 #else
 bool mtp_to_float(int type, const void* src, float* dst, int64_t n) {
     const auto* t = ggml_get_type_traits((ggml_type) type);
@@ -86,15 +86,15 @@ void mtp_quant_q4_0(const float* x, void* dst, int64_t n) { ggml_quantize_chunk(
 }  // namespace
 #endif
 
-namespace strata::core {
+namespace nostroma::core {
 namespace {
 
 constexpr float EPS = 1e-6f;
 
-// #783 PR-i: STRATA_MTP_CATCHUP_ALL=1 catches the drafter's K/V up for the whole verified window, rejected rows included
+// #783 PR-i: NOSTROMA_MTP_CATCHUP_ALL=1 catches the drafter's K/V up for the whole verified window, rejected rows included
 bool mtp_catchup_all() {
     static const bool on = [] {
-        const char* v = strata::env("NOSTROMA_MTP_CATCHUP_ALL");
+        const char* v = nostroma::env("NOSTROMA_MTP_CATCHUP_ALL");
         return v != nullptr && v[0] != '\0' && v[0] != '0';
     }();
     return on;
@@ -120,7 +120,7 @@ bool mapped(size_t bytes, void **h, void **d) try {
     migrated code and was removed or replaced with 0. You may need to check the
     migrated code.
     */
-    if (DPCT_CHECK_ERROR(*h = strata::host_malloc_polled(
+    if (DPCT_CHECK_ERROR(*h = nostroma::host_malloc_polled(
                              bytes, dpct::get_in_order_queue())) !=
         0 || *h == nullptr) return false;   // the host polls what the draft steps write: uncached host memory (sycl_queue.hpp)
     std::memset(*h, 0, bytes);
@@ -132,15 +132,15 @@ catch (sycl::exception const &exc) {
   std::exit(1);
 }
 
-strata::kernels::QsaShapes shapes_of(const ModelGeometry& g) { return qsa_shapes(g); }
+nostroma::kernels::QsaShapes shapes_of(const ModelGeometry& g) { return qsa_shapes(g); }
 
 // 64-bit seek/tell on a `FILE*`: `fseek`/`ftell` take a 32-bit `long` on Windows and would wrap past 2 GiB.
 #if defined(_WIN32)
-#define STRATA_FILE_SEEK64(f, o, w) _fseeki64((f), (long long) (o), (w))
-#define STRATA_FILE_TELL64(f) _ftelli64(f)
+#define NOSTROMA_FILE_SEEK64(f, o, w) _fseeki64((f), (long long) (o), (w))
+#define NOSTROMA_FILE_TELL64(f) _ftelli64(f)
 #else
-#define STRATA_FILE_SEEK64(f, o, w) fseeko((f), (off_t) (o), (w))
-#define STRATA_FILE_TELL64(f) ftello(f)
+#define NOSTROMA_FILE_SEEK64(f, o, w) fseeko((f), (off_t) (o), (w))
+#define NOSTROMA_FILE_TELL64(f) ftello(f)
 #endif
 
 bool read_file(const std::string& path, std::vector<uint8_t>& out) {
@@ -154,11 +154,11 @@ bool read_file(const std::string& path, std::vector<uint8_t>& out) {
         FILE* f;
         ~Closer() { if (f != nullptr) std::fclose(f); }
     } closer{f};
-    if (STRATA_FILE_SEEK64(f, 0, SEEK_END) != 0) return false;
-    const long long n = (long long) STRATA_FILE_TELL64(f);
-    if (n < 0 || STRATA_FILE_SEEK64(f, 0, SEEK_SET) != 0) return false;
+    if (NOSTROMA_FILE_SEEK64(f, 0, SEEK_END) != 0) return false;
+    const long long n = (long long) NOSTROMA_FILE_TELL64(f);
+    if (n < 0 || NOSTROMA_FILE_SEEK64(f, 0, SEEK_SET) != 0) return false;
 #if !defined(_WIN32)
-    strata::platform::advise_willneed(fileno(f), 0, (uint64_t) n);
+    nostroma::platform::advise_willneed(fileno(f), 0, (uint64_t) n);
 #endif
     out.resize((size_t) n);
     return n == 0 || std::fread(out.data(), 1, (size_t) n, f) == (size_t) n;
@@ -187,9 +187,9 @@ MtpDrafter::~MtpDrafter() {
     if (sh_fork_) dpct::destroy_event(sh_fork_);
     if (sh_join_) dpct::destroy_event(sh_join_);
     if(owns_weights_&&dense_){
-      const strata::core::OnDevice on(device_);
-      for(const auto&t:tensors_)if(strata::kernels::b60_has_mtp_q8_cache(dense_+t.off))
-        strata::kernels::b60_release_mtp_q8_cache(dense_+t.off,device_,&dpct::get_in_order_queue());
+      const nostroma::core::OnDevice on(device_);
+      for(const auto&t:tensors_)if(nostroma::kernels::b60_has_mtp_q8_cache(dense_+t.off))
+        nostroma::kernels::b60_release_mtp_q8_cache(dense_+t.off,device_,&dpct::get_in_order_queue());
     }
     if (owns_weights_ && dense_) sycl::free(dense_, dpct::get_in_order_queue());
     if (owns_weights_ && experts_)
@@ -198,12 +198,12 @@ MtpDrafter::~MtpDrafter() {
     if (arena_) sycl::free(arena_, dpct::get_in_order_queue());
     if (head_logits_) sycl::free(head_logits_, dpct::get_in_order_queue());
     if (owns_draft_head_ && dhead_) {
-      if(strata::kernels::b60_cached_weight(dhead_,24)){
-        const strata::core::OnDevice on(device_);
-        strata::kernels::b60_release_weight_cache(dhead_,24,device_,&dpct::get_in_order_queue());
+      if(nostroma::kernels::b60_cached_weight(dhead_,24)){
+        const nostroma::core::OnDevice on(device_);
+        nostroma::kernels::b60_release_weight_cache(dhead_,24,device_,&dpct::get_in_order_queue());
       }
 
-      strata::kernels::native_q6_k_unpack(dhead_);
+      nostroma::kernels::native_q6_k_unpack(dhead_);
       sycl::free(dhead_, dpct::get_in_order_queue());
     }
     if (owns_draft_head_ && dvocab_)
@@ -211,7 +211,7 @@ MtpDrafter::~MtpDrafter() {
     if (ev_chain_) dpct::destroy_event(ev_chain_);
     for (dpct::event_ptr e : ev_step_) if (e) dpct::destroy_event(e);
     void* hosts[] = {h_tok_, h_step_, h_pos_, h_row_, h_out_, h_prob_, h_force_};
-    for (void *h : hosts) if (h) strata::host_free_polled(h, dpct::get_in_order_queue());
+    for (void *h : hosts) if (h) nostroma::host_free_polled(h, dpct::get_in_order_queue());
 }
 
 const float* MtpDrafter::f32(const char* name) const {
@@ -236,7 +236,7 @@ const void* MtpDrafter::wq(const char* name, int& type) const {
 
 // --mtp-q4: every Q8_0 tensor of dense.bin as Q4_0 (ggml's reference quantizer), in one device buffer
 bool MtpDrafter::make_q4_dense(const std::vector<uint8_t>& blob, std::string& err) {
-#ifdef STRATA_MTP_Q4
+#ifdef NOSTROMA_MTP_Q4
     uint64_t total = 0;
     std::vector<std::pair<const Tensor*, uint64_t>> plan;
     for (const auto& t : tensors_) {
@@ -255,11 +255,11 @@ bool MtpDrafter::make_q4_dense(const std::vector<uint8_t>& blob, std::string& er
         }
         q4_off_.push_back({t->name, off});
     }
-    dense4_ = (uint8_t*) strata::malloc_device_guarded((size_t) total, dpct::get_in_order_queue());   // SYCL port: cudaMalloc/cudaMemcpy
+    dense4_ = (uint8_t*) nostroma::malloc_device_guarded((size_t) total, dpct::get_in_order_queue());   // SYCL port: cudaMalloc/cudaMemcpy
     if (dense4_ == nullptr) { err = "mtp: the Q4_0 projections do not fit"; return false; }
     dpct::get_in_order_queue().memcpy(dense4_, host.data(), (size_t) total).wait();
     vram_ += total;
-    std::fprintf(stderr, "strata mtp: --mtp-q4: %zu projections as Q4_0 (%.1f MiB)\n", plan.size(), (double) total / 1048576.0);
+    std::fprintf(stderr, "nostroma mtp: --mtp-q4: %zu projections as Q4_0 (%.1f MiB)\n", plan.size(), (double) total / 1048576.0);
     return true;
 #else
     (void) blob;
@@ -270,15 +270,15 @@ bool MtpDrafter::make_q4_dense(const std::vector<uint8_t>& blob, std::string& er
 
 // --mtp-q4: the draft head's subset rows as Q4_0 (dequantized from the main head's format)
 bool MtpDrafter::make_q4_head(std::string& err) {
-#ifdef STRATA_MTP_Q4
+#ifdef NOSTROMA_MTP_Q4
     const int64_t N = g_->n_embd;
     if (N % 32 != 0) { err = "mtp: --mtp-q4 cannot read the head's format"; return false; }
-    // SYCL port: with STRATA_Q6_PLANAR the head is stored as planes, and the subset this builds from is row-major
+    // SYCL port: with NOSTROMA_Q6_PLANAR the head is stored as planes, and the subset this builds from is row-major
     // only when the head is packed - the gather at load time then copies planes as if they were rows.  The result is
     // a draft head that proposes nothing at all (measured: 0 drafts, decode 73.8 -> 35.3 tok/s) with no error, so
     // refuse instead of running wrong in silence.
-    if (head_->type() == 14 && strata::kernels::native_q6_k_is_planar(head_->weights())) {
-        err = "mtp: --mtp-q4 head needs the packed Q6_K head layout (STRATA_Q6_PLANAR=0)";
+    if (head_->type() == 14 && nostroma::kernels::native_q6_k_is_planar(head_->weights())) {
+        err = "mtp: --mtp-q4 head needs the packed Q6_K head layout (NOSTROMA_Q6_PLANAR=0)";
         return false;
     }
     const size_t in_row = head_->row_bytes(), out_row = (size_t) (N / 32) * 18;
@@ -294,7 +294,7 @@ bool MtpDrafter::make_q4_head(std::string& err) {
     try { dpct::get_in_order_queue().memcpy(dhead_, dst.data(), dst.size()).wait(); }
     catch (sycl::exception const&) { err = "mtp: writing the draft head"; return false; }
     dhead_type_ = GGML_Q4_0;
-    std::fprintf(stderr, "strata mtp: --mtp-q4: draft head over %lld tokens as Q4_0 (%.1f MiB read per step, was %.1f)\n",
+    std::fprintf(stderr, "nostroma mtp: --mtp-q4: draft head over %lld tokens as Q4_0 (%.1f MiB read per step, was %.1f)\n",
                  (long long) n_dvocab_, (double) dst.size() / 1048576.0, (double) src.size() / 1048576.0);
     return true;
 #else
@@ -314,7 +314,7 @@ bool MtpDrafter::load(const std::string &rt_dir, const ModelGeometry &g,
     if (ple_ss_ == nullptr) ple_ss_ = &ss;
     max_t_ = max_t;
     rt_dir_ = rt_dir;
-    if (max_t < 1 || max_t > strata::kernels::kVerifyMaxT) { err = "mtp: max_t out of range"; return false; }
+    if (max_t < 1 || max_t > nostroma::kernels::kVerifyMaxT) { err = "mtp: max_t out of range"; return false; }
     if (shared != nullptr) {
         if (shared->device_ != device_ || shared->g_ != &g || shared->dense_ == nullptr ||
             shared->experts_ == nullptr || shared->rt_dir_ != rt_dir) {
@@ -346,7 +346,7 @@ bool MtpDrafter::load(const std::string &rt_dir, const ModelGeometry &g,
         std::vector<uint8_t> blob;
         if (!read_file(rt_dir + "/dense.bin", blob)) { err = "mtp: cannot read dense.bin"; return false; }
         const dpct::err0 alloc =
-            DPCT_CHECK_ERROR(dense_ = (uint8_t *)strata::malloc_device_guarded(
+            DPCT_CHECK_ERROR(dense_ = (uint8_t *)nostroma::malloc_device_guarded(
                                  blob.size(), dpct::get_in_order_queue()));
         /*
         DPCT1000: Error handling if-stmt was detected but could not be
@@ -384,7 +384,7 @@ bool MtpDrafter::load(const std::string &rt_dir, const ModelGeometry &g,
     }
     // ---- the 512 routed experts, one blob each
     if (shared == nullptr) {
-        const uint64_t bytes = (uint64_t) g.n_expert * strata::kernels::cpu::BLOB;
+        const uint64_t bytes = (uint64_t) g.n_expert * nostroma::kernels::cpu::BLOB;
         // Loader fix (0.1.15+loaderfix.2): each 64 MiB read below reached the disk as ~16k 4095-byte reads under
         // MSVC's `basic_filebuf::xsgetn`, which is what made 675 MiB of drafter experts take minutes.
         FILE* f = std::fopen((rt_dir + "/experts.bin").c_str(), "rb");
@@ -393,12 +393,12 @@ bool MtpDrafter::load(const std::string &rt_dir, const ModelGeometry &g,
             FILE* f;
             ~Closer() { if (f != nullptr) std::fclose(f); }
         } closer{f};
-        if (DPCT_CHECK_ERROR(experts_ = (uint8_t *)strata::malloc_device_guarded(
+        if (DPCT_CHECK_ERROR(experts_ = (uint8_t *)nostroma::malloc_device_guarded(
                                  bytes, dpct::get_in_order_queue())) != 0) {
             err = "mtp: the 512 experts do not fit in VRAM"; return false;
         }
 #if !defined(_WIN32)
-        strata::platform::advise_willneed(fileno(f), 0, bytes);
+        nostroma::platform::advise_willneed(fileno(f), 0, bytes);
 #endif
         std::vector<uint8_t> chunk(64u << 20);
         for (uint64_t off = 0; off < bytes;) {
@@ -416,7 +416,7 @@ bool MtpDrafter::load(const std::string &rt_dir, const ModelGeometry &g,
                               "mlp.shared_expert.up_proj.weight", "mlp.shared_expert.down_proj.weight"};
     for (const char* n : required) if (!q8(n)) { err = std::string("mtp: ") + n + " is missing (q8_0)"; return false; }
 
-    if(owns_weights_&&!q4_&&strata::kernels::b60_mtp_q8_cache_requested()){
+    if(owns_weights_&&!q4_&&nostroma::kernels::b60_mtp_q8_cache_requested()){
       size_t cache_bytes=0;int cache_count=0;
       for(const auto&t:tensors_){
         unsigned mask=0;int rows=0,cols=0;
@@ -432,7 +432,7 @@ bool MtpDrafter::load(const std::string &rt_dir, const ModelGeometry &g,
         if(!mask)continue;
         if(t.kind!="q8_0"||t.rows!=rows||t.cols!=cols||t.bytes!=uint64_t(rows)*(cols/32)*34)
           throw std::runtime_error("B60 MTP Q8 RT tensor mismatch");
-        strata::kernels::b60_make_mtp_q8_cache(dense_+t.off,rows,cols,mask,device_,&dpct::get_in_order_queue());
+        nostroma::kernels::b60_make_mtp_q8_cache(dense_+t.off,rows,cols,mask,device_,&dpct::get_in_order_queue());
         cache_bytes+=t.bytes+256;++cache_count;
       }
       if(cache_count!=9||cache_bytes!=72071424)throw std::runtime_error("B60 MTP Q8 RT cache count/bytes");
@@ -441,7 +441,7 @@ bool MtpDrafter::load(const std::string &rt_dir, const ModelGeometry &g,
     }
 
     // ---- the layer's own K/V (dense attention: no indexer state is read)
-    const strata::kernels::QsaShapes s = shapes_of(g);
+    const nostroma::kernels::QsaShapes s = shapes_of(g);
     const int64_t max_cells = ss.qsa_states[ss.qsa_primary()].max_cells;
     // KV streaming: the drafter only reads its last `window` cells, so with streaming on its K/V is a ring of the
     // window (plus the cells a round writes ahead of its queries) over a host copy, refilled on a resume. The host copy
@@ -454,13 +454,13 @@ bool MtpDrafter::load(const std::string &rt_dir, const ModelGeometry &g,
     qsa_set_kv_hybrid(false);
     if (kv_hybrid_was) qsa_set_kv_int8(true);   // the drafter under --kv k8v4: plain INT8
     uint64_t sb = qsa_state_bytes(g, max_cells, false, ring);
-    if (DPCT_CHECK_ERROR(state_arena_ = (void *)strata::malloc_device_guarded(
+    if (DPCT_CHECK_ERROR(state_arena_ = (void *)nostroma::malloc_device_guarded(
                              sb, dpct::get_in_order_queue())) != 0) {
         err = "mtp: the K/V state does not fit"; return false;
     }
     if (qsa_state_init(g, max_cells, state_arena_, st_, &ss.qsa_states[ss.qsa_primary()], ring) == 0) {
         if (st_.kv_mode == 0) { err = "mtp: state init failed"; return false; }
-        std::fprintf(stderr, "strata mtp: no pinned RAM left for the draft layer's K/V copy; keeping it in VRAM\n");
+        std::fprintf(stderr, "nostroma mtp: no pinned RAM left for the draft layer's K/V copy; keeping it in VRAM\n");
         /*
         DPCT1026: The call to cudaGetLastError was removed because this
         functionality is redundant in SYCL.
@@ -469,7 +469,7 @@ bool MtpDrafter::load(const std::string &rt_dir, const ModelGeometry &g,
         st_ = QsaState{};
         ring = -1;   // fully resident
         sb = qsa_state_bytes(g, max_cells, false, ring);
-        if (DPCT_CHECK_ERROR(state_arena_ = (void *)strata::malloc_device_guarded(
+        if (DPCT_CHECK_ERROR(state_arena_ = (void *)nostroma::malloc_device_guarded(
                                  sb, dpct::get_in_order_queue())) != 0) {
             err = "mtp: the K/V state does not fit"; return false;
         }
@@ -484,7 +484,7 @@ bool MtpDrafter::load(const std::string &rt_dir, const ModelGeometry &g,
     // ---- buffers
     window_ = (window > 0 && window < max_cells) ? window : 0;
     cap_ = (((window_ > 0 ? window_ : max_cells) + 63) / 64) * 64;
-    attn_scratch_floats_ = (int64_t) strata::kernels::qsa_decode_attn_scratch_floats(cap_, s);
+    attn_scratch_floats_ = (int64_t) nostroma::kernels::qsa_decode_attn_scratch_floats(cap_, s);
     const uint64_t T = (uint64_t) max_t, N = (uint64_t) g.n_embd, HC = (uint64_t) g.hc, K = (uint64_t) ss.k;
     const uint64_t NH = (uint64_t) g.n_head, HD = (uint64_t) g.head_dim, NKV = (uint64_t) g.n_head_kv;
     const uint64_t R2 = 2 * T;   // step/pos rows: T catch-up rows + up to T-2 chain steps
@@ -506,7 +506,7 @@ bool MtpDrafter::load(const std::string &rt_dir, const ModelGeometry &g,
         mixed_ = b.take<float>(T * N); inj_ = b.take<float>(T * HC); inj2_ = b.take<float>(T * HC);
         lo_ = b.take<float>(T * (uint64_t) g.hc_lr); rs_ = b.take<float>(T * HC); bo_ = b.take<float>(T * N);
         xn_ = b.take<float>(T * HC * N);
-        xq_ = b.take<uint8_t>(strata::kernels::native_q8_1_bytes((int) (NH * HD), 8));
+        xq_ = b.take<uint8_t>(nostroma::kernels::native_q8_1_bytes((int) (NH * HD), 8));
         qfull_ = b.take<float>(T * NH * 2 * HD); qcur_ = b.take<float>(T * NH * HD);
         kcur_ = b.take<float>(T * NKV * HD); vcur_ = b.take<float>(T * NKV * HD);
         attn_ = b.take<float>(T * NH * HD); attn32_ = b.take<float>(T * NH * HD);
@@ -518,22 +518,22 @@ bool MtpDrafter::load(const std::string &rt_dir, const ModelGeometry &g,
         grp_ptr_ = b.take<unsigned long long>(T * K); grp_start_ = b.take<int32_t>(T * K + 1);
         grp_counts_ = b.take<int32_t>(4);
         hit_xq_ = b.take<uint8_t>(T * (N / 32) * 34); hit_xs_ = b.take<float>(T * (N / 32));
-        hit_scratch_ = b.take<uint8_t>(strata::kernels::moe_hit_grouped_scratch_bytes((int64_t) (T * K), g.n_embd, g.n_ff));
-        sh_scratch_ = (float*) b.take<uint8_t>(strata::kernels::shared_expert_scratch_bytes(g.n_ff));
+        hit_scratch_ = b.take<uint8_t>(nostroma::kernels::moe_hit_grouped_scratch_bytes((int64_t) (T * K), g.n_embd, g.n_ff));
+        sh_scratch_ = (float*) b.take<uint8_t>(nostroma::kernels::shared_expert_scratch_bytes(g.n_ff));
         x_bf16_ = b.take<uint16_t>(N);
         out_ids_ = b.take<int32_t>(T + 4);
         probs_ = b.take<float>(T + 4);
-        arg_scratch_ = b.take<uint8_t>(strata::kernels::argmax_rows_scratch_bytes((int) T));
-        top_scratch_ = b.take<uint8_t>(strata::kernels::row_top_prob_scratch_bytes((int) T));
+        arg_scratch_ = b.take<uint8_t>(nostroma::kernels::argmax_rows_scratch_bytes((int) T));
+        top_scratch_ = b.take<uint8_t>(nostroma::kernels::row_top_prob_scratch_bytes((int) T));
         dummy_inj_ = b.take<float>(HC);
     };
     Bump count;
     carve(count);
-    if (DPCT_CHECK_ERROR(arena_ = (void *)strata::malloc_device_guarded(
+    if (DPCT_CHECK_ERROR(arena_ = (void *)nostroma::malloc_device_guarded(
                              count.used, dpct::get_in_order_queue())) != 0) {
         err = "mtp: buffers do not fit"; return false;
     }
-    strata::big_fill_zero(dpct::get_in_order_queue(), arena_, count.used);
+    nostroma::big_fill_zero(dpct::get_in_order_queue(), arena_, count.used);
     Bump real;
     real.base = (uint8_t*) arena_;
     carve(real);
@@ -551,10 +551,10 @@ bool MtpDrafter::load(const std::string &rt_dir, const ModelGeometry &g,
         dpct::get_in_order_queue().memcpy(ident_, id.data(), id.size() * 4).wait();
     }
     // --pipeline-windows 2 (the forcing graphs): the chain shares its card with stage 1's windows and the next launch
-    // on stage 0 waits for it, so its stream gets the highest priority there (STRATA_MTP_PRIORITY=0: the default)
+    // on stage 0 waits for it, so its stream gets the highest priority there (NOSTROMA_MTP_PRIORITY=0: the default)
     bool prio = false;
-#if !defined(STRATA_USE_HIP)   // (HIP: the default priority)
-    static const bool hi_prio = [] { const char* v = strata::env("NOSTROMA_MTP_PRIORITY"); return v == nullptr || std::atoi(v) != 0; }();
+#if !defined(NOSTROMA_USE_HIP)   // (HIP: the default priority)
+    static const bool hi_prio = [] { const char* v = nostroma::env("NOSTROMA_MTP_PRIORITY"); return v == nullptr || std::atoi(v) != 0; }();
     int prio_lo = 0, prio_hi = 0;
     /*
     DPCT1027: The call to cudaDeviceGetStreamPriorityRange was replaced with
@@ -593,13 +593,13 @@ bool MtpDrafter::load(const std::string &rt_dir, const ModelGeometry &g,
     }
     const double files_s = std::chrono::duration<double>(std::chrono::steady_clock::now() - t_files).count();
     if (shared != nullptr) {
-        std::fprintf(stderr, "strata mtp: shared draft weights, %.0f MiB of private state and buffers\n",
+        std::fprintf(stderr, "nostroma mtp: shared draft weights, %.0f MiB of private state and buffers\n",
                      (double) vram_ / 1048576.0);
     } else {
-        std::fprintf(stderr, "strata mtp: draft layer loaded, %.0f MiB of VRAM (experts %.0f, dense %.0f), files read in %.2f s (%.0f MiB/s)\n",
-                     (double) vram_ / 1048576.0, (double) g.n_expert * strata::kernels::cpu::BLOB / 1048576.0,
+        std::fprintf(stderr, "nostroma mtp: draft layer loaded, %.0f MiB of VRAM (experts %.0f, dense %.0f), files read in %.2f s (%.0f MiB/s)\n",
+                     (double) vram_ / 1048576.0, (double) g.n_expert * nostroma::kernels::cpu::BLOB / 1048576.0,
                      (double) tensors_.back().off / 1048576.0, files_s,
-                     files_s > 0 ? ((double) g.n_expert * strata::kernels::cpu::BLOB + (double) tensors_.back().off) /
+                     files_s > 0 ? ((double) g.n_expert * nostroma::kernels::cpu::BLOB + (double) tensors_.back().off) /
                                        1048576.0 / files_s : 0.0);
     }
     return true;
@@ -611,20 +611,20 @@ catch (sycl::exception const &exc) {
 }
 
 namespace {
-// STRATA_MTP_FULL_HEAD=1 (a diagnostic): draft over the whole vocabulary (the main head itself) instead of
+// NOSTROMA_MTP_FULL_HEAD=1 (a diagnostic): draft over the whole vocabulary (the main head itself) instead of
 // rt/draft_vocab.bin's subset - the reference head, to measure what the subset costs in acceptance
 bool full_head_env() {
-    static const bool on = [] { const char* v = strata::env("NOSTROMA_MTP_FULL_HEAD"); return v && v[0] == '1'; }();
+    static const bool on = [] { const char* v = nostroma::env("NOSTROMA_MTP_FULL_HEAD"); return v && v[0] == '1'; }();
     return on;
 }
 }  // namespace
 
 bool MtpDrafter::top2_env() {
-    static const bool on = [] { const char* v = strata::env("NOSTROMA_MTP_TOP2"); return v && v[0] == '1'; }();
+    static const bool on = [] { const char* v = nostroma::env("NOSTROMA_MTP_TOP2"); return v && v[0] == '1'; }();
     return on;
 }
 
-// STRATA_MTP_TOP2=1 (a diagnostic for tree drafts): draft j's runner-up under the draft layer, from the head logits
+// NOSTROMA_MTP_TOP2=1 (a diagnostic for tree drafts): draft j's runner-up under the draft layer, from the head logits
 // the step just wrote (row 0), on the host.  Slow; only for measuring what a second branch would have caught.
 void MtpDrafter::record_top2(int j) try {
     const int64_t nv = dhead_ != nullptr ? n_dvocab_ : n_vocab_;
@@ -662,14 +662,14 @@ uint64_t MtpDrafter::bind_bytes(uint64_t head_row_bytes, int64_t n_vocab) const 
             if (size >= 4 && size % 4 == 0) {
                 bytes += (uint64_t) (size / 4) * head_row_bytes + (uint64_t) size;
                 // Price the independent padded head cache before auto sizes the expert cache.
-                if (strata::kernels::b60_single_actor_requested() && strata::kernels::b60_cache_requested(24) &&
+                if (nostroma::kernels::b60_single_actor_requested() && nostroma::kernels::b60_cache_requested(24) &&
                     size / 4 == 106299 && head_row_bytes == 1360 && !q4_head_)
                     bytes += uint64_t((size / 4 + 15) / 16 * 16) * head_row_bytes +
-                             2 * strata::kernels::kB60WeightCacheGuard;
+                             2 * nostroma::kernels::kB60WeightCacheGuard;
             }
         }
     }
-    // coupled draft sampling (STRATA_SPEC_COUPLED=1 only): an upper bound - the id -> subset map, the penalty ring,
+    // coupled draft sampling (NOSTROMA_SPEC_COUPLED=1 only): an upper bound - the id -> subset map, the penalty ring,
     // the split scratch (64 lists of 64 entries at most) and the parameters
     if (coupled_draft_env() && cparams_ == nullptr)
         bytes += (uint64_t) n_vocab * 4 + (uint64_t) (kCoupledHistCap + max_t_) * 4 + 64ull * 64ull * 8ull + 4096;
@@ -678,26 +678,26 @@ uint64_t MtpDrafter::bind_bytes(uint64_t head_row_bytes, int64_t n_vocab) const 
 
 bool MtpDrafter::setup_coupled(std::string& err) try {
     const int64_t nv = dhead_ != nullptr ? n_dvocab_ : n_vocab_;
-    const size_t scratch = strata::kernels::coupled_draft_scratch_bytes((int) nv);
+    const size_t scratch = nostroma::kernels::coupled_draft_scratch_bytes((int) nv);
     if (scratch == 0) {
-        std::fprintf(stderr, "strata mtp: STRATA_SPEC_COUPLED: %lld draft logits are too wide for the coupled sampler; "
+        std::fprintf(stderr, "nostroma mtp: NOSTROMA_SPEC_COUPLED: %lld draft logits are too wide for the coupled sampler; "
                              "argmax drafts\n", (long long) nv);
         return true;
     }
     sycl::queue& q = dpct::get_in_order_queue();
     const size_t ring = (size_t) (kCoupledHistCap + max_t_) * sizeof(int32_t);
-    cparams_ = sycl::malloc_device<strata::kernels::SamplerParams>(1, q);
+    cparams_ = sycl::malloc_device<nostroma::kernels::SamplerParams>(1, q);
     cring_ = (int32_t*) sycl::malloc_device(ring, q);
     cscratch_ = sycl::malloc_device(scratch, q);
     if (cparams_ == nullptr || cring_ == nullptr || cscratch_ == nullptr ||
-        !mapped(sizeof(strata::kernels::SamplerParams), (void**) &h_cparams_, (void**) &m_cparams_) ||
+        !mapped(sizeof(nostroma::kernels::SamplerParams), (void**) &h_cparams_, (void**) &m_cparams_) ||
         !mapped((size_t) kCoupledHistCap * sizeof(int32_t), (void**) &h_chist_, (void**) &m_chist_)) {
         err = "mtp: the coupled draft sampler's buffers do not fit";
         return false;
     }
     q.memset(cring_, 0xff, ring).wait();   // -1: no token
     std::fill(h_chist_, h_chist_ + kCoupledHistCap, -1);
-    vram_ += sizeof(strata::kernels::SamplerParams) + ring + scratch;
+    vram_ += sizeof(nostroma::kernels::SamplerParams) + ring + scratch;
     if (dhead_ != nullptr) {   // token id -> subset index (-1: not in the draft head), for the penalties
         std::vector<int32_t> sub((size_t) n_dvocab_), inv((size_t) n_vocab_, -1);
         q.memcpy(sub.data(), dvocab_, sub.size() * sizeof(int32_t)).wait();
@@ -727,7 +727,7 @@ bool MtpDrafter::setup_coupled(std::string& err) try {
         return false;
     }
     coupled_ok_ = true;
-    std::fprintf(stderr, "strata mtp: coupled draft sampling on (STRATA_SPEC_COUPLED): sampled requests draft with the "
+    std::fprintf(stderr, "nostroma mtp: coupled draft sampling on (NOSTROMA_SPEC_COUPLED): sampled requests draft with the "
                          "target's chain and Philox draw over %lld tokens\n", (long long) nv);
     return true;
 } catch (sycl::exception const& e) {
@@ -735,7 +735,7 @@ bool MtpDrafter::setup_coupled(std::string& err) try {
     return false;
 }
 
-void MtpDrafter::set_draft_sampling(const strata::kernels::SamplerParams& sp) {
+void MtpDrafter::set_draft_sampling(const nostroma::kernels::SamplerParams& sp) {
     coupled_active_ = coupled_ok_ && !sp.greedy && sp.temperature > 0.0f;
     if (!coupled_active_) return;
     *h_cparams_ = sp;   // read by the next round graph (after the previous one has synced)
@@ -763,7 +763,7 @@ void draft_head_hint(int64_t n_tokens, int64_t row_bytes) {
         std::snprintf(b, sizeof(b), " and %.0f MiB is free", (double) free_b / 1048576.0);
         free_s = b;
     }
-    std::fprintf(stderr, "strata mtp: the draft head over %lld tokens needs %.0f MiB of VRAM%s.\n",
+    std::fprintf(stderr, "nostroma mtp: the draft head over %lld tokens needs %.0f MiB of VRAM%s.\n",
                  (long long) n_tokens, mib(n_tokens), free_s.c_str());
     struct Subset { const char* name; int64_t tokens; const char* what; };
     static const Subset smaller[] = {{"cyrillic", 58963, "English, code and the Cyrillic script"},
@@ -777,13 +777,13 @@ void draft_head_hint(int64_t n_tokens, int64_t row_bytes) {
             opts += b;
         }
     if (!opts.empty())
-        std::fprintf(stderr, "strata mtp: hint: a smaller draft vocabulary needs less VRAM: %s. Start once with it - "
+        std::fprintf(stderr, "nostroma mtp: hint: a smaller draft vocabulary needs less VRAM: %s. Start once with it - "
                              "START-HERE.bat --draft-vocab en (Windows) or ./setup.sh --draft-vocab en - and the model "
-                             "keeps it (\"draft_vocab\" in its strata-*.json config); or a smaller --context in "
+                             "keeps it (\"draft_vocab\" in its nostroma-*.json config); or a smaller --context in "
                              "setup.\n",
                      opts.c_str());
     else
-        std::fprintf(stderr, "strata mtp: hint: this is already the smallest shipped draft vocabulary: a smaller "
+        std::fprintf(stderr, "nostroma mtp: hint: this is already the smallest shipped draft vocabulary: a smaller "
                              "--context (or closing what else uses the GPU) leaves it room.\n");
 }
 }  // namespace
@@ -839,9 +839,9 @@ bool MtpDrafter::bind(const WeightTable &wt, const NativeHead *head,
             dvocab_host_.resize((size_t) n_dvocab_);
             std::memcpy(dvocab_host_.data(), raw.data(), raw.size());
             bool planar_gathered = false;
-            if (head->type() == 14 && strata::kernels::native_q6_k_is_planar(head->weights()) && !q4_head_) {
-                // STRATA_Q6_PLANAR: the LM head is stored as planes; the subset is gathered from them, planar
-                void* pd = strata::kernels::native_q6_k_planar_gather(head->weights(), (int) (row_bytes / 210) * 256, dvocab_,
+            if (head->type() == 14 && nostroma::kernels::native_q6_k_is_planar(head->weights()) && !q4_head_) {
+                // NOSTROMA_Q6_PLANAR: the LM head is stored as planes; the subset is gathered from them, planar
+                void* pd = nostroma::kernels::native_q6_k_planar_gather(head->weights(), (int) (row_bytes / 210) * 256, dvocab_,
                                                                       n_dvocab_, "MTP draft head");
                 if (pd != nullptr) {
                     sycl::free(dhead_, dpct::get_in_order_queue());
@@ -850,26 +850,26 @@ bool MtpDrafter::bind(const WeightTable &wt, const NativeHead *head,
                 }
             }
             if (!planar_gathered)
-                strata::kernels::gather_rows((const uint8_t*) head->weights(), row_bytes, dvocab_, n_dvocab_, dhead_, nullptr);
+                nostroma::kernels::gather_rows((const uint8_t*) head->weights(), row_bytes, dvocab_, n_dvocab_, dhead_, nullptr);
             dpct::get_current_device().queues_wait_and_throw();
             vram_ += (uint64_t) (n_dvocab_ * row_bytes) + raw.size();
-            std::fprintf(stderr, "strata mtp: draft head over %lld tokens (%.1f MiB)\n", (long long) n_dvocab_,
+            std::fprintf(stderr, "nostroma mtp: draft head over %lld tokens (%.1f MiB)\n", (long long) n_dvocab_,
                          (double) (n_dvocab_ * row_bytes) / 1048576.0);
             dhead_type_ = head->type();
-            if(strata::kernels::b60_cache_requested(24)){
+            if(nostroma::kernels::b60_cache_requested(24)){
                 if(dhead_type_!=23||n_dvocab_!=106299||row_bytes!=1360||q4_head_)throw std::logic_error("B60 exact draft cache requires the fixed raw IQ4 subset");
-                strata::kernels::b60_make_weight_cache(dhead_,int(n_dvocab_),2560,24,device_,&dpct::get_in_order_queue());
-                const uint64_t cache_bytes=uint64_t((n_dvocab_+15)/16*16)*1360+2*strata::kernels::kB60WeightCacheGuard;
+                nostroma::kernels::b60_make_weight_cache(dhead_,int(n_dvocab_),2560,24,device_,&dpct::get_in_order_queue());
+                const uint64_t cache_bytes=uint64_t((n_dvocab_+15)/16*16)*1360+2*nostroma::kernels::kB60WeightCacheGuard;
                 vram_+=cache_bytes;
                 std::fprintf(stderr,"B60_DRAFT_CACHE device=%d bytes=%llu\n",device_,(unsigned long long)cache_bytes);
             }
             if (q4_head_ && !make_q4_head(err)) return false;
-            if (dhead_type_ == 14 && strata::kernels::native_q6_k_packed_enabled())   // STRATA_Q6_PACKED=1
-                strata::kernels::native_q6_k_pack(dhead_, (int) (row_bytes / 210) * 256, (int) n_dvocab_,
+            if (dhead_type_ == 14 && nostroma::kernels::native_q6_k_packed_enabled())   // NOSTROMA_Q6_PACKED=1
+                nostroma::kernels::native_q6_k_pack(dhead_, (int) (row_bytes / 210) * 256, (int) n_dvocab_,
                                                   "MTP draft head");
-            if (!planar_gathered && dhead_type_ == 14 && !q4_head_ && !strata::kernels::native_q6_k_packed_enabled() &&
-                strata::kernels::native_q6_k_planar_enabled())   // STRATA_Q6_PLANAR
-                dhead_ = (uint8_t*) strata::kernels::native_q6_k_planar_adopt(dhead_, (int) (row_bytes / 210) * 256,
+            if (!planar_gathered && dhead_type_ == 14 && !q4_head_ && !nostroma::kernels::native_q6_k_packed_enabled() &&
+                nostroma::kernels::native_q6_k_planar_enabled())   // NOSTROMA_Q6_PLANAR
+                dhead_ = (uint8_t*) nostroma::kernels::native_q6_k_planar_adopt(dhead_, (int) (row_bytes / 210) * 256,
                                                                               (int) n_dvocab_, "MTP draft head");
         }
     }
@@ -885,7 +885,7 @@ catch (sycl::exception const &exc) {
 // The layer for T rows.  full = false stops after the K/V append (the prompt only needs the cache).
 bool MtpDrafter::record_forward(int T, int step_row0, dpct::queue_ptr cs,
                                 std::string &err) {
-    strata::workload_trace::Scope forward_trace("decode.mtp_forward", cs, T);
+    nostroma::workload_trace::Scope forward_trace("decode.mtp_forward", cs, T);
     // step_row0 >= 0: the full layer on step rows [step_row0, +T); step_row0 < 0: K/V only on rows [-1 - step_row0, +T)
     const bool full = step_row0 >= 0;
     if (full && T != 1) { err = "mtp: the full layer runs one row at a time (its attention scratch is sized for one)"; return false; }
@@ -895,7 +895,7 @@ bool MtpDrafter::record_forward(int T, int step_row0, dpct::queue_ptr cs,
 
 bool MtpDrafter::record_front(int T, int row0, dpct::queue_ptr cs,
                               std::string &err) {
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     const ModelGeometry& g = *g_;
     const int64_t N = g.n_embd, HC = g.hc, NH = g.n_head, HD = g.head_dim, NKV = g.n_head_kv;
     const QsaShapes s = shapes_of(g);
@@ -953,13 +953,13 @@ bool MtpDrafter::record_front(int T, int row0, dpct::queue_ptr cs,
         native_mmvq(wt_k_proj, wp_k_proj, xq_, kcur_, (int) N, (int) (NKV * HD), T, cs);
         native_mmvq(wt_v_proj, wp_v_proj, xq_, vcur_, (int) N, (int) (NKV * HD), T, cs);
         // #783 PR-d (stuchapin909): the T tokens' K norm, K/V rotation and K/V append each run once over all T rows
-        // (every row is independent; the rope keeps its per-token positions). STRATA_NO_BATCH_KV_STEP=1 appends per token.
+        // (every row is independent; the rope keeps its per-token positions). NOSTROMA_NO_BATCH_KV_STEP=1 appends per token.
         static const bool no_batch_kv = [] {
-            const char* v = strata::env("NOSTROMA_NO_BATCH_KV_STEP");
+            const char* v = nostroma::env("NOSTROMA_NO_BATCH_KV_STEP");
             return v != nullptr && v[0] != '\0' && v[0] != '0';
         }();
         // #783 PR-f (stuchapin909): the per-head RMSNorm and the rope fused (bit-identical to the pair, rope_parity
-        // check 6; STRATA_NO_NORM_ROPE=1 keeps the two; off on HIP until its parity check passes). K rows of one token
+        // check 6; NOSTROMA_NO_NORM_ROPE=1 keeps the two; off on HIP until its parity check passes). K rows of one token
         // are consecutive in `pos`, tokens are NH apart, so a one-token window is the fusable case.
         const bool fuse_nr = native_rope_enabled() && native_norm_rope_usable((int) HD, (int) s.n_rot);
         if (T == 1 && fuse_nr) {
@@ -973,7 +973,7 @@ bool MtpDrafter::record_front(int T, int row0, dpct::queue_ptr cs,
                 else rope_neox_apply(kc, kc, (int) NKV, (int) HD, (int) s.n_rot, st_.cos_tab, st_.sin_tab, pos + t * NH, cs);
             }
         }
-        if (st_.kv_rot) {   // rotated K and V (kv_q4.hpp): Q4_0, and INT8 with STRATA_KV_ROT=1
+        if (st_.kv_rot) {   // rotated K and V (kv_q4.hpp): Q4_0, and INT8 with NOSTROMA_KV_ROT=1
             fwht256_inplace_cuda(kcur_, (int64_t) T * NKV, cs);
             fwht256_inplace_cuda(vcur_, (int64_t) T * NKV, cs);
         }
@@ -1004,7 +1004,7 @@ bool MtpDrafter::record_front(int T, int row0, dpct::queue_ptr cs,
 
 void MtpDrafter::norm_rope(float *data, const float *gamma, int rows, int cols,
                            const int32_t *p, dpct::queue_ptr cs) {
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     const QsaShapes s = shapes_of(*g_);
     native_qsa_rms_norm_weighted(data, gamma, data, cols, rows, EPS, cs);
     if (native_rope_enabled()) native_rope_apply(data, data, rows, cols, (int) s.n_rot, rope_scaling(), p, cs);
@@ -1013,7 +1013,7 @@ void MtpDrafter::norm_rope(float *data, const float *gamma, int rows, int cols,
 
 bool MtpDrafter::record_rest(int step_row, dpct::queue_ptr cs,
                              std::string &err) {
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     const ModelGeometry& g = *g_;
     SessionState& ss = *ss_;
     const int T = 1;
@@ -1089,24 +1089,24 @@ bool MtpDrafter::record_rest(int step_row, dpct::queue_ptr cs,
         const SForm none{};
         const bool need_bf16_x = !shared_expert_native_bf16_enabled();
         static const bool fuse_head_gr = [] {
-            const char* v = strata::env("NOSTROMA_FUSE_HEAD_GR");
+            const char* v = nostroma::env("NOSTROMA_FUSE_HEAD_GR");
             return v != nullptr && std::atoi(v) != 0;
         }();
         static const bool head_mix_multi_on = [] {
-#if defined(STRATA_USE_HIP)
+#if defined(NOSTROMA_USE_HIP)
             return false;
 #else
-            const char* v = strata::env("NOSTROMA_HEAD_MIX_MULTI");
+            const char* v = nostroma::env("NOSTROMA_HEAD_MIX_MULTI");
             return v == nullptr || std::atoi(v) != 0;
 #endif
         }();
         // the shared expert only reads mixed_ / xq_ and writes shared_: a branch beside the router and the routed
-        // experts, joined before the combine (CUDA; HIP keeps one stream: STRATA_MTP_SHARED_BRANCH=0 does too)
+        // experts, joined before the combine (CUDA; HIP keeps one stream: NOSTROMA_MTP_SHARED_BRANCH=0 does too)
         static const bool branch_on = [] {
-#if defined(STRATA_USE_HIP)
+#if defined(NOSTROMA_USE_HIP)
             return false;
 #else
-            const char* v = strata::env("NOSTROMA_MTP_SHARED_BRANCH");
+            const char* v = nostroma::env("NOSTROMA_MTP_SHARED_BRANCH");
             return v == nullptr || std::atoi(v) != 0;
 #endif
         }();
@@ -1158,7 +1158,7 @@ bool MtpDrafter::record_rest(int step_row, dpct::queue_ptr cs,
             else router_top10(logits_ + t * g.n_expert, 1, (int) g.n_expert, (int) K, ids_ + t * K, w_ + t * K, cs);
         }
         }
-        moe_group_resident(ids_, (int) (T * K), (int) K, experts_, (int64_t) strata::kernels::cpu::BLOB, grp_ptr_,
+        moe_group_resident(ids_, (int) (T * K), (int) K, experts_, (int64_t) nostroma::kernels::cpu::BLOB, grp_ptr_,
                            grp_start_, grp_counts_, hit_dst_, hit_slot_, cs);
         quantize_q8_0_scaled(mixed_, hit_xq_, hit_xs_, (int64_t) T * N, cs);
         moe_grouped_s2(grp_ptr_, grp_start_, grp_counts_, hit_dst_, hit_slot_, (int64_t) T * K, (int64_t) T * K, hit_xq_,
@@ -1171,8 +1171,8 @@ bool MtpDrafter::record_rest(int step_row, dpct::queue_ptr cs,
         } else {
             shared_rows();
         }
-        static const bool no_multi_gr = [] {   // #783 PR-g: STRATA_NO_MULTI_GR=1 keeps the per-token GR calls
-            const char* v = strata::env("NOSTROMA_NO_MULTI_GR");
+        static const bool no_multi_gr = [] {   // #783 PR-g: NOSTROMA_NO_MULTI_GR=1 keeps the per-token GR calls
+            const char* v = nostroma::env("NOSTROMA_NO_MULTI_GR");
             return v != nullptr && v[0] != '\0' && v[0] != '0';
         }();
         for (int t = 0; t < T; ++t) {
@@ -1298,7 +1298,7 @@ catch (sycl::exception const &exc) {
 
 bool MtpDrafter::capture_prefill(int T, std::string &err) try {
     if (prefill_exec_[T]) return true;
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     if (DPCT_CHECK_ERROR(dpct::experimental::begin_recording(cs_)) != 0) {
         err = "mtp: begin capture"; return false;
     }
@@ -1331,7 +1331,7 @@ catch (sycl::exception const &exc) {
 bool MtpDrafter::capture_round(int T, bool coupled, std::string &err) try {
     dpct::experimental::command_graph_exec_ptr& exec = coupled ? round_exec_c_[T] : round_exec_[T];
     if (exec) return true;
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     const int64_t HCN = g_->hc * g_->n_embd;
     if (DPCT_CHECK_ERROR(dpct::experimental::begin_recording(cs_)) != 0) {
         err = "mtp: begin capture"; return false;
@@ -1344,7 +1344,7 @@ bool MtpDrafter::capture_round(int T, bool coupled, std::string &err) try {
     // one graph per step (`capture_step`) so the host can stop it when a draft is unlikely
     const int ra = 2 * max_t_ - 1;
     const int64_t N = g_->n_embd, NH = g_->n_head;
-#if defined(STRATA_USE_HIP)   // AMD keeps its separate copies
+#if defined(NOSTROMA_USE_HIP)   // AMD keeps its separate copies
     copy_i32_from_mapped(tok_, m_tok_, T, cs_);
     copy_i32_from_mapped(step_, m_step_, (int64_t) 2 * T * 4, cs_);
     copy_i32_from_mapped(pos_, m_pos_, (int64_t) 2 * T * NH, cs_);
@@ -1384,13 +1384,13 @@ catch (sycl::exception const &exc) {
 bool MtpDrafter::capture_step(int j, bool coupled, std::string &err) try {
     dpct::experimental::command_graph_exec_ptr& exec = coupled ? step_exec_c_[j] : step_exec_[j];
     if (exec) return true;
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     const int64_t HCN = g_->hc * g_->n_embd;
     const int row = max_t_ + j - 1;
     if (DPCT_CHECK_ERROR(dpct::experimental::begin_recording(cs_)) != 0) {
         err = "mtp: begin capture"; return false;
     }
-#if defined(STRATA_USE_HIP)
+#if defined(NOSTROMA_USE_HIP)
     copy_i32_from_mapped(step_ + row * 4, m_step_ + row * 4, 4, cs_);
     copy_i32_from_mapped(pos_ + row * g_->n_head, m_pos_ + row * g_->n_head, g_->n_head, cs_);
 #else
@@ -1416,9 +1416,9 @@ void MtpDrafter::kv_restore(int64_t upto) {
     const OnDevice on_device(device_);
     if (st_.kv_mode != 2 || upto <= 0) return;
     // the ring's blocks below `upto`, from the host copy: a checkpoint resume may have left later cells in them
-    const strata::kernels::QsaShapes s = shapes_of(*g_);
+    const nostroma::kernels::QsaShapes s = shapes_of(*g_);
     const int64_t b1 = (upto + s.page_size - 1) / s.page_size, b0 = std::max<int64_t>(0, b1 - st_.n_slots);
-    strata::kernels::kv_ring_restore(qsa_attn_pools(st_), st_.host, qsa_kv_format(st_), b0, b1, st_.n_slots, s, cs_);
+    nostroma::kernels::kv_ring_restore(qsa_attn_pools(st_), st_.host, qsa_kv_format(st_), b0, b1, st_.n_slots, s, cs_);
     cs_->wait();
 }
 
@@ -1438,7 +1438,7 @@ bool MtpDrafter::prepare_prefill(std::string &err) try {
         pf_cap_ = max_t_ * per_row;
     }
     for (int T = 1; T <= max_t_; ++T)
-        if (!capture_prefill_dev(T, err)) return false;   // (STRATA_MTP_PREFILL_SYNC's loop syncs anyway)
+        if (!capture_prefill_dev(T, err)) return false;   // (NOSTROMA_MTP_PREFILL_SYNC's loop syncs anyway)
     return true;
 }
 catch (sycl::exception const &exc) {
@@ -1457,7 +1457,7 @@ bool MtpDrafter::prefill(const float* R_rows, const int32_t* next_tokens, int64_
     // E-4: every group's token / step / position records uploaded at once; each group is then device copies and a
     // graph on the one stream, with a single sync at the end (a group of <= max_t rows used to be staged in mapped
     // memory and synced before the next: ~5,500 host round trips on a 32K prompt).  The same work in the same
-    // order.  STRATA_MTP_PREFILL_SYNC=1 keeps the old loop, =0 forces E-4.
+    // order.  NOSTROMA_MTP_PREFILL_SYNC=1 keeps the old loop, =0 forces E-4.
     // HIP defaults to the old loop.  This pass runs whenever E-9 (Prefill::draft_kv) declines, which it does for the
     // drafter's ring (KV streaming, --kv-resident), and on gfx1201 / ROCm 7.2.4 the E-4 queue (a graph launch and four
     // device copies per group, ~2,000 groups per 8192-token chunk, no sync) sometimes never completes: the prompt hangs
@@ -1465,8 +1465,8 @@ bool MtpDrafter::prefill(const float* R_rows, const int32_t* next_tokens, int64_
     // 32768, mixed load (chats, 32K and 7K prompts, deep follow-ups): E-4 hung in the first round on 2 of 2 tries,
     // the old loop ran 30 of 30 rounds clean, prompt speed unchanged.
     static const bool per_group_sync = [] {
-        if (const char* v = strata::env("NOSTROMA_MTP_PREFILL_SYNC")) return std::atoi(v) != 0;
-#if defined(STRATA_USE_HIP)
+        if (const char* v = nostroma::env("NOSTROMA_MTP_PREFILL_SYNC")) return std::atoi(v) != 0;
+#if defined(NOSTROMA_USE_HIP)
         return true;
 #else
         return false;
@@ -1675,8 +1675,8 @@ bool MtpDrafter::draft(int T, const int32_t* tokens, int64_t p, int a, int32_t* 
     int32_t ple_prev[2] = {do_ple ? pss->ple_prev[0] : 0, do_ple ? pss->ple_prev[1] : 0};
     auto prefetch_ple = [&](int32_t tok) {
         if (!do_ple || tok < 0) return;
-        uint32_t rows16[strata::kernels::PLE_N_HEADS];
-        strata::kernels::ngram_rows(&tok, ple_prev, 1, pss->ple.consts, rows16);
+        uint32_t rows16[nostroma::kernels::PLE_N_HEADS];
+        nostroma::kernels::ngram_rows(&tok, ple_prev, 1, pss->ple.consts, rows16);
         ple_prev[0] = ple_prev[1];
         ple_prev[1] = tok;
         pss->ple.table->prefetch_rows(rows16);
@@ -1922,7 +1922,7 @@ bool MtpDrafter::chain_launch(int T, const int32_t *tokens, int64_t p, int a,
     if (!stage_source_R(T, err)) return false;
     chain_early_ = std::max(0, std::min(n_early, n_out));
     int submit_n = n_out;
-    if (auto* ds = strata::private_demand::get(this)) {
+    if (auto* ds = nostroma::private_demand::get(this)) {
         ds->limit = n_out; ds->submitted = ds->target = submit_n = 1;
         ds->final = n_out == 1;
         ds->last_ready_ns = 0;
@@ -1985,9 +1985,9 @@ catch (sycl::exception const &exc) {
 int MtpDrafter::chain_outputs_ready(std::string &err) try {
     if (!chain_live_) return chain_n_;
     const OnDevice on_device(device_);
-    if (auto* ds = strata::private_demand::get(this)) {
+    if (auto* ds = nostroma::private_demand::get(this)) {
         if (ds->target > ds->submitted) {
-            const long long start_ns = ds->metrics ? strata::private_demand::now_ns() : 0;
+            const long long start_ns = ds->metrics ? nostroma::private_demand::now_ns() : 0;
             if (ds->metrics && ds->last_ready_ns) {
                 const auto reaction = start_ns - ds->last_ready_ns;
                 ds->reaction_ns += reaction;
@@ -2007,11 +2007,11 @@ int MtpDrafter::chain_outputs_ready(std::string &err) try {
                 err = "private demand: retirement event failed"; return -1;
             }
             (void)DPCT_CHECK_ERROR(cs_->ext_oneapi_empty());
-            if (ds->metrics) ds->submit_ns += strata::private_demand::now_ns() - start_ns;
+            if (ds->metrics) ds->submit_ns += nostroma::private_demand::now_ns() - start_ns;
         }
     }
 
-    const auto* ds = strata::private_demand::get(this);
+    const auto* ds = nostroma::private_demand::get(this);
     const int readable = ds ? std::min(chain_early_, ds->submitted) : chain_early_;
     while (steps_seen_ < readable) {
         const dpct::err0 q = dpct::sycl_event_query(ev_step_[steps_seen_]);
@@ -2042,8 +2042,8 @@ int MtpDrafter::chain_outputs_ready(std::string &err) try {
         chain_tok_[steps_seen_] = ((volatile int32_t*) h_out_)[steps_seen_];
         chain_prob_[steps_seen_] = ((volatile float*) h_prob_)[steps_seen_];
         ++steps_seen_;
-        if (auto* observed = strata::private_demand::get(this); observed && observed->metrics)
-            observed->last_ready_ns = strata::private_demand::now_ns();
+        if (auto* observed = nostroma::private_demand::get(this); observed && observed->metrics)
+            observed->last_ready_ns = nostroma::private_demand::now_ns();
     }
     return steps_seen_;
 }
@@ -2055,7 +2055,7 @@ catch (sycl::exception const &exc) {
 
 int MtpDrafter::chain_poll(std::string &err) try {
     if (!chain_live_) return 1;
-    if (auto* ds = strata::private_demand::get(this); ds && !ds->final) return 0;
+    if (auto* ds = nostroma::private_demand::get(this); ds && !ds->final) return 0;
     const OnDevice on_device(device_);
     const dpct::err0 q = dpct::sycl_event_query(ev_chain_);
     /*
@@ -2083,7 +2083,7 @@ int MtpDrafter::chain_poll(std::string &err) try {
       err = std::string("mtp chain: ") + dpct::get_error_string_dummy(q);
       return -1;
     }
-    if (auto* ds = strata::private_demand::get(this)) chain_n_ = ds->submitted;
+    if (auto* ds = nostroma::private_demand::get(this)) chain_n_ = ds->submitted;
     for (int j = 0; j < chain_n_; ++j) {
         chain_tok_[j] = ((volatile int32_t*) h_out_)[j];
         chain_prob_[j] = ((volatile float*) h_prob_)[j];
@@ -2119,4 +2119,4 @@ catch (sycl::exception const &exc) {
   std::exit(1);
 }
 
-}  // namespace strata::core
+}  // namespace nostroma::core

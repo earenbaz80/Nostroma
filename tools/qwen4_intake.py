@@ -8,12 +8,12 @@
 
 For each set of files (a split model is one set) it prints, and writes as JSON:
 
-  * the architecture and every geometry key, against both families Nostroma runs (qwen4exp = include/strata/core/geometry.hpp's
+  * the architecture and every geometry key, against both families Nostroma runs (qwen4exp = include/nostroma/core/geometry.hpp's
     kCompiledGeometry; qwen35moe = the run-time shapes of src/qwen35 with its fixed limits);
-  * the tensor layout against the layout tables of include/strata/core/family_layout.hpp: missing, reshaped and unknown tensors;
+  * the tensor layout against the layout tables of include/nostroma/core/family_layout.hpp: missing, reshaped and unknown tensors;
   * every quant type against what each backend (CUDA, HIP, SYCL, Metal) has kernels for, by tensor role;
   * the tokenizer (model, pre-tokenizer, vocabulary, special tokens, BOS/EOS) against Flash-Next's, and whether
-    tools/strata_tokenizer.py can build it; the chat template's hash, tool-call form and thinking tags;
+    tools/nostroma_tokenizer.py can build it; the chat template's hash, tool-call form and thinking tags;
   * the MTP block, the vision projector, split shards, sizes, sha256 where known, the general.* names and licence;
   * a verdict: case A (runs now: which path and backends), B (known layer types at a new shape or under a new name: the fields
     that differ) or C (each blocker), and a DRAFT catalog entry and setup config.  Nothing here is wired into setup.py.
@@ -49,7 +49,7 @@ if str(ROOT) not in sys.path:
 TOOL_VERSION = 1
 
 # ====================================================================================================== geometry (port)
-# include/strata/core/geometry.hpp: ModelGeometry.  The defaults are Qwen3.8-Flash-Next's, the shape the kernels are compiled for.
+# include/nostroma/core/geometry.hpp: ModelGeometry.  The defaults are Qwen3.8-Flash-Next's, the shape the kernels are compiled for.
 
 
 @dataclasses.dataclass
@@ -105,14 +105,14 @@ class Geometry:
 
 COMPILED = Geometry()
 
-# include/strata/artifact/model_family.hpp
+# include/nostroma/artifact/model_family.hpp
 FAMILY_ARCH = {"qwen4exp": "qwen4exp", "qwen35moe": "qwen35moe"}
 FAMILY_TITLE = {"qwen4exp": "Qwen3.8-Flash-Next", "qwen35moe": "Qwen3.6-35B-A3B"}
 # model_family_runs() is true for qwen4exp only; qwen35moe has the src/qwen35 path the CUDA and HIP builds switch to.  The SYCL
 # build refuses it (model_family_not_supported); Metal has no such path (docs: "Metal and Intel Arc have no such path").
 FAMILY_BACKENDS = {"qwen4exp": ["cuda", "hip", "sycl", "metal"], "qwen35moe": ["cuda", "hip"]}
 # Other architectures Nostroma runs with an engine of its own: never a Qwen4 path.
-OTHER_ENGINES = {"deepseek41": "strata-dsv41 (setup.py MULTI_FILE_FAMILIES): a separate engine, not the Qwen3.8 / Qwen3.6 paths"}
+OTHER_ENGINES = {"deepseek41": "nostroma-dsv41 (setup.py MULTI_FILE_FAMILIES): a separate engine, not the Qwen3.8 / Qwen3.6 paths"}
 
 # read_geometry() (gguf_reader.hpp): key -> (field, required), under "<arch>."
 QWEN4_KEYS = [
@@ -295,7 +295,7 @@ def qwen35_limit_violations(g: Geometry, arch: str) -> list[dict]:
 
 
 # ====================================================================================================== layout tables (port)
-# include/strata/core/family_layout.hpp layer_tensors() / global_tensors(); shapes are GGUF order (dim 0 contiguous).
+# include/nostroma/core/family_layout.hpp layer_tensors() / global_tensors(); shapes are GGUF order (dim 0 contiguous).
 
 
 def layer_tensors(g: Geometry, layer: int) -> list[tuple[str, list[int]]]:
@@ -371,7 +371,7 @@ TYPE_NAME = G.GGML_TYPES
 SMALL_OK = {0, 1, 30}            # F32, F16, BF16: norms, router, biases, the SSM vectors (q36_engine.cu f32(): F32 / BF16 / F16 / Q8_0)
 MMVQ = {2, 6, 7, 8, 11, 12, 13, 14, 20, 23, 42, 16, 17, 18, 21, 22, 29}        # native_mmvq_supported(): CUDA, SYCL and Metal host copy
 BACKEND_LISTS = {
-    # src/kernels/cuda/iq_kernels.cu: STRATA_GU_FMTS / STRATA_D_FMTS (STRATA_Q6K_EXPERTS=ON, the default) and is_iq().  The HIP
+    # src/kernels/cuda/iq_kernels.cu: NOSTROMA_GU_FMTS / NOSTROMA_D_FMTS (NOSTROMA_Q6K_EXPERTS=ON, the default) and is_iq().  The HIP
     # build compiles this same file: AMD gfx11 / gfx12 / gfx1151 differ in kernel modes and speed, not in this list.
     "cuda": {"gu": {16, 17, 18, 21, 22, 23, 29, 42, 12, 13, 14, 6, 2, 3, 8, 40, 144, 145, 147, 148, 149},
              "down": {20, 23, 42, 7, 6, 2, 3, 8, 13, 14, 40, 144, 146, 147, 148, 149},
@@ -536,7 +536,7 @@ KNOWN_TEMPLATES = {
 
 
 def tokenizer_report(md: dict, build: bool, text_probe: bool = True) -> dict:
-    import strata_tokenizer as ST
+    import nostroma_tokenizer as ST
     toks = md.get("tokenizer.ggml.tokens")
     merges = md.get("tokenizer.ggml.merges")
     types = md.get("tokenizer.ggml.token_type")
@@ -572,9 +572,9 @@ def tokenizer_report(md: dict, build: bool, text_probe: bool = True) -> dict:
     r["end_of_turn_id"] = by_text.get("<|im_end|>")
     problems = []
     if r["model"] != "gpt2":
-        problems.append("tokenizer.ggml.model is %r; tools/strata_tokenizer.py builds the byte-level BPE ('gpt2') only" % (r["model"],))
+        problems.append("tokenizer.ggml.model is %r; tools/nostroma_tokenizer.py builds the byte-level BPE ('gpt2') only" % (r["model"],))
     if r["pre_rule"] is None:
-        problems.append("tokenizer.ggml.pre is %r: no splitting rule for it in tools/strata_tokenizer.py (knows qwen35, deepseek*)" % (pre,))
+        problems.append("tokenizer.ggml.pre is %r: no splitting rule for it in tools/nostroma_tokenizer.py (knows qwen35, deepseek*)" % (pre,))
     if not isinstance(merges, list):
         problems.append("the file carries no tokenizer.ggml.merges")
     r["problems"] = problems
@@ -599,7 +599,7 @@ def tokenizer_report(md: dict, build: bool, text_probe: bool = True) -> dict:
 
 
 def _byte_chars():
-    import strata_tokenizer as ST
+    import nostroma_tokenizer as ST
     return sorted(ST.BYTE_TO_UNICODE.values())
 
 
@@ -904,7 +904,7 @@ def verdict(rep: dict, arch: str | None) -> dict:
     for p in tk.get("problems", []):
         blockers.append("tokenizer: " + p)
     if tk.get("builds") and not tk["builds"].get("ok"):
-        blockers.append("tokenizer: tools/strata_tokenizer.py cannot build it: " + tk["builds"].get("error", ""))
+        blockers.append("tokenizer: tools/nostroma_tokenizer.py cannot build it: " + tk["builds"].get("error", ""))
     if tk.get("builds") and tk["builds"].get("ok") and tk["builds"].get("roundtrip") is False:
         blockers.append("tokenizer: encode + decode of a probe string does not return the string")
     if rep["vocab_matches_embedding"] is False:
@@ -941,10 +941,10 @@ def verdict(rep: dict, arch: str | None) -> dict:
             notes.append("known layer types under a new name: architecture '%s' must be added to model_family_from_arch (and its %s guard)" % (arch, fam))
         if fam == "qwen35moe":
             shape_fields = rep["qwen35_limit_violations"]
-        path = {"qwen4exp": "the Flash-Next engine path (src/program, src/kernels)", "qwen35moe": "src/qwen35 (strata-q36)"}[fam]
+        path = {"qwen4exp": "the Flash-Next engine path (src/program, src/kernels)", "qwen35moe": "src/qwen35 (nostroma-q36)"}[fam]
         backends = usable
     if case == "B" and fam == "qwen4exp":
-        notes.append("kernels are compiled for the Flash-Next shape (include/strata/core/geometry.hpp): a rebuild with another geometry header, "
+        notes.append("kernels are compiled for the Flash-Next shape (include/nostroma/core/geometry.hpp): a rebuild with another geometry header, "
                      "every platform; the engine refuses the file until then")
     if case == "A" and fam == "qwen4exp":
         # native router kernel: the (512 experts, top-10) or (256, top-8) fast path only; other counts take the generic router

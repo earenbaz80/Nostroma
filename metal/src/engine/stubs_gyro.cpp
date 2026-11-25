@@ -5,21 +5,21 @@
 
 #include <cstdint>
 
-#include "strata/kernels/iq_kernels.hpp"
+#include "nostroma/kernels/iq_kernels.hpp"
 
-namespace strata::metal_engine {
+namespace nostroma::metal_engine {
 void missing(const char* name);
 }
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 void hadamard_rows(const float*, float*, int64_t, int64_t, int, const float*, void*) {
-    strata::metal_engine::missing("strata::kernels::hadamard_rows");
+    nostroma::metal_engine::missing("nostroma::kernels::hadamard_rows");
 }
 void hadamard_rows_f16(uint16_t*, int64_t, int64_t, int, const float*, void*) {
-    strata::metal_engine::missing("strata::kernels::hadamard_rows_f16");
+    nostroma::metal_engine::missing("nostroma::kernels::hadamard_rows_f16");
 }
 const float* hadamard_device_signs(const float*, int) {
-    strata::metal_engine::missing("strata::kernels::hadamard_device_signs");
+    nostroma::metal_engine::missing("nostroma::kernels::hadamard_device_signs");
     return nullptr;
 }
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels

@@ -1,7 +1,7 @@
 // The prompt path's block scores on the thread-per-head kernel (an active-block count) against block_scores_kernel
 // (no count, more than 8 queries), every score of blocks 0..n_bid bitwise; then the time of each.  GPU, synthetic.
-#include "strata/kernels/qsa.hpp"
-#include "strata/kernels/qsa_select.hpp"
+#include "nostroma/kernels/qsa.hpp"
+#include "nostroma/kernels/qsa_select.hpp"
 #include <cuda_runtime.h>
 #include <cmath>
 #include <cstdint>
@@ -11,7 +11,7 @@
 #include <random>
 #include <vector>
 
-namespace k = strata::kernels;
+namespace k = nostroma::kernels;
 namespace {
 void ck(cudaError_t e) {
     if (e != cudaSuccess) {

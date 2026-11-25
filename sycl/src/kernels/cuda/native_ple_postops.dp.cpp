@@ -20,13 +20,13 @@
 
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
-#include "strata/kprof.hpp"
-#include "strata/core/geometry.hpp"
+#include "nostroma/kprof.hpp"
+#include "nostroma/core/geometry.hpp"
 #include <dpct/dpct.hpp>
-#include "strata/sycl_queue.hpp"
-#include "strata/kernels/native_ple_postops.hpp"
-#include "strata/kernels/native_gr_norm.hpp"
-#include "strata/kernels/ngram.hpp"
+#include "nostroma/sycl_queue.hpp"
+#include "nostroma/kernels/native_ple_postops.hpp"
+#include "nostroma/kernels/native_gr_norm.hpp"
+#include "nostroma/kernels/ngram.hpp"
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -34,10 +34,10 @@
 #include <stdexcept>
 #include <string>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
-constexpr int N = strata::core::kCompiledGeometry.n_embd, H = strata::core::kCompiledGeometry.hc, D = N * H, HISTORY = 9;
-static_assert(N == strata::core::kCompiledGeometry.n_embd && H == strata::core::kCompiledGeometry.hc, "native_ple_postops is compiled for core/geometry.hpp");
+constexpr int N = nostroma::core::kCompiledGeometry.n_embd, H = nostroma::core::kCompiledGeometry.hc, D = N * H, HISTORY = 9;
+static_assert(N == nostroma::core::kCompiledGeometry.n_embd && H == nostroma::core::kCompiledGeometry.hc, "native_ple_postops is compiled for core/geometry.hpp");
 inline float warp_sum(float x) {
     /*
 DPCT1108: '__shfl_xor_sync' was migrated with the experimental feature masked
@@ -340,7 +340,7 @@ void native_ple_postops(const float* projected_key, const float* hidden,
     }
     native_gr_rms_norm_weighted(projected_key,w.norm_key,b.key,N,H,NG_RMS_EPS,stream);
     native_gr_rms_norm_weighted(hidden,w.norm_query,b.query,N,H,NG_RMS_EPS,stream);
-    auto st = strata::q_of(stream);
+    auto st = nostroma::q_of(stream);
     /*
     DPCT1049: The work-group size passed to the SYCL kernel may exceed the
     limit. To get the device limit, query info::device::max_work_group_size.
@@ -350,7 +350,7 @@ void native_ple_postops(const float* projected_key, const float* hidden,
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
             auto std_sqrt_float_N_ct3 = 1.0f / std::sqrt(float(N));
 
             cgh.parallel_for<dpct_kernel_name<class gate_kernel_f8e4fc>>(
@@ -368,7 +368,7 @@ void native_ple_postops(const float* projected_key, const float* hidden,
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class broadcast_kernel_50d78d>>(
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class broadcast_kernel_50d78d>>(
             sycl::nd_range<3>(sycl::range(1, 1, D / 256) *
                                   sycl::range(1, 1, 256),
                               sycl::range(1, 1, 256)),
@@ -382,7 +382,7 @@ void native_ple_postops(const float* projected_key, const float* hidden,
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class conv_residual_kernel_6182eb>>(
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class conv_residual_kernel_6182eb>>(
             sycl::nd_range<3>(sycl::range(1, 1, D / 256) *
                                   sycl::range(1, 1, 256),
                               sycl::range(1, 1, 256)),
@@ -398,7 +398,7 @@ void native_ple_postops_batch(float* key, float* hidden, const float* value, flo
                               float* query_norm, float* gated, float* gate, int T, void* stream) {
     if (!stream || T <= 0 || !key || !hidden || !value || !history || !query_norm || !gated || !gate)
         throw std::invalid_argument("native PLE postops batch: null input or empty batch");
-    auto st = strata::q_of(stream);
+    auto st = nostroma::q_of(stream);
     const unsigned rows = unsigned(T) * H;
     const unsigned blocks = unsigned((size_t(T) * D + 255) / 256);
     /*
@@ -410,7 +410,7 @@ void native_ple_postops_batch(float* key, float* hidden, const float* value, flo
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class rms_rep_kernel_dde36c>>(
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class rms_rep_kernel_dde36c>>(
             sycl::nd_range<3>(sycl::range(1, 1, rows) * sycl::range(1, 1, 1024),
                               sycl::range(1, 1, 1024)),
             exp_props,
@@ -427,7 +427,7 @@ void native_ple_postops_batch(float* key, float* hidden, const float* value, flo
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class rms_rep_kernel_9b5d94>>(
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class rms_rep_kernel_9b5d94>>(
             sycl::nd_range<3>(sycl::range(1, 1, rows) * sycl::range(1, 1, 1024),
                               sycl::range(1, 1, 1024)),
             exp_props,
@@ -444,7 +444,7 @@ void native_ple_postops_batch(float* key, float* hidden, const float* value, flo
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
             auto std_sqrt_float_N_ct3 = 1.0f / std::sqrt(float(N));
 
             cgh.parallel_for<dpct_kernel_name<class gate_kernel_558e90>>(
@@ -463,7 +463,7 @@ void native_ple_postops_batch(float* key, float* hidden, const float* value, flo
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class broadcast_batch_kernel_24ebaf>>(
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class broadcast_batch_kernel_24ebaf>>(
             sycl::nd_range<3>(sycl::range(1, 1, blocks) *
                                   sycl::range(1, 1, 256),
                               sycl::range(1, 1, 256)),
@@ -480,7 +480,7 @@ void native_ple_postops_batch(float* key, float* hidden, const float* value, flo
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class rms_rep_kernel_e4e0bd>>(
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class rms_rep_kernel_e4e0bd>>(
             sycl::nd_range<3>(sycl::range(1, 1, rows) * sycl::range(1, 1, 1024),
                               sycl::range(1, 1, 1024)),
             exp_props,
@@ -492,7 +492,7 @@ void native_ple_postops_batch(float* key, float* hidden, const float* value, flo
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<
             dpct_kernel_name<class conv_residual_batch_kernel_3906fe>>(
             sycl::nd_range<3>(sycl::range(1, 1, blocks) *
                                   sycl::range(1, 1, 256),
@@ -506,7 +506,7 @@ void native_ple_postops_batch(float* key, float* hidden, const float* value, flo
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class history_batch_kernel_8243c6>>(
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class history_batch_kernel_8243c6>>(
             sycl::nd_range<3>(sycl::range(1, 1, D / 256) *
                                   sycl::range(1, 1, 256),
                               sycl::range(1, 1, 256)),
@@ -516,4 +516,4 @@ void native_ple_postops_batch(float* key, float* hidden, const float* value, flo
     }
     launch_check();
 }
-} // namespace strata::kernels
+} // namespace nostroma::kernels

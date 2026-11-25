@@ -185,7 +185,7 @@ def smoke(bundle: Path, *, interactive: bool = False) -> dict:
                 (one_shot.get("snapshot") or {}).get("model", {}).get("id") != "portable-smoke-model"):
             raise RuntimeError("one-shot monitor returned the wrong model or failed")
 
-        with tempfile.TemporaryDirectory(prefix="strata-portable-smoke-") as scratch:
+        with tempfile.TemporaryDirectory(prefix="nostroma-portable-smoke-") as scratch:
             target = Path(scratch) / "monitor"
             preview = _run(str(BUILDER), "install", str(bundle), "--target", str(target), "--plan")
             if preview.get("sha256") != expected_sha or preview.get("would_install") is not True:

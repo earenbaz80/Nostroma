@@ -1,14 +1,14 @@
-#include "strata/core/remote_experts.hpp"
-#include "strata/env.hpp"
-#include "strata/core/device.hpp"   // primary_device() (STRATA_PRIMARY_DEVICE)
-#include "strata/core/remote_expert_opt.hpp"
+#include "nostroma/core/remote_experts.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/core/device.hpp"   // primary_device() (NOSTROMA_PRIMARY_DEVICE)
+#include "nostroma/core/remote_expert_opt.hpp"
 
-#include "strata/kernels/cpu/expert_layout.hpp"
-#include "strata/kernels/cpu/hadamard.hpp"
-#include "strata/kernels/iq_kernels.hpp"
-#include "strata/kernels/quantize_act.hpp"
-#include "strata/kernels/s2_expert_grouped.hpp"
-#include "strata/kernels/window_limits.hpp"
+#include "nostroma/kernels/cpu/expert_layout.hpp"
+#include "nostroma/kernels/cpu/hadamard.hpp"
+#include "nostroma/kernels/iq_kernels.hpp"
+#include "nostroma/kernels/quantize_act.hpp"
+#include "nostroma/kernels/s2_expert_grouped.hpp"
+#include "nostroma/kernels/window_limits.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -16,11 +16,11 @@
 #include <cstdlib>
 #include <cstring>
 
-namespace strata::core {
+namespace nostroma::core {
 namespace {
-constexpr int64_t H = strata::kernels::cpu::H;
-constexpr int64_t FF = strata::kernels::cpu::FF;
-constexpr int64_t CAP = strata::kernels::kWindowMaxT * 10;   // a window's rows x top-10
+constexpr int64_t H = nostroma::kernels::cpu::H;
+constexpr int64_t FF = nostroma::kernels::cpu::FF;
+constexpr int64_t CAP = nostroma::kernels::kWindowMaxT * 10;   // a window's rows x top-10
 
 // Small enough to copy as one pinned buffer per layer. The kernels read the
 // individual arrays through pointers into the same device allocation.
@@ -78,14 +78,14 @@ bool RemoteExperts::preflight(int device, double& free_gib, std::string& err) {
     }
     if (device == primary_device()) {   // the primary may be any visible ordinal; the helper cannot be it
         err = "CUDA" + std::to_string(device) + " experts: the helper cannot be the primary device "
-                                                 "(STRATA_PRIMARY_DEVICE)";
+                                                 "(NOSTROMA_PRIMARY_DEVICE)";
         return false;
     }
     // The layer waits for this GPU on the CPU pool's critical path: spin instead of sleeping, whose wake-up
     // costs more than a small expert batch takes (measured: ~0.3 ms per round trip on Windows).  Only possible
-    // before the device's context exists, so first thing; STRATA_REMOTE_SPIN=0 keeps the driver's default.
-#if !defined(STRATA_USE_HIP) && !defined(STRATA_GPU_METAL)
-    const char* spin = strata::env("NOSTROMA_REMOTE_SPIN");
+    // before the device's context exists, so first thing; NOSTROMA_REMOTE_SPIN=0 keeps the driver's default.
+#if !defined(NOSTROMA_USE_HIP) && !defined(NOSTROMA_GPU_METAL)
+    const char* spin = nostroma::env("NOSTROMA_REMOTE_SPIN");
     if (!(spin && spin[0] == '0')) cudaInitDevice(device, cudaDeviceScheduleSpin | cudaDeviceMapHost, 0);
     cudaGetLastError();
 #endif
@@ -151,7 +151,7 @@ bool RemoteExperts::open(int device, int slots, int64_t layers, int64_t experts,
     if (!scope.ok) { err = scope.error(device); return false; }
     device_ = device;
     n_expert_ = experts;
-    const auto& lay = strata::kernels::cpu::expert_layout();
+    const auto& lay = nostroma::kernels::cpu::expert_layout();
     size_t free_bytes = 0, total_bytes = 0;
     if (!check(cudaMemGetInfo(&free_bytes, &total_bytes), "free memory", err, device)) { close(); return false; }
     uint64_t needed = 0;
@@ -206,8 +206,8 @@ bool RemoteExperts::open(int device, int slots, int64_t layers, int64_t experts,
     }
 
     const size_t scratch = std::max<size_t>(
-        (size_t) strata::kernels::moe_hit_grouped_scratch_bytes(CAP, H, FF),
-        strata::kernels::native_expert_scratch_bytes(CAP, FF));
+        (size_t) nostroma::kernels::moe_hit_grouped_scratch_bytes(CAP, H, FF),
+        nostroma::kernels::native_expert_scratch_bytes(CAP, FF));
     const size_t meta_bytes = sizeof(RemoteMeta) + (remote_opt_ ? remote_opt_->metadata_bytes() : 0);
     const bool allocated =
         check(cudaStreamCreateWithFlags(&stream_, cudaStreamNonBlocking), "stream", err, device) &&
@@ -220,20 +220,20 @@ bool RemoteExperts::open(int device, int slots, int64_t layers, int64_t experts,
         check(cudaMalloc((void**) &d_scales_, (size_t) CAP * (H / 32) * sizeof(float)), "activation scales", err, device) &&
         check(cudaMalloc(&d_scratch_, scratch), "scratch", err, device) &&
         check(cudaMalloc(&d_meta_, meta_bytes), "group metadata", err, device) &&
-        (!strata::kernels::cpu::hadamard_spec().any() ||
+        (!nostroma::kernels::cpu::hadamard_spec().any() ||
          check(cudaMalloc((void**) &d_xr_, (size_t) CAP * H * sizeof(float)), "rotated input", err, device));
     if (!allocated) { close(); return false; }
     if (!check(cudaStreamCreateWithFlags(&read_stream_, cudaStreamNonBlocking), "cache read stream", err, device)) {
         close();
         return false;
     }
-    if (strata::kernels::cpu::hadamard_spec().any()) {   // APR: this device's copies of the sign vectors
-        d_sx_ = strata::kernels::hadamard_device_signs(strata::kernels::cpu::hadamard_signs((int) H), (int) H);
-        d_sh_ = strata::kernels::hadamard_device_signs(strata::kernels::cpu::hadamard_signs((int) FF), (int) FF);
+    if (nostroma::kernels::cpu::hadamard_spec().any()) {   // APR: this device's copies of the sign vectors
+        d_sx_ = nostroma::kernels::hadamard_device_signs(nostroma::kernels::cpu::hadamard_signs((int) H), (int) H);
+        d_sh_ = nostroma::kernels::hadamard_device_signs(nostroma::kernels::cpu::hadamard_signs((int) FF), (int) FF);
     }
     // Zero-copy: the helper reads its input from, and writes its compact rows into, the pinned host buffers
-    // directly - two copies fewer per layer, each of which is a PCIe round trip.  STRATA_REMOTE_ZEROCOPY=0 copies.
-    const char* zc = strata::env("NOSTROMA_REMOTE_ZEROCOPY");
+    // directly - two copies fewer per layer, each of which is a PCIe round trip.  NOSTROMA_REMOTE_ZEROCOPY=0 copies.
+    const char* zc = nostroma::env("NOSTROMA_REMOTE_ZEROCOPY");
     zero_copy_ = !(zc && zc[0] == '0') &&
                  cudaHostGetDevicePointer((void**) &z_x_, h_x_, 0) == cudaSuccess &&
                  cudaHostGetDevicePointer((void**) &z_out_, h_out_, 0) == cudaSuccess;
@@ -270,7 +270,7 @@ bool RemoteExperts::begin(int64_t layer, const float* x, const int32_t* ids, int
     struct Timer { double& acc; std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
         ~Timer() { acc += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count(); } } timer{ms_begin_};
     const int64_t n = n_tok * k;
-    if (n <= 0 || n > CAP || n_tok > strata::kernels::kWindowMaxT || k != (int) strata::core::kCompiledGeometry.n_expert_used || layer < 0 ||
+    if (n <= 0 || n > CAP || n_tok > nostroma::kernels::kWindowMaxT || k != (int) nostroma::core::kCompiledGeometry.n_expert_used || layer < 0 ||
         (size_t) layer >= layers_present_.size() || device_ < 0) {
         err = "CUDA" + std::to_string(device_) + " experts: invalid layer, routing width or window size";
         return false;
@@ -329,22 +329,22 @@ bool RemoteExperts::begin(int64_t layer, const float* x, const int32_t* ids, int
         check(cudaMemcpyAsync(d_meta_, h_meta_, sizeof(RemoteMeta) + (reduce ? remote_opt_->metadata_bytes() : 0),
                               cudaMemcpyHostToDevice, s), "copy group metadata", err, device_);
     if (!staged) return false;
-    const auto& lay = strata::kernels::cpu::expert_layout();
+    const auto& lay = nostroma::kernels::cpu::expert_layout();
     if (lay.native) {
         const auto& fmt = lay.fmt[(size_t) layer];
         const float* xe = zero_copy_ ? z_x_ : d_x_;
         if (fmt.had_gu) {   // APR: Hadamard-folded gate/up take H (s * x)
-            strata::kernels::hadamard_rows(xe, d_xr_, n_tok, H, fmt.had_block, d_sx_, s);
+            nostroma::kernels::hadamard_rows(xe, d_xr_, n_tok, H, fmt.had_block, d_sx_, s);
             xe = d_xr_;
         }
-        strata::kernels::quantize_q8_1_rows(xe, n_tok, H, d_q8_, s);
-        auto L = strata::kernels::native_expert_layout(fmt.gu_type, fmt.d_type, fmt.n_embd, fmt.n_ff);
+        nostroma::kernels::quantize_q8_1_rows(xe, n_tok, H, d_q8_, s);
+        auto L = nostroma::kernels::native_expert_layout(fmt.gu_type, fmt.d_type, fmt.n_embd, fmt.n_ff);
         if (fmt.had_d) { L.had_block = fmt.had_block; L.d_signs = d_sh_; }
-        strata::kernels::native_expert_grouped(L, d_ptr_, d_start_, d_count_, d_dst_, d_tok_,
+        nostroma::kernels::native_expert_grouped(L, d_ptr_, d_start_, d_count_, d_dst_, d_tok_,
                                                groups_, (int64_t) dst_.size(), d_q8_, d_scratch_, zero_copy_ && !reduce ? z_out_ : d_out_, s);
     } else {
-        strata::kernels::quantize_q8_0_scaled(zero_copy_ ? z_x_ : d_x_, d_q8_, d_scales_, n_tok * H, s);
-        strata::kernels::moe_grouped_s2_window(d_ptr_, d_start_, d_count_, d_dst_, d_tok_,
+        nostroma::kernels::quantize_q8_0_scaled(zero_copy_ ? z_x_ : d_x_, d_q8_, d_scales_, n_tok * H, s);
+        nostroma::kernels::moe_grouped_s2_window(d_ptr_, d_start_, d_count_, d_dst_, d_tok_,
                                                groups_, (int64_t) dst_.size(), d_q8_, d_scales_, d_scratch_, zero_copy_ && !reduce ? z_out_ : d_out_, s,
                                                (int) n_tok);
     }
@@ -367,11 +367,11 @@ bool RemoteExperts::finish(float* out, std::string& err) {
     // Spin on the stream like PeerExperts::finish instead of the blocking sync: the layer waits for this helper
     // on the CPU pool's critical path, and a blocking sync's wake-up costs more than the helper's small batch
     // takes - on HIP especially, where the CUDA branch's cudaInitDevice(ScheduleSpin) does not exist and the
-    // device keeps its default policy.  STRATA_REMOTE_SPIN=0 keeps the blocking sync (the same switch the CUDA
+    // device keeps its default policy.  NOSTROMA_REMOTE_SPIN=0 keeps the blocking sync (the same switch the CUDA
     // branch reads).
-#if defined(STRATA_USE_HIP)   // HIP only: the CUDA branch's cudaInitDevice(ScheduleSpin) already makes the sync spin
+#if defined(NOSTROMA_USE_HIP)   // HIP only: the CUDA branch's cudaInitDevice(ScheduleSpin) already makes the sync spin
     static const bool spin = [] {
-        const char* v = strata::env("NOSTROMA_REMOTE_SPIN");
+        const char* v = nostroma::env("NOSTROMA_REMOTE_SPIN");
         return !(v != nullptr && v[0] == '0');
     }();
     if (spin) {
@@ -396,7 +396,7 @@ bool RemoteExperts::copy_cached_blobs(const int32_t* layers, const int32_t* expe
                                       size_t n, uint8_t* hit, std::string& err) {
     std::fill(hit, hit + n, 0);
     if (device_ < 0 || read_stream_ == nullptr || n == 0) return true;
-    const auto& lay = strata::kernels::cpu::expert_layout();
+    const auto& lay = nostroma::kernels::cpu::expert_layout();
     DeviceScope scope(device_);
     if (!scope.ok) { err = scope.error(device_); return false; }
     std::lock_guard<std::mutex> lock(read_mu_);
@@ -434,7 +434,7 @@ bool RemotePrefillSource::copy_blob(int64_t layer, int64_t expert, uint8_t* dst)
             const bool ok = h->copy_cached_blobs(&l, &e, &d, 1, &got, err);
             if (got) {
                 helper_blobs_.fetch_add(1, std::memory_order_relaxed);
-                helper_bytes_.fetch_add(strata::kernels::cpu::expert_layout().blob_bytes(layer),
+                helper_bytes_.fetch_add(nostroma::kernels::cpu::expert_layout().blob_bytes(layer),
                                         std::memory_order_relaxed);
                 return true;
             }
@@ -465,7 +465,7 @@ bool RemotePrefillSource::copy_blobs(const int32_t* layers, const int32_t* exper
     // One stream batch per helper, so several hits pay one wait; the misses go to the file source in one
     // call, which keeps its own batched-read merging for them.
     uint64_t blobs = 0, bytes = 0;
-    const auto& lay = strata::kernels::cpu::expert_layout();
+    const auto& lay = nostroma::kernels::cpu::expert_layout();
     for (size_t k = 0; k < helpers_.size(); ++k) {
         hl.clear(); he.clear(); hd.clear(); idx.clear();
         for (size_t i = 0; i < n; ++i)
@@ -499,4 +499,4 @@ void RemotePrefillSource::warn(const std::string& err) {
     std::fprintf(stderr, "prefill: a helper cache read failed (%s); the file source fills that blob instead\n",
                  err.c_str());
 }
-} // namespace strata::core
+} // namespace nostroma::core

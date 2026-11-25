@@ -5,14 +5,14 @@
 // still right.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
-#include "strata/kprof.hpp"
+#include "nostroma/kprof.hpp"
 #include <dpct/dpct.hpp>
-#include "strata/kernels/s2_gemv.hpp"
+#include "nostroma/kernels/s2_gemv.hpp"
 
 #include <cstdio>
 #include <cstdlib>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 
 constexpr int QK = 64;
@@ -65,7 +65,7 @@ void s2_gemv(const uint16_t *x, const uint8_t *codes, const float *scales,
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(&dpct::get_in_order_queue(), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(&dpct::get_in_order_queue(), __FILE__, __func__, __LINE__)
             ->template parallel_for<dpct_kernel_name<class s2_gemv_kernel_163eb8>>(
                 sycl::nd_range<3>(sycl::range(1, 1, (unsigned)blocks) *
                                       sycl::range(1, 1, threads),
@@ -83,4 +83,4 @@ catch (sycl::exception const &exc) {
   std::exit(1);
 }
 
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels

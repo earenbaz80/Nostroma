@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Which code of a linked strata-vision (or strata-vision-own) holds instructions an older CPU lacks (RESULTS-OWN-3V.md PART H).
+"""Which code of a linked nostroma-vision (or nostroma-vision-own) holds instructions an older CPU lacks (RESULTS-OWN-3V.md PART H).
 
 The CPU tower compiles each kernel tier in a file of its own with that tier's flags and calls it only after a CPU check (cpu_caps.h); everything else
 must stay at the floor of the build.  An instruction-set flag on a file that uses the standard library also reaches its inline and template copies
@@ -10,7 +10,7 @@ must stay at the floor of the build.  An instruction-set flag on a file that use
   floor avx_f16c (Ivy Bridge): as avx, F16C allowed.
 
 A function with such an instruction passes only if it is a LOCAL symbol of a kernel tier (the anonymous namespace `kn` of cpu_kernels_impl.h) or a tier's
-table getter (strata_vit::cpu_ops_<tier>), i.e. code reached only behind the CPU check.  Anything else is printed, weak / COMDAT copies marked.
+table getter (nostroma_vit::cpu_ops_<tier>), i.e. code reached only behind the CPU check.  Anything else is printed, weak / COMDAT copies marked.
 
     python3 check_floor_isa.py <binary> --floor none|avx|avx_f16c        exit 0 clean, 1 a violation, 77 no objdump / nm
 Linux (GNU binutils) only.
@@ -94,7 +94,7 @@ def main():
     for (addr, name), h in sorted(hits.items(), key=lambda x: x[0][1]):
         k = kind.get(addr, "?")
         local = k in ("t", "d", "b", "r")
-        tier = ("(anonymous namespace)::kn::" in name and local) or re.match(r"^strata_vit::cpu_ops_(sse41|avx|avx2|avx512)\(\)$", name)
+        tier = ("(anonymous namespace)::kn::" in name and local) or re.match(r"^nostroma_vit::cpu_ops_(sse41|avx|avx2|avx512)\(\)$", name)
         (ok_tier if tier else bad).append((name, k, h))
     print("floor %s: %d functions with instructions above the floor; %d are kernel-tier code behind the CPU check, %d are NOT" % (
         a.floor, len(hits), len(ok_tier), len(bad)))

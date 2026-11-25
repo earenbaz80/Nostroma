@@ -1,6 +1,6 @@
 {
-  "_note": "Engine-side numbers (the engine's own decode/prefill lines), NOT client timings. The two arms differ only in STRATA_SM70_TABLE; both generate the same 256 tokens (see output_sha256 below). See README.md for the method and the limits.",
-  "question": "should STRATA_SM70_TABLE=1 become the sm_70 default with the 0.1.41 code (docs/NVIDIA_V100.md asks a V100 owner to confirm)?",
+  "_note": "Engine-side numbers (the engine's own decode/prefill lines), NOT client timings. The two arms differ only in NOSTROMA_SM70_TABLE; both generate the same 256 tokens (see output_sha256 below). See README.md for the method and the limits.",
+  "question": "should NOSTROMA_SM70_TABLE=1 become the sm_70 default with the 0.1.41 code (docs/NVIDIA_V100.md asks a V100 owner to confirm)?",
   "answer": "yes on this machine: decode +9.8% and +15.0% in two order-swapped pairs, output bit-identical",
   "hardware": {
     "gpu": "Tesla V100-SXM2-32GB",
@@ -16,7 +16,7 @@
     "engine": {
       "commit": "fb58e0d",
       "version": "0.1.41",
-      "build": "-DSTRATA_EXPERIMENTAL_SM60=ON -DCMAKE_CUDA_ARCHITECTURES=70 -DSTRATA_GGML_DIR=<llama.cpp 3cf03257>",
+      "build": "-DNOSTROMA_EXPERIMENTAL_SM60=ON -DCMAKE_CUDA_ARCHITECTURES=70 -DNOSTROMA_GGML_DIR=<llama.cpp 3cf03257>",
       "generator": "NMake Makefiles (see README: ninja cannot start a child process in this host's tooling sandbox)",
       "sha256": "5bfb80e584053443904b19e7723faa41b7c97390487a5bb8c9e902d8901fc501"
     }
@@ -39,8 +39,8 @@
     "engine_load_excluded": true
   },
   "arms": {
-    "A": "STRATA_SM70_TABLE=0 (what 0.1.40.3 ran on sm_70)",
-    "B": "STRATA_SM70_TABLE=1 (native_mmvq_il + Volta rows table, expert mode 8, gr_up_fast)"
+    "A": "NOSTROMA_SM70_TABLE=0 (what 0.1.40.3 ran on sm_70)",
+    "B": "NOSTROMA_SM70_TABLE=1 (native_mmvq_il + Volta rows table, expert mode 8, gr_up_fast)"
   },
   "paired_runs": {
     "pair1_A": {"decode_tok_s": 28.16, "prefill_tok_s": 1626.79, "ttft_s": 5.91, "mtp_accept": 0.612, "tokens_per_round": 2.23, "pool_ms_round": 46.548, "host_ms_round": 19.075, "cpu_experts_per_layer": 2.88, "slots": 9203},

@@ -17,8 +17,8 @@
   "engine_prompt_tps": 1523.1,
   "engine_decode_tps": 143.9,
   "log_lines": [
-   "strata serve: prompt 1080 tokens = 0 reused + 1080 read in 709 ms (1523.1 tok/s), 94 generated in 653 ms (143.9 tok/s), drafts accepted 64 of 78, 1 checkpoints",
-   "strata serve: decode expert cache hit rate: 85.6% (45626 hits / 53280 lookups)"
+   "nostroma serve: prompt 1080 tokens = 0 reused + 1080 read in 709 ms (1523.1 tok/s), 94 generated in 653 ms (143.9 tok/s), drafts accepted 64 of 78, 1 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 85.6% (45626 hits / 53280 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand the context better."
  },
@@ -40,9 +40,9 @@
   "engine_prompt_tps": 1723.4,
   "engine_decode_tps": 190.9,
   "log_lines": [
-   "strata serve: conversation cache: parked 1176 tokens in 44.0 ms; parked=1 bytes=254096452 evictions=0 snapshot_bytes=254096452 reused_kv_bytes=0",
-   "strata serve: prompt 1143 tokens = 0 reused + 1143 read in 663 ms (1723.4 tok/s), 97 generated in 508 ms (190.9 tok/s), drafts accepted 66 of 70, 1 checkpoints",
-   "strata serve: decode expert cache hit rate: 93.2% (46505 hits / 49920 lookups)"
+   "nostroma serve: conversation cache: parked 1176 tokens in 44.0 ms; parked=1 bytes=254096452 evictions=0 snapshot_bytes=254096452 reused_kv_bytes=0",
+   "nostroma serve: prompt 1143 tokens = 0 reused + 1143 read in 663 ms (1723.4 tok/s), 97 generated in 508 ms (190.9 tok/s), drafts accepted 66 of 70, 1 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 93.2% (46505 hits / 49920 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand the context of the files mentioned."
  },
@@ -64,9 +64,9 @@
   "engine_prompt_tps": 1750.4,
   "engine_decode_tps": 213.5,
   "log_lines": [
-   "strata serve: conversation cache: parked 1242 tokens in 44.0 ms; parked=2 bytes=509225228 evictions=0 snapshot_bytes=255128776 reused_kv_bytes=0",
-   "strata serve: prompt 1139 tokens = 0 reused + 1139 read in 651 ms (1750.4 tok/s), 94 generated in 440 ms (213.5 tok/s), drafts accepted 65 of 70, 1 checkpoints",
-   "strata serve: decode expert cache hit rate: 95.7% (46380 hits / 48480 lookups)"
+   "nostroma serve: conversation cache: parked 1242 tokens in 44.0 ms; parked=2 bytes=509225228 evictions=0 snapshot_bytes=255128776 reused_kv_bytes=0",
+   "nostroma serve: prompt 1139 tokens = 0 reused + 1139 read in 651 ms (1750.4 tok/s), 94 generated in 440 ms (213.5 tok/s), drafts accepted 65 of 70, 1 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 95.7% (46380 hits / 48480 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand the context better."
  },
@@ -88,9 +88,9 @@
   "engine_prompt_tps": 4659.4,
   "engine_decode_tps": 189.2,
   "log_lines": [
-   "strata serve: conversation cache: parked 1234 tokens in 44.3 ms; parked=3 bytes=764231844 evictions=0 snapshot_bytes=255006616 reused_kv_bytes=0",
-   "strata serve: prompt 4162 tokens = 0 reused + 4162 read in 893 ms (4659.4 tok/s), 84 generated in 444 ms (189.2 tok/s), drafts accepted 54 of 61, 1 checkpoints",
-   "strata serve: decode expert cache hit rate: 95.5% (42647 hits / 44640 lookups)"
+   "nostroma serve: conversation cache: parked 1234 tokens in 44.3 ms; parked=3 bytes=764231844 evictions=0 snapshot_bytes=255006616 reused_kv_bytes=0",
+   "nostroma serve: prompt 4162 tokens = 0 reused + 4162 read in 893 ms (4659.4 tok/s), 84 generated in 444 ms (189.2 tok/s), drafts accepted 54 of 61, 1 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 95.5% (42647 hits / 44640 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand the context better, particularly the CMakeLists.txt file and related files."
  },
@@ -112,9 +112,9 @@
   "engine_prompt_tps": 5376.1,
   "engine_decode_tps": 188.3,
   "log_lines": [
-   "strata serve: conversation cache: parked 4247 tokens in 50.6 ms; parked=4 bytes=1065237772 evictions=0 snapshot_bytes=301005928 reused_kv_bytes=0",
-   "strata serve: prompt 4202 tokens = 0 reused + 4202 read in 782 ms (5376.1 tok/s), 78 generated in 414 ms (188.3 tok/s), drafts accepted 50 of 56, 1 checkpoints",
-   "strata serve: decode expert cache hit rate: 95.6% (39455 hits / 41280 lookups)"
+   "nostroma serve: conversation cache: parked 4247 tokens in 50.6 ms; parked=4 bytes=1065237772 evictions=0 snapshot_bytes=301005928 reused_kv_bytes=0",
+   "nostroma serve: prompt 4202 tokens = 0 reused + 4202 read in 782 ms (5376.1 tok/s), 78 generated in 414 ms (188.3 tok/s), drafts accepted 50 of 56, 1 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 95.6% (39455 hits / 41280 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand the context better."
  },
@@ -136,9 +136,9 @@
   "engine_prompt_tps": 5361.3,
   "engine_decode_tps": 199.9,
   "log_lines": [
-   "strata serve: conversation cache: parked 4281 tokens in 49.1 ms; parked=4 bytes=1112697048 evictions=1 snapshot_bytes=301555728 reused_kv_bytes=0",
-   "strata serve: prompt 4211 tokens = 0 reused + 4211 read in 785 ms (5361.3 tok/s), 60 generated in 300 ms (199.9 tok/s), drafts accepted 37 of 42, 1 checkpoints",
-   "strata serve: decode expert cache hit rate: 97.2% (30339 hits / 31200 lookups)"
+   "nostroma serve: conversation cache: parked 4281 tokens in 49.1 ms; parked=4 bytes=1112697048 evictions=1 snapshot_bytes=301555728 reused_kv_bytes=0",
+   "nostroma serve: prompt 4211 tokens = 0 reused + 4211 read in 785 ms (5361.3 tok/s), 60 generated in 300 ms (199.9 tok/s), drafts accepted 37 of 42, 1 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 97.2% (30339 hits / 31200 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand the context better."
  },
@@ -160,9 +160,9 @@
   "engine_prompt_tps": 5942.8,
   "engine_decode_tps": 181.3,
   "log_lines": [
-   "strata serve: conversation cache: parked 4270 tokens in 49.0 ms; parked=4 bytes=1158940824 evictions=2 snapshot_bytes=301372552 reused_kv_bytes=0",
-   "strata serve: prompt 33130 tokens = 0 reused + 33130 read in 5575 ms (5942.8 tok/s), 119 generated in 656 ms (181.3 tok/s), drafts accepted 75 of 86, 3 checkpoints",
-   "strata serve: decode expert cache hit rate: 94.6% (59045 hits / 62400 lookups)"
+   "nostroma serve: conversation cache: parked 4270 tokens in 49.0 ms; parked=4 bytes=1158940824 evictions=2 snapshot_bytes=301372552 reused_kv_bytes=0",
+   "nostroma serve: prompt 33130 tokens = 0 reused + 33130 read in 5575 ms (5942.8 tok/s), 119 generated in 656 ms (181.3 tok/s), drafts accepted 75 of 86, 3 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 94.6% (59045 hits / 62400 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand the context of the last file (`build-vision/CMakeCache.txt`) and the vision build system it belongs to."
  },
@@ -184,9 +184,9 @@
   "engine_prompt_tps": 6324.0,
   "engine_decode_tps": 183.8,
   "log_lines": [
-   "strata serve: conversation cache: parked 33248 tokens in 160.0 ms; parked=4 bytes=1884158092 evictions=3 snapshot_bytes=980223884 reused_kv_bytes=0",
-   "strata serve: prompt 31518 tokens = 0 reused + 31518 read in 4984 ms (6324.0 tok/s), 89 generated in 484 ms (183.8 tok/s), drafts accepted 56 of 62, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 97.0% (45637 hits / 47040 lookups)"
+   "nostroma serve: conversation cache: parked 33248 tokens in 160.0 ms; parked=4 bytes=1884158092 evictions=3 snapshot_bytes=980223884 reused_kv_bytes=0",
+   "nostroma serve: prompt 31518 tokens = 0 reused + 31518 read in 4984 ms (6324.0 tok/s), 89 generated in 484 ms (183.8 tok/s), drafts accepted 56 of 62, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 97.0% (45637 hits / 47040 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand the context, then examine the last file in detail."
  },
@@ -208,9 +208,9 @@
   "engine_prompt_tps": 6358.6,
   "engine_decode_tps": 150.7,
   "log_lines": [
-   "strata serve: conversation cache: parked 31609 tokens in 131.1 ms; parked=4 bytes=2420189948 evictions=4 snapshot_bytes=837037784 reused_kv_bytes=0",
-   "strata serve: prompt 31617 tokens = 0 reused + 31617 read in 4972 ms (6358.6 tok/s), 256 generated in 1699 ms (150.7 tok/s), drafts accepted 131 of 178, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 94.7% (137670 hits / 145440 lookups)"
+   "nostroma serve: conversation cache: parked 31609 tokens in 131.1 ms; parked=4 bytes=2420189948 evictions=4 snapshot_bytes=837037784 reused_kv_bytes=0",
+   "nostroma serve: prompt 31617 tokens = 0 reused + 31617 read in 4972 ms (6358.6 tok/s), 256 generated in 1699 ms (150.7 tok/s), drafts accepted 131 of 178, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 94.7% (137670 hits / 145440 lookups)"
   ],
   "answer_head": "I can't explain or improve `build-vision/CMakeCache.txt` as a source file, because it is a **generated build artifact**, not part of the project's source code.\n\n### What `build-vision/CMakeCache.txt` is\n\nThis file is automatically created by CMake when you configure a build directory (in this case, "
  },
@@ -232,9 +232,9 @@
   "engine_prompt_tps": 6217.3,
   "engine_decode_tps": 164.9,
   "log_lines": [
-   "strata serve: conversation cache: parked 31872 tokens in 131.2 ms; parked=4 bytes=2959648236 evictions=5 snapshot_bytes=841014016 reused_kv_bytes=0",
-   "strata serve: prompt 130268 tokens = 0 reused + 130268 read in 20953 ms (6217.3 tok/s), 256 generated in 1553 ms (164.9 tok/s), drafts accepted 143 of 182, 6 checkpoints",
-   "strata serve: decode expert cache hit rate: 96.8% (137520 hits / 142080 lookups)"
+   "nostroma serve: conversation cache: parked 31872 tokens in 131.2 ms; parked=4 bytes=2959648236 evictions=5 snapshot_bytes=841014016 reused_kv_bytes=0",
+   "nostroma serve: prompt 130268 tokens = 0 reused + 130268 read in 20953 ms (6217.3 tok/s), 256 generated in 1553 ms (164.9 tok/s), drafts accepted 143 of 182, 6 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 96.8% (137520 hits / 142080 lookups)"
   ],
   "answer_head": "The last file in the repository listing is `build-vision/CMakeFiles/4.2.3/CompilerIdCUDA/tmp/CMakeCUDACompilerId.cudafe1.cpp`.\n\n### What this file does\n\nThis is an **intermediate, auto-generated file** produced by the NVIDIA CUDA compiler (`nvcc`) during CMake's compiler identification phase.\n\n1.  *"
  },
@@ -256,9 +256,9 @@
   "engine_prompt_tps": 6092.4,
   "engine_decode_tps": 190.4,
   "log_lines": [
-   "strata serve: conversation cache: parked 130524 tokens in 462.4 ms; parked=4 bytes=5479600112 evictions=6 snapshot_bytes=2821324428 reused_kv_bytes=0",
-   "strata serve: prompt 130772 tokens = 0 reused + 130772 read in 21465 ms (6092.4 tok/s), 42 generated in 221 ms (190.4 tok/s), drafts accepted 28 of 29, 6 checkpoints",
-   "strata serve: decode expert cache hit rate: 96.0% (20283 hits / 21120 lookups)"
+   "nostroma serve: conversation cache: parked 130524 tokens in 462.4 ms; parked=4 bytes=5479600112 evictions=6 snapshot_bytes=2821324428 reused_kv_bytes=0",
+   "nostroma serve: prompt 130772 tokens = 0 reused + 130772 read in 21465 ms (6092.4 tok/s), 42 generated in 221 ms (190.4 tok/s), drafts accepted 28 of 29, 6 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 96.0% (20283 hits / 21120 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand what we're working with."
  },
@@ -280,9 +280,9 @@
   "engine_prompt_tps": 6088.3,
   "engine_decode_tps": 158.6,
   "log_lines": [
-   "strata serve: conversation cache: parked 130814 tokens in 406.9 ms; parked=4 bytes=7325154776 evictions=7 snapshot_bytes=2825778548 reused_kv_bytes=0",
-   "strata serve: prompt 130804 tokens = 0 reused + 130804 read in 21485 ms (6088.3 tok/s), 256 generated in 1614 ms (158.6 tok/s), drafts accepted 132 of 168, 6 checkpoints",
-   "strata serve: decode expert cache hit rate: 98.1% (138915 hits / 141600 lookups)"
+   "nostroma serve: conversation cache: parked 130814 tokens in 406.9 ms; parked=4 bytes=7325154776 evictions=7 snapshot_bytes=2825778548 reused_kv_bytes=0",
+   "nostroma serve: prompt 130804 tokens = 0 reused + 130804 read in 21485 ms (6088.3 tok/s), 256 generated in 1614 ms (158.6 tok/s), drafts accepted 132 of 168, 6 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 98.1% (138915 hits / 141600 lookups)"
   ],
   "answer_head": "The last file shown is `build-vision/CMakeFiles/4.2.3/CompilerIdCUDA/tmp/CMakeCUDACompilerId.cudafe1.cpp`.\n\n### What this file does\n\nThis is an **intermediate artifact generated by the NVIDIA CUDA compiler (`nvcc`)** during CMake's compiler identification phase.\n\n1.  **Origin**: When CMake configure"
  }

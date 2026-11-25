@@ -3,7 +3,7 @@
 // same class: options, operands, spellings and quoting. The last block is the commands people really type, which must keep running unasked.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isReadOnlyShell, maskQuotes, readOnlyCommandNames } from '../server/agent/plugins/strata-gate.mjs';
+import { isReadOnlyShell, maskQuotes, readOnlyCommandNames } from '../server/agent/plugins/nostroma-gate.mjs';
 
 const denied = (list) => { for (const c of list) assert.equal(isReadOnlyShell(c), false, `must ask: ${c}`); };
 const allowed = (list) => { for (const c of list) assert.equal(isReadOnlyShell(c), true, `must run unasked: ${c}`); };

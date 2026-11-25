@@ -74,7 +74,7 @@ BASE_SLOTTED_MIB = {("intel", "flash-next"): 4500, ("cuda", "flash-next"): 4990,
                     ("hip", "flash-next"): 3900}      # (vendor, model family): the A750, the CUDA engine, and a discrete AMD card (R9700, see the HIP lines below)
 SLOT_SLOTTED_MIB = 2.22
 # CUDA, 8 GB mimic (7942 MiB left), 2 requests at 4K: a start the plan counted 177 MiB over the one-slot limit loaded, sized a 336-slot cache with the reserve lowered
-# to 424 MiB ("a working cache needs 263"), had 59 MiB free, and aborted at its first request ("ggml-cuda (strata mmq): out of memory").  The threshold for request
+# to 424 MiB ("a working cache needs 263"), had 59 MiB free, and aborted at its first request ("ggml-cuda (nostroma mmq): out of memory").  The threshold for request
 # slots on CUDA is the working cache the engine itself asks for: 263 slots of the largest blob (2.54 MiB with the IQ3_S pack).
 WORKING_CACHE_MIB = {"cuda": 263 * 2.54, "hip": 263 * 2.54}      # (the same engine code sizes the cache on HIP)
 SINGLE_MEASURED_VENDORS = ("cuda", "hip")                          # a single request is priced from the measured base on these (the draft layer, the head and the sessions are the same buffers)
@@ -334,7 +334,7 @@ def fit_context(model: str, vram_gb: float, ctx: int, kv: str = "int8", reserve_
 
 # ----- a start that ended because a card ran out of memory --------------------------------------------------------------------------------------------------
 # The engine's own lines for it (src/program/generate.cpp, serve): the cache has no room, the prompt path or a weight arena does not fit, the card has too
-# little free VRAM.  They start with "strata generate:" / "strata serve:", which the launcher's generic cause search skips (those logs are chatty), and the words
+# little free VRAM.  They start with "nostroma generate:" / "nostroma serve:", which the launcher's generic cause search skips (those logs are chatty), and the words
 # are not the generic "error|failed" ones, so the last such line used to be the picture reader's harmless "ggml_cuda_init: failed to initialize CUDA: no
 # CUDA-capable device" (it runs on the processor when the cards are full).  One list, so the launcher's final line and the server's retry agree.
 ENGINE_STOP_PATTERNS = (
@@ -346,13 +346,13 @@ ENGINE_STOP_PATTERNS = (
     re.compile(r"weight arena (does not fit|failed)|cudaMalloc\(\d+\) for the weight arena failed", re.I),
     re.compile(r"(session state|head|native dense projections|weights).*(out of memory|does not fit|failed)", re.I),
 )
-ENGINE_LINE = re.compile(r"^(?:\[strata\]\s*)?strata (?:generate|serve|mtp|dflash2|prefill): ", re.I)
+ENGINE_LINE = re.compile(r"^(?:\[nostroma\]\s*)?nostroma (?:generate|serve|mtp|dflash2|prefill): ", re.I)
 # a line that only reports what the walk did, never why a start stopped
 _NOT_A_STOP = re.compile(r"short of GPU memory: |trying a smaller|trying \d+ of \d+ slots|a card this small|LOW: ", re.I)
 
 
 def engine_stop_reason(lines) -> str | None:
-    """The engine's own last line saying a card was out of memory, without its "strata generate: " prefix; None when the start stopped for another reason.
+    """The engine's own last line saying a card was out of memory, without its "nostroma generate: " prefix; None when the start stopped for another reason.
     `lines` are the log lines of ONE start (the launcher passes only what this attempt wrote)."""
     for raw in reversed([str(x).strip() for x in lines or []]):
         if not ENGINE_LINE.match(raw) or _NOT_A_STOP.search(raw):

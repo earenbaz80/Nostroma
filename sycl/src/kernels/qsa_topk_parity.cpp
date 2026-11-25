@@ -12,8 +12,8 @@
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "strata/kernels/qsa.hpp"
-#include "strata/kernels/qsa_select.hpp"
+#include "nostroma/kernels/qsa.hpp"
+#include "nostroma/kernels/qsa_select.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -23,7 +23,7 @@
 #include <random>
 #include <vector>
 
-namespace k = strata::kernels;
+namespace k = nostroma::kernels;
 
 namespace {
 void ck(dpct::err0 e, const char *w) {

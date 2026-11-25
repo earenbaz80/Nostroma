@@ -1,11 +1,11 @@
 #include "b60_layout_state.hpp"
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 // Private phase-boundary adapter for the measured same-payload layouts.
 #include <sycl/sycl.hpp>
 #include <cstdint>
 #include <cstdio>
 #include <stdexcept>
-namespace strata::kernels {
+namespace nostroma::kernels {
 template<int B> inline int raw_to_packed(int i,int blocks){
  const int row=i/(blocks*B),kb=(i/B)%blocks,x=i%B,base=kb*16*B;
  if constexpr(B==56){
@@ -100,7 +100,7 @@ void b60_weight_permute_many(void* const* matrices,int count,int rows,int blocks
 }
 
 #include <atomic>
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {std::atomic<bool> b60_packed_state{false};thread_local bool b60_main_actor_state=false;}
 bool b60_weights_packed(){return b60_packed_state.load(std::memory_order_acquire);}
 void b60_set_weights_packed(bool v){b60_packed_state.store(v,std::memory_order_release);}
@@ -113,7 +113,7 @@ void b60_set_main_actor(bool v){b60_main_actor_state=v;}
 #include <map>
 #include <mutex>
 #include <utility>
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 struct B60CachedWeight {void* allocation;void* packed;int rows,cols,device;};
 std::mutex b60_cache_mutex;
@@ -187,7 +187,7 @@ void b60_release_weight_cache(const void* original,int kind,int device,void* str
 
 // Independent registry: existing cache APIs, raw pointers and object ABI stay intact.
 #include "b60_mtp_q8_cache.hpp"
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 struct B60MtpQ8Cache {void* allocation;void* packed;int rows,cols,device;unsigned token_mask;};
 std::mutex b60_mtp_q8_mutex;
@@ -251,7 +251,7 @@ void b60_release_mtp_q8_cache(const void* raw,int device,void* stream){
 // pinned mirrors. Convert only mirror groups into one reusable device arena.
 // Neither the host mirror nor the model file is modified. The two ordered nodes
 // finish every copy before publishing new pointers to the unchanged FP readers.
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 struct SingleExpertStage {uint8_t* data=nullptr;sycl::queue* queue=nullptr;size_t stride=0;int cap=0;uintptr_t begin=0,end=0;};
 SingleExpertStage single_stage;
@@ -304,8 +304,8 @@ void b60_exchange_single_expert(uint8_t* device,uint8_t* mirror,int gu,size_t up
     sycl::get_pointer_type(mirror,q.get_context())!=sycl::usm::alloc::host||
     sycl::get_pointer_device(device,q.get_context())!=q.get_device())
   throw std::invalid_argument("B60 packed mirror exchange ownership");
- const bool pack16=[] {const char* p=strata::env("NOSTROMA_PRIVATE_GU_XXS_PACKED");return p&&p[0]=='1';}();
- const bool pack29=[] {const char* p=strata::env("NOSTROMA_PRIVATE_GU_IQ1_PACKED");return p&&p[0]=='1';}();
+ const bool pack16=[] {const char* p=nostroma::env("NOSTROMA_PRIVATE_GU_XXS_PACKED");return p&&p[0]=='1';}();
+ const bool pack29=[] {const char* p=nostroma::env("NOSTROMA_PRIVATE_GU_IQ1_PACKED");return p&&p[0]=='1';}();
  // Own a contiguous raw mirror word: all PCIe accesses coalesce. The four
  // scattered resident bytes are in VRAM and belong only to this work-item.
  // The bijection permits in-place exchange without a temporary expert blob.
@@ -327,8 +327,8 @@ void b60_exchange_single_expert(uint8_t* device,uint8_t* mirror,int gu,size_t up
 void b60_stage_single_experts(unsigned long long* ptrs,const int32_t* count,int cap,int gu,size_t up,size_t down,size_t bytes,void* stream){
  const auto s=single_stage;auto& q=*static_cast<sycl::queue*>(stream);
  if(!s.data||!s.begin||!q.is_in_order()||q.get_device()!=s.queue->get_device()||cap<1||cap>s.cap||bytes>s.stride||bytes%4||down+460800!=bytes||up*2!=down||!(gu==22||gu==16||gu==29))throw std::invalid_argument("B60 single staging plan/geometry");
- const bool pack16=[] {const char* p=strata::env("NOSTROMA_PRIVATE_GU_XXS_PACKED");return p&&p[0]=='1';}();
- const bool pack29=[] {const char* p=strata::env("NOSTROMA_PRIVATE_GU_IQ1_PACKED");return p&&p[0]=='1';}();
+ const bool pack16=[] {const char* p=nostroma::env("NOSTROMA_PRIVATE_GU_XXS_PACKED");return p&&p[0]=='1';}();
+ const bool pack29=[] {const char* p=nostroma::env("NOSTROMA_PRIVATE_GU_IQ1_PACKED");return p&&p[0]=='1';}();
  // Each 16 KiB stripe owns disjoint words. All stripes see the original ptrs.
  const size_t stripes=(bytes+16383)/16384;
  q.parallel_for<B60SingleExpertStageCopy>(sycl::nd_range<2>(sycl::range<2>(size_t(cap),stripes*256),sycl::range<2>(1,256)),[=](sycl::nd_item<2> it){

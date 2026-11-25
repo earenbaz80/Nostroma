@@ -28,7 +28,7 @@ TOPICS = ["how a hash map works: hashing, collisions, resizing, complexity",
 
 def one(i, out, t0):
     """One streamed request: the time to its first token and its own decode rate (the server's timings)."""
-    body = {"model": "strata", "max_tokens": 300, "temperature": 0, "reasoning_effort": "none", "stream": True,
+    body = {"model": "nostroma", "max_tokens": 300, "temperature": 0, "reasoning_effort": "none", "stream": True,
             "stream_options": {"include_usage": True},
             "messages": [{"role": "user", "content": f"[{uuid.uuid4().hex[:8]}] Explain in detail {TOPICS[i % 8]}. "
                                                      "About 220 words."}]}

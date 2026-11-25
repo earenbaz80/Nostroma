@@ -4,7 +4,7 @@
 // ggml/src/ggml-quants.c at 3cf03257f219afbe7334045ff7c6a06ac68c627d, Copyright (c) 2023-2026 The ggml authors, MIT).  Q8_0 / Q8_1 round half
 // away from zero (roundf) here; ggml's AVX / AVX2 quantizers round half to even (x86/act_avx*.cpp).  Q8_K is ggml's scalar code on every x86
 // flavour, and its scale is -127/max, not -128/max (the comment in the loop says why): do not "fix" that.
-#include "strata/quant/act.hpp"
+#include "nostroma/quant/act.hpp"
 
 #include <cassert>
 
@@ -15,10 +15,10 @@
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
-namespace strata::quant {
+namespace nostroma::quant {
 namespace {
 
-void q8_0_ref(const float* STRATA_RESTRICT x, block_q8_0* STRATA_RESTRICT y, int64_t k) {
+void q8_0_ref(const float* NOSTROMA_RESTRICT x, block_q8_0* NOSTROMA_RESTRICT y, int64_t k) {
     assert(k % QK8_0 == 0);
     const int nb = k / QK8_0;
 
@@ -43,7 +43,7 @@ void q8_0_ref(const float* STRATA_RESTRICT x, block_q8_0* STRATA_RESTRICT y, int
     }
 }
 
-void q8_1_ref(const float* STRATA_RESTRICT x, block_q8_1* STRATA_RESTRICT y, int64_t k) {
+void q8_1_ref(const float* NOSTROMA_RESTRICT x, block_q8_1* NOSTROMA_RESTRICT y, int64_t k) {
     assert(QK8_1 == 32);
     assert(k % QK8_1 == 0);
     const int nb = k / QK8_1;
@@ -78,7 +78,7 @@ void q8_1_ref(const float* STRATA_RESTRICT x, block_q8_1* STRATA_RESTRICT y, int
     }
 }
 
-void q8_K_ref(const float* STRATA_RESTRICT x, block_q8_K* STRATA_RESTRICT y, int64_t k) {
+void q8_K_ref(const float* NOSTROMA_RESTRICT x, block_q8_K* NOSTROMA_RESTRICT y, int64_t k) {
     assert(k % QK_K == 0);
     const int64_t nb = k / QK_K;
 
@@ -117,7 +117,7 @@ void q8_K_ref(const float* STRATA_RESTRICT x, block_q8_K* STRATA_RESTRICT y, int
     }
 }
 
-void q4_0_ref(const float* STRATA_RESTRICT x, block_q4_0* STRATA_RESTRICT y, int64_t k) {
+void q4_0_ref(const float* NOSTROMA_RESTRICT x, block_q4_0* NOSTROMA_RESTRICT y, int64_t k) {
     static const int qk = QK4_0;
 
     assert(k % qk == 0);
@@ -171,4 +171,4 @@ const ActKernel kGenericAct[] = {
 
 ActTable generic_act_table() noexcept { return {kGenericAct, 3}; }
 
-}  // namespace strata::quant
+}  // namespace nostroma::quant

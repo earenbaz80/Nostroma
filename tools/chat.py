@@ -22,7 +22,7 @@ from highlight import StreamHighlighter
 
 
 def stream(url, messages, think, max_tokens):
-    body = {"model": "strata", "messages": messages, "stream": True, "max_tokens": max_tokens,
+    body = {"model": "nostroma", "messages": messages, "stream": True, "max_tokens": max_tokens,
             "reasoning_effort": think}
     req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=3600) as r:

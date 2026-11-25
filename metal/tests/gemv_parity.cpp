@@ -4,7 +4,7 @@
 //   gemv_parity [--nin A,B,C]           parity: every format, n_in 2560/640/10240 (or --nin), 1..8 tokens
 //   gemv_parity --bench [--pack Q2_0|IQ3_XXS] [--ntok N] [--all]   speed on the pack's shapes (best tile per shape)
 //   gemv_parity --one TYPE NIN NOUT [--ntok N]                      sweep one shape
-//   GEMV_F16=1 gemv_parity --one TYPE NIN NOUT [--ntok N]           the fp16 tiles (STRATA_METAL_F16) against the fp32 gemv
+//   GEMV_F16=1 gemv_parity --one TYPE NIN NOUT [--ntok N]           the fp16 tiles (NOSTROMA_METAL_F16) against the fp32 gemv
 #include "gguf_lite.h"
 #include "mtl_rt.h"
 #include "ref_quant.h"
@@ -101,7 +101,7 @@ int main(int argc, char** argv) {
         } else { std::fprintf(stderr, "unknown argument %s\n", a.c_str()); return 2; }
     }
     mtl::Context cx;
-    const int lib = cx.compile({"quant.metal", "units.metal", "gemv.metal"}, std::getenv("GEMV_F16") ? "#define STRATA_METAL_F16 1\n" : "");
+    const int lib = cx.compile({"quant.metal", "units.metal", "gemv.metal"}, std::getenv("GEMV_F16") ? "#define NOSTROMA_METAL_F16 1\n" : "");
     std::printf("device %s\n", cx.device_name().c_str());
     const int MAXT = 8;
     mtl::Pipeline pprep = cx.pipeline(lib, "xprep");

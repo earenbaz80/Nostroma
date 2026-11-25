@@ -2,19 +2,19 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
 index 995765a..4a7589b 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -633,0 +634,5 @@ if(STRATA_ENABLE_CUDA OR STRATA_ENABLE_HIP)
+@@ -633,0 +634,5 @@ if(NOSTROMA_ENABLE_CUDA OR NOSTROMA_ENABLE_HIP)
 +    add_executable(hip_qsa_decode_repeat tests/hip/qsa_decode_repeat.cpp)
-+    target_link_libraries(hip_qsa_decode_repeat PRIVATE strata_kernels strata_hip_runtime)
++    target_link_libraries(hip_qsa_decode_repeat PRIVATE nostroma_kernels nostroma_hip_runtime)
 +    add_test(NAME hip_qsa_decode_repeat COMMAND hip_qsa_decode_repeat)
 +    set_tests_properties(hip_qsa_decode_repeat PROPERTIES TIMEOUT 120)
-+    list(APPEND _strata_hip_tests hip_qsa_decode_repeat)
-@@ -1376,0 +1382,6 @@ if(STRATA_NATIVE_EXPERTS)
++    list(APPEND _nostroma_hip_tests hip_qsa_decode_repeat)
+@@ -1376,0 +1382,6 @@ if(NOSTROMA_NATIVE_EXPERTS)
 +    add_executable(hip_prefill_gather_bytes tests/hip/prefill_gather_bytes.cpp)
-+    target_include_directories(hip_prefill_gather_bytes PRIVATE "${_strata_gg}/include")
-+    target_link_libraries(hip_prefill_gather_bytes PRIVATE strata_mmq strata_hip_runtime)
++    target_include_directories(hip_prefill_gather_bytes PRIVATE "${_nostroma_gg}/include")
++    target_link_libraries(hip_prefill_gather_bytes PRIVATE nostroma_mmq nostroma_hip_runtime)
 +    add_test(NAME hip_prefill_gather_bytes COMMAND hip_prefill_gather_bytes)
 +    set_tests_properties(hip_prefill_gather_bytes PROPERTIES TIMEOUT 120)
-+    list(APPEND _strata_hip_tests hip_prefill_gather_bytes)
++    list(APPEND _nostroma_hip_tests hip_prefill_gather_bytes)
 diff --git a/src/kernels/cuda/iq_kernels.cu b/src/kernels/cuda/iq_kernels.cu
 index 1c20986..19718c4 100644
 --- a/src/kernels/cuda/iq_kernels.cu
@@ -52,13 +52,13 @@ index ce8e004..08d2edd 100644
 +                // One file per request (overwritten); a serialized caller can read it after DONE and
 +                // feed a fixed continuation to compare distributions without reloading the model.
 +                if (first_window) {
-+                    if (const char* fl = std::getenv("STRATA_DUMP_FIRST_LOGITS")) {
++                    if (const char* fl = std::getenv("NOSTROMA_DUMP_FIRST_LOGITS")) {
 +                        std::vector<float> row((size_t) ver.vocab());
 +                        std::FILE* f = ver.copy_logits(0, row.data()) ? std::fopen(fl, "wb") : nullptr;
 +                        const bool ok = f && std::fwrite(row.data(), sizeof(float), row.size(), f) == row.size();
 +                        const bool closed = f && std::fclose(f) == 0;
 +                        if (!ok || !closed) {
-+                            std::fprintf(stderr, "strata serve: STRATA_DUMP_FIRST_LOGITS: cannot write %s\n", fl);
++                            std::fprintf(stderr, "nostroma serve: NOSTROMA_DUMP_FIRST_LOGITS: cannot write %s\n", fl);
 +                            std::printf("ERR cannot write diagnostic logits\n");
 +                            return 1;
 +                        }
@@ -72,7 +72,7 @@ index 0000000..f472adf
 @@ -0,0 +1,98 @@
 +// Exact byte/guard test for the grouped gather used by native MMQ prefill.
 +// Arbitrary byte patterns are deliberate: gathering must preserve every bit, independent of quantized values.
-+#include "strata/prefill/moe_mmq.hpp"
++#include "nostroma/prefill/moe_mmq.hpp"
 +#include "ggml.h"
 +#include <hip/hip_runtime.h>
 +
@@ -85,7 +85,7 @@ index 0000000..f472adf
 +#include <vector>
 +
 +namespace {
-+namespace mmq = strata::prefill::mmq;
++namespace mmq = nostroma::prefill::mmq;
 +void check(hipError_t code) {
 +    if (code != hipSuccess) throw std::runtime_error(hipGetErrorString(code));
 +}
@@ -175,8 +175,8 @@ index 0000000..f1440e8
 +++ b/tests/hip/qsa_decode_repeat.cpp
 @@ -0,0 +1,74 @@
 +// A fresh short prompt must not depend on bytes left in attention scratch by an earlier request.
-+#include "strata/kernels/qsa.hpp"
-+#include "strata/kernels/qsa_decode_attn.hpp"
++#include "nostroma/kernels/qsa.hpp"
++#include "nostroma/kernels/qsa_decode_attn.hpp"
 +#include <hip/hip_runtime.h>
 +#include <algorithm>
 +#include <cmath>
@@ -185,7 +185,7 @@ index 0000000..f1440e8
 +#include <stdexcept>
 +#include <vector>
 +
-+namespace k = strata::kernels;
++namespace k = nostroma::kernels;
 +namespace {
 +void check(hipError_t code) { if (code != hipSuccess) throw std::runtime_error(hipGetErrorString(code)); }
 +struct Buffer {

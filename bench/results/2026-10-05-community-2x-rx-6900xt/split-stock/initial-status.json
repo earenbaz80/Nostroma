@@ -1,6 +1,6 @@
 {
-  "service": "strata",
-  "model": "strata-split",
+  "service": "nostroma",
+  "model": "nostroma-split",
   "loaded": true,
   "auto_load": true,
   "structured_output": {

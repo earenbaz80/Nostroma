@@ -1,12 +1,12 @@
-// src/prefill/kernels.cu - see include/strata/prefill/kernels.hpp.
-#include "strata/prefill/kernels.hpp"
-#include "strata/env.hpp"
-#include "strata/prefill/gdn_chunk.hpp"
-#include "strata/prefill/gdn_probe.hpp"
-#include "strata/kernels/mrope.hpp"
-#include "strata/kernels/gfx_arch.hpp"
-#include "strata/kernels/router_top10.hpp"
-#include "strata/core/emulate.hpp"
+// src/prefill/kernels.cu - see include/nostroma/prefill/kernels.hpp.
+#include "nostroma/prefill/kernels.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/prefill/gdn_chunk.hpp"
+#include "nostroma/prefill/gdn_probe.hpp"
+#include "nostroma/kernels/mrope.hpp"
+#include "nostroma/kernels/gfx_arch.hpp"
+#include "nostroma/kernels/router_top10.hpp"
+#include "nostroma/core/emulate.hpp"
 
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
@@ -19,15 +19,15 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "strata/core/geometry.hpp"
+#include "nostroma/core/geometry.hpp"
 
-namespace strata::prefill {
+namespace nostroma::prefill {
 namespace {
 
-constexpr int N = strata::core::kCompiledGeometry.n_embd, HC = strata::core::kCompiledGeometry.hc, D = N * HC, LR = strata::core::kCompiledGeometry.hc_lr;
-constexpr int KU = strata::core::kCompiledGeometry.n_expert_used;   // routed experts per token (10 for Flash-Next)
-constexpr int64_t FFC = strata::core::kCompiledGeometry.n_ff;   // the routed (and shared) expert width: 640 for Flash-Next
-constexpr int S = strata::core::kCompiledGeometry.ssm_state_size, HK = strata::core::kCompiledGeometry.ssm_k_heads, HV = strata::core::kCompiledGeometry.ssm_v_heads, C = strata::core::kCompiledGeometry.ssm_conv_channels;
+constexpr int N = nostroma::core::kCompiledGeometry.n_embd, HC = nostroma::core::kCompiledGeometry.hc, D = N * HC, LR = nostroma::core::kCompiledGeometry.hc_lr;
+constexpr int KU = nostroma::core::kCompiledGeometry.n_expert_used;   // routed experts per token (10 for Flash-Next)
+constexpr int64_t FFC = nostroma::core::kCompiledGeometry.n_ff;   // the routed (and shared) expert width: 640 for Flash-Next
+constexpr int S = nostroma::core::kCompiledGeometry.ssm_state_size, HK = nostroma::core::kCompiledGeometry.ssm_k_heads, HV = nostroma::core::kCompiledGeometry.ssm_v_heads, C = nostroma::core::kCompiledGeometry.ssm_conv_channels;
 
 __device__ __forceinline__ float warp_sum(float v) {
 #pragma unroll
@@ -44,7 +44,7 @@ __device__ __forceinline__ uint16_t bf(float f) {
     u += 0x7fffu + ((u >> 16) & 1u);
     return (uint16_t) (u >> 16);
 }
-// The BF16 GEMMs' second operand (STRATA_PREFILL_BF16X2): what the BF16 image `hi` left out of f, itself in BF16.
+// The BF16 GEMMs' second operand (NOSTROMA_PREFILL_BF16X2): what the BF16 image `hi` left out of f, itself in BF16.
 // W.hi + W.lo carries ~16 mantissa bits of the activation - the decode path's FP32 x to within ~1e-5.
 __device__ __forceinline__ uint16_t bf_lo(float f, uint16_t hi) { return bf(f - __uint_as_float((uint32_t) hi << 16)); }
 __device__ __forceinline__ float sigm(float x) { return 1.0f / (1.0f + __expf(-x)); }
@@ -52,7 +52,7 @@ __device__ __forceinline__ uint16_t hf(float f) { return __half_as_ushort(__floa
 // A SwiGLU product for an FP16 GEMM: saturated, so a token with a massive activation cannot turn into inf and then
 // NaN in the down projection (decode's q8_1 has room to ~8e6; FP16 ends at 65504).  A NaN stays NaN (fminf/fmaxf
 // would make it -65504 and hide where it came from); finite values below 65504 round exactly as before.
-// STRATA_F16_RANGE=1 (set_f16_range): what reaches FP16's range on this device - the largest |value| the activation
+// NOSTROMA_F16_RANGE=1 (set_f16_range): what reaches FP16's range on this device - the largest |value| the activation
 // images converted (hf_sat is their one funnel) and how many were beyond 65504 or NaN; W and Y are counted in gemm.cu.
 // Off, the cost is one flag read per value.  The max is kept as float bits (positive floats order as unsigned ints),
 // and a thread takes the atomic only when it beats the value it read, so the atomics stop once the max has settled.
@@ -209,7 +209,7 @@ __global__ void __launch_bounds__(256) gr_write_norm_rs_kernel(float* __restrict
         if (xn16_lo) xn16_lo[xo + d] = bf_lo(x, h);
     }
 }
-// S23 (opt-in STRATA_CVEC_FUSE=1): a steered layer's FFN write, its control vector and the next half's norm in one
+// S23 (opt-in NOSTROMA_CVEC_FUSE=1): a steered layer's FFN write, its control vector and the next half's norm in one
 // pass over R (was gr_write + cvec_apply + gr_norm_rs: three).  The write is gr_write_kernel's, the vector
 // cvec_kernel's (the same per-thread dot order over d = tid + 256 k, the same two-level xor reduction), the norm
 // gr_norm_rs_kernel's (the same ss order and block_sum): the same bits.
@@ -363,7 +363,7 @@ __global__ void gdn_conv_tiled_kernel(const float* __restrict__ hist, const floa
         v0 = v1; v1 = v2; v2 = x;
     }
 }
-// Aurora (S23, opt-in STRATA_GDN_CONVL2=1): gdn_conv_tiled_kernel with gdn_l2_kernel folded in.  A block's 128 threads
+// Aurora (S23, opt-in NOSTROMA_GDN_CONVL2=1): gdn_conv_tiled_kernel with gdn_l2_kernel folded in.  A block's 128 threads
 // are the 128 channels of one head, so for the q / k heads (block < 2 HK) the norm's sum of squares is the block's:
 // the same warp_sum, the same four partials added in the same order, the same v * rsqrtf(ss + eps) on the same
 // stored value - the same bits, without writing h and reading it back (16 tokens per round).
@@ -403,7 +403,7 @@ __global__ void gdn_conv_l2_kernel(const float* __restrict__ hist, const float* 
         __syncthreads();
     }
 }
-// STRATA_GDN_CONVL2=2: the conv, SiLU and q / k L2 norm in ONE pass, a warp per (head, run of CONVW_TOK tokens): a lane owns
+// NOSTROMA_GDN_CONVL2=2: the conv, SiLU and q / k L2 norm in ONE pass, a warp per (head, run of CONVW_TOK tokens): a lane owns
 // four consecutive channels of the head's 128 (a float4 each way), walks the tokens keeping the three previous inputs in
 // registers, and the head's sum of squares is one 5-step warp reduction a token - no shared memory, no barrier, h written
 // once, normalised.  The conv + SiLU value is the expression of gdn_conv_tiled_kernel (same bits); the sum of squares is
@@ -483,7 +483,7 @@ constexpr int RG = 4, RPG = S / RG;
 constexpr int CB = 32, NCB = S / CB;  // value columns per block kernel / blocks per head
 // v100/gdn-chunk: Volta-only (sm_70), inside the experimental build.  Main's recurrence kernels above are
 // untouched for every other architecture; the chain-split is dispatched only when the device is cc 7.0.
-#if defined(STRATA_EXPERIMENTAL_SM60)
+#if defined(NOSTROMA_EXPERIMENTAL_SM60)
 // v100/gdn-chunk: the same recurrence with WARP-LOCAL reductions - no __syncthreads at all.  gdn_rec_cols_*'
 // per-token shape is two cross-warp reductions (k^T W and q^T W) behind two barriers each (six barriers per
 // token in the pipelined kernel); here a warp owns 8 columns and the 4 row-groups are lanes within the warp,
@@ -639,7 +639,7 @@ __global__ void __launch_bounds__(CB * RG) gdn_rec_cols_kernel(float* __restrict
 }
 // gdn_rec_cols_kernel with the next token's inputs (q/k rows, v, gate, beta) loaded into registers while this token
 // computes (software pipelining).  The same arithmetic in the same order: the same bits, and the same CB-column split.
-// STRATA_GDN_PIPELINE=0: gdn_rec_cols_kernel.
+// NOSTROMA_GDN_PIPELINE=0: gdn_rec_cols_kernel.
 __global__ void __launch_bounds__(CB * RG) gdn_rec_cols_pipe_kernel(float* __restrict__ state, const float* __restrict__ h,
                                                                       const float* __restrict__ gate,
                                                                       const float* __restrict__ beta,
@@ -700,8 +700,8 @@ __global__ void __launch_bounds__(CB * RG) gdn_rec_cols_pipe_kernel(float* __res
 // accumulators each.  The chain is the recurrence's per-token floor (a 32-step dependent FFMA chain is ~128
 // cycles before the barriers); the split keeps the load pattern, the barriers and the (S, h_v, S) state
 // layout untouched.  FP32-level, NOT bit-exact - the four partial sums group the 32 products differently -
-// so it is opt-in by measured benefit (STRATA_GDN_REC_WARP=2; gdn_chunk_parity bounds the error).
-#if defined(STRATA_EXPERIMENTAL_SM60)
+// so it is opt-in by measured benefit (NOSTROMA_GDN_REC_WARP=2; gdn_chunk_parity bounds the error).
+#if defined(NOSTROMA_EXPERIMENTAL_SM60)
 __global__ void __launch_bounds__(CB * RG) gdn_rec_cols_pipe_fast_kernel(float* __restrict__ state,
                                                                         const float* __restrict__ h,
                                                                         const float* __restrict__ gate,
@@ -772,33 +772,33 @@ __global__ void __launch_bounds__(CB * RG) gdn_rec_cols_pipe_fast_kernel(float* 
 // one of a token orders every read of rkv before the next token's writes, the next token's first one every read of ro
 // before the writes after it.  64 blocks instead of 192.  Per value head and column the same arithmetic in the same
 // order: the same bits (src/prefill/gdn_rec_parity.cu checks them and times the variants: 1.41x on a 4080 Super).
-// sm_80+ cards that hold its 64 blocks at once (gdn_keyhead_ok); STRATA_GDN_KEYHEAD=0: gdn_rec_cols_pipe_kernel.
+// sm_80+ cards that hold its 64 blocks at once (gdn_keyhead_ok); NOSTROMA_GDN_KEYHEAD=0: gdn_rec_cols_pipe_kernel.
 #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
-#define STRATA_GDN_CP_ASYNC 0   // Turing builds: plain copies (never launched there, see gdn_keyhead_ok)
+#define NOSTROMA_GDN_CP_ASYNC 0   // Turing builds: plain copies (never launched there, see gdn_keyhead_ok)
 #else
-#define STRATA_GDN_CP_ASYNC 1
+#define NOSTROMA_GDN_CP_ASYNC 1
 #endif
 __device__ __forceinline__ void gdn_cp4(float* smem, const float* gmem) {
-#if STRATA_GDN_CP_ASYNC
+#if NOSTROMA_GDN_CP_ASYNC
     asm volatile("cp.async.ca.shared.global [%0], [%1], 4;\n" ::"r"((unsigned) __cvta_generic_to_shared(smem)), "l"(gmem));
 #else
     *smem = *gmem;
 #endif
 }
 __device__ __forceinline__ void gdn_cp16(float* smem, const float* gmem) {
-#if STRATA_GDN_CP_ASYNC
+#if NOSTROMA_GDN_CP_ASYNC
     asm volatile("cp.async.cg.shared.global [%0], [%1], 16;\n" ::"r"((unsigned) __cvta_generic_to_shared(smem)), "l"(gmem));
 #else
     *reinterpret_cast<float4*>(smem) = *reinterpret_cast<const float4*>(gmem);
 #endif
 }
 __device__ __forceinline__ void gdn_cp_commit() {
-#if STRATA_GDN_CP_ASYNC
+#if NOSTROMA_GDN_CP_ASYNC
     asm volatile("cp.async.commit_group;\n" ::);
 #endif
 }
 __device__ __forceinline__ void gdn_cp_wait_prev() {   // every group but the newest has landed
-#if STRATA_GDN_CP_ASYNC
+#if NOSTROMA_GDN_CP_ASYNC
     asm volatile("cp.async.wait_group 1;\n" ::);
 #endif
 }
@@ -904,7 +904,7 @@ __global__ void __launch_bounds__(CB * RG) gdn_rec_kh_kernel(float* __restrict__
 // 1.28-1.31x / 1.28-1.30x at 39 to 47, 1.53-1.57x / 1.54-1.55x at 32 to 38.  Per call, from the current device (a
 // layer split can mix cards).
 bool gdn_keyhead_ok() {
-    static const bool off = [] { const char* v = strata::env("NOSTROMA_GDN_KEYHEAD"); return v != nullptr && std::atoi(v) == 0; }();
+    static const bool off = [] { const char* v = nostroma::env("NOSTROMA_GDN_KEYHEAD"); return v != nullptr && std::atoi(v) == 0; }();
     if (off) return false;
     static int known[64] = {};   // per device: 0 not asked yet, 1 yes, 2 no
     int dev = 0;
@@ -921,7 +921,7 @@ bool gdn_keyhead_ok() {
     }
     return known[dev] == 1;
 }
-// STRATA_GDN_CHUNKED=1 (opt-in): the recurrence in chunks of GCH tokens (the WY form of the gated delta rule, as
+// NOSTROMA_GDN_CHUNKED=1 (opt-in): the recurrence in chunks of GCH tokens (the WY form of the gated delta rule, as
 // flash-linear-attention computes it), all in FP32.  Per value head, with g_t = exp(gate_t), gamma_t the gate's sum
 // from the chunk's start to t (inclusive) and S0 the state before the chunk:
 //   A[t][i] = beta_t exp(gamma_t - gamma_i) k_t.k_i (i < t),   T = (I + A)^-1 (unit lower triangular),
@@ -933,11 +933,11 @@ bool gdn_keyhead_ok() {
 // super-block at once (a block per chunk and key head: its three value heads share k and q); gdn_chunk_scan_kernel then
 // walks the super-block's chunks per (value head, 16 columns): the state slice in registers, the products as small
 // register-tiled matmuls from shared memory.  Every exponent is <= 0 (gates are negative), so nothing overflows.
-// STRATA_GDN_CHUNKED=1 takes prompt chunks of this many tokens and more: on an RTX 5090 the two launches cost more
+// NOSTROMA_GDN_CHUNKED=1 takes prompt chunks of this many tokens and more: on an RTX 5090 the two launches cost more
 // than they save below ~100 tokens (gdn_rec_parity --bench: 32 tokens 0.58x gdn_rec_kh_kernel, 96 1.03x, 128 1.20x,
 // 512 1.67x, 2048+ 1.81x)
 constexpr int64_t kGdnChunkedMin = 128;
-constexpr int64_t kGdnTcMin = 128;        // STRATA_GDN_TC: the two launches cost ~20 us; below this the kh kernel wins
+constexpr int64_t kGdnTcMin = 128;        // NOSTROMA_GDN_TC: the two launches cost ~20 us; below this the kh kernel wins
 constexpr int GCH = 32;            // tokens per chunk (the prep's solve is a lane per token)
 constexpr int GSB = 2048;          // tokens per super-block: the prep's scratch is GSB / GCH chunks of T, P and gamma
 constexpr int GDV = 16;            // value columns per scan block
@@ -1038,7 +1038,7 @@ __global__ void __launch_bounds__(256) gdn_chunk_prep_kernel(const float* __rest
 
 __device__ __forceinline__ void gdn_pf_l2(const float* p) { asm volatile("prefetch.global.L2 [%0];" ::"l"(p)); }
 __device__ __forceinline__ void gdn_cp_wait_all() {
-#if STRATA_GDN_CP_ASYNC
+#if NOSTROMA_GDN_CP_ASYNC
     asm volatile("cp.async.wait_all;\n" ::);
 #endif
 }
@@ -1206,7 +1206,7 @@ __global__ void __launch_bounds__(128 * VPK) gdn_chunk_scan_kernel(float* __rest
 #pragma unroll
         for (int y = 0; y < 4; ++y) state[(size_t) (4 * rq + xx) * rs + (size_t) vh * S + c0 + vv + y] = s[xx][y];
 }
-// the same scan on the tensor cores (STRATA_GDN_TC=1, gdn_rec_tc below); src/prefill/gdn_rec_parity.cu includes the
+// the same scan on the tensor cores (NOSTROMA_GDN_TC=1, gdn_rec_tc below); src/prefill/gdn_rec_parity.cu includes the
 // same text
 #include "gdn_tc.cuh"
 
@@ -1246,13 +1246,13 @@ cudaError_t gdn_rec_chunked(float* state, const float* h, const float* gate, con
             cudaGetLastError();
             return cudaErrorNotSupported;
         }
-        // STRATA_GDN_CHUNKED=2 skips the SM-count test (measurement on a card under 128 SMs: the scan then runs in
+        // NOSTROMA_GDN_CHUNKED=2 skips the SM-count test (measurement on a card under 128 SMs: the scan then runs in
         // several waves and is expected to be slower than the default kernel; the architecture and shared-memory
         // tests stay)
-        static const bool any_sms_env = [] { const char* v = strata::env("NOSTROMA_GDN_CHUNKED"); return v != nullptr && std::atoi(v) >= 2; }();
+        static const bool any_sms_env = [] { const char* v = nostroma::env("NOSTROMA_GDN_CHUNKED"); return v != nullptr && std::atoi(v) >= 2; }();
         const GdnProbe* pr = gdn_probe_get();   // tests only: the same as =2, per call
         const bool any_sms = any_sms_env || (pr != nullptr && pr->any_sms);
-        if (strata::cc_major_of(major) < 8 || (!any_sms && sms < HK * (S / GDV)) || (size_t) strata::smem_optin_of(smem) < kChunkScanSmem)
+        if (nostroma::cc_major_of(major) < 8 || (!any_sms && sms < HK * (S / GDV)) || (size_t) nostroma::smem_optin_of(smem) < kChunkScanSmem)
             return cudaErrorNotSupported;
     }
     float* scratch = gdn_chunk_scratch();
@@ -1281,14 +1281,14 @@ cudaError_t gdn_rec_chunked(float* state, const float* h, const float* gate, con
     }
     return cudaSuccess;   // launch errors surface at the caller's check; an error above means nothing ran
 }
-// STRATA_GDN_TC=1: gdn_rec_chunked with the scan on the tensor cores (gdn_tc_scan_kernel, gdn_tc.cuh) and the prep
+// NOSTROMA_GDN_TC=1: gdn_rec_chunked with the scan on the tensor cores (gdn_tc_scan_kernel, gdn_tc.cuh) and the prep
 // that also writes its f16 images (gdn_tc_prep_kernel, scratch gdn_tc_scratch), 48 blocks of 256 threads in one wave.  An error return means nothing was launched: the card is below
 // sm_80, has fewer than 48 SMs, or less than 122 KB of shared memory a block.
-// value tiles a head for the split tensor-core scan: STRATA_GDN_TC_TILES=1|2 (or the probe's tc_tiles) asks; 1 otherwise
+// value tiles a head for the split tensor-core scan: NOSTROMA_GDN_TC_TILES=1|2 (or the probe's tc_tiles) asks; 1 otherwise
 int gdn_tc_tiles() {
     const GdnProbe* pr = gdn_probe_get();
     if (pr != nullptr && pr->tc_tiles > 0) return pr->tc_tiles >= 2 ? 2 : 1;
-    static const int e = [] { const char* v = strata::env("NOSTROMA_GDN_TC_TILES"); return v ? std::atoi(v) : 0; }();
+    static const int e = [] { const char* v = nostroma::env("NOSTROMA_GDN_TC_TILES"); return v ? std::atoi(v) : 0; }();
     if (e > 0) return e >= 2 ? 2 : 1;
     // automatic: two tiles when all 2 x 48 blocks fit the card in one wave (measured: PRO 5000 / 110 SMs rec 1.47x; A6000 / 84 SMs
     // is 1.25x SLOWER with two tiles, its 96 blocks need a second wave)
@@ -1324,8 +1324,8 @@ cudaError_t gdn_rec_tc(float* state, const float* h, const float* gate, const fl
         }
         const GdnProbe* pr = gdn_probe_get();   // tests only: fewer SMs than value heads run the 48 blocks in several waves
         const bool any_sms = pr != nullptr && pr->any_sms;
-        if (strata::cc_major_of(major) < 8 || (!any_sms && sms < HV) ||
-            (size_t) strata::smem_optin_of(smem) < (split ? (nm ? kTcScanSmemSplitNorm : kTcScanSmemSplit) : kTcScanSmem<false>))
+        if (nostroma::cc_major_of(major) < 8 || (!any_sms && sms < HV) ||
+            (size_t) nostroma::smem_optin_of(smem) < (split ? (nm ? kTcScanSmemSplitNorm : kTcScanSmemSplit) : kTcScanSmem<false>))
             return cudaErrorNotSupported;
     }
     const GtcScratch sc = gdn_tc_scratch();
@@ -1356,11 +1356,11 @@ cudaError_t gdn_rec_tc(float* state, const float* h, const float* gate, const fl
         if (tiles == 2 && split && !nm && np == 3) {
             gdn_tc_scan_kernel<false, true, 3, 2><<<HV * 2, GTC_CW * 16, kTcScanSmemSplit, s>>>(state, h, sc.ti, sc.te, sc.sc, sc.kq, sc.pi, y, t0, nch, T);
         } else if (nm && split) {
-#define STRATA_TCN(NPV) gdn_tc_scan_kernel<true, true, NPV><<<HV, GTC_CW * 32, kTcScanSmemSplitNorm, s>>>(state, h, sc.ti, sc.te, sc.sc, sc.kq, sc.pi, y, t0, nch, T, nm->z, nm->gamma, nm->eps, nm->y16, nm->ld16)
-            if (np == 2) STRATA_TCN(2);
-            else if (np == 1) STRATA_TCN(1);
-            else STRATA_TCN(3);
-#undef STRATA_TCN
+#define NOSTROMA_TCN(NPV) gdn_tc_scan_kernel<true, true, NPV><<<HV, GTC_CW * 32, kTcScanSmemSplitNorm, s>>>(state, h, sc.ti, sc.te, sc.sc, sc.kq, sc.pi, y, t0, nch, T, nm->z, nm->gamma, nm->eps, nm->y16, nm->ld16)
+            if (np == 2) NOSTROMA_TCN(2);
+            else if (np == 1) NOSTROMA_TCN(1);
+            else NOSTROMA_TCN(3);
+#undef NOSTROMA_TCN
         } else if (split && np == 2)
             gdn_tc_scan_kernel<false, true, 2><<<HV, GTC_CW * 32, kTcScanSmemSplit, s>>>(state, h, sc.ti, sc.te, sc.sc, sc.kq, sc.pi, y, t0, nch, T);
         else if (split && np == 1)
@@ -1385,15 +1385,15 @@ const char* gdn_chunk_why(bool tc, cudaError_t e, bool any_sms, bool split = fal
         cudaGetLastError();
         return "device attributes unavailable";
     }
-    const int cc = strata::cc_major_of(major);
+    const int cc = nostroma::cc_major_of(major);
     const size_t need = tc ? (split ? kTcScanSmemSplit : (size_t) kTcScanSmem<false>) : kChunkScanSmem;
     const int sm_need = tc ? HV : HK * (S / GDV);
     if (cc < 8) std::snprintf(buf, sizeof buf, "compute capability %d < 8 (cp.async)", cc);
     else if (!tc && !any_sms && sms < sm_need)
-        std::snprintf(buf, sizeof buf, "%d SMs < %d: the scan would run in several waves (STRATA_GDN_CHUNKED=2 bypasses)", sms, sm_need);
+        std::snprintf(buf, sizeof buf, "%d SMs < %d: the scan would run in several waves (NOSTROMA_GDN_CHUNKED=2 bypasses)", sms, sm_need);
     else if (tc && !any_sms && sms < sm_need) std::snprintf(buf, sizeof buf, "%d SMs < %d (one block per value head)", sms, sm_need);
-    else if ((size_t) strata::smem_optin_of(smem) < need)
-        std::snprintf(buf, sizeof buf, "shared memory per block %d B < %zu B needed", strata::smem_optin_of(smem), need);
+    else if ((size_t) nostroma::smem_optin_of(smem) < need)
+        std::snprintf(buf, sizeof buf, "shared memory per block %d B < %zu B needed", nostroma::smem_optin_of(smem), need);
     else std::snprintf(buf, sizeof buf, "not supported (%s)", cudaGetErrorString(e));
     return buf;
 }
@@ -1407,7 +1407,7 @@ const char* gdn_chunk_why(bool tc, cudaError_t e, bool any_sms, bool split = fal
 // loaded into registers while this one computes, and a token's k and q rows are read into registers before its
 // products (one LDS latency per token, not one per load).  The old kernels took ~4 barriers per token and ~3.5 us
 // per token and layer on the Radeon 8060S; the output norm runs after it in gdn_out_norm_warp_kernel.
-// STRATA_GDN_HEAD=0: the old kernels.
+// NOSTROMA_GDN_HEAD=0: the old kernels.
 constexpr int HT = 4;                           // tokens per staged chunk (LDS ~10 KB: all 192 blocks resident)
 constexpr int QCB = 32;                         // columns per block
 constexpr int QTH = QCB * 4;                    // threads per block: 4 lanes per column
@@ -1516,7 +1516,7 @@ __global__ void __launch_bounds__(QTH) gdn_rec_quad_kernel(float* __restrict__ s
         for (int r = 0; r < 32; ++r) base[(size_t) r * HV * S] = s[r];
     }
 }
-// Aurora (S23, opt-in STRATA_GDN_PP=1): gdn_rec_quad_kernel with the same arithmetic in the same order, two changes in
+// Aurora (S23, opt-in NOSTROMA_GDN_PP=1): gdn_rec_quad_kernel with the same arithmetic in the same order, two changes in
 // how it is compiled.  (1) The VGPR count: the 32 state-row addresses of the first loads were kept live across the
 // whole walk to be reused by the final stores (64 VGPRs, 196 in all = 7 waves a SIMD for the 192 blocks of 4 waves
 // that need 9.6): the stores' lane offset goes through an asm so the addresses are made again, 133 VGPRs, all blocks
@@ -1642,7 +1642,7 @@ __global__ void __launch_bounds__(QTH) gdn_rec_quad_pp_kernel(float* __restrict_
     }
 }
 
-// Aurora (S23, opt-in STRATA_GDN_PP=2): gdn_rec_quad_kernel with two columns per lane (a wave: 4 row groups x 8 lanes x
+// Aurora (S23, opt-in NOSTROMA_GDN_PP=2): gdn_rec_quad_kernel with two columns per lane (a wave: 4 row groups x 8 lanes x
 // 2 columns = 16 columns; a block of 4 waves 64 columns, 96 blocks).  A lane's two columns share the k / q rows it
 // reads from shared memory (half the LDS reads and shuffles per column, the kernel's limit) and give each wave two
 // independent dependency chains; the 384 waves fit in one round at 230 VGPRs.  Per column the same arithmetic in
@@ -1797,7 +1797,7 @@ __global__ void __launch_bounds__(S) gdn_out_norm_loop_kernel(const float* __res
             y[at] = v;
             y16[o16] = hf(v);
         } else {
-            // STRATA_GDN_NOY=1: nothing reads the FP32 result (403 MB per 16K chunk).  The FP16 value is what the
+            // NOSTROMA_GDN_NOY=1: nothing reads the FP32 result (403 MB per 16K chunk).  The FP16 value is what the
             // compiler makes of hf(v) next to the store: v_fma_mixlo_f16, the product rounded to FP16 once
             unsigned r;
             asm("v_fma_mixlo_f16 %0, %1, %2, 0" : "=v"(r) : "v"(sg), "v"(bp));
@@ -1805,7 +1805,7 @@ __global__ void __launch_bounds__(S) gdn_out_norm_loop_kernel(const float* __res
         }
     }
 }
-// STRATA_GDN_CHUNKED=1 on the gfx11 matrix cores: the recurrence in chunks of 16 tokens (the WY form of the CUDA
+// NOSTROMA_GDN_CHUNKED=1 on the gfx11 matrix cores: the recurrence in chunks of 16 tokens (the WY form of the CUDA
 // chunked path above), FP16 operands and FP32 accumulation, the output norm fused.  Per value head, gamma_t the
 // gate's sum from the chunk's start to t (inclusive; the code's sg) and S0 the state before the chunk:
 //   A[t][i] = beta_t exp(gamma_t - gamma_i) k_t.k_i (i < t),  T = (I + A)^-1,  P[t][i] = exp(gamma_t - gamma_i) q_t.k_i (i <= t),
@@ -1817,30 +1817,30 @@ __global__ void __launch_bounds__(S) gdn_out_norm_loop_kernel(const float* __res
 // 2^-11), so the output differs from the FP32 kernels by more than their rounding (tests/hip/gdn_chunked.cpp holds it
 // to the bounds of its Error::ok).  The norm and the z gate run in the scan.
 #if defined(__gfx1100__) || defined(__gfx1101__) || defined(__gfx1102__) || defined(__gfx1103__) || defined(__gfx1150__) || defined(__gfx1151__)
-#define STRATA_GDN_WMMA 1   // device pass with the gfx11 WMMA intrinsic (the list of gfx_arch_is_gfx11_wmma)
+#define NOSTROMA_GDN_WMMA 1   // device pass with the gfx11 WMMA intrinsic (the list of gfx_arch_is_gfx11_wmma)
 #endif
 constexpr int GW_CK = 16;          // tokens per chunk (a WMMA tile)
 constexpr int GW_NW = S / 16;      // the scan's waves per block: one per 16 value columns
 constexpr int GW_VPK = HV / HK;    // value heads per key head: the prep's waves per block
 constexpr int GW_KP = S + 8;       // the scan's padded FP16 k / q rows
 constexpr int GW_AHEAD = 3;        // the scan warms the cache this many chunks ahead
-constexpr int64_t kGdnWmmaMin = 64;   // STRATA_GDN_CHUNKED=1 takes prompt chunks of this many tokens and more
+constexpr int64_t kGdnWmmaMin = 64;   // NOSTROMA_GDN_CHUNKED=1 takes prompt chunks of this many tokens and more
 // gfx12: the chunked kernels are faster than the sequential ones at every call length from 64 tokens up (1.7x to 2.5x on the
 // layer), but the prompt-speed gain depends on the prompt: IQ3_S on an R9700, +3.9% at 4K, +5.0% at 8K (median of 7 pairs: borderline), +6.9% at 16K, +10.1% at
 // 32K.  It first started at 12000 tokens for the old +5% bar; the owner then chose every gain (2026-10-30), and the final gate
 // with the start at 64 measured +1.7% to +3.2% at 1-3K, +3.5% at 4K, +4.7% at 16K, +6.1% at 32K (20 pairs), KL 0.0025 mean /
 // 0.0381 max, 55 of 61 tasks, a 30-minute soak clean.  So gfx12 takes it from the same 64 tokens as gfx11.
 constexpr int64_t kGdnW12MinT = kGdnWmmaMin;
-// gfx12 (RDNA4) only, STRATA_GDN_CHUNKED unset (owner 11-06, "ok" to a length-gated default): the chunked scan takes prompt chunks of 30,000 tokens or more -
+// gfx12 (RDNA4) only, NOSTROMA_GDN_CHUNKED unset (owner 11-06, "ok" to a length-gated default): the chunked scan takes prompt chunks of 30,000 tokens or more -
 // a long prompt (--prefill auto takes chunks up to 32,768 on gfx12, so a 32K prompt is one chunk of about 31,996-32,087 rows, which is why the line is 30,000 and not 32,000; +6.5% prompt speed at 32K, 3 of 3 rounds).  Shorter chunks keep the kernels they ran.
-// STRATA_GDN_CHUNKED=0 turns it off, =1 takes every chunk of 64 tokens or more (the old opt-in), STRATA_GDN_CHUNKED_MIN=N moves the line.
+// NOSTROMA_GDN_CHUNKED=0 turns it off, =1 takes every chunk of 64 tokens or more (the old opt-in), NOSTROMA_GDN_CHUNKED_MIN=N moves the line.
 inline int gdn_chunked_env() {   // -1 unset, else the number
-    static const int v = [] { const char* e = strata::env("NOSTROMA_GDN_CHUNKED"); return e == nullptr || e[0] == '\0' ? -1 : std::atoi(e); }();
+    static const int v = [] { const char* e = nostroma::env("NOSTROMA_GDN_CHUNKED"); return e == nullptr || e[0] == '\0' ? -1 : std::atoi(e); }();
     return v;
 }
 inline bool gdn_chunked_auto(int64_t T) {   // unset: only on gfx12, only for long chunks (the caller has checked the device)
-    static const int64_t lo = [] { const char* e = strata::env("NOSTROMA_GDN_CHUNKED_MIN"); return e != nullptr && e[0] != '\0' ? (int64_t) std::atoll(e) : (int64_t) 30000; }();
-    static const bool gfx12_defaults = [] { const char* e = strata::env("NOSTROMA_GFX12_DEFAULTS"); return !(e != nullptr && e[0] == '0'); }();   // (the gfx12 defaults' one off switch)
+    static const int64_t lo = [] { const char* e = nostroma::env("NOSTROMA_GDN_CHUNKED_MIN"); return e != nullptr && e[0] != '\0' ? (int64_t) std::atoll(e) : (int64_t) 30000; }();
+    static const bool gfx12_defaults = [] { const char* e = nostroma::env("NOSTROMA_GFX12_DEFAULTS"); return !(e != nullptr && e[0] == '0'); }();   // (the gfx12 defaults' one off switch)
     return gdn_chunked_env() < 0 && gfx12_defaults && T >= lo;
 }
 typedef _Float16 gw_h16 __attribute__((ext_vector_type(16)));
@@ -1850,7 +1850,7 @@ typedef float gw_f8 __attribute__((ext_vector_type(8)));
 typedef float gw_f4 __attribute__((ext_vector_type(4)));   // (HIP's float4 copies through memcpy, which kept a staged
                                                            // copy in scratch: a store that waits for the load)
 __device__ __forceinline__ gw_f8 gw_mma(gw_h16 a, gw_h16 b, gw_f8 c) {
-#if defined(STRATA_GDN_WMMA)
+#if defined(NOSTROMA_GDN_WMMA)
     return __builtin_amdgcn_wmma_f32_16x16x16_f16_w32(a, b, c);
 #else
     (void) a; (void) b; (void) c;
@@ -1868,7 +1868,7 @@ __device__ __forceinline__ gw_h16 gw_acc_to_b(gw_f8 x, GwSel ps) {
     for (int m = 0; m < 4; ++m) {
         const gw_h2 p = {(_Float16) x[2 * m], (_Float16) x[2 * m + 1]};
         const unsigned own = __builtin_bit_cast(unsigned, p);
-#if defined(STRATA_GDN_WMMA)
+#if defined(NOSTROMA_GDN_WMMA)
         const unsigned other = __builtin_amdgcn_permlanex16(own, own, 0x76543210u, 0xfedcba98u, false, false);
 #else
         const unsigned other = own;
@@ -1885,14 +1885,14 @@ __device__ __forceinline__ gw_h16 gw_ld(const _Float16* p) {   // 32 bytes of LD
 }
 // The wave's own LDS writes complete (read back across its lanes).  A gfx11 instruction: gfx12 device passes never run these kernels.
 __device__ __forceinline__ void gw_lds_wait() {
-#if defined(STRATA_GDN_WMMA)
+#if defined(NOSTROMA_GDN_WMMA)
     __asm__ volatile("s_waitcnt lgkmcnt(0)" ::: "memory");
 #endif
 }
 // A barrier over LDS only.  __syncthreads() is a workgroup fence over all memory, which on gfx11 also waits for every
 // global load in flight: the scan's loads of the next chunk would have to land before each barrier.
 __device__ __forceinline__ void gw_lds_barrier() {
-#if defined(STRATA_GDN_WMMA)
+#if defined(NOSTROMA_GDN_WMMA)
     __asm__ volatile("s_waitcnt lgkmcnt(0)\n\ts_barrier" ::: "memory");
 #else
     __syncthreads();   // the gfx11-only instruction must not reach a gfx12 device pass
@@ -2133,7 +2133,7 @@ __global__ void __launch_bounds__(GW_NW * 32) gdn_wmma_scan_kernel(float* __rest
         for (int v = 0; v < 8; ++v) state[(size_t) (16 * j + 2 * v + hi) * rs + (size_t) vh * S + col] = s[j][v];
 }
 #include "gdn_wmma12.inc"
-// The opt-in chunked recurrence on gfx11 and gfx12 (STRATA_GDN_CHUNKED=1): false (nothing launched) on another part.  y, the
+// The opt-in chunked recurrence on gfx11 and gfx12 (NOSTROMA_GDN_CHUNKED=1): false (nothing launched) on another part.  y, the
 // FP32 scratch of the other kernels (T x 6144 floats), holds T and P (1 KB per chunk and value head: T x 3 KB).
 bool gdn_rec_wmma(float* state, const float* h, const float* gate, const float* beta, const float* z, const float* gamma,
                   float eps, float* y, uint16_t* y16, int64_t T, cudaStream_t s, int64_t ld16) {
@@ -2147,8 +2147,8 @@ bool gdn_rec_wmma(float* state, const float* h, const float* gate, const float* 
     if (dev != last_device) {
         cudaDeviceProp p{};
         if (cudaGetDeviceProperties(&p, dev) != cudaSuccess) return false;
-        gfx11 = strata::kernels::gfx_arch_is_gfx11_wmma(p.gcnArchName);
-        gfx12 = strata::kernels::gfx_arch_is_gfx12_wmma(p.gcnArchName);
+        gfx11 = nostroma::kernels::gfx_arch_is_gfx11_wmma(p.gcnArchName);
+        gfx12 = nostroma::kernels::gfx_arch_is_gfx12_wmma(p.gcnArchName);
         last_device = dev;
     }
     if (!gfx11 && !gfx12) return false;
@@ -2158,7 +2158,7 @@ bool gdn_rec_wmma(float* state, const float* h, const float* gate, const float* 
     _Float16* tp = reinterpret_cast<_Float16*>(y);
     if (gfx12) {
         gdn_w12_prep_kernel<false><<<dim3(HK, (unsigned) nch), 32 * GW_VPK, 0, s>>>(h, nullptr, gate, beta, tp, T);
-        static const bool lb = [] { const char* v = strata::env("NOSTROMA_GDN_W12_LB"); return v == nullptr || std::atoi(v) != 0; }();
+        static const bool lb = [] { const char* v = nostroma::env("NOSTROMA_GDN_W12_LB"); return v == nullptr || std::atoi(v) != 0; }();
         if (lb)
             gdn_w12_scan_kernel<true, false><<<HV, GW_NW * 32, 0, s>>>(state, h, nullptr, gate, beta, z, gamma,
                                                                        reinterpret_cast<const unsigned*>(tp), eps, y16, T, ld16);
@@ -2172,14 +2172,14 @@ bool gdn_rec_wmma(float* state, const float* h, const float* gate, const float* 
                                                    eps, y16, T, ld16);
     return true;
 }
-// STRATA_GDN_CHUNKED=1 on gfx12 with the conv folded in (gdn_wmma12f.inc; STRATA_GDN_FUSE=0 keeps conv and recurrence apart):
+// NOSTROMA_GDN_CHUNKED=1 on gfx12 with the conv folded in (gdn_wmma12f.inc; NOSTROMA_GDN_FUSE=0 keeps conv and recurrence apart):
 // the work of gdn_conv + gdn_recurrence in three launches, no h buffer.  False (nothing launched) when the chunked path or
 // the fusion is off, the device is not gfx12, or the call is short / unaligned: the caller then runs the two entry points.
 bool gdn_fused_impl(float* history, const float* qkv, const float* conv_w, float* hbuf, float* state, const float* gate,
                     const float* beta, const float* z, const float* gamma, float eps, float l2eps, float* y, uint16_t* y16,
                     int64_t T, void* stream, int64_t ld16) {
     static const bool on = [] {
-        const char* f = strata::env("NOSTROMA_GDN_FUSE");
+        const char* f = nostroma::env("NOSTROMA_GDN_FUSE");
         return gdn_chunked_env() != 0 && (f == nullptr || std::atoi(f) != 0);   // (unset: the length gate below, gfx12 only)
     }();
     if (!on || T < kGdnWmmaMin) return false;
@@ -2192,7 +2192,7 @@ bool gdn_fused_impl(float* history, const float* qkv, const float* conv_w, float
     if (dev != last_device) {
         cudaDeviceProp p{};
         if (cudaGetDeviceProperties(&p, dev) != cudaSuccess) return false;
-        gfx12 = strata::kernels::gfx_arch_is_gfx12_wmma(p.gcnArchName);
+        gfx12 = nostroma::kernels::gfx_arch_is_gfx12_wmma(p.gcnArchName);
         last_device = dev;
     }
     if (!gfx12 || T < kGdnW12MinT) return false;
@@ -2204,7 +2204,7 @@ bool gdn_fused_impl(float* history, const float* qkv, const float* conv_w, float
     gdn_conv_l2_h16_kernel<<<dim3(C / 128, (unsigned) ((T + CONV_TILE - 1) / CONV_TILE)), 128, 0, s>>>(history, qkv, conv_w, h16, T, l2eps);
     gdn_conv_hist_kernel<<<C / 128, 128, 0, s>>>(history, qkv, T);   // the history after the chunk (the conv above read the old one)
     gdn_w12_prep_kernel<true><<<dim3(HK, (unsigned) nch), 32 * GW_VPK, 0, s>>>(nullptr, h16, gate, beta, tp, T);
-    static const bool lb = [] { const char* v = strata::env("NOSTROMA_GDN_W12_LB"); return v == nullptr || std::atoi(v) != 0; }();
+    static const bool lb = [] { const char* v = nostroma::env("NOSTROMA_GDN_W12_LB"); return v == nullptr || std::atoi(v) != 0; }();
     if (lb)
         gdn_w12_scan_kernel<true, true><<<HV, GW_NW * 32, 0, s>>>(state, nullptr, h16, gate, beta, z, gamma,
                                                                   reinterpret_cast<const unsigned*>(tp), eps, y16, T, ld16);
@@ -2439,31 +2439,31 @@ __global__ void rms_rows_kernel(float* __restrict__ x, const float* __restrict__
     __syncthreads();
     for (int64_t c = threadIdx.x; c < cols; c += blockDim.x) r[c] = s * r[c] * w[c];
 }
-// TAB (#280, STRATA_ROPE_TABLE=1): the angles from the session's float64 table.  The host launches <false> whenever
+// TAB (#280, NOSTROMA_ROPE_TABLE=1): the angles from the session's float64 table.  The host launches <false> whenever
 // no table applies - the default - so the default kernel is 0.1.31's code exactly (the table read is not in it;
 // with it merely skipped at run time, the compiled default path changed its results).
 template <bool TAB>
 __global__ void rope_kernel(float* __restrict__ x, int64_t heads, int64_t dim, int64_t ld, int64_t pos0,
                             float theta_scale, float freq_scale, float corr_low, float corr_high,
                             float ext_factor, float mscale, const int32_t* __restrict__ mtab,
-                            strata::kernels::RopeTab rt) {
+                            nostroma::kernels::RopeTab rt) {
     const int64_t row = blockIdx.x;             // t * heads + h
     const int pair = threadIdx.x;               // 0..31
     const int64_t t = row / heads, h = row % heads;
     float* p = x + t * ld + h * dim;
     float c, s;
-    if (!(TAB && strata::kernels::rope_tab_cs(rt, strata::kernels::mrope_pos(mtab, (int) (pos0 + t), pair), pair, c,
+    if (!(TAB && nostroma::kernels::rope_tab_cs(rt, nostroma::kernels::mrope_pos(mtab, (int) (pos0 + t), pair), pair, c,
                                               s))) {
         const float theta_extrap =
-            (float) strata::kernels::mrope_pos(mtab, (int) (pos0 + t), pair) * powf(theta_scale, (float) pair);
-        strata::kernels::rope_scaled_angle(theta_extrap, freq_scale, corr_low, corr_high, ext_factor, mscale,
+            (float) nostroma::kernels::mrope_pos(mtab, (int) (pos0 + t), pair) * powf(theta_scale, (float) pair);
+        nostroma::kernels::rope_scaled_angle(theta_extrap, freq_scale, corr_low, corr_high, ext_factor, mscale,
                                            pair, c, s);
     }
     const float a = p[pair], b = p[pair + 32];
     p[pair] = a * c - b * s;
     p[pair + 32] = a * s + b * c;
 }
-// STRATA_QSA_FUSE_NR (default on, =0 runs the chain below as before): rms_rows_kernel + rope_kernel (+ split_q_kernel for
+// NOSTROMA_QSA_FUSE_NR (default on, =0 runs the chain below as before): rms_rows_kernel + rope_kernel (+ split_q_kernel for
 // the query) in ONE pass over a head's row.  The same arithmetic in the same order as the pair: the sum of squares goes
 // through the same block_sum, the scaled value is (s * x) * w as a float (the pair stored it and reloaded it), and a
 // rotated pair is rotated with rope_kernel's own expressions.  What changes is the traffic: the q chain read and wrote
@@ -2478,7 +2478,7 @@ __global__ void __launch_bounds__(256) rms_rope_rows_kernel(const float* in, int
                                                             int64_t dim, float eps, int64_t pos0, float theta_scale,
                                                             float freq_scale, float corr_low, float corr_high,
                                                             float ext_factor, float mscale, const int32_t* __restrict__ mtab,
-                                                            strata::kernels::RopeTab rt) {
+                                                            nostroma::kernels::RopeTab rt) {
     __shared__ float sh[32];
     __shared__ float sv[256];
     const int64_t row = blockIdx.x;             // t * heads + h
@@ -2500,11 +2500,11 @@ __global__ void __launch_bounds__(256) rms_rope_rows_kernel(const float* in, int
     if (tid < 32) {                             // rope_kernel: one thread a (pair, pair + 32)
         const int pair = tid;
         float c, s;
-        if (!(TAB && strata::kernels::rope_tab_cs(rt, strata::kernels::mrope_pos(mtab, (int) (pos0 + t), pair), pair, c,
+        if (!(TAB && nostroma::kernels::rope_tab_cs(rt, nostroma::kernels::mrope_pos(mtab, (int) (pos0 + t), pair), pair, c,
                                                   s))) {
             const float theta_extrap =
-                (float) strata::kernels::mrope_pos(mtab, (int) (pos0 + t), pair) * powf(theta_scale, (float) pair);
-            strata::kernels::rope_scaled_angle(theta_extrap, freq_scale, corr_low, corr_high, ext_factor, mscale,
+                (float) nostroma::kernels::mrope_pos(mtab, (int) (pos0 + t), pair) * powf(theta_scale, (float) pair);
+            nostroma::kernels::rope_scaled_angle(theta_extrap, freq_scale, corr_low, corr_high, ext_factor, mscale,
                                                pair, c, s);
         }
         const float a = sv[pair], b = sv[pair + 32];
@@ -2533,7 +2533,7 @@ __global__ void gate_attn_kernel(const float* __restrict__ a, const float* __res
 __global__ void kv_append_kernel(const float* __restrict__ K, const float* __restrict__ V, int64_t pos0,
                                  const int32_t* __restrict__ table, int64_t page_size, uint16_t* k_pool,
                                  uint16_t* v_pool, int8_t* k_q, int8_t* v_q, uint16_t* k_scale, uint16_t* v_scale,
-                                 strata::kernels::KvHostPools host, strata::kernels::KvHostPools stage) {
+                                 nostroma::kernels::KvHostPools host, nostroma::kernels::KvHostPools stage) {
     const int64_t t = blockIdx.x;
     const int kvh = blockIdx.y, g = blockIdx.z >> 1;
     const bool is_v = (blockIdx.z & 1) != 0;
@@ -2594,7 +2594,7 @@ __global__ void to_bf16_kernel(const float* __restrict__ x, uint16_t* __restrict
     }
 }
 
-// S23 (opt-in STRATA_HC_UPMIX=1, gfx11): the hyper-connection read's up projection with gr_mix_r as its epilogue.  The
+// S23 (opt-in NOSTROMA_HC_UPMIX=1, gfx11): the hyper-connection read's up projection with gr_mix_r as its epilogue.  The
 // up GEMM's FP32 output `gated` (T x 10240: 671 MB per 16K chunk) is never written or read back: a block computes a
 // tile of 64 tokens x 64 columns for all 4 streams on the matrix cores (BF16 in, FP32 accumulate over K = 320; the
 // lo16 and w_up tiles staged in LDS), and each lane already holds the 4 streams' values of its (token, column) - the
@@ -2616,7 +2616,7 @@ __device__ __forceinline__ um_b16 um_frag(const uint16_t* p) {   // 16 BF16 (32 
     const uint32_t w[8] = {a.x, a.y, a.z, a.w, b.x, b.y, b.z, b.w};
     return __builtin_bit_cast(um_b16, w);
 }
-// The FP16 prompt path (g_act_f16, STRATA_HIP_PROMPT_F16=1): lo16 holds FP16 bits, so the same product runs on the FP16 matrix-core
+// The FP16 prompt path (g_act_f16, NOSTROMA_HIP_PROMPT_F16=1): lo16 holds FP16 bits, so the same product runs on the FP16 matrix-core
 // builtin; the BF16 w_up rows are converted to FP16 while they are staged (bf_to_hf_conv, the conversion the FP16 GEMM route applies;
 // a BF16 value is exact in FP16 above 6e-5).  FP32 accumulate, same K order as the BF16 kernel.
 typedef _Float16 um_h16 __attribute__((ext_vector_type(16)));
@@ -2699,7 +2699,7 @@ __global__ void __launch_bounds__(512) gr_upmix_kernel(const uint16_t* __restric
 }
 #endif
 #if !defined(__HIPCC__)
-// S23 on CUDA (sm_80+; opt-in STRATA_HC_UPMIX=1, see hc_upmix in prefill.cpp): the hyper-connection read's up
+// S23 on CUDA (sm_80+; opt-in NOSTROMA_HC_UPMIX=1, see hc_upmix in prefill.cpp): the hyper-connection read's up
 // projection (lo16 x w_up^T, BF16 in, FP32 accumulate over K = 320) with gr_mix_r as its epilogue, so `gated`
 // (T x 10240 FP32, 336 MB for an 8,192-token chunk) is neither written by the GEMM nor read back by the mix - gr_mix_r
 // reads R and `gated` at ~96% of the bandwidth already, so only fewer bytes make the read faster.  A block: 128 tokens
@@ -2834,11 +2834,11 @@ __global__ void __launch_bounds__(256, 2) gr_upmix_cuda_kernel(const uint16_t* _
 
 void kv_append(const float* K, const float* V, int64_t T, int64_t pos0, const int32_t* page_table, int64_t page_size,
                uint16_t* k_pool, uint16_t* v_pool, int8_t* k_q, int8_t* v_q, uint16_t* k_scale, uint16_t* v_scale,
-               void* stream, const strata::kernels::KvHostPools* host, const strata::kernels::KvHostPools* stage) {
+               void* stream, const nostroma::kernels::KvHostPools* host, const nostroma::kernels::KvHostPools* stage) {
     if (T <= 0) return;
     kv_append_kernel<<<dim3((unsigned) T, 2, 8), 64, 0, (cudaStream_t) stream>>>(
         K, V, pos0, page_table, page_size, k_pool, v_pool, k_q, v_q, k_scale, v_scale,
-        host ? *host : strata::kernels::KvHostPools{}, stage ? *stage : strata::kernels::KvHostPools{});
+        host ? *host : nostroma::kernels::KvHostPools{}, stage ? *stage : nostroma::kernels::KvHostPools{});
     check("kv_append");
 }
 void set_act_f16(bool on) {
@@ -2920,7 +2920,7 @@ bool gr_upmix(const uint16_t* lo16, const uint16_t* w_up, const float* R, const 
         int dev = 0;
         cudaDeviceProp p;
         if (cudaGetDevice(&dev) != cudaSuccess || cudaGetDeviceProperties(&p, dev) != cudaSuccess) return false;
-        return strata::kernels::gfx_arch_is_gfx11_wmma(p.gcnArchName);
+        return nostroma::kernels::gfx_arch_is_gfx11_wmma(p.gcnArchName);
     }();
     if (!gfx11 || T <= 0) return false;
     gr_upmix_kernel<<<dim3(N / UM_D, (unsigned) ((T + UM_T - 1) / UM_T)), 512, 0, (cudaStream_t) stream>>>(
@@ -2934,7 +2934,7 @@ bool gr_upmix(const uint16_t* lo16, const uint16_t* w_up, const float* R, const 
     if (ok_dev[dev] == 0) {
         int major = 0;
         ok_dev[dev] = cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, dev) == cudaSuccess &&
-                      strata::cc_major_of(major) >= 8 ? 1 : 2;
+                      nostroma::cc_major_of(major) >= 8 ? 1 : 2;
         cudaGetLastError();
     }
     if (ok_dev[dev] != 1) return false;
@@ -2980,11 +2980,11 @@ void gdn_gates(const float* ab, const float* dt, const float* ssm_a, float* gate
     check("gdn_gates");
 }
 void gdn_conv(float* history, const float* qkv, const float* conv_w, float* h, int64_t T, float eps, void* stream) {
-    static const bool serial = strata::env("NOSTROMA_GDN_CONV_SERIAL") != nullptr;   // the old walk (A/B)
+    static const bool serial = nostroma::env("NOSTROMA_GDN_CONV_SERIAL") != nullptr;   // the old walk (A/B)
     if (serial || T <= CONV_TILE) {
         gdn_conv_kernel<<<C / 128, 128, 0, (cudaStream_t) stream>>>(history, qkv, conv_w, h, T);
     } else {
-        static const int fused_mode = [] { const char* v = strata::env("NOSTROMA_GDN_CONVL2"); return v ? std::atoi(v) : 0; }();
+        static const int fused_mode = [] { const char* v = nostroma::env("NOSTROMA_GDN_CONVL2"); return v ? std::atoi(v) : 0; }();
         const bool fused = fused_mode != 0;
         if (fused_mode >= 2) {
             gdn_conv_w_kernel<<<dim3(C / 128, (unsigned) ((T + 4 * CONVW_TOK - 1) / (4 * CONVW_TOK))), 128, 0,
@@ -3013,10 +3013,10 @@ static void gdn_recurrence_impl(int variant, float* state, const float* h, const
                                 const float* z, const float* gamma, float eps, float* y, uint16_t* y16, int64_t T,
                                 void* stream, int64_t ld16, bool with_out) {
     if (ld16 <= 0) ld16 = (int64_t) HV * S;
-    static const bool serial = strata::env("NOSTROMA_GDN_REC_HEADS") != nullptr;   // the one-block-per-head kernel (A/B)
+    static const bool serial = nostroma::env("NOSTROMA_GDN_REC_HEADS") != nullptr;   // the one-block-per-head kernel (A/B)
 #if defined(__HIPCC__)
     if (variant == 0 || variant == 1) {
-        // STRATA_GDN_CHUNKED=1 (opt-in): the chunked recurrence on the gfx11 matrix cores, FP16 operands (other bits;
+        // NOSTROMA_GDN_CHUNKED=1 (opt-in): the chunked recurrence on the gfx11 matrix cores, FP16 operands (other bits;
         // a shorter chunk or another part takes the kernels below)
         static const bool chunked = gdn_chunked_env() != 0;   // (unset: gdn_rec_wmma applies the gfx12 length gate)
         if (chunked && !serial && gdn_rec_wmma(state, h, gate, beta, z, gamma, eps, y, y16, T, (cudaStream_t) stream, ld16)) {
@@ -3047,14 +3047,14 @@ static void gdn_recurrence_impl(int variant, float* state, const float* h, const
     }
     if (variant == 1) {
         if (T > 0) {
-            static const int pp = [] { const char* v = strata::env("NOSTROMA_GDN_PP"); return v ? std::atoi(v) : 0; }();
+            static const int pp = [] { const char* v = nostroma::env("NOSTROMA_GDN_PP"); return v ? std::atoi(v) : 0; }();
             if (pp == 2)
                 gdn_rec_quad2c_kernel<<<HV * (S / C2CB), QTH, 0, (cudaStream_t) stream>>>(state, h, gate, beta, y, T);
             else if (pp)
                 gdn_rec_quad_pp_kernel<<<HV * (S / QCB), QTH, 0, (cudaStream_t) stream>>>(state, h, gate, beta, y, T);
             else
                 gdn_rec_quad_kernel<<<HV * (S / QCB), QTH, 0, (cudaStream_t) stream>>>(state, h, gate, beta, y, T);
-            static const bool noy = [] { const char* v = strata::env("NOSTROMA_GDN_NOY"); return v && std::atoi(v) != 0; }();
+            static const bool noy = [] { const char* v = nostroma::env("NOSTROMA_GDN_NOY"); return v && std::atoi(v) != 0; }();
             if (with_out && noy)
                 gdn_out_norm_loop_kernel<false><<<(unsigned) std::min<int64_t>(T * HV, 4096), S, 0, (cudaStream_t) stream>>>(
                     z, gamma, eps, y, y16, T * HV, ld16);
@@ -3068,23 +3068,23 @@ static void gdn_recurrence_impl(int variant, float* state, const float* h, const
 #else
     (void) variant;   // the quad recurrence kernels are AMD-only
 #endif
-#if defined(STRATA_EXPERIMENTAL_SM60)
+#if defined(NOSTROMA_EXPERIMENTAL_SM60)
     // v100/gdn-chunk: the chunked recurrence (src/prefill/gdn_chunk.cu) on Volta, where the token chain is the
-    // cost.  STRATA_GDN_CHUNK=0 forces the recurrence, =1 forces the chunked path (the parity test's A/B switch);
+    // cost.  NOSTROMA_GDN_CHUNK=0 forces the recurrence, =1 forces the chunked path (the parity test's A/B switch);
     // unset: cc == 7.0 only, every other architecture keeps the recurrence bit-for-bit as before.  Read per call
     // on purpose - cheap next to the work, and the tests flip it between two launches.
-    const char* chunk_v = strata::env("NOSTROMA_GDN_CHUNK");
+    const char* chunk_v = nostroma::env("NOSTROMA_GDN_CHUNK");
     const int chunk_env = chunk_v && *chunk_v ? std::atoi(chunk_v) : -1;
     static const bool volta = gdn_chunk_available();   // runtime cc == 7.0 (the kernels are compiled for sm_70 only)
     const bool chunked = !serial && T > 0 && (chunk_env >= 0 ? chunk_env != 0 : false);
     // v100/gdn-chunk: the sync-free warp-reduction recurrence (bit-exact vs gdn_rec_cols_pipe) is the
-    // measured-fast path on Volta; the chunked recurrence is opt-in (STRATA_GDN_CHUNK=1/2) - correct and
-    // measured, but slower than this on the V100 (bench/gdn_chunk_bench).  STRATA_GDN_REC_WARP=0 restores
+    // measured-fast path on Volta; the chunked recurrence is opt-in (NOSTROMA_GDN_CHUNK=1/2) - correct and
+    // measured, but slower than this on the V100 (bench/gdn_chunk_bench).  NOSTROMA_GDN_REC_WARP=0 restores
     // the old pipelined kernel bit-for-bit.
-    // STRATA_GDN_REC_WARP (Volta only, opt-in): unset or 0 -> the pipelined kernel (the default; the chain split changes the
+    // NOSTROMA_GDN_REC_WARP (Volta only, opt-in): unset or 0 -> the pipelined kernel (the default; the chain split changes the
     // summation order, so it is not the default without a V100 check here), 2 -> the chain-split kernel (measured +6..9%, FP32-level), the
     // old pipelined kernel bit-for-bit is 0, 1 -> the sync-free bit-exact control.
-    const char* warp_v = strata::env("NOSTROMA_GDN_REC_WARP");
+    const char* warp_v = nostroma::env("NOSTROMA_GDN_REC_WARP");
     const int warp_env = warp_v && *warp_v ? std::atoi(warp_v) : 0;
     const bool warp_rec = !serial && !chunked && T > 0 && volta && warp_env != 0;
     if (chunked && T >= 64) {
@@ -3111,16 +3111,16 @@ static void gdn_recurrence_impl(int variant, float* state, const float* h, const
     if ((serial && with_out) || T <= 0 || variant == 2) {   // the fused kernel needs z/gamma: only with the output
         gdn_rec_kernel<<<HV, dim3(S, RG), 0, (cudaStream_t) stream>>>(state, h, gate, beta, z, gamma, eps, y, y16, T, ld16);
     } else {
-        static const bool pipe = [] { const char* v = strata::env("NOSTROMA_GDN_PIPELINE"); return v == nullptr || std::atoi(v) != 0; }();
+        static const bool pipe = [] { const char* v = nostroma::env("NOSTROMA_GDN_PIPELINE"); return v == nullptr || std::atoi(v) != 0; }();
         bool normed_any = false;   // the tensor-core scan wrote y16 (the norm kernel below is skipped)
 #if !defined(__HIPCC__)
-        // STRATA_GDN_CHUNKED=1 (opt-in): the recurrence in chunks for prompt chunks of kGdnChunkedMin+ tokens (other
+        // NOSTROMA_GDN_CHUNKED=1 (opt-in): the recurrence in chunks for prompt chunks of kGdnChunkedMin+ tokens (other
         // bits; a shorter chunk, a card it does not fit or a failed scratch allocation takes the kernels below)
-        static const bool chunked = [] { const char* v = strata::env("NOSTROMA_GDN_CHUNKED"); return v != nullptr && std::atoi(v) != 0; }();
-        // STRATA_GDN_TC=1 (opt-in): the chunked recurrence with the scan on the tensor cores (gdn_tc.cuh) for prompt
+        static const bool chunked = [] { const char* v = nostroma::env("NOSTROMA_GDN_CHUNKED"); return v != nullptr && std::atoi(v) != 0; }();
+        // NOSTROMA_GDN_TC=1 (opt-in): the chunked recurrence with the scan on the tensor cores (gdn_tc.cuh) for prompt
         // chunks of kGdnTcMin+ tokens: within 1e-4 of the kernels below (gdn_rec_parity), 3.75x gdn_rec_kh_kernel on a
         // CMP 170HX; a shorter chunk, a card it does not fit or a failed scratch allocation takes the kernels below
-        static const bool tc = [] { const char* v = strata::env("NOSTROMA_GDN_TC"); return v != nullptr && std::atoi(v) != 0; }();
+        static const bool tc = [] { const char* v = nostroma::env("NOSTROMA_GDN_TC"); return v != nullptr && std::atoi(v) != 0; }();
         // A test's probe (gdn_probe.hpp) reads back the path that ran and may force one; without a probe this is the
         // dispatch it was.  A forced path that cannot run launches nothing (selected = none, reason says why).
         GdnProbe* pr = gdn_probe_get();
@@ -3129,8 +3129,8 @@ static void gdn_recurrence_impl(int variant, float* state, const float* h, const
         bool normed = false;   // the scan wrote y16 itself
         const char* why = "";
         const cudaStream_t cs = (cudaStream_t) stream;
-        // the split tensor-core scan can write y16 itself (STRATA_GDN_TC_FUSE=0 off): then the norm kernel below is skipped
-        static const bool tc_fuse = [] { const char* v = strata::env("NOSTROMA_GDN_TC_FUSE"); return v == nullptr || std::atoi(v) != 0; }();
+        // the split tensor-core scan can write y16 itself (NOSTROMA_GDN_TC_FUSE=0 off): then the norm kernel below is skipped
+        static const bool tc_fuse = [] { const char* v = nostroma::env("NOSTROMA_GDN_TC_FUSE"); return v == nullptr || std::atoi(v) != 0; }();
         const GdnTcNorm tcn = {z, gamma, eps, y16, ld16};
         const int tcl = gdn_tc_tiles();
         const GdnTcNorm* tcnp = with_out && tc_fuse && tcl == 1 ? &tcn : nullptr;   // 2 tiles a head: the norm kernel (a head's norm spans both)
@@ -3149,7 +3149,7 @@ static void gdn_recurrence_impl(int variant, float* state, const float* h, const
                 if (gdn_keyhead_ok()) {
                     gdn_rec_kh_kernel<<<HK * NCB, dim3(CB, RG), 0, cs>>>(state, h, gate, beta, y, T);
                     sel = kGdnKeyHead;
-                } else why = "keyhead kernel not eligible here (needs sm_80+ with all 64 blocks resident, or STRATA_GDN_KEYHEAD=0 is set)";
+                } else why = "keyhead kernel not eligible here (needs sm_80+ with all 64 blocks resident, or NOSTROMA_GDN_KEYHEAD=0 is set)";
             } else if (force == kGdnPipe) {
                 gdn_rec_cols_pipe_kernel<<<HV * NCB, dim3(CB, RG), 0, cs>>>(state, h, gate, beta, y, T);
                 sel = kGdnPipe;
@@ -3164,8 +3164,8 @@ static void gdn_recurrence_impl(int variant, float* state, const float* h, const
                 if (e == cudaSuccess) sel = kGdnTc;
                 else {   // the 99-KB cards (sm_86 / 89 / 120): the single-buffered v / T / P plan
                     if (pr) why = gdn_chunk_why(true, e, false);
-                    // STRATA_GDN_TC_NP=1|2 (experiment, not a default): fewer split passes a product on this plan, other bits
-                    static const int tc_np = [] { const char* v = strata::env("NOSTROMA_GDN_TC_NP"); const int x = v ? std::atoi(v) : 3; return x == 1 || x == 2 ? x : 3; }();
+                    // NOSTROMA_GDN_TC_NP=1|2 (experiment, not a default): fewer split passes a product on this plan, other bits
+                    static const int tc_np = [] { const char* v = nostroma::env("NOSTROMA_GDN_TC_NP"); const int x = v ? std::atoi(v) : 3; return x == 1 || x == 2 ? x : 3; }();
                     e = gdn_rec_tc(state, h, gate, beta, y, T, cs, true, tc_np, tcnp, tcl);
                     if (e == cudaSuccess) { sel = kGdnTcSplit; why = ""; normed = tcnp != nullptr; }
                 }
@@ -3212,10 +3212,10 @@ void gdn_recurrence_variant(int variant, float* state, const float* h, const flo
 void gdn_recurrence(float* state, const float* h, const float* gate, const float* beta, const float* z,
                     const float* gamma, float eps, float* y, uint16_t* y16, int64_t T, void* stream, int64_t ld16) {
     // Aurora (S23): four lanes per column + the grid-stride norm, the same bits (tests/hip/gdn_rec_head.cpp);
-    // STRATA_GDN_HEAD=1 (on by default on gfx1151; off with STRATA_GDN_HEAD=0 or STRATA_GDN_REC_HEADS) takes them
-    // (AMD builds only; the arch defaults set STRATA_GDN_HEAD=1 on gfx1151 and leave other cards on the earlier kernels)
-    static const bool head = [] { const char* v = strata::env("NOSTROMA_GDN_HEAD"); return v != nullptr && std::atoi(v) != 0; }();
-    static const bool serial = strata::env("NOSTROMA_GDN_REC_HEADS") != nullptr;
+    // NOSTROMA_GDN_HEAD=1 (on by default on gfx1151; off with NOSTROMA_GDN_HEAD=0 or NOSTROMA_GDN_REC_HEADS) takes them
+    // (AMD builds only; the arch defaults set NOSTROMA_GDN_HEAD=1 on gfx1151 and leave other cards on the earlier kernels)
+    static const bool head = [] { const char* v = nostroma::env("NOSTROMA_GDN_HEAD"); return v != nullptr && std::atoi(v) != 0; }();
+    static const bool serial = nostroma::env("NOSTROMA_GDN_REC_HEADS") != nullptr;
     gdn_recurrence_impl(head && !serial ? 1 : 0, state, h, gate, beta, z, gamma, eps, y, y16, T, stream, ld16, true);
 }
 /// KVA: the same recurrence, bit for bit, without the output normalisation (its readers - the output projection
@@ -3234,8 +3234,8 @@ bool gdn_conv_recurrence_fused(float* history, const float* qkv, const float* co
 }
 void gdn_recurrence_state_only(float* state, const float* h, const float* gate, const float* beta, float* y,
                                int64_t T, void* stream) {
-    static const bool head = [] { const char* v = strata::env("NOSTROMA_GDN_HEAD"); return v != nullptr && std::atoi(v) != 0; }();
-    static const bool serial = strata::env("NOSTROMA_GDN_REC_HEADS") != nullptr;
+    static const bool head = [] { const char* v = nostroma::env("NOSTROMA_GDN_HEAD"); return v != nullptr && std::atoi(v) != 0; }();
+    static const bool serial = nostroma::env("NOSTROMA_GDN_REC_HEADS") != nullptr;
     gdn_recurrence_impl(head && !serial ? 1 : 0, state, h, gate, beta, nullptr, nullptr, 0.0f, y, nullptr, T,
                         stream, 0, /*with_out=*/false);
 }
@@ -3245,7 +3245,7 @@ void route(const float* logits, int32_t* ids, float* weights, int64_t T, int64_t
     else if (n_expert == 256)
         route_kernel<8><<<(unsigned) ((T + 7) / 8), 256, 0, (cudaStream_t) stream>>>(logits, ids, weights, T);
     else
-        strata::kernels::router_top10(logits, (int) T, (int) n_expert, KU, ids, weights, stream);
+        nostroma::kernels::router_top10(logits, (int) T, (int) n_expert, KU, ids, weights, stream);
     check("route");
 }
 void blob_dequant(const uint8_t* blob, uint16_t* gu16, uint16_t* down16, void* stream) {
@@ -3422,7 +3422,7 @@ void peer_scatter_add(float* sum, const float* rows, const float* wk, const int3
 }
 void moe_combine(const float* Dm, const int32_t* slot, const float* w, const float* shared, const float* sg, float* bo,
                  int64_t T, void* stream, const float* row_sd) {
-#ifndef STRATA_W_NO_COMB
+#ifndef NOSTROMA_W_NO_COMB
     if (((reinterpret_cast<uintptr_t>(Dm) | reinterpret_cast<uintptr_t>(shared) | reinterpret_cast<uintptr_t>(bo)) & 15) == 0) {
         moe_combine4_kernel<<<blocks_for(T * (N / 4)), 256, 0, (cudaStream_t) stream>>>(
             Dm, slot, w, reinterpret_cast<const float4*>(shared), sg, reinterpret_cast<float4*>(bo), T, row_sd);
@@ -3458,49 +3458,49 @@ void rms_rows(float* x, const float* w, int64_t rows, int64_t cols, int64_t ld, 
     check("rms_rows");
 }
 void rope(float* x, int64_t T, int64_t heads, int64_t dim, int64_t ld, int64_t pos0,
-          const strata::kernels::RopeScaling& scaling, void* stream) {
+          const nostroma::kernels::RopeScaling& scaling, void* stream) {
     // The engine validates the resolved config at startup with the same rule (generate.cpp), so this only
     // fires for a caller that bypassed it; the prompt path has no error return here, so it stops the process.
-    if (const char* why = strata::kernels::rope_scaling_invalid(scaling)) {
+    if (const char* why = nostroma::kernels::rope_scaling_invalid(scaling)) {
         std::fprintf(stderr, "prefill rope: invalid rope scaling: %s\n", why);
         std::exit(1);
     }
     const float theta_scale = powf((float) scaling.freq_base, -2.0f / 64.0f);
-    const strata::kernels::RopeKernelArgs k = scaling.kernel_args(64);   // none: the identity constants
-    const strata::kernels::RopeTab rt = strata::kernels::rope_table_for(scaling);
+    const nostroma::kernels::RopeKernelArgs k = scaling.kernel_args(64);   // none: the identity constants
+    const nostroma::kernels::RopeTab rt = nostroma::kernels::rope_table_for(scaling);
     if (rt.cos != nullptr)
         rope_kernel<true><<<(unsigned) (T * heads), 32, 0, (cudaStream_t) stream>>>(
             x, heads, dim, ld, pos0, theta_scale, k.freq_scale, k.corr_low, k.corr_high, k.ext_factor, k.attn_factor,
-            strata::kernels::mrope_table(), rt);
+            nostroma::kernels::mrope_table(), rt);
     else
         rope_kernel<false><<<(unsigned) (T * heads), 32, 0, (cudaStream_t) stream>>>(
             x, heads, dim, ld, pos0, theta_scale, k.freq_scale, k.corr_low, k.corr_high, k.ext_factor, k.attn_factor,
-            strata::kernels::mrope_table(), rt);
+            nostroma::kernels::mrope_table(), rt);
     check("rope");
 }
 void rms_rope_rows(const float* in, int64_t in_ts, int64_t in_hs, float* out, int64_t out_ts, const float* w, int64_t T,
-                   int64_t heads, int64_t dim, float eps, int64_t pos0, const strata::kernels::RopeScaling& scaling,
+                   int64_t heads, int64_t dim, float eps, int64_t pos0, const nostroma::kernels::RopeScaling& scaling,
                    void* stream) {
     if (T <= 0) return;
     if (dim < 64 || dim > 256) {
         std::fprintf(stderr, "prefill rms_rope_rows: dim %lld is outside 64..256\n", (long long) dim);
         std::exit(1);
     }
-    if (const char* why = strata::kernels::rope_scaling_invalid(scaling)) {
+    if (const char* why = nostroma::kernels::rope_scaling_invalid(scaling)) {
         std::fprintf(stderr, "prefill rope: invalid rope scaling: %s\n", why);
         std::exit(1);
     }
     const float theta_scale = powf((float) scaling.freq_base, -2.0f / 64.0f);
-    const strata::kernels::RopeKernelArgs k = scaling.kernel_args(64);
-    const strata::kernels::RopeTab rt = strata::kernels::rope_table_for(scaling);
+    const nostroma::kernels::RopeKernelArgs k = scaling.kernel_args(64);
+    const nostroma::kernels::RopeTab rt = nostroma::kernels::rope_table_for(scaling);
     if (rt.cos != nullptr)
         rms_rope_rows_kernel<true><<<(unsigned) (T * heads), 256, 0, (cudaStream_t) stream>>>(
             in, in_ts, in_hs, out, out_ts, w, heads, dim, eps, pos0, theta_scale, k.freq_scale, k.corr_low, k.corr_high,
-            k.ext_factor, k.attn_factor, strata::kernels::mrope_table(), rt);
+            k.ext_factor, k.attn_factor, nostroma::kernels::mrope_table(), rt);
     else
         rms_rope_rows_kernel<false><<<(unsigned) (T * heads), 256, 0, (cudaStream_t) stream>>>(
             in, in_ts, in_hs, out, out_ts, w, heads, dim, eps, pos0, theta_scale, k.freq_scale, k.corr_low, k.corr_high,
-            k.ext_factor, k.attn_factor, strata::kernels::mrope_table(), rt);
+            k.ext_factor, k.attn_factor, nostroma::kernels::mrope_table(), rt);
     check("rms_rope_rows");
 }
 void split_q(const float* q_full, float* q, int64_t T, void* stream) {
@@ -3513,4 +3513,4 @@ void gate_attn(const float* attn, const float* q_full, uint16_t* out16, int64_t 
     check("gate_attn");
 }
 
-}  // namespace strata::prefill
+}  // namespace nostroma::prefill

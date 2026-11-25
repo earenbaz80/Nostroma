@@ -16,15 +16,15 @@
  "engine_prompt_tps": 2114.8,
  "engine_decode_tps": 75.1,
  "log_lines": [
-  "strata serve: prompt 15636 tokens = 0 reused + 15636 read in 7394 ms (2114.8 tok/s), 256 generated in 3410 ms (75.1 tok/s), drafts accepted 152 of 215, 1 checkpoints",
-  "strata serve: decode expert cache hit rate: 93.0% (136865 hits / 147168 lookups)"
+  "nostroma serve: prompt 15636 tokens = 0 reused + 15636 read in 7394 ms (2114.8 tok/s), 256 generated in 3410 ms (75.1 tok/s), drafts accepted 152 of 215, 1 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 93.0% (136865 hits / 147168 lookups)"
  ],
  "answer_head": "## What `README.md` does\n\n`README.md` is the project's landing page and primary user-facing documentation. It serves several purposes:\n\n1. **Marketing/overview** \u2014 Opens with a headline claim (\"Run a 125-billion-parameter AI model on a normal gaming PC\") and a visual demo (the pagoda video) to immed",
  "turn2_ttft_s": 0.438,
  "turn2_prompt_tokens": 15915,
  "turn2_log_lines": [
-  "strata serve: prompt 15915 tokens = 15892 reused + 23 read in 332 ms (69.3 tok/s), 46 generated in 661 ms (69.6 tok/s), drafts accepted 27 of 44, 2 checkpoints",
-  "strata serve: decode expert cache hit rate: 96.4% (29047 hits / 30124 lookups)"
+  "nostroma serve: prompt 15915 tokens = 15892 reused + 23 read in 332 ms (69.3 tok/s), 46 generated in 661 ms (69.6 tok/s), drafts accepted 27 of 44, 2 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 96.4% (29047 hits / 30124 lookups)"
  ],
  "metrics_after": {
   "engine": {

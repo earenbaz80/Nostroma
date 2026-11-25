@@ -9,7 +9,7 @@ from nostroma_control import control_paths
 
 
 def _control(root: Path, name: str) -> Path:
-    here = root / name / "usr" / "lib" / "Strata" / "control"
+    here = root / name / "usr" / "lib" / "Nostroma" / "control"
     (here / "data").mkdir(parents=True)
     (here / "data" / "expert-profile.bin").write_bytes(b"x")
     return here
@@ -22,8 +22,8 @@ class ControlPaths(unittest.TestCase):
         self.root = Path(tmp.name)
 
     def test_a_gone_mount_path_is_pointed_at_this_control(self):
-        here = _control(self.root, ".mount_StrataNEW")
-        gone = "/tmp/.mount_StratappjGco/usr/lib/Strata/control"
+        here = _control(self.root, ".mount_NostromaNEW")
+        gone = "/tmp/.mount_NostromappjGco/usr/lib/Nostroma/control"
         cfg = {"cwd": gone, "args": ["--native", "/data/m/a.gguf", "--expert-profile", gone + "/data/expert-profile.bin", "--max-context", "32768"],
                "model_name": "Qwen"}
         out = control_paths.repoint(cfg, here)
@@ -38,7 +38,7 @@ class ControlPaths(unittest.TestCase):
         other = _control(self.root, "old")
         kept = str(other / "data" / "expert-profile.bin")
         self.assertEqual(control_paths.repoint_value(kept, here), kept, "an existing file is left alone")
-        missing = "/tmp/.mount_X/usr/lib/Strata/control/data/not-in-this-control.bin"
+        missing = "/tmp/.mount_X/usr/lib/Nostroma/control/data/not-in-this-control.bin"
         self.assertEqual(control_paths.repoint_value(missing, here), missing, "no counterpart: unchanged (the start reports it)")
         self.assertEqual(control_paths.repoint_value("/home/u/controller/x", here), "/home/u/controller/x")
         self.assertEqual(control_paths.repoint_value(32768, here), 32768)

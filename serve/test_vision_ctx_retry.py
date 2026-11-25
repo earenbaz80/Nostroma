@@ -43,7 +43,7 @@ class Rule(unittest.TestCase):
         self.assertFalse(rule(next_start_s=40.0))
 
     def test_the_own_tower_wording_counts_too(self):
-        self.assertTrue(rule("strata-vision: Nostroma's picture reader did not start (cannot use GPU 0: out of memory)"))
+        self.assertTrue(rule("nostroma-vision: Nostroma's picture reader did not start (cannot use GPU 0: out of memory)"))
 
     def test_other_platforms_never_retry(self):
         self.assertFalse(rule(linux=False))           # Windows, Mac
@@ -63,7 +63,7 @@ class Rule(unittest.TestCase):
                 self.assertFalse(rule(text))
 
 
-def make_vision(args=("/engine/strata-vision", "--gpu"), log_text=""):
+def make_vision(args=("/engine/nostroma-vision", "--gpu"), log_text=""):
     f = tempfile.NamedTemporaryFile("w+", suffix=".log", delete=False)
     f.write(log_text)
     f.flush()
@@ -95,7 +95,7 @@ class Clock:
 
 
 class Spawn(unittest.TestCase):
-    def run_start(self, outcomes, args=("/engine/strata-vision", "--gpu"), system="linux", machine="aarch64", logged=CTX, attempt_s=1.4, hook=None):
+    def run_start(self, outcomes, args=("/engine/nostroma-vision", "--gpu"), system="linux", machine="aarch64", logged=CTX, attempt_s=1.4, hook=None):
         """_start_gpu_reader with `_start_reader` giving `outcomes` in turn (the last one repeats; an exception is raised, anything else returned) and taking `attempt_s`
         on a fake clock; returns (clock, calls, result or error)."""
         v, f = make_vision(args)
@@ -185,13 +185,13 @@ class Spawn(unittest.TestCase):
         self.assertEqual(len(calls), 1)
         self.assertIsInstance(res, RuntimeError)
 
-    def test_the_diagnostic_line_only_with_STRATA_VIT_PROF_and_only_after_a_retry(self):
-        for env, outcomes, expect in (({"STRATA_VIT_PROF": "1"}, [RuntimeError(DIED)] * 3 + [None], ["vit-prof: GPU reader started after 3 retries, 8.60 s"]),
-                                      ({"STRATA_VIT_PROF": "1"}, [None], []),
+    def test_the_diagnostic_line_only_with_NOSTROMA_VIT_PROF_and_only_after_a_retry(self):
+        for env, outcomes, expect in (({"NOSTROMA_VIT_PROF": "1"}, [RuntimeError(DIED)] * 3 + [None], ["vit-prof: GPU reader started after 3 retries, 8.60 s"]),
+                                      ({"NOSTROMA_VIT_PROF": "1"}, [None], []),
                                       ({}, [RuntimeError(DIED)] * 3 + [None], []),
-                                      ({"STRATA_VIT_PROF": "1"}, [RuntimeError(DIED)], ["vit-prof: GPU reader did not start after 7 retries, 18.20 s"])):
+                                      ({"NOSTROMA_VIT_PROF": "1"}, [RuntimeError(DIED)], ["vit-prof: GPU reader did not start after 7 retries, 18.20 s"])):
             with self.subTest(env=env, n=len(outcomes)), mock.patch.dict(server.os.environ, env), mock.patch("builtins.print") as pr:
-                server.os.environ.pop("STRATA_VIT_PROF", None) if not env else None
+                server.os.environ.pop("NOSTROMA_VIT_PROF", None) if not env else None
                 self.run_start(outcomes)
             # (print is patched for the whole process: only this module's diagnostic lines count, whatever another thread prints meanwhile)
             self.assertEqual([c.args[0] for c in pr.call_args_list if c.args and str(c.args[0]).startswith("vit-prof")], expect)
@@ -210,7 +210,7 @@ class Spawn(unittest.TestCase):
     def test_other_systems_are_not_retried(self):
         err = RuntimeError("the vision encoder did not start")
         for kw in ({"system": "win32"}, {"system": "darwin"}, {"machine": "x86_64"}, {"machine": "AMD64"},
-                   {"args": ("/engine/strata-vision-hip", "--gpu")}):
+                   {"args": ("/engine/nostroma-vision-hip", "--gpu")}):
             with self.subTest(kw=kw):
                 clock, calls, res = self.run_start([err], **kw)
                 self.assertEqual((len(calls), clock.sleeps), (1, []))
@@ -230,7 +230,7 @@ class Spawn(unittest.TestCase):
     def test_start_falls_back_to_the_cpu_reader_after_the_last_retry(self):
         v, f = make_vision()
         self.addCleanup(lambda: (f.close(), Path(f.name).unlink()))
-        v.fallback = (["/engine/strata-vision"], f, None)
+        v.fallback = (["/engine/nostroma-vision"], f, None)
         v.on_cpu, v.elastic = False, False
         starts = []
         clock = Clock()

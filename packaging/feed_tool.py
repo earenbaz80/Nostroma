@@ -128,10 +128,10 @@ GZIP_BLOCK = 4 << 20        # bytes of the tar per gzip member when several thre
 
 
 def gzip_threads() -> int:
-    """How many threads compress a tar.gz: 1 (the single-stream gzip, byte for byte as before) unless STRATA_PACK_THREADS asks for more. OPT-IN
+    """How many threads compress a tar.gz: 1 (the single-stream gzip, byte for byte as before) unless NOSTROMA_PACK_THREADS asks for more. OPT-IN
     (coordinator 11-10): a threaded archive is several gzip members, and every published client that unpacks a package must be shown to read
     those before this may become the default."""
-    raw = os.environ.get("STRATA_PACK_THREADS", "").strip()
+    raw = os.environ.get("NOSTROMA_PACK_THREADS", "").strip()
     if raw.isdigit() and int(raw) >= 1:
         return min(int(raw), 64)
     return 1
@@ -214,12 +214,12 @@ def _tree(folder: Path, *, links: bool = False) -> list[tuple[str, Path]]:
     return found
 
 
-def pack_engine(folder: Path, out: Path, fmt: str = "tar.gz", *, url_prefix: str = "engine/", prefix: str = "strata-engine") -> dict:
+def pack_engine(folder: Path, out: Path, fmt: str = "tar.gz", *, url_prefix: str = "engine/", prefix: str = "nostroma-engine") -> dict:
     """Archive a (signed) engine package folder and return its feed entry. The archive holds the folder's files at its root. The package of a model shape (package_engine.py --shape)
-    gets its component's name as the archive prefix (strata-q4-lite-<version>-...) and its entry names the ``shape``: it goes into the feed member ``shape_engines``."""
+    gets its component's name as the archive prefix (nostroma-q4-lite-<version>-...) and its entry names the ``shape``: it goes into the feed member ``shape_engines``."""
     folder = Path(folder)
     component = ec.read_manifest_any(folder)
-    if component.shape and prefix == "strata-engine":
+    if component.shape and prefix == "nostroma-engine":
         prefix = component.id
     files = _tree(folder)
     installed = sum(p.stat().st_size for _, p in files)
@@ -238,11 +238,11 @@ def pack_engine(folder: Path, out: Path, fmt: str = "tar.gz", *, url_prefix: str
 
 
 def pack_control(folder: Path, out: Path, *, version: str, platform: str, fmt: str = "tar.gz",
-                 entry_file: str = "strata.py", url_prefix: str = "control/") -> dict:
+                 entry_file: str = "nostroma.py", url_prefix: str = "control/") -> dict:
     folder = Path(folder)
     files = _tree(folder, links=True)
     installed = sum(p.stat().st_size for _, p in files if not p.is_symlink())
-    name = f"strata-control-{version}-{platform}.{fmt}"
+    name = f"nostroma-control-{version}-{platform}.{fmt}"
     archive = Path(out) / name
     _write_archive(files, archive, fmt, entry_file)
     entry = {"platform": platform, "format": fmt, "url": f"{url_prefix}{name}", "size": archive.stat().st_size,
@@ -310,7 +310,7 @@ def build_feed(out: Path, *, key: dict, sequence: int, channel: str = "stable", 
                shapes_dir: Path | None = None, dsv41_member: dict | None = None) -> dict:
     now = now or dt.datetime.now(dt.timezone.utc)
     install_manifest = ""
-    document: dict = {"schema_version": feedmod.SCHEMA_VERSION, "feed": "strata-updates", "channel": channel,
+    document: dict = {"schema_version": feedmod.SCHEMA_VERSION, "feed": "nostroma-updates", "channel": channel,
                       "sequence": sequence, "generated_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
                       "expires_at": (now + dt.timedelta(days=expires_days)).strftime("%Y-%m-%dT%H:%M:%SZ") if expires_days else None}
     if engine_dir:
@@ -473,7 +473,7 @@ def main(argv: list[str] | None = None) -> int:
     pe.add_argument("--out", type=Path, required=True)
     pe.add_argument("--format", choices=feedmod.FORMATS, default="tar.gz")
     pe.add_argument("--url-prefix", default="engine/", help='where the archive sits relative to the feed ("" for flat GitHub release assets)')
-    pe.add_argument("--prefix", default="strata-engine", help="archive name prefix")
+    pe.add_argument("--prefix", default="nostroma-engine", help="archive name prefix")
     pd = sub.add_parser("pack-drafter", help="a DFlash2 drafter file as a feed entry (feed member drafters)")
     pd.add_argument("pack", type=Path)
     pd.add_argument("--out", type=Path, required=True)
@@ -499,7 +499,7 @@ def main(argv: list[str] | None = None) -> int:
     bf.add_argument("--channel", default="stable")
     bf.add_argument("--engine", type=Path)
     bf.add_argument("--carry-dsv41", type=Path, metavar="PREVIOUS-FEED",
-                    help="the last published strata-feed.json: its dsv41 member (the DeepSeek engine of Nostroma 0.2.13 and earlier) is carried over, frozen")
+                    help="the last published nostroma-feed.json: its dsv41 member (the DeepSeek engine of Nostroma 0.2.13 and earlier) is carried over, frozen")
     bf.add_argument("--carry-dsv41-base", metavar="URL", help="the https folder of the release that holds those archives, e.g. " + DSV41_BASE_EXAMPLE)
     bf.add_argument("--no-dsv41-carry", action="store_true", help="build the feed without the frozen DeepSeek member (a test feed, or the owner's choice)")
     bf.add_argument("--shapes", type=Path, help="folder of the model-shape engines' .entry.json files (feed member shape_engines; pack-engine writes them for a package made with package_engine.py --shape)")
@@ -541,7 +541,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({k: entry[k] for k in ("version", "platform", "size", "sha256")}, indent=1))
     elif a.cmd == "build-feed":
         if bool(a.carry_dsv41) == bool(a.no_dsv41_carry):
-            raise SystemExit("build-feed: say what happens to the frozen DeepSeek member: --carry-dsv41 <the last strata-feed.json> --carry-dsv41-base "
+            raise SystemExit("build-feed: say what happens to the frozen DeepSeek member: --carry-dsv41 <the last nostroma-feed.json> --carry-dsv41-base "
                              f"{DSV41_BASE_EXAMPLE} (with the tag of the release that holds the archives), or --no-dsv41-carry")
         member = carried_dsv41(a.carry_dsv41, a.carry_dsv41_base) if a.carry_dsv41 else None
         doc = build_feed(a.out, key=_load_key(a.key), sequence=a.sequence, channel=a.channel, engine_dir=a.engine,

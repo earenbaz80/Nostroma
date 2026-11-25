@@ -1,7 +1,7 @@
 # Benchmark results
 
 Raw results and short reports from measurement runs, one folder per run, named by date. They stay here as they were written: each states
-the Strata version, hardware and method of its own day, and none is a statement about a later release. Current numbers are in the
+the Nostroma version, hardware and method of its own day, and none is a statement about a later release. Current numbers are in the
 [docs](../../docs/README.md) and the [README](../../README.md); how to measure is in [BENCHMARK_PROTOCOL.md](../../docs/BENCHMARK_PROTOCOL.md).
 
 This page is built by `python tools/bench_results_index.py` (`--check` fails when a folder is missing from it). 142 folders and 3 loose files, 2185 files in all.
@@ -16,7 +16,7 @@ This page is built by `python tools/bench_results_index.py` (`--check` fails whe
 | [2026-09-27-cache-parity](2026-09-27-cache-parity/) | 2026-09-27: expert cache on vs off (issue #23) | 1 |
 | [2026-09-27-esp](2026-09-27-esp/) | 2026-09-27: the experimental-speed-projection control vector | 5 |
 | [2026-09-27-kv-q4](2026-09-27-kv-q4/) | 2026-09-27: Q4_0 KV with Hadamard rotation (PR #21, --kv q4_0) | 1 |
-| [2026-09-28-coder](2026-09-28-coder/) | The GSQ-RCO Coder (256 of 512 experts) on Strata | 2 |
+| [2026-09-28-coder](2026-09-28-coder/) | The GSQ-RCO Coder (256 of 512 experts) on Nostroma | 2 |
 | [2026-09-28-prefill-speed](2026-09-28-prefill-speed/) | Faster prompt reading (engine 0.1.13) | 1 |
 | [2026-09-28-rope-scaling](2026-09-28-rope-scaling/) | Rope scaling: needle recall past the trained 262K | 10 |
 | [2026-09-28-speed-0114](2026-09-28-speed-0114/) | Speed with engine 0.1.14 | 3 |
@@ -32,12 +32,12 @@ This page is built by `python tools/bench_results_index.py` (`--check` fails whe
 
 | Folder | What | Files |
 | --- | --- | ---: |
-| [2026-10-01-0.1.31-release](2026-10-01-0.1.31-release/) | Strata 0.1.31 vs 0.1.30 — RX 7900 XTX (gfx1100), 2026-10-01 | 3 |
+| [2026-10-01-0.1.31-release](2026-10-01-0.1.31-release/) | Nostroma 0.1.31 vs 0.1.30 — RX 7900 XTX (gfx1100), 2026-10-01 | 3 |
 | [2026-10-01-community-2x-rtx-pro-4500](2026-10-01-community-2x-rtx-pro-4500/) | Community benchmark: 2x RTX PRO 4500 Blackwell, Swift IQ3_XXS | 10 |
 | [2026-10-01-community-2x-titan-rtx](2026-10-01-community-2x-titan-rtx/) | Community benchmark: 2x TITAN RTX (sm_75, NVLink), Xeon E5-2696 v4 | 9 |
 | [2026-10-01-community-rtx-5090-5950x](2026-10-01-community-rtx-5090-5950x/) | Community benchmark on RTX 5090 + Ryzen 9 5950X (AVX2): UD-Q4_K_XL, IQ3_S and Swift IQ3_XXS, engines 0.1.31 to 0.1.39 | 89 |
 | [2026-10-01-community-rtx-pro-4500](2026-10-01-community-rtx-pro-4500/) | Community benchmark: RTX PRO 4500 Blackwell, Threadripper PRO 3975WX | 174 |
-| [2026-10-01-ctx-ladder](2026-10-01-ctx-ladder/) | 2026-10-01 — Strata IQ2_XS context-ladder TPS on RTX 4070 Ti SUPER | 14 |
+| [2026-10-01-ctx-ladder](2026-10-01-ctx-ladder/) | 2026-10-01 — Nostroma IQ2_XS context-ladder TPS on RTX 4070 Ti SUPER | 14 |
 | [2026-10-01-iq4xs-64gb](2026-10-01-iq4xs-64gb/) | 2026-10-01: IQ4_XS on a 64 GB PC — pinned arena vs experts.bin mmap vs the RAM budget | 1 |
 | [2026-10-02-community-2x-rtx-pro-4500-engine-0.1.36](2026-10-02-community-2x-rtx-pro-4500-engine-0.1.36/) | Community benchmark on 2x RTX PRO 4500 Blackwell, Swift IQ3_XXS, engine 0.1.36 | 15 |
 | [2026-10-02-community-2x5060ti](2026-10-02-community-2x5060ti/) | Community benchmark on 2× RTX 5060 Ti 16 GB (PCIe gen3) | 4 |
@@ -66,7 +66,7 @@ This page is built by `python tools/bench_results_index.py` (`--check` fails whe
 | [2026-10-04-community-2x-arc-pro-b60](2026-10-04-community-2x-arc-pro-b60/) | Community benchmark on 2x Intel Arc Pro B60 | 14 |
 | [2026-10-04-community-2x-rtx3060](2026-10-04-community-2x-rtx3060/) | Community benchmark: 2× RTX 3060 12 GB (Xeon E5-2678 v3), Qwen3.8-Flash-Next IQ3_S | 30 |
 | [2026-10-04-community-4090-32gb-ram-512k](2026-10-04-community-4090-32gb-ram-512k/) | Community benchmark: RTX 4090 24 GB with 32 GB of system RAM, 512K context (IQ2_XS) | 5 |
-| [2026-10-04-community-4090-agents-vs-dense-27b](2026-10-04-community-4090-agents-vs-dense-27b/) | Community report: Flash-Next IQ2_XS on Strata vs a dense 27B, as coding agents on one RTX 4090 + 32 GB RAM | 7 |
+| [2026-10-04-community-4090-agents-vs-dense-27b](2026-10-04-community-4090-agents-vs-dense-27b/) | Community report: Flash-Next IQ2_XS on Nostroma vs a dense 27B, as coding agents on one RTX 4090 + 32 GB RAM | 7 |
 | [2026-10-04-community-mi50](2026-10-04-community-mi50/) | Community benchmark: AMD MI50 (gfx906), Intel i5-12400F | 13 |
 | [2026-10-04-community-rtx-4080s-iq3s](2026-10-04-community-rtx-4080s-iq3s/) | Community benchmark: RTX 4080 SUPER (32 GB), Core i7-13790F | 7 |
 | [2026-10-04-community-rtx-4090-laptop](2026-10-04-community-rtx-4090-laptop/) | Community benchmark: RTX 4090 Laptop GPU, Core i9-13900HX | 15 |
@@ -98,23 +98,23 @@ This page is built by `python tools/bench_results_index.py` (`--check` fails whe
 | [2026-10-05-rdna2-rocblas-table](2026-10-05-rdna2-rocblas-table/) | RX 6900 XT (gfx1030): rocBLAS's kernel choice for the FP16 prompt GEMMs, and a solution table (2026-10-05) | 4 |
 | [2026-10-06-community-2x-p100](2026-10-06-community-2x-p100/) | Community benchmark: 2x Tesla P100 PCIe 16GB, Xeon E5-2699 v4 | 12 |
 | [2026-10-06-community-2x-rtx-pro-4500-engine-0.1.40.1](2026-10-06-community-2x-rtx-pro-4500-engine-0.1.40.1/) | Community benchmark on 2x RTX PRO 4500 Blackwell, Swift IQ3_XXS, engine 0.1.40.1 | 19 |
-| [2026-10-06-community-2x-rx-6900xt-0.1.40.1](2026-10-06-community-2x-rx-6900xt-0.1.40.1/) | Community benchmark: 2x AMD Radeon RX 6900 XT 16 GB (gfx1030), Ryzen 5 5600X, 128 GB RAM - Strata 0.1.40.1 | 49 |
+| [2026-10-06-community-2x-rx-6900xt-0.1.40.1](2026-10-06-community-2x-rx-6900xt-0.1.40.1/) | Community benchmark: 2x AMD Radeon RX 6900 XT 16 GB (gfx1030), Ryzen 5 5600X, 128 GB RAM - Nostroma 0.1.40.1 | 49 |
 | [2026-10-06-community-2x-rx-7900-gre](2026-10-06-community-2x-rx-7900-gre/) | Community benchmark: 2x AMD Radeon RX 7900 GRE 16 GiB (gfx1100), Ryzen 7 5700X3D | 21 |
 | [2026-10-06-community-4x-tesla-p100](2026-10-06-community-4x-tesla-p100/) | Community benchmark on 4x Tesla P100 16 GB (Pascal, sm_60) | 6 |
 | [2026-10-06-community-r9-2x-rtx-2080-ti](2026-10-06-community-r9-2x-rtx-2080-ti/) | Community benchmark: 2x NVIDIA GeForce RTX 2080 Ti, Ryzen 9 5950X | 9 |
 | [2026-10-06-community-rtx-5060ti](2026-10-06-community-rtx-5060ti/) | Community benchmark: RTX 5060 Ti 16 GB, Ryzen 9 7945HX | 11 |
 | [2026-10-06-community-rtx-5090-laptop](2026-10-06-community-rtx-5090-laptop/) | Community benchmark: RTX 5090 Laptop GPU (24 GB), Ryzen 9 9955HX3D | 14 |
 | [2026-10-06-community-rtx3090-egpu-64gb](2026-10-06-community-rtx3090-egpu-64gb/) | Community benchmark — RTX 3090 in Thunderbolt eGPU, 64 GB RAM — 2026-10-06 | 5 |
-| [2026-10-06-community-rtx4090-opt-ins](2026-10-06-community-rtx4090-opt-ins/) | What two opt-ins cost on a single-GPU RTX 4090: STRATA_KV_PREFETCH=1, and "parallel": 2 with --batch-mtp | 8 |
+| [2026-10-06-community-rtx4090-opt-ins](2026-10-06-community-rtx4090-opt-ins/) | What two opt-ins cost on a single-GPU RTX 4090: NOSTROMA_KV_PREFETCH=1, and "parallel": 2 with --batch-mtp | 8 |
 | [2026-10-06-community-rtx4090-toolcall-hotfix](2026-10-06-community-rtx4090-toolcall-hotfix/) | What 0.1.40.1 does with a <tool_call> the model writes, and with requests waiting for a dead engine | 7 |
 | [2026-10-06-community-rtx5070ti-5900x](2026-10-06-community-rtx5070ti-5900x/) | Community benchmark: RTX 5070 Ti, Ryzen 9 5900X, 64 GB DDR4-3600 (Windows 10) | 6 |
-| [2026-10-06-community-rtxpro-v0140](2026-10-06-community-rtxpro-v0140/) | Community results: Strata 0.1.39 versus 0.1.40 on RTX PRO 6000 | 8 |
+| [2026-10-06-community-rtxpro-v0140](2026-10-06-community-rtxpro-v0140/) | Community results: Nostroma 0.1.39 versus 0.1.40 on RTX PRO 6000 | 8 |
 | [2026-10-06-community-rx-6800m](2026-10-06-community-rx-6800m/) | Community benchmark on AMD Radeon RX 6800M (gfx1031) | 12 |
 | [2026-10-06-community-rx-7900-xtx](2026-10-06-community-rx-7900-xtx/) | Community benchmark on RX 7900 XTX (Windows 11) | 4 |
-| [2026-10-06-llamacpp-0.6.0](2026-10-06-llamacpp-0.6.0/) | Strata vs llama.cpp v0.6.0 head-to-head (2026-10-06) | 25 |
+| [2026-10-06-llamacpp-0.6.0](2026-10-06-llamacpp-0.6.0/) | Nostroma vs llama.cpp v0.6.0 head-to-head (2026-10-06) | 25 |
 | [2026-10-06-q8-prefill8192-rtxpro](2026-10-06-q8-prefill8192-rtxpro/) | Q8 prefill: 6.7x faster with 8,192-token chunks | 6 |
 | [2026-10-07-community-2x-rtx-4000](2026-10-07-community-2x-rtx-4000/) | Community benchmark: 2x NVIDIA Quadro RTX 4000 8 GB, Xeon E5-2620 v3, 64 GB RAM | 1 |
-| [2026-10-07-community-arc-b65-v01402](2026-10-07-community-arc-b65-v01402/) | Arc Pro B65: Strata v0.1.40.2 on PCIe Gen4 | 28 |
+| [2026-10-07-community-arc-b65-v01402](2026-10-07-community-arc-b65-v01402/) | Arc Pro B65: Nostroma v0.1.40.2 on PCIe Gen4 | 28 |
 | [2026-10-07-community-gfx1150](2026-10-07-community-gfx1150/) | Radeon 890M (gfx1150): a hipBLASLt table, and the gfx1151 exact switches (2026-10-07) | 4 |
 | [2026-10-07-community-rtx-5080-docker-wsl2](2026-10-07-community-rtx-5080-docker-wsl2/) | Community benchmark: RTX 5080 in Docker Desktop on Windows (WSL2) | 35 |
 | [2026-10-07-community-rtx-5090-laptop-ud-iq4xs](2026-10-07-community-rtx-5090-laptop-ud-iq4xs/) | Community benchmark: RTX 5090 Laptop, Core Ultra 9 275HX, 188 GB RAM — Unsloth UD-IQ4_XS (first NVIDIA measurement) | 3 |
@@ -133,13 +133,13 @@ This page is built by `python tools/bench_results_index.py` (`--check` fails whe
 | [2026-10-08-community-rtx4090-iq3xxs-200k-ru](2026-10-08-community-rtx4090-iq3xxs-200k-ru/) | Community benchmark: NVIDIA GeForce RTX 4090 (Russian prompts) | 8 |
 | [2026-10-08-community-v100-sm70-table](2026-10-08-community-v100-sm70-table/) | Community benchmark on Tesla V100-SXM2-32GB (sm_70): the opt-in Volta decode kernels | 3 |
 | [2026-10-08-gfx906-qsa-query-swizzle](2026-10-08-gfx906-qsa-query-swizzle/) | QSA query LDS swizzle qualification | 3 |
-| [2026-10-09-community-2x-rx-6900xt-0.1.41](2026-10-09-community-2x-rx-6900xt-0.1.41/) | Community benchmark: 2x AMD Radeon RX 6900 XT 16 GB (gfx1030), Ryzen 5 5600X, 128 GB RAM - Strata 0.1.41: one card, layer split, expert helper, and... | 47 |
+| [2026-10-09-community-2x-rx-6900xt-0.1.41](2026-10-09-community-2x-rx-6900xt-0.1.41/) | Community benchmark: 2x AMD Radeon RX 6900 XT 16 GB (gfx1030), Ryzen 5 5600X, 128 GB RAM - Nostroma 0.1.41: one card, layer split, expert helper, and... | 47 |
 | [2026-10-09-community-4x-rx-7900-xt](2026-10-09-community-4x-rx-7900-xt/) | Community benchmark on 4x AMD Radeon RX 7900 XT | 14 |
 | [2026-10-09-community-gfx1151-ud-iq4xs-0.1.41](2026-10-09-community-gfx1151-ud-iq4xs-0.1.41/) | Community benchmark: EVO-X2, Ryzen AI Max+ 395 / Radeon 8060S (gfx1151), 128 GB UMA | 51 |
 | [2026-10-09-community-p4-prefill-roofline](2026-10-09-community-p4-prefill-roofline/) | Tesla P4 prefill: transfer reuse and chunk sizing | 22 |
 | [2026-10-09-community-radeon-pro-vii-16gb](2026-10-09-community-radeon-pro-vii-16gb/) | Community benchmark: AMD Radeon Pro VII 16 GB (gfx906), Xeon E5-2666 v3 | 37 |
-| [2026-10-09-community-rtx-3060-0141](2026-10-09-community-rtx-3060-0141/) | Community benchmark: RTX 3060 12 GB, Strata 0.1.41 | 26 |
-| [2026-10-09-community-rtx-5060-ti-e5-2680-v4](2026-10-09-community-rtx-5060-ti-e5-2680-v4/) | Community benchmark: RTX 5060 Ti 16 GB + Xeon E5-2680 v4, Strata 0.1.41 | 12 |
+| [2026-10-09-community-rtx-3060-0141](2026-10-09-community-rtx-3060-0141/) | Community benchmark: RTX 3060 12 GB, Nostroma 0.1.41 | 26 |
+| [2026-10-09-community-rtx-5060-ti-e5-2680-v4](2026-10-09-community-rtx-5060-ti-e5-2680-v4/) | Community benchmark: RTX 5060 Ti 16 GB + Xeon E5-2680 v4, Nostroma 0.1.41 | 12 |
 | [2026-10-09-community-rtx-5060ti-wsl2-iq3_s-0141](2026-10-09-community-rtx-5060ti-wsl2-iq3_s-0141/) | Community benchmark on RTX 5060 Ti 16 GB (WSL2) + GSQ-RCO IQ3_S | 8 |
 | [2026-10-09-community-rtx-5080-4060ti-0.1.41](2026-10-09-community-rtx-5080-4060ti-0.1.41/) | Community benchmark on RTX 5080 16 GB + RTX 4060 Ti 8 GB (helper expert cache), Ryzen 9 9950X3D, 96 GB | 10 |
 | [2026-10-09-community-rtx-5080-w7-2475x-ud-iq4xs-786k](2026-10-09-community-rtx-5080-w7-2475x-ud-iq4xs-786k/) | Community benchmark: RTX 5080 16 GB, Xeon w7-2475X, 128 GB DDR5, Unsloth UD-IQ4_XS at a 786,432-token context (YaRN x3) | 12 |
@@ -150,13 +150,13 @@ This page is built by `python tools/bench_results_index.py` (`--check` fails whe
 | [2026-10-10-community-rx-9060-xt](2026-10-10-community-rx-9060-xt/) | Community benchmark on RX 9060 XT with IQ2_XS and IQ3_XXS | 70 |
 | [2026-10-10-community-rx-9070](2026-10-10-community-rx-9070/) | Community benchmark on AMD Radeon RX 9070 16 GB (gfx1201), Windows 11, Ryzen 7 5800X3D | 8 |
 | [2026-10-11-community-rtx3090-5600x-arena-async](2026-10-11-community-rtx3090-5600x-arena-async/) | --adapt-async 1 in the arena mode — community report, RTX 3090 + Ryzen 5 5600X (Windows 11) | 7 |
-| [2026-10-11-community-rtx3090-5600x-arena-pin-by-need](2026-10-11-community-rtx3090-5600x-arena-pin-by-need/) | Pin by need (STRATA_PIN_BY_NEED=1) — community report, RTX 3090 + Ryzen 5 5600X (Windows 11) | 8 |
+| [2026-10-11-community-rtx3090-5600x-arena-pin-by-need](2026-10-11-community-rtx3090-5600x-arena-pin-by-need/) | Pin by need (NOSTROMA_PIN_BY_NEED=1) — community report, RTX 3090 + Ryzen 5 5600X (Windows 11) | 8 |
 | [2026-10-11-gfx1100-qsa-scores](2026-10-11-gfx1100-qsa-scores/) | Exact gfx1100 QSA scorer: measured prefill benefit, opt-in only | 7 |
 | [2026-10-11-rtx-5090-callback-affinity](2026-10-11-rtx-5090-callback-affinity/) | RTX 5090: adaptive-overlap callback affinity (#1975) | 1 |
 | [2026-10-12-community-gfx1103](2026-10-12-community-gfx1103/) | Radeon 780M (gfx1103) on ROCm 10.1: dot4 + WMMA + a hipBLASLt table (2026-10-12) | 23 |
-| [2026-10-12-hc-persist-gfx1030](2026-10-12-hc-persist-gfx1030/) | STRATA_HC_PERSIST=1: the verifier's hyper-connection read as one persistent kernel (gfx1030) | 2 |
+| [2026-10-12-hc-persist-gfx1030](2026-10-12-hc-persist-gfx1030/) | NOSTROMA_HC_PERSIST=1: the verifier's hyper-connection read as one persistent kernel (gfx1030) | 2 |
 | [2026-10-12-p40-sm61-kernels](2026-10-12-p40-sm61-kernels/) | Tesla P40 (sm_61): wide dequantization, the dense GEMMs as cublasSgemm (opt-in), expert mode 8 and a matvec table (2026-10-12) | 16 |
-| [2026-10-20-0.2.1-bench](2026-10-20-0.2.1-bench/) | First real strata bench run on the released 0.2.1 (terminal 0.2.1, engine 0.1.46 cuda12 Linux packages) | 43 |
+| [2026-10-20-0.2.1-bench](2026-10-20-0.2.1-bench/) | First real nostroma bench run on the released 0.2.1 (terminal 0.2.1, engine 0.1.46 cuda12 Linux packages) | 43 |
 | [2026-10-20-0.2.1-idle-gpu](2026-10-20-0.2.1-idle-gpu/) | The idle GPUs (proposal 2507-0): what the existing switches do on NVIDIA | 15 |
 
 ## Loose files

@@ -3,7 +3,7 @@ import json, re, subprocess, sys, time
 from pathlib import Path
 
 W = Path(r"C:\dflash2-work")
-RW = "C:\\strata-test\\dflash2"
+RW = "C:\\nostroma-test\\dflash2"
 
 
 def ssh(cmd, timeout=1500):

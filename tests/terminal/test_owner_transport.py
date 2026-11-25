@@ -43,7 +43,7 @@ class TestAddressing(unittest.TestCase):
 
     @unittest.skipIf(ot.WINDOWS, "the Windows address is a placeholder; the listener picks the port")
     def test_address_is_stable_for_the_same_inputs(self):
-        d = Path("/tmp/strata-runtime")
+        d = Path("/tmp/nostroma-runtime")
         self.assertEqual(ot.address_for(d, "default"), ot.address_for(d, "default"))
         self.assertNotEqual(ot.address_for(d, "default"), ot.address_for(d, "other"))
 
@@ -51,7 +51,7 @@ class TestAddressing(unittest.TestCase):
 @unittest.skipIf(ot.WINDOWS, "POSIX socket binding")
 class TestPosixListener(unittest.TestCase):
     def setUp(self):
-        self.tmp = Path(tempfile.mkdtemp(prefix="strata-transport-"))
+        self.tmp = Path(tempfile.mkdtemp(prefix="nostroma-transport-"))
 
     def tearDown(self):
         import shutil
@@ -107,7 +107,7 @@ class TestLoopbackTransport(unittest.TestCase):
     """
 
     def setUp(self):
-        self.tmp = Path(tempfile.mkdtemp(prefix="strata-transport-tcp-"))
+        self.tmp = Path(tempfile.mkdtemp(prefix="nostroma-transport-tcp-"))
 
     def tearDown(self):
         import shutil
@@ -193,7 +193,7 @@ class TestStateFileValidation(unittest.TestCase):
     """A client must refuse a state file it cannot trust."""
 
     def setUp(self):
-        self.tmp = Path(tempfile.mkdtemp(prefix="strata-state-"))
+        self.tmp = Path(tempfile.mkdtemp(prefix="nostroma-state-"))
         self.path = self.tmp / "default.json"
         self.path.write_text('{"token": "x"}')
         restrict_to_current_user(self.path)

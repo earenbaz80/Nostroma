@@ -32,7 +32,7 @@ class DraftingError(RuntimeError):
 
 
 class OfflineError(DraftingError):
-    """The download address did not answer (no internet, or a host that is down). Setup skips this one silently: the model keeps the MTP (strata-offline-users)."""
+    """The download address did not answer (no internet, or a host that is down). Setup skips this one silently: the model keeps the MTP (nostroma-offline-users)."""
 
 
 def plan(data_dir: str | Path, engine: str | os.PathLike[str] | None = None, *, model_name: str | None = None, backend: str | None = None, archs=None,
@@ -62,10 +62,10 @@ def _packer():
     """tools/dflash2_pack.py as a module: beside nostroma_control in a source checkout and in the packaged Control (TOOLS_SUBSET)."""
     path = Path(__file__).resolve().parents[1] / "tools" / "dflash2_pack.py"
     if not path.is_file():
-        raise DraftingError("The packing tool is missing from this installation. Update Strata, then try again.")
-    spec = importlib.util.spec_from_file_location("strata_dflash2_pack", path)
+        raise DraftingError("The packing tool is missing from this installation. Update Nostroma, then try again.")
+    spec = importlib.util.spec_from_file_location("nostroma_dflash2_pack", path)
     module = importlib.util.module_from_spec(spec)
-    sys.modules.setdefault("strata_dflash2_pack", module)
+    sys.modules.setdefault("nostroma_dflash2_pack", module)
     spec.loader.exec_module(module)
     return module
 
@@ -78,7 +78,7 @@ def online(url: str, timeout: float = REACH_SECONDS) -> bool:
     sentence in a few seconds instead of a stalled progress bar. Any answer from the server counts, even an error page."""
     try:
         transfer.check_url_policy(url)
-        request = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "strata-drafting/1"})
+        request = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "nostroma-drafting/1"})
         with transfer._opener.open(request, timeout=timeout):     # the download's own opener: same certificates, same redirect policy, same proxy settings
             return True
     except urllib.error.HTTPError:
@@ -175,7 +175,7 @@ def _note_miss(data_dir: str | Path, missed: bool) -> None:
 
 
 def _feed_source(feed: str | None = None) -> str:
-    """The signed feed to read: the one named, STRATA_UPDATE_FEED, else the project's release feed (nostroma_cli/update_cmd.py default_feed)."""
+    """The signed feed to read: the one named, NOSTROMA_UPDATE_FEED, else the project's release feed (nostroma_cli/update_cmd.py default_feed)."""
     if feed:
         return feed
     from nostroma_cli import update_cmd
@@ -250,7 +250,7 @@ def provide_licence(data_dir: str | Path) -> bool:
 def ensure_tuned(data_dir: str | Path, *, progress: Progress | None = None, cancel: threading.Event | None = None, url: str | None = None,
                  size: int | None = None, sha256: str | None = None, name: str | None = None, feed: str | None = None, throttle: bool = False, backend: str | None = None, variant: str | None = None) -> Path | None:
     """Make the tuned drafter (drafting.TUNED_NAME, 340 MB) exist under ``data_dir`` and return its path. It is found in the signed feed (``feed``: a URL or folder; default
-    STRATA_UPDATE_FEED or the project's release feed), unless ``url`` or STRATA_DFLASH2_TUNED_URL names the file directly. None when it cannot be had without anything being wrong:
+    NOSTROMA_UPDATE_FEED or the project's release feed), unless ``url`` or NOSTROMA_DFLASH2_TUNED_URL names the file directly. None when it cannot be had without anything being wrong:
     the feed or the address does not answer (no internet, the host is down), the feed does not list the file, or it answers with an error page. Resumable (transfer.download continues a kept partial file). A complete
     file that is not the pinned bytes is deleted and DraftingError says so; an interrupted download keeps its partial file and raises DraftingError. The licence text and the
     notice are copied beside it. The stock pack is never touched. The keyword arguments are for tests."""

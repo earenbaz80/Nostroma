@@ -340,7 +340,7 @@ class FolderStep(Base):
             self.assertIn("Free space in that folder's drive", t)
             f = app.screen.query_one("#folderpath")
             f.value = ""
-            self.assertNotEqual(str(ctx.default_folder()), str(self.home.base / "Elsewhere-data"))      # (on Linux the default is Strata-data under the home: typing it again is no change)
+            self.assertNotEqual(str(ctx.default_folder()), str(self.home.base / "Elsewhere-data"))      # (on Linux the default is Nostroma-data under the home: typing it again is no change)
             await typed(pilot, str(self.home.base / "Elsewhere-data"))
             self.assertEqual(f.value, str(self.home.base / "Elsewhere-data"))
             await press(pilot, "enter")
@@ -553,9 +553,9 @@ class AdvancedStep(Base):
     def ctx_with_engine(self):
         ctx = make_ctx()
         ctx.settings.family, ctx.settings.model = "qwen", "IQ3_XXS"
-        base = {"exe": "component:strata-engine", "args": ["--max-context", "32768", "--kv", "int8", "--prefill", "auto"]}
+        base = {"exe": "component:nostroma-engine", "args": ["--max-context", "32768", "--kv", "int8", "--prefill", "auto"]}
         p1 = mock.patch.object(Ctx, "base_config", lambda self: base)
-        p2 = mock.patch.object(Ctx, "engine_exe", lambda self: "/engine/strata")
+        p2 = mock.patch.object(Ctx, "engine_exe", lambda self: "/engine/nostroma")
         p3 = mock.patch("nostroma_cli.launch.params.engine_help_text", return_value=self.HELP)
         for p in (p1, p2, p3):
             p.start()
@@ -620,9 +620,9 @@ class AdvancedStep(Base):
 
         async def case(app, pilot, ctx):
             await press(pilot, *self.reach(), "a")
-            await typed(pilot, "STRATA_PIN_BY_NEED=1")
+            await typed(pilot, "NOSTROMA_PIN_BY_NEED=1")
             await press(pilot, "enter")
-            self.assertEqual(ctx.settings.extra, {"STRATA_PIN_BY_NEED": "1"})
+            self.assertEqual(ctx.settings.extra, {"NOSTROMA_PIN_BY_NEED": "1"})
         self.run_app(case, ctx=ctx)
 
     def test_experimental_filter_and_text_filter(self):
@@ -689,7 +689,7 @@ class AccessStep(Base):
         async def case(app, pilot, ctx):
             await press(pilot, *self.reach(), "down")
             t = text_of(app)
-            self.assertTrue(ctx.settings.api_key.startswith("sk-strata-"))
+            self.assertTrue(ctx.settings.api_key.startswith("sk-nostroma-"))
             self.assertIn("API key   [ on ]", t)
             self.assertIn("An API key was made for you", t)
             await press(pilot, "enter")

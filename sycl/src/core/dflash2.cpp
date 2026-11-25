@@ -1,17 +1,17 @@
-// sycl/src/core/dflash2.cpp - the DFlash2 drafter on an Intel GPU.  Port of src/core/dflash2.cpp; see sycl/include/strata/core/dflash2.hpp for the differences.
+// sycl/src/core/dflash2.cpp - the DFlash2 drafter on an Intel GPU.  Port of src/core/dflash2.cpp; see sycl/include/nostroma/core/dflash2.hpp for the differences.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 #include <dpct/dpct.hpp>
-#include "strata/sycl_queue.hpp"
-#include "strata/core/dflash2.hpp"
+#include "nostroma/sycl_queue.hpp"
+#include "nostroma/core/dflash2.hpp"
 
-#include "strata/core/native_head.hpp"
-#include "strata/core/on_device.hpp"
-#include "strata/core/weights.hpp"
-#include "strata/kernels/dflash2.hpp"
-#include "strata/kernels/native_mmvq.hpp"
-#include "strata/kernels/verify_kernels.hpp"
+#include "nostroma/core/native_head.hpp"
+#include "nostroma/core/on_device.hpp"
+#include "nostroma/core/weights.hpp"
+#include "nostroma/kernels/dflash2.hpp"
+#include "nostroma/kernels/native_mmvq.hpp"
+#include "nostroma/kernels/verify_kernels.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -22,7 +22,7 @@
 #include <initializer_list>
 #include <stdexcept>
 
-namespace strata::core {
+namespace nostroma::core {
 namespace {
 
 using Clock = std::chrono::steady_clock;
@@ -62,8 +62,8 @@ Dflash2Drafter::~Dflash2Drafter() try {
     fr(logits_); fr(dvocab_); fr(dhead_);
     if (h_logq_) sycl::free(h_logq_, *cs_);
     if (h_logd_) sycl::free(h_logd_, *cs_);
-    if (h_meta_) strata::host_free_polled(h_meta_, *cs_);
-    if (h_out_) strata::host_free_polled(h_out_, *cs_);
+    if (h_meta_) nostroma::host_free_polled(h_meta_, *cs_);
+    if (h_out_) nostroma::host_free_polled(h_out_, *cs_);
     if (cs_) dpct::get_current_device().destroy_queue(cs_);
 } catch (...) {
 }
@@ -158,7 +158,7 @@ bool Dflash2Drafter::load(const std::string& path, int device, std::string& err)
             cs_->memcpy(blob_ + t.off, stage.data(), t.bytes).wait();
         }
     }
-    if (const char* e = strata::env("NOSTROMA_DF2_TIMING"); e && e[0] == '1') timing_ = true;
+    if (const char* e = nostroma::env("NOSTROMA_DF2_TIMING"); e && e[0] == '1') timing_ = true;
     return alloc(err);
 } catch (const std::exception& e) {
     err = std::string("dflash2: ") + e.what();
@@ -202,8 +202,8 @@ bool Dflash2Drafter::alloc(std::string& err) try {
     vram_ += slab_total;
     rb_bytes_ = rb_cap * (2560 + 80 * sizeof(float) + sizeof(int32_t));
     if (!ok) { err = "dflash2: the drafter's buffers do not fit in VRAM"; return false; }
-    h_meta_ = (int32_t*) strata::host_malloc_polled(kMetaBytes, *cs_);
-    h_out_ = (int32_t*) strata::host_malloc_polled(64 * 4, *cs_);
+    h_meta_ = (int32_t*) nostroma::host_malloc_polled(kMetaBytes, *cs_);
+    h_out_ = (int32_t*) nostroma::host_malloc_polled(64 * 4, *cs_);
     if (h_meta_ == nullptr || h_out_ == nullptr) { err = "dflash2: host staging"; return false; }
     std::memset(h_meta_, 0, kMetaBytes);
     std::memset(h_out_, 0, 64 * 4);
@@ -212,8 +212,8 @@ bool Dflash2Drafter::alloc(std::string& err) try {
     cs_->memset(d_meta_, 0, kMetaBytes);
     cs_->memset(tag_, 0xff, (size_t) kRing * 8);   // -1: no slot holds a context row yet
     for (int64_t& t : slot_pos_) t = -1;
-    if (const char* e = strata::env("NOSTROMA_DF2_RING_LOG"); e && e[0] == '0') log_on_ = false;
-    if (const char* e = strata::env("NOSTROMA_DF2_LOG_MIB"); e && e[0]) stash_budget_ = (uint64_t) std::max(0, std::atoi(e)) << 20;
+    if (const char* e = nostroma::env("NOSTROMA_DF2_RING_LOG"); e && e[0] == '0') log_on_ = false;
+    if (const char* e = nostroma::env("NOSTROMA_DF2_LOG_MIB"); e && e[0]) stash_budget_ = (uint64_t) std::max(0, std::atoi(e)) << 20;
     if (log_on_) {
         h_logq_ = (int8_t*) sycl::malloc_host((size_t) kRows * N_, *cs_);
         h_logd_ = (float*) sycl::malloc_host((size_t) kRows * (N_ / 32) * 4, *cs_);
@@ -221,7 +221,7 @@ bool Dflash2Drafter::alloc(std::string& err) try {
             if (h_logq_) sycl::free(h_logq_, *cs_);
             if (h_logd_) sycl::free(h_logd_, *cs_);
             h_logq_ = nullptr; h_logd_ = nullptr; log_on_ = false;
-            std::fprintf(stderr, "strata dflash2: the ring log's staging does not fit in host memory: the log is off\n");
+            std::fprintf(stderr, "nostroma dflash2: the ring log's staging does not fit in host memory: the log is off\n");
         }
     }
     cs_->memset(xqp_, 0, (size_t) 5 * N_ * 8 + 4096);
@@ -309,7 +309,7 @@ bool Dflash2Drafter::bind(const WeightTable& wt, const NativeHead* head, const s
         head_rows = (int64_t) vocab.size();
     }
     if (!bind_raw(embed, hw, head->type(), head_rows, vocab, err)) return false;
-    std::fprintf(stderr, "strata dflash2: %lld-token draft head (%.1f MiB), drafter %.0f MiB of VRAM (Q4_0 weights)\n", (long long) n_dvocab_,
+    std::fprintf(stderr, "nostroma dflash2: %lld-token draft head (%.1f MiB), drafter %.0f MiB of VRAM (Q4_0 weights)\n", (long long) n_dvocab_,
                  (double) (n_dvocab_ * row_bytes) / 1048576.0, (double) vram_ / 1048576.0);
     return true;
 } catch (const std::exception& e) {
@@ -571,7 +571,7 @@ bool Dflash2Drafter::rebuild(int64_t lo, int64_t hi, int64_t* rebuilt, int64_t* 
         if (slot_pos_[(size_t) (p % kRing)] == (((int64_t) epoch_ << 32) | p)) continue;   // the ring already holds this row
         if (cur_.logged(p)) pos.push_back((int32_t) p);
         else {
-            if (++*missing <= 8 && strata::env("NOSTROMA_DF2_RING_STATS") != nullptr) std::fprintf(stderr, "strata dflash2 ring: position %lld was never logged (hist %zu)\n", (long long) p, cur_.hist.size());
+            if (++*missing <= 8 && nostroma::env("NOSTROMA_DF2_RING_STATS") != nullptr) std::fprintf(stderr, "nostroma dflash2 ring: position %lld was never logged (hist %zu)\n", (long long) p, cur_.hist.size());
         }
     }
     if (pos.empty()) return true;
@@ -668,15 +668,15 @@ bool Dflash2Drafter::begin_request(const int32_t* ids, int64_t n, int64_t resume
     const int64_t lo = std::max<int64_t>(0, n - (window_ - 1)), hi = resume;
     if (hi > lo) {
         if (!rebuild(lo, hi, &rebuilt, &missing, err)) {
-            std::fprintf(stderr, "strata dflash2: %s: the ring starts over for this request\n", err.c_str());
+            std::fprintf(stderr, "nostroma dflash2: %s: the ring starts over for this request\n", err.c_str());
             invalidate_ring();
             missing = hi - lo;
             rebuilt = 0;
         }
     }
-    static const bool verbose = strata::env("NOSTROMA_DF2_RING_STATS") != nullptr;
+    static const bool verbose = nostroma::env("NOSTROMA_DF2_RING_STATS") != nullptr;
     if (verbose)
-        std::fprintf(stderr, "strata dflash2 ring: request %lld resume %lld of %lld: live log %.1f MiB (%lld positions), parked %zu lineages %.1f MiB, rebuilt %lld rows (missing %lld) in %.2f ms%s\n",
+        std::fprintf(stderr, "nostroma dflash2 ring: request %lld resume %lld of %lld: live log %.1f MiB (%lld positions), parked %zu lineages %.1f MiB, rebuilt %lld rows (missing %lld) in %.2f ms%s\n",
                      (long long) ring_stats.requests, (long long) resume, (long long) n, (double) cur_.bytes() / 1048576.0, (long long) cur_.hist.size(), stash_.size(),
                      (double) ring_stash_bytes() / 1048576.0, (long long) rebuilt, (long long) missing, ms_since(t0), swapped ? " (swapped in)" : "");
     ring_stats.rows_rebuilt += rebuilt;
@@ -771,4 +771,4 @@ bool Dflash2Drafter::draft(const float* taps, int n_new, int64_t pos0, int32_t a
     return false;
 }
 
-}  // namespace strata::core
+}  // namespace nostroma::core

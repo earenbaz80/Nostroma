@@ -4,13 +4,13 @@
 #include "tier_common.hpp"
 
 #include "../registry.hpp"
-#include "strata/quant/act.hpp"
+#include "nostroma/quant/act.hpp"
 
 #if defined(__AVX2__) || defined(__FMA__) || defined(__F16C__)
 #error "act_avx.cpp is the AVX-only tier: compile it without AVX2, FMA and F16C"
 #endif
 
-namespace strata::quant {
+namespace nostroma::quant {
 namespace avx {
 
 #include "x86_helpers.inc"
@@ -30,4 +30,4 @@ const ActKernel kTable[] = {
 
 ActTable avx_act_table() noexcept { return {kTable, (int) (sizeof kTable / sizeof kTable[0])}; }
 
-}  // namespace strata::quant
+}  // namespace nostroma::quant

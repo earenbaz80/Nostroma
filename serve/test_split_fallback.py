@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import serve.server as S  # noqa: E402
 
 
-NORMAL = os.path.abspath("/e/strata")
+NORMAL = os.path.abspath("/e/nostroma")
 
 
 class FakeEngine:
@@ -29,16 +29,16 @@ class FakeEngine:
 
 
 def split_cfg():
-    return {"exe": "/e/strata-split-2", "args": ["--native", "/m/a.gguf", "--batch", "6"], "cwd": "/x", "tokenizer": "/t", "port": 8080,
+    return {"exe": "/e/nostroma-split-2", "args": ["--native", "/m/a.gguf", "--batch", "6"], "cwd": "/x", "tokenizer": "/t", "port": 8080,
             "env": {"FNX_ARENA": "0", "FNX_EXPERT_RAM_GIB": "off"},
             "split_fallback": {"exe": NORMAL, "args": ["--pack", "/p", "--native", "/m/a.gguf", "--layer-split", "auto"],
-                               "env": {"STRATA_X": "1"}, "layer_split": "auto"}}
+                               "env": {"NOSTROMA_X": "1"}, "layer_split": "auto"}}
 
 
 class Fallback(unittest.TestCase):
     def setUp(self):
         FakeEngine.started, FakeEngine.fail_exes = [], set()
-        self.p = [mock.patch.object(S, "StrataEngine", FakeEngine), mock.patch.object(S, "effort_end_args", lambda cfg, exe, tok: None),
+        self.p = [mock.patch.object(S, "NostromaEngine", FakeEngine), mock.patch.object(S, "effort_end_args", lambda cfg, exe, tok: None),
                   mock.patch.object(S, "configure_batch_telemetry_env", lambda env, cfg, override: None)]
         for p in self.p:
             p.start()
@@ -56,18 +56,18 @@ class Fallback(unittest.TestCase):
     def test_a_split_engine_that_starts_is_used(self):
         engine, out = self.run_start(split_cfg())
         self.assertEqual(len(FakeEngine.started), 1)
-        self.assertEqual(FakeEngine.started[0][0], "/e/strata-split-2")
+        self.assertEqual(FakeEngine.started[0][0], "/e/nostroma-split-2")
         self.assertNotIn("split_fallback", engine.info)
         self.assertEqual(out, "")
 
     def test_a_split_engine_that_fails_is_replaced_by_the_normal_layer_split_with_one_line(self):
-        FakeEngine.fail_exes = {"/e/strata-split-2"}
+        FakeEngine.fail_exes = {"/e/nostroma-split-2"}
         engine, out = self.run_start(split_cfg())
-        self.assertEqual([s[0] for s in FakeEngine.started], ["/e/strata-split-2", NORMAL])
+        self.assertEqual([s[0] for s in FakeEngine.started], ["/e/nostroma-split-2", NORMAL])
         exe, args, cwd, env = FakeEngine.started[1]
         self.assertIn("--layer-split", args)
         self.assertNotIn("--batch", args)
-        self.assertEqual(env.get("STRATA_X"), "1")
+        self.assertEqual(env.get("NOSTROMA_X"), "1")
         self.assertNotIn("FNX_ARENA", env)
         self.assertTrue(engine.info.get("split_fallback"))
         lines = [ln for ln in out.splitlines() if ln.strip()]
@@ -85,17 +85,17 @@ class Fallback(unittest.TestCase):
         class Refusing(FakeEngine):
             def __init__(self, exe, args, cwd=None, log=None, env=None, lazy=False, **kw):
                 FakeEngine.started.append((exe, list(args), cwd, dict(env or {})))
-                if exe == "/e/strata-split-2":
+                if exe == "/e/nostroma-split-2":
                     raise S.EngineDied("the engine exited before it was ready (see x)\n" + Path(log).read_text())
                 self.info = {}
-        with mock.patch.object(S, "StrataEngine", Refusing):
+        with mock.patch.object(S, "NostromaEngine", Refusing):
             engine, out = self.run_start(cfg)
         lines = [ln for ln in out.splitlines() if ln.strip()]
         self.assertEqual(len(lines), 1)
         self.assertIn("does not read this model's routed experts", lines[0])
         self.assertNotIn("exited before it was ready", lines[0])
         self.assertTrue(os.path.exists(log + ".split-engine"))          # the normal engine will overwrite the log; the refusal stays readable
-        self.assertEqual([s[0] for s in FakeEngine.started], ["/e/strata-split-2", NORMAL])
+        self.assertEqual([s[0] for s in FakeEngine.started], ["/e/nostroma-split-2", NORMAL])
 
     def test_a_split_config_keeps_its_arguments_through_the_drafter_step(self):
         """nostroma_control/split_engine.split_config writes "drafting": "mtp" (what the split engine runs), so the drafter step, which resolves Auto to
@@ -105,7 +105,7 @@ class Fallback(unittest.TestCase):
         base = {"exe": NORMAL, "args": ["--pack", "/p", "--native", "/m/a.gguf", "--mtp", "/d/mtp/rt", "--layer-split", "auto"], "cwd": "/x",
                 "tokenizer": "/t", "port": 8080}
         decision = SE.Decision(True, [], 2)
-        cfg = SE.split_config(base, decision, exe="/e/strata-split-2", native="/m/a.gguf", mtp_dir="/d/mtp/rt", draft_vocab="/d/v.bin", context=131072)
+        cfg = SE.split_config(base, decision, exe="/e/nostroma-split-2", native="/m/a.gguf", mtp_dir="/d/mtp/rt", draft_vocab="/d/v.bin", context=131072)
         args = S.engine_args(cfg)
         self.assertEqual(args[:2], ["--native", "/m/a.gguf"])
         self.assertNotIn("--draft", args)
@@ -115,7 +115,7 @@ class Fallback(unittest.TestCase):
         self.assertNotIn("--layer-split", args)
         # the layer split that starts instead keeps the person's drafting word, or none (Auto)
         self.assertNotIn("drafting", cfg["split_fallback"])
-        cfg = SE.split_config({**base, "drafting": "auto"}, decision, exe="/e/strata-split-2", native="/m/a.gguf", mtp_dir="/d/mtp/rt",
+        cfg = SE.split_config({**base, "drafting": "auto"}, decision, exe="/e/nostroma-split-2", native="/m/a.gguf", mtp_dir="/d/mtp/rt",
                               draft_vocab="/d/v.bin", context=131072)
         self.assertEqual(cfg["split_fallback"]["drafting"], "auto")
         self.assertEqual(cfg["drafting"], "mtp")
@@ -123,14 +123,14 @@ class Fallback(unittest.TestCase):
     def test_without_a_fallback_the_failure_stays_a_failure(self):
         cfg = split_cfg()
         del cfg["split_fallback"]
-        FakeEngine.fail_exes = {"/e/strata-split-2"}
+        FakeEngine.fail_exes = {"/e/nostroma-split-2"}
         with self.assertRaises(S.EngineDied):
             self.run_start(cfg)
         self.assertEqual(len(FakeEngine.started), 1)
 
     def test_a_normal_config_is_untouched(self):
-        cfg = {"exe": "/e/strata", "args": ["--pack", "/p"], "cwd": "/x", "tokenizer": "/t"}
-        FakeEngine.fail_exes = {"/e/strata"}
+        cfg = {"exe": "/e/nostroma", "args": ["--pack", "/p"], "cwd": "/x", "tokenizer": "/t"}
+        FakeEngine.fail_exes = {"/e/nostroma"}
         with self.assertRaises(S.EngineDied):
             self.run_start(cfg)
         self.assertEqual(len(FakeEngine.started), 1)

@@ -1,6 +1,6 @@
 name: Docker images
 
-# Builds the Strata container images of one release from its engine packages and pushes them to ghcr.io.
+# Builds the Nostroma container images of one release from its engine packages and pushes them to ghcr.io.
 # Run by hand only (Actions tab -> Docker images -> Run workflow). Nothing starts it on its own.
 #
 # For each flavor the job downloads the engine package from the release and checks it against the signed update feed

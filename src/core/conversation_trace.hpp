@@ -1,5 +1,5 @@
 #pragma once
-// STRATA_PARK_TRACE helpers (diagnostics only, nothing here changes what the engine does): minor page faults of the
+// NOSTROMA_PARK_TRACE helpers (diagnostics only, nothing here changes what the engine does): minor page faults of the
 // calling thread, the process's AnonHugePages, THP settings, and where a buffer sits relative to the C heap.  Read by
 // the park trace lines in conversation_state.cpp / conversation_snapshot.cpp.  Linux only; elsewhere every figure is 0.
 #include <cstdint>
@@ -13,7 +13,7 @@
 #include <unistd.h>
 #endif
 
-namespace strata::core::conversation_trace {
+namespace nostroma::core::conversation_trace {
 
 /// Minor page faults taken by the calling thread so far (a 4 KiB first touch is one; a 2 MiB huge page is one)
 inline long thread_minflt() {
@@ -83,4 +83,4 @@ inline const char* where(const void* p) {
 #endif
 }
 
-}  // namespace strata::core::conversation_trace
+}  // namespace nostroma::core::conversation_trace

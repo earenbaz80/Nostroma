@@ -1,44 +1,44 @@
 // metal/src/engine/missing.cpp - what a kernel entry point that has no Metal implementation yet does when called.
 //
 // Default: say which one and stop (exit code 86), so a run never continues on outputs nobody wrote.
-// STRATA_METAL_STUBS=log: say it once per entry point and return (outputs untouched) - for listing which entry points a
+// NOSTROMA_METAL_STUBS=log: say it once per entry point and return (outputs untouched) - for listing which entry points a
 // code path reaches, never for answers.
 #include <cstdio>
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 #include <cstdlib>
 #include <mutex>
 #include <set>
 #include <string>
 
-namespace strata::metal_engine {
+namespace nostroma::metal_engine {
 
 void missing(const char* name) {
     static const bool log_only = [] {
-        const char* v = strata::env("NOSTROMA_METAL_STUBS");
+        const char* v = nostroma::env("NOSTROMA_METAL_STUBS");
         return v != nullptr && std::string(v) == "log";
     }();
     if (!log_only) {
-        std::fprintf(stderr, "strata metal: %s has no Metal implementation yet\n", name);
+        std::fprintf(stderr, "nostroma metal: %s has no Metal implementation yet\n", name);
         std::fflush(stderr);
         std::_Exit(86);
     }
     static std::mutex mu;
     static std::set<std::string> seen;
     std::lock_guard<std::mutex> lk(mu);
-    if (seen.insert(name).second) std::fprintf(stderr, "strata metal: STUB %s\n", name);
+    if (seen.insert(name).second) std::fprintf(stderr, "nostroma metal: STUB %s\n", name);
 }
 
-}  // namespace strata::metal_engine
+}  // namespace nostroma::metal_engine
 
 // ---- entry points the shared host loop asks every request, with nothing to do on Metal yet
-#include "strata/kernels/cvec.hpp"
-namespace strata::kernels {
+#include "nostroma/kernels/cvec.hpp"
+namespace nostroma::kernels {
 // no control vector on Metal (--control-vector-scaled is not ported): the empty one, `loaded()` false
 const Cvec& cvec() {
     static const Cvec none{};
     return none;
 }
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels
 
 // an uncaught exception or abort on the Metal build prints where it came from (macOS gives no core dump by default and
 // lldb needs a debugging permission a user's session may not have)
@@ -54,7 +54,7 @@ namespace {
 [[noreturn]] void metal_terminate() {
     void* fr[64];
     const int n = backtrace(fr, 64);
-    const char msg[] = "strata metal: terminate - the call stack:\n";
+    const char msg[] = "nostroma metal: terminate - the call stack:\n";
     (void) !write(2, msg, sizeof msg - 1);
     backtrace_symbols_fd(fr, n, 2);
     std::abort();
@@ -65,7 +65,7 @@ void metal_crash(int sig, siginfo_t* si, void*) {
     void* fr[64];
     const int n = backtrace(fr, 64);
     char msg[160];
-    const int m = std::snprintf(msg, sizeof msg, "strata metal: crashed (signal %d at address %p) - the call stack:\n", sig,
+    const int m = std::snprintf(msg, sizeof msg, "nostroma metal: crashed (signal %d at address %p) - the call stack:\n", sig,
                                 si ? si->si_addr : nullptr);
     (void) !write(2, msg, (size_t) m);
     backtrace_symbols_fd(fr, n, 2);
@@ -81,7 +81,7 @@ void metal_crash(int sig, siginfo_t* si, void*) {
         mach_msg_type_number_t cnt = TASK_VM_INFO_COUNT;
         const bool ok = task_info(mach_task_self(), TASK_VM_INFO, (task_info_t) &ti, &cnt) == KERN_SUCCESS;
         char m2[256];
-        const int k = std::snprintf(m2, sizeof m2, "strata metal: open descriptors %d (limit %llu / %llu), virtual %.1f GB, footprint %.2f GB, resident %.2f GB\n", fds,
+        const int k = std::snprintf(m2, sizeof m2, "nostroma metal: open descriptors %d (limit %llu / %llu), virtual %.1f GB, footprint %.2f GB, resident %.2f GB\n", fds,
                                     (unsigned long long) rl.rlim_cur, (unsigned long long) rl.rlim_max, ok ? ti.virtual_size / 1e9 : -1.0,
                                     ok ? ti.phys_footprint / 1e9 : -1.0, ok ? ti.resident_size / 1e9 : -1.0);
         (void) !write(2, m2, (size_t) k);

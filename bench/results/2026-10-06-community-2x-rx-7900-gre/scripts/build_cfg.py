@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[4]
-BASE = ROOT / 'strata-coder-iq1_m.json'
+BASE = ROOT / 'nostroma-coder-iq1_m.json'
 
 
 def main():

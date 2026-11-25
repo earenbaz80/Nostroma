@@ -1,7 +1,7 @@
 # Community benchmark: RTX 5090, Ryzen 7 9700X
 
 Measured on 2026-10-04 by [steve8697](https://github.com/steve8697), on a
-native Windows PC. This tests the published Strata 0.1.39 engine with the
+native Windows PC. This tests the published Nostroma 0.1.39 engine with the
 original Flash-Next IQ3_XXS, one GPU, and a 262,144-token context limit.
 
 Median fresh-prompt throughput was **3,775 tok/s prefill and 171.7 tok/s
@@ -50,7 +50,7 @@ rows are in [Full window and two requests at once](#full-window-and-two-requests
   The engine then reports `spec=6`, `mtp_max=4`, `lookup=3`: with prompt
   lookup enabled it keeps a 4-token MTP draft and widens the verify window
   by 2, up to 8.
-- `STRATA_PF_FUSED=1`, so native IQ prompt experts use the fused int8 kernels
+- `NOSTROMA_PF_FUSED=1`, so native IQ prompt experts use the fused int8 kernels
   once a prompt is long enough for that path. Short prompts stay on the
   previous kernels.
 - `"parallel": 2`. These requests were sent one at a time, so each one used
@@ -61,10 +61,10 @@ rows are in [Full window and two requests at once](#full-window-and-two-requests
 - `experimental_speed_projection` left off. No API key. The server listened
   on all interfaces; the configured hostname allowlist is omitted here.
 
-Launch, from the Strata directory:
+Launch, from the Nostroma directory:
 
 ```text
-.venv\Scripts\python.exe -u serve\server.py --engine strata --config strata-iq3_xxs.json --port 5310
+.venv\Scripts\python.exe -u serve\server.py --engine nostroma --config nostroma-iq3_xxs.json --port 5310
 ```
 
 The script that issued the requests is [benchmark.py](benchmark.py).
@@ -185,7 +185,7 @@ decoding, tool calls, and images were not measured. The nine serial runs never
 shared a batch window, so `"parallel": 2` only reserved slot memory for them.
 The later pair of 128,000-token prompts did share the slots.
 
-`STRATA_PF_FUSED=1` changes how long prompts round native IQ expert math.
+`NOSTROMA_PF_FUSED=1` changes how long prompts round native IQ expert math.
 This report does not claim those tokens match a run with the flag unset.
 
 The other RTX 5090 report in this directory is a different computer (Linux,

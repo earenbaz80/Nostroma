@@ -7,7 +7,7 @@
 
 What it does, in the same order and with the same code as `nostroma update`:
 
-1. reads strata-feed.json and strata-feed.json.sig from the release (GitHub release assets, or a folder / URL given with --source)
+1. reads nostroma-feed.json and nostroma-feed.json.sig from the release (GitHub release assets, or a folder / URL given with --source)
    and checks the Ed25519 signature against the public key in nostroma_control/update_keys.json;
 2. for each flavor picks the linux-x86_64 engine package the feed lists for it (see FLAVORS);
 3. downloads the archive and checks its size and SHA-256 against the signed feed (a mismatch deletes the file and stops);
@@ -100,7 +100,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--release-tag", help="the GitHub release tag, for example v0.2.7")
     ap.add_argument("--repo", default="earenbaz80/Nostroma", help="owner/name of the GitHub repository (default %(default)s)")
-    ap.add_argument("--source", help="a release folder or base URL holding strata-feed.json(.sig) and the archives (instead of --release-tag)")
+    ap.add_argument("--source", help="a release folder or base URL holding nostroma-feed.json(.sig) and the archives (instead of --release-tag)")
     ap.add_argument("--flavors", default=",".join(FLAVORS), help="comma separated; default: all (%s)" % ", ".join(FLAVORS))
     ap.add_argument("--out", type=Path, help="where the unpacked package folders go")
     ap.add_argument("--skip-missing", action="store_true", help="a flavor the feed has no package for is skipped (default: an error)")

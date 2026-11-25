@@ -1,7 +1,7 @@
 # Community benchmark: 2x Tesla P40 22 GB (Pascal, sm_61), 2x Xeon E5-2698 v4
 
 Measured on 2026-10-05 by [sarge18](https://github.com/sarge18) on a Linux server. This tests the original Flash-Next IQ2_XS
-with a 32,768-token context on the **experimental CUDA 12 engine for Pascal** (`-DSTRATA_EXPERIMENTAL_SM60=ON`, sm_61), once on a
+with a 32,768-token context on the **experimental CUDA 12 engine for Pascal** (`-DNOSTROMA_EXPERIMENTAL_SM60=ON`, sm_61), once on a
 single P40 and once on **both P40s with the layer split** (config `"gpu": [0, 1]`, which `docs/MULTI_GPU.md` lists as unsupported for
 cards below compute capability 7.5). The report was prepared with an AI assistant (Claude Sonnet 5.5, medium effort) under the
 maintainer's direction; the full study, which also compares llama.cpp and Ollama on the same weights, is in
@@ -20,10 +20,10 @@ synthetic and greedy; they do not establish general answer quality or performanc
 - **CPU and RAM:** 2x Intel Xeon E5-2698 v4 (2x20 cores, 80 threads, AVX2, no AVX-512; the engine used 19 expert-pool workers plus its host thread). 153 GiB RAM (Linux MemTotal 160,445,020 kB). Storage: a
   spinning-disk ZFS RAIDZ2 pool shared with other duties (it affects cold-load times only). 8 GiB swap; the server unit had swap disabled, and the host's swap use stayed flat (about 0.4 GiB, from other processes).
 - **OS and runtime:** Ubuntu 26.04, kernel 7.0.0-29-generic, glibc 2.43, NVIDIA driver 580.173.02, CUDA toolkit 12.4 (Ubuntu's `nvidia-cuda-toolkit`) with g++ 13.4.
-- **Source:** Strata v0.1.39, commit `6f32ec070f23ced9f50e704d854d775da52591ab` (current `main` at the time of writing), unmodified.
-- **Build:** local source build through setup: `CXX=g++-13 CUDAHOSTCXX=g++-13 STRATA_NVCC=/usr/bin/nvcc ./setup.sh --family qwen --model IQ2_XS --context 32768 --vision no --cuda 12 --build --gpu 1 --yes --no-start --no-browser --data-dir <dir> --experimental-speed-projection off`.
-  setup compiled the engine for `compute_61/sm_61` with `-DSTRATA_EXPERIMENTAL_SM60=1`. See "Build notes" below for what was needed on Ubuntu 26.04.
-- **Other services:** the machine's other GPU service (an Ollama instance) was stopped for each run and restored afterwards, so the cards ran only Strata. Other processes (a file server, an idle virtual machine, small periodic timers)
+- **Source:** Nostroma v0.1.39, commit `6f32ec070f23ced9f50e704d854d775da52591ab` (current `main` at the time of writing), unmodified.
+- **Build:** local source build through setup: `CXX=g++-13 CUDAHOSTCXX=g++-13 NOSTROMA_NVCC=/usr/bin/nvcc ./setup.sh --family qwen --model IQ2_XS --context 32768 --vision no --cuda 12 --build --gpu 1 --yes --no-start --no-browser --data-dir <dir> --experimental-speed-projection off`.
+  setup compiled the engine for `compute_61/sm_61` with `-DNOSTROMA_EXPERIMENTAL_SM60=1`. See "Build notes" below for what was needed on Ubuntu 26.04.
+- **Other services:** the machine's other GPU service (an Ollama instance) was stopped for each run and restored afterwards, so the cards ran only Nostroma. Other processes (a file server, an idle virtual machine, small periodic timers)
   kept running, and one service kept about 22 GB of RAM locked in page cache. No long-running scheduled job was due during the runs, judging by the timer schedule (not by logs); small periodic housekeeping timers did run. This was not a fully isolated operating system.
   Each run was started inside a network namespace with loopback only (no Internet), as an unprivileged user with a hard memory limit.
 
@@ -37,7 +37,7 @@ the files were downloaded by setup, which checks only their structure. They were
 
 The native pack and the MTP draft layer were prepared by setup (MTP tensors from `Qwen/Qwen3.8-Flash-Next` at the pinned revision `de4b8e4d43b917e7706784d8bb445c9af86a3540`). The expert profile is the bundled `data/expert-profile.bin`.
 
-**Configuration** ([strata-iq2_xs.json](strata-iq2_xs.json) for one card, [strata-iq2_xs-dual.json](strata-iq2_xs-dual.json) for two; `/m` is the model directory, `/work` the checkout):
+**Configuration** ([nostroma-iq2_xs.json](nostroma-iq2_xs.json) for one card, [nostroma-iq2_xs-dual.json](nostroma-iq2_xs-dual.json) for two; `/m` is the model directory, `/work` the checkout):
 
 - context 32,768, `--kv int8`, expert cache `auto`, `--prefill auto`;
 - MTP `--spec 4 --spec-min-p 0.5` (native IQ packs require `--spec` of at least 2, so speculation cannot be switched off);
@@ -46,8 +46,8 @@ The native pack and the MTP draft layer were prepared by setup (MTP tensors from
 
 ```text
 # server, inside the benchmark's network namespace (cwd /work); one card:
-python serve/server.py --engine strata --config strata-iq2_xs.json --port 8080
-# both cards: --config strata-iq2_xs-dual.json
+python serve/server.py --engine nostroma --config nostroma-iq2_xs.json --port 8080
+# both cards: --config nostroma-iq2_xs-dual.json
 ```
 
 ## Method
@@ -60,7 +60,7 @@ was started cold, then the three tasks ran in order, three times (`--reps 3`), o
 - **TTFT** and **total latency** are measured by the client from sending the request to the first generated token / the end of the stream; they include the engine's prompt processing and any queueing (none: one request at a time). The first token is answer text (thinking off).
 - **Warm-up:** the first repetition of each configuration is slower (the expert cache fills): see the per-run table. Medians are of all three runs, with the range in brackets. Model load time was not included in any speed number.
 - **Memory:** the server unit's cgroup memory peak (anonymous memory plus page cache charged to it) was 34.8 GB (one card) and 35.8 GB (both cards); swap 0. Peak VRAM during the runs (nvidia-smi, 5-second samples) was 22,601 MiB on GPU 1 for one card, and 20,487 MiB (GPU 0) and 22,377 MiB (GPU 1) with both. No paging or out-of-memory event.
-  `data/engine-logs/strata-iq2_xs.log` and `strata-iq2_xs-dual.log` are the engine's cumulative logs for every run on that install (they also contain a smoke test and the quality runs). Peaks are over the whole run; the telemetry CSVs (per 5 s: host available memory, swap, per-GPU utilisation, memory, temperature, power) are in `data/telemetry/`.
+  `data/engine-logs/nostroma-iq2_xs.log` and `nostroma-iq2_xs-dual.log` are the engine's cumulative logs for every run on that install (they also contain a smoke test and the quality runs). Peaks are over the whole run; the telemetry CSVs (per 5 s: host available memory, swap, per-GPU utilisation, memory, temperature, power) are in `data/telemetry/`.
 
 ## Results
 

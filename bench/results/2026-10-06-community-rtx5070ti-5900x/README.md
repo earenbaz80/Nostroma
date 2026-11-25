@@ -1,7 +1,7 @@
 # Community benchmark: RTX 5070 Ti, Ryzen 9 5900X, 64 GB DDR4-3600 (Windows 10)
 
 Measured on 2026-10-06 by [obiscr](https://github.com/obiscr), on a native-Windows machine.
-This tests Strata 0.1.39 (the `strata-windows-x64.zip` release build) with three Flash-Next
+This tests Nostroma 0.1.39 (the `nostroma-windows-x64.zip` release build) with three Flash-Next
 native packs — **IQ2_XS, IQ3_XXS and IQ3_S** — on one GPU at a 65,536-token context, and then
 a six-configuration A/B of the settings that helped a similar machine in #832.
 
@@ -33,7 +33,7 @@ decode throughput drifted by up to 17% across the session while prefill stayed w
   DDR4-3600 with XMP/DOCP enabled** (~57.6 GB/s theoretical dual-channel).
 - Model files on `D:`; 2.83 GiB/s measured while loading experts, so an NVMe-class SSD.
 - Windows 10 (build 19045); NVIDIA driver 591.86; CUDA 13.0.
-- Strata commit `6f32ec0`; engine **0.1.39** from the release zip; no source build.
+- Nostroma commit `6f32ec0`; engine **0.1.39** from the release zip; no source build.
 - The machine was otherwise idle during the runs; the benchmark drove the server over
   loopback with no browser open.
 
@@ -54,13 +54,13 @@ Vision is **not installed**; the experimental speed projection is off; the shipp
 profile was used without calibration.
 
 The arms differ only in the settings below; everything else is the configuration in
-[`strata-iq3_s.json`](strata-iq3_s.json) (arm A), **with its local paths replaced by `<repo>`
+[`nostroma-iq3_s.json`](nostroma-iq3_s.json) (arm A), **with its local paths replaced by `<repo>`
 and `<data-dir>`**:
 
 | arm | `--kv` | `--prefill` | engine env |
 | --- | --- | --- | --- |
 | **A** baseline | `int8` | `auto` | — |
-| **B** | `q4_0` | `auto:32768` | `STRATA_PF_FUSED=1`, `STRATA_PF_FUSED_TILE=128`, `STRATA_GR_DOWN_MAX4=1` |
+| **B** | `q4_0` | `auto:32768` | `NOSTROMA_PF_FUSED=1`, `NOSTROMA_PF_FUSED_TILE=128`, `NOSTROMA_GR_DOWN_MAX4=1` |
 | **C** | `q4_0` | `auto` | the same three |
 | **D** | `int8` | `auto` | the same three |
 | **E** | `q4_0` | `auto` | — |
@@ -70,7 +70,7 @@ Everything else is identical in all six: `--expert-cache auto --spec 4 --spec-mi
 `--max-context 65536 --kv-resident 32768`, MTP on, one GPU, the same pack and profile.
 
 ```text
-strata.exe --pack <data-dir>\packs\iq3_s
+nostroma.exe --pack <data-dir>\packs\iq3_s
   --native   <data-dir>\models\IQ3_S\…-IQ3_S-00001-of-00002.gguf
   --ple-gguf <data-dir>\models\IQ3_S\…-IQ3_S-00002-of-00002.gguf
   --expert-profile <repo>\data\expert-profile.bin

@@ -76,7 +76,7 @@ def normalised(parser_cls, raw: str, thinking: bool, chunk: int, stream: bool) -
 
 
 class Detection(unittest.TestCase):
-    def test_every_template_strata_ships_is_xml(self):
+    def test_every_template_nostroma_ships_is_xml(self):
         self.assertEqual(toolformat.tool_format((ROOT / "serve" / "chat_template.jinja").read_text(encoding="utf-8")), "xml")
         for name in ("fn_unsloth_ud_q4_k_xl", "fn_swift_iq3_s", "q36_ud_q4_k_xl"):
             with self.subTest(name):

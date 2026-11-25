@@ -1,17 +1,17 @@
 #include "b60_layout_state.hpp"
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 #include <cstdlib>
-// src/kernels/cuda/qsa_decode_attn.cu - see include/strata/kernels/qsa_decode_attn.hpp.
+// src/kernels/cuda/qsa_decode_attn.cu - see include/nostroma/kernels/qsa_decode_attn.hpp.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
-#include "strata/kprof.hpp"
-#include "strata/core/geometry.hpp"
+#include "nostroma/kprof.hpp"
+#include "nostroma/core/geometry.hpp"
 #include <dpct/dpct.hpp>
-#include "strata/sycl_queue.hpp"
-#include "strata/workload_trace.hpp"
-#include "strata/kernels/qsa_decode_attn.hpp"
-#include "strata/kernels/kv_q8.hpp"
-#include "strata/kernels/kv_q4.hpp"
+#include "nostroma/sycl_queue.hpp"
+#include "nostroma/workload_trace.hpp"
+#include "nostroma/kernels/qsa_decode_attn.hpp"
+#include "nostroma/kernels/kv_q8.hpp"
+#include "nostroma/kernels/kv_q4.hpp"
 
 #include <cfloat>
 #include <cstdio>
@@ -22,13 +22,13 @@
 // END PRIVATE QSA TWO STAGE INCLUDES
 #include <cmath>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 
 constexpr int HD = 256;          // head_dim
-constexpr int G = strata::core::kCompiledGeometry.n_head / strata::core::kCompiledGeometry.n_head_kv;   // query heads per KV head (12 for Flash-Next; 1..16, a multiple of 4)
+constexpr int G = nostroma::core::kCompiledGeometry.n_head / nostroma::core::kCompiledGeometry.n_head_kv;   // query heads per KV head (12 for Flash-Next; 1..16, a multiple of 4)
 static_assert(G % 4 == 0 && G <= 16, "qsa_decode_attn: query heads per KV head must be 4, 8, 12 or 16 (float4 probability rows, the 16-lane score reduce)");
-static_assert(HD == strata::core::kCompiledGeometry.head_dim && G == strata::core::kCompiledGeometry.n_head / strata::core::kCompiledGeometry.n_head_kv, "qsa_decode_attn is compiled for core/geometry.hpp");
+static_assert(HD == nostroma::core::kCompiledGeometry.head_dim && G == nostroma::core::kCompiledGeometry.n_head / nostroma::core::kCompiledGeometry.n_head_kv, "qsa_decode_attn is compiled for core/geometry.hpp");
 constexpr int CHUNK = 64;        // cells per block
 constexpr int THREADS = 256;
 constexpr int WARPS = THREADS / 32;
@@ -193,7 +193,7 @@ attn_chunk_kernel(const float *__restrict__ q, QsaAttnPools p,
     */
     item_ct1.barrier();
     if constexpr (LANE_CELL) {
-        // S25 (STRATA_ATTN_LANECELL=1): thread t scores cell t % 64 for heads 3 (t / 64) .. +2 by itself - the same
+        // S25 (NOSTROMA_ATTN_LANECELL=1): thread t scores cell t % 64 for heads 3 (t / 64) .. +2 by itself - the same
         // 8-dimension partial per former lane (the identical expression), then the former warp_sum's butterfly as
         // lane 0 ran it (a[l] += a[l + o] for o = 16 .. 1), so every score is bit-identical without 12 shuffle
         // reductions per cell
@@ -388,8 +388,8 @@ attn_chunk_kernel(const float *__restrict__ q, QsaAttnPools p,
 // PR #540 (sskver): the same attention with fewer shuffles and less shared-memory traffic, bit for bit the kernel
 // above (same operands, same order); +7% prompt speed on a V100, where this kernel reads every prompt chunk.  It
 // uses more registers (80 vs 38 on sm_70), so it runs on cards below sm_75 only, and exists only in the experimental
-// build (-DSTRATA_EXPERIMENTAL_SM60=ON): the ready-made engine keeps exactly the kernel above.
-#if defined(STRATA_EXPERIMENTAL_SM60)
+// build (-DNOSTROMA_EXPERIMENTAL_SM60=ON): the ready-made engine keeps exactly the kernel above.
+#if defined(NOSTROMA_EXPERIMENTAL_SM60)
 // The 12 heads' lane sums (`part[12..15]` zero), reduce-scattered with warp_sum's pairing order (xor 16, 8, 4, 2, 1):
 // every output adds the same two operands at every level, so each sum is bit for bit warp_sum's (float add commutes),
 // for 16 shuffles instead of 12 x 5.  Lane l ends holding head head_of_lane(l); lanes l and l^1 agree.
@@ -594,7 +594,7 @@ __global__ void __launch_bounds__(THREADS) attn_chunk_kernel_pre75(const float* 
 #pragma unroll
     for (int h = 0; h < G; ++h) part_acc[((size_t) slot * G + h) * HD + t] = acc[h];
 }
-#endif  // STRATA_EXPERIMENTAL_SM60
+#endif  // NOSTROMA_EXPERIMENTAL_SM60
 
 __dpct_inline__ void attn_merge_kernel(const float *__restrict__ part_acc,
                                        const float *__restrict__ part_m,
@@ -687,7 +687,7 @@ __dpct_inline__ void attn_merge_active_kernel(
 }
 
 bool merge_active_on(const sycl::device& d) {
-    static const bool on = strata::bm_default_on("STRATA_ATTN_MERGE_ACTIVE", d);
+    static const bool on = nostroma::bm_default_on("NOSTROMA_ATTN_MERGE_ACTIVE", d);
     return on;
 }
 
@@ -765,12 +765,12 @@ void launch_qsa_merge_two_stage_partial(const float* part_acc,
         });
 }
 // END PRIVATE QSA TWO STAGE HELPER
-#if defined(STRATA_EXPERIMENTAL_SM60)
-// the current device is below sm_75 (per device: a layer split can mix cards); STRATA_ATTN_PRE75=0 turns PR #540's
+#if defined(NOSTROMA_EXPERIMENTAL_SM60)
+// the current device is below sm_75 (per device: a layer split can mix cards); NOSTROMA_ATTN_PRE75=0 turns PR #540's
 // kernel off (A/B)
 bool pre75_attn() {
     static const bool off = [] {
-        const char* e = strata::env("NOSTROMA_ATTN_PRE75");
+        const char* e = nostroma::env("NOSTROMA_ATTN_PRE75");
         return e != nullptr && e[0] == '0';
     }();
     static int cc[64] = {};
@@ -788,9 +788,9 @@ bool pre75_attn() {
     }
     return cc[dev] < 75;
 }
-#define STRATA_ATTN_CHUNK(M) (pre75_attn() ? attn_chunk_kernel_pre75<M> : attn_chunk_kernel<M>)
+#define NOSTROMA_ATTN_CHUNK(M) (pre75_attn() ? attn_chunk_kernel_pre75<M> : attn_chunk_kernel<M>)
 #else
-#define STRATA_ATTN_CHUNK(M) attn_chunk_kernel<M>
+#define NOSTROMA_ATTN_CHUNK(M) attn_chunk_kernel<M>
 #endif
 
 // ---- SYCL port: the prompt path's chunk kernel with the scores computed one work-item per cell (attn_bench).
@@ -961,13 +961,13 @@ static void launch_qsa_chunk_down(int,const float*,const QsaAttnPools&,const int
                            const QsaShapes&,float*,float*,int64_t,void*);
 bool qsa_chunk_down_supported(int64_t cap, int64_t n_q, const QsaShapes& s, void* stream) {
     static const bool enabled = [] {
-        const char* v = strata::env("NOSTROMA_SYCL_QSA_CHUNK_DOWN");
+        const char* v = nostroma::env("NOSTROMA_SYCL_QSA_CHUNK_DOWN");
         return !v || v[0] == '1';
     }();
     const bool batch = n_q >= 1 && n_q <= 6;
     const bool shape = (cap == 2051 && (batch || n_q == 32)) || (cap == 32768 && batch);
     return enabled && shape && s.n_head == 24 && s.n_head_kv == 2 && s.page_size == 4 &&
-        strata::intel_gpu_gen(strata::q_of(stream)->get_device()) == strata::IntelGpuGen::Battlemage;
+        nostroma::intel_gpu_gen(nostroma::q_of(stream)->get_device()) == nostroma::IntelGpuGen::Battlemage;
 }
 // BEGIN PRIVATE QSA TWO STAGE ENTRY
 uint64_t qsa_merge_two_stage_scratch_floats(int n_chunks) {
@@ -982,7 +982,7 @@ void qsa_merge_two_stage_probe(int mode, const float* scratch, int n_chunks,
     if (mode < 0 || mode > 1 || !scratch || !out || !stream || n_chunks <= 0 ||
         n_chunks > INT_MAX / 24 || (mode == 1 && !group_scratch))
         throw std::invalid_argument("QSA two-stage diagnostic arguments");
-    auto* queue = strata::q_of(stream);
+    auto* queue = nostroma::q_of(stream);
     if (!queue->is_in_order())
         throw std::invalid_argument("QSA two-stage probe requires an in-order queue");
     const float* part_m = scratch + size_t(n_chunks) * 24 * HD;
@@ -1009,7 +1009,7 @@ void qsa_decode_attn_batch(const float* q, const QsaAttnPools& pools, const int3
     }
     const int kv_mode = pools.k_q4 != nullptr ? 2 : (pools.k_q != nullptr && pools.v_q4 != nullptr ? 3
                         : (pools.k_q != nullptr ? 1 : 0));
-    strata::workload_trace::Scope trace("decode.qsa_attention", stream, n_q, s.n_head, s.head_dim,
+    nostroma::workload_trace::Scope trace("decode.qsa_attention", stream, n_q, s.n_head, s.head_dim,
                                         cap, s.n_head_kv, kv_mode);
     if (qsa_chunk_down_supported(cap, n_q, s, stream) && kv_mode == 1 && pools.v_q) {
         launch_qsa_chunk_down(1, q, pools, ids, steps, cap, s, scratch, attn, n_q, stream);
@@ -1024,29 +1024,29 @@ void qsa_decode_attn_batch(const float* q, const QsaAttnPools& pools, const int3
     const float scale = 1.0f / sqrtf((float) HD);
     const dpct::dim3 grid((unsigned)n_chunks, (unsigned)s.n_head_kv,
                           (unsigned)n_q);
-    dpct::queue_ptr st = strata::q_of(stream);
+    dpct::queue_ptr st = nostroma::q_of(stream);
     // S25: the score phase one cell per thread (bit-identical scores, no shuffle reductions).  Prompt batches take
     // it by default: on 2x Arc Pro B65 it reads a 4,106-token prompt 5.2% faster, 8,191 tokens 5.2% and 16,380
     // tokens 4.8%, with the same tokens; the decode window's few queries per call are 1.4% slower with it (56.6-57.0
     // against 55.9-56.3 tok/s), so the choice follows the query count.  It is a Battlemage (Xe2) default only: on an Arc
     // A750 (Alchemist) the same switch reads a 4,106-token prompt 0.7% slower (three interleaved runs, 4 of 5 pairs
-    // faster with it off), so the generation comes from the device's architecture id (strata::intel_gpu_gen: the
+    // faster with it off), so the generation comes from the device's architecture id (nostroma::intel_gpu_gen: the
     // runtime's architecture enum first, the name only as a fallback), never from the name alone.
-    // STRATA_ATTN_LANECELL=1/0 forces either way on any device.
+    // NOSTROMA_ATTN_LANECELL=1/0 forces either way on any device.
     static const int lane_cell_env = [] {
-        const char* v = strata::env("NOSTROMA_ATTN_LANECELL");
+        const char* v = nostroma::env("NOSTROMA_ATTN_LANECELL");
         return v != nullptr && v[0] != '\0' ? std::atoi(v) : -1;
     }();
     const bool lane_cell = lane_cell_env >= 0
         ? lane_cell_env != 0
-        : (n_q >= 16 && strata::intel_gpu_gen(st->get_device()) == strata::IntelGpuGen::Battlemage);
-#define STRATA_ATTN_LC(M)                                                      \
+        : (n_q >= 16 && nostroma::intel_gpu_gen(st->get_device()) == nostroma::IntelGpuGen::Battlemage);
+#define NOSTROMA_ATTN_LC(M)                                                      \
     {                                                                          \
         auto exp_props = sycl::ext::oneapi::experimental::properties{          \
             sycl::ext::oneapi::experimental::use_root_sync};                   \
         dpct::has_capability_or_fail(st->get_device(), {sycl::aspect::fp16});  \
                                                                                \
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {                                   \
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {                                   \
             auto q_ct0 = q;                                                    \
             QsaAttnPools pools_ct1 = pools;                                    \
             auto ids_ct2 = ids;                                                \
@@ -1077,13 +1077,13 @@ void qsa_decode_attn_batch(const float* q, const QsaAttnPools& pools, const int3
                     });                                                        \
         });                                                                    \
     }
-#define STRATA_ATTN_RSK(M, V)                                                      \
+#define NOSTROMA_ATTN_RSK(M, V)                                                      \
     {                                                                          \
         auto exp_props = sycl::ext::oneapi::experimental::properties{          \
             sycl::ext::oneapi::experimental::use_root_sync};                   \
         dpct::has_capability_or_fail(st->get_device(), {sycl::aspect::fp16});  \
                                                                                \
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {                                   \
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {                                   \
             auto q_ct0 = q;                                                    \
             QsaAttnPools pools_ct1 = pools;                                    \
             auto ids_ct2 = ids;                                                \
@@ -1114,36 +1114,36 @@ void qsa_decode_attn_batch(const float* q, const QsaAttnPools& pools, const int3
                     });                                                        \
         });                                                                    \
     }
-#undef STRATA_ATTN_RSK_DEFINED
-    // 151-b70: STRATA_ATTN_RS=2 (default): the probabilities in [cell][head] order and the value phase reading a cell's 12 as three vectors - the same
+#undef NOSTROMA_ATTN_RSK_DEFINED
+    // 151-b70: NOSTROMA_ATTN_RS=2 (default): the probabilities in [cell][head] order and the value phase reading a cell's 12 as three vectors - the same
     // bits (first-token logits md5 equal at 4K and 16K), +0.8..0.9% prompt tok/s on the B70; =1 adds a 16-shuffle reduce-scatter for the scores
     // (bit-exact too, but -1.5% here: the score phase is not shuffle bound); =0 the layout before
-    static const int rs_on = [] { const char* v = strata::env("NOSTROMA_ATTN_RS"); return v ? std::atoi(v) : 2; }();
+    static const int rs_on = [] { const char* v = nostroma::env("NOSTROMA_ATTN_RS"); return v ? std::atoi(v) : 2; }();
     if (lane_cell) {
-        if (kv_mode == 3) { STRATA_ATTN_LC(3); }
-        else if (kv_mode == 2) { STRATA_ATTN_LC(2); }
-        else if (kv_mode == 1) { STRATA_ATTN_LC(1); }
-        else { STRATA_ATTN_LC(0); }
+        if (kv_mode == 3) { NOSTROMA_ATTN_LC(3); }
+        else if (kv_mode == 2) { NOSTROMA_ATTN_LC(2); }
+        else if (kv_mode == 1) { NOSTROMA_ATTN_LC(1); }
+        else { NOSTROMA_ATTN_LC(0); }
     } else if (rs_on == 1) {
-        if (kv_mode == 3) { STRATA_ATTN_RSK(3, 1); }
-        else if (kv_mode == 2) { STRATA_ATTN_RSK(2, 1); }
-        else if (kv_mode == 1) { STRATA_ATTN_RSK(1, 1); }
-        else { STRATA_ATTN_RSK(0, 1); }
+        if (kv_mode == 3) { NOSTROMA_ATTN_RSK(3, 1); }
+        else if (kv_mode == 2) { NOSTROMA_ATTN_RSK(2, 1); }
+        else if (kv_mode == 1) { NOSTROMA_ATTN_RSK(1, 1); }
+        else { NOSTROMA_ATTN_RSK(0, 1); }
     } else if (rs_on == 2) {
-        if (kv_mode == 3) { STRATA_ATTN_RSK(3, 2); }
-        else if (kv_mode == 2) { STRATA_ATTN_RSK(2, 2); }
-        else if (kv_mode == 1) { STRATA_ATTN_RSK(1, 2); }
-        else { STRATA_ATTN_RSK(0, 2); }
+        if (kv_mode == 3) { NOSTROMA_ATTN_RSK(3, 2); }
+        else if (kv_mode == 2) { NOSTROMA_ATTN_RSK(2, 2); }
+        else if (kv_mode == 1) { NOSTROMA_ATTN_RSK(1, 2); }
+        else { NOSTROMA_ATTN_RSK(0, 2); }
     } else
-#undef STRATA_ATTN_LC
-#undef STRATA_ATTN_RSK
+#undef NOSTROMA_ATTN_LC
+#undef NOSTROMA_ATTN_RSK
     if (kv_mode == 3)
     {
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
         dpct::has_capability_or_fail(st->get_device(), {sycl::aspect::fp16});
 
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_chunk_kernel_dfacfc,
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_chunk_kernel_dfacfc,
                                           dpct_kernel_scalar<3>>>(
             sycl::nd_range<3>(grid * sycl::range(1, 1, THREADS),
                               sycl::range(1, 1, THREADS)),
@@ -1159,7 +1159,7 @@ void qsa_decode_attn_batch(const float* q, const QsaAttnPools& pools, const int3
             sycl::ext::oneapi::experimental::use_root_sync};
         dpct::has_capability_or_fail(st->get_device(), {sycl::aspect::fp16});
 
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_chunk_kernel_b0d448,
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_chunk_kernel_b0d448,
                                           dpct_kernel_scalar<2>>>(
             sycl::nd_range<3>(grid * sycl::range(1, 1, THREADS),
                               sycl::range(1, 1, THREADS)),
@@ -1175,7 +1175,7 @@ void qsa_decode_attn_batch(const float* q, const QsaAttnPools& pools, const int3
             sycl::ext::oneapi::experimental::use_root_sync};
         dpct::has_capability_or_fail(st->get_device(), {sycl::aspect::fp16});
 
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_chunk_kernel_2ad0a4,
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_chunk_kernel_2ad0a4,
                                           dpct_kernel_scalar<1>>>(
             sycl::nd_range<3>(grid * sycl::range(1, 1, THREADS),
                               sycl::range(1, 1, THREADS)),
@@ -1190,7 +1190,7 @@ void qsa_decode_attn_batch(const float* q, const QsaAttnPools& pools, const int3
             sycl::ext::oneapi::experimental::use_root_sync};
         dpct::has_capability_or_fail(st->get_device(), {sycl::aspect::fp16});
 
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_chunk_kernel_5c04f7,
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_chunk_kernel_5c04f7,
                                           dpct_kernel_scalar<0>>>(
             sycl::nd_range<3>(grid * sycl::range(1, 1, THREADS),
                               sycl::range(1, 1, THREADS)),
@@ -1206,7 +1206,7 @@ void qsa_decode_attn_batch(const float* q, const QsaAttnPools& pools, const int3
             sycl::ext::oneapi::experimental::use_root_sync};
 
         if (merge_active_on(st->get_device()) && n_q <= 8) {
-            strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_merge_active>>(
+            nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_merge_active>>(
                 sycl::nd_range<3>(
                     sycl::range(1, (unsigned)n_q, (unsigned)s.n_head) *
                         sycl::range(1, 1, HD),
@@ -1216,7 +1216,7 @@ void qsa_decode_attn_batch(const float* q, const QsaAttnPools& pools, const int3
                                              attn, stride, steps);
                 });
         } else {
-            strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_merge_kernel_338175>>(
+            nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_merge_kernel_338175>>(
                 sycl::nd_range<3>(
                     sycl::range(1, (unsigned)n_q, (unsigned)s.n_head) *
                         sycl::range(1, 1, HD),
@@ -1245,7 +1245,7 @@ void attn_rows_chunks(dpct::queue_ptr st, const dpct::dim3& grid, const float* q
     dpct::has_capability_or_fail(st->get_device(), {sycl::aspect::fp16});
     const QsaAttnPools p0 = pools;
     const QsaAttnPoolsRows rr = rows;
-    strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_rows_chunk_kernel_9f2, dpct_kernel_scalar<M>>>(
+    nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_rows_chunk_kernel_9f2, dpct_kernel_scalar<M>>>(
         sycl::nd_range<3>(grid * sycl::range(1, 1, THREADS), sycl::range(1, 1, THREADS)), exp_props,
         [=](sycl::nd_item<3> item_ct1) [[sycl::reqd_sub_group_size(32)]] {
             attn_chunk_kernel<M, false, 2>(q, p0, ids, steps, n_kv_heads, page_size, scale, part_acc, part_m, part_l,
@@ -1263,9 +1263,9 @@ void qsa_decode_attn_batch_rows(const float* q, const QsaAttnPoolsRows& rows, co
         std::fprintf(stderr, "qsa_decode_attn_batch_rows: unsupported geometry or missing buffers\n");
         std::exit(1);
     }
-    static const int rs_on = [] { const char* v = strata::env("NOSTROMA_ATTN_RS"); return v ? std::atoi(v) : 2; }();
+    static const int rs_on = [] { const char* v = nostroma::env("NOSTROMA_ATTN_RS"); return v ? std::atoi(v) : 2; }();
     static const int lane_cell_env = [] {
-        const char* v = strata::env("NOSTROMA_ATTN_LANECELL");
+        const char* v = nostroma::env("NOSTROMA_ATTN_LANECELL");
         return v != nullptr && v[0] != '\0' ? std::atoi(v) : -1;
     }();
     const long long stride = (long long) qsa_decode_attn_scratch_floats(cap, s);
@@ -1284,14 +1284,14 @@ void qsa_decode_attn_batch_rows(const float* q, const QsaAttnPoolsRows& rows, co
     float* part_l = part_m + (size_t) n_chunks * s.n_head;
     const float scale = 1.0f / sqrtf((float) HD);
     const dpct::dim3 grid((unsigned)n_chunks, (unsigned)s.n_head_kv, (unsigned)n_q);
-    dpct::queue_ptr st = strata::q_of(stream);
+    dpct::queue_ptr st = nostroma::q_of(stream);
     if (kv_mode == 3) attn_rows_chunks<3>(st, grid, q, pools, ids, steps, (int)s.n_head_kv, (int)s.page_size, scale, part_acc, part_m, part_l, n_chunks, (int)cap, stride, rows);
     else if (kv_mode == 2) attn_rows_chunks<2>(st, grid, q, pools, ids, steps, (int)s.n_head_kv, (int)s.page_size, scale, part_acc, part_m, part_l, n_chunks, (int)cap, stride, rows);
     else if (kv_mode == 1) attn_rows_chunks<1>(st, grid, q, pools, ids, steps, (int)s.n_head_kv, (int)s.page_size, scale, part_acc, part_m, part_l, n_chunks, (int)cap, stride, rows);
     else attn_rows_chunks<0>(st, grid, q, pools, ids, steps, (int)s.n_head_kv, (int)s.page_size, scale, part_acc, part_m, part_l, n_chunks, (int)cap, stride, rows);
     {
         auto exp_props = sycl::ext::oneapi::experimental::properties{sycl::ext::oneapi::experimental::use_root_sync};
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_merge_rows_kernel_9f2>>(
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_merge_rows_kernel_9f2>>(
             sycl::nd_range<3>(sycl::range(1, (unsigned)n_q, (unsigned)s.n_head) * sycl::range(1, 1, HD),
                               sycl::range(1, 1, HD)),
             exp_props, [=](sycl::nd_item<3> item_ct1) {
@@ -1329,14 +1329,14 @@ void qsa_decode_attn_step(const float* q, const QsaAttnPools& pools, const int32
     float* part_l = part_m + (size_t) n_chunks * s.n_head;
     const float scale = 1.0f / sqrtf((float) HD);
     const dpct::dim3 grid((unsigned)n_chunks, (unsigned)s.n_head_kv);
-    dpct::queue_ptr st = strata::q_of(stream);
+    dpct::queue_ptr st = nostroma::q_of(stream);
     if (kv_mode == 3)
     {
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
         dpct::has_capability_or_fail(st->get_device(), {sycl::aspect::fp16});
 
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_chunk_kernel_f262e6,
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_chunk_kernel_f262e6,
                                           dpct_kernel_scalar<3>>>(
             sycl::nd_range<3>(grid * sycl::range(1, 1, THREADS),
                               sycl::range(1, 1, THREADS)),
@@ -1352,7 +1352,7 @@ void qsa_decode_attn_step(const float* q, const QsaAttnPools& pools, const int32
             sycl::ext::oneapi::experimental::use_root_sync};
         dpct::has_capability_or_fail(st->get_device(), {sycl::aspect::fp16});
 
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_chunk_kernel_4fd923,
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_chunk_kernel_4fd923,
                                           dpct_kernel_scalar<2>>>(
             sycl::nd_range<3>(grid * sycl::range(1, 1, THREADS),
                               sycl::range(1, 1, THREADS)),
@@ -1368,7 +1368,7 @@ void qsa_decode_attn_step(const float* q, const QsaAttnPools& pools, const int32
             sycl::ext::oneapi::experimental::use_root_sync};
         dpct::has_capability_or_fail(st->get_device(), {sycl::aspect::fp16});
 
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_chunk_kernel_f6855e,
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_chunk_kernel_f6855e,
                                           dpct_kernel_scalar<1>>>(
             sycl::nd_range<3>(grid * sycl::range(1, 1, THREADS),
                               sycl::range(1, 1, THREADS)),
@@ -1383,7 +1383,7 @@ void qsa_decode_attn_step(const float* q, const QsaAttnPools& pools, const int32
             sycl::ext::oneapi::experimental::use_root_sync};
         dpct::has_capability_or_fail(st->get_device(), {sycl::aspect::fp16});
 
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_chunk_kernel_7c8e09,
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_chunk_kernel_7c8e09,
                                           dpct_kernel_scalar<0>>>(
             sycl::nd_range<3>(grid * sycl::range(1, 1, THREADS),
                               sycl::range(1, 1, THREADS)),
@@ -1398,7 +1398,7 @@ void qsa_decode_attn_step(const float* q, const QsaAttnPools& pools, const int32
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_merge_kernel_c055e7>>(
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class attn_merge_kernel_c055e7>>(
             sycl::nd_range<3>(sycl::range(1, 1, (unsigned)s.n_head) *
                                   sycl::range(1, 1, HD),
                               sycl::range(1, 1, HD)),
@@ -1424,7 +1424,7 @@ void qsa_prompt_attn_percell(const float* q, const QsaAttnPools& pools, const in
                         : (pools.k_q != nullptr ? 1 : 0));
     const long long stride = (long long) qsa_decode_attn_scratch_floats(cap, s);
     const float scale = 1.0f / sqrtf((float) HD);
-    dpct::queue_ptr st = strata::q_of(stream);
+    dpct::queue_ptr st = nostroma::q_of(stream);
     const int nc = (int) ((cap + PC_CHUNK - 1) / PC_CHUNK);
     float* pa = scratch;
     float* pm = scratch + (size_t) nc * s.n_head * HD;
@@ -1438,11 +1438,11 @@ void qsa_prompt_attn_percell(const float* q, const QsaAttnPools& pools, const in
                      [=](sycl::nd_item<3>) { attn_merge_kernel(pa, pm, pl, nc, attn, stride); });
 }
 
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels
 
 #include <stdexcept>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 __dpct_inline__ float lane0_sum(float value){
     auto group=sycl::ext::oneapi::this_work_item::get_sub_group();
@@ -2507,7 +2507,7 @@ b60_qsa_local_fence_kernel(const float *__restrict__ q, QsaAttnPools p,
 }
 
 class B60QsaLocalFence;
-inline bool b60_next_qsa_pool(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_B60_NEXT_POOL");return p&&p[0]=='1';}();return on;}
+inline bool b60_next_qsa_pool(){static const bool on=[] {const char*p=nostroma::env("NOSTROMA_PRIVATE_B60_NEXT_POOL");return p&&p[0]=='1';}();return on;}
 class B60QsaFloat4;
 thread_local bool b60_qsa_float4_probe_mode=false;
 
@@ -2521,7 +2521,7 @@ static void launch_normal_qsa_vector(int mode,const float* q,const QsaAttnPools&
     const long long stride=qsa_decode_attn_scratch_floats(cap,sh);
     auto* pm=scratch+size_t(chunks)*sh.n_head*HD;
     auto* pl=pm+size_t(chunks)*sh.n_head;
-    auto* queue=strata::q_of(stream);const float scale=1.f/sqrtf(float(HD));
+    auto* queue=nostroma::q_of(stream);const float scale=1.f/sqrtf(float(HD));
     auto props=sycl::ext::oneapi::experimental::properties{};
     if(b60_layout_requested()&&b60_next_qsa_pool()&&((cap==2051&&nq==1&&(!b60_single_actor_requested()&&queue->get_device()==static_cast<const sycl::device&>(dpct::get_device(0)))) || (cap==2051&&nq==1&&(b60_single_actor_requested()||queue->get_device()==static_cast<const sycl::device&>(dpct::get_device(1)))))) {
     queue->parallel_for<B60QsaHead6>(
@@ -2567,7 +2567,7 @@ static void launch_qsa_chunk_down(int mode,const float* q,const QsaAttnPools& po
     }
     if(nq<=0)return;
     static const bool vector_enabled = [] {
-        const char* v = strata::env("NOSTROMA_SYCL_QSA_VALUE8_K8_VEC");
+        const char* v = nostroma::env("NOSTROMA_SYCL_QSA_VALUE8_K8_VEC");
         return !v || v[0] == '1';
     }();
     const bool vector_shape=(cap==2051&&(nq==1||nq==2||nq==3||nq==4||nq==32))||(cap==32768&&nq==1);
@@ -2576,7 +2576,7 @@ static void launch_qsa_chunk_down(int mode,const float* q,const QsaAttnPools& po
     const long long stride=qsa_decode_attn_scratch_floats(cap,s);
     auto* part_m=scratch+size_t(chunks)*s.n_head*HD;
     auto* part_l=part_m+size_t(chunks)*s.n_head;
-    auto* queue=strata::q_of(stream);
+    auto* queue=nostroma::q_of(stream);
     const float scale=1.f/sqrtf(float(HD));
     auto props=sycl::ext::oneapi::experimental::properties{};
     queue->parallel_for<QsaChunkDown>(
@@ -2603,10 +2603,10 @@ bool qsa_decode_attn_batch_try_two_stage(const float* q, const QsaAttnPools& poo
         pools.k_q4 || pools.v_q4 || !qsa_chunk_down_supported(cap, n_q, s, stream))
         return false;
     static const bool vector_enabled = [] {
-        const char* v = strata::env("NOSTROMA_SYCL_QSA_VALUE8_K8_VEC");
+        const char* v = nostroma::env("NOSTROMA_SYCL_QSA_VALUE8_K8_VEC");
         return !v || v[0] == '1';
     }();
-    auto* queue = strata::q_of(stream);
+    auto* queue = nostroma::q_of(stream);
     const int chunks = int((cap + CHUNK - 1) / CHUNK);
     const uint64_t used = qsa_merge_two_stage_scratch_floats(chunks);
     if (!vector_enabled || !queue->is_in_order() || secondary_floats < used)
@@ -2627,7 +2627,7 @@ bool qsa_decode_attn_batch_try_two_stage(const float* q, const QsaAttnPools& poo
 }
 }
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 void qsa_query_float4_probe(int mode,const float*q,const QsaAttnPools&p,const int32_t*ids,const int32_t*steps,int64_t cap,const QsaShapes&sh,float*scratch,float*attn,int64_t T,void*stream,float*secondary){
  if(mode<0||mode>1)throw std::invalid_argument("B60 query float4 mode");
  struct Restore {bool previous;~Restore(){b60_qsa_float4_probe_mode=previous;}} restore{b60_qsa_float4_probe_mode};

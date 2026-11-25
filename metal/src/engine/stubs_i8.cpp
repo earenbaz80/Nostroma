@@ -10,11 +10,11 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "strata/kernels/iq_kernels.hpp"
+#include "nostroma/kernels/iq_kernels.hpp"
 
-namespace strata::metal_engine { void missing(const char* name); }
+namespace nostroma::metal_engine { void missing(const char* name); }
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 bool native_expert_i8_supported(const NativeExpertLayout&) noexcept { return false; }
 bool native_expert_i8_prompt(const NativeExpertLayout&, int64_t) noexcept { return false; }
 bool native_expert_i8_by_default() noexcept { return false; }
@@ -26,10 +26,10 @@ size_t native_expert_i8_scratch_bytes(int64_t cap_entries, int64_t cap_groups, i
     return hqb + (size_t) (cap_groups + 1) * sizeof(int32_t);
 }
 void native_expert_i8_quantize(const float*, int64_t, int64_t, void*, void*) {
-    strata::metal_engine::missing("strata::kernels::native_expert_i8_quantize");
+    nostroma::metal_engine::missing("nostroma::kernels::native_expert_i8_quantize");
 }
 void native_expert_i8(const NativeExpertLayout&, const unsigned long long*, const int32_t*, const int32_t*, const int32_t*, const int32_t*, int64_t, int64_t,
                       const void*, void*, float*, void*) {
-    strata::metal_engine::missing("strata::kernels::native_expert_i8");
+    nostroma::metal_engine::missing("nostroma::kernels::native_expert_i8");
 }
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels

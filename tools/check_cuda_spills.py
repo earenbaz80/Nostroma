@@ -12,12 +12,12 @@ the stack frame (STACK: with CUDA 13 spills and local arrays both live there), t
 Every kernel must have STACK 0 and LOCAL 0 on every sm_ in the library, unless ALLOWED below carries an entry for it
 with the measured allowance: the kernels that keep a per-thread array on purpose, one line each saying what the array
 is.  A byte over the allowance fails; a kernel that is not listed fails with any of either.  Kernels vendored from
-llama.cpp (ggml-cuda's mmq.cuh and quantize.cu, fetched at configure time and instantiated in strata_mmq, strata_kq
-and strata_mmq_w4a4) are skipped: they are the only kernels at global scope with no namespace at all, so a kernel
+llama.cpp (ggml-cuda's mmq.cuh and quantize.cu, fetched at configure time and instantiated in nostroma_mmq, nostroma_kq
+and nostroma_mmq_w4a4) are skipped: they are the only kernels at global scope with no namespace at all, so a kernel
 whose demangled name carries no `::` is one of theirs, and they are llama.cpp's to gate - every kernel Nostroma wrote
-sits in `strata::` or in an anonymous namespace.  The report line counts what was skipped.
+sits in `nostroma::` or in an anonymous namespace.  The report line counts what was skipped.
 
-  check_cuda_spills.py libstrata_kernels.a [libstrata_core.a ...]   (needs cuobjdump, and cu++filt or c++filt)
+  check_cuda_spills.py libnostroma_kernels.a [libnostroma_core.a ...]   (needs cuobjdump, and cu++filt or c++filt)
   check_cuda_spills.py --list LIB ...   the full table (library, object, sm, REG, STACK, LOCAL, SHARED, kernel,
                                         gated) as CSV, every kernel on every sm_ - the vendored ones too, gated 0 -
                                         nothing judged: this is how the numbers in ALLOWED were produced
@@ -63,132 +63,132 @@ ALLOWED = {
     # float values[V] (V = NE / 32 = 8): the lane's logits for the top-k selection (no spill)
     "q36k::k_route_group": {"sm_86": (32, 0)},
     # spill 4 B stores / 4 B loads at 64 registers under __launch_bounds__(256); its w[4] / o[4] stay in registers
-    "strata::kernels::native_down_amd_kernel": {"sm_120": (8, 0)},
+    "nostroma::kernels::native_down_amd_kernel": {"sm_120": (8, 0)},
     # spill 12 / 12 at 80 registers under __launch_bounds__(256)
-    "strata::kernels::native_gu_amd_kernel": {"sm_120": (16, 0)},
+    "nostroma::kernels::native_gu_amd_kernel": {"sm_120": (16, 0)},
     # spill 12 / 24 (sm_86), 16 / 32 (sm_120) at 64 registers under __launch_bounds__(256), no local array
-    "strata::kernels::native_gu_fused_kernel": {"sm_120": (8, 0), "sm_86": (8, 0)},
+    "nostroma::kernels::native_gu_fused_kernel": {"sm_120": (8, 0), "sm_86": (8, 0)},
     # spill 8 / 4 at 48 registers (sm_86), 8 / 8 at 80 (sm_120) under __launch_bounds__(256), no local array
-    "strata::kernels::native_gu_lds_kernel": {"sm_120": (8, 0), "sm_86": (8, 0)},
+    "nostroma::kernels::native_gu_lds_kernel": {"sm_120": (8, 0), "sm_86": (8, 0)},
     # int32_t my[10]: the lane's selected expert ids (no spill)
-    "strata::kernels::route_resident_k": {"sm_86": (40, 0)},
+    "nostroma::kernels::route_resident_k": {"sm_86": (40, 0)},
     # float a[HPT][32] (HPT = 3): the thread's score tile (no spill; sm_120 keeps it in 142 registers)
-    "strata::kernels::{anonymous}::attn_chunk_kernel": {"sm_86": (384, 0)},
+    "nostroma::kernels::{anonymous}::attn_chunk_kernel": {"sm_86": (384, 0)},
     # spill 4 / 4 at 64 registers under __launch_bounds__(THREADS = 256); its cc[NC] / kk[NC][8] / pp[NC][16] / acc[G]
     # stay in registers
-    "strata::kernels::{anonymous}::attn_chunk_kernel_pre75": {"sm_86": (8, 0)},
+    "nostroma::kernels::{anonymous}::attn_chunk_kernel_pre75": {"sm_86": (8, 0)},
     # float qr[G][8] (G = 12): the thread's query rows (no spill; sm_120 keeps them in registers)
-    "strata::kernels::{anonymous}::attn_chunk_slots_kernel": {"sm_86": (384, 0)},
+    "nostroma::kernels::{anonymous}::attn_chunk_slots_kernel": {"sm_86": (384, 0)},
     # spill 4 / 4 at 80 registers under __launch_bounds__(SCORE_WARPS * 32 = 256); its qr[NQ][IDX_HEADS] /
     # qv[IDX_HEADS][8] stay in registers
-    "strata::kernels::{anonymous}::block_scores_rows_kernel": {"sm_120": (8, 0)},
+    "nostroma::kernels::{anonymous}::block_scores_rows_kernel": {"sm_120": (8, 0)},
     # spill 4 / 4 at 80 registers under __launch_bounds__(256); its acc[8][TN] / qr[8] / kr[TN] stay in registers
-    "strata::kernels::{anonymous}::block_scores_simt_kernel": {"sm_86": (8, 0)},
+    "nostroma::kernels::{anonymous}::block_scores_simt_kernel": {"sm_86": (8, 0)},
     # spill 92 / 288 (sm_86), 172 / 260 (sm_120) at the 64-register cap of __launch_bounds__(TK_T = 1024); its
     # uint32_t key[PER] stays in registers
-    "strata::kernels::{anonymous}::block_topk_reg_kernel": {"sm_120": (88, 0), "sm_86": (96, 0)},
+    "nostroma::kernels::{anonymous}::block_topk_reg_kernel": {"sm_120": (88, 0), "sm_86": (96, 0)},
     # the Runs parameter (src[4], dst[4], len[4], n) copied to the stack to index it with the run loop variable
     # (no spill)
-    "strata::kernels::{anonymous}::copy_kernel": {"sm_120": (88, 0), "sm_86": (88, 0)},
+    "nostroma::kernels::{anonymous}::copy_kernel": {"sm_120": (88, 0), "sm_86": (88, 0)},
     # 16-byte stack frame on sm_86 and sm_120, no spill; per-thread array not located in the source
-    "strata::kernels::{anonymous}::dequant_gu_kernel": {"sm_120": (16, 0), "sm_86": (16, 0)},
+    "nostroma::kernels::{anonymous}::dequant_gu_kernel": {"sm_120": (16, 0), "sm_86": (16, 0)},
     # the TYPE 11 (Q3_K) instantiations: uint32_t aux[4], the block's unpacked scales (16 B); on sm_86 also the
     # TYPE 14 (Q6_K) vectorised instantiation's T buf[32] flush buffer (64 B); no spill
     # f-027-int, CUDA 13.0: sm_120 allowance raised from STACK 16 to 128 (measured)
-    "strata::kernels::{anonymous}::dequant_kernel": {"sm_120": (128, 0), "sm_86": (64, 0)},
+    "nostroma::kernels::{anonymous}::dequant_kernel": {"sm_120": (128, 0), "sm_86": (64, 0)},
     # float s[R][NC]: the entry group's partial sums, plus spill 428 / 600 (sm_86), 200 / 328 (sm_120) at the
-    # 64-register cap of __launch_bounds__(256, STRATA_EXPDEC_MINB = 4)
-    "strata::kernels::{anonymous}::expdec_down_kernel": {"sm_120": (136, 0), "sm_86": (272, 0)},
+    # 64-register cap of __launch_bounds__(256, NOSTROMA_EXPDEC_MINB = 4)
+    "nostroma::kernels::{anonymous}::expdec_down_kernel": {"sm_120": (136, 0), "sm_86": (272, 0)},
     # float s[R][NC] / s8[R][NC]: the entry group's partial sums, plus spill 60 / 92 (sm_86), 52 / 88 (sm_120) at the
     # 64-register cap of __launch_bounds__(256, MINB)
     # f-027-int, CUDA 13.0: sm_120 allowance raised from STACK 40 to 112 (measured)
-    "strata::kernels::{anonymous}::expdec_gu_kernel": {"sm_120": (112, 0), "sm_86": (56, 0)},
+    "nostroma::kernels::{anonymous}::expdec_gu_kernel": {"sm_120": (112, 0), "sm_86": (56, 0)},
     # the DBG instantiation only: the printf argument buffer, two ints (no spill)
-    "strata::kernels::{anonymous}::gdn_step_commit_kernel": {"sm_120": (8, 0), "sm_86": (8, 0)},
+    "nostroma::kernels::{anonymous}::gdn_step_commit_kernel": {"sm_120": (8, 0), "sm_86": (8, 0)},
     # spill 4 / 4 at 64 registers under __launch_bounds__(S * RG = 512), no local array (sm_120: no frame any more)
-    "strata::kernels::{anonymous}::gdn_step_norm_multi_kernel": {"sm_86": (8, 0)},
+    "nostroma::kernels::{anonymous}::gdn_step_norm_multi_kernel": {"sm_86": (8, 0)},
     # on f-027-int (CUDA 13.0): a stack frame, measured; no spill or local array located in the source yet
-    "strata::kernels::{anonymous}::gemm8_kernel": {"sm_120": (136, 0), "sm_86": (104, 0)},
+    "nostroma::kernels::{anonymous}::gemm8_kernel": {"sm_120": (136, 0), "sm_86": (104, 0)},
     # float gw[HC] / ss[HC] (no spill)
-    "strata::kernels::{anonymous}::gr_down_kernel": {"sm_120": (16, 0)},
+    "nostroma::kernels::{anonymous}::gr_down_kernel": {"sm_120": (16, 0)},
     # spill 8 / 24 at 80 registers under __launch_bounds__(THREADS = 256); its acc[MAX_T] / s[MAX_T] / wv[TQ] stay in
     # registers
-    "strata::kernels::{anonymous}::gr_down_multi_kernel": {"sm_86": (8, 0)},
+    "nostroma::kernels::{anonymous}::gr_down_multi_kernel": {"sm_86": (8, 0)},
     # spill 4 / 8 at 128 registers under __launch_bounds__(THREADS = 256), no local array
-    "strata::kernels::{anonymous}::gr_down_q8_fast_kernel": {"sm_86": (8, 0)},
+    "nostroma::kernels::{anonymous}::gr_down_q8_fast_kernel": {"sm_86": (8, 0)},
     # spill 12 / 24 at 128 registers under __launch_bounds__(THREADS = 256), no local array (sm_120: 206 registers,
     # no spill)
-    "strata::kernels::{anonymous}::gr_down_q8_kernel": {"sm_86": (16, 0)},
+    "nostroma::kernels::{anonymous}::gr_down_q8_kernel": {"sm_86": (16, 0)},
     # spill 16 / 16 at 80 (sm_86) / 64 (sm_120) registers under __launch_bounds__(THREADS = 256); its acc[MAX_T] /
     # s[MAX_T] stay in registers
-    "strata::kernels::{anonymous}::gr_down_staged_kernel": {"sm_120": (8, 0), "sm_86": (16, 0)},
+    "nostroma::kernels::{anonymous}::gr_down_staged_kernel": {"sm_120": (8, 0), "sm_86": (16, 0)},
     # spill 12 / 8 at 48 registers under __launch_bounds__(THREADS = 256), no local array
-    "strata::kernels::{anonymous}::gr_down_v3_kernel": {"sm_86": (8, 0)},
+    "nostroma::kernels::{anonymous}::gr_down_v3_kernel": {"sm_86": (8, 0)},
     # spill 16 / 48 at the 64-register cap of __launch_bounds__(THREADS = 256, 4); its mine[RPW] / rv[RPW] / wn[RPW] /
     # bo[RPW] (RPW = 8) stay in registers
-    "strata::kernels::{anonymous}::gr_up75_kernel": {"sm_120": (16, 0)},
+    "nostroma::kernels::{anonymous}::gr_up75_kernel": {"sm_120": (16, 0)},
     # spill 8 / 16 at 48 registers under __launch_bounds__(THREADS = 256), no local array
-    "strata::kernels::{anonymous}::gr_up_q8_fast_kernel": {"sm_86": (8, 0)},
+    "nostroma::kernels::{anonymous}::gr_up_q8_fast_kernel": {"sm_86": (8, 0)},
     # spill 4 / 4 at 40 registers under __launch_bounds__(THREADS = 256), no local array
-    "strata::kernels::{anonymous}::gr_up_v3_kernel": {"sm_120": (8, 0)},
+    "nostroma::kernels::{anonymous}::gr_up_v3_kernel": {"sm_120": (8, 0)},
     # spill 4 / 4 at 48 registers under __launch_bounds__(256), no local array
-    "strata::kernels::{anonymous}::native_down_kernel": {"sm_86": (8, 0)},
+    "nostroma::kernels::{anonymous}::native_down_kernel": {"sm_86": (8, 0)},
     # int off[GRP_NC] / float s[GRP_NC] (GRP_NC = 4): per-entry token offsets and partial sums, plus spill 16 / 16
     # (sm_86), 12 / 12 (sm_120)
-    "strata::kernels::{anonymous}::native_down_multi_kernel": {"sm_120": (48, 0), "sm_86": (64, 0)},
+    "nostroma::kernels::{anonymous}::native_down_multi_kernel": {"sm_120": (48, 0), "sm_86": (64, 0)},
     # spill 4 / 4 at 80 (sm_86) / 48 (sm_120) registers under __launch_bounds__(256), no local array
-    "strata::kernels::{anonymous}::native_gu_kernel": {"sm_120": (8, 0), "sm_86": (8, 0)},
+    "nostroma::kernels::{anonymous}::native_gu_kernel": {"sm_120": (8, 0), "sm_86": (8, 0)},
     # const int off[1..4] / float s[1..4] per entry group; since v0.2.2 the 8-lane trellis rows (TG 144 / 145, STAGE_GRID)
     # keep row_dot_160_sub8's float p[4][NC] too: 144 B at 77-80 registers with no spill, or 128 B with spill 28 / 32 at
     # 48 (sm_86); the other instantiations spill 56 / 64 (sm_86), 52 / 64 (sm_120)
-    "strata::kernels::{anonymous}::native_gu_multi_kernel": {"sm_120": (112, 0), "sm_86": (144, 0)},
+    "nostroma::kernels::{anonymous}::native_gu_multi_kernel": {"sm_120": (112, 0), "sm_86": (144, 0)},
     # const int off[1..3] / float a[1..3] / b[1..3] per entry group and gv[GRP_NC] / uv[GRP_NC], plus spill 88 / 140 at
     # the 64-register cap of __launch_bounds__(512)
     # f-027-int, CUDA 13.0: sm_120 allowance raised from STACK 64 to 72 (measured)
-    "strata::kernels::{anonymous}::native_gu_swiglu_kernel": {"sm_120": (72, 0), "sm_86": (8, 0)},
+    "nostroma::kernels::{anonymous}::native_gu_swiglu_kernel": {"sm_120": (72, 0), "sm_86": (8, 0)},
     # float o[NC] plus spill 60 / 60 at 56 registers under __launch_bounds__(4 * WARP)
-    "strata::kernels::{anonymous}::native_mmvq_il_kernel": {"sm_120": (24, 0)},
+    "nostroma::kernels::{anonymous}::native_mmvq_il_kernel": {"sm_120": (24, 0)},
     # 16-byte stack frame on sm_86 and sm_120, no spill; per-thread array not located in the source
-    "strata::kernels::{anonymous}::pair_kernel": {"sm_120": (16, 0), "sm_86": (16, 0)},
+    "nostroma::kernels::{anonymous}::pair_kernel": {"sm_120": (16, 0), "sm_86": (16, 0)},
     # spill 24 / 24 at 168 registers under __launch_bounds__(THREADS = 128, 3); its qa[3][2][4] / x[2][2][2][4] stay in
     # registers
     # f-027-int, CUDA 13.0: sm_120 allowance raised from STACK 24 to 40 (measured)
-    "strata::kernels::{anonymous}::prompt_attn_i8v3_kernel": {"sm_120": (40, 0)},
+    "nostroma::kernels::{anonymous}::prompt_attn_i8v3_kernel": {"sm_120": (40, 0)},
     # spill 4 / 12 at 72 registers under __launch_bounds__(THREADS = 128), no local array
-    "strata::kernels::{anonymous}::prompt_attn_kernel": {"sm_86": (8, 0)},
+    "nostroma::kernels::{anonymous}::prompt_attn_kernel": {"sm_86": (8, 0)},
     # on f-027-int (CUDA 13.0): a stack frame, measured; no spill or local array located in the source yet
-    "strata::kernels::{anonymous}::rope_table_kernel": {"sm_120": (32, 0), "sm_86": (32, 0)},
+    "nostroma::kernels::{anonymous}::rope_table_kernel": {"sm_120": (32, 0), "sm_86": (32, 0)},
     # float values[16]: the lane's 16 logits for the top-k selection (no spill)
-    "strata::kernels::{anonymous}::route": {"sm_86": (64, 0)},
+    "nostroma::kernels::{anonymous}::route": {"sm_86": (64, 0)},
     # float values[16]: the lane's 16 logits for the top-k selection (no spill)
-    "strata::kernels::{anonymous}::route_multi": {"sm_86": (64, 0)},
+    "nostroma::kernels::{anonymous}::route_multi": {"sm_86": (64, 0)},
     # float p[16] / s[16]: s[] is cleared at the selected index (no spill)
-    "strata::kernels::{anonymous}::route_prior_k": {"sm_86": (64, 0)},
+    "nostroma::kernels::{anonymous}::route_prior_k": {"sm_86": (64, 0)},
     # float values[V] (V = 8): the lane's logits for the top-k selection (no spill)
-    "strata::kernels::{anonymous}::route_topk": {"sm_86": (32, 0)},
+    "nostroma::kernels::{anonymous}::route_topk": {"sm_86": (32, 0)},
     # const uint8_t* wr[RPW] / float s[RPW][GRP_NC]: per-row pointers and partial sums (no spill)
-    "strata::kernels::{anonymous}::s26_gu_l_kernel": {"sm_120": (32, 0), "sm_86": (32, 0)},
+    "nostroma::kernels::{anonymous}::s26_gu_l_kernel": {"sm_120": (32, 0), "sm_86": (32, 0)},
     # spill 12 / 12 at 64 registers under __launch_bounds__(256); its wr[RPW] / s[RPW][GRP_NC] stay in registers
-    "strata::kernels::{anonymous}::s27_down_kernel": {"sm_86": (16, 0)},
+    "nostroma::kernels::{anonymous}::s27_down_kernel": {"sm_86": (16, 0)},
     # const uint8_t* wr[RPW] / float s[RPW][GRP_NC]: per-row pointers and partial sums; sm_120 also spills 20 / 20 at
     # 80 registers
-    "strata::kernels::{anonymous}::s27_gu_kernel": {"sm_120": (32, 0), "sm_86": (32, 0)},
+    "nostroma::kernels::{anonymous}::s27_gu_kernel": {"sm_120": (32, 0), "sm_86": (32, 0)},
     # spill 36 / 52 (sm_86), 32 / 32 (sm_120) at the 128-register cap of __launch_bounds__(THREADS = 512, 1); its q[8]
     # / raw[5] / bq[4] / a[4] / d[4] stay in registers
-    "strata::prefill::fused::{anonymous}::native_kernel": {"sm_120": (32, 0), "sm_86": (32, 0)},
+    "nostroma::prefill::fused::{anonymous}::native_kernel": {"sm_120": (32, 0), "sm_86": (32, 0)},
     # the Qwen3.6 copy of the same kernels (moe_fused_iq_q36.cu includes moe_fused_iq.cu with the shape override and its namespace renamed): same source and
     # instance parameters, so the same spill under the same register cap, no per-thread array found (an instance has the same STACK as its fused:: twin in 24 of 25 cases on
     # sm_86 and 7 of 10 on sm_120, never more than 8 B apart).  Measured on f-p4-q36 7bc09fadf, CUDA 13.2 sm_120 (l620) and CUDA 12.9
     # cuobjdump on CUDA 13.0 objects for sm_86 (z440): the maximum over 62 instances, which include the K-quant down instances <13 / 14, false, 2 / 4, 512>
-    "strata::prefill::fused_q36::{anonymous}::native_kernel": {"sm_120": (16, 0), "sm_86": (80, 0)},
+    "nostroma::prefill::fused_q36::{anonymous}::native_kernel": {"sm_120": (16, 0), "sm_86": (80, 0)},
     # float x[GRW_PER] (GRW_PER = 10): the thread's rows for the norm (no spill)
-    "strata::prefill::{anonymous}::gr_write_cvec_norm_rs_kernel": {"sm_86": (40, 0)},
+    "nostroma::prefill::{anonymous}::gr_write_cvec_norm_rs_kernel": {"sm_86": (40, 0)},
     # float v[GRW_PER] (GRW_PER = 10): the thread's rows for the norm (no spill)
-    "strata::prefill::{anonymous}::gr_write_norm_rs_kernel": {"sm_86": (40, 0)},
+    "nostroma::prefill::{anonymous}::gr_write_norm_rs_kernel": {"sm_86": (40, 0)},
     # 32-byte stack frame on sm_86 and sm_120, no spill; per-thread array not located in the source
-    "strata::prefill::{anonymous}::rope_kernel": {"sm_120": (32, 0), "sm_86": (32, 0)},
+    "nostroma::prefill::{anonymous}::rope_kernel": {"sm_120": (32, 0), "sm_86": (32, 0)},
     # float v[REG] (REG = 16): the lane's logits for the top-k selection (no spill)
-    "strata::prefill::{anonymous}::route_kernel": {"sm_86": (64, 0)},
+    "nostroma::prefill::{anonymous}::route_kernel": {"sm_86": (64, 0)},
     # 32-byte stack frame on sm_86 and sm_120, no spill; per-thread array not located in the source
     "{anonymous}::k_attn_prep": {"sm_120": (32, 0), "sm_86": (32, 0)},
 }
@@ -200,85 +200,85 @@ ALLOWED = {
 # one of these kernels now fails again only when it goes past the number below.  The ones marked NEW are the two this merge adds.
 _INT3_ALLOWED = {
     # Spark sm_121 (never measured before)
-    "strata::kernels::native_gu_amd_kernel": {"sm_121": (8, 0)},
+    "nostroma::kernels::native_gu_amd_kernel": {"sm_121": (8, 0)},
     # Spark sm_121 (never measured before)
-    "strata::kernels::native_gu_fused_kernel": {"sm_121": (8, 0)},
+    "nostroma::kernels::native_gu_fused_kernel": {"sm_121": (8, 0)},
     # sm_120 already at v0.2.9
-    "strata::kernels::route_resident_k": {"sm_120": (40, 0)},
+    "nostroma::kernels::route_resident_k": {"sm_120": (40, 0)},
     # Spark sm_121 (never measured before)
-    "strata::kernels::{anonymous}::block_scores_rows_kernel": {"sm_121": (8, 0)},
+    "nostroma::kernels::{anonymous}::block_scores_rows_kernel": {"sm_121": (8, 0)},
     # Spark sm_121 (never measured before)
-    "strata::kernels::{anonymous}::block_topk_reg_kernel": {"sm_121": (88, 0)},
+    "nostroma::kernels::{anonymous}::block_topk_reg_kernel": {"sm_121": (88, 0)},
     # Spark sm_121 (never measured before)
-    "strata::kernels::{anonymous}::copy_kernel": {"sm_121": (88, 0)},
+    "nostroma::kernels::{anonymous}::copy_kernel": {"sm_121": (88, 0)},
     # sm_120 already at v0.2.9; sm_86 already at v0.2.9
-    "strata::kernels::{anonymous}::dequant_gu_kernel": {"sm_120": (32, 0), "sm_121": (32, 0), "sm_86": (32, 0)},
+    "nostroma::kernels::{anonymous}::dequant_gu_kernel": {"sm_120": (32, 0), "sm_121": (32, 0), "sm_86": (32, 0)},
     # Spark sm_121 (never measured before)
-    "strata::kernels::{anonymous}::dequant_kernel": {"sm_121": (128, 0)},
+    "nostroma::kernels::{anonymous}::dequant_kernel": {"sm_121": (128, 0)},
     # sm_86 288 B (272 B in the table before) with cuobjdump 12.9 reading the objects
-    "strata::kernels::{anonymous}::expdec_down_kernel": {"sm_121": (136, 0), "sm_86": (288, 0)},
+    "nostroma::kernels::{anonymous}::expdec_down_kernel": {"sm_121": (136, 0), "sm_86": (288, 0)},
     # Spark sm_121 (never measured before)
-    "strata::kernels::{anonymous}::expdec_gu_kernel": {"sm_121": (64, 0)},
+    "nostroma::kernels::{anonymous}::expdec_gu_kernel": {"sm_121": (64, 0)},
     # Spark sm_121 (never measured before)
-    "strata::kernels::{anonymous}::gdn_step_commit_kernel": {"sm_121": (8, 0)},
+    "nostroma::kernels::{anonymous}::gdn_step_commit_kernel": {"sm_121": (8, 0)},
     # sm_120 already at v0.2.9
-    "strata::kernels::{anonymous}::gdn_step_norm_multi_kernel": {"sm_120": (8, 0)},
+    "nostroma::kernels::{anonymous}::gdn_step_norm_multi_kernel": {"sm_120": (8, 0)},
     # NEW in 0.2.9 (DFlash2 Q4_0 drafter, opt-in): the Df2Segs parameter struct (Df2Seg s[3]) is copied to the stack to index it in a loop, as gemm8_kernel; avoidable (constant memory or unrolled segments), noted for BW-DRAFT
-    "strata::kernels::{anonymous}::gemm4_kernel": {"sm_120": (104, 0), "sm_121": (104, 0), "sm_86": (104, 0)},
+    "nostroma::kernels::{anonymous}::gemm4_kernel": {"sm_120": (104, 0), "sm_121": (104, 0), "sm_86": (104, 0)},
     # Spark sm_121 (never measured before)
-    "strata::kernels::{anonymous}::gemm8_kernel": {"sm_121": (136, 0)},
+    "nostroma::kernels::{anonymous}::gemm8_kernel": {"sm_121": (136, 0)},
     # present at v0.2.9 (not in the table then)
-    "strata::kernels::{anonymous}::gemm_iq_f16_grouped_kernel": {"sm_120": (32, 0), "sm_121": (32, 0), "sm_86": (32, 0)},
+    "nostroma::kernels::{anonymous}::gemm_iq_f16_grouped_kernel": {"sm_120": (32, 0), "sm_121": (32, 0), "sm_86": (32, 0)},
     # Spark sm_121 (never measured before)
-    "strata::kernels::{anonymous}::gr_down_staged_kernel": {"sm_121": (8, 0)},
+    "nostroma::kernels::{anonymous}::gr_down_staged_kernel": {"sm_121": (8, 0)},
     # Spark sm_121 (never measured before)
-    "strata::kernels::{anonymous}::gr_up75_kernel": {"sm_121": (8, 0)},
+    "nostroma::kernels::{anonymous}::gr_up75_kernel": {"sm_121": (8, 0)},
     # Spark sm_121 (never measured before)
-    "strata::kernels::{anonymous}::gr_up_v3_kernel": {"sm_121": (8, 0)},
+    "nostroma::kernels::{anonymous}::gr_up_v3_kernel": {"sm_121": (8, 0)},
     # present at v0.2.9 (not in the table then)
-    "strata::kernels::{anonymous}::hcp::persist_kernel": {"sm_120": (8, 0), "sm_121": (8, 0), "sm_86": (16, 0)},
+    "nostroma::kernels::{anonymous}::hcp::persist_kernel": {"sm_120": (8, 0), "sm_121": (8, 0), "sm_86": (16, 0)},
     # NEW since v0.2.9 on sm_120 (8 B); not looked at
-    "strata::kernels::{anonymous}::mmvq_multi_kernel": {"sm_120": (8, 0), "sm_121": (8, 0)},
+    "nostroma::kernels::{anonymous}::mmvq_multi_kernel": {"sm_120": (8, 0), "sm_121": (8, 0)},
     # sm_120 already at v0.2.9
-    "strata::kernels::{anonymous}::native_down_kernel": {"sm_120": (8, 0)},
+    "nostroma::kernels::{anonymous}::native_down_kernel": {"sm_120": (8, 0)},
     # Spark sm_121 (never measured before)
-    "strata::kernels::{anonymous}::native_down_multi_kernel": {"sm_121": (48, 0)},
+    "nostroma::kernels::{anonymous}::native_down_multi_kernel": {"sm_121": (48, 0)},
     # sm_120 already at v0.2.9
-    "strata::kernels::{anonymous}::native_gu_kernel": {"sm_120": (24, 0)},
+    "nostroma::kernels::{anonymous}::native_gu_kernel": {"sm_120": (24, 0)},
     # Spark sm_121 (never measured before)
-    "strata::kernels::{anonymous}::native_gu_multi_kernel": {"sm_121": (112, 0)},
+    "nostroma::kernels::{anonymous}::native_gu_multi_kernel": {"sm_121": (112, 0)},
     # Spark sm_121 (never measured before)
-    "strata::kernels::{anonymous}::native_gu_swiglu_kernel": {"sm_121": (72, 0)},
+    "nostroma::kernels::{anonymous}::native_gu_swiglu_kernel": {"sm_121": (72, 0)},
     # Spark sm_121 (never measured before)
-    "strata::kernels::{anonymous}::native_mmvq_il_kernel": {"sm_121": (8, 0)},
+    "nostroma::kernels::{anonymous}::native_mmvq_il_kernel": {"sm_121": (8, 0)},
     # the interleaved prefetch MMVQ (IlQ4K / IlQ5K / IlQ6K / IlIQ4XS instantiations, one entry for all): 1.3-1.6 KB of stack a thread; present at v0.2.9 and not in the table then
-    "strata::kernels::{anonymous}::native_mmvq_il_pf_kernel": {"sm_120": (1624, 0), "sm_121": (1456, 0), "sm_86": (1336, 0)},
+    "nostroma::kernels::{anonymous}::native_mmvq_il_pf_kernel": {"sm_120": (1624, 0), "sm_121": (1456, 0), "sm_86": (1336, 0)},
     # Spark sm_121 (never measured before)
-    "strata::kernels::{anonymous}::pair_kernel": {"sm_121": (16, 0)},
+    "nostroma::kernels::{anonymous}::pair_kernel": {"sm_121": (16, 0)},
     # Spark sm_121 (never measured before)
-    "strata::kernels::{anonymous}::prompt_attn_i8v3_kernel": {"sm_121": (40, 0)},
+    "nostroma::kernels::{anonymous}::prompt_attn_i8v3_kernel": {"sm_121": (40, 0)},
     # Spark sm_121 (never measured before)
-    "strata::kernels::{anonymous}::rope_table_kernel": {"sm_121": (32, 0)},
+    "nostroma::kernels::{anonymous}::rope_table_kernel": {"sm_121": (32, 0)},
     # Spark sm_121 (never measured before)
-    "strata::kernels::{anonymous}::s26_gu_l_kernel": {"sm_121": (32, 0)},
+    "nostroma::kernels::{anonymous}::s26_gu_l_kernel": {"sm_121": (32, 0)},
     # Spark sm_121 (never measured before)
-    "strata::kernels::{anonymous}::s27_gu_kernel": {"sm_121": (32, 0)},
+    "nostroma::kernels::{anonymous}::s27_gu_kernel": {"sm_121": (32, 0)},
     # sm_86 already at v0.2.9
-    "strata::prefill::fused::{anonymous}::native_kernel": {"sm_121": (16, 0), "sm_86": (48, 0)},
+    "nostroma::prefill::fused::{anonymous}::native_kernel": {"sm_121": (16, 0), "sm_86": (48, 0)},
     # sm_86 present at v0.2.9; sm_120 8 B new on CUDA 13.x
-    "strata::prefill::{anonymous}::gdn_conv_w_kernel": {"sm_120": (8, 0), "sm_121": (8, 0), "sm_86": (24, 0)},
+    "nostroma::prefill::{anonymous}::gdn_conv_w_kernel": {"sm_120": (8, 0), "sm_121": (8, 0), "sm_86": (24, 0)},
     # present at v0.2.9 (not in the table then), sm_86
-    "strata::prefill::{anonymous}::gdn_tc_scan_kernel": {"sm_86": (128, 0)},
-    # NEW in 0.2.9 (STRATA_QSA_FUSE_NR, f-042-strix-pf): the RopeTab parameter struct is copied to the stack for rope_tab_cs; avoidable (pass the table by pointer), noted for STRIX-PF
-    "strata::prefill::{anonymous}::rms_rope_rows_kernel": {"sm_120": (32, 0), "sm_121": (32, 0), "sm_86": (32, 0)},
+    "nostroma::prefill::{anonymous}::gdn_tc_scan_kernel": {"sm_86": (128, 0)},
+    # NEW in 0.2.9 (NOSTROMA_QSA_FUSE_NR, f-042-strix-pf): the RopeTab parameter struct is copied to the stack for rope_tab_cs; avoidable (pass the table by pointer), noted for STRIX-PF
+    "nostroma::prefill::{anonymous}::rms_rope_rows_kernel": {"sm_120": (32, 0), "sm_121": (32, 0), "sm_86": (32, 0)},
     # Spark sm_121 (never measured before)
-    "strata::prefill::{anonymous}::rope_kernel": {"sm_121": (32, 0)},
+    "nostroma::prefill::{anonymous}::rope_kernel": {"sm_121": (32, 0)},
     # Spark sm_121 (never measured before)
     "{anonymous}::k_attn_prep": {"sm_121": (32, 0)},
-    # rc1 (measured on l620, CUDA 13.2 sm_120): the HC down kernel's register-blocked instance <1,6,true,2,0,true> (df2-more, STRATA_GR_V3_PF bit 7, default 133 on sm_120) keeps 8 bytes
-    "strata::kernels::{anonymous}::gr_down_v3_kernel": {"sm_120": (8, 0)},
+    # rc1 (measured on l620, CUDA 13.2 sm_120): the HC down kernel's register-blocked instance <1,6,true,2,0,true> (df2-more, NOSTROMA_GR_V3_PF bit 7, default 133 on sm_120) keeps 8 bytes
+    "nostroma::kernels::{anonymous}::gr_down_v3_kernel": {"sm_120": (8, 0)},
     # rc1 (l620 sm_120): DFlash2's rope table builder copies its parameter struct to the stack (src/kernels/cuda/dflash2.cu, from the ring / multi-card DFlash2 line); avoidable
-    "strata::kernels::{anonymous}::rope_table_inv_kernel": {"sm_120": (32, 0)},
+    "nostroma::kernels::{anonymous}::rope_table_inv_kernel": {"sm_120": (32, 0)},
 }
 for _key, _per_sm in _INT3_ALLOWED.items():
     _merged = ALLOWED.setdefault(_key, {})
@@ -286,52 +286,52 @@ for _key, _per_sm in _INT3_ALLOWED.items():
         _old = _merged.get(_sm, (0, 0))
         _merged[_sm] = (max(_stack, _old[0]), max(_local, _old[1]))
 
-# sm_89 (Ada: the RTX 40 cards), measured 11-13 on a CUDA 13.2 build of d6f9f68f9 (batch 15, sm_89-real; cuobjdump 13.2 reading libstrata_kernels.a):
+# sm_89 (Ada: the RTX 40 cards), measured 11-13 on a CUDA 13.2 build of d6f9f68f9 (batch 15, sm_89-real; cuobjdump 13.2 reading libnostroma_kernels.a):
 # 432 instances in these 40 kernels use stack, none uses .local.  36 of the keys equal the sm_86 allowance above to the byte, or are below it; gemm4_rows_kernel,
 # gemm_rows_kernel, i8_kernel and rope_table_inv_kernel have no sm_86 entry (their stack is the same size on sm_86).  The kernels are the same device code on
 # every architecture (there is no per-architecture variant of them); the sm_89 keys were only missing.  Same shape and rule as the entries above: the
 # measured maximum, so any growth fails.
 _SM89_ALLOWED = {
-    "strata::kernels::native_gu_lds_kernel": {"sm_89": (8, 0)},
-    "strata::kernels::route_resident_k": {"sm_89": (40, 0)},
-    "strata::kernels::{anonymous}::attn_chunk_kernel": {"sm_89": (384, 0)},
-    "strata::kernels::{anonymous}::attn_chunk_kernel_pre75": {"sm_89": (8, 0)},
-    "strata::kernels::{anonymous}::attn_chunk_slots_kernel": {"sm_89": (384, 0)},
-    "strata::kernels::{anonymous}::block_scores_simt_kernel": {"sm_89": (8, 0)},
-    "strata::kernels::{anonymous}::block_topk_reg_kernel": {"sm_89": (96, 0)},
-    "strata::kernels::{anonymous}::copy_kernel": {"sm_89": (88, 0)},
-    "strata::kernels::{anonymous}::dequant_gu_kernel": {"sm_89": (32, 0)},
-    "strata::kernels::{anonymous}::dequant_kernel": {"sm_89": (64, 0)},
-    "strata::kernels::{anonymous}::expdec_down_kernel": {"sm_89": (288, 0)},
-    "strata::kernels::{anonymous}::expdec_gu_kernel": {"sm_89": (56, 0)},
-    "strata::kernels::{anonymous}::gdn_step_commit_kernel": {"sm_89": (8, 0)},
-    "strata::kernels::{anonymous}::gemm4_rows_kernel": {"sm_89": (8, 0)},
-    "strata::kernels::{anonymous}::gemm_iq_f16_grouped_kernel": {"sm_89": (32, 0)},
-    "strata::kernels::{anonymous}::gemm_rows_kernel": {"sm_89": (40, 0)},
-    "strata::kernels::{anonymous}::gr_down_multi_kernel": {"sm_89": (8, 0)},
-    "strata::kernels::{anonymous}::gr_down_q8_fast_kernel": {"sm_89": (8, 0)},
-    "strata::kernels::{anonymous}::gr_down_q8_kernel": {"sm_89": (16, 0)},
-    "strata::kernels::{anonymous}::gr_down_staged_kernel": {"sm_89": (16, 0)},
-    "strata::kernels::{anonymous}::gr_down_v3_kernel": {"sm_89": (8, 0)},
-    "strata::kernels::{anonymous}::gr_up_q8_fast_kernel": {"sm_89": (8, 0)},
-    "strata::kernels::{anonymous}::hcp::persist_kernel": {"sm_89": (16, 0)},
-    "strata::kernels::{anonymous}::i8_kernel": {"sm_89": (8, 0)},
-    "strata::kernels::{anonymous}::native_down_kernel": {"sm_89": (8, 0)},
-    "strata::kernels::{anonymous}::native_down_multi_kernel": {"sm_89": (64, 0)},
-    "strata::kernels::{anonymous}::native_gu_kernel": {"sm_89": (8, 0)},
-    "strata::kernels::{anonymous}::native_gu_multi_kernel": {"sm_89": (144, 0)},
-    "strata::kernels::{anonymous}::native_mmvq_il_pf_kernel": {"sm_89": (1336, 0)},
-    "strata::kernels::{anonymous}::pair_kernel": {"sm_89": (16, 0)},
-    "strata::kernels::{anonymous}::prompt_attn_kernel": {"sm_89": (8, 0)},
-    "strata::kernels::{anonymous}::rope_table_inv_kernel": {"sm_89": (32, 0)},
-    "strata::kernels::{anonymous}::rope_table_kernel": {"sm_89": (32, 0)},
-    "strata::kernels::{anonymous}::route": {"sm_89": (64, 0)},
-    "strata::kernels::{anonymous}::route_multi": {"sm_89": (64, 0)},
-    "strata::kernels::{anonymous}::route_prior_k": {"sm_89": (64, 0)},
-    "strata::kernels::{anonymous}::route_topk": {"sm_89": (32, 0)},
-    "strata::kernels::{anonymous}::s26_gu_l_kernel": {"sm_89": (32, 0)},
-    "strata::kernels::{anonymous}::s27_down_kernel": {"sm_89": (16, 0)},
-    "strata::kernels::{anonymous}::s27_gu_kernel": {"sm_89": (32, 0)},
+    "nostroma::kernels::native_gu_lds_kernel": {"sm_89": (8, 0)},
+    "nostroma::kernels::route_resident_k": {"sm_89": (40, 0)},
+    "nostroma::kernels::{anonymous}::attn_chunk_kernel": {"sm_89": (384, 0)},
+    "nostroma::kernels::{anonymous}::attn_chunk_kernel_pre75": {"sm_89": (8, 0)},
+    "nostroma::kernels::{anonymous}::attn_chunk_slots_kernel": {"sm_89": (384, 0)},
+    "nostroma::kernels::{anonymous}::block_scores_simt_kernel": {"sm_89": (8, 0)},
+    "nostroma::kernels::{anonymous}::block_topk_reg_kernel": {"sm_89": (96, 0)},
+    "nostroma::kernels::{anonymous}::copy_kernel": {"sm_89": (88, 0)},
+    "nostroma::kernels::{anonymous}::dequant_gu_kernel": {"sm_89": (32, 0)},
+    "nostroma::kernels::{anonymous}::dequant_kernel": {"sm_89": (64, 0)},
+    "nostroma::kernels::{anonymous}::expdec_down_kernel": {"sm_89": (288, 0)},
+    "nostroma::kernels::{anonymous}::expdec_gu_kernel": {"sm_89": (56, 0)},
+    "nostroma::kernels::{anonymous}::gdn_step_commit_kernel": {"sm_89": (8, 0)},
+    "nostroma::kernels::{anonymous}::gemm4_rows_kernel": {"sm_89": (8, 0)},
+    "nostroma::kernels::{anonymous}::gemm_iq_f16_grouped_kernel": {"sm_89": (32, 0)},
+    "nostroma::kernels::{anonymous}::gemm_rows_kernel": {"sm_89": (40, 0)},
+    "nostroma::kernels::{anonymous}::gr_down_multi_kernel": {"sm_89": (8, 0)},
+    "nostroma::kernels::{anonymous}::gr_down_q8_fast_kernel": {"sm_89": (8, 0)},
+    "nostroma::kernels::{anonymous}::gr_down_q8_kernel": {"sm_89": (16, 0)},
+    "nostroma::kernels::{anonymous}::gr_down_staged_kernel": {"sm_89": (16, 0)},
+    "nostroma::kernels::{anonymous}::gr_down_v3_kernel": {"sm_89": (8, 0)},
+    "nostroma::kernels::{anonymous}::gr_up_q8_fast_kernel": {"sm_89": (8, 0)},
+    "nostroma::kernels::{anonymous}::hcp::persist_kernel": {"sm_89": (16, 0)},
+    "nostroma::kernels::{anonymous}::i8_kernel": {"sm_89": (8, 0)},
+    "nostroma::kernels::{anonymous}::native_down_kernel": {"sm_89": (8, 0)},
+    "nostroma::kernels::{anonymous}::native_down_multi_kernel": {"sm_89": (64, 0)},
+    "nostroma::kernels::{anonymous}::native_gu_kernel": {"sm_89": (8, 0)},
+    "nostroma::kernels::{anonymous}::native_gu_multi_kernel": {"sm_89": (144, 0)},
+    "nostroma::kernels::{anonymous}::native_mmvq_il_pf_kernel": {"sm_89": (1336, 0)},
+    "nostroma::kernels::{anonymous}::pair_kernel": {"sm_89": (16, 0)},
+    "nostroma::kernels::{anonymous}::prompt_attn_kernel": {"sm_89": (8, 0)},
+    "nostroma::kernels::{anonymous}::rope_table_inv_kernel": {"sm_89": (32, 0)},
+    "nostroma::kernels::{anonymous}::rope_table_kernel": {"sm_89": (32, 0)},
+    "nostroma::kernels::{anonymous}::route": {"sm_89": (64, 0)},
+    "nostroma::kernels::{anonymous}::route_multi": {"sm_89": (64, 0)},
+    "nostroma::kernels::{anonymous}::route_prior_k": {"sm_89": (64, 0)},
+    "nostroma::kernels::{anonymous}::route_topk": {"sm_89": (32, 0)},
+    "nostroma::kernels::{anonymous}::s26_gu_l_kernel": {"sm_89": (32, 0)},
+    "nostroma::kernels::{anonymous}::s27_down_kernel": {"sm_89": (16, 0)},
+    "nostroma::kernels::{anonymous}::s27_gu_kernel": {"sm_89": (32, 0)},
 }
 for _key, _per_sm in _SM89_ALLOWED.items():
     _merged = ALLOWED.setdefault(_key, {})
@@ -339,21 +339,21 @@ for _key, _per_sm in _SM89_ALLOWED.items():
         _old = _merged.get(_sm, (0, 0))
         _merged[_sm] = (max(_stack, _old[0]), max(_local, _old[1]))
 
-# sm_89, the other libraries (libstrata_prefill.a, libstrata_qwen35.a, libstrata_mmq.a, libstrata_pf_own.a), from the CTest output of a CUDA 13.2 build
+# sm_89, the other libraries (libnostroma_prefill.a, libnostroma_qwen35.a, libnostroma_mmq.a, libnostroma_pf_own.a), from the CTest output of a CUDA 13.2 build
 # of af6226a3c on an RTX 4090 (the pod's cuda_spill_guard run, with MMQ and without): 75 and 68 kernel instances use stack, none uses .local; the 12 keys
 # below cover all of them, each at the measured maximum of its instances.  Same rule as above: any growth fails.
 _SM89_OTHER_LIBS_ALLOWED = {
     "q36k::k_route_group": {"sm_89": (32, 0)},
-    "strata::prefill::fused::{anonymous}::native_kernel": {"sm_89": (80, 0)},
-    "strata::prefill::fused_q36::{anonymous}::native_kernel": {"sm_89": (80, 0)},
-    "strata::prefill::mmq::{anonymous}::iq4_w4a8_kernel": {"sm_89": (40, 0)},
-    "strata::prefill::{anonymous}::gdn_conv_w_kernel": {"sm_89": (24, 0)},
-    "strata::prefill::{anonymous}::gdn_tc_scan_kernel": {"sm_89": (128, 0)},
-    "strata::prefill::{anonymous}::gr_write_cvec_norm_rs_kernel": {"sm_89": (40, 0)},
-    "strata::prefill::{anonymous}::gr_write_norm_rs_kernel": {"sm_89": (40, 0)},
-    "strata::prefill::{anonymous}::rms_rope_rows_kernel": {"sm_89": (32, 0)},
-    "strata::prefill::{anonymous}::rope_kernel": {"sm_89": (32, 0)},
-    "strata::prefill::{anonymous}::route_kernel": {"sm_89": (64, 0)},
+    "nostroma::prefill::fused::{anonymous}::native_kernel": {"sm_89": (80, 0)},
+    "nostroma::prefill::fused_q36::{anonymous}::native_kernel": {"sm_89": (80, 0)},
+    "nostroma::prefill::mmq::{anonymous}::iq4_w4a8_kernel": {"sm_89": (40, 0)},
+    "nostroma::prefill::{anonymous}::gdn_conv_w_kernel": {"sm_89": (24, 0)},
+    "nostroma::prefill::{anonymous}::gdn_tc_scan_kernel": {"sm_89": (128, 0)},
+    "nostroma::prefill::{anonymous}::gr_write_cvec_norm_rs_kernel": {"sm_89": (40, 0)},
+    "nostroma::prefill::{anonymous}::gr_write_norm_rs_kernel": {"sm_89": (40, 0)},
+    "nostroma::prefill::{anonymous}::rms_rope_rows_kernel": {"sm_89": (32, 0)},
+    "nostroma::prefill::{anonymous}::rope_kernel": {"sm_89": (32, 0)},
+    "nostroma::prefill::{anonymous}::route_kernel": {"sm_89": (64, 0)},
     "{anonymous}::k_attn_prep": {"sm_89": (32, 0)},
 }
 for _key, _per_sm in _SM89_OTHER_LIBS_ALLOWED.items():

@@ -1,12 +1,12 @@
 #!/bin/sh
-# Strata Terminal launcher.
+# Nostroma Terminal launcher.
 #
 # An end user must not need a development checkout, a global interpreter, pip or a compiler. This
 # script finds a usable Python in a fixed order and hands over to the CLI; it installs nothing and
 # downloads nothing.
 #
 # Search order:
-#   1. $STRATA_PYTHON                        — an explicit override, always wins
+#   1. $NOSTROMA_PYTHON                        — an explicit override, always wins
 #   2. <this dir>/python/bin/python3         — the private runtime shipped with the distribution
 #   3. A Python 3.10+ found on PATH          — a developer convenience, never a requirement
 #
@@ -16,9 +16,9 @@
 # than failing obscurely.
 set -eu
 
-# Resolve this script's real directory, following symlinks, so `nostroma` and its old name `strata` can live on PATH.
+# Resolve this script's real directory, following symlinks, so `nostroma` and its old name `nostroma` can live on PATH.
 prog=$(basename -- "$0")          # the name it was typed as, for the messages below
-NOSTROMA_PROG="$prog"             # and for strata.py, which cannot see which link was used
+NOSTROMA_PROG="$prog"             # and for nostroma.py, which cannot see which link was used
 export NOSTROMA_PROG
 self=$0
 while [ -L "$self" ]; do
@@ -32,17 +32,17 @@ done
 HERE=$(CDPATH= cd -- "$(dirname -- "$self")" && pwd -P)
 
 pick_python() {
-  if [ -n "${STRATA_PYTHON:-}" ]; then
-    if [ -x "$STRATA_PYTHON" ]; then printf '%s\n' "$STRATA_PYTHON"; return 0; fi
-    echo "$prog: STRATA_PYTHON=$STRATA_PYTHON is not executable" >&2
+  if [ -n "${NOSTROMA_PYTHON:-}" ]; then
+    if [ -x "$NOSTROMA_PYTHON" ]; then printf '%s\n' "$NOSTROMA_PYTHON"; return 0; fi
+    echo "$prog: NOSTROMA_PYTHON=$NOSTROMA_PYTHON is not executable" >&2
     return 1
   fi
 
   # The private runtime shipped with the distribution.
   #
   # Two layouts are supported, and the relative depth differs between them:
-  #   * an installed distribution: <root>/bin/strata with the runtime at <root>/python/
-  #   * a source checkout:        <root>/bin/strata with no bundled runtime at all
+  #   * an installed distribution: <root>/bin/nostroma with the runtime at <root>/python/
+  #   * a source checkout:        <root>/bin/nostroma with no bundled runtime at all
   # So the parent directory is checked as well as this one. Getting this wrong is silent: the
   # launcher falls through to whatever Python is on PATH and the bundle stops being self-contained.
   for candidate in \
@@ -54,7 +54,7 @@ pick_python() {
   # Anything on PATH that is new enough, then the usual places an interpreter lives on macOS
   # without being on a non-interactive PATH (Homebrew, python.org, and the interpreter a DeepSeek
   # Harness installation already ships, which is a legitimate Python 3.12 to reuse rather than
-  # download a second copy of). Strata needs 3.10 or newer; macOS's own /usr/bin/python3 is 3.9 and
+  # download a second copy of). Nostroma needs 3.10 or newer; macOS's own /usr/bin/python3 is 3.9 and
   # is correctly rejected below.
   for candidate in \
       "$(command -v python3 2>/dev/null || true)" \
@@ -85,7 +85,7 @@ This distribution is meant to run on its own. If you are seeing this, the privat
 missing from the install and no Python 3.10+ is on your PATH.
 
   * Reinstall the distribution, which restores the bundled runtime, or
-  * set STRATA_PYTHON=/path/to/python3 (3.10 or newer), or
+  * set NOSTROMA_PYTHON=/path/to/python3 (3.10 or newer), or
   * install Python 3.10+ and run this launcher again.
 MSG
   exit 5
@@ -93,26 +93,26 @@ fi
 
 # Find the application root. Two layouts are supported so the same launcher works from a checkout
 # (`bin/nostroma` beside `nostroma.py`) and from an installed distribution (`<root>/bin/nostroma` with the
-# code under `<root>/`). `strata.py` is the name the program had before the rename and still runs it.
+# code under `<root>/`). `nostroma.py` is the name the program had before the rename and still runs it.
 if [ -f "$HERE/nostroma.py" ]; then
   APP=$HERE
 elif [ -f "$HERE/../nostroma.py" ]; then
   APP=$(CDPATH= cd -- "$HERE/.." && pwd -P)
-elif [ -f "$HERE/strata.py" ]; then
+elif [ -f "$HERE/nostroma.py" ]; then
   APP=$HERE
-elif [ -f "$HERE/../strata.py" ]; then
+elif [ -f "$HERE/../nostroma.py" ]; then
   APP=$(CDPATH= cd -- "$HERE/.." && pwd -P)
 else
   echo "$prog: cannot find nostroma.py next to $HERE or its parent; the installation looks incomplete" >&2
   exit 5
 fi
 
-if [ -f "$APP/nostroma.py" ]; then ENTRY=$APP/nostroma.py; else ENTRY=$APP/strata.py; fi
+if [ -f "$APP/nostroma.py" ]; then ENTRY=$APP/nostroma.py; else ENTRY=$APP/nostroma.py; fi
 
 # Only the API server needs third-party packages. `--help`, `status`, `monitor`, `timeskip` and
 # `tune plan` are deliberately stdlib-only — the CLI imports `serve.*` lazily inside the functions
 # that need it — so they must keep working on a bare interpreter. Checking them here anyway was a
-# real defect: it made `strata --help` refuse to run on an interpreter that could have answered it.
+# real defect: it made `nostroma --help` refuse to run on an interpreter that could have answered it.
 #
 # A missing dependency is reported as a typed, actionable failure rather than a traceback, and
 # nothing is ever installed here.

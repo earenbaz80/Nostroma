@@ -1,13 +1,13 @@
-// tests/quant/type_geometry_oracle.cpp - Strata's type table (strata::quant::type_info) against ggml's own table, id by id.
+// tests/quant/type_geometry_oracle.cpp - Nostroma's type table (nostroma::quant::type_info) against ggml's own table, id by id.
 //
 // The engine's prompt buffers size an expert matrix from this table (src/prefill/moe_helpers.cu, mmq::matrix_bytes), which used to ask
-// ggml (ggml_blck_size / ggml_type_size).  ggml is the oracle here only: the test is built where ggml-base is (STRATA_BUILD_TESTS).
+// ggml (ggml_blck_size / ggml_type_size).  ggml is the oracle here only: the test is built where ggml-base is (NOSTROMA_BUILD_TESTS).
 #include <cstdio>
 
 #include "ggml.h"
-#include "strata/quant/types.hpp"
+#include "nostroma/quant/types.hpp"
 
-namespace sq = strata::quant;
+namespace sq = nostroma::quant;
 
 static int g_fail = 0;
 #define CHECK(c, ...)                                  \
@@ -22,7 +22,7 @@ static int g_fail = 0;
 
 int main() {
     int same = 0, ggml_only = 0;
-    // every id of ggml's table: where Strata's table knows the id, the block geometry is ggml's
+    // every id of ggml's table: where Nostroma's table knows the id, the block geometry is ggml's
     for (int t = 0; t < GGML_TYPE_COUNT; ++t) {
         const int64_t gb = ggml_blck_size((ggml_type) t);
         const size_t gs = ggml_type_size((ggml_type) t);
@@ -34,7 +34,7 @@ int main() {
             }
             continue;
         }
-        CHECK(gb == ti->blck && gs == ti->bytes, "id %d (%s): Strata %d values / %zu bytes, ggml %lld / %zu", t, ti->name, ti->blck, ti->bytes,
+        CHECK(gb == ti->blck && gs == ti->bytes, "id %d (%s): Nostroma %d values / %zu bytes, ggml %lld / %zu", t, ti->name, ti->blck, ti->bytes,
               (long long) gb, gs);
         ++same;
     }

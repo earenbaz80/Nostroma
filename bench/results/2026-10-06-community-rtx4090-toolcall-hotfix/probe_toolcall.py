@@ -22,13 +22,13 @@ import subprocess
 import time
 import urllib.request
 
-REPO = "/home/dgbox/Strata"
-CFG = REPO + "/strata-200k.json"
+REPO = "/home/dgbox/Nostroma"
+CFG = REPO + "/nostroma-200k.json"
 BASE = "http://127.0.0.1:8080"
 
 cfg = json.load(open(CFG, encoding="utf-8"))
 KEY = cfg["api_key"]
-MODEL = cfg.get("model_name", "strata")
+MODEL = cfg.get("model_name", "nostroma")
 
 TOOLS = [{
     "type": "function",

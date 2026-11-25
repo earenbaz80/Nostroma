@@ -62,7 +62,7 @@ $ErrorActionPreference='SilentlyContinue'
 $cs=@'
 using System;
 using System.Runtime.InteropServices;
-public static class StrataDiskTemp {
+public static class NostromaDiskTemp {
   [DllImport("kernel32.dll", SetLastError=true, CharSet=CharSet.Unicode)] static extern IntPtr CreateFile(string n, uint a, uint s, IntPtr p, uint d, uint f, IntPtr t);
   [DllImport("kernel32.dll", SetLastError=true)] static extern bool DeviceIoControl(IntPtr h, uint c, byte[] i, uint il, byte[] o, uint ol, out uint r, IntPtr ov);
   [DllImport("kernel32.dll")] static extern bool CloseHandle(IntPtr h);
@@ -87,7 +87,7 @@ while($true){
     if(-not $compiled){ Add-Type -TypeDefinition $cs; $compiled=$true }
     # only drives Windows names as NVMe, one at a time: a RAID, SATA, USB or unknown drive is never asked (a driver stack that stalls on this query
     # froze whole PCs, #4661)
-    foreach($d in @(Get-PhysicalDisk | Where-Object { $_.BusType -eq 'NVMe' })){ $v=[StrataDiskTemp]::Read([int]$d.DeviceId); if($v -gt $max){ $max=$v } }
+    foreach($d in @(Get-PhysicalDisk | Where-Object { $_.BusType -eq 'NVMe' })){ $v=[NostromaDiskTemp]::Read([int]$d.DeviceId); if($v -gt $max){ $max=$v } }
   }
   if($max -gt 0){ [Console]::Out.WriteLine('ssd '+$max) } else { [Console]::Out.WriteLine('ssd -') }
   [Console]::Out.Flush()

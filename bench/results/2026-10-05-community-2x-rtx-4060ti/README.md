@@ -1,6 +1,6 @@
 # Community benchmark: 2x RTX 4060 Ti 16 GB, Threadripper PRO 3975WX
 
-Measured on 2026-10-05. Strata 0.1.39 (`6f32ec0`), Unsloth UD-IQ4_XS, 131,072-token context,
+Measured on 2026-10-05. Nostroma 0.1.39 (`6f32ec0`), Unsloth UD-IQ4_XS, 131,072-token context,
 layer split across two RTX 4060 Ti 16 GB cards, with the experts only partly in VRAM. Two configurations
 differ only in the MTP draft vocabulary: an Italian-built one (`prod`, what this machine serves day to day) and
 setup's default one (`stock`). The workload is the RTX 5090 report's synthetic code-explanation prompts
@@ -18,7 +18,7 @@ setup's default one (`stock`). The workload is the RTX 5090 report's synthetic c
 - Model files on a Crucial P310 500 GB NVMe (all experts were loaded into RAM at start, so the disk is not
   on the decode path).
 - Pop!_OS 24.04 LTS, kernel 7.1.5, NVIDIA driver 610.57.04.
-- Strata `6f32ec070f23ced9f50e704d854d775da52591ab`, engine 0.1.39, **source build** for sm_89 with CUDA 12.6
+- Nostroma `6f32ec070f23ced9f50e704d854d775da52591ab`, engine 0.1.39, **source build** for sm_89 with CUDA 12.6
   (setup's own build; [BUILD.json](BUILD.json)). Image encoder built for the CPU (`vision: cpu`).
 - Background: the desktop session (about 100 MiB of VRAM on GPU 0) and idle services. The machine's usual
   web front end was stopped for the whole run, so no other request reached the server. An Ollama runner that
@@ -37,13 +37,13 @@ setup's default one (`stock`). The workload is the RTX 5090 report's synthetic c
   CUDA0 and 3,678 slots / 8.30 GiB on CUDA1); prefill `auto`; layer split `auto` (CUDA0 layers 0-22, CUDA1
   layers 23-47); `--remote-expert-opt`; `--pcie-frac 0.00`; one request at a time (no `"parallel"`).
 - MTP `--spec 4 --spec-min-p 0.50`:
-  - `prod`: `--mtp Strata-data/mtp/rt-it`, the same Q2_0 draft layer with its draft vocabulary rebuilt from an
+  - `prod`: `--mtp Nostroma-data/mtp/rt-it`, the same Q2_0 draft layer with its draft vocabulary rebuilt from an
     Italian Wikipedia text (`draft_vocab_it.bin`, about 7 MB of itwiki text), for an Italian-speaking deployment;
-  - `stock`: `--mtp Strata-data/mtp/rt`, setup's default draft vocabulary.
+  - `stock`: `--mtp Nostroma-data/mtp/rt`, setup's default draft vocabulary.
 - Requests: `temperature 0`, `reasoning_effort "none"`, `max_tokens 256` (the benchmark script's defaults).
 
-The exact run configurations are [prod/strata-config.json](prod/strata-config.json) and
-[stock/strata-config.json](stock/strata-config.json) (local paths left in; no API key is configured).
+The exact run configurations are [prod/nostroma-config.json](prod/nostroma-config.json) and
+[stock/nostroma-config.json](stock/nostroma-config.json) (local paths left in; no API key is configured).
 
 ## Method
 

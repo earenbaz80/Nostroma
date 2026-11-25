@@ -4,8 +4,8 @@
 The report rules say to remove credentials and private paths. Every file this
 report ships is rewritten in place:
 
-    <home>/Projects/Strata-data  -> <data root>
-    <home>/Projects/Strata       -> <strata checkout>
+    <home>/Projects/Nostroma-data  -> <data root>
+    <home>/Projects/Nostroma       -> <nostroma checkout>
     <home>/.local/opt            -> <local opt>
     <home>                       -> <home>
 
@@ -21,12 +21,12 @@ from pathlib import Path
 DATA = Path(__file__).resolve().parent.parent / 'data'
 HOME = Path.home()
 # This machine's layout: where the checkout, its data root and the toolchain are.
-CHECKOUT = HOME / 'Projects' / 'Strata'
-DATA_ROOT = HOME / 'Projects' / 'Strata-data'
+CHECKOUT = HOME / 'Projects' / 'Nostroma'
+DATA_ROOT = HOME / 'Projects' / 'Nostroma-data'
 LOCAL_OPT = HOME / '.local' / 'opt'
 REPLACEMENTS = [
     (str(DATA_ROOT), '<data root>'),
-    (str(CHECKOUT), '<strata checkout>'),
+    (str(CHECKOUT), '<nostroma checkout>'),
     (str(LOCAL_OPT), '<local opt>'),
     (str(HOME), '<home>'),
 ]

@@ -1,7 +1,7 @@
 # Community benchmark: RTX 5090 Laptop GPU (24 GB), Ryzen 9 9955HX3D
 
 Measured on 2026-10-06 by [wolffahrer](https://github.com/wolffahrer) on a Windows 11 gaming laptop
-(Schenker XMG NEO 16, A25). This tests Strata 0.1.40.1 (engine 0.1.40) with Flash-Next **Q2_0**, one mobile GPU, and a
+(Schenker XMG NEO 16, A25). This tests Nostroma 0.1.40.1 (engine 0.1.40) with Flash-Next **Q2_0**, one mobile GPU, and a
 131,072-token context limit. It reuses the workload of the
 [2026-09-30 desktop RTX 5090 report](../2026-09-30-community-rtx-5090/README.md) (same synthetic prompts, prompt lengths,
 greedy decoding, reasoning off, 256-token output cap) so the two can be read side by side. It is **not** a controlled
@@ -22,11 +22,11 @@ reused tokens. These are synthetic code-explanation requests; they do not establ
 - 64 GB installed RAM (2 x 32 GB DDR5-5600); Windows reported 61.68 GiB usable.
 - Storage: model files and pack on a Samsung SSD 990 PRO 1TB (NVMe); OS on a WD Blue SN5100 500GB (NVMe).
 - Windows 11 Home, build 26200. NVIDIA driver 610.88 (CUDA UMD 13.3).
-- Strata **v0.1.40.1**, tag commit `82f46a8c8f475f001ad76d92f58f4a4f8ffb0253`, built from the release source archive
+- Nostroma **v0.1.40.1**, tag commit `82f46a8c8f475f001ad76d92f58f4a4f8ffb0253`, built from the release source archive
   (not a git checkout). Engine 0.1.40, compiled locally for CUDA architecture 120 with CUDA toolkit 13.3 (nvcc
   13.3.73), GPU vision helper included. See [BUILD.json](BUILD.json).
 - Background: a WSL2 VM (memory cap 32 GB) with an idle local agent stack kept running; the regular local inference
-  server was stopped for the run, so the GPU was dedicated to Strata and its vision helper. Not an isolated OS.
+  server was stopped for the run, so the GPU was dedicated to Nostroma and its vision helper. Not an isolated OS.
 
 ## Model and configuration
 
@@ -46,22 +46,22 @@ reused tokens. These are synthetic code-explanation requests; they do not establ
   --conversation-cache-slots 2`, `reasoning_budget_tokens: 12000`, `reasoning_loop_recovery: "stop"`.
 - Speed runs: reasoning off (`reasoning_effort: none`), temperature 0, at most 256 generated tokens.
 
-The complete configuration (local paths replaced by placeholders) is [strata-q2_0.json](strata-q2_0.json); startup
+The complete configuration (local paths replaced by placeholders) is [nostroma-q2_0.json](nostroma-q2_0.json); startup
 choices and every request's timing and draft statistics are in [engine.log](engine.log).
 
 ```text
-.venv\Scripts\python.exe serve\server.py --engine strata --config strata-q2_0.json --port 18096
+.venv\Scripts\python.exe serve\server.py --engine nostroma --config nostroma-q2_0.json --port 18096
 ```
 
 ## Method
 
-[benchmark.py](benchmark.py) is the desktop report's script with three changes: it runs with Strata's own Windows
+[benchmark.py](benchmark.py) is the desktop report's script with three changes: it runs with Nostroma's own Windows
 venv, a failed or cancelled request is recorded with its error and excluded from the statistics instead of stopping
 the suite, and peak host RAM (total minus available, system-wide) and GPU memory are sampled every 0.5 s during each
 request. Prompts, nonces, token targets and the token-count check against the server are unchanged.
 
 ```text
-.venv\Scripts\python.exe benchmark.py --root <strata> --pack <strata-data>\packs\q2_0 --url http://127.0.0.1:18096 --out results
+.venv\Scripts\python.exe benchmark.py --root <nostroma> --pack <nostroma-data>\packs\q2_0 --url http://127.0.0.1:18096 --out results
 .venv\Scripts\python.exe tools\needle_bench.py --url http://127.0.0.1:18096 --lengths 32k,128k --depths 10,50,90 --out needles.json
 .venv\Scripts\python.exe coding_check.py --url http://127.0.0.1:18096 --out coding-check.json
 ```

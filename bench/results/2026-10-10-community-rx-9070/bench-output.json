@@ -2,7 +2,7 @@
   "started": "2026-10-10 07:54:42",
   "url": "http://127.0.0.1:8080/v1/chat/completions",
   "model": "qwen3.8-flash-next-iq3_xxs",
-  "engine_log": "D:/Dev/Strata/strata-iq3_xxs.log",
+  "engine_log": "D:/Dev/Nostroma/nostroma-iq3_xxs.log",
   "cap_tokens": 256,
   "reps": 3,
   "speed": [
@@ -194,21 +194,21 @@
     },
     {
       "ok": false,
-      "error": "HTTP 400: {\"error\": {\"type\": \"invalid_request_error\", \"message\": \"prompt (131428 tokens) + max tokens (256) exceeds the context (131072); requests are never truncated. Send a smaller max_tokens (at most 0 here), or add \\\"fit_max_tokens\\\": true to the model's strata-<model>.json to shorten it to the room left (#545)\"}}",
+      "error": "HTTP 400: {\"error\": {\"type\": \"invalid_request_error\", \"message\": \"prompt (131428 tokens) + max tokens (256) exceeds the context (131072); requests are never truncated. Send a smaller max_tokens (at most 0 here), or add \\\"fit_max_tokens\\\": true to the model's nostroma-<model>.json to shorten it to the room left (#545)\"}}",
       "target": 128000,
       "rep": 1,
       "chars": 322636
     },
     {
       "ok": false,
-      "error": "HTTP 400: {\"error\": {\"type\": \"invalid_request_error\", \"message\": \"prompt (131428 tokens) + max tokens (256) exceeds the context (131072); requests are never truncated. Send a smaller max_tokens (at most 0 here), or add \\\"fit_max_tokens\\\": true to the model's strata-<model>.json to shorten it to the room left (#545)\"}}",
+      "error": "HTTP 400: {\"error\": {\"type\": \"invalid_request_error\", \"message\": \"prompt (131428 tokens) + max tokens (256) exceeds the context (131072); requests are never truncated. Send a smaller max_tokens (at most 0 here), or add \\\"fit_max_tokens\\\": true to the model's nostroma-<model>.json to shorten it to the room left (#545)\"}}",
       "target": 128000,
       "rep": 2,
       "chars": 322636
     },
     {
       "ok": false,
-      "error": "HTTP 400: {\"error\": {\"type\": \"invalid_request_error\", \"message\": \"prompt (131428 tokens) + max tokens (256) exceeds the context (131072); requests are never truncated. Send a smaller max_tokens (at most 0 here), or add \\\"fit_max_tokens\\\": true to the model's strata-<model>.json to shorten it to the room left (#545)\"}}",
+      "error": "HTTP 400: {\"error\": {\"type\": \"invalid_request_error\", \"message\": \"prompt (131428 tokens) + max tokens (256) exceeds the context (131072); requests are never truncated. Send a smaller max_tokens (at most 0 here), or add \\\"fit_max_tokens\\\": true to the model's nostroma-<model>.json to shorten it to the room left (#545)\"}}",
       "target": 128000,
       "rep": 3,
       "chars": 322636
@@ -316,7 +316,7 @@
     },
     {
       "ok": false,
-      "error": "HTTP 400: {\"error\": {\"type\": \"invalid_request_error\", \"message\": \"prompt (131473 tokens) + max tokens (32) exceeds the context (131072); requests are never truncated. Send a smaller max_tokens (at most 0 here), or add \\\"fit_max_tokens\\\": true to the model's strata-<model>.json to shorten it to the room left (#545)\"}}",
+      "error": "HTTP 400: {\"error\": {\"type\": \"invalid_request_error\", \"message\": \"prompt (131473 tokens) + max tokens (32) exceeds the context (131072); requests are never truncated. Send a smaller max_tokens (at most 0 here), or add \\\"fit_max_tokens\\\": true to the model's nostroma-<model>.json to shorten it to the room left (#545)\"}}",
       "target": 128000,
       "depth": 10,
       "needle_found": false,
@@ -324,7 +324,7 @@
     },
     {
       "ok": false,
-      "error": "HTTP 400: {\"error\": {\"type\": \"invalid_request_error\", \"message\": \"prompt (131473 tokens) + max tokens (32) exceeds the context (131072); requests are never truncated. Send a smaller max_tokens (at most 0 here), or add \\\"fit_max_tokens\\\": true to the model's strata-<model>.json to shorten it to the room left (#545)\"}}",
+      "error": "HTTP 400: {\"error\": {\"type\": \"invalid_request_error\", \"message\": \"prompt (131473 tokens) + max tokens (32) exceeds the context (131072); requests are never truncated. Send a smaller max_tokens (at most 0 here), or add \\\"fit_max_tokens\\\": true to the model's nostroma-<model>.json to shorten it to the room left (#545)\"}}",
       "target": 128000,
       "depth": 50,
       "needle_found": false,
@@ -332,7 +332,7 @@
     },
     {
       "ok": false,
-      "error": "HTTP 400: {\"error\": {\"type\": \"invalid_request_error\", \"message\": \"prompt (131473 tokens) + max tokens (32) exceeds the context (131072); requests are never truncated. Send a smaller max_tokens (at most 0 here), or add \\\"fit_max_tokens\\\": true to the model's strata-<model>.json to shorten it to the room left (#545)\"}}",
+      "error": "HTTP 400: {\"error\": {\"type\": \"invalid_request_error\", \"message\": \"prompt (131473 tokens) + max tokens (32) exceeds the context (131072); requests are never truncated. Send a smaller max_tokens (at most 0 here), or add \\\"fit_max_tokens\\\": true to the model's nostroma-<model>.json to shorten it to the room left (#545)\"}}",
       "target": 128000,
       "depth": 90,
       "needle_found": false,

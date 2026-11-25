@@ -13,7 +13,7 @@ engines 0.1.41 to 0.1.47 with a hand-made configuration (`--mmap-experts`, a lis
 Measured on 2026-10-26 on a GMKtec NucBox EVO-X2 (Ryzen AI Max+ 395, 128 GB shared memory: a 64 GB BIOS carve-out for the graphics chip
 and 64 GB that Windows sees; Windows 11 Pro, AMD Adrenalin 26.10.1 / driver 32.0.32015.7029). Nostroma was the 0.2.7 release candidate
 (Terminal and engine 0.1.51 built from commit `3e468f5de`, ROCm 10.2.0a20260930). The server was started with `nostroma launch` and
-nothing else was set by hand; the speeds come from `tools/strata_bench.py` against the running server (three runs per test, medians,
+nothing else was set by hand; the speeds come from `tools/nostroma_bench.py` against the running server (three runs per test, medians,
 the engine's own timings; the model is loaded before the clock starts). The numbers can still move before the release is cut.
 
 **Qwen3.8-Flash-Next IQ3_S** (`nostroma launch --family qwen --model iq3_s`; 131,072 tokens of context, int8 KV, pictures on):
@@ -27,7 +27,7 @@ the engine's own timings; the model is loaded before the clock starts). The numb
 | 32K prompt | **792 tok/s** (40.6 s) |
 | Coding-agent session, 6 turns | 69% of the prompt came from the conversation cache; answers 47 tok/s; 4.5 s to the first token per turn |
 
-The prompt rows use the word-list prompt of `tools/strata_bench.py`; ordinary text is costlier for the experts and reads slower (124 to 164 tok/s on 3 to 5K-token pieces of prose). These are speed measurements. They say nothing about answer quality, and the short-chat range depends on the text. The other Qwen sizes
+The prompt rows use the word-list prompt of `tools/nostroma_bench.py`; ordinary text is costlier for the experts and reads slower (124 to 164 tok/s on 3 to 5K-token pieces of prose). These are speed measurements. They say nothing about answer quality, and the short-chat range depends on the text. The other Qwen sizes
 were not measured for this page.
 
 ## 2. Memory and the BIOS
@@ -43,7 +43,7 @@ were not measured for this page.
 
 ## 3. Install
 
-1. Use the Windows app (`Strata-<version>-windows-x64-setup.exe`) or the Terminal. The engine for this chip is the `windows-x86_64-hip-rdna3`
+1. Use the Windows app (`Nostroma-<version>-windows-x64-setup.exe`) or the Terminal. The engine for this chip is the `windows-x86_64-hip-rdna3`
    package; the app or `nostroma launch` downloads it on the first start, and `nostroma update` keeps it current.
 2. Choose the model in the app, or `nostroma launch --family qwen --model iq3_s`. With model files you already have, add
    `--model-path <folder>` (for IQ3_S the two shards are in one folder: shard 1 is the main model, shard 2 holds the per-layer embedding
@@ -61,37 +61,37 @@ What `nostroma launch` wrote for IQ3_S, with no switches of mine (these are the 
 
 ## 4. What is on by default
 
-- On `gfx1151` the engine turns on exact speed switches by itself (19 on Linux, 18 on Windows, which leaves `STRATA_SH_STREAM` out, see below; the start line lists them; `STRATA_GFX1151_DEFAULTS=0` turns them all
-  off, and a switch you set is kept). They are the ones that give the same answers as without. `STRATA_HC_Q8=1` is also on here (decode
-  about 9% faster, near-tie tokens can differ); `STRATA_HC_Q8=0` keeps the old read.
+- On `gfx1151` the engine turns on exact speed switches by itself (19 on Linux, 18 on Windows, which leaves `NOSTROMA_SH_STREAM` out, see below; the start line lists them; `NOSTROMA_GFX1151_DEFAULTS=0` turns them all
+  off, and a switch you set is kept). They are the ones that give the same answers as without. `NOSTROMA_HC_Q8=1` is also on here (decode
+  about 9% faster, near-tie tokens can differ); `NOSTROMA_HC_Q8=0` keeps the old read.
 - The hipBLASLt table for `gfx1151` ships in the package and is chosen without a setting (`prefill gemm: hipBLASLt tuning enabled (32 rows,
   gfx1151, version 100500)` in the log). A hand-built engine has to be pointed at it: [AMD_HIP.md](AMD_HIP.md).
-- **The matrix-core prompt set is on by default on `gfx1151` on Windows** (engine 0.1.52 and the build after it): `STRATA_HIP_WMMA`,
-  `STRATA_PF_GEMM`, `STRATA_PA_FAST`, `STRATA_HC_UPMIX` and `STRATA_PF_FUSED`. It is the set that has been on the Radeon 780M since
+- **The matrix-core prompt set is on by default on `gfx1151` on Windows** (engine 0.1.52 and the build after it): `NOSTROMA_HIP_WMMA`,
+  `NOSTROMA_PF_GEMM`, `NOSTROMA_PA_FAST`, `NOSTROMA_HC_UPMIX` and `NOSTROMA_PF_FUSED`. It is the set that has been on the Radeon 780M since
   021-minipc, and the start line lists it (`integrated GPU (gfx1151): the matrix-core prompt set is on ...`). Prompts on Qwen IQ3_S:
   4K 688.8 -> 1,192.8 tok/s, 8K 787.0 -> 1,283.5, 12K 750.4 -> 1,256.5, 32K 775.4 -> 1,245.1, 64K 748.5 -> 1,188.9 (x1.59 to x1.72;
   interleaved pairs, one engine at a time). The answers differ in the last bits: the first-token KL against the 0.2.7 default is
   0.0014 mean over four prompts of 4K to 24K, top-1 the same everywhere, and the measured noise floor is 0.00000 - against the
-  accepted `HC_Q8` bar of 0.0228 mean. `STRATA_IGPU_PROMPT_SET=0` turns it off, `STRATA_SELECT_WMMA=1` adds the block scorer back
-  (it measured x1.003), a single switch can be turned off on its own (`STRATA_HC_UPMIX=0`).
+  accepted `HC_Q8` bar of 0.0228 mean. `NOSTROMA_IGPU_PROMPT_SET=0` turns it off, `NOSTROMA_SELECT_WMMA=1` adds the block scorer back
+  (it measured x1.003), a single switch can be turned off on its own (`NOSTROMA_HC_UPMIX=0`).
 - **The prompt keeps its own buffers instead of lending expert-cache slots** (`--no-prefill-borrow`, engine 0.1.52 and after, on
   `gfx1151` Windows only). A lent slot's expert has to be read back from the host arena during every prompt chunk, and on this PC
   that copy runs at about 0.5 GB/s (the arena is not registered with the driver in UMA mode): 823 slots took 2.75 s of a 3.3 s 4K
   prompt inside the copy thread. With its own buffers every expert stays in the cache (`experts streamed 0 ... resident 24576` in the
-  log) and prompts are 8.5% (4K) to 8.9% (8K) faster. `STRATA_PREFILL_BORROW=1` brings lending back. `--prefill auto` keeps a
+  log) and prompts are 8.5% (4K) to 8.9% (8K) faster. `NOSTROMA_PREFILL_BORROW=1` brings lending back. `--prefill auto` keeps a
   16,384-token chunk on this PC instead of falling back to 2,048: the prompt reads every expert once per chunk, so a bigger chunk reads
   them fewer times (32K 1,250.6-1,260.0 -> 1,286.3-1,307.9 tok/s, 64K 1,188.4-1,191.0 -> 1,234.3-1,238.2; at 4K and 8K the chunk is
-  the prompt itself and nothing changes). `STRATA_GFX1151_CHUNK=0` keeps 6,144, and `--prefill auto:32768` is another ~2% at 64K for
+  the prompt itself and nothing changes). `NOSTROMA_GFX1151_CHUNK=0` keeps 6,144, and `--prefill auto:32768` is another ~2% at 64K for
   about 12.8 GiB of prompt buffers.
 - `--mmap-experts` is not needed. The first Windows guide found that without it the pinned expert arena used up the graphics memory
   budget and decode fell to 28 tok/s on engine 0.1.41; the engine on this page sizes the cache from the shared pool and reaches every slot.
 
-**`STRATA_SH_STREAM` (the shared expert on its own stream) is off by default on Windows `gfx1151` in 0.2.7, because it is slower there.** It stays
+**`NOSTROMA_SH_STREAM` (the shared expert on its own stream) is off by default on Windows `gfx1151` in 0.2.7, because it is slower there.** It stays
 on by default on Linux `gfx1151`, where it was measured to help ([STRIX_HALO.md](STRIX_HALO.md)). The first Windows guide found the Windows
 result on engine 0.1.41 (+13% decode with it off). Measured again on the 0.2.7 build as it was before this default changed (the switch was
 on), with Qwen IQ3_S, three starts each, run in turn (on, off, on, off, on, off), the same quick suite after every start:
 
-| Start | `STRATA_SH_STREAM` | Chat decode, median of 9 answers (tok/s) | 4K prompt (tok/s) |
+| Start | `NOSTROMA_SH_STREAM` | Chat decode, median of 9 answers (tok/s) | 4K prompt (tok/s) |
 | --- | --- | ---: | ---: |
 | 1 | 1 (the default then) | 43.9 | 742.9 |
 | 2 | 0 | 48.3 | 742.9 |
@@ -108,8 +108,8 @@ The answers stay the same: on the same PC and build I ran five fixed greedy prom
 token ids were identical in all four runs for every prompt.
 
 What 0.2.7 does: on Windows `gfx1151` the engine no longer turns the switch on by itself. To turn it back on, use `nostroma launch ...
---set STRATA_SH_STREAM=1` (or put `STRATA_SH_STREAM=1` in the environment of an engine you start by hand); a value you set is always kept.
-`STRATA_DEFAULTS=026` brings back everything 0.2.6 did, including the switch on. This is one model, one PC and short answers; Linux `gfx1151` has not been measured against it.
+--set NOSTROMA_SH_STREAM=1` (or put `NOSTROMA_SH_STREAM=1` in the environment of an engine you start by hand); a value you set is always kept.
+`NOSTROMA_DEFAULTS=026` brings back everything 0.2.6 did, including the switch on. This is one model, one PC and short answers; Linux `gfx1151` has not been measured against it.
 
 ## 5. Traps
 
@@ -118,14 +118,14 @@ What 0.2.7 does: on Windows `gfx1151` the engine no longer turns the switch on b
 3. **The graphics driver.** The measured driver is Adrenalin 26.10.1 (32.0.32015.7029).
 4. **If Windows resets the driver** (screen flicker, the engine dies mid-answer), see the driver-reset entry in
    [TROUBLESHOOTING.md](TROUBLESHOOTING.md#amd-cards).
-5. **Other tuning from the first guide** (a longer `--prefill`, `STRATA_PF_*` switches, `--lookup-chain`): those results are for engines
+5. **Other tuning from the first guide** (a longer `--prefill`, `NOSTROMA_PF_*` switches, `--lookup-chain`): those results are for engines
    0.1.41 to 0.1.47 and a hand-made configuration. They were not repeated here, so they are not part of this page.
 
 ## 6. Reproduce it
 
 ```
 nostroma launch --family qwen --model iq3_s            # then, from a source checkout:
-python tools/strata_bench.py --url http://127.0.0.1:8080 --runs 3 --long
+python tools/nostroma_bench.py --url http://127.0.0.1:8080 --runs 3 --long
 ```
 
 `--long` adds the 32K prompt.

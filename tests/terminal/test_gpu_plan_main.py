@@ -78,7 +78,7 @@ def start_main(cards, typed, base=None):
 
 class PlanNamesTheRunsMain(unittest.TestCase):
     def setUp(self):
-        self.home = Home().__enter__()                  # a private install / data / home folder (STRATA_INSTALL_DIR ...), as the other launch tests
+        self.home = Home().__enter__()                  # a private install / data / home folder (NOSTROMA_INSTALL_DIR ...), as the other launch tests
         self.addCleanup(self.home.__exit__, None, None, None)
 
     def test_every_row_the_plan_equals_the_start(self):
@@ -121,12 +121,12 @@ class PlanNamesTheRunsMain(unittest.TestCase):
     def test_the_vram_guard_message_is_unchanged(self):
         _, order, said = start_main(SETS["A"], (0, 1))
         self.assertEqual(order, [0, 1])
-        self.assertEqual(said, "[strata] layer split: keeping card order 0,1 - the faster card has less VRAM than the one the split ends on (16384 vs 24576 MiB, #1576)")
+        self.assertEqual(said, "[nostroma] layer split: keeping card order 0,1 - the faster card has less VRAM than the one the split ends on (16384 vs 24576 MiB, #1576)")
 
     def test_the_reorder_message_is_unchanged(self):
         _, order, said = start_main(SETS["B"], (1, 0))
         self.assertEqual(order, [0, 1])
-        self.assertEqual(said, '[strata] layer split: card order 0,1 (the faster card last; "gpu_order": "as_given" keeps 1,0, #1352)')
+        self.assertEqual(said, '[nostroma] layer split: card order 0,1 (the faster card last; "gpu_order": "as_given" keeps 1,0, #1352)')
 
     def test_equal_cards_print_nothing_and_keep_the_typed_order(self):
         for name, typed in (("control", (0, 1, 2, 3)), ("C", (0, 1)), ("C", (1, 0))):

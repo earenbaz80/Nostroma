@@ -7,12 +7,12 @@ import { join } from 'node:path';
 import { startScriptedWorker } from './helpers/scripted-worker.mjs';
 import { createAgentBridge } from '../server/agent/agent-bridge.mjs';
 import { resolveHarness } from '../server/agent/harness-runtime.mjs';
-const HARNESS = process.env.STRATA_HARNESS_DIR;
-const skip = !HARNESS || !resolveHarness({ env: process.env }).ok ? 'STRATA_HARNESS_DIR is not set to a built Harness' : false;
+const HARNESS = process.env.NOSTROMA_HARNESS_DIR;
+const skip = !HARNESS || !resolveHarness({ env: process.env }).ok ? 'NOSTROMA_HARNESS_DIR is not set to a built Harness' : false;
 
 test('a silent model ends the turn with a plain message, and the chat works again afterwards', { skip }, async (t) => {
   const worker = await startScriptedWorker({});
-  const dir = mkdtempSync(join(tmpdir(), 'strata-wd-')); const ws = join(dir, 'ws'); mkdirSync(ws, { recursive: true });
+  const dir = mkdtempSync(join(tmpdir(), 'nostroma-wd-')); const ws = join(dir, 'ws'); mkdirSync(ws, { recursive: true });
   const bridge = createAgentBridge({ dataDir: dir, localInstances: () => [{ id: 'i', label: 'S', baseUrl: worker.url, modelId: 'scripted-model', context: 32768, slots: 2 }], connections: () => [], env: process.env, startTimeoutMs: 90_000, stallMs: 2500, stallToolMs: 6000 });
   t.after(async () => { await bridge.close(); await worker.close(); try { rmSync(dir, { recursive: true, force: true, maxRetries: 3 }); } catch { /* best effort */ } });
   const out = [];
@@ -29,7 +29,7 @@ test('a silent model ends the turn with a plain message, and the chat works agai
 
 test('engine progress keeps a long prompt read alive past the stall limit, then the normal limit applies (#3623)', { skip }, async (t) => {
   const worker = await startScriptedWorker({});
-  const dir = mkdtempSync(join(tmpdir(), 'strata-wd-')); const ws = join(dir, 'ws'); mkdirSync(ws, { recursive: true });
+  const dir = mkdtempSync(join(tmpdir(), 'nostroma-wd-')); const ws = join(dir, 'ws'); mkdirSync(ws, { recursive: true });
   const started = Date.now();
   const bridge = createAgentBridge({ dataDir: dir, localInstances: () => [{ id: 'i', label: 'S', baseUrl: worker.url, modelId: 'scripted-model', context: 32768, slots: 2 }], connections: () => [], env: process.env, startTimeoutMs: 90_000, stallMs: 2500, stallToolMs: 6000, engineGraceMs: 60_000,
     // The engine moves for 7 s (a prompt being read), then goes quiet.

@@ -91,7 +91,7 @@ def warning_for(folder: Path, longest_inside: int) -> str | None:
     return (f"Nostroma's folder is deep: some engine files will have paths of about {reach} characters, and Windows stops at 259 unless "
             f"long paths are turned on. The install carries on, but the engine's graphics libraries may fail to load those files. "
             f"To fix it, turn on Windows long paths (Group Policy: Enable Win32 long paths) or put Nostroma in a shorter folder "
-            f"(for example set STRATA_COMPONENTS_DIR to C:\\Strata) and update again.")
+            f"(for example set NOSTROMA_COMPONENTS_DIR to C:\\Nostroma) and update again.")
 
 
 def describe_oserror(exc: BaseException) -> str:
@@ -102,8 +102,8 @@ def describe_oserror(exc: BaseException) -> str:
         shown = plain(os.fsdecode(name))
         if too_long(shown):
             return (f"a file path is longer than Windows allows ({len(os.path.abspath(shown))} characters, the limit is {PLAIN_LIMIT}): "
-                    f"{shown}. Windows long paths are off on this PC. Put Nostroma in a shorter folder (set STRATA_COMPONENTS_DIR "
-                    f"to something short like C:\\Strata) or turn on Windows long paths, then try again ({kind})")
+                    f"{shown}. Windows long paths are off on this PC. Put Nostroma in a shorter folder (set NOSTROMA_COMPONENTS_DIR "
+                    f"to something short like C:\\Nostroma) or turn on Windows long paths, then try again ({kind})")
         if isinstance(exc, FileNotFoundError):
             return f"Nostroma could not find or create {shown} ({kind})"
         if isinstance(exc, PermissionError):

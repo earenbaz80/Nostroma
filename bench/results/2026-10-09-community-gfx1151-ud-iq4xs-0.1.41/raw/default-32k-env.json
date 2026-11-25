@@ -1,3 +1,3 @@
 {
-  "STRATA_HIPBLASLT_TUNING": "/data/ssd/llm-src/Strata/tools/hip/gfx1151-hipblaslt-100401.txt"
+  "NOSTROMA_HIPBLASLT_TUNING": "/data/ssd/llm-src/Nostroma/tools/hip/gfx1151-hipblaslt-100401.txt"
 }

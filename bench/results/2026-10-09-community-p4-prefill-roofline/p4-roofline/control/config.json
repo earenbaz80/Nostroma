@@ -1,6 +1,6 @@
 {
-  "exe": "/home/bench/src/strata-issue1670-p4-roofline/build/strata",
-  "cwd": "/home/bench/src/strata-issue1670-p4-roofline",
+  "exe": "/home/bench/src/nostroma-issue1670-p4-roofline/build/nostroma",
+  "cwd": "/home/bench/src/nostroma-issue1670-p4-roofline",
   "tokenizer": "/home/bench/CodiServer/pack/tokenizer",
   "backend": "cuda",
   "gpu": 0,
@@ -10,7 +10,7 @@
   "log": "/home/bench/fleet-downloads/issue1670-p4-roofline/control/engine.log",
   "args": [
     "--expert-profile",
-    "/home/bench/src/strata-p4/data/expert-profile.bin",
+    "/home/bench/src/nostroma-p4/data/expert-profile.bin",
     "--expert-cache",
     "auto",
     "--prefill",
@@ -28,7 +28,7 @@
     "--vram-reserve-mib",
     "1024",
     "--mtp",
-    "/home/bench/src/strata-p4/mtp/rt",
+    "/home/bench/src/nostroma-p4/mtp/rt",
     "--spec",
     "2",
     "--spec-min-p",
@@ -63,13 +63,13 @@
     "--mmap-experts"
   ],
   "env": {
-    "STRATA_PREFILL_TIMING": "1",
-    "STRATA_IQ_MT_MIN": "1",
+    "NOSTROMA_PREFILL_TIMING": "1",
+    "NOSTROMA_IQ_MT_MIN": "1",
     "OMP_NUM_THREADS": "1",
     "OPENBLAS_NUM_THREADS": "1",
-    "STRATA_ATTN_MERGE_V2": "1",
-    "STRATA_PREFILL_ROOFLINE": "1",
-    "STRATA_PREFILL_CPU_SHARE": "0"
+    "NOSTROMA_ATTN_MERGE_V2": "1",
+    "NOSTROMA_PREFILL_ROOFLINE": "1",
+    "NOSTROMA_PREFILL_CPU_SHARE": "0"
   },
   "open_browser": false,
   "idle_unload_s": 0,

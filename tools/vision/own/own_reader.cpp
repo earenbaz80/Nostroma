@@ -4,7 +4,7 @@
 #include "cpu_caps.h"
 #include "vit_cpu.h"
 #include "vit_ref.h"
-#ifdef STRATA_VIT_GPU
+#ifdef NOSTROMA_VIT_GPU
 #include "vit_gpu.h"
 #endif
 
@@ -17,7 +17,7 @@
 #include <memory>
 #include <thread>
 
-namespace strata_vit {
+namespace nostroma_vit {
 
 namespace {
 
@@ -37,18 +37,18 @@ bool parse_enc(const std::string& line, std::string& img, std::string& out) {
 std::string vision_tower_default(const char* env, std::string& note) {
     const std::string v = env ? env : "";
     if (v == "mtmd" || v == "own" || v == "auto") return v;
-    if (!v.empty()) note = "STRATA_VISION_TOWER=" + v + " is not mtmd, own or auto; using auto";
+    if (!v.empty()) note = "NOSTROMA_VISION_TOWER=" + v + " is not mtmd, own or auto; using auto";
     return "auto";
 }
 
 bool own_reader_inject_failure(const char* point) {
-    const char* v = std::getenv("STRATA_VIT_TEST_FAIL");
+    const char* v = std::getenv("NOSTROMA_VIT_TEST_FAIL");
     return v && point && std::string(v) == point;
 }
 
 bool own_reader_supported(const std::string& mmproj, bool gpu, int max_tokens, std::string& why) {
     if (gpu) {
-#ifdef STRATA_VIT_GPU
+#ifdef NOSTROMA_VIT_GPU
         bool bf16 = false;      // the layer matrices' type decides on Pascal (vit_gpu.h)
         {
             Gguf g0;
@@ -89,7 +89,7 @@ std::string vision_tower_resolve(const std::string& tower, bool own_ok) {
 int own_reader_run(const OwnReaderOptions& o) {
     using clock = std::chrono::steady_clock;
     const auto load_t0 = clock::now();
-    // every return before READY goes through here: under `auto` the reason goes back to strata-vision, which starts mtmd's reader (nothing on stdout yet)
+    // every return before READY goes through here: under `auto` the reason goes back to nostroma-vision, which starts mtmd's reader (nothing on stdout yet)
     auto fail = [&o](const std::string& msg, int code) {
         if (o.start_error) {
             *o.start_error = msg;
@@ -99,8 +99,8 @@ int own_reader_run(const OwnReaderOptions& o) {
         std::fflush(stdout);
         return code;
     };
-    const std::string injected = " (injected for a test: STRATA_VIT_TEST_FAIL)";
-#ifndef STRATA_VIT_GPU
+    const std::string injected = " (injected for a test: NOSTROMA_VIT_TEST_FAIL)";
+#ifndef NOSTROMA_VIT_GPU
     if (o.gpu) return fail("this build has no GPU backend for the own tower (use --tower mtmd)", 3);
 #endif
     Gguf gg;
@@ -111,7 +111,7 @@ int own_reader_run(const OwnReaderOptions& o) {
     int threads = o.threads;
     std::unique_ptr<VitRef> cpu;
     std::unique_ptr<VitCpu> fast;
-#ifdef STRATA_VIT_GPU
+#ifdef NOSTROMA_VIT_GPU
     std::unique_ptr<VitGpu> gpu;
     if (o.gpu) {
         std::string why;
@@ -126,8 +126,8 @@ int own_reader_run(const OwnReaderOptions& o) {
     }
 #endif
     if (!o.gpu) {
-        // the CPU path of the own tower is the fast tower (VitCpu); STRATA_VIT_CPU=ref selects the float32 reference (VitRef: the oracle, for tests)
-        const char* sel = std::getenv("STRATA_VIT_CPU");
+        // the CPU path of the own tower is the fast tower (VitCpu); NOSTROMA_VIT_CPU=ref selects the float32 reference (VitRef: the oracle, for tests)
+        const char* sel = std::getenv("NOSTROMA_VIT_CPU");
         if (!(sel && std::string(sel) == "ref")) {
             fast.reset(new VitCpu());
             if (!fast->load(gg, geo, err)) return fail("cannot load the vision encoder " + o.mmproj + " (" + err + ")", 1);
@@ -138,16 +138,16 @@ int own_reader_run(const OwnReaderOptions& o) {
         if (own_reader_inject_failure("load")) return fail("cannot load the vision encoder " + o.mmproj + injected, 1);
         if (threads <= 0) threads = (int) std::max(1u, std::min(16u, std::thread::hardware_concurrency() / 2));
     }
-    std::fprintf(stderr, "strata-vision: own tower (%s, %d layers, width %d) loaded in %.1f s, %s\n", geo.projector.c_str(), geo.layers, geo.width,
+    std::fprintf(stderr, "nostroma-vision: own tower (%s, %d layers, width %d) loaded in %.1f s, %s\n", geo.projector.c_str(), geo.layers, geo.width,
                  std::chrono::duration<double>(clock::now() - load_t0).count(), o.gpu ? "on the GPU" : ("on the CPU, " + std::to_string(threads) + " threads").c_str());
     auto encode = [&](const PreparedImage& prep, std::vector<float>& rows, int& nx, int& ny, std::string& e) {
-#ifdef STRATA_VIT_GPU
+#ifdef NOSTROMA_VIT_GPU
         if (gpu) return gpu->encode(prep, rows, nx, ny, e);
 #endif
         if (fast) return fast->encode(prep, threads, rows, nx, ny, e);
         return cpu->encode(prep, threads, rows, nx, ny, e);
     };
-#ifdef STRATA_VIT_GPU
+#ifdef NOSTROMA_VIT_GPU
     if (gpu) {   // warm up at the largest picture before READY: the work buffers are taken now, not at the first real picture
         const auto w0 = clock::now();
         ImageU8 gray;
@@ -159,7 +159,7 @@ int own_reader_run(const OwnReaderOptions& o) {
         err.clear();
         if (own_reader_inject_failure("warmup")) err = "out of GPU memory" + injected;
         if (err.empty() && prepare_image(gray, geo, o.min_tokens, o.max_tokens, wp, err) && encode(wp, rows, nx, ny, err))
-            std::fprintf(stderr, "strata-vision: warmed up at %d image tokens in %.1f s, %.0f MiB of GPU memory\n", nx * ny,
+            std::fprintf(stderr, "nostroma-vision: warmed up at %d image tokens in %.1f s, %.0f MiB of GPU memory\n", nx * ny,
                          std::chrono::duration<double>(clock::now() - w0).count(), (double) gpu->device_bytes() / 1048576.0);
         else
             return fail("the vision encoder failed its warm-up (" + err + ")", 1);
@@ -189,7 +189,7 @@ int own_reader_run(const OwnReaderOptions& o) {
         }
         std::vector<float> rows;
         int nx = 0, ny = 0;
-        if (std::getenv("STRATA_VIT_PROF"))
+        if (std::getenv("NOSTROMA_VIT_PROF"))
             std::fprintf(stderr, "vit-prof: read + decode + prepare %.2f ms\n", std::chrono::duration<double, std::milli>(clock::now() - t0).count());
         if (!encode(prep, rows, nx, ny, err)) { std::printf("ERR the vision encoder failed (%s)\n", err.c_str()); std::fflush(stdout); continue; }
         const int n = nx * ny;
@@ -206,4 +206,4 @@ int own_reader_run(const OwnReaderOptions& o) {
     return 0;
 }
 
-}  // namespace strata_vit
+}  // namespace nostroma_vit

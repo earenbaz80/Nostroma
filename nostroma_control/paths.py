@@ -1,7 +1,7 @@
 """Per-user state locations, one rule for the terminal and the host.
 
-POSIX keeps $XDG_STATE_HOME (default ~/.local/state) under ``strata/``. Windows has no such place: state goes to
-``%LOCALAPPDATA%\\Strata``. The Node host (apps/host/server/platform-paths.mjs) resolves the same folders.
+POSIX keeps $XDG_STATE_HOME (default ~/.local/state) under ``nostroma/``. Windows has no such place: state goes to
+``%LOCALAPPDATA%\\Nostroma``. The Node host (apps/host/server/platform-paths.mjs) resolves the same folders.
 """
 
 from __future__ import annotations
@@ -17,5 +17,5 @@ def state_base(environ=None, *, windows: bool | None = None, home: Path | None =
     home = Path.home() if home is None else home
     if windows:
         local = environ.get("LOCALAPPDATA") or str(home / "AppData" / "Local")
-        return Path(local) / "Strata"
-    return Path(environ.get("XDG_STATE_HOME") or str(home / ".local" / "state")) / "strata"
+        return Path(local) / "Nostroma"
+    return Path(environ.get("XDG_STATE_HOME") or str(home / ".local" / "state")) / "nostroma"

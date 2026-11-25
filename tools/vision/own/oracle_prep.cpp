@@ -1,6 +1,6 @@
 // tools/vision/own/oracle_prep.cpp - mtmd's side of the picture-preparation check (built in tools/vision's mtmd build only, EXCLUDE_FROM_ALL).
 //
-//   strata-vision-prep-oracle <mmproj.gguf> <out dir> <min_tokens> <max_tokens> <image> [<image> ...]
+//   nostroma-vision-prep-oracle <mmproj.gguf> <out dir> <min_tokens> <max_tokens> <image> [<image> ...]
 // For each image: decodes it with mtmd's own helper, runs mtmd's Qwen preprocessor (the same class mtmd_tokenize uses) with the given token
 // limits (0 = the tower's default), and writes <out dir>/<image file name>.<min>.<max>.prep:  int32 {w, h}, then float32 [h][w][3] (what the
 // tower is given: resized, padded, normalised).  `own_prep_check` (test_image_prep.cpp) compares its own result with these files, bit for bit.
@@ -22,7 +22,7 @@ static std::string base_name(const std::string& p) {
 }
 
 int main(int argc, char** argv) {
-    if (argc < 6) { std::fprintf(stderr, "usage: strata-vision-prep-oracle <mmproj> <out dir> <min_tokens> <max_tokens> <image>...\n"); return 2; }
+    if (argc < 6) { std::fprintf(stderr, "usage: nostroma-vision-prep-oracle <mmproj> <out dir> <min_tokens> <max_tokens> <image>...\n"); return 2; }
     const std::string mmproj = argv[1], out_dir = argv[2];
     const int min_t = std::atoi(argv[3]), max_t = std::atoi(argv[4]);
 

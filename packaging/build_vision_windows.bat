@@ -1,22 +1,22 @@
 @echo off
-rem The Windows CUDA picture reader for an engine package: strata-vision.exe built for the SAME architectures as the package's strata.exe.
+rem The Windows CUDA picture reader for an engine package: nostroma-vision.exe built for the SAME architectures as the package's nostroma.exe.
 rem
 rem   packaging\build_vision_windows.bat cuda12 <stage folder>     CUDA 12.9: 60;61;70;75;80;86;89 (+ 89 PTX)  the Pascal / Volta package
 rem   packaging\build_vision_windows.bat cuda13 <stage folder>     CUDA 13.0: 75;86;89;120 (+ 120 PTX)
 rem
-rem Why: the cuda12 and cuda13 packages used to share one strata-vision.exe, built before the Pascal code existed (unchanged since 0.1.44). On a
+rem Why: the cuda12 and cuda13 packages used to share one nostroma-vision.exe, built before the Pascal code existed (unchanged since 0.1.44). On a
 rem Tesla P100 / GTX 10 card the engine ran and the reader stopped with "IM2COL failed / device kernel image is invalid" (#3669), and the
 rem app only said "the vision encoder did not start". Now each variant has its own reader and packaging\package_engine.py refuses a package
 rem whose BUILD.json vision_archs do not cover its archs.
 rem
 rem Needs: Visual Studio 2022 Build Tools (run from a "x64 Native Tools" prompt, or let this call vcvars64), CMake + Ninja, the CUDA toolkit of
-rem the variant (CUDA_PATH_V12_9 / CUDA_PATH_V13_0, or CUDA_PATH already pointing at it). llama.cpp's sources are the vendored third_party\strata-llama:
+rem the variant (CUDA_PATH_V12_9 / CUDA_PATH_V13_0, or CUDA_PATH already pointing at it). llama.cpp's sources are the vendored third_party\nostroma-llama:
 rem nothing is downloaded.
 rem
-rem Settings (all optional): STRATA_GGML_DIR  a llama.cpp checkout to build from instead (an override, kept for two releases)   VISION_BUILD_DIR  the build folder
+rem Settings (all optional): NOSTROMA_GGML_DIR  a llama.cpp checkout to build from instead (an override, kept for two releases)   VISION_BUILD_DIR  the build folder
 rem   VISION_ARCHS  override the architecture list (semicolons)      BUILD_JOBS  the number of compile jobs (default 4: the CUDA compiler uses RAM)
 rem
-rem It copies strata-vision.exe into <stage folder> and writes vision_archs into <stage folder>\BUILD.json. Nothing is uploaded.
+rem It copies nostroma-vision.exe into <stage folder> and writes vision_archs into <stage folder>\BUILD.json. Nothing is uploaded.
 setlocal EnableDelayedExpansion
 set "VARIANT=%~1"
 set "STAGE=%~2"
@@ -35,9 +35,9 @@ if not defined CUDA_PATH (echo CUDA_PATH is not set: install the %VARIANT% toolk
 if not exist "%CUDA_PATH%\bin\nvcc.exe" (echo no nvcc.exe in %CUDA_PATH%\bin & exit /b 1)
 if not defined BUILD_JOBS set "BUILD_JOBS=4"
 set "VLLAMA="
-if defined STRATA_GGML_DIR (
-  set "LLAMA=%STRATA_GGML_DIR:\=/%"
-  if not exist "!LLAMA!/tools/mtmd" (echo llama.cpp with tools/mtmd not found in !LLAMA! - check STRATA_GGML_DIR & exit /b 1)
+if defined NOSTROMA_GGML_DIR (
+  set "LLAMA=%NOSTROMA_GGML_DIR:\=/%"
+  if not exist "!LLAMA!/tools/mtmd" (echo llama.cpp with tools/mtmd not found in !LLAMA! - check NOSTROMA_GGML_DIR & exit /b 1)
   set VLLAMA="-DLLAMA_DIR=!LLAMA!"
 )
 if not defined VISION_BUILD_DIR set "VISION_BUILD_DIR=%SRC%\build-vision-%VARIANT%-win"
@@ -58,15 +58,15 @@ for %%A in (%ARCHS:;= %) do (
   if defined REAL (set "REAL=!REAL!;%%A-real") else (set "REAL=%%A-real")
 )
 cmake -G Ninja -S "%SRC%\tools\vision" -B "%VISION_BUILD_DIR%" -DCMAKE_BUILD_TYPE=Release !VLLAMA! ^
-  -DSTRATA_VISION_CUDA=ON -DSTRATA_PORTABLE=ON -DGGML_CUDA_NCCL=OFF ^
+  -DNOSTROMA_VISION_CUDA=ON -DNOSTROMA_PORTABLE=ON -DGGML_CUDA_NCCL=OFF ^
   "-DCMAKE_CUDA_ARCHITECTURES=!REAL!;!LAST!-virtual" -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl ^
   "-DCMAKE_CUDA_COMPILER=%CUDA_PATH%/bin/nvcc.exe" "-DCUDAToolkit_ROOT=%CUDA_PATH%" || exit /b 1
-cmake --build "%VISION_BUILD_DIR%" --target strata-vision -j %BUILD_JOBS% || exit /b 1
-copy /y "%VISION_BUILD_DIR%\bin\strata-vision.exe" "%STAGE%\strata-vision.exe" >nul || exit /b 1
+cmake --build "%VISION_BUILD_DIR%" --target nostroma-vision -j %BUILD_JOBS% || exit /b 1
+copy /y "%VISION_BUILD_DIR%\bin\nostroma-vision.exe" "%STAGE%\nostroma-vision.exe" >nul || exit /b 1
 py -3 "%~dp0package_engine.py" --stamp-vision "%STAGE%" --vision-archs "%ARCHS%" || exit /b 1
-echo built: %STAGE%\strata-vision.exe  (%VARIANT%, archs %ARCHS%)
+echo built: %STAGE%\nostroma-vision.exe  (%VARIANT%, archs %ARCHS%)
 exit /b 0
 
 :usage
-echo usage: packaging\build_vision_windows.bat cuda12^|cuda13 ^<stage folder with strata.exe^>
+echo usage: packaging\build_vision_windows.bat cuda12^|cuda13 ^<stage folder with nostroma.exe^>
 exit /b 2

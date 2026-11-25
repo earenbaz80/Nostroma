@@ -2,15 +2,15 @@
 # Build a Nostroma image from an engine component package. Run it on a Linux x86_64 machine with Docker (it needs the internet
 # for the base image and for the Terminal's pinned Python and locked wheels; the engine package is local).
 #
-#   docker/build.sh --flavor cuda --engine ~/pkgs/0.1.45.3-linux-x86_64-cuda-cuda13 --tag strata:0.2.7-cuda13
-#   docker/build.sh --flavor hip  --engine ~/pkgs/0.1.45.3-linux-x86_64-hip-gfx120X  --tag strata:0.2.7-rocm-gfx120x
-#   docker/build.sh --flavor sycl --engine ~/pkgs/0.1.45.3-linux-x86_64-sycl         --tag strata:0.2.7-sycl
+#   docker/build.sh --flavor cuda --engine ~/pkgs/0.1.45.3-linux-x86_64-cuda-cuda13 --tag nostroma:0.2.7-cuda13
+#   docker/build.sh --flavor hip  --engine ~/pkgs/0.1.45.3-linux-x86_64-hip-gfx120X  --tag nostroma:0.2.7-rocm-gfx120x
+#   docker/build.sh --flavor sycl --engine ~/pkgs/0.1.45.3-linux-x86_64-sycl         --tag nostroma:0.2.7-sycl
 #
 # --engine is the package FOLDER that packaging/package_engine.py wrote (engine-component.json inside). It can be given more than
 # once to put several packages in one image (the Terminal picks the one that fits the card).
 #
 #   --flavor cuda|hip|sycl   which system libraries the runtime adds (see docker/Dockerfile)
-#   --tag NAME               image name (default strata:<version>-<flavor>)
+#   --tag NAME               image name (default nostroma:<version>-<flavor>)
 #   --base IMAGE             base image (default: the digest-pinned ubuntu:24.04; sycl: ubuntu:26.04). A tag alone works but the
 #                            published images are built from the digests named below, so a moved tag cannot change them.
 #   --repo DIR               the Nostroma source tree (default: the one this script is in)
@@ -18,7 +18,7 @@
 #   --ctx DIR                keep the build context here (default: a temporary folder, removed after the build)
 #   --no-cache               docker build --no-cache
 #   --ctx-only               assemble the context and stop
-# Environment: STRATA_DOCKER_BUILD_OPTS adds options to `docker build` (for example --network host).
+# Environment: NOSTROMA_DOCKER_BUILD_OPTS adds options to `docker build` (for example --network host).
 # Nothing is pushed anywhere; the image stays in the local Docker.
 set -eu
 
@@ -56,13 +56,13 @@ if [ -z "$version" ]; then
 fi
 
 own_ctx=""
-if [ -z "$ctx" ]; then ctx=$(mktemp -d "${TMPDIR:-/tmp}/strata-docker-ctx.XXXXXX"); own_ctx=1; fi
+if [ -z "$ctx" ]; then ctx=$(mktemp -d "${TMPDIR:-/tmp}/nostroma-docker-ctx.XXXXXX"); own_ctx=1; fi
 mkdir -p "$ctx/terminal-src" "$ctx/engine" "$ctx/docker"
 cleanup() { if [ -n "$own_ctx" ] && [ -z "$ctxonly" ]; then rm -rf "$ctx"; fi; }
 trap cleanup EXIT
 
 # the commit the sources are from (the build context has no .git; package_terminal.py writes it into the archive's COMMIT)
-commit=${STRATA_BUILD_COMMIT:-$(git -C "$repo" rev-parse HEAD 2>/dev/null || true)}
+commit=${NOSTROMA_BUILD_COMMIT:-$(git -C "$repo" rev-parse HEAD 2>/dev/null || true)}
 case "$commit" in *[!0-9a-f]*|"") commit="" ;; esac
 
 # 1. the Terminal's sources: exactly what packaging/package_terminal.py copies (the working tree, so local edits are in the image)
@@ -71,7 +71,7 @@ case "$commit" in *[!0-9a-f]*|"") commit="" ;; esac
 cd "$repo"
 # metal/tools/: the two repack scripts the bundle carries (INSTALLER_METAL_TOOLS in package_terminal.py; without them the terminal stage
 # stops at "No such file or directory: '/src/metal/tools/metal_repack.py'", as the v0.2.11 image build did)
-paths="packaging bin strata.py nostroma_control nostroma_cli serve requirements.txt requirements-monitor.txt docs/MANAGEMENT_PROTOCOL.md docs/TERMINAL_LAUNCH.md data bench/prompts/standard-v1 setup.py ref/load.py CMakeLists.txt metal/tools/metal_repack.py metal/tools/stream_experts.py"
+paths="packaging bin nostroma.py nostroma_control nostroma_cli serve requirements.txt requirements-monitor.txt docs/MANAGEMENT_PROTOCOL.md docs/TERMINAL_LAUNCH.md data bench/prompts/standard-v1 setup.py ref/load.py CMakeLists.txt metal/tools/metal_repack.py metal/tools/stream_experts.py"
 if git rev-parse --git-dir >/dev/null 2>&1; then
   # shellcheck disable=SC2086
   { git ls-files -z -- $paths ':(glob)tools/**/*.py'; } | tar --null -T - -cf - | tar -xf - -C "$ctx/terminal-src"
@@ -98,21 +98,21 @@ done
 
 # 3. the Dockerfile and the container scripts
 cp "$here/Dockerfile" "$ctx/Dockerfile"
-cp "$here/entrypoint.sh" "$here/strata-wrapper.sh" "$here/healthcheck.sh" "$ctx/docker/"
+cp "$here/entrypoint.sh" "$here/nostroma-wrapper.sh" "$here/healthcheck.sh" "$ctx/docker/"
 tr -d '\r' < "$here/entrypoint.sh" > "$ctx/docker/entrypoint.sh"          # a checkout with CRLF line ends must not break the scripts
-tr -d '\r' < "$here/strata-wrapper.sh" > "$ctx/docker/strata-wrapper.sh"
+tr -d '\r' < "$here/nostroma-wrapper.sh" > "$ctx/docker/nostroma-wrapper.sh"
 tr -d '\r' < "$here/healthcheck.sh" > "$ctx/docker/healthcheck.sh"
 
 engine_label=$(for e in $engines; do basename "$e"; done | tr '\n' ' ' | sed 's/ $//')
-[ -n "$tag" ] || tag="strata:$version-$flavor"
+[ -n "$tag" ] || tag="nostroma:$version-$flavor"
 echo "context: $ctx"
 echo "flavor $flavor, base $base, engine(s): $engine_label, tag $tag"
 [ -n "$ctxonly" ] && { echo "context kept (--ctx-only)"; exit 0; }
 
 # shellcheck disable=SC2086
-docker build $nocache ${STRATA_DOCKER_BUILD_OPTS:-} \
+docker build $nocache ${NOSTROMA_DOCKER_BUILD_OPTS:-} \
   --build-arg "BASE_IMAGE=$base" --build-arg "FLAVOR=$flavor" \
-  --build-arg "STRATA_COMMIT=$commit" --build-arg "STRATA_VERSION=$version" --build-arg "ENGINE_LABEL=$engine_label" \
+  --build-arg "NOSTROMA_COMMIT=$commit" --build-arg "NOSTROMA_VERSION=$version" --build-arg "ENGINE_LABEL=$engine_label" \
   -t "$tag" "$ctx"
 docker image inspect "$tag" --format 'built {{.RepoTags}} {{.Size}} bytes'
 echo "Not pushed anywhere. Size on disk: $(docker image inspect "$tag" --format '{{.Size}}') bytes."

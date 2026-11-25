@@ -47,7 +47,7 @@ input[type=number]::-webkit-inner-spin-button{opacity:.5;}
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
           <div style="display:flex;flex-direction:column;gap:4px;">
             <h2 style="margin:0;font-weight:700;font-size:20px;">What will you mostly use it for?</h2>
-            <span style="font-size:14px;color:#6f6f6f;">Strata sets everything else up for you. You can change it any time.</span>
+            <span style="font-size:14px;color:#6f6f6f;">Nostroma sets everything else up for you. You can change it any time.</span>
           </div>
           <button onClick="{{ startTune }}" style="display:flex;align-items:center;gap:8px;height:40px;padding:0 16px;border:1.5px solid #dee5ee;border-radius:14px;background:#ffffff;color:#221e1f;font:700 14px 'GT Walsheim Pro',sans-serif;cursor:pointer;" style-hover="background:#f7f7f7;"><span style="display:inline-block;width:18px;height:18px;background:#2F384C;mask:url(icons/gauge.svg) center/contain no-repeat;"></span>Auto-tune for my PC</button>
         </div>
@@ -209,7 +209,7 @@ input[type=number]::-webkit-inner-spin-button{opacity:.5;}
           <button onClick="{{ toRaw }}" style="{{ tabRawStyle }}display:flex;align-items:center;gap:8px;height:34px;padding:0 14px;border:0;border-radius:10px;font:700 14px/1 'GT Walsheim Pro',sans-serif;cursor:pointer;"><span style="display:inline-block;width:16px;height:16px;background:currentColor;mask:url(icons/copy.svg) center/contain no-repeat;"></span>Raw config</button>
         </div>
         <span style="flex:1;"></span>
-        <code style="font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#6f6f6f;">~/.strata/engine.json</code>
+        <code style="font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#6f6f6f;">~/.nostroma/engine.json</code>
       </div>
 
       <sc-if value="{{ tabParams }}" hint-placeholder-val="{{ true }}">
@@ -429,13 +429,13 @@ const GOALS = {
 };
 const STYLES = { precise: ['Precise', 'Same answer each time', 0.2, 0.9], balanced: ['Balanced', 'Good for most things', 0.7, 0.95], creative: ['Creative', 'More varied ideas', 1.0, 0.98] };
 const BUILTIN = [
-  ['Strata default', {}],
+  ['Nostroma default', {}],
   ['Max speed', { 'sys.headroom': 'max', 'ctx.length': '8192', 'ctx.kvMode': 'int8', 'batch.size': '4096', 'perf.draftDepth': 6 }],
   ['Long context', { 'ctx.length': '131072', 'ctx.kvMode': 'int8', 'ctx.ropeScale': 'yarn', 'mem.mode': 'offload', 'batch.size': '2048' }],
   ['Low VRAM', { 'ctx.length': '16384', 'ctx.kvMode': 'int4', 'mem.mode': 'offload', 'mem.expertCache': 32, 'batch.size': '512', 'batch.ubatch': '256' }],
   ['Deterministic eval', { 'sample.temperature': 0, 'sample.topK': 1, 'sample.seed': 42, 'perf.draft': false }],
 ];
-const VRAM = 12, LS = 'strata-engine-presets-v1';
+const VRAM = 12, LS = 'nostroma-engine-presets-v1';
 const fmt = (k, v) => { const p = PM[k]; if (p.type === SEL) return (p.opts.find(o => o[0] === v) || [v, v])[1]; if (p.type === BOOL) return v ? 'On' : 'Off'; return String(v); };
 
 
@@ -634,7 +634,7 @@ class Component extends DCLogic {
   later(fn, ms) { (this.timers ||= []).push(setTimeout(fn, ms)); }
 
   setCfg(patch, keepRaw) { this.setState(s => ({ cfg: { ...s.cfg, ...patch }, ...(keepRaw ? {} : { raw: null, rawErr: null, rawWarn: null }) })); }
-  rawText() { const s = this.state; return JSON.stringify({ schema: 'strata.engine/1', model: 'qwen3.8-flash-next', simple: { goal: s.goal, style: this.styleOf(s.cfg) || 'custom' }, engine: s.cfg }, null, 2); }
+  rawText() { const s = this.state; return JSON.stringify({ schema: 'nostroma.engine/1', model: 'qwen3.8-flash-next', simple: { goal: s.goal, style: this.styleOf(s.cfg) || 'custom' }, engine: s.cfg }, null, 2); }
   parseRaw(text) {
     let obj;
     try { obj = JSON.parse(text); } catch (e) { const m = /position (\d+)/.exec(e.message); let line = ''; if (m) line = ` (line ${text.slice(0, +m[1]).split('\n').length})`; this.setState({ raw: text, rawErr: 'Invalid JSON' + line + ': ' + e.message.replace(/^JSON\.parse: |^Unexpected/, s => s ? s : ''), rawWarn: null }); return; }
@@ -691,7 +691,7 @@ class Component extends DCLogic {
     const total = Math.max(VRAM, cc.used + cc.reserve), pct = v => `width:${(v / total * 100).toFixed(2)}%;`;
     const fit = cc.spill ? 'over' : cc.free < 1.2 ? 'tight' : 'ok';
     const fitMap = {
-      ok: ['Fits comfortably', 'background:#ecfdf5;color:#0c8a60;', cc.reserve > 0 ? `Fits with ${cc.free.toFixed(1)} GB to spare, plus ${cc.reserve.toFixed(1)} GB kept free for your other apps.` : `Everything fits with ${cc.free.toFixed(1)} GB to spare. Full power: Strata uses the whole card.`],
+      ok: ['Fits comfortably', 'background:#ecfdf5;color:#0c8a60;', cc.reserve > 0 ? `Fits with ${cc.free.toFixed(1)} GB to spare, plus ${cc.reserve.toFixed(1)} GB kept free for your other apps.` : `Everything fits with ${cc.free.toFixed(1)} GB to spare. Full power: Nostroma uses the whole card.`],
       tight: ['Tight fit', 'background:#fff6e0;color:#8a5a00;', 'It fits, but only just. Other apps using the graphics card may slow it down.'],
       over: ['Too big', 'background:#fdecee;color:#b01a2e;', `It needs ${cc.over.toFixed(1)} GB more than your graphics card has, so part of it moves to slower system memory.`],
     }[fit];
@@ -743,7 +743,7 @@ class Component extends DCLogic {
       toSimple: () => this.setState({ mode: 'simple' }), toExpert: () => this.setState({ mode: 'expert' }),
       modeSimpleStyle: isExpert ? 'background:transparent;color:#6f6f6f;' : 'background:#221e1f;color:#ffffff;', modeExpertStyle: isExpert ? 'background:#221e1f;color:#ffffff;' : 'background:transparent;color:#6f6f6f;',
       modeBarWidth: isExpert ? 'max-width:1360px;' : 'max-width:1200px;',
-      modeHint: isExpert ? `Every parameter, presets and the raw config. Same settings as Simple.` : 'Pick what you need and Strata handles the rest.',
+      modeHint: isExpert ? `Every parameter, presets and the raw config. Same settings as Simple.` : 'Pick what you need and Nostroma handles the rest.',
       paramCount: P.length,
       // simple
       startTune: () => this.startTune(),
@@ -754,9 +754,9 @@ class Component extends DCLogic {
         iconWrap: sel ? 'background:#ffffff;' : 'background:#f7f7f7;',
         iconStyle: `background:${sel ? '#0c8a60' : '#2F384C'};mask:url(icons/${gg.icon}.svg) center/contain no-repeat;`,
       }; }),
-      headroom: [['shared', 'Leave room for other apps', 'Keeps 15% of graphics memory and 2 CPU cores free, so browsing, calls and video stay smooth.', 'activity'], ['max', 'Full power', 'Uses all of the graphics card and every CPU core for the fastest replies. Best when Strata is the only thing running.', 'bolt']].map(([k, t, sub, ic]) => {
+      headroom: [['shared', 'Leave room for other apps', 'Keeps 15% of graphics memory and 2 CPU cores free, so browsing, calls and video stay smooth.', 'activity'], ['max', 'Full power', 'Uses all of the graphics card and every CPU core for the fastest replies. Best when Nostroma is the only thing running.', 'bolt']].map(([k, t, sub, ic]) => {
         const sel = c['sys.headroom'] === k, alt = this.calc({ ...c, 'sys.headroom': k });
-        return { title: t, sub, stat: `≈ ${alt.gen.toFixed(0)} tok/s · ${k === 'max' ? 'all 12 GB' : (VRAM * 0.85).toFixed(1) + ' GB for Strata'}`,
+        return { title: t, sub, stat: `≈ ${alt.gen.toFixed(0)} tok/s · ${k === 'max' ? 'all 12 GB' : (VRAM * 0.85).toFixed(1) + ' GB for Nostroma'}`,
           pick: () => this.setCfg({ 'sys.headroom': k }),
           cardStyle: sel ? 'background:#ecfdf5;border:1.5px solid #10b981;' : 'background:#ffffff;border:1.5px solid #dee5ee;',
           radio: sel ? 'border:6px solid #10b981;background:#ffffff;' : 'border:1.5px solid #c9d1db;background:#ffffff;',
@@ -823,7 +823,7 @@ class Component extends DCLogic {
       tuning: !!s.tuning, tuneDone: !!s.tuning?.done,
       tuneRunning: !!s.tuning && !s.tuning.done,
       tuneTitle: s.tuning?.done ? 'Your PC is tuned' : 'Tuning for your PC',
-      tuneSub: s.tuning?.done ? 'Strata found the fastest setup for ' + g.title.toLowerCase() + '. Nothing changes until you review and apply it.' : 'Strata is testing your PC with the model to find the fastest setup. About 10 seconds.',
+      tuneSub: s.tuning?.done ? 'Nostroma found the fastest setup for ' + g.title.toLowerCase() + '. Nothing changes until you review and apply it.' : 'Nostroma is testing your PC with the model to find the fastest setup. About 10 seconds.',
       tuneViz: s.tuning ? ce(TuneViz, { key: s.tuning.run, trials: s.tuning.trials, best: s.tuning.best, baseGen: ca.gen, vramT: s.tuning.vramT, onDone: this._tuneDone }) : null,
       cancelTune: () => this.setState({ tuning: null }),
       discardTune: () => this.setState({ tuning: null }),

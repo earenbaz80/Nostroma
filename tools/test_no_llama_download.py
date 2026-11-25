@@ -1,8 +1,8 @@
 """OWN-1B: nothing downloads llama.cpp to build, package or install Nostroma.
 
-ggml (third_party/strata-ggml), strata-vision's sources (third_party/strata-llama) and gguf-py (third_party/strata-gguf-py) are vendored at the llama.cpp
+ggml (third_party/nostroma-ggml), nostroma-vision's sources (third_party/nostroma-llama) and gguf-py (third_party/nostroma-gguf-py) are vendored at the llama.cpp
 pin. This test reads the release scripts, Docker files, CI workflows and setup.py and fails when one of them fetches llama.cpp again or requires a checkout.
-The overrides (STRATA_GGML_DIR, LLAMA, GG, --llama, STRATA_GGUF_PY) stay for two releases and are allowed: they only POINT at a checkout.
+The overrides (NOSTROMA_GGML_DIR, LLAMA, GG, --llama, NOSTROMA_GGUF_PY) stay for two releases and are allowed: they only POINT at a checkout.
 
     python -m unittest tools.test_no_llama_download -v
 """
@@ -21,8 +21,8 @@ SCRIPTS = ["packaging/build_cuda_linux.sh", "packaging/build_cuda_linux_aarch64.
            "tools/hip/build_windows.bat", "Dockerfile", "docker/Dockerfile", "docker/entrypoint.sh", ".github/workflows/backends.yml",
            ".github/workflows/metal-build.yml", "metal/setup_mac.py", "sycl/setup_intel.py"]
 # a download of llama.cpp: its git remote or archive URL, setup's fetch function, the downloaded folder as a requirement
-FETCH = [r"ggml-org/llama\.cpp(\.git|/archive)", r"get_llama_cpp\s*\(", r"LLAMA_CPP_ZIP", r"FETCHCONTENT_SOURCE_DIR_STRATA_LLAMACPP"]
-REQUIRED = [r"third_party[/\\]llama\.cpp", r":\?[^}]*llama\.cpp", r"set STRATA_GGML_DIR to"]
+FETCH = [r"ggml-org/llama\.cpp(\.git|/archive)", r"get_llama_cpp\s*\(", r"LLAMA_CPP_ZIP", r"FETCHCONTENT_SOURCE_DIR_NOSTROMA_LLAMACPP"]
+REQUIRED = [r"third_party[/\\]llama\.cpp", r":\?[^}]*llama\.cpp", r"set NOSTROMA_GGML_DIR to"]
 
 
 class NoLlamaDownload(unittest.TestCase):
@@ -35,19 +35,19 @@ class NoLlamaDownload(unittest.TestCase):
     def test_setup_has_no_llama_cpp_zip_and_the_vendored_trees_are_the_defaults(self):
         import setup
         self.assertFalse(hasattr(setup, "LLAMA_CPP_ZIP"))
-        self.assertIsNone(setup.get_llama_cpp() if not setup.os.environ.get("STRATA_GGML_DIR") else None)
-        self.assertEqual(setup.VENDORED_LLAMA, ROOT / "third_party" / "strata-llama")
-        self.assertEqual(setup.vision_llama(None), ROOT / "third_party" / "strata-llama")
+        self.assertIsNone(setup.get_llama_cpp() if not setup.os.environ.get("NOSTROMA_GGML_DIR") else None)
+        self.assertEqual(setup.VENDORED_LLAMA, ROOT / "third_party" / "nostroma-llama")
+        self.assertEqual(setup.vision_llama(None), ROOT / "third_party" / "nostroma-llama")
         self.assertEqual(setup.ggml_defs(None), [])
-        for part in ("third_party/strata-ggml",):
+        for part in ("third_party/nostroma-ggml",):
             self.assertIn(part, setup.ENGINE_SOURCES)
-        self.assertIn("third_party/strata-llama", setup.VISION_SOURCES)
+        self.assertIn("third_party/nostroma-llama", setup.VISION_SOURCES)
         self.assertIn("tools/vision", setup.VISION_SOURCES)
 
     def test_tools_vision_takes_the_vendored_tree_by_default(self):
         cm = (ROOT / "tools" / "vision" / "CMakeLists.txt").read_text(encoding="utf-8")
-        self.assertIn('set(LLAMA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/strata-llama"', cm)
-        tree = ROOT / "third_party" / "strata-llama"
+        self.assertIn('set(LLAMA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/nostroma-llama"', cm)
+        tree = ROOT / "third_party" / "nostroma-llama"
         for rel in ("CMakeLists.txt", "src/llama.cpp", "tools/mtmd/mtmd.cpp", "tools/mtmd/models/qwen3vl.cpp", "ggml/CMakeLists.txt", "ggml/src/ggml-backend-reg.cpp",
                     "ggml/src/ggml-cuda/ggml-cuda.cu", "ggml/src/ggml-sycl/ggml-sycl.cpp", "ggml/src/ggml-metal/ggml-metal.cpp", "ggml/src/ggml-hip/CMakeLists.txt",
                     "vendor/miniaudio/miniaudio.h", "vendor/stb/stb_image.h", "LICENSE"):
@@ -64,14 +64,14 @@ class NoLlamaDownload(unittest.TestCase):
             self.assertNotIn("llama.cpp\"", src.replace("llama.cpp's", ""), name)
             self.assertNotIn('"third_party" / "llama.cpp"', src, name)
         conv = Path(_paths.converter_dir())
-        self.assertEqual(conv, ROOT / "third_party" / "strata-gguf-py" / "converter")
+        self.assertEqual(conv, ROOT / "third_party" / "nostroma-gguf-py" / "converter")
         src = (conv / "conversion" / "qwen4exp.py").read_text(encoding="utf-8")
         self.assertIn("class Qwen4ExpTextModel", src)
         self.assertIn("_place_ple_shard", src)
 
     def test_the_terminal_and_control_carry_gguf_py_so_a_model_is_prepared_without_a_download(self):
         pt = (ROOT / "packaging" / "package_terminal.py").read_text(encoding="utf-8")
-        self.assertIn('INSTALLER_THIRD_PARTY = ("third_party/strata-gguf-py",)', pt)
+        self.assertIn('INSTALLER_THIRD_PARTY = ("third_party/nostroma-gguf-py",)', pt)
 
 
 if __name__ == "__main__":

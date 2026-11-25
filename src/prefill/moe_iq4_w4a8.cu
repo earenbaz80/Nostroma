@@ -1,4 +1,4 @@
-// src/prefill/moe_iq4_w4a8.cu - see include/strata/prefill/moe_iq4_w4a8.hpp.
+// src/prefill/moe_iq4_w4a8.cu - see include/nostroma/prefill/moe_iq4_w4a8.hpp.
 //
 // llama.cpp's MMQ runs these products at 1 CTA of 8 warps per SM with every load synchronous (load the 256-value
 // tile, convert it to int8 in shared memory, sync, MMA, sync): ~28 % (gate/up) and ~19 % (down) of the int8 peak on a
@@ -17,16 +17,16 @@
 // 32 * 127 * 127 < 2^22), and fma(x, d_w, -M * d_w) = round(x * d_w - M * d_w) = round(dot * d_w) - the FMUL's value -
 // because -M * d_w is exact: d_w = f16 d * (ls - 32) has at most 11 + 6 significant bits (IQ4_NL: 11), so 3 * 2^22 *
 // d_w fits a float's 24.  Then sum += t * d_y as before.  The int8 lookup is llama.cpp's get_int_from_table_16 (MIT).
-#include "strata/prefill/moe_iq4_w4a8.hpp"
-#include "strata/env.hpp"
+#include "nostroma/prefill/moe_iq4_w4a8.hpp"
+#include "nostroma/env.hpp"
 
 #if defined(GGML_USE_HIP)
 // The gfx906 HIP build compiles every CUDA source of the tree as HIP: this kernel is NVIDIA PTX (mma.sync, cp.async),
 // so there it declines every product and the MMQ path runs as before.
-namespace strata::prefill::mmq {
+namespace nostroma::prefill::mmq {
 int iq4_w4a8_mode() { return 0; }
 bool run_iq4_w4a8(const Product&, void*) { return false; }
-}  // namespace strata::prefill::mmq
+}  // namespace nostroma::prefill::mmq
 #else
 
 #include "ggml.h"
@@ -42,7 +42,7 @@ bool run_iq4_w4a8(const Product&, void*) { return false; }
 #include <atomic>
 #include <mutex>
 
-namespace strata::prefill::mmq {
+namespace nostroma::prefill::mmq {
 namespace {
 
 constexpr int kThreads = 256;           // 8 warps x 16 weight rows
@@ -362,19 +362,19 @@ __global__ void __launch_bounds__(kThreads, C::MINB)
         if (i == z) w = tab.p[i];
     const int row0 = it * kBM, yrow0 = lo + j0;
     const int nt = (nv + 7) >> 3;
-#define STRATA_W4A8_NT(n) \
+#define NOSTROMA_W4A8_NT(n) \
     if constexpr (n * 8 <= C::BN) { \
         if (nt == n) { tile<XS, C, n>(w, y, ids, dst, ld_dst, row0, nk, row_bytes, ncols_y, yrow0, nv, smem); return; } \
     }
-    STRATA_W4A8_NT(1) STRATA_W4A8_NT(2) STRATA_W4A8_NT(3) STRATA_W4A8_NT(4)
-    STRATA_W4A8_NT(5) STRATA_W4A8_NT(6) STRATA_W4A8_NT(7) STRATA_W4A8_NT(8)
-    STRATA_W4A8_NT(9) STRATA_W4A8_NT(10) STRATA_W4A8_NT(11) STRATA_W4A8_NT(12)
-    STRATA_W4A8_NT(13) STRATA_W4A8_NT(14) STRATA_W4A8_NT(15) STRATA_W4A8_NT(16)
-#undef STRATA_W4A8_NT
+    NOSTROMA_W4A8_NT(1) NOSTROMA_W4A8_NT(2) NOSTROMA_W4A8_NT(3) NOSTROMA_W4A8_NT(4)
+    NOSTROMA_W4A8_NT(5) NOSTROMA_W4A8_NT(6) NOSTROMA_W4A8_NT(7) NOSTROMA_W4A8_NT(8)
+    NOSTROMA_W4A8_NT(9) NOSTROMA_W4A8_NT(10) NOSTROMA_W4A8_NT(11) NOSTROMA_W4A8_NT(12)
+    NOSTROMA_W4A8_NT(13) NOSTROMA_W4A8_NT(14) NOSTROMA_W4A8_NT(15) NOSTROMA_W4A8_NT(16)
+#undef NOSTROMA_W4A8_NT
 #endif
 }
 
-// configurations (STRATA_W4A8_CFG): 1 CTA/SM, 2 stages, two FFMAs (EPI 1), rows of 72 bytes, the pipelined loop;
+// configurations (NOSTROMA_W4A8_CFG): 1 CTA/SM, 2 stages, two FFMAs (EPI 1), rows of 72 bytes, the pipelined loop;
 // tokens per CTA 0 = 128, 1 = 104, 2 = 112, 3 = 96
 using Cfg0 = Cfg<128, 2, 1, 1, 72, 1>;
 using Cfg1 = Cfg<104, 2, 1, 1, 72, 1>;
@@ -383,7 +383,7 @@ using Cfg3 = Cfg<96, 2, 1, 1, 72, 1>;
 
 int cfg_index() {
     static const int c = [] {
-        const char* v = strata::env("NOSTROMA_W4A8_CFG");
+        const char* v = nostroma::env("NOSTROMA_W4A8_CFG");
         const int i = v != nullptr ? std::atoi(v) : 0;
         return i >= 0 && i <= 3 ? i : 0;
     }();
@@ -440,10 +440,10 @@ static bool arch_ok(int cc) { return (cc >= 80 && cc < 89) || cc == 120; }
 void report_counts();
 int iq4_w4a8_mode() {
     static const int m = [] {
-        const char* v = strata::env("NOSTROMA_IQ4_W4A8");
+        const char* v = nostroma::env("NOSTROMA_IQ4_W4A8");
         const int r = v != nullptr ? std::atoi(v) : 0;
         if (r == 1 || r == 2)
-            std::fprintf(stderr, "strata: prompt experts: the IQ4 W4A8 kernel runs %s (STRATA_IQ4_W4A8=%d, config %d; "
+            std::fprintf(stderr, "nostroma: prompt experts: the IQ4 W4A8 kernel runs %s (NOSTROMA_IQ4_W4A8=%d, config %d; "
                                  "MMQ's bits)\n", r == 1 ? "the IQ4_XS and IQ4_NL products" : "the IQ4_NL (down) products",
                          r, cfg_index());
         if (r == 1 || r == 2) std::atexit(report_counts);
@@ -456,7 +456,7 @@ int iq4_w4a8_mode() {
 std::atomic<long long> g_ran[2], g_declined[6];   // ran: [IQ4_XS, IQ4_NL]; declined: shape, scales, arch, splits-K, alignment, type
 const char* const kWhy[6] = {"shape", "NVFP4 scales", "architecture", "MMQ would split K", "alignment", "other type"};
 void report_counts() {
-    std::fprintf(stderr, "strata: IQ4 W4A8 kernel: ran %lld IQ4_XS and %lld IQ4_NL products; declined", g_ran[0].load(), g_ran[1].load());
+    std::fprintf(stderr, "nostroma: IQ4 W4A8 kernel: ran %lld IQ4_XS and %lld IQ4_NL products; declined", g_ran[0].load(), g_ran[1].load());
     for (int i = 0; i < 6; ++i) std::fprintf(stderr, " %s %lld%s", kWhy[i], g_declined[i].load(), i < 5 ? "," : "");
     std::fprintf(stderr, " (MMQ ran those)\n");
 }
@@ -491,6 +491,6 @@ bool run_iq4_w4a8(const Product& p, void* stream) {
     return true;
 }
 
-}  // namespace strata::prefill::mmq
+}  // namespace nostroma::prefill::mmq
 
 #endif  // GGML_USE_HIP

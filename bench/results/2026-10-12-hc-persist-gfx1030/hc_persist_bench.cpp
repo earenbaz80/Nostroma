@@ -1,14 +1,14 @@
-// The engine's STRATA_HC_PERSIST read (public API) against the default read, per token count: the largest relative
-// difference from the default read, and the time per read in a graph of 48 cold reads. Run with STRATA_HC_PERSIST=1
+// The engine's NOSTROMA_HC_PERSIST read (public API) against the default read, per token count: the largest relative
+// difference from the default read, and the time per read in a graph of 48 cold reads. Run with NOSTROMA_HC_PERSIST=1
 #include <hip/hip_runtime.h>
-#include "strata/kernels/fused_gr.hpp"
+#include "nostroma/kernels/fused_gr.hpp"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <random>
 #include <vector>
-namespace K = strata::kernels;
+namespace K = nostroma::kernels;
 #define CK(x) do { hipError_t e_ = (x); if (e_ != hipSuccess) { std::fprintf(stderr, "%s:%d %s\n", __FILE__, __LINE__, hipGetErrorString(e_)); std::exit(1); } } while (0)
 constexpr int N = 2560, HC = 4, D = N * HC, LR = 320, TM = 8;
 static uint16_t bf16(float x) { uint32_t u; std::memcpy(&u, &x, 4); return (uint16_t) ((u + 0x7fff + ((u >> 16) & 1)) >> 16); }

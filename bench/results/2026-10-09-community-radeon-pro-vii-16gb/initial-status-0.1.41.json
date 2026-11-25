@@ -1,5 +1,5 @@
 {
-  "service": "strata",
+  "service": "nostroma",
   "model": "Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS",
   "loaded": true,
   "auto_load": true,

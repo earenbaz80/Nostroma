@@ -2,7 +2,7 @@
 # Line: <family> <flavour> <section> <type> <n> <rows> <input digest> <reference digest>; digests: golden_fnv1a64 (FNV-1a, 64 bit) in quant_parity.cpp.
 # family gcc: ggml-cpu built by GCC 13.3.0, every group; every toolchain is held to these lines unless it has its own.
 # family msvc: ggml-cpu built by MSVC 19.44.35228, only the groups where its reference differs from the gcc line (%note says why).
-# ggml: third_party/strata-ggml, llama.cpp pin 3cf03257f219afbe7334045ff7c6a06ac68c627d (UPSTREAM.md).
+# ggml: third_party/nostroma-ggml, llama.cpp pin 3cf03257f219afbe7334045ff7c6a06ac68c627d (UPSTREAM.md).
 # made by: tests/quant/make_golden.sh (GCC side, quant_parity --write-golden per flavour) + quant_parity --write-golden under MSVC + tests/quant/golden_merge.py
 # date: 2026-11-10
 # flavour avx2: 291 groups, 31490 rows; family msvc: 14 own lines

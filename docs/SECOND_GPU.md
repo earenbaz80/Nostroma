@@ -2,11 +2,11 @@
 
 This page is for people who tune the engine by hand and want a second, third or fourth card to hold extra experts. These are
 experimental engine settings. For ordinary multi-GPU use in the app or `nostroma launch`, see [MULTI_GPU.md](MULTI_GPU.md). The
-settings go into the run config (`strata-*.json`) as `"args"` entries; they are engine flags, not `nostroma launch` flags.
+settings go into the run config (`nostroma-*.json`) as `"args"` entries; they are engine flags, not `nostroma launch` flags.
 
 > **On this page:** [How it works](#how-it-works) · [Helper caches](#helper-caches) · [Faster helper decode](#faster-helper-decode---remote-expert-opt) ·
 > [Peer tier](#peer-tier---peer-device) · [Resident RAM mode](#the-resident-ram-mode-with-the-helper-caches) ·
-> [Choosing the primary device](#choosing-the-primary-device-on-windows-strata_primary_device) · [History](#history--older-measurements)
+> [Choosing the primary device](#choosing-the-primary-device-on-windows-nostroma_primary_device) · [History](#history--older-measurements)
 
 ## How it works
 
@@ -21,7 +21,7 @@ continues the layer. Each layer waits for all helpers.
   Compare identical requests at one, two and four GPUs. VRAM use alone does not show useful offload.
 - Longer contexts reserve more KV on CUDA0 and shrink its automatic expert cache.
 - Under WDDM (Windows, WSL2) only 8 GiB of the host expert arena is registered with CUDA when helpers are on
-  (`STRATA_ARENA_PIN_GIB` overrides it). On Linux the whole arena is registered.
+  (`NOSTROMA_ARENA_PIN_GIB` overrides it). On Linux the whole arena is registered.
 - The CUDA0 expert-cache GPU hit path gives outputs that diverge from cache-off runs. Treat performance as experimental until the
   generated tokens are validated.
 
@@ -82,7 +82,7 @@ NVLink or another peer-to-peer path. It is an alternative to the helper caches a
 | `--peer-prefill-rows N` | -1 | Share of each prompt chunk's rows the peer computes; -1 is half of chunk x top-k, 0 keeps prompt rows on the primary. |
 
 Whether the two cards can really exchange data is tested once at start with a copy each way. If the copy arrives wrong, the log
-says so and the prompt path uses the host route (activations and rows through mapped host memory). `STRATA_PEER_NO_P2P=1` asks
+says so and the prompt path uses the host route (activations and rows through mapped host memory). `NOSTROMA_PEER_NO_P2P=1` asks
 for that route by hand.
 
 Through the server, list both cards in the config's `"gpu"` (for example `[0, 1]`, numbered as `nvidia-smi` numbers them) and add
@@ -107,11 +107,11 @@ byte-identical to the single-GPU run under the exactness gate.
 `--resident-experts` (the low-RAM mode) works with the helper caches. The experts a helper holds are left out of the RAM copy,
 and the helpers' refills read through the source: the RAM copy when it holds the bytes, the model files otherwise.
 
-## Choosing the primary device on Windows (`STRATA_PRIMARY_DEVICE`)
+## Choosing the primary device on Windows (`NOSTROMA_PRIMARY_DEVICE`)
 
 The engine runs the model on the device the runtime numbers 0. Windows' HIP runtime enumerates cards in a fixed order that
 `HIP_VISIBLE_DEVICES` only filters, so when the faster card comes second, the model can only land on the slower one.
-`STRATA_PRIMARY_DEVICE=N` picks another visible ordinal as primary. Unset or 0 keeps the default.
+`NOSTROMA_PRIMARY_DEVICE=N` picks another visible ordinal as primary. Unset or 0 keeps the default.
 
 - The helper caches (`--expert-cache-device1..3`) take the visible devices other than the primary, in order.
 - The peer tier uses the same ordinal.

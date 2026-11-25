@@ -12,7 +12,7 @@
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "strata/kernels/router_top10.hpp"
+#include "nostroma/kernels/router_top10.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -87,7 +87,7 @@ int run_case(const char* name, const std::vector<float>& logits, int n_tokens, i
     check(DPCT_CHECK_ERROR((dpct::get_current_device().queues_wait_and_throw(), dpct::get_in_order_queue()).memcpy(
               d_l, logits.data(), logits.size() * sizeof(float)).wait()),
           "copy");
-    strata::kernels::router_top10(d_l, n_tokens, n_expert, k, d_ids, d_w, nullptr);
+    nostroma::kernels::router_top10(d_l, n_tokens, n_expert, k, d_ids, d_w, nullptr);
     check(DPCT_CHECK_ERROR(
               (dpct::get_current_device().queues_wait_and_throw(), dpct::get_in_order_queue())
                   .memcpy(h_ids.data(), d_ids, h_ids.size() * sizeof(int))
@@ -143,7 +143,7 @@ int f32_vs_double(const char* name, const std::vector<float>& logits, int n_toke
     std::vector<float> w[2];
     const int variants[2] = {0, 3};
     for (int v = 0; v < 2; ++v) {
-        if (!strata::kernels::router_top10_variant(d_l, n_tokens, n_expert, k, d_i[v], d_w[v], nullptr, variants[v])) {
+        if (!nostroma::kernels::router_top10_variant(d_l, n_tokens, n_expert, k, d_i[v], d_w[v], nullptr, variants[v])) {
             std::printf("  %-26s fp32 vs double: variant %d not available\n", name, variants[v]);
             return 1;
         }

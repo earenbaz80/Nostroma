@@ -80,7 +80,7 @@ def entry(version="0.1.46", backend="cuda", variant="cuda13", archs=("sm_86", "c
 
 
 def document(**over):
-    doc = {"schema_version": 1, "feed": "strata-updates", "channel": "stable", "sequence": 5,
+    doc = {"schema_version": 1, "feed": "nostroma-updates", "channel": "stable", "sequence": 5,
            "generated_at": "2026-10-15T00:00:00Z", "expires_at": None, "engine": {"packages": [entry()]}}
     doc.update(over)
     return doc
@@ -97,7 +97,7 @@ class FeedChecks(unittest.TestCase):
         self.trusted = fx.trusted_of(self.key)
 
     def load(self, payload, sig, **guards):
-        return feedmod.verify_and_parse(payload, sig, source="/feeds/strata-feed.json", trusted=self.trusted, **guards)
+        return feedmod.verify_and_parse(payload, sig, source="/feeds/nostroma-feed.json", trusted=self.trusted, **guards)
 
     def test_a_good_feed_loads(self):
         feed = self.load(*signed(document(), self.key))
@@ -126,7 +126,7 @@ class FeedChecks(unittest.TestCase):
     def test_no_trusted_keys_means_no_update(self):
         payload, sig = signed(document(), self.key)
         with self.assertRaisesRegex(feedmod.FeedError, "trusts no update key"):
-            feedmod.verify_and_parse(payload, sig, source="x/strata-feed.json", trusted={})
+            feedmod.verify_and_parse(payload, sig, source="x/nostroma-feed.json", trusted={})
 
     def test_an_older_feed_is_a_downgrade(self):
         payload, sig = signed(document(sequence=4), self.key)
@@ -297,7 +297,7 @@ class FeedTool(unittest.TestCase):
             with contextlib.redirect_stdout(out):
                 main(["verify-feed", str(release), "--pub", str(Path(folder) / "keys" / "feed-key.pub.json")])
             self.assertIn("sequence 3", out.getvalue())
-            feed = release / "strata-feed.json"
+            feed = release / "nostroma-feed.json"
             feed.write_bytes(feed.read_bytes().replace(b'"sequence": 3', b'"sequence": 4'))
             with self.assertRaises(feedmod.FeedError):
                 main(["verify-feed", str(release), "--pub", str(Path(folder) / "keys" / "feed-key.pub.json")])
@@ -308,7 +308,7 @@ class DeepSeekEnginePackages(FeedChecks):
     DeepSeek model and does not read it (nostroma_control/retired.py)."""
 
     def test_the_member_is_ignored_and_is_never_an_engine_package(self):
-        ds = entry(version="0.1.49", variant="cuda13", url="dsv41/strata-dsv41-0.1.49-linux-x86_64-cuda-cuda13.tar.gz")
+        ds = entry(version="0.1.49", variant="cuda13", url="dsv41/nostroma-dsv41-0.1.49-linux-x86_64-cuda-cuda13.tar.gz")
         feed = self.load(*signed(document(dsv41={"packages": [ds]}), self.key))
         self.assertFalse(hasattr(feed, "dsv41"))
         self.assertEqual([p.version for p in feed.engine], ["0.1.46"], "a DeepSeek package is not an engine package")
@@ -324,19 +324,19 @@ class AppPlatform(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.public, self.secret = fx.minisign_pair()
-        self.archive = self.root / "Strata.app.tar.gz"
+        self.archive = self.root / "Nostroma.app.tar.gz"
         with tarfile.open(self.archive, "w:gz") as tar:
-            for name, data in (("Strata.app/Contents/Info.plist", b"<plist/>"), ("Strata.app/Contents/MacOS/strata-desktop", b"bin")):
+            for name, data in (("Nostroma.app/Contents/Info.plist", b"<plist/>"), ("Nostroma.app/Contents/MacOS/nostroma-desktop", b"bin")):
                 info = tarfile.TarInfo(name)
                 info.size = len(data)
                 tar.addfile(info, io.BytesIO(data))
-        self.sig = self.root / "Strata.app.tar.gz.sig"
+        self.sig = self.root / "Nostroma.app.tar.gz.sig"
         self.sig.write_text(fx.minisign_sign(self.archive.read_bytes(), self.secret) + "\n")
         self.app_json = self.root / "latest.json"
 
     def run_tool(self, **extra):
         from feed_tool import set_app_platform
-        args = dict(target="darwin-aarch64", archive=self.archive, signature_file=self.sig, url="https://example.invalid/Strata.app.tar.gz",
+        args = dict(target="darwin-aarch64", archive=self.archive, signature_file=self.sig, url="https://example.invalid/Nostroma.app.tar.gz",
                     version="0.2.0", pubkey=self.public)
         args.update(extra)
         return set_app_platform(self.app_json, **args)
@@ -382,7 +382,7 @@ class AppPlatform(unittest.TestCase):
         import io
         import tarfile
         with tarfile.open(self.archive, "w:gz") as tar:
-            info = tarfile.TarInfo("build/Strata.app/Contents/Info.plist")
+            info = tarfile.TarInfo("build/Nostroma.app/Contents/Info.plist")
             info.size = 1
             tar.addfile(info, io.BytesIO(b"x"))
         self.sig.write_text(fx.minisign_sign(self.archive.read_bytes(), self.secret))

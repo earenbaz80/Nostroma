@@ -13,17 +13,17 @@ import _paths  # noqa: E402
 class GgufPyLookup(unittest.TestCase):
     def test_install_dir_is_searched(self):
         with tempfile.TemporaryDirectory() as d:
-            gp = Path(d) / "third_party" / "strata-gguf-py"
+            gp = Path(d) / "third_party" / "nostroma-gguf-py"
             (gp / "gguf").mkdir(parents=True)
-            env = {k: v for k, v in os.environ.items() if k != "STRATA_GGUF_PY"}
-            env["STRATA_INSTALL_DIR"] = d
+            env = {k: v for k, v in os.environ.items() if k != "NOSTROMA_GGUF_PY"}
+            env["NOSTROMA_INSTALL_DIR"] = d
             with mock.patch.dict(os.environ, env, clear=True), \
                     mock.patch.object(_paths, "ENGINE", Path(d) / "nowhere" / "pkg"):
                 self.assertEqual(_paths.gguf_py(), str(gp))
 
     def test_the_vendored_copy_is_found_without_any_download_or_setting(self):
-        """OWN-1B: third_party/strata-gguf-py ships with the sources and the Terminal/Control packages."""
-        env = {k: v for k, v in os.environ.items() if k not in ("STRATA_GGUF_PY", "STRATA_INSTALL_DIR")}
+        """OWN-1B: third_party/nostroma-gguf-py ships with the sources and the Terminal/Control packages."""
+        env = {k: v for k, v in os.environ.items() if k not in ("NOSTROMA_GGUF_PY", "NOSTROMA_INSTALL_DIR")}
         with mock.patch.dict(os.environ, env, clear=True), mock.patch.object(_paths, "_install_dirs", return_value=[]):
             self.assertEqual(Path(_paths.gguf_py()), _paths.VENDORED)
             self.assertTrue((_paths.VENDORED / "gguf" / "__init__.py").is_file())
@@ -33,15 +33,15 @@ class GgufPyLookup(unittest.TestCase):
     def test_env_wins_and_message_names_it(self):
         with tempfile.TemporaryDirectory() as d:
             (Path(d) / "gguf").mkdir()
-            with mock.patch.dict(os.environ, {"STRATA_GGUF_PY": d}):
+            with mock.patch.dict(os.environ, {"NOSTROMA_GGUF_PY": d}):
                 self.assertEqual(_paths.gguf_py(), d)
-        env = {k: v for k, v in os.environ.items() if k not in ("STRATA_GGUF_PY", "STRATA_INSTALL_DIR")}
+        env = {k: v for k, v in os.environ.items() if k not in ("NOSTROMA_GGUF_PY", "NOSTROMA_INSTALL_DIR")}
         with tempfile.TemporaryDirectory() as d, mock.patch.dict(os.environ, env, clear=True), \
                 mock.patch.object(_paths, "ENGINE", Path(d) / "a" / "b"), \
                 mock.patch.object(_paths, "_install_dirs", return_value=[]):
             with self.assertRaises(SystemExit) as cm:
                 _paths.gguf_py()
-            self.assertIn("STRATA_GGUF_PY", str(cm.exception))
+            self.assertIn("NOSTROMA_GGUF_PY", str(cm.exception))
 
 
 if __name__ == "__main__":

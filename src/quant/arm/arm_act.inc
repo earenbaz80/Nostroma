@@ -1,12 +1,12 @@
 // arm_act.inc - ggml's Arm NEON Q8_0 and Q8_1 activation quantizers (arch/arm/quants.c at the pin; MIT, The ggml authors), same namespace as arm_dots.inc.
 // Round to nearest even (vcvtnq_s32_f32).  Q8_K is ggml's scalar _ref on Arm too ("placeholder implementation for Apple targets").
 
-void quantize_q8_0(const float* STRATA_RESTRICT x, void* STRATA_RESTRICT vy, int64_t k) {
+void quantize_q8_0(const float* NOSTROMA_RESTRICT x, void* NOSTROMA_RESTRICT vy, int64_t k) {
     assert(QK8_0 == 32);
     assert(k % QK8_0 == 0);
     const int nb = k / QK8_0;
 
-    block_q8_0* STRATA_RESTRICT y = (block_q8_0*) vy;
+    block_q8_0* NOSTROMA_RESTRICT y = (block_q8_0*) vy;
 
 #if defined(__ARM_NEON)
     for (int i = 0; i < nb; i++) {
@@ -45,11 +45,11 @@ void quantize_q8_0(const float* STRATA_RESTRICT x, void* STRATA_RESTRICT vy, int
 #endif
 }
 
-void quantize_q8_1(const float* STRATA_RESTRICT x, void* STRATA_RESTRICT vy, int64_t k) {
+void quantize_q8_1(const float* NOSTROMA_RESTRICT x, void* NOSTROMA_RESTRICT vy, int64_t k) {
     assert(k % QK8_1 == 0);
     const int nb = k / QK8_1;
 
-    block_q8_1* STRATA_RESTRICT y = (block_q8_1*) vy;
+    block_q8_1* NOSTROMA_RESTRICT y = (block_q8_1*) vy;
 #if defined(__ARM_NEON)
     for (int i = 0; i < nb; i++) {
         float32x4_t srcv [8];

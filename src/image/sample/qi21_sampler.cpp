@@ -1,4 +1,4 @@
-// src/image/sample/qi21_sampler.cpp - see include/strata/image/qi21_sampler.hpp.
+// src/image/sample/qi21_sampler.cpp - see include/nostroma/image/qi21_sampler.hpp.
 //
 // No contraction into fused multiply-adds: sd.cpp computes every line as its own pass over a tensor, so each operation
 // rounds on its own.  The passes are kept separate here too (a temporary per line), and contraction is switched off
@@ -10,13 +10,13 @@
 #pragma GCC optimize("fp-contract=off")
 #endif
 
-#include "strata/image/qi21_sampler.hpp"
+#include "nostroma/image/qi21_sampler.hpp"
 
 #include <cerrno>
 #include <cstdlib>
 #include <sstream>
 
-namespace strata::image {
+namespace nostroma::image {
 
 const char* const QI21_TURBO_SIGMAS = "1.0,0.978453,0.95418,0.926626,0.89508,0.845148,0.704534,0.414568,0.0";
 
@@ -58,4 +58,4 @@ void qi21_euler_step(float* x, const float* v, size_t n, float sigma, float sigm
     for (size_t i = 0; i < n; ++i) x[i] = x[i] + d[i];               // x += ...
 }
 
-}  // namespace strata::image
+}  // namespace nostroma::image

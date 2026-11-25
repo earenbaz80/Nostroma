@@ -12,7 +12,7 @@ from nostroma_control import updater
 
 def tree(root: Path) -> Path:
     (root / "lib").mkdir(parents=True)
-    (root / "strata.exe").write_bytes(b"exe")
+    (root / "nostroma.exe").write_bytes(b"exe")
     (root / "lib" / "cublas.dll").write_bytes(b"dll" * 1000)
     return root
 
@@ -35,7 +35,7 @@ class MoveDir(unittest.TestCase):
 
     def test_a_rename_that_works_is_a_rename(self):
         self.move()
-        self.assertTrue((self.destination / "strata.exe").is_file())
+        self.assertTrue((self.destination / "nostroma.exe").is_file())
         self.assertFalse(self.source.exists())
 
     def test_a_rename_held_for_a_moment_is_waited_for(self):
@@ -56,7 +56,7 @@ class MoveDir(unittest.TestCase):
             self.move(patience=3.0)
         self.assertGreaterEqual(self.clock[0], 3.0)                       # it waited the whole patience first
         self.assertEqual((self.destination / "lib" / "cublas.dll").read_bytes(), b"dll" * 1000)
-        self.assertEqual((self.destination / "strata.exe").read_bytes(), b"exe")
+        self.assertEqual((self.destination / "nostroma.exe").read_bytes(), b"exe")
         self.assertFalse(self.source.exists())
 
     def test_a_copy_that_fails_too_says_both_and_leaves_nothing_behind(self):
@@ -68,7 +68,7 @@ class MoveDir(unittest.TestCase):
         self.assertIn("could not be moved into place", str(caught.exception))
         self.assertIn("copying it did not work either", str(caught.exception))
         self.assertFalse(self.destination.exists())
-        self.assertTrue((self.source / "strata.exe").is_file())           # the staged copy is untouched
+        self.assertTrue((self.source / "nostroma.exe").is_file())           # the staged copy is untouched
 
     @unittest.skipUnless(os.name == "nt", "a program holding a file inside the folder refuses the rename only on Windows")
     def test_a_real_open_file_blocks_the_rename_and_the_copy_still_works(self):

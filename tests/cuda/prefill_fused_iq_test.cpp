@@ -1,4 +1,4 @@
-// prefill_fused_iq_test - #136: the fused int8 expert kernels for the native packs (moe_fused_iq.hpp, STRATA_PF_FUSED=1)
+// prefill_fused_iq_test - #136: the fused int8 expert kernels for the native packs (moe_fused_iq.hpp, NOSTROMA_PF_FUSED=1)
 // on random native expert blobs ([gate rows | up rows | down rows], GGUF blocks) and random routing, per format pair,
 // against
 //   - a double-precision reference: the weights dequantized by ggml's own to_float, times the FP32 activations
@@ -14,12 +14,12 @@
 // top 10) on both paths and on MMQ's products alone (no gathers), for the IQ2_XS, IQ3_XXS and IQ3_S packs' most
 // common layers, with the grouping checked and a sample of rows against the reference.  --no-ref, --no-timing,
 // --only=NAME, --edge, --chunks=A,B, --blob-shift=N, --host-blobs=N [--expect-fallback | --expect-no-fallback] (the first N experts' blobs in host memory: the weight-staging
-// check fails for the launches that hold one and they take the unstaged kernel, same output bits), --unset-pf-fused (STRATA_PF_FUSED left unset instead of set to 1: the engine's default, for the
-// STRATA_PF_FUSED_Q2N=1 ctest entry).  Exit 77 without a CUDA device of sm_80 or newer.
-#include "strata/core/emulate.hpp"
-#include "strata/prefill/moe_fused_iq.hpp"
-#include "strata/prefill/mmq_ids_margin.hpp"
-#include "strata/prefill/moe_mmq.hpp"
+// check fails for the launches that hold one and they take the unstaged kernel, same output bits), --unset-pf-fused (NOSTROMA_PF_FUSED left unset instead of set to 1: the engine's default, for the
+// NOSTROMA_PF_FUSED_Q2N=1 ctest entry).  Exit 77 without a CUDA device of sm_80 or newer.
+#include "nostroma/core/emulate.hpp"
+#include "nostroma/prefill/moe_fused_iq.hpp"
+#include "nostroma/prefill/mmq_ids_margin.hpp"
+#include "nostroma/prefill/moe_mmq.hpp"
 
 #include "ggml.h"
 
@@ -38,7 +38,7 @@
 #include <thread>
 #include <vector>
 
-// the trellis types' codebooks (CUDA STRATA_PF_FUSED_TQ=1 pairs): the fp16 one (the format definition, ggml-common-tq.h, host data in a C++ file)
+// the trellis types' codebooks (CUDA NOSTROMA_PF_FUSED_TQ=1 pairs): the fp16 one (the format definition, ggml-common-tq.h, host data in a C++ file)
 // for the reference, and the int8 one the kernels read (tq_lut_i8.cuh, a __device__ table there: read here as host data) for the int8 model
 #pragma push_macro("__device__")
 #undef __device__
@@ -48,11 +48,11 @@
 #pragma pop_macro("__device__")
 
 namespace {
-namespace mmq = strata::prefill::mmq;
-namespace fused = strata::prefill::fused;
+namespace mmq = nostroma::prefill::mmq;
+namespace fused = nostroma::prefill::fused;
 
-// The compiled geometry's widths (Flash-Next: 2560 x 640, 512 experts, top 10): build with -DSTRATA_GEOMETRY=<name> to test another shape.
-constexpr int N = fused::kMoeEmbd, FF = fused::kMoeFF, FF2 = fused::kMoeGuRows, K = (int) strata::core::kCompiledGeometry.n_expert_used, GROUP = 16;
+// The compiled geometry's widths (Flash-Next: 2560 x 640, 512 experts, top 10): build with -DNOSTROMA_GEOMETRY=<name> to test another shape.
+constexpr int N = fused::kMoeEmbd, FF = fused::kMoeFF, FF2 = fused::kMoeGuRows, K = (int) nostroma::core::kCompiledGeometry.n_expert_used, GROUP = 16;
 
 void ck(cudaError_t e, const char* what) {
     if (e != cudaSuccess) throw std::runtime_error(std::string(what) + ": " + cudaGetErrorString(e));
@@ -115,7 +115,7 @@ void tq_block(int t, const uint8_t* b, float* out, bool int8cb) {
     }
 }
 
-// --folded (trellis pairs): the Gyro packs' Hadamard-folded experts (include/strata/kernels/cpu/hadamard.hpp): the weights are taken as stored
+// --folded (trellis pairs): the Gyro packs' Hadamard-folded experts (include/nostroma/kernels/cpu/hadamard.hpp): the weights are taken as stored
 // (W' = W diag(s) H^T), so every activation entering them is rotated first, y = H_128 (s * x) / sqrt(128) per 128 values, with random signs.
 // The reference rotates on the host (this function, from the definition); the fused path's H rotation is set_down_rotation, MMQ's is
 // hadamard128_rows (the same device code: the reference is the independent side); the gate/up input is rotated on the host for every path.
@@ -178,12 +178,12 @@ struct Geo {
 };
 
 // random blocks with a sane fp16 scale `d` at each block's start (every format here begins with it): scales chosen so
-// STRATA_PF_F16=1: the covered formats run on F16 weights (moe_f16_kq.cu, native_f16_kernel), not the int8 kernels
+// NOSTROMA_PF_F16=1: the covered formats run on F16 weights (moe_f16_kq.cu, native_f16_kernel), not the int8 kernels
 bool f16_on() {
-    const char* v = std::getenv("STRATA_PF_F16");
-    // STRATA_PF_FUSED_F16=1 / STRATA_PF_FUSED_WS=1 (the int8 kernels' f16 mma form, #3779): F16 products too, so the same limits
-    const char* f = std::getenv("STRATA_PF_FUSED_F16");
-    const char* w = std::getenv("STRATA_PF_FUSED_WS");
+    const char* v = std::getenv("NOSTROMA_PF_F16");
+    // NOSTROMA_PF_FUSED_F16=1 / NOSTROMA_PF_FUSED_WS=1 (the int8 kernels' f16 mma form, #3779): F16 products too, so the same limits
+    const char* f = std::getenv("NOSTROMA_PF_FUSED_F16");
+    const char* w = std::getenv("NOSTROMA_PF_FUSED_WS");
     return (v != nullptr && v[0] == '1') || (f != nullptr && f[0] == '1') || (w != nullptr && w[0] == '1');
 }
 
@@ -452,7 +452,7 @@ constexpr double kKqRms = 1.15, kKqWorst = 1.5;
 bool kq_gu(const Pair& p) { return p.gu == GGML_TYPE_Q4_K || p.gu == GGML_TYPE_Q5_K; }
 
 // A build WITHOUT MMQ (mmq::built() false) has no MMQ distance to measure against.  Its rule, for every pair:
-//   (a) the fused path against the int8-rounded model: as above (2e-3 rel RMS, 3e-2 worst row; 5e-3 RMS with STRATA_PF_F16=1);
+//   (a) the fused path against the int8-rounded model: as above (2e-3 rel RMS, 3e-2 worst row; 5e-3 RMS with NOSTROMA_PF_F16=1);
 //   (b) the int8-rounded model's own distance to FP32 stays under the ceiling of the pair's class (a broken model cannot pass relative to itself);
 //   (c) the fused path's distance to FP32 is at most kOwnRel (RMS) / kOwnRelWorst (worst row) times the model's, plus kOwnAbs.
 // (MMQ and the model are the same distance from FP32 within 1% on every shape; the fused path equals the model to 1.001 x.)  Builds with MMQ keep
@@ -593,7 +593,7 @@ void reference_part(const Pair& p, cudaStream_t s, int T = 256, int E = 64, int 
     const Err e2 = compare(y_f, frow, ref2, pair, (size_t) rows);
     std::printf("  fused vs the int8-rounded model (same activation / H rounding, double sums): rel RMS %.3e  worst %.3e\n",
                 e2.rms, e2.worst);
-    // STRATA_PF_F16=1: H's int8 rounding meets values a few F16 ulps from the int8 model's (f16_on); the FP32 reference
+    // NOSTROMA_PF_F16=1: H's int8 rounding meets values a few F16 ulps from the int8 model's (f16_on); the FP32 reference
     // checks below stay as they are
     if (e2.rms > (f16_on() ? 5e-3 : 2e-3) || e2.worst > 3e-2)
         throw std::runtime_error(std::string(p.name) + ": the fused path differs from its own arithmetic's model");
@@ -627,7 +627,7 @@ void reference_part(const Pair& p, cudaStream_t s, int T = 256, int E = 64, int 
 
 // part 2: one layer at a real chunk, timed
 void timing_part(const Pair& p, int T, cudaStream_t s) {
-    static const int E = [] { const char* v = std::getenv("S20_E"); return v != nullptr && std::atoi(v) > 0 ? std::atoi(v) : (int) strata::core::kCompiledGeometry.n_expert; }();   // S20_E=256: the Coder pack
+    static const int E = [] { const char* v = std::getenv("S20_E"); return v != nullptr && std::atoi(v) > 0 ? std::atoi(v) : (int) nostroma::core::kCompiledGeometry.n_expert; }();   // S20_E=256: the Coder pack
     const Geo geo(p);
     std::mt19937 rng(1360);
     const int64_t rows = (int64_t) T * K;
@@ -915,7 +915,7 @@ void timing_part(const Pair& p, int T, cudaStream_t s) {
         if (g_expect_fallback < 0 && fbk != 0) throw std::runtime_error(std::string(p.name) + ": --expect-no-fallback: a launch took the unstaged kernel");
     }
     // the two int8 paths at the real shape, every tile of the layer: R9700 rel RMS 1.3-1.9e-4, worst row 2.9e-3-8.3e-3
-    // (STRATA_PF_F16=1: F16 products against MMQ's int8, gfx1151 rel RMS 2.5-2.7e-3, worst row 6.4e-3-8.8e-3)
+    // (NOSTROMA_PF_F16=1: F16 products against MMQ's int8, gfx1151 rel RMS 2.5-2.7e-3, worst row 6.4e-3-8.8e-3)
     // (K-quant gate/up pairs: fused against MMQ is information only, see kq_gu)
     // Fused against MMQ is a comparison of two noisy paths with each other, not against the truth: its worst row is the largest of many tail values and grows with the row count (Q2_0 / Q2_0,
     // RTX A4000: 1.0e-2 at 8,192 tokens, 2.6e-2 at 20,000 and 32,768 with rel RMS 2e-5, while both paths stand at the same distance from the FP32 reference).  So the worst row here is only a
@@ -1011,11 +1011,11 @@ void bits_staged(const std::vector<Pair>& ps, const std::vector<int>& sizes, int
 
 int main(int argc, char** argv) {
     try {
-        // --unset-pf-fused: STRATA_PF_FUSED unset, as the engine's default (the ctest entry for the opt-in STRATA_PF_FUSED_Q2N=1,
+        // --unset-pf-fused: NOSTROMA_PF_FUSED unset, as the engine's default (the ctest entry for the opt-in NOSTROMA_PF_FUSED_Q2N=1,
         // whose Q2_0 / Q2_0 pair the engine takes with the old variable unset or at 1)
-        // --no-kq: STRATA_PF_FUSED_KQ left as it is (HIP: the ctest entry for STRATA_PF_FUSED_Q8D=1 on gfx12, which must cover the i-quant / Q8_0
+        // --no-kq: NOSTROMA_PF_FUSED_KQ left as it is (HIP: the ctest entry for NOSTROMA_PF_FUSED_Q8D=1 on gfx12, which must cover the i-quant / Q8_0
         // pairs without the K-quant switch that also covers them there)
-        // --turing: the Turing set only (STRATA_PF_FUSED_SM75=1; the ctest entry prefill_fused_iq_test_sm75): skipped (77) unless the card is a compute capability 7.5 one or emulates it (STRATA_EMULATE_CC=75)
+        // --turing: the Turing set only (NOSTROMA_PF_FUSED_SM75=1; the ctest entry prefill_fused_iq_test_sm75): skipped (77) unless the card is a compute capability 7.5 one or emulates it (NOSTROMA_EMULATE_CC=75)
         bool unset_pf = false, no_kq = false, turing_only = false;
         for (int i = 1; i < argc; ++i) {
             if (std::strcmp(argv[i], "--unset-pf-fused") == 0) unset_pf = true;
@@ -1027,15 +1027,15 @@ int main(int argc, char** argv) {
             if (cudaGetDeviceCount(&cmaj) != cudaSuccess || cmaj == 0) { std::printf("no CUDA device: skipped\n"); return 77; }
             (void)cudaDeviceGetAttribute(&cmaj, cudaDevAttrComputeCapabilityMajor, 0);
             (void)cudaDeviceGetAttribute(&cmin, cudaDevAttrComputeCapabilityMinor, 0);
-            if (strata::cc_major_of(cmaj) != 7 || strata::cc_minor_of(cmin) != 5) { std::printf("--turing: not a compute capability 7.5 card (and no STRATA_EMULATE_CC=75): skipped\n"); return 77; }
+            if (nostroma::cc_major_of(cmaj) != 7 || nostroma::cc_minor_of(cmin) != 5) { std::printf("--turing: not a compute capability 7.5 card (and no NOSTROMA_EMULATE_CC=75): skipped\n"); return 77; }
         }
 #ifdef _WIN32
-        if (unset_pf) _putenv_s("STRATA_PF_FUSED", ""); else _putenv_s("STRATA_PF_FUSED", "1");   // (an empty value removes it)
+        if (unset_pf) _putenv_s("NOSTROMA_PF_FUSED", ""); else _putenv_s("NOSTROMA_PF_FUSED", "1");   // (an empty value removes it)
         (void) no_kq;   // (Windows: the K-quant switch is not set here)
 #else
-        if (unset_pf) unsetenv("STRATA_PF_FUSED"); else setenv("STRATA_PF_FUSED", "1", 1);
-        if (!no_kq) setenv("STRATA_PF_FUSED_KQ", "1", 1);   // (the HIP build's Q4_K / Q5_K / Q5_1 / Q8_0 pairs)
-        setenv("STRATA_PF_FUSED_Q50", "1", 1);  // (gfx12's Q5_0 down pairs)
+        if (unset_pf) unsetenv("NOSTROMA_PF_FUSED"); else setenv("NOSTROMA_PF_FUSED", "1", 1);
+        if (!no_kq) setenv("NOSTROMA_PF_FUSED_KQ", "1", 1);   // (the HIP build's Q4_K / Q5_K / Q5_1 / Q8_0 pairs)
+        setenv("NOSTROMA_PF_FUSED_Q50", "1", 1);  // (gfx12's Q5_0 down pairs)
 #endif
         int n = 0;
         if (cudaGetDeviceCount(&n) != cudaSuccess || n == 0) { std::printf("no CUDA device: skipped\n"); return 77; }
@@ -1044,22 +1044,22 @@ int main(int argc, char** argv) {
             std::printf("the fused kernels need sm_80 or newer (or gfx11 / gfx12 matrix cores): skipped\n");
             return 77;
         }
-        // --no-kq (the STRATA_PF_FUSED_Q8D entry): a device or build where the i-quant / Q8_0 pairs are not covered without the K-quant switch
+        // --no-kq (the NOSTROMA_PF_FUSED_Q8D entry): a device or build where the i-quant / Q8_0 pairs are not covered without the K-quant switch
         // (gfx11, or the switch unset) skips instead of failing
-        // (with STRATA_PF_FUSED_Q8GU=1 the probe is the Q8_0 / Q8_0 pair: the Q8GU entry asks the same of its own switch)
-        const char* q8gu_env = std::getenv("STRATA_PF_FUSED_Q8GU");
+        // (with NOSTROMA_PF_FUSED_Q8GU=1 the probe is the Q8_0 / Q8_0 pair: the Q8GU entry asks the same of its own switch)
+        const char* q8gu_env = std::getenv("NOSTROMA_PF_FUSED_Q8GU");
         const bool probe_q8gu = q8gu_env != nullptr && q8gu_env[0] == '1';
         if (no_kq && !fused::native_supported(probe_q8gu ? GGML_TYPE_Q8_0 : GGML_TYPE_IQ3_S, GGML_TYPE_Q8_0)) {
-            std::printf("--no-kq: the %s pairs are not covered here without STRATA_PF_FUSED_KQ (skipped)\n", probe_q8gu ? "Q8_0 / Q8_0" : "i-quant / Q8_0");
+            std::printf("--no-kq: the %s pairs are not covered here without NOSTROMA_PF_FUSED_KQ (skipped)\n", probe_q8gu ? "Q8_0 / Q8_0" : "i-quant / Q8_0");
             return 77;
         }
 #if defined(__HIPCC__)
-        // the trellis pairs on HIP are gfx12's (STRATA_PF_FUSED_TQ=1): another AMD card skips the _tq / _tqh entries instead of failing; on gfx12
+        // the trellis pairs on HIP are gfx12's (NOSTROMA_PF_FUSED_TQ=1): another AMD card skips the _tq / _tqh entries instead of failing; on gfx12
         // the pairs must be covered (a host rule that does not take them fails below)
         const char* only_tq = nullptr;
         for (int i = 1; i < argc; ++i)
             if (std::strncmp(argv[i], "--only=", 7) == 0) only_tq = argv[i] + 7;
-        if (only_tq != nullptr && std::strstr("TQK6 + TQK7 TQ2_T + TQ2_T Q6_K + Q8_0", only_tq) != nullptr) {   // (and the Q6_K pair: STRATA_PF_FUSED_Q6K=1 is gfx12's too)
+        if (only_tq != nullptr && std::strstr("TQK6 + TQK7 TQ2_T + TQ2_T Q6_K + Q8_0", only_tq) != nullptr) {   // (and the Q6_K pair: NOSTROMA_PF_FUSED_Q6K=1 is gfx12's too)
             cudaDeviceProp prop{};
             if (cudaGetDeviceProperties(&prop, 0) == cudaSuccess && std::strncmp(prop.gcnArchName, "gfx12", 5) != 0) {
                 std::printf("the trellis / Q6_K pairs: gfx12 only on HIP (%s: skipped)\n", prop.gcnArchName);
@@ -1067,21 +1067,21 @@ int main(int argc, char** argv) {
             }
         }
 #endif
-        // with STRATA_PF_FUSED unset nothing is set up below sm_80 (Turing's pair is STRATA_PF_FUSED=1 STRATA_PF_FUSED_SM75=1's)
+        // with NOSTROMA_PF_FUSED unset nothing is set up below sm_80 (Turing's pair is NOSTROMA_PF_FUSED=1 NOSTROMA_PF_FUSED_SM75=1's)
         if (unset_pf) {
             int major = 0;
             (void)cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, 0);
-            if (strata::cc_major_of(major) < 8) { std::printf("STRATA_PF_FUSED unset: nothing is set up below sm_80 (skipped)\n"); return 77; }
+            if (nostroma::cc_major_of(major) < 8) { std::printf("NOSTROMA_PF_FUSED unset: nothing is set up below sm_80 (skipped)\n"); return 77; }
         }
-        // the opt-in kernel sets (STRATA_PF_FUSED_NT=256, _F16=1, _WS=1): a card that cannot set them up (shared memory,
+        // the opt-in kernel sets (NOSTROMA_PF_FUSED_NT=256, _F16=1, _WS=1): a card that cannot set them up (shared memory,
         // occupancy) falls back to the 512-thread kernels, and a run of those would pass for the wrong kernels - skip it
         {
-            const char* nt = std::getenv("STRATA_PF_FUSED_NT");
-            const char* f16 = std::getenv("STRATA_PF_FUSED_F16");
-            const char* ws = std::getenv("STRATA_PF_FUSED_WS");
+            const char* nt = std::getenv("NOSTROMA_PF_FUSED_NT");
+            const char* f16 = std::getenv("NOSTROMA_PF_FUSED_F16");
+            const char* ws = std::getenv("NOSTROMA_PF_FUSED_WS");
             const bool asked = (nt && std::atoi(nt) == 256) || (f16 && f16[0] == '1') || (ws && ws[0] == '1');
             if (asked && !fused::native_wide()) {
-                std::printf("STRATA_PF_FUSED_NT / _F16 / _WS: those kernels are not set up on this device (skipped)\n");
+                std::printf("NOSTROMA_PF_FUSED_NT / _F16 / _WS: those kernels are not set up on this device (skipped)\n");
                 return 77;
             }
         }
@@ -1096,21 +1096,21 @@ int main(int argc, char** argv) {
             // the Coder IQ1_M pack's other pairs (appended: the default timing set takes pairs 0, 1, 4, 3 by index)
             {GGML_TYPE_IQ2_S, GGML_TYPE_IQ4_NL, "IQ2_S / IQ4_NL"},   {GGML_TYPE_IQ3_XXS, GGML_TYPE_Q2_0, "IQ3_XXS / Q2_0"},
             {GGML_TYPE_IQ3_S, GGML_TYPE_Q2_0, "IQ3_S / Q2_0"},       {GGML_TYPE_IQ4_XS, GGML_TYPE_IQ4_NL, "IQ4_XS / IQ4_NL"},
-            // UD-IQ4_XS-v31's Q5_0 down layers (STRATA_PF_FUSED_Q50=1: HIP gfx12, and CUDA sm_80+ since phase 4 step 1; checked against the reference, the build has no Q5_0 MMQ)
+            // UD-IQ4_XS-v31's Q5_0 down layers (NOSTROMA_PF_FUSED_Q50=1: HIP gfx12, and CUDA sm_80+ since phase 4 step 1; checked against the reference, the build has no Q5_0 MMQ)
             {GGML_TYPE_IQ3_XXS, GGML_TYPE_Q5_0, "IQ3_XXS / Q5_0"},   {GGML_TYPE_IQ4_XS, GGML_TYPE_Q5_0, "IQ4_XS / Q5_0"},
             // the canonical Q2_0 pack (gate/up and down Q2_0; CUDA)
             {GGML_TYPE_Q2_0, GGML_TYPE_Q2_0, "Q2_0 / Q2_0"},
-            // the pinned UD-IQ4_XS's Q8_0 down layers (IQ3_S / Q8_0 4, IQ4_XS / Q8_0 1): STRATA_PF_FUSED_Q8D=1 on CUDA sm_80+ (opt-in)
+            // the pinned UD-IQ4_XS's Q8_0 down layers (IQ3_S / Q8_0 4, IQ4_XS / Q8_0 1): NOSTROMA_PF_FUSED_Q8D=1 on CUDA sm_80+ (opt-in)
             {GGML_TYPE_IQ3_S, GGML_TYPE_Q8_0, "IQ3_S / Q8_0"},       {GGML_TYPE_IQ4_XS, GGML_TYPE_Q8_0, "IQ4_XS / Q8_0"},
-            // the Q8_0 set's layers (and UD-Q6_K_XL's one Q8_0 layer): STRATA_PF_FUSED_Q8GU=1 on CUDA sm_80+ (opt-in)
+            // the Q8_0 set's layers (and UD-Q6_K_XL's one Q8_0 layer): NOSTROMA_PF_FUSED_Q8GU=1 on CUDA sm_80+ (opt-in)
             {GGML_TYPE_Q8_0, GGML_TYPE_Q8_0, "Q8_0 / Q8_0"},
-            // UD-Q6_K_XL's layers (and UD-Q5_K_XL's one Q6_K layer): STRATA_PF_FUSED_Q6K=1 on CUDA sm_80+ (opt-in); MMQ = the K-quant library.
+            // UD-Q6_K_XL's layers (and UD-Q5_K_XL's one Q6_K layer): NOSTROMA_PF_FUSED_Q6K=1 on CUDA sm_80+ (opt-in); MMQ = the K-quant library.
             // Named with "+" so the _kq entry's --only="K / Q" does not take it
             {GGML_TYPE_Q6_K, GGML_TYPE_Q8_0, "Q6_K + Q8_0"},
-            // Gyro-S (TQK6 gate/up, TQK7 down) and Gyro-M (TQ2_T both): STRATA_PF_FUSED_TQ=1 on CUDA sm_80+ (opt-in); MMQ = the overlay's trellis
+            // Gyro-S (TQK6 gate/up, TQK7 down) and Gyro-M (TQ2_T both): NOSTROMA_PF_FUSED_TQ=1 on CUDA sm_80+ (opt-in); MMQ = the overlay's trellis
             // instances; the ids are agentionai's (the pinned ggml.h has no enumerators for them)
             {(ggml_type) 145, (ggml_type) 146, "TQK6 + TQK7"},       {(ggml_type) 144, (ggml_type) 144, "TQ2_T + TQ2_T"},
-            // NVFP4 (ModelOpt packs: gate/up and down NVFP4, the blob's tail = the per-expert scales); STRATA_PF_FUSED=1 as the test sets it; CUDA sm_80+; against the reference alone
+            // NVFP4 (ModelOpt packs: gate/up and down NVFP4, the blob's tail = the per-expert scales); NOSTROMA_PF_FUSED=1 as the test sets it; CUDA sm_80+; against the reference alone
             {GGML_TYPE_NVFP4, GGML_TYPE_NVFP4, "NVFP4 / NVFP4"}};
         const char* only = nullptr;   // --only=NAME: the pairs whose name contains NAME
         for (int i = 1; i < argc; ++i)
@@ -1162,13 +1162,13 @@ int main(int argc, char** argv) {
             // other entry runs what it ran
             if (!only && ((p.d == GGML_TYPE_Q8_0 && !kq_gu(p)) || tq_type(p.gu) || nvfp4_pair(p))) continue;   // (and the trellis pairs: _tq; the NVFP4 pair: _nvfp4)
             if (!fused::native_supported((int) p.gu, (int) p.d)) {
-                // the Q2_0 / Q2_0 pair is the Turing opt-in's (STRATA_PF_FUSED_SM75=1; the only pair set up there) or, on sm_80+,
-                // STRATA_PF_FUSED_Q2N=1's: skip what this device does not take (--only=NAME still insists)
+                // the Q2_0 / Q2_0 pair is the Turing opt-in's (NOSTROMA_PF_FUSED_SM75=1; the only pair set up there) or, on sm_80+,
+                // NOSTROMA_PF_FUSED_Q2N=1's: skip what this device does not take (--only=NAME still insists)
                 const bool turing_pair = p.gu == GGML_TYPE_Q2_0 && p.d == GGML_TYPE_Q2_0;
-                const bool q50_pair = p.d == GGML_TYPE_Q5_0;   // (STRATA_PF_FUSED_Q50=1 only: off by default on CUDA and gfx12)
+                const bool q50_pair = p.d == GGML_TYPE_Q5_0;   // (NOSTROMA_PF_FUSED_Q50=1 only: off by default on CUDA and gfx12)
                 int major = 0;
                 (void)cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, 0);
-                major = strata::cc_major_of(major);   // (STRATA_EMULATE_CC=75 on a bigger card: the pairs Turing has no kernels for are skipped as on the real card)
+                major = nostroma::cc_major_of(major);   // (NOSTROMA_EMULATE_CC=75 on a bigger card: the pairs Turing has no kernels for are skipped as on the real card)
                 if ((major < 8 || turing_pair || q50_pair) && (!only || turing_only)) { std::printf("%s: not set up on this device (skipped)\n", p.name); continue; }
                 throw std::runtime_error(std::string(p.name) + ": not covered by the native kernels");
             }

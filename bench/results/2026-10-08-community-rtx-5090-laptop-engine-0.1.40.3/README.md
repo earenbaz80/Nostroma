@@ -3,7 +3,7 @@
 Measured in the night of 2026-10-07/08 by [wolffahrer](https://github.com/wolffahrer) on the same Windows 11 gaming
 laptop (Schenker XMG NEO 16, A25) as [2026-10-06-community-rtx-5090-laptop](../2026-10-06-community-rtx-5090-laptop/README.md)
 (engine 0.1.40.1, PR #1263). This is a follow-up: same machine, same model files, same configuration, same scripts,
-same order of requests. Only the Strata version changed. 0.1.40.2 was measured the same night with the identical
+same order of requests. Only the Nostroma version changed. 0.1.40.2 was measured the same night with the identical
 procedure; its numbers are in a short section below.
 
 Median decode throughput with **0.1.40.3** was **138.1 tok/s at 4,096 prompt tokens, 144.4 tok/s at 32,768, and
@@ -18,11 +18,11 @@ Unchanged from the 0.1.40.1 entry unless noted:
   during this run median 163.9 W, peak sample 179.4 W; GPU temperature peaked at 84 °C. PCIe Gen 4 x8 under load.
 - AMD Ryzen 9 9955HX3D, `--pool-workers 10`. 64 GB RAM (61.68 GiB usable). Samsung SSD 990 PRO 1TB for model and pack.
 - Windows 11 Home, build 26200. NVIDIA driver 610.88. CUDA toolkit 13.3.
-- Strata **v0.1.40.3**, tag commit `d5ea7133741e67743c0e886bb426c0ce8d69cf6c`, built from the release source archive
+- Nostroma **v0.1.40.3**, tag commit `d5ea7133741e67743c0e886bb426c0ce8d69cf6c`, built from the release source archive
   (sha256 `6fdca77a04d8535c598c6602990789892d999000f8b7e956a27ed0dc602b5cba`) with the unmodified installer for CUDA
   architecture 120, GPU vision helper included. See [BUILD.json](BUILD.json).
 - Background: a WSL2 VM with an idle local agent stack; the regular inference server was stopped, so the GPU was
-  dedicated to Strata and its vision helper. Not an isolated OS.
+  dedicated to Nostroma and its vision helper. Not an isolated OS.
 
 ## Model and configuration
 
@@ -30,7 +30,7 @@ Identical to the 0.1.40.1 entry: `ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF` *
 32,768 resident cells, expert cache `auto` (again **11,742 slots, 15.12 GiB VRAM**, 495 MiB VRAM free with everything
 loaded), prefill `auto` (borrows 2,082 slots), MTP `--spec 4 --spec-min-p 0.7`, `--pcie-frac 0`, `--mmap-experts`, GPU
 vision, conversation cache 6 GiB / 2 slots, `reasoning_budget_tokens: 12000`, `reasoning_loop_recovery: "stop"`.
-Complete configuration with local paths replaced by placeholders: [strata-q2_0.json](strata-q2_0.json). Startup
+Complete configuration with local paths replaced by placeholders: [nostroma-q2_0.json](nostroma-q2_0.json). Startup
 choices and every request's timing are in [engine.log](engine.log).
 
 ## Method
@@ -43,8 +43,8 @@ three runs each, greedy, reasoning off, 256-token cap), the unchanged `tools/nee
 the folder small).
 
 ```text
-.venv\Scripts\python.exe serve\server.py --engine strata --config strata-q2_0.json --port 18096
-.venv\Scripts\python.exe benchmark.py --root <strata> --pack <strata-data>\packs\q2_0 --url http://127.0.0.1:18096 --out results
+.venv\Scripts\python.exe serve\server.py --engine nostroma --config nostroma-q2_0.json --port 18096
+.venv\Scripts\python.exe benchmark.py --root <nostroma> --pack <nostroma-data>\packs\q2_0 --url http://127.0.0.1:18096 --out results
 .venv\Scripts\python.exe tools\needle_bench.py --url http://127.0.0.1:18096 --lengths 32k,128k --depths 10,50,90 --out needles.json
 .venv\Scripts\python.exe coding_check.py --url http://127.0.0.1:18096 --out coding-check.json
 ```

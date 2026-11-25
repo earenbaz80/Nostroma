@@ -7,7 +7,7 @@ import { APP_UPDATES_OFF, looksOffline, plainUpdateError } from './update-messag
 export async function checkUpdates({ appVersion, engineVersion }) {
   return {
     checkedAt: new Date().toISOString(),
-    strata: { installedVersion: appVersion, status: 'unavailable', canInstall: false, message: APP_UPDATES_OFF },
+    nostroma: { installedVersion: appVersion, status: 'unavailable', canInstall: false, message: APP_UPDATES_OFF },
     engine: { installedVersion: engineVersion, status: 'unavailable', canInstall: false, message: 'Engine update checks are not available in this build.' },
   };
 }
@@ -28,7 +28,7 @@ export async function checkComponentUpdates({ control, appVersion = null }) {
   } catch (error) {
     const plain = plainUpdateError(error, 'Nostroma');
     const message = /update server|aren't available|No internet/.test(plain.headline) ? plain.message : `Couldn't check for updates. Try again in a moment.`;
-    return { checkedAt, strata: { installedVersion: appVersion ?? control.version ?? null, status: 'error', message, details: plain.details, canInstall: false }, engine: { installedVersion: null, status: 'error', message, details: plain.details, canInstall: false } };
+    return { checkedAt, nostroma: { installedVersion: appVersion ?? control.version ?? null, status: 'error', message, details: plain.details, canInstall: false }, engine: { installedVersion: null, status: 'error', message, details: plain.details, canInstall: false } };
   }
   const mib = bytes => `${Math.round((bytes ?? 0) / 1_000_000)} MB`;      // decimal megabytes, like the Terminal and the release page
   const engine = report.engine ?? {};
@@ -49,13 +49,13 @@ export async function checkComponentUpdates({ control, appVersion = null }) {
   /* The app row is off in this build. Control's feed carries the app installer and the Control package of the project that
      publishes it, and this checkout has one of neither: offering them here could only install that other build. The engine
      row above is Control's own and keeps working, and so does the engine step of an update. */
-  const strata = {
+  const nostroma = {
     installedVersion: appVersion ?? control_.installed ?? control.version ?? null,
     status: 'unavailable',
     canInstall: false,
     message: APP_UPDATES_OFF,
   };
-  return { checkedAt, feed: report.feed, strata, engine: engineView, serving: report.serving ?? [] };
+  return { checkedAt, feed: report.feed, nostroma, engine: engineView, serving: report.serving ?? [] };
 }
 
 /**

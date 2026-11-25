@@ -1,5 +1,5 @@
 // src/platform/memory_test.cpp - plan v0.3 P0.1: lock_resident on a 256 MiB region (CPU only, no GPU, no model).
-#include "strata/platform/memory.hpp"
+#include "nostroma/platform/memory.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -18,7 +18,7 @@ uint64_t gib(double g) { return (uint64_t) (g * 1073741824.0); }
 
 // #577: the file tier's unbuffered choice (true = the file cache keeps its reads, so they stay buffered)
 int file_cache_keeps_cases() {
-    using strata::platform::file_cache_keeps;
+    using nostroma::platform::file_cache_keeps;
     struct Case { const char* what; double avail, arena, read; bool keeps; };
     const double experts = 71.7;   // UD-Q4_K_XL's routed experts
     const Case cases[] = {
@@ -75,7 +75,7 @@ int file_cache_keeps_cases() {
 
 // #3237: the drive probe's decision
 int file_tier_prefers_direct_cases() {
-    using strata::platform::file_tier_prefers_direct;
+    using nostroma::platform::file_tier_prefers_direct;
     struct Case { const char* what; double held, direct, cached; bool direct_wins; };
     const Case cases[] = {
         {"#3237: 13% held, 8.18 vs 4.93 GB/s", 0.13, 8.18e9, 4.93e9, true},
@@ -107,7 +107,7 @@ int main() {
     void* p = std::malloc(bytes);
     if (p == nullptr) return 2;
     std::memset(p, 1, bytes);
-    const strata::platform::LockResult r = strata::platform::lock_resident(p, bytes);
+    const nostroma::platform::LockResult r = nostroma::platform::lock_resident(p, bytes);
     std::printf("lock_resident: ok=%d locked=%llu MiB (%s)\n", (int) r.ok, (unsigned long long) (r.locked_bytes >> 20),
                 r.note.c_str());
     // The system refused the lock (a container or a shell with a small `ulimit -l`: RLIMIT_MEMLOCK of 8 MiB, no CAP_IPC_LOCK): nothing was locked, so the
@@ -120,7 +120,7 @@ int main() {
     std::printf("working set %llu MiB\n", (unsigned long long) (pmc.WorkingSetSize >> 20));
     fail |= pmc.WorkingSetSize < bytes;
 #endif
-    strata::platform::unlock_resident(p, bytes);
+    nostroma::platform::unlock_resident(p, bytes);
     std::free(p);
     if (!fail && lock_refused) {
         std::printf("platform_memory_test: SKIPPED, the system refused to lock %llu MiB (%s); raise the memory-lock limit to run it\n",

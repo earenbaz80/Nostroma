@@ -1,7 +1,7 @@
-#include "strata/core/conversation_snapshot.hpp"
-#include "strata/env.hpp"
-#include "strata/core/conversation_file.hpp"
-#include "strata/kernels/kv_q4.hpp"
+#include "nostroma/core/conversation_snapshot.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/core/conversation_file.hpp"
+#include "nostroma/kernels/kv_q4.hpp"
 #include <cuda_runtime.h>
 
 #include <array>
@@ -16,11 +16,11 @@
 #include <utility>
 #include <vector>
 
-using namespace strata::core;
-using namespace strata::kernels;
+using namespace nostroma::core;
+using namespace nostroma::kernels;
 
 namespace {
-// STRATA_CKPT_ASYNC=1 (the ctest entries conversation_snapshot_test_ckpt_async / _vram_slots): the checkpoint's GDN bytes land in
+// NOSTROMA_CKPT_ASYNC=1 (the ctest entries conversation_snapshot_test_ckpt_async / _vram_slots): the checkpoint's GDN bytes land in
 // the background; the test reads them at once, so it joins after each save (the engine's readers join before they read)
 template <class... A> bool ckpt_save(A&&... a) {
     const bool ok = conversation_checkpoint_save(std::forward<A>(a)...);
@@ -132,7 +132,7 @@ void full_session(int fmt, int mode, int experts) {
     auto& g=main.g;
     g.n_layers=4; g.n_expert=experts;
     g.ssm_state_size=2; g.ssm_v_heads=2; g.ssm_conv_channels=8;
-    if (strata::env("NOSTROMA_TEST_BIG_GDN")) { g.ssm_state_size=64; g.ssm_v_heads=64; }   // a GDN state over 1 MiB: the async checkpoint path
+    if (nostroma::env("NOSTROMA_TEST_BIG_GDN")) { g.ssm_state_size=64; g.ssm_v_heads=64; }   // a GDN state over 1 MiB: the async checkpoint path
     SessionState ss;
     ss.max_cells=96; ss.qsa_states=&main.state;
     ss.layer_hi=g.n_layers; ss.gdn_alloc=g.n_gdn_layers(); ss.qsa_alloc=g.n_qsa_layers();   // the whole-model carve
@@ -177,7 +177,7 @@ void full_session(int fmt, int mode, int experts) {
         check(meta.kv.empty() && sources.size()==b.kv.size(),"one source per K/V layer, none captured");
         const SessionFileIdentity id{1,2};
         namespace fs=std::filesystem;
-        const fs::path dir=fs::temp_directory_path()/("strata-snap-test-"+std::to_string(experts)+"-"+
+        const fs::path dir=fs::temp_directory_path()/("nostroma-snap-test-"+std::to_string(experts)+"-"+
             std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
         fs::create_directories(dir);
         const std::string p1=(dir/"streamed.bin").string(), p2=(dir/"captured.bin").string();
@@ -419,7 +419,7 @@ int main() {
             auto bad=a; bad.head_dim++;
             check(!conversation_kv_restore(bad,f.state,f.g,upto,index,err),"reject incompatible geometry");
             if (fmt==kKvInt8) {
-                // #293: INT8 K/V saved through the Hadamard rotation (STRATA_KV_ROT=1) never restores into a state
+                // #293: INT8 K/V saved through the Hadamard rotation (NOSTROMA_KV_ROT=1) never restores into a state
                 // without it, nor the reverse
                 f.state.kv_rot=true;
                 ConversationKv rotated;

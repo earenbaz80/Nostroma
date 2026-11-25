@@ -283,7 +283,7 @@ def main(argv=None) -> int:
     ap.add_argument("--cmp", action="append", default=[])
     ap.add_argument("--layers", type=int, default=0)
     ap.add_argument("--trace-block", type=int, default=-1, help="with --trace: compare the inside of this block (image rows)")
-    ap.add_argument("--trace", help="per-stage comparison with a STRATA_DIT_TRACE_DIR dump; {name} = the dump dir name")
+    ap.add_argument("--trace", help="per-stage comparison with a NOSTROMA_DIT_TRACE_DIR dump; {name} = the dump dir name")
     a = ap.parse_args(argv)
     Wt = DitWeights(Path(a.gguf))
     modes = a.mode.split(",")

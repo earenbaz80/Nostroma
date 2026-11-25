@@ -44,7 +44,7 @@ class Apply(unittest.TestCase):
     def test_fills_the_profile_on_a_default_config(self):
         c = fresh()
         with mock.patch.dict(os.environ, {}, clear=False):
-            for k in list(F.BATCH_ENV) + ["STRATA_FOUR_CARD_PROFILE"]:
+            for k in list(F.BATCH_ENV) + ["NOSTROMA_FOUR_CARD_PROFILE"]:
                 os.environ.pop(k, None)
             notes = F.apply(CARDS, c)
         self.assertTrue(notes)
@@ -66,13 +66,13 @@ class Apply(unittest.TestCase):
 
     def test_the_persons_choices_win(self):
         c = fresh(layer_split="12,25,37", parallel=8, args=CFG["args"] + ["--prefill", "8192", "--batch-groups", "2"],
-                  env={"STRATA_QSA_SLOTS": "0"})
+                  env={"NOSTROMA_QSA_SLOTS": "0"})
         F.apply(CARDS, c)
         self.assertEqual(c["layer_split"], "12,25,37")
         self.assertEqual(c["parallel"], 8)
         self.assertEqual(c["args"][c["args"].index("--prefill") + 1], "8192")
         self.assertEqual(c["args"].count("--batch-groups"), 1)
-        self.assertEqual(c["env"]["STRATA_QSA_SLOTS"], "0")
+        self.assertEqual(c["env"]["NOSTROMA_QSA_SLOTS"], "0")
 
     def test_a_number_of_requests_asked_for_keeps_the_groups_to_the_engine(self):
         c = fresh()
@@ -89,14 +89,14 @@ class Apply(unittest.TestCase):
 
     def test_an_environment_variable_of_the_persons_own_wins(self):
         c = fresh()
-        with mock.patch.dict(os.environ, {"STRATA_BATCH_SELF_COMMIT": "0"}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_BATCH_SELF_COMMIT": "0"}):
             F.apply(CARDS, c)
-        self.assertNotIn("STRATA_BATCH_SELF_COMMIT", c["env"])
-        self.assertEqual(c["env"]["STRATA_QSA_SLOTS"], "1")
+        self.assertNotIn("NOSTROMA_BATCH_SELF_COMMIT", c["env"])
+        self.assertEqual(c["env"]["NOSTROMA_QSA_SLOTS"], "1")
 
     def test_off_switches(self):
         c = fresh()
-        with mock.patch.dict(os.environ, {"STRATA_FOUR_CARD_PROFILE": "0"}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_FOUR_CARD_PROFILE": "0"}):
             self.assertEqual(F.apply(CARDS, c), [])
         self.assertEqual(c, fresh())
         c = fresh(four_card_profile=False)

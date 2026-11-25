@@ -5,7 +5,7 @@
    "longest": [
     "engine-component.json",
     "cublasLt64_12.dll",
-    "strata-vision.exe"
+    "nostroma-vision.exe"
    ],
    "files": 8
   },
@@ -14,7 +14,7 @@
    "longest": [
     "engine-component.json",
     "cublasLt64_13.dll",
-    "strata-vision.exe"
+    "nostroma-vision.exe"
    ],
    "files": 7
   },

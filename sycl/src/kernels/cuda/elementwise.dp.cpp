@@ -1,16 +1,16 @@
 // src/kernels/cuda/elementwise.cu - P2.S5's glue kernels.  See the header for why each exists.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
-#include "strata/env.hpp"
-#include "strata/kprof.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kprof.hpp"
 #include <dpct/dpct.hpp>
-#include "strata/sycl_queue.hpp"
-#include "strata/sycl_doorbell.hpp"
-#include "strata/kernels/elementwise.hpp"
-#include "strata/kernels/dp4a.hpp"
+#include "nostroma/sycl_queue.hpp"
+#include "nostroma/sycl_doorbell.hpp"
+#include "nostroma/kernels/elementwise.hpp"
+#include "nostroma/kernels/dp4a.hpp"
 
-#include "strata/kernels/bf16_bits.hpp"
-#include "strata/kernels/f16_bits.hpp"
+#include "nostroma/kernels/bf16_bits.hpp"
+#include "nostroma/kernels/f16_bits.hpp"
 
 #include <cmath>
 #include <cstdio>
@@ -18,7 +18,7 @@
 #include <atomic>
 #include <chrono>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 
 constexpr int THREADS = 256;
@@ -214,7 +214,7 @@ void embedding_gather(const uint8_t* codes, const float* scales, const float* of
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->template parallel_for<
                 dpct_kernel_name<class embedding_gather_kernel_40b387>>(
                 sycl::nd_range<3>(sycl::range(1, 1, grid_for(n)) *
@@ -237,7 +237,7 @@ void gdn_gate(const float* alpha, const float* dt, const float* ssm_a, float* ga
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->template parallel_for<dpct_kernel_name<class gdn_gate_kernel_de22c0>>(
                 sycl::nd_range<3>(sycl::range(1, 1, grid_for(n)) *
                                       sycl::range(1, 1, THREADS),
@@ -256,7 +256,7 @@ void scale_inplace(float* x, int64_t n, float s, void* stream) {
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->template parallel_for<dpct_kernel_name<class scale_kernel_501571>>(
                 sycl::nd_range<3>(sycl::range(1, 1, grid_for(n)) *
                                       sycl::range(1, 1, THREADS),
@@ -275,7 +275,7 @@ void add_inplace(float* dst, const float* src, int64_t n, void* stream) {
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->template parallel_for<dpct_kernel_name<class add_kernel_95886e>>(
                 sycl::nd_range<3>(sycl::range(1, 1, grid_for(n)) *
                                       sycl::range(1, 1, THREADS),
@@ -294,7 +294,7 @@ void f32_to_f16_bulk(const float* x, uint16_t* y, int64_t n, void* stream) {
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->template parallel_for<dpct_kernel_name<class to_f16_kernel_ba0968>>(
                 sycl::nd_range<3>(sycl::range(1, 1, grid_for(n)) *
                                       sycl::range(1, 1, THREADS),
@@ -313,7 +313,7 @@ void f32_to_bf16_bulk(const float* x, uint16_t* y, int64_t n, void* stream) {
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->template parallel_for<dpct_kernel_name<class to_bf16_kernel_7b22d1>>(
                 sycl::nd_range<3>(sycl::range(1, 1, grid_for(n)) *
                                       sycl::range(1, 1, THREADS),
@@ -332,10 +332,10 @@ void silu_inplace(float* x, int64_t n, void* stream) {
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
         dpct::has_capability_or_fail(
-            strata::q_of(stream)->get_device(),
+            nostroma::q_of(stream)->get_device(),
             {sycl::aspect::fp64});
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->template parallel_for<dpct_kernel_name<class silu_kernel_4d1386>>(
                 sycl::nd_range<3>(sycl::range(1, 1, grid_for(n)) *
                                       sycl::range(1, 1, THREADS),
@@ -378,7 +378,7 @@ __dpct_inline__ void doorbell_ring_kernel(uint32_t *seq) {
     are needed.
     */
     sycl::atomic_fence(sycl::memory_order::acq_rel, sycl::memory_scope::system);
-    strata::sys_store(seq, strata::sys_load(seq) + 1u);
+    nostroma::sys_store(seq, nostroma::sys_load(seq) + 1u);
 #if defined(__HIPCC__)  // #697: HIP only; on RDNA4 the volatile store alone can sit in L2 until the stream syncs
     __threadfence_system();
 #endif
@@ -386,8 +386,8 @@ __dpct_inline__ void doorbell_ring_kernel(uint32_t *seq) {
 
 __dpct_inline__ void doorbell_wait_kernel(const volatile uint32_t *flag,
                                           const volatile uint32_t *seq, uint32_t spin_max) {
-    const uint32_t want = strata::sys_load(seq);
-    for (uint32_t spin = 0; spin < spin_max && strata::sys_load(flag) != want; ++spin) strata_spin_pause();
+    const uint32_t want = nostroma::sys_load(seq);
+    for (uint32_t spin = 0; spin < spin_max && nostroma::sys_load(flag) != want; ++spin) nostroma_spin_pause();
     /*
     DPCT1078: Consider replacing memory_order::acq_rel with
     memory_order::seq_cst for correctness if strong memory order restrictions
@@ -398,12 +398,12 @@ __dpct_inline__ void doorbell_wait_kernel(const volatile uint32_t *flag,
 
 void doorbell_wait(const uint32_t* d_flag, const uint32_t* d_seq, void* stream) {
     if (d_flag == nullptr || d_seq == nullptr) return;
-    const uint32_t spin_max = strata::spin_max(*strata::q_of(stream));
+    const uint32_t spin_max = nostroma::spin_max(*nostroma::q_of(stream));
     {
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->template parallel_for<dpct_kernel_name<class doorbell_wait_kernel_47b360>>(
                 sycl::nd_range<3>(sycl::range(1, 1, 1), sycl::range(1, 1, 1)),
                 exp_props, [=](sycl::nd_item<3> item_ct1) {
@@ -427,7 +427,7 @@ __dpct_inline__ void copy_from_mapped_kernel(sycl::float4 *__restrict__ dst,
              item_ct1.get_local_id(2);
          i < n4; i += (int64_t)item_ct1.get_group_range(2) *
                       item_ct1.get_local_range(2)) {
-        const sycl::float4 v = strata::load_mapped_float4(src + i);
+        const sycl::float4 v = nostroma::load_mapped_float4(src + i);
         dst[i] = v;
     }
 }
@@ -470,7 +470,7 @@ __dpct_inline__ void copy_rows_from_mapped_kernel(
 #pragma unroll
         for (int64_t i = item_ct1.get_local_id(2); i < row4;
              i += item_ct1.get_local_range(2))
-            d[i] = strata::load_mapped_float4(sr + i);
+            d[i] = nostroma::load_mapped_float4(sr + i);
     }
 }
 namespace {
@@ -497,7 +497,7 @@ void scatter_rows_f32(const float* src, float* dst, const int32_t* rows, int64_t
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->submit([&](sycl::handler &cgh) {
                 auto width_ct3 = width / 4;
 
@@ -525,7 +525,7 @@ void copy_rows_from_mapped(float* dst, const float* src, int64_t rows, int64_t w
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->submit([&](sycl::handler &cgh) {
                 auto width_ct2 = width / 4;
 
@@ -555,7 +555,7 @@ void copy_from_mapped(float* dst, const float* src, int64_t n, void* stream) {
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->template parallel_for<
                 dpct_kernel_name<class copy_from_mapped_kernel_82951a>>(
                 sycl::nd_range<3>(sycl::range(1, 1, blocks) *
@@ -590,7 +590,7 @@ inline uint32_t dbx_payload_sum(const float* x, int64_t n, const int32_t* ids, c
         for (int64_t j = 0; j < k; ++j) s += dbx_payload_mix(sycl::bit_cast<uint32_t>(w[j]), (uint32_t) (n + k + j));
     return s;
 }
-// STRATA_SYCL_A770_FAST=1 (opt-in): pair the activation stores without changing the checksum's word/position
+// NOSTROMA_SYCL_A770_FAST=1 (opt-in): pair the activation stores without changing the checksum's word/position
 // order. Odd sizes or unaligned mapped pointers retain the scalar path.
 __dpct_inline__ uint32_t dbx_publish_x(const float* x, float* out, int n, int lane, int threads, bool pair, bool plain) {
     uint32_t part = 0;
@@ -598,17 +598,17 @@ __dpct_inline__ uint32_t dbx_publish_x(const float* x, float* out, int n, int la
         for (int j = 2 * lane; j + 1 < n; j += 2 * threads) {
             const uint32_t a = sycl::bit_cast<uint32_t>(x[j]);
             const uint32_t b = sycl::bit_cast<uint32_t>(x[j + 1]);
-            strata::sys_store_mapped(reinterpret_cast<uint64_t*>(out + j),
+            nostroma::sys_store_mapped(reinterpret_cast<uint64_t*>(out + j),
                                      (uint64_t)a | ((uint64_t)b << 32));
             part += dbx_payload_mix(a, (uint32_t)j) + dbx_payload_mix(b, (uint32_t)(j + 1));
         }
         if ((n & 1) && lane == 0) {
-            strata::sys_store_mapped(plain, out + n - 1, x[n - 1]);
+            nostroma::sys_store_mapped(plain, out + n - 1, x[n - 1]);
             part += dbx_payload_mix(sycl::bit_cast<uint32_t>(x[n - 1]), (uint32_t)(n - 1));
         }
     } else {
         for (int j = lane; j < n; j += threads) {
-            strata::sys_store_mapped(plain, out + j, x[j]);
+            nostroma::sys_store_mapped(plain, out + j, x[j]);
             part += dbx_payload_mix(sycl::bit_cast<uint32_t>(x[j]), (uint32_t)j);
         }
     }
@@ -621,13 +621,13 @@ __dpct_inline__ void dbx_ring_commit(uint32_t* seq, uint32_t part, bool group_ok
     (void) group_ok;
 #endif
     if (group_ok) {
-        strata::sys_store(seq + 2 + 2 * (ring % 4), part);
-        strata::sys_store(seq + 1 + 2 * (ring % 4), ring);
+        nostroma::sys_store(seq + 2 + 2 * (ring % 4), part);
+        nostroma::sys_store(seq + 1 + 2 * (ring % 4), ring);
         sycl::atomic_fence(sycl::memory_order::seq_cst, sycl::memory_scope::system);
-        strata::sys_store(seq, ring);
+        nostroma::sys_store(seq, ring);
     }
 }
-// The payload store (strata::sys_store_mapped(plain, ...)): uncached (sycl_doorbell.hpp) so a host that polls the ring while the kernel still runs reads a
+// The payload store (nostroma::sys_store_mapped(plain, ...)): uncached (sycl_doorbell.hpp) so a host that polls the ring while the kernel still runs reads a
 // whole payload, or a plain store when every reader waits for the kernel to end (doorbell_plain_payload: the stepped
 // verify window reads a segment's payload only after the segment has drained, and the end of a kernel makes its
 // stores visible). The host checksum (doorbell_payload_ready) still guards every read.
@@ -648,11 +648,11 @@ __dpct_inline__ void doorbell_publish_kernel(const float *__restrict__ x,
     uint32_t part = dbx_publish_x(x, x_out, n, i, nt, pair, plain);
     if (i < k) {
         const int32_t id = ids[i];
-        strata::sys_store_mapped(plain, ids_out + i, id);
+        nostroma::sys_store_mapped(plain, ids_out + i, id);
         part += dbx_payload_mix((uint32_t) id, (uint32_t) (n + i));
         if (w_out != nullptr) {
             const float wv = w[i];
-            strata::sys_store_mapped(plain, w_out + i, wv);
+            nostroma::sys_store_mapped(plain, w_out + i, wv);
             part += dbx_payload_mix(sycl::bit_cast<uint32_t>(wv), (uint32_t) (n + k + i));
         }
     }
@@ -660,7 +660,7 @@ __dpct_inline__ void doorbell_publish_kernel(const float *__restrict__ x,
     sycl::atomic_fence(sycl::memory_order::seq_cst, sycl::memory_scope::system);
     item_ct1.barrier();
     if (i == 0) {
-        const uint32_t next = strata::sys_load(seq) + 1u;
+        const uint32_t next = nostroma::sys_load(seq) + 1u;
         dbx_ring_commit(seq, sum, true, next);
     }
 }
@@ -669,7 +669,7 @@ __dpct_inline__ void doorbell_publish_res_kernel(
     const float *__restrict__ x, const int32_t *__restrict__ ids,
     const int32_t *__restrict__ d_res, int n_expert, int n, int k, float *x_out,
     int32_t *ids_out, uint32_t *seq, bool full, bool plain, bool pair) {
-    // full (STRATA_DOORBELL_CHECK=1): the payload is published whole and the checksum covers x and the ids (this
+    // full (NOSTROMA_DOORBELL_CHECK=1): the payload is published whole and the checksum covers x and the ids (this
     // variant publishes no weights). Otherwise d_res/n_expert decide whether x is copied, as before the checksum:
     // when every routed expert is resident the host never reads x, and an uncached copy of it costs the A750 ~10%
     // of decode.
@@ -678,17 +678,17 @@ __dpct_inline__ void doorbell_publish_res_kernel(
         int any_miss = 0;
         if ((int) item_ct1.get_local_id(2) < k) {
             const int32_t id = ids[item_ct1.get_local_id(2)];
-            strata::sys_store_mapped(plain, ids_out + item_ct1.get_local_id(2), id);
+            nostroma::sys_store_mapped(plain, ids_out + item_ct1.get_local_id(2), id);
             if (d_res == nullptr || id < 0 || id >= n_expert || d_res[id] < 0) any_miss = 1;
         }
         if ((item_ct1.barrier(), sycl::any_of_group(sycl::ext::oneapi::this_work_item::get_work_group<3>(), any_miss))) {
             for (int j = (int) item_ct1.get_local_id(2); j < n; j += (int) item_ct1.get_local_range(2))
-                strata::sys_store_mapped(plain, x_out + j, x[j]);
+                nostroma::sys_store_mapped(plain, x_out + j, x[j]);
         }
         sycl::atomic_fence(sycl::memory_order::seq_cst, sycl::memory_scope::system);
         item_ct1.barrier();
         if (item_ct1.get_local_id(2) == 0) {
-            const uint32_t next = strata::sys_load(seq) + 1u;
+            const uint32_t next = nostroma::sys_load(seq) + 1u;
             dbx_ring_commit(seq, 0u, true, next);
         }
         return;
@@ -698,19 +698,19 @@ __dpct_inline__ void doorbell_publish_res_kernel(
     uint32_t part = dbx_publish_x(x, x_out, n, i, nt, pair, plain);
     if (i < k) {
         const int32_t id = ids[i];
-        strata::sys_store_mapped(plain, ids_out + i, id);
+        nostroma::sys_store_mapped(plain, ids_out + i, id);
         part += dbx_payload_mix((uint32_t) id, (uint32_t) (n + i));
     }
     const uint32_t sum = sycl::reduce_over_group(item_ct1.get_group(), part, sycl::plus<uint32_t>());
     sycl::atomic_fence(sycl::memory_order::seq_cst, sycl::memory_scope::system);
     item_ct1.barrier();
     if (i == 0) {
-        const uint32_t next = strata::sys_load(seq) + 1u;
+        const uint32_t next = nostroma::sys_load(seq) + 1u;
         dbx_ring_commit(seq, sum, true, next);
     }
 }
 
-// #649 (HIP, STRATA_DOORBELL_STORE=1): the same publish, but the ring is STORED (the step's own number, known at
+// #649 (HIP, NOSTROMA_DOORBELL_STORE=1): the same publish, but the ring is STORED (the step's own number, known at
 // capture) instead of read-modify-written over PCIe - one store, no read of host memory from the GPU.
 __dpct_inline__ void doorbell_publish_value_kernel(
     const float *__restrict__ x, const int32_t *__restrict__ ids,
@@ -722,10 +722,10 @@ __dpct_inline__ void doorbell_publish_value_kernel(
     uint32_t part = dbx_publish_x(x, x_out, n, i, nt, pair, plain);
     if (i < k) {
         const int32_t id = ids[i];
-        strata::sys_store_mapped(plain, ids_out + i, id);
+        nostroma::sys_store_mapped(plain, ids_out + i, id);
         part += dbx_payload_mix((uint32_t) id, (uint32_t) (n + i));
         const float wv = w[i];
-        strata::sys_store_mapped(plain, w_out + i, wv);
+        nostroma::sys_store_mapped(plain, w_out + i, wv);
         part += dbx_payload_mix(sycl::bit_cast<uint32_t>(wv), (uint32_t) (n + k + i));
     }
     const uint32_t sum = sycl::reduce_over_group(item_ct1.get_group(), part, sycl::plus<uint32_t>());
@@ -738,8 +738,8 @@ void doorbell_publish_value(const float* x, const int32_t* ids, const float* wei
                             float* x_out, int32_t* ids_out, float* weights_out, uint32_t* d_seq, uint32_t value,
                             void* stream) {
     if (k > 1024) { std::fprintf(stderr, "doorbell_publish: k too large\n"); std::exit(1); }
-    const bool plain = strata::doorbell_plain_payload() || g_plain_payload.load(std::memory_order_relaxed);
-    const bool pair = strata::a770_fast();
+    const bool plain = nostroma::doorbell_plain_payload() || g_plain_payload.load(std::memory_order_relaxed);
+    const bool pair = nostroma::a770_fast();
     /*
     DPCT1049: The work-group size passed to the SYCL kernel may exceed the
     limit. To get the device limit, query info::device::max_work_group_size.
@@ -749,7 +749,7 @@ void doorbell_publish_value(const float* x, const int32_t* ids, const float* wei
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->template parallel_for<
                 dpct_kernel_name<class doorbell_publish_value_kernel_9bdb22>>(
                 sycl::nd_range<3>(sycl::range(1, 1, 1024),
@@ -765,8 +765,8 @@ void doorbell_publish_value(const float* x, const int32_t* ids, const float* wei
 void doorbell_publish(const float* x, const int32_t* ids, const float* weights, int64_t n, int64_t k, float* x_out,
                       int32_t* ids_out, float* weights_out, uint32_t* d_seq, void* stream) {
     if (k > 1024) { std::fprintf(stderr, "doorbell_publish: k too large\n"); std::exit(1); }
-    const bool plain = strata::doorbell_plain_payload() || g_plain_payload.load(std::memory_order_relaxed);
-    const bool pair = strata::a770_fast();
+    const bool plain = nostroma::doorbell_plain_payload() || g_plain_payload.load(std::memory_order_relaxed);
+    const bool pair = nostroma::a770_fast();
     /*
     DPCT1049: The work-group size passed to the SYCL kernel may exceed the
     limit. To get the device limit, query info::device::max_work_group_size.
@@ -776,7 +776,7 @@ void doorbell_publish(const float* x, const int32_t* ids, const float* weights, 
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->template parallel_for<
                 dpct_kernel_name<class doorbell_publish_kernel_8b5bad>>(
                 sycl::nd_range<3>(sycl::range(1, 1, 1024),
@@ -792,10 +792,10 @@ void doorbell_publish(const float* x, const int32_t* ids, const float* weights, 
 void doorbell_publish_res(const float* x, const int32_t* ids, const int32_t* d_res, int n_expert, int64_t n, int64_t k,
                           float* x_out, int32_t* ids_out, uint32_t* d_seq, void* stream) {
     if (k > 1024) { std::fprintf(stderr, "doorbell_publish_res: k too large\n"); std::exit(1); }
-    static const bool full = [] { const char* v = strata::env("NOSTROMA_DOORBELL_CHECK"); return v != nullptr && v[0] == '1'; }();
+    static const bool full = [] { const char* v = nostroma::env("NOSTROMA_DOORBELL_CHECK"); return v != nullptr && v[0] == '1'; }();
     const bool fl = full;
-    const bool plain = strata::doorbell_plain_payload() || g_plain_payload.load(std::memory_order_relaxed);
-    const bool pair = strata::a770_fast();
+    const bool plain = nostroma::doorbell_plain_payload() || g_plain_payload.load(std::memory_order_relaxed);
+    const bool pair = nostroma::a770_fast();
     /*
     DPCT1049: The work-group size passed to the SYCL kernel may exceed the
     limit. To get the device limit, query info::device::max_work_group_size.
@@ -805,7 +805,7 @@ void doorbell_publish_res(const float* x, const int32_t* ids, const int32_t* d_r
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->template parallel_for<
                 dpct_kernel_name<class doorbell_publish_res_kernel_85b9b3>>(
                 sycl::nd_range<3>(sycl::range(1, 1, 1024),
@@ -830,10 +830,10 @@ bool doorbell_payload_ready(const uint32_t* h_seq, const float* h_x, int64_t n, 
 
 bool doorbell_wait_payload(const uint32_t* h_seq, const float* h_x, int64_t n, const int32_t* h_ids,
                            const float* h_weights, int64_t k, uint32_t want, int timeout_ms) {
-    // Opt-in (STRATA_DOORBELL_CHECK=1): on an Arc A750 (i915) the host-side checksum of the whole payload, read from
+    // Opt-in (NOSTROMA_DOORBELL_CHECK=1): on an Arc A750 (i915) the host-side checksum of the whole payload, read from
     // uncached host memory twice per CPU-expert layer, cost 15-20% of decode (5 interleaved rounds), and the stale
     // payload it guards against was not seen there. The ring tag is still published by the GPU.
-    static const bool check = [] { const char* v = strata::env("NOSTROMA_DOORBELL_CHECK"); return v != nullptr && v[0] == '1'; }();
+    static const bool check = [] { const char* v = nostroma::env("NOSTROMA_DOORBELL_CHECK"); return v != nullptr && v[0] == '1'; }();
     if (!check) return true;
     if (doorbell_payload_ready(h_seq, h_x, n, h_ids, h_weights, k, want)) return true;
     const auto t0 = std::chrono::steady_clock::now();
@@ -898,7 +898,7 @@ void copy_from_mapped_multi(const MappedCopy* copies, int n, void* stream) {
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->template parallel_for<
                 dpct_kernel_name<class copy_from_mapped_multi_kernel_66c71e>>(
                 sycl::nd_range<3>(sycl::range(1, (unsigned)n, bx < 1 ? 1 : bx) *
@@ -918,7 +918,7 @@ void copy_i32_from_mapped(int32_t* dst, const int32_t* src, int64_t n, void* str
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->template parallel_for<
                 dpct_kernel_name<class copy_i32_from_mapped_kernel_a44acc>>(
                 sycl::nd_range<3>(sycl::range(1, 1, 128),
@@ -944,7 +944,7 @@ void doorbell_ring(uint32_t* d_seq, void* stream) {
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->template parallel_for<dpct_kernel_name<class doorbell_ring_kernel_b862a4>>(
                 sycl::nd_range<3>(sycl::range(1, 1, 1), sycl::range(1, 1, 1)),
                 exp_props, [=](sycl::nd_item<3> item_ct1) {
@@ -965,7 +965,7 @@ void rms_norm_weighted(float* x, const float* w, int64_t rows, int64_t cols, flo
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->template parallel_for<
                 dpct_kernel_name<class rms_norm_weighted_kernel_b603f5>>(
                 sycl::nd_range<3>(sycl::range(1, 1, grid) *
@@ -981,4 +981,4 @@ void rms_norm_weighted(float* x, const float* w, int64_t rows, int64_t cols, flo
     sync_if_needed(stream, "rms_norm_weighted");
 }
 
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels

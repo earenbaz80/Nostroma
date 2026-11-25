@@ -1,17 +1,17 @@
-// src/quant/x86/dot_avx.cpp - the Avx contract: ggml-cpu's dot products as its AVX-only flavour compiles them (the older-CPU build, STRATA_ISA_FLOOR=avx).
+// src/quant/x86/dot_avx.cpp - the Avx contract: ggml-cpu's dot products as its AVX-only flavour compiles them (the older-CPU build, NOSTROMA_ISA_FLOOR=avx).
 // Compiled with -mavx and AVX2, FMA and F16C explicitly off (/arch:AVX), so no wider instruction can leak in.  Types ggml has no AVX branch for run its
 // generic C code under this contract (the ported code's own #else).
 #include "tier_common.hpp"
 
 #include "../generic.hpp"
 #include "../registry.hpp"
-#include "strata/quant/dot.hpp"
+#include "nostroma/quant/dot.hpp"
 
 #if defined(__AVX2__) || defined(__FMA__) || defined(__F16C__)
 #error "dot_avx.cpp is the AVX-only tier: compile it without AVX2, FMA and F16C"
 #endif
 
-namespace strata::quant {
+namespace nostroma::quant {
 namespace avx {
 
 #include "x86_helpers.inc"
@@ -35,4 +35,4 @@ const DotKernel kTable[] = {
 
 DotTable avx_dot_table() noexcept { return {kTable, (int) (sizeof kTable / sizeof kTable[0])}; }
 
-}  // namespace strata::quant
+}  // namespace nostroma::quant

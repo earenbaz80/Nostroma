@@ -1,6 +1,6 @@
-# 2026-10-01 — Strata IQ2_XS context-ladder TPS on RTX 4070 Ti SUPER
+# 2026-10-01 — Nostroma IQ2_XS context-ladder TPS on RTX 4070 Ti SUPER
 
-Benchmark target: `Qwen3.8-Flash-Next` IQ2_XS (the README's "recommended" variant for a 16 GiB consumer GPU), serving on `127.0.0.1:8090` from inside the `strata` container (`--network host`, otherwise the docker-proxy DNAT/loopback interaction bites — see commit `02f14e1` in the vps1 project for the parallel diagnostic pattern).
+Benchmark target: `Qwen3.8-Flash-Next` IQ2_XS (the README's "recommended" variant for a 16 GiB consumer GPU), serving on `127.0.0.1:8090` from inside the `nostroma` container (`--network host`, otherwise the docker-proxy DNAT/loopback interaction bites — see commit `02f14e1` in the vps1 project for the parallel diagnostic pattern).
 
 ## Summary
 
@@ -27,8 +27,8 @@ Draft acceptance also glides down modestly with context (80 → 76 → 74 %); th
 
 ## Method
 
-- Container: hash `2236bbf72fb4` (`strata:latest`, 8.11 GB), engine = sm_89 fat-binary, vision encoder NOT compiled (`BUILD_VISION=0`).
-- `docker run -d --name strata --network host --gpus all --ulimit memlock=-1 --shm-size=4g -v strata-data:/data -e ...` re-deployed for each context with `REINSTALL=1`. Re-boot is ~15 s once experts are paged in.
+- Container: hash `2236bbf72fb4` (`nostroma:latest`, 8.11 GB), engine = sm_89 fat-binary, vision encoder NOT compiled (`BUILD_VISION=0`).
+- `docker run -d --name nostroma --network host --gpus all --ulimit memlock=-1 --shm-size=4g -v nostroma-data:/data -e ...` re-deployed for each context with `REINSTALL=1`. Re-boot is ~15 s once experts are paged in.
 - `run.py`: linear-interpolate fill characters in `[0.50–0.97] · ctx · char-per-token` band via 2 calibration calls (`n_lo`, `n_hi`), then a 5-sample local scan to land near 92 %. 3 SSE stream `POST /v1/chat/completions` calls per row. Engine-reported timings captured from the latest SSE chunk.
 - `aggregate.py`: 3 runs averaged; writes `matrix.md` and `summary.json`.
 
@@ -41,7 +41,7 @@ Draft acceptance also glides down modestly with context (80 → 76 → 74 %); th
 ## Reproduction
 
 ```bash
-cd /home/lfontanez/dev/strata/bench/results/2026-10-01-ctx-ladder
+cd /home/lfontanez/dev/nostroma/bench/results/2026-10-01-ctx-ladder
 python3 run.py --contexts 32768 65536 131072 --out all.json --note "full ladder"
 python3 aggregate.py     # writes matrix.md and summary.json
 ```

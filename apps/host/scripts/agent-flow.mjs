@@ -1,7 +1,7 @@
 /**
  * Drive the real app through an agent turn and take screenshots (playwright-core + installed Chrome).
  *
- *   STRATA_URL=http://127.0.0.1:8791 SHOTS=./shots node scripts/agent-flow.mjs
+ *   NOSTROMA_URL=http://127.0.0.1:8791 SHOTS=./shots node scripts/agent-flow.mjs
  *
  * What it does, against a host that has the Harness installed and one API connection saved:
  *   1. opens the app, picks the API model in the chat picker (the choice is for this chat only);
@@ -10,7 +10,7 @@
  *   4. reloads the page, reopens the chat and sends one more message (resume, no replayed tool).
  *
  * Environment:
- *   STRATA_URL     host base URL (required)
+ *   NOSTROMA_URL     host base URL (required)
  *   SHOTS          output directory for screenshots (default ./agent-shots)
  *   MODEL          text of the API model in the picker (default "Cloud model")
  *   PROMPT_TOOL    prompt that makes the model call a tool
@@ -26,7 +26,7 @@ import { join, resolve } from 'node:path';
 import { envVar } from '../server/env-compat.mjs';
 
 const BASE = envVar('URL');
-if (!BASE) { console.error('STRATA_URL is required'); process.exit(2); }
+if (!BASE) { console.error('NOSTROMA_URL is required'); process.exit(2); }
 const SHOTS = resolve(process.env.SHOTS ?? 'agent-shots');
 mkdirSync(SHOTS, { recursive: true });
 const MODEL = process.env.MODEL ?? 'Cloud model';

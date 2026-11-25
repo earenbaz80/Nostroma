@@ -1,16 +1,16 @@
-// src/kernels/cuda/kv_q8.cu - see include/strata/kernels/kv_q8.hpp.
+// src/kernels/cuda/kv_q8.cu - see include/nostroma/kernels/kv_q8.hpp.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
-#include "strata/kprof.hpp"
+#include "nostroma/kprof.hpp"
 #include <dpct/dpct.hpp>
-#include "strata/sycl_queue.hpp"
-#include "strata/kernels/kv_q8.hpp"
-#include "strata/kernels/f16_bits.hpp"
+#include "nostroma/sycl_queue.hpp"
+#include "nostroma/kernels/kv_q8.hpp"
+#include "nostroma/kernels/f16_bits.hpp"
 
 #include <cstdio>
 #include <cstdlib>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 
 void check(const char* what) {
@@ -31,7 +31,7 @@ void validate(const QsaShapes& s, const char* what) {
 }
 
 // One block = one 64-value group of one KV head of K (blockIdx.z = 0) or V (1); 64 threads, one value each.
-// MULTI (S26 STRATA_LFUSE): blockIdx.z = 2 * token + (K / V); token j reads step + j * step_stride and its rows at
+// MULTI (S26 NOSTROMA_LFUSE): blockIdx.z = 2 * token + (K / V); token j reads step + j * step_stride and its rows at
 // kcur / vcur + j * cur_stride - every token's code is the single launch's
 template <bool MULTI = false>
 __dpct_inline__ void kv_append_q8_kernel(
@@ -163,7 +163,7 @@ void kv_append_q8_step(int8_t* k_q, int8_t* v_q, uint16_t* k_scale, uint16_t* v_
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->submit([&](sycl::handler &cgh) {
                 KvHostPools host_host_KvHostPools_ct11 =
                     host ? *host : KvHostPools{};
@@ -203,7 +203,7 @@ void kv_append_q8_steps(int8_t* k_q, int8_t* v_q, uint16_t* k_scale, uint16_t* v
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->submit([&](sycl::handler &cgh) {
                 KvHostPools host_host_KvHostPools_ct11 =
                     host ? *host : KvHostPools{};
@@ -238,7 +238,7 @@ void kv_gather_q8_step(const int8_t* k_q, const int8_t* v_q, const uint16_t* k_s
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->template parallel_for<dpct_kernel_name<class kv_gather_q8_kernel_84cbb3>>(
                 sycl::nd_range<3>(sycl::range(1, 1, blocks) *
                                       sycl::range(1, 1, 256),
@@ -253,4 +253,4 @@ void kv_gather_q8_step(const int8_t* k_q, const int8_t* v_q, const uint16_t* k_s
     check("kv_gather_q8 launch");
 }
 
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels

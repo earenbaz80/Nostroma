@@ -16,9 +16,9 @@
  "engine_prompt_tps": 5967.3,
  "engine_decode_tps": 152.3,
  "log_lines": [
-  "strata serve: conversation cache: parked 31705 tokens in 132.1 ms; parked=4 bytes=2960008508 evictions=5 snapshot_bytes=838503924 reused_kv_bytes=0",
-  "strata serve: prompt 130257 tokens = 0 reused + 130257 read in 21829 ms (5967.3 tok/s), 256 generated in 1681 ms (152.3 tok/s), drafts accepted 132 of 174, 6 checkpoints",
-  "strata serve: decode expert cache hit rate: 96.1% (138448 hits / 144000 lookups)"
+  "nostroma serve: conversation cache: parked 31705 tokens in 132.1 ms; parked=4 bytes=2960008508 evictions=5 snapshot_bytes=838503924 reused_kv_bytes=0",
+  "nostroma serve: prompt 130257 tokens = 0 reused + 130257 read in 21829 ms (5967.3 tok/s), 256 generated in 1681 ms (152.3 tok/s), drafts accepted 132 of 174, 6 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 96.1% (138448 hits / 144000 lookups)"
  ],
  "answer_head": "The last file in the provided list is `build-vision/CMakeFiles/4.2.3/CompilerIdCUDA/tmp/CMakeCUDACompilerId.cudafe1.cpp`.\n\n### What this file does\n\nThis is a **generated intermediate file** produced by the NVIDIA CUDA compiler (`nvcc`) during CMake's compiler identification phase.\n\n1.  **Purpose**: ",
  "metrics_after": {

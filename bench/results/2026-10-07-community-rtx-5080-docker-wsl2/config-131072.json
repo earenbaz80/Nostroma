@@ -1,5 +1,5 @@
 {
- "exe": "/opt/strata/engine/strata",
+ "exe": "/opt/nostroma/engine/nostroma",
  "args": [
   "--pack",
   "/data/packs/coder-iq1_m",
@@ -8,7 +8,7 @@
   "--ple-gguf",
   "/data/models/coder-IQ1_M/Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00002-of-00002.gguf",
   "--expert-profile",
-  "/opt/strata/data/expert-profile-coder.bin",
+  "/opt/nostroma/data/expert-profile-coder.bin",
   "--expert-cache",
   "auto",
   "--prefill",
@@ -27,10 +27,10 @@
   "--vram-reserve-mib",
   "700"
  ],
- "cwd": "/opt/strata",
+ "cwd": "/opt/nostroma",
  "tokenizer": "/data/packs/coder-iq1_m/tokenizer",
  "model_name": "qwen3.8-flash-next-coder-iq1_m",
- "log": "/opt/strata/strata-coder-iq1_m.log",
+ "log": "/opt/nostroma/nostroma-coder-iq1_m.log",
  "lib_dirs": [
   "/usr/local/cuda/bin",
   "/usr/local/cuda/lib64"
@@ -40,7 +40,7 @@
  "gpus_asked": true,
  "host": "0.0.0.0",
  "vision": {
-  "exe": "/opt/strata/engine/strata-vision",
+  "exe": "/opt/nostroma/engine/nostroma-vision",
   "mmproj": "/data/models/mmproj-Qwen3.8-Flash-Next-BF16.gguf",
   "model": "/data/models/coder-IQ1_M/Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00001-of-00002.gguf",
   "gpu": false,

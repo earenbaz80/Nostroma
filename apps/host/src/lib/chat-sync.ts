@@ -9,12 +9,12 @@ import {
  * the browser's old chats to the host), the last-moment copy for a page that goes away, and the merge of what another window saved.
  */
 
-const BASE = () => (globalThis as { __STRATA_HOST__?: string }).__STRATA_HOST__ ?? '';
+const BASE = () => (globalThis as { __NOSTROMA_HOST__?: string }).__NOSTROMA_HOST__ ?? '';
 /** Names this window to the host, so the event of its own save is not mistaken for another window's. */
 export const WINDOW_ID = `w_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
 
 export function createHttpTransport(fetchImpl: typeof fetch = (...args) => fetch(...args)): ChatTransport {
-  const headers = (extra: Record<string, string> = {}) => ({ 'x-strata-client': 'ui', 'x-strata-window': WINDOW_ID, ...extra });
+  const headers = (extra: Record<string, string> = {}) => ({ 'x-nostroma-client': 'ui', 'x-nostroma-window': WINDOW_ID, ...extra });
   async function call(method: string, path: string, init: { body?: string; headers?: Record<string, string> } = {}): Promise<Response> {
     let res: Response;
     try { res = await fetchImpl(`${BASE()}${path}`, { method, headers: headers(init.headers), body: init.body }); }
@@ -33,7 +33,7 @@ export function createHttpTransport(fetchImpl: typeof fetch = (...args) => fetch
       } catch (e) { if (isTransportError(e) && (e as TransportError).status === 404) return null; throw e; }
     },
     async put(id, text, baseRev) {
-      const res = await call('PUT', `/api/chats/${encodeURIComponent(id)}`, { body: text, headers: { 'content-type': 'application/json', ...(baseRev !== null ? { 'x-strata-base-rev': String(baseRev) } : {}) } });
+      const res = await call('PUT', `/api/chats/${encodeURIComponent(id)}`, { body: text, headers: { 'content-type': 'application/json', ...(baseRev !== null ? { 'x-nostroma-base-rev': String(baseRev) } : {}) } });
       const data = await res.json() as { rev: number; conflict?: boolean };
       return { rev: Number(data.rev) || 0, conflict: data.conflict === true };
     },

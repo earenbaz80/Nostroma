@@ -37,7 +37,7 @@ class Text(unittest.TestCase):
 
     def test_long_paths_junction_and_running_version(self):
         self.assertIn("tar.exe", self.ps1)
-        self.assertIn("STRATA_DATA_DIR to a short folder", self.ps1)
+        self.assertIn("NOSTROMA_DATA_DIR to a short folder", self.ps1)
         self.assertIn("$LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $current", self.ps1)
         self.assertIn("a program is using it", self.ps1)
         self.assertIn("Windows did not say where your user folder is", self.ps1)
@@ -48,7 +48,7 @@ class Text(unittest.TestCase):
 @unittest.skipUnless(sys.platform == "win32" and shutil.which("powershell"), "needs Windows and PowerShell")
 class Run(unittest.TestCase):
     def test_native_arm_stops_before_any_download(self):
-        env = dict(os.environ, PROCESSOR_ARCHITECTURE="ARM64", STRATA_FEED="http://127.0.0.1:9")
+        env = dict(os.environ, PROCESSOR_ARCHITECTURE="ARM64", NOSTROMA_FEED="http://127.0.0.1:9")
         env.pop("PROCESSOR_ARCHITEW6432", None)
         done = subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(PS1)],
                               capture_output=True, text=True, env=env, timeout=120)
@@ -73,7 +73,7 @@ class InstallShFailsVisibly(unittest.TestCase):
             home = Path(d) / "home"
             home.mkdir()
             r = subprocess.run(["sh", str(f)], capture_output=True, text=True, timeout=120,
-                               env={**os.environ, "HOME": str(home), "STRATA_DATA_DIR": str(home / "data"), "STRATA_BIN_DIR": str(home / "bin"), **env})
+                               env={**os.environ, "HOME": str(home), "NOSTROMA_DATA_DIR": str(home / "data"), "NOSTROMA_BIN_DIR": str(home / "bin"), **env})
             return r, home
 
     def test_the_script_is_one_function_called_on_the_last_line(self):
@@ -102,7 +102,7 @@ class InstallShFailsVisibly(unittest.TestCase):
                 (fakes / name).write_text("#!/bin/sh" + chr(10) + (body if body is not None else "exit 1") + chr(10), encoding="utf-8", newline=chr(10))
                 (fakes / name).chmod(0o755)
             path = str(fakes) + os.pathsep + os.environ["PATH"]     # the fakes win over any real tool
-            r, _ = self.run_sh(SH.read_text(encoding="utf-8"), STRATA_FEED="http://127.0.0.1:9", PATH=path)
+            r, _ = self.run_sh(SH.read_text(encoding="utf-8"), NOSTROMA_FEED="http://127.0.0.1:9", PATH=path)
             return next((l for l in r.stdout.splitlines() if "This computer:" in l), r.stdout + r.stderr)
 
     def test_the_graphics_line_is_a_card_not_an_ssd_or_an_error_sentence(self):
@@ -123,7 +123,7 @@ class InstallShFailsVisibly(unittest.TestCase):
     def test_an_unreachable_release_folder_stops_with_a_reason_and_a_failing_exit(self):
         if not shutil.which("curl") and not shutil.which("wget"):
             self.skipTest("no curl or wget")
-        r, home = self.run_sh(SH.read_text(encoding="utf-8"), STRATA_FEED="http://127.0.0.1:9")
+        r, home = self.run_sh(SH.read_text(encoding="utf-8"), NOSTROMA_FEED="http://127.0.0.1:9")
         self.assertEqual(r.returncode, 1)
         self.assertIn("127.0.0.1 did not answer (or this computer is offline), so the installer could not start.", r.stderr)   # lane NET W10
-        self.assertFalse((home / "bin" / "strata").exists())
+        self.assertFalse((home / "bin" / "nostroma").exists())

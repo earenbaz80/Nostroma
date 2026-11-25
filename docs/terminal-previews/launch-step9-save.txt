@@ -33,5 +33,5 @@
  Enter to keep it, or type another folder (it is created if it does not exist). Models you already have stay
  where they are and stay usable; the new folder is for new downloads.
  Type to change the folder   Enter next   Esc back   ? help
- ! This is not a full path: n. Type the whole path, starting with /, like /data/strata-models. Nothing was
+ ! This is not a full path: n. Type the whole path, starting with /, like /data/nostroma-models. Nothing was
  downloaded or changed.

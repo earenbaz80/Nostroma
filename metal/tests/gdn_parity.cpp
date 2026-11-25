@@ -17,7 +17,7 @@
 #include <vector>
 
 namespace {
-constexpr int S = strata_metal::geo::SS, HK = strata_metal::geo::HK, HV = strata_metal::geo::HV, C = (2 * HK + HV) * S, MAXT = 8;
+constexpr int S = nostroma_metal::geo::SS, HK = nostroma_metal::geo::HK, HV = nostroma_metal::geo::HV, C = (2 * HK + HV) * S, MAXT = 8;
 struct GdnArgs { uint32_t h_k, h_v, channels, commit; float eps; uint32_t plane; };
 double median(std::vector<double> v) { std::sort(v.begin(), v.end()); return v[v.size() / 2]; }
 struct Err {

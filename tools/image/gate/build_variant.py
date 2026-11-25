@@ -2,7 +2,7 @@
 build_sd.py build with exactly its configure line.
 
     python3 -I -B build_variant.py <root> <backend> <variant> [--jobs N] [--noise] [--vae REPO] [--dit REPO] [--def -DNAME=VALUE ...]
---dit REPO: also Nostroma's DiT GEMMs in the native runner (REPO/tools/image/sdcpp_dit/apply.py; --model-args strata_dit_gemm=1).
+--dit REPO: also Nostroma's DiT GEMMs in the native runner (REPO/tools/image/sdcpp_dit/apply.py; --model-args nostroma_dit_gemm=1).
 --vae REPO: the stage hooks plus Nostroma's VAE decoder from REPO/tools/image/sdcpp_vae/apply.py (a repo copy).
 Makes <root>/sd-<variant> (stage_hooks.py applied to a copy of <root>/sd-<backend>; with --noise instead the product's
 noise generator, <root>/repo/tools/image/sdcpp_noise/apply.py), <root>/build-<variant> and

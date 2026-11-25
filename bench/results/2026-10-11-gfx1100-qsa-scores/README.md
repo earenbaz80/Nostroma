@@ -12,7 +12,7 @@ not promoted into the tested machine's production setup.
 
 ## Dispatch and implementation
 
-Set `STRATA_SCORES_THREAD=1` **before starting the engine**. Dispatch also requires:
+Set `NOSTROMA_SCORES_THREAD=1` **before starting the engine**. Dispatch also requires:
 
 - HIP on the exact `gfx1100` architecture (normal feature suffixes are accepted).
 - At least 64 queries and a supplied live bound of at least 16,385 index blocks.
@@ -31,7 +31,7 @@ The retained layout is 64 queries by 32 key blocks, 512 key blocks per workgroup
 256 threads. Four layout variants were screened; none improved stage time by the
 predeclared 10% threshold over this one, so the first layout was retained.
 
-`STRATA_SCORES_THREAD_TRACE=1` optionally prints one engagement line per host thread.
+`NOSTROMA_SCORES_THREAD_TRACE=1` optionally prints one engagement line per host thread.
 No trace output is enabled by default.
 
 ## Machine and shared settings
@@ -59,7 +59,7 @@ PR #1107 prefix reuse and resident-budget loans in **both** arms. They compare t
 installed control against its reconstructed candidate, not two official release
 binaries. A separate comparison builds current main at
 `61b3fb5dd3f1e8ec09cf7e4e05208bc6d3c46406` plus this patch and uses the **same binary**
-with `STRATA_SCORES_THREAD=0` and `1`. Those families are never pooled.
+with `NOSTROMA_SCORES_THREAD=0` and `1`. Those families are never pooled.
 
 ## Before and after
 
@@ -147,8 +147,8 @@ Build and run the standalone check even from the published tree without `tests/`
 
 ```bash
 cmake -S . -B build-qsa -G Ninja -DCMAKE_BUILD_TYPE=Release \
-  -DSTRATA_ENABLE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
-  -DSTRATA_BUILD_TESTS=OFF -DSTRATA_PARITY_GFX1100_QSA_SCORES=ON
+  -DNOSTROMA_ENABLE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DNOSTROMA_BUILD_TESTS=OFF -DNOSTROMA_PARITY_GFX1100_QSA_SCORES=ON
 cmake --build build-qsa --target qsa_scores_gfx1100_parity -j 6
 ctest --test-dir build-qsa --output-on-failure -R '^qsa_scores_gfx1100_parity$'
 ```
@@ -195,19 +195,19 @@ version. The balanced expert profile is identified by hash, not included; use th
 same profile and other settings in your two arms.
 
 Run a loaded private server with the same binary and settings, changing only
-`STRATA_SCORES_THREAD=0` or `1` **at startup**. Restart that worker between every
+`NOSTROMA_SCORES_THREAD=0` or `1` **at startup**. Restart that worker between every
 length/arm invocation, preserve every observation, and repeat in both orders:
 
 ```bash
 python bench/results/2026-10-11-gfx1100-qsa-scores/benchmark.py \
   --url http://127.0.0.1:8080 --tokenizer /path/to/pack/tokenizer \
-  --model strata-qwen38-iq3s-uncensored --length 131072 \
+  --model nostroma-qwen38-iq3s-uncensored --length 131072 \
   --variant off --output off-128k-trial1.json
 ```
 
 Then restart with the scorer enabled and use `--variant on` and a new output file.
 Repeat with `--length 240000`, then reverse arm order. Use `--prepare-only` to
-check request hashes without inference. `STRATA_API_KEY` can supply an API key;
+check request hashes without inference. `NOSTROMA_API_KEY` can supply an API key;
 it is never written to results. The script refuses to overwrite any attempt and
 records a failure if a fresh prompt reused cached tokens.
 

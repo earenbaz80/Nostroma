@@ -16,10 +16,10 @@
  "engine_prompt_tps": 2110.2,
  "engine_decode_tps": 90.6,
  "log_lines": [
-  "strata serve: prompt 34932 tokens = 0 reused + 34932 read in 16554 ms (2110.2 tok/s), 256 generated in 2827 ms (90.6 tok/s), drafts accepted 167 of 216, 3 checkpoints",
-  "strata serve: decode expert cache hit rate: 94.1% (133137 hits / 141416 lookups)"
+  "nostroma serve: prompt 34932 tokens = 0 reused + 34932 read in 16554 ms (2110.2 tok/s), 256 generated in 2827 ms (90.6 tok/s), drafts accepted 167 of 216, 3 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 94.1% (133137 hits / 141416 lookups)"
  ],
- "answer_head": "I'll analyze the last file in the repository listing and propose an improvement.\n\n## What `docs/DETAILS.md` does\n\nThis is the comprehensive technical documentation file for the Strata project. It serves as the single source of truth for:\n\n1. **Performance benchmarks** \u2014 Detailed tables of prompt-pro",
+ "answer_head": "I'll analyze the last file in the repository listing and propose an improvement.\n\n## What `docs/DETAILS.md` does\n\nThis is the comprehensive technical documentation file for the Nostroma project. It serves as the single source of truth for:\n\n1. **Performance benchmarks** \u2014 Detailed tables of prompt-pro",
  "metrics_after": {
   "engine": {
    "model": "qwen3.8-flash-next-iq3_xxs",

@@ -6,7 +6,7 @@
  * luminance, motion) was skipped rather than run. Resolution is now a single
  * place with the same order everywhere:
  *
- *   1. STRATA_CHROME — an explicit override, for a CI image or a second Chrome
+ *   1. NOSTROMA_CHROME — an explicit override, for a CI image or a second Chrome
  *   2. a Playwright browser cache: `playwright-core install chromium` puts one
  *      in the usual cache directory for the platform, and Playwright's own
  *      PLAYWRIGHT_BROWSERS_PATH moves that directory
@@ -90,7 +90,7 @@ export function findChromium() {
 export function requireChromium() {
   const path = findChromium();
   if (!path) {
-    console.error('No Chromium found. Set STRATA_CHROME, or install Chrome, Edge or Chromium.');
+    console.error('No Chromium found. Set NOSTROMA_CHROME, or install Chrome, Edge or Chromium.');
     process.exit(2);
   }
   return path;

@@ -53,7 +53,7 @@ export function writeShellPrefs(patch, file = shellPrefsFile()) {
 }
 
 /**
- * What the shell tells the host about this start: STRATA_PORT_NOTICE is "busy:<wanted>:<used>" when the port it wanted was taken
+ * What the shell tells the host about this start: NOSTROMA_PORT_NOTICE is "busy:<wanted>:<used>" when the port it wanted was taken
  * (set by the shell, never by the person). The page turns it into a sentence in the person's language.
  */
 export function parsePortNotice(value) {
@@ -63,7 +63,7 @@ export function parsePortNotice(value) {
 
 /** The notification route of the shell's bridge (loopback, token). Null outside the desktop app. */
 export function createShellNotifier({ env = process.env, fetcher = fetch } = {}) {
-  const base = (env.NOSTROMA_SHELL_BRIDGE ?? env.STRATA_SHELL_BRIDGE), token = (env.NOSTROMA_SHELL_TOKEN ?? env.STRATA_SHELL_TOKEN);
+  const base = (env.NOSTROMA_SHELL_BRIDGE ?? env.NOSTROMA_SHELL_BRIDGE), token = (env.NOSTROMA_SHELL_TOKEN ?? env.NOSTROMA_SHELL_TOKEN);
   if (!base || !token || !/^http:\/\/127\.0\.0\.1:\d+$/.test(base)) return null;
   return {
     async notify({ title, body }) {

@@ -1,8 +1,8 @@
-// src/image/qi21_image_main.cpp - test program strata-image (step 5; not shipped, not called by the server, in no build
+// src/image/qi21_image_main.cpp - test program nostroma-image (step 5; not shipped, not called by the server, in no build
 // that ships): prompt + size + seed -> PNG with Nostroma's own parts only, no stable-diffusion.cpp and no ggml in the
 // process.  sd-cli stays the default and the fallback everywhere.
 //
-//   strata-image --te <Qwen3-VL text encoder .gguf> --dit <qwen-image-2.1 DiT .gguf> --vae <VAE .safetensors>
+//   nostroma-image --te <Qwen3-VL text encoder .gguf> --dit <qwen-image-2.1 DiT .gguf> --vae <VAE .safetensors>
 //                --prompt TEXT -o OUT.png [--width 1024] [--height 1024] [--seed 42] [--steps 8]
 //                [--dump DIR] [--report FILE.json] [--threads N] [--plan auto|resident|te-released] [--te-mode auto|resident|streamed]
 //
@@ -36,20 +36,20 @@
 //        src/image/te/qwen2_tok.cpp src/image/te/qwen3vl_te.cu src/image/te/te_dequant.cu src/image/te/te_dequant_host.cpp
 //        src/image/dit/qi21_dit.cu src/image/dit/qi21_kernels.cu src/image/dit/dit_gemm.cu src/image/dit/qi21_rope.cpp
 //        src/image/vae/wan_vae.cu src/image/vae/qi21_pixels.cpp src/image/noise/qi21_noise.cpp
-//        src/image/sample/qi21_sampler.cpp src/image/png/png_write.cpp -lcublas -o strata-image
-// HIP: written against include/strata/hip_compat like the parts; not compiled yet (owed, p620).
-#include "strata/image/png_write.hpp"
-#include "strata/image/qi21_dit.hpp"
-#include "strata/image/qi21_image.hpp"
-#include "strata/image/qi21_noise.hpp"
-#include "strata/image/qi21_pixels.hpp"
-#include "strata/image/qi21_sampler.hpp"
-#include "strata/image/qwen2_tok.hpp"
-#include "strata/image/qwen3vl_te.hpp"
-#include "strata/image/wan_vae.hpp"
+//        src/image/sample/qi21_sampler.cpp src/image/png/png_write.cpp -lcublas -o nostroma-image
+// HIP: written against include/nostroma/hip_compat like the parts; not compiled yet (owed, p620).
+#include "nostroma/image/png_write.hpp"
+#include "nostroma/image/qi21_dit.hpp"
+#include "nostroma/image/qi21_image.hpp"
+#include "nostroma/image/qi21_noise.hpp"
+#include "nostroma/image/qi21_pixels.hpp"
+#include "nostroma/image/qi21_sampler.hpp"
+#include "nostroma/image/qwen2_tok.hpp"
+#include "nostroma/image/qwen3vl_te.hpp"
+#include "nostroma/image/wan_vae.hpp"
 
 #if defined(__HIP__) || defined(__HIPCC__) || defined(__HIP_PLATFORM_AMD__)
-#include "strata/hip_compat/cuda_runtime.h"
+#include "nostroma/hip_compat/cuda_runtime.h"
 #else
 #include <cuda_runtime.h>
 #endif
@@ -71,7 +71,7 @@
 #include <vector>
 
 namespace fs = std::filesystem;
-using namespace strata::image;
+using namespace nostroma::image;
 
 namespace {
 
@@ -165,7 +165,7 @@ std::string json_escape(const std::string& s) {
 
 int usage() {
     std::fprintf(stderr,
-                 "usage: strata-image --te TE.gguf --dit DIT.gguf --vae VAE.safetensors --prompt TEXT -o OUT.png\n"
+                 "usage: nostroma-image --te TE.gguf --dit DIT.gguf --vae VAE.safetensors --prompt TEXT -o OUT.png\n"
                  "                    [--width 1024] [--height 1024] [--seed 42] [--steps 8] [--dump DIR] [--report FILE]\n"
                  "                    [--threads N] [--plan auto|resident|te-released] [--te-mode auto|resident|streamed]\n");
     return 2;
@@ -201,17 +201,17 @@ int main(int argc, char** argv) {
     }
     if (te_path.empty() || dit_path.empty() || vae_path.empty() || !have_prompt || out_png.empty()) return usage();
     if (steps != 8) {
-        std::fprintf(stderr, "strata-image: --steps %d is not supported; this test program runs Turbo's 8-step "
+        std::fprintf(stderr, "nostroma-image: --steps %d is not supported; this test program runs Turbo's 8-step "
                              "schedule only\n", steps);
         return 2;
     }
     if (width < 16 || height < 16 || width % 16 || height % 16) {
-        std::fprintf(stderr, "strata-image: width and height must be multiples of 16 (got %dx%d)\n", width, height);
+        std::fprintf(stderr, "nostroma-image: width and height must be multiples of 16 (got %dx%d)\n", width, height);
         return 2;
     }
     const std::vector<float> sigmas = qi21_parse_sigmas(QI21_TURBO_SIGMAS);
     if ((int) sigmas.size() != steps + 1) {
-        std::fprintf(stderr, "strata-image: the Turbo schedule did not parse\n");
+        std::fprintf(stderr, "nostroma-image: the Turbo schedule did not parse\n");
         return 2;
     }
     const fs::path dump(dump_dir);
@@ -224,7 +224,7 @@ int main(int argc, char** argv) {
     if ((plan_arg != "auto" && plan_arg != "resident" && plan_arg != "te-released") || te_mode < 0) return usage();
     const bool resident = plan_arg == "auto" ? total >= (size_t) 24 * 1000 * 1000 * 1000 : plan_arg == "resident";
     const char* plan = resident ? "resident" : "te-released";
-    std::printf("strata-image: %dx%d, seed %llu, %d steps; device memory %.1f GB total -> plan %s%s\n", width, height,
+    std::printf("nostroma-image: %dx%d, seed %llu, %d steps; device memory %.1f GB total -> plan %s%s\n", width, height,
                 (unsigned long long) seed, steps, total / 1e9, plan, plan_arg == "auto" ? "" : " (forced by --plan)");
 
     std::string err;
@@ -243,11 +243,11 @@ int main(int argc, char** argv) {
         return s / 1e9;
     };
     auto fail = [&](const std::string& what) {
-        std::fprintf(stderr, "strata-image: %s\n", what.c_str());
+        std::fprintf(stderr, "nostroma-image: %s\n", what.c_str());
         if (te) qwen3vl_te_close(te);
         if (dit) qi21_dit_close(dit);
         if (vae) wan_vae_close(vae);
-        std::printf("STRATA-IMAGE FAIL\n");
+        std::printf("NOSTROMA-IMAGE FAIL\n");
         return 1;
     };
     double open_ms = 0;
@@ -386,6 +386,6 @@ int main(int argc, char** argv) {
     if (te) qwen3vl_te_close(te);
     qi21_dit_close(dit);
     wan_vae_close(vae);
-    std::printf("STRATA-IMAGE PASS %s\n", out_png.c_str());
+    std::printf("NOSTROMA-IMAGE PASS %s\n", out_png.c_str());
     return 0;
 }

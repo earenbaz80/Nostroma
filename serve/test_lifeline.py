@@ -5,7 +5,7 @@
 Each case runs a small "server" process (a fresh interpreter) that starts a sleeping child through
 `lifeline.popen`, then ends that server the hard way (kill -9 / TerminateProcess), and checks that the child
 is gone. The mechanism under test is Windows' job object, Linux's PR_SET_PDEATHSIG, or the portable watcher
-(forced with STRATA_LIFELINE=watcher so it is proven on every POSIX box, not only on macOS).
+(forced with NOSTROMA_LIFELINE=watcher so it is proven on every POSIX box, not only on macOS).
 """
 import json
 import os
@@ -51,7 +51,7 @@ def alive(pid: int) -> bool:
 
 class Lifeline(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="strata-lifeline-")
+        self.temp = tempfile.TemporaryDirectory(prefix="nostroma-lifeline-")
         self.addCleanup(self.temp.cleanup)
         self.env = {**os.environ, "LOCALAPPDATA": self.temp.name, "XDG_STATE_HOME": self.temp.name,
                     "PYTHONPATH": str(ROOT)}
@@ -103,7 +103,7 @@ class Lifeline(unittest.TestCase):
 
     @unittest.skipUnless(POSIX, "the portable watcher is the POSIX path")
     def test_the_portable_watcher_ends_the_child_when_the_server_is_killed(self):
-        self.assertEqual(self._killed_parent_takes_the_child(STRATA_LIFELINE="watcher"), "watcher")
+        self.assertEqual(self._killed_parent_takes_the_child(NOSTROMA_LIFELINE="watcher"), "watcher")
 
     @unittest.skipUnless(POSIX, "the portable watcher is the POSIX path")
     def test_the_watcher_token_does_not_change_with_the_child_state(self):
@@ -161,7 +161,7 @@ class Lifeline(unittest.TestCase):
     def test_the_child_is_recorded_while_it_runs_and_forgotten_after(self):
         from nostroma_control import procs
         proc, info = self.launch("sleep")
-        base = Path(self.temp.name) / "Strata" / "procs" if not POSIX else Path(self.temp.name) / "strata" / "procs"
+        base = Path(self.temp.name) / "Nostroma" / "procs" if not POSIX else Path(self.temp.name) / "nostroma" / "procs"
         record = base / f"{info['child']}.json"
         deadline = time.monotonic() + 5
         while not record.exists() and time.monotonic() < deadline:
@@ -191,7 +191,7 @@ class HardFallback(unittest.TestCase):
     def test_an_engine_that_ignores_everything_is_killed(self):
         from unittest import mock
         from serve import server
-        engine = server.StrataEngine("missing-executable", [], lazy=True)
+        engine = server.NostromaEngine("missing-executable", [], lazy=True)
         engine.proc = subprocess.Popen([sys.executable, "-c", STUBBORN], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                        text=True, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         engine.proc.stdout.readline()

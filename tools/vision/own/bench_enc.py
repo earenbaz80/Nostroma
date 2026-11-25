@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Times one reader on one picture: image-to-embedding time (median of --repeat encodes after the first) and the reader's GPU memory.
 
-    python3 bench_enc.py --helper <strata-vision or strata-vision-own> --mmproj <mmproj.gguf> --model <text model or x> --image <picture> [--tower own]
+    python3 bench_enc.py --helper <nostroma-vision or nostroma-vision-own> --mmproj <mmproj.gguf> --model <text model or x> --image <picture> [--tower own]
                          [--gpu] [--max-tokens 1024] [--repeat 8] [--out <file for the embeddings>] [--env NAME=VALUE ...]
-Prints one line: label, tokens, median ms, min ms, peak GPU MiB (nvidia-smi, by pid).  Used to compare settings of the GPU tower (STRATA_VIT_ROWS, STRATA_VIT_SCORES).
+Prints one line: label, tokens, median ms, min ms, peak GPU MiB (nvidia-smi, by pid).  Used to compare settings of the GPU tower (NOSTROMA_VIT_ROWS, NOSTROMA_VIT_SCORES).
 """
 import argparse
 import os

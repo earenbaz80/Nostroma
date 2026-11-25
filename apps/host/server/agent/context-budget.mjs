@@ -1,5 +1,5 @@
 /**
- * Token arithmetic for the agent's context, with no I/O (the Harness plugin `plugins/strata-context.mjs` and the host both use it).
+ * Token arithmetic for the agent's context, with no I/O (the Harness plugin `plugins/nostroma-context.mjs` and the host both use it).
  *
  * Why it exists. The Harness prices a conversation with a fixed 4 characters per token. Code, logs and JSON are about twice as dense
  * (2.09 characters per token in the 2026-10-22 hands-on test), so its pressure read 31,794 tokens while the engine had been sent 59,048,

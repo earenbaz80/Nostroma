@@ -1,6 +1,6 @@
 // GDN prompt stage bench (production-linked): one layer's gates + conv + recurrence/out through the public entry points,
 // timed per piece, at the prompt lengths of the 4K / 16K / 32K tables.  Unlike gdn_chunked --bench it sets NO environment:
-// the STRATA_GDN_* knobs (and the arch defaults a real run would apply, passed by the caller) are read as they are, so one
+// the NOSTROMA_GDN_* knobs (and the arch defaults a real run would apply, passed by the caller) are read as they are, so one
 // process measures one knob set.  It prints a hash of the output rows and the final state, so an "exact" knob can be
 // checked bit for bit against the default run, and a split-call hash (the prompt cut at an unaligned token, state carried)
 // for the continuation gate.
@@ -8,8 +8,8 @@
 //   gdn_stage_bench [T ...]        default T = 4096 16384 32768
 //   env GDN_BENCH_REPS=N           timed repeats (median), default 7
 //   env GDN_BENCH_SPLIT=0          skip the split-call hash
-#include "strata/prefill/kernels.hpp"
-#include "strata/kernels/gfx_arch.hpp"
+#include "nostroma/prefill/kernels.hpp"
+#include "nostroma/kernels/gfx_arch.hpp"
 #include <cuda_runtime.h>
 #include <cuda_fp16.h>
 #include <algorithm>
@@ -59,8 +59,8 @@ int main(int argc, char** argv) {
     cudaDeviceProp props{};
     ck(cudaGetDevice(&dev), "device"); ck(cudaGetDeviceProperties(&props, dev), "props");
     std::printf("device=%s CUs=%d\n", props.gcnArchName, props.multiProcessorCount);
-    for (const char* k : {"STRATA_GDN_CHUNKED", "STRATA_GDN_HEAD", "STRATA_GDN_PP", "STRATA_GDN_CONVL2", "STRATA_GDN_NOY",
-                          "STRATA_GDN_CONV_SERIAL", "STRATA_GDN_REC_HEADS"})
+    for (const char* k : {"NOSTROMA_GDN_CHUNKED", "NOSTROMA_GDN_HEAD", "NOSTROMA_GDN_PP", "NOSTROMA_GDN_CONVL2", "NOSTROMA_GDN_NOY",
+                          "NOSTROMA_GDN_CONV_SERIAL", "NOSTROMA_GDN_REC_HEADS"})
         std::printf("env %s=%s\n", k, std::getenv(k) ? std::getenv(k) : "(unset)");
     const int64_t Tmax = *std::max_element(lens.begin(), lens.end());
     Rng r;
@@ -92,12 +92,12 @@ int main(int argc, char** argv) {
         ck(cudaMemcpy(dstate, state0.data(), state0.size() * 4, cudaMemcpyHostToDevice), "reset");
     };
     auto layer = [&](int64_t t0, int64_t n) {   // the prompt-path order: gates, conv, recurrence (+ norm)
-        strata::prefill::gdn_gates(dab + t0 * 2 * HV, ddt, dssm, dgate + t0 * HV, dbeta + t0 * HV, n, nullptr);
-        if (strata::prefill::gdn_conv_recurrence_fused(dhist, dqkv + t0 * C, dcw, dh, dstate, dgate + t0 * HV, dbeta + t0 * HV,
+        nostroma::prefill::gdn_gates(dab + t0 * 2 * HV, ddt, dssm, dgate + t0 * HV, dbeta + t0 * HV, n, nullptr);
+        if (nostroma::prefill::gdn_conv_recurrence_fused(dhist, dqkv + t0 * C, dcw, dh, dstate, dgate + t0 * HV, dbeta + t0 * HV,
                                                        dz + t0 * ROW, dgamma, 1e-6f, 1e-6f, dy, dy16 + t0 * ld, n, nullptr, ld))
             return;
-        strata::prefill::gdn_conv(dhist, dqkv + t0 * C, dcw, dh + t0 * C, n, 1e-6f, nullptr);
-        strata::prefill::gdn_recurrence(dstate, dh + t0 * C, dgate + t0 * HV, dbeta + t0 * HV, dz + t0 * ROW, dgamma, 1e-6f,
+        nostroma::prefill::gdn_conv(dhist, dqkv + t0 * C, dcw, dh + t0 * C, n, 1e-6f, nullptr);
+        nostroma::prefill::gdn_recurrence(dstate, dh + t0 * C, dgate + t0 * HV, dbeta + t0 * HV, dz + t0 * ROW, dgamma, 1e-6f,
                                         dy, dy16 + t0 * ld, n, nullptr, ld);
     };
     if (std::getenv("GDN_BENCH_CHECK")) {   // fused / unfused chunked path against the FP32 sequential kernels, and a split-call check
@@ -105,19 +105,19 @@ int main(int argc, char** argv) {
             auto half = [](uint16_t b) { __half_raw x; x.x = b; return __half2float(__half(x)); };
             struct R { std::vector<uint16_t> y; std::vector<float> st, hist; };
             auto grab = [&] { return R{down(dy16, T * ld), down(dstate, S * ROW), down(dhist, C * 3)}; };
-            auto prep = [&] { reset(); strata::prefill::gdn_gates(dab, ddt, dssm, dgate, dbeta, T, nullptr); };
+            auto prep = [&] { reset(); nostroma::prefill::gdn_gates(dab, ddt, dssm, dgate, dbeta, T, nullptr); };
             prep();
-            strata::prefill::gdn_conv(dhist, dqkv, dcw, dh, T, 1e-6f, nullptr);
-            strata::prefill::gdn_recurrence_variant(5, dstate, dh, dgate, dbeta, dz, dgamma, 1e-6f, dy, dy16, T, nullptr, ld);
+            nostroma::prefill::gdn_conv(dhist, dqkv, dcw, dh, T, 1e-6f, nullptr);
+            nostroma::prefill::gdn_recurrence_variant(5, dstate, dh, dgate, dbeta, dz, dgamma, 1e-6f, dy, dy16, T, nullptr, ld);
             ck(cudaDeviceSynchronize(), "sync");
             const R ref = grab();
             prep();
-            strata::prefill::gdn_conv(dhist, dqkv, dcw, dh, T, 1e-6f, nullptr);
-            strata::prefill::gdn_recurrence(dstate, dh, dgate, dbeta, dz, dgamma, 1e-6f, dy, dy16, T, nullptr, ld);
+            nostroma::prefill::gdn_conv(dhist, dqkv, dcw, dh, T, 1e-6f, nullptr);
+            nostroma::prefill::gdn_recurrence(dstate, dh, dgate, dbeta, dz, dgamma, 1e-6f, dy, dy16, T, nullptr, ld);
             ck(cudaDeviceSynchronize(), "sync");
             const R unf = grab();
             prep();
-            const bool f = strata::prefill::gdn_conv_recurrence_fused(dhist, dqkv, dcw, dh, dstate, dgate, dbeta, dz, dgamma, 1e-6f,
+            const bool f = nostroma::prefill::gdn_conv_recurrence_fused(dhist, dqkv, dcw, dh, dstate, dgate, dbeta, dz, dgamma, 1e-6f,
                                                                       1e-6f, dy, dy16, T, nullptr, ld);
             ck(cudaDeviceSynchronize(), "sync");
             const R fus = grab();
@@ -141,8 +141,8 @@ int main(int argc, char** argv) {
                 reset();
                 const int64_t cut = (T / 2) | 1;
                 auto call = [&](int64_t t0, int64_t n) {
-                    strata::prefill::gdn_gates(dab + t0 * 2 * HV, ddt, dssm, dgate + t0 * HV, dbeta + t0 * HV, n, nullptr);
-                    strata::prefill::gdn_conv_recurrence_fused(dhist, dqkv + t0 * C, dcw, dh, dstate, dgate + t0 * HV, dbeta + t0 * HV,
+                    nostroma::prefill::gdn_gates(dab + t0 * 2 * HV, ddt, dssm, dgate + t0 * HV, dbeta + t0 * HV, n, nullptr);
+                    nostroma::prefill::gdn_conv_recurrence_fused(dhist, dqkv + t0 * C, dcw, dh, dstate, dgate + t0 * HV, dbeta + t0 * HV,
                                                                dz + t0 * ROW, dgamma, 1e-6f, 1e-6f, dy, dy16 + t0 * ld, n, nullptr, ld);
                 };
                 call(0, cut); call(cut, T - cut);
@@ -157,12 +157,12 @@ int main(int argc, char** argv) {
         for (int round = -2; round < reps; ++round) {
             reset();
             ck(cudaEventRecord(e0), "ev");
-            strata::prefill::gdn_gates(dab, ddt, dssm, dgate, dbeta, T, nullptr);
-            const bool fused = strata::prefill::gdn_conv_recurrence_fused(dhist, dqkv, dcw, dh, dstate, dgate, dbeta, dz, dgamma,
+            nostroma::prefill::gdn_gates(dab, ddt, dssm, dgate, dbeta, T, nullptr);
+            const bool fused = nostroma::prefill::gdn_conv_recurrence_fused(dhist, dqkv, dcw, dh, dstate, dgate, dbeta, dz, dgamma,
                                                                           1e-6f, 1e-6f, dy, dy16, T, nullptr, ld);
-            if (!fused) strata::prefill::gdn_conv(dhist, dqkv, dcw, dh, T, 1e-6f, nullptr);
+            if (!fused) nostroma::prefill::gdn_conv(dhist, dqkv, dcw, dh, T, 1e-6f, nullptr);
             ck(cudaEventRecord(e1), "ev");   // fused: conv and recurrence are both inside the FIRST piece
-            if (!fused) strata::prefill::gdn_recurrence(dstate, dh, dgate, dbeta, dz, dgamma, 1e-6f, dy, dy16, T, nullptr, ld);
+            if (!fused) nostroma::prefill::gdn_recurrence(dstate, dh, dgate, dbeta, dz, dgamma, 1e-6f, dy, dy16, T, nullptr, ld);
             ck(cudaEventRecord(e2), "ev");
             ck(cudaEventSynchronize(e2), "sync");
             float a = 0, b = 0;

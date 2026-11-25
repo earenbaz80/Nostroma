@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""kl.py A.bin B.bin ... : KL(A||B), top-1 agreement and max |dlogit| between first-token logit dumps (STRATA_DUMP_FIRST_LOGITS)."""
+"""kl.py A.bin B.bin ... : KL(A||B), top-1 agreement and max |dlogit| between first-token logit dumps (NOSTROMA_DUMP_FIRST_LOGITS)."""
 import sys
 import numpy as np
 

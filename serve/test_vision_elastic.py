@@ -252,7 +252,7 @@ class OnDemandReader(unittest.TestCase):
 class OnDemandByDefault(unittest.TestCase):
     """An NVIDIA GPU reader on one GPU starts on demand without the config saying so; everything else keeps its reader as it was."""
     BASE = {"args": ["--max-context", "8192", "--vision"], "gpu": 0,
-            "vision": {"exe": "/e/strata-vision", "mmproj": "m", "model": "t", "gpu": True, "max_tokens": 1024}}
+            "vision": {"exe": "/e/nostroma-vision", "mmproj": "m", "model": "t", "gpu": True, "max_tokens": 1024}}
 
     def setUp(self):
         # these tests describe a PC (x86); the Spark class (Linux on Arm) has its own tests below, so a test run on a Spark does not change them
@@ -280,7 +280,7 @@ class OnDemandByDefault(unittest.TestCase):
                 c = apply_vision_defaults(self.cfg(args=["--vision", "--vram-reserve-mib", "700"]))
                 self.assertNotIn("elastic", c["vision"])                                    # no key written: the reader starts with the server
                 self.assertEqual(c["args"][c["args"].index("--vram-reserve-mib") + 1], "700")   # the resident path's reserve, not 2,048
-                self.assertFalse(f(self.cfg(vision={"exe": "component:engine/strata-vision"})))
+                self.assertFalse(f(self.cfg(vision={"exe": "component:engine/nostroma-vision"})))
                 self.assertFalse(f(self.cfg(backend="cuda")))
 
     def test_the_spark_class_still_takes_an_explicit_elastic_key_either_way(self):
@@ -307,7 +307,7 @@ class OnDemandByDefault(unittest.TestCase):
         import serve.server as S
         with mock.patch("platform.machine", return_value="aarch64"), mock.patch.object(sys, "platform", "linux"), \
                 mock.patch.object(S, "VISION_ON_DEMAND_AMD_BY_DEFAULT", True):
-            self.assertTrue(S.vision_on_demand_by_default(self.cfg(vision={"exe": "/e/strata-vision-hip", "cpu_exe": "/e/strata-vision"}, backend="hip")))
+            self.assertTrue(S.vision_on_demand_by_default(self.cfg(vision={"exe": "/e/nostroma-vision-hip", "cpu_exe": "/e/nostroma-vision"}, backend="hip")))
 
     def test_the_plain_nvidia_config_is_on_demand(self):
         from serve.server import apply_vision_defaults, vision_on_demand_by_default
@@ -330,15 +330,15 @@ class OnDemandByDefault(unittest.TestCase):
             c = apply_vision_defaults(self.cfg(args=["--vision", "--vram-reserve-mib", "700"]))
             self.assertNotIn("vram_elastic", c)
             self.assertEqual(c["args"][c["args"].index("--vram-reserve-mib") + 1], "2048")
-        self.assertTrue(vision_on_demand_by_default(self.cfg(vision={"exe": "component:engine/strata-vision.exe"})))
-        self.assertTrue(vision_on_demand_by_default(self.cfg(vision={"exe": "C:/e/strata-vision.exe"})))
+        self.assertTrue(vision_on_demand_by_default(self.cfg(vision={"exe": "component:engine/nostroma-vision.exe"})))
+        self.assertTrue(vision_on_demand_by_default(self.cfg(vision={"exe": "C:/e/nostroma-vision.exe"})))
         bs = chr(92)
-        self.assertTrue(vision_on_demand_by_default(self.cfg(vision={"exe": "C:" + bs + "e" + bs + "strata-vision.exe"})))
+        self.assertTrue(vision_on_demand_by_default(self.cfg(vision={"exe": "C:" + bs + "e" + bs + "nostroma-vision.exe"})))
 
     def test_the_amd_reader_with_its_cpu_reader_is_on_demand_when_asked(self):
         import serve.server as S
         f = S.vision_on_demand_by_default
-        amd = self.cfg(vision={"exe": "/e/strata-vision-hip", "cpu_exe": "/e/strata-vision"}, backend="hip")
+        amd = self.cfg(vision={"exe": "/e/nostroma-vision-hip", "cpu_exe": "/e/nostroma-vision"}, backend="hip")
         self.assertFalse(f(amd))                                  # off by default on AMD (no slots gained: see the constant's note)
         with mock.patch.object(S, "VISION_ON_DEMAND_AMD_BY_DEFAULT", True):
             self.assertTrue(f(amd))
@@ -347,17 +347,17 @@ class OnDemandByDefault(unittest.TestCase):
             self.assertNotIn("vram_elastic", got)                 # AMD: no shrinking cache, the room stays in the reserve
             self.assertEqual(got["args"][-2:], ["--vram-reserve-mib", "2048"])
         with mock.patch.object(__import__("serve.server").server, "VISION_ON_DEMAND_AMD_BY_DEFAULT", True):
-            self.assertFalse(f(self.cfg(vision={"exe": "/e/strata-vision-hip", "cpu_exe": "/e/strata-vision"}, backend="hip", gpu=[0, 1])))
-        self.assertFalse(f(self.cfg(vision={"exe": "/e/strata-vision-sycl", "cpu_exe": "/e/strata-vision"}, backend="sycl")))
+            self.assertFalse(f(self.cfg(vision={"exe": "/e/nostroma-vision-hip", "cpu_exe": "/e/nostroma-vision"}, backend="hip", gpu=[0, 1])))
+        self.assertFalse(f(self.cfg(vision={"exe": "/e/nostroma-vision-sycl", "cpu_exe": "/e/nostroma-vision"}, backend="sycl")))
 
     def test_what_stays_as_it_was(self):
         from serve.server import vision_on_demand_by_default as f
         self.assertFalse(f(self.cfg(vision={"gpu": False})))                         # the CPU reader
         self.assertFalse(f(self.cfg(vision={"elastic": False})))                     # the person said no
         self.assertFalse(f(self.cfg(vision={"cuda_device": 1})))                     # a reader on its own card
-        self.assertFalse(f(self.cfg(vision={"exe": "/e/strata-vision-hip"}, backend="hip")))              # AMD without its CPU reader
-        self.assertFalse(f(self.cfg(vision={"exe": "/e/strata-vision"}, backend="hip")))
-        self.assertFalse(f(self.cfg(backend="sycl", vision={"exe": "/e/strata-vision-sycl"})))
+        self.assertFalse(f(self.cfg(vision={"exe": "/e/nostroma-vision-hip"}, backend="hip")))              # AMD without its CPU reader
+        self.assertFalse(f(self.cfg(vision={"exe": "/e/nostroma-vision"}, backend="hip")))
+        self.assertFalse(f(self.cfg(backend="sycl", vision={"exe": "/e/nostroma-vision-sycl"})))
         self.assertFalse(f(self.cfg(gpu=[0, 1])))                                     # a layer split
         self.assertFalse(f(self.cfg(args=["--vision", "--kv-grow"])))
         self.assertTrue(f(self.cfg(args=["--vision", "--resident-budget-gib", "30"])))   # no cache to shrink is needed

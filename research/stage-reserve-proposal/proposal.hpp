@@ -1,14 +1,14 @@
 // research/stage-reserve-proposal/proposal.hpp - PROPOSAL, not used by the engine (moved out of
-// include/strata/program/stage_reserve.hpp in cleanup step 4.2; the text of both functions is unchanged).
+// include/nostroma/program/stage_reserve.hpp in cleanup step 4.2; the text of both functions is unchanged).
 // See README.md in this folder.
 #pragma once
 
-#include "strata/program/stage_reserve.hpp"
+#include "nostroma/program/stage_reserve.hpp"
 
 #include <algorithm>
 #include <cstdint>
 
-namespace strata::program::stage_reserve {
+namespace nostroma::program::stage_reserve {
 
 constexpr int64_t kGraphMib = 6;            ///< one window graph, captured on first use (log of #3702: 4, 6, 6)
 constexpr int64_t kInstantiateBurstMib = 48; ///< the largest single step seen (42 MiB in #3702): room kept for one more
@@ -29,4 +29,4 @@ inline int64_t proposed_reserve_mib(const Inputs& in, int max_window_t) {
     return r;
 }
 
-}  // namespace strata::program::stage_reserve
+}  // namespace nostroma::program::stage_reserve

@@ -1,6 +1,6 @@
 """I1 / I2 (tools and images review, 2026-10-22): the picture reader in an engine package must run on every card and Mac the package does.
 
-#3669: the Windows cuda12 package reused a strata-vision.exe built before Pascal support; the engine ran on a P100 and the reader stopped
+#3669: the Windows cuda12 package reused a nostroma-vision.exe built before Pascal support; the engine ran on a P100 and the reader stopped
 with "device kernel image is invalid". #3697: a macOS package with no reader at all. These tests need no GPU and no toolkit."""
 
 import json
@@ -22,10 +22,10 @@ class ReaderCheck(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.src = Path(self.tmp.name)
-        (self.src / "strata").write_text("x")
+        (self.src / "nostroma").write_text("x")
 
     def reader(self, vision_archs=None):
-        (self.src / "strata-vision").write_text("x")
+        (self.src / "nostroma-vision").write_text("x")
         data = {"version": "0.2.3"}
         if vision_archs is not None:
             data["vision_archs"] = vision_archs

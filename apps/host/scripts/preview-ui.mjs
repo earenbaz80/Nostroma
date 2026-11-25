@@ -6,12 +6,12 @@ import {tmpdir} from 'node:os';
 import {resolve,join} from 'node:path';
 import { envVar } from '../server/env-compat.mjs';
 const root=resolve(import.meta.dirname,'..');
-const home=mkdtempSync(join(tmpdir(),'strata-ui-preview-'));
+const home=mkdtempSync(join(tmpdir(),'nostroma-ui-preview-'));
 const hostPort=Number(envVar('PREVIEW_HOST_PORT')??8792);
 const webPort=Number(envVar('PREVIEW_PORT')??5272);
 const children=[];let stopping=false;
 function stop(code=0){if(stopping)return;stopping=true;for(const child of children)child.kill('SIGTERM');setTimeout(()=>process.exit(code),300).unref();}
-function run(args,extra={}){const child=spawn(process.execPath,args,{cwd:root,env:{...process.env,STRATA_HOME:home,STRATA_MODELS_DIR:join(home,'models'),STRATA_WORKSPACE:home,STRATA_REAL_ENGINE:'0',STRATA_NATIVE_REPO:join(home,'no-native-installation'),STRATA_PORT:String(hostPort),...extra},stdio:'inherit'});children.push(child);child.on('error',error=>{console.error(error.message);stop(1);});child.on('exit',code=>{if(!stopping)stop(code??1);});return child;}
+function run(args,extra={}){const child=spawn(process.execPath,args,{cwd:root,env:{...process.env,NOSTROMA_HOME:home,NOSTROMA_MODELS_DIR:join(home,'models'),NOSTROMA_WORKSPACE:home,NOSTROMA_REAL_ENGINE:'0',NOSTROMA_NATIVE_REPO:join(home,'no-native-installation'),NOSTROMA_PORT:String(hostPort),...extra},stdio:'inherit'});children.push(child);child.on('error',error=>{console.error(error.message);stop(1);});child.on('exit',code=>{if(!stopping)stop(code??1);});return child;}
 process.on('SIGINT',()=>stop());process.on('SIGTERM',()=>stop());
 if(!existsSync(join(root,'dist/index.html'))){console.error('Run npm run build before starting the UI preview.');process.exit(1);}
 run(['server/index.mjs']);
@@ -22,6 +22,6 @@ for(let attempt=0;attempt<100;attempt++){
  await new Promise(resolve=>setTimeout(resolve,150));
 }
 if(!stopping){
- run(['tests/fixtures/onboarding-ui-host.mjs'],{STRATA_UI_PREVIEW:'1',STRATA_ONBOARDING_UPSTREAM:`http://127.0.0.1:${hostPort}`,STRATA_ONBOARDING_PORT:String(webPort),STRATA_ONBOARDING_START:'ready',STRATA_ONBOARDING_SCENARIO:'telemetry',STRATA_ONBOARDING_PREVIEW:'1'});
+ run(['tests/fixtures/onboarding-ui-host.mjs'],{NOSTROMA_UI_PREVIEW:'1',NOSTROMA_ONBOARDING_UPSTREAM:`http://127.0.0.1:${hostPort}`,NOSTROMA_ONBOARDING_PORT:String(webPort),NOSTROMA_ONBOARDING_START:'ready',NOSTROMA_ONBOARDING_SCENARIO:'telemetry',NOSTROMA_ONBOARDING_PREVIEW:'1'});
  console.log(`\nUI PREVIEW ONLY — hardware, models and telemetry are simulated.\nOpen http://localhost:${webPort}/#/models\nOnboarding: http://localhost:${webPort}/#/setup\nTemporary preview data: ${home}\nCtrl+C stops both preview processes.\n`);
 }

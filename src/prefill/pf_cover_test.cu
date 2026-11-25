@@ -4,10 +4,10 @@
 // failure class halo-box/strix-llama.cpp #213 fixed in its own WMMA kernels: a tile variant that covers only part of its
 // output (a skipped second 16-token fragment, a 128-column tile that stops at 64) - which a few-row parity sample at a
 // shape that picks another variant does not see.  Covered:
-//   strata_wmma_gemm_f16 / _bf16       the 16x16 (1 wave) and 64x64 (4 waves) kernels       (T, N, K from tails to 8191)
-//   strata_pf_gemm_f16_ld              kernel_bk64 (N >= 1024), kernel<256,64>, kernel<128,32> (N < 1024), padded strides
-//   strata_pf_hcdown_bf16              the HC down + inject GEMM (nd 320 + ni 4, K 10240)
-//   strata_pf_hcdown_exact_bf16        the hipBLASLt-order HC down GEMM
+//   nostroma_wmma_gemm_f16 / _bf16       the 16x16 (1 wave) and 64x64 (4 waves) kernels       (T, N, K from tails to 8191)
+//   nostroma_pf_gemm_f16_ld              kernel_bk64 (N >= 1024), kernel<256,64>, kernel<128,32> (N < 1024), padded strides
+//   nostroma_pf_hcdown_bf16              the HC down + inject GEMM (nd 320 + ni 4, K 10240)
+//   nostroma_pf_hcdown_exact_bf16        the hipBLASLt-order HC down GEMM
 // Exit 77 without a gfx11 GPU.   pf_cover_test           the checks (a few minutes of GPU time at most)
 #include "wmma_gemm.h"
 
@@ -151,8 +151,8 @@ int main() {
         for (const S& s : generic) {
             Mat X = make(s.T, s.K, s.K, bf, rng, 1.0f), W = make(s.N, s.K, s.K, bf, rng, 1.0f);
             ck(cudaMemset(dy, 0xff, (size_t) s.T * s.N * 4), "poison");
-            const bool ran = bf ? strata_wmma_gemm_bf16(X.dev, W.dev, dy, s.T, s.N, s.K, s.N, 0.0f, nullptr)
-                                : strata_wmma_gemm_f16(X.dev, W.dev, dy, s.T, s.N, s.K, s.N, 0.0f, nullptr);
+            const bool ran = bf ? nostroma_wmma_gemm_bf16(X.dev, W.dev, dy, s.T, s.N, s.K, s.N, 0.0f, nullptr)
+                                : nostroma_wmma_gemm_f16(X.dev, W.dev, dy, s.T, s.N, s.K, s.N, 0.0f, nullptr);
             if (!ran) { std::printf("%s T %lld N %lld K %lld: not run (no gfx11 device?)\n", bf ? "wmma bf16" : "wmma f16", (long long) s.T, (long long) s.N, (long long) s.K); continue; }
             any_ran = true;
             fetch(s.T, s.N);
@@ -176,7 +176,7 @@ int main() {
                     std::vector<float> ones((size_t) s.T * s.N, 1.0f);
                     ck(cudaMemcpy(dy, ones.data(), ones.size() * 4, cudaMemcpyHostToDevice), "ones");
                 }
-                if (!strata_pf_gemm_f16_ld(X.dev, ldx, W.dev, ldw, dy, s.T, s.N, s.K, s.N, beta, nullptr)) {
+                if (!nostroma_pf_gemm_f16_ld(X.dev, ldx, W.dev, ldw, dy, s.T, s.N, s.K, s.N, beta, nullptr)) {
                     std::printf("pf_gemm_f16_ld T %lld N %lld K %lld pad %d: not run\n", (long long) s.T, (long long) s.N, (long long) s.K, pad);
                     continue;
                 }
@@ -201,7 +201,7 @@ int main() {
         ck(cudaMalloc(&dinj, (size_t) T * 4 * 4), "malloc");
         ck(cudaMemset(dlo, 0xff, (size_t) T * 320 * 4), "poison");
         ck(cudaMemset(dinj, 0xff, (size_t) T * 4 * 4), "poison");
-        if (strata_pf_hcdown_bf16(X.dev, HLD, Wd.dev, Wi.dev, 320, 4, dlo, dinj, T, HK, nullptr)) {
+        if (nostroma_pf_hcdown_bf16(X.dev, HLD, Wd.dev, Wi.dev, 320, 4, dlo, dinj, T, HK, nullptr)) {
             any_ran = true;
             ck(cudaDeviceSynchronize(), "sync");
             std::vector<float> lo((size_t) T * 320), inj((size_t) T * 4);
@@ -211,7 +211,7 @@ int main() {
             report("hcdown inj", T, 4, HK, check_out(inj, T, 4, X, Wi, 0, 4, HK, 0));
         } else std::printf("hcdown T %lld: not run\n", (long long) T);
         ck(cudaMemset(dlo, 0xff, (size_t) T * 320 * 4), "poison");
-        if (strata_pf_hcdown_exact_bf16(X.dev, HLD, Wd.dev, dlo, T, 320, HK, nullptr)) {
+        if (nostroma_pf_hcdown_exact_bf16(X.dev, HLD, Wd.dev, dlo, T, 320, HK, nullptr)) {
             any_ran = true;
             ck(cudaDeviceSynchronize(), "sync");
             std::vector<float> lo((size_t) T * 320);

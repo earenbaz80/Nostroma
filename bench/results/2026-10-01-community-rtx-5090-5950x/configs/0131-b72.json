@@ -1,14 +1,14 @@
 ﻿{
-    "exe":  "E:\\strata-src\\engine\\strata.exe",
+    "exe":  "E:\\nostroma-src\\engine\\nostroma.exe",
     "args":  [
                  "--pack",
-                 "E:\\strata-data\\packs\\ud-q4_k_xl",
+                 "E:\\nostroma-data\\packs\\ud-q4_k_xl",
                  "--native",
-                 "E:\\strata-data\\models-unsloth\\UD-Q4_K_XL\\Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf",
+                 "E:\\nostroma-data\\models-unsloth\\UD-Q4_K_XL\\Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf",
                  "--resident-budget-gib",
                  "72",
                  "--expert-profile",
-                 "E:\\strata-src\\data\\expert-profile.bin",
+                 "E:\\nostroma-src\\data\\expert-profile.bin",
                  "--expert-cache",
                  "auto",
                  "--prefill",
@@ -18,18 +18,18 @@
                  "--spec-min-p",
                  "0.5",
                  "--mtp",
-                 "E:\\strata-data\\mtp\\rt",
+                 "E:\\nostroma-data\\mtp\\rt",
                  "--max-context",
                  "32768",
                  "--kv",
                  "int8"
              ],
-    "cwd":  "E:\\strata-0132",
-    "tokenizer":  "E:\\strata-data\\packs\\ud-q4_k_xl\\tokenizer",
+    "cwd":  "E:\\nostroma-0132",
+    "tokenizer":  "E:\\nostroma-data\\packs\\ud-q4_k_xl\\tokenizer",
     "model_name":  "qwen3.8-flash-next-ud-q4_k_xl",
-    "log":  "E:\\strata-0132\\bench\\engine-ud-b72-0131.log",
+    "log":  "E:\\nostroma-0132\\bench\\engine-ud-b72-0131.log",
     "lib_dirs":  [
-                     "E:\\strata-src\\.venv\\Lib\\site-packages\\nvidia\\cu13\\bin\\x86_64"
+                     "E:\\nostroma-src\\.venv\\Lib\\site-packages\\nvidia\\cu13\\bin\\x86_64"
                  ],
     "port":  18199,
     "gpu":  0,

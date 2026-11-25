@@ -16,10 +16,10 @@
  "engine_prompt_tps": 492.6,
  "engine_decode_tps": 34.5,
  "log_lines": [
-  "strata serve: prompt 130799 tokens = 0 reused + 130799 read in 265449 ms (492.7 tok/s), 256 generated in 7909 ms (32.4 tok/s), drafts accepted 137 of 205, 6 checkpoints",
-  "strata serve: decode expert cache hit rate: 52.3% (69485 hits / 132851 lookups)",
-  "strata serve: prompt 130801 tokens = 0 reused + 130801 read in 265551 ms (492.6 tok/s), 256 generated in 7414 ms (34.5 tok/s), drafts accepted 147 of 202, 6 checkpoints",
-  "strata serve: decode expert cache hit rate: 53.0% (67762 hits / 127866 lookups)"
+  "nostroma serve: prompt 130799 tokens = 0 reused + 130799 read in 265449 ms (492.7 tok/s), 256 generated in 7909 ms (32.4 tok/s), drafts accepted 137 of 205, 6 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 52.3% (69485 hits / 132851 lookups)",
+  "nostroma serve: prompt 130801 tokens = 0 reused + 130801 read in 265551 ms (492.6 tok/s), 256 generated in 7414 ms (34.5 tok/s), drafts accepted 147 of 202, 6 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 53.0% (67762 hits / 127866 lookups)"
  ],
  "answer_head": "I'll analyze the last file in the repository listing.\n\n## What the last file does\n\nThe last file is `build-vision/CMakeFiles/4.2.3/CompilerIdCUDA/tmp/CMakeCUDACompilerId.cudafe1.cpp`.\n\nThis is **not a hand-written source file** \u2014 it is a **CMake-generated build artifact**. Specifically, it is the ho",
  "metrics_after": {

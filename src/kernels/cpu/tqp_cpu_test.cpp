@@ -11,7 +11,7 @@
 //     before the pair types, plus 147-149.
 //
 // Random stream bytes are valid codes (any 15-bit state indexes the codebook).  CPU only.  Exit 0 = pass.
-#include "strata/kernels/cpu/tq_cpu.hpp"
+#include "nostroma/kernels/cpu/tq_cpu.hpp"
 
 #include "tq_states.hpp"
 
@@ -22,7 +22,7 @@
 #include <random>
 #include <vector>
 
-using namespace strata::kernels::cpu;
+using namespace nostroma::kernels::cpu;
 
 namespace {
 
@@ -83,7 +83,7 @@ std::vector<uint8_t> random_q8_0(int n, std::mt19937& rng, std::vector<float>& d
     for (int b = 0; b < n / 32; ++b) {
         const uint16_t h = (uint16_t) ((ex(rng) << 10) | man(rng));
         std::memcpy(&a[(size_t) b * 34], &h, 2);
-        d[(size_t) b] = strata::kernels::cpu::tq_detail::tq_half_to_float(h);
+        d[(size_t) b] = nostroma::kernels::cpu::tq_detail::tq_half_to_float(h);
         for (int j = 0; j < 32; ++j) {
             const int v = val(rng);
             q[(size_t) b * 32 + j] = v;
@@ -114,7 +114,7 @@ double ref_dot(int type, const uint8_t* row, int n, const std::vector<float>& d,
         const uint8_t* blk = row + (size_t) i * bs;
         uint16_t hd;
         std::memcpy(&hd, blk, 2);
-        const double dw = strata::kernels::cpu::tq_detail::tq_half_to_float(hd);
+        const double dw = nostroma::kernels::cpu::tq_detail::tq_half_to_float(hd);
         uint32_t st[64];
         for (int t = 0; t < 64; ++t) st[t] = ref_state(blk + 2, K, t);
         for (int k = 0; k < 4; ++k) {

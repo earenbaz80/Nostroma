@@ -155,11 +155,11 @@ export interface AppState {
   sessionSave: { failedIds: string[]; reason: 'disk-full' | 'permission' | 'other' } | null;
 }
 
-const PREFS_KEY = 'strata.prefs.v2';
+const PREFS_KEY = 'nostroma.prefs.v2';
 /** What the model has been allowed to read, kept across restarts. */
-const TOUCHED_KEY = 'strata.touched.v1';
+const TOUCHED_KEY = 'nostroma.touched.v1';
 /** Kept one release so downgrading does not lose the theme and sidebar state. */
-const PREFS_KEY_V1 = 'strata.prefs.v1';
+const PREFS_KEY_V1 = 'nostroma.prefs.v1';
 
 const CONTENT_FS_MIN = 10;
 const CONTENT_FS_MAX = 22;
@@ -292,7 +292,7 @@ let lastApprovalNotice = '';
 let state: AppState = {
   language: prefs.language,
   fontFamily: prefs.fontFamily,
-  configDraft: (() => { try { return sessionStorage.getItem('strata.config-draft.v1'); } catch { return null; } })(),
+  configDraft: (() => { try { return sessionStorage.getItem('nostroma.config-draft.v1'); } catch { return null; } })(),
   navOpen: false,
   ready: false,
   connection: 'connecting',
@@ -381,8 +381,8 @@ export function getState(): AppState {
 export function setConfigDraft(configDraft: string | null) {
   set({ configDraft });
   try {
-    if (configDraft === null) sessionStorage.removeItem('strata.config-draft.v1');
-    else sessionStorage.setItem('strata.config-draft.v1', configDraft);
+    if (configDraft === null) sessionStorage.removeItem('nostroma.config-draft.v1');
+    else sessionStorage.setItem('nostroma.config-draft.v1', configDraft);
   } catch { /* Keep the session draft even when browser storage is unavailable. */ }
 }
 
@@ -396,7 +396,7 @@ export function selectRemoteModel(remoteModel: RemoteModelSelection | null) {
   set({ remoteModel });
   const id = state.activeSession;
   if (id) patchSession(id, s => ({ ...s, preferences: { ...s.preferences, remoteModel } }));
-  try { localStorage.removeItem('strata.remote-model.v1'); } catch { /* The old global choice is retired. */ }
+  try { localStorage.removeItem('nostroma.remote-model.v1'); } catch { /* The old global choice is retired. */ }
 }
 function applyProviders(providers: ModelProviders) {
   // A chat whose API model was removed keeps its choice: the next send says the model is gone, rather
@@ -1725,7 +1725,7 @@ export async function retryLast(messageId?: string) {
   const prompt = rewindTo(user.id);
   if (prompt !== null) {
     // Retry sends immediately; only Edit should leave the prompt in the composer.
-    sessionStorage.setItem(`strata.chat-draft.${state.activeSession}`, '');
+    sessionStorage.setItem(`nostroma.chat-draft.${state.activeSession}`, '');
     await sendMessage(prompt);
   }
 }
@@ -1847,7 +1847,7 @@ export function rewindTo(messageId: string): string | null {
   const branchId = branchFrom(messageId);
   if (!branchId) return null;
   patchSession(branchId, s => ({ ...s, messages: s.messages.slice(0, -1), tokensIn: 0, tokensOut: s.messages.slice(0, -1).reduce((n, m) => n + (m.tokens ?? 0), 0) }));
-  sessionStorage.setItem(`strata.chat-draft.${branchId}`, prompt);
+  sessionStorage.setItem(`nostroma.chat-draft.${branchId}`, prompt);
   return prompt;
 }
 
@@ -2341,8 +2341,8 @@ export function go(route: Route, param?: string) {
 /* ---------------------------------------------------------------- bootstrap */
 
 export function bootOnce() {
-  if ((globalThis as { __strataBooted?: boolean }).__strataBooted) return;
-  (globalThis as { __strataBooted?: boolean }).__strataBooted = true;
+  if ((globalThis as { __nostromaBooted?: boolean }).__nostromaBooted) return;
+  (globalThis as { __nostromaBooted?: boolean }).__nostromaBooted = true;
   void bootstrap();
 }
 

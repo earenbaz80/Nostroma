@@ -4,11 +4,11 @@
 // Origin: llama.cpp (https://github.com/ggml-org/llama.cpp), ggml/src/ggml-cuda/vecdotq.cuh (the 11 vec_dot_*_q8_1 functions below, their
 // _impl helpers, get_int_b2/b4, get_int_from_table_16, unpack_ksigns and the MMVQ VDR values) and ggml/src/ggml-cuda/common.cuh
 // (ggml_cuda_dp4a, ggml_cuda_type_traits' qk / qi; the FAST_FP16_AVAILABLE condition) plus ggml/src/ggml-cuda/vendors/hip.h (__vsubss4),
-// at the commit vendored in third_party/strata-ggml (pin 3cf03257f219afbe7334045ff7c6a06ac68c627d, third_party/strata-ggml/UPSTREAM.md).
-// MIT License, Copyright (c) 2023-2026 The ggml authors; the licence text is third_party/strata-ggml/LICENSE and stays with this code.
+// at the commit vendored in third_party/nostroma-ggml (pin 3cf03257f219afbe7334045ff7c6a06ac68c627d, third_party/nostroma-ggml/UPSTREAM.md).
+// MIT License, Copyright (c) 2023-2026 The ggml authors; the licence text is third_party/nostroma-ggml/LICENSE and stays with this code.
 // The function bodies are the upstream text; only names changed (fnx namespace, ggml_cuda_dp4a -> qd_dp4a, the VDR macros -> constants,
 // ggml_cuda_type_traits -> qtraits) and the MUSA / pre-RDNA2 branches the split never builds are left out.
-// Block layouts and codebook tables: third_party/strata-ggml/strata-quant-common.h (Nostroma's quant header).
+// Block layouts and codebook tables: third_party/nostroma-ggml/nostroma-quant-common.h (Nostroma's quant header).
 //
 // The main engine's own copies (src/kernels/cuda/iq_kernels.cu) are NOT the same arithmetic for Q5_1 and Q4_0 (min term from the quantized
 // activations, centred codes), so they are not used here; tools/qdot_test.cu proves these dots bit-identical to vecdotq.cuh.
@@ -26,7 +26,7 @@
 #define GGML_COMMON_DECL_CUDA
 #define GGML_COMMON_IMPL_CUDA
 #endif
-#include "strata-quant-common.h"
+#include "nostroma-quant-common.h"
 
 #include "gguf.hpp"   // GgmlType (T_Q4_K, ...: the ggml type numbers)
 

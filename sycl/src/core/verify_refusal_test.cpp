@@ -6,7 +6,7 @@
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "strata/core/verify.hpp"
+#include "nostroma/core/verify.hpp"
 
 #include <cstdio>
 #include <string>
@@ -15,7 +15,7 @@ static int g_fail = 0;
 static void check(bool ok, const char* what) { std::printf("  %-100s %s\n", what, ok ? "ok" : "FAIL"); if (!ok) ++g_fail; }
 
 int main() {
-    using namespace strata::core;
+    using namespace nostroma::core;
     sycl::queue* q = &dpct::get_in_order_queue();
     std::printf("device: %s\n", q->get_device().get_info<sycl::info::device::name>().c_str());
     {

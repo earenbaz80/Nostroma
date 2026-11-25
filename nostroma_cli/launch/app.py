@@ -413,7 +413,7 @@ def _info_for(result: Result, s: S.LaunchSettings) -> dict:
     except (OSError, ValueError):
         pass
     return {"url": result.urls[0] if result.urls else f"http://127.0.0.1:{s.port}", "urls": result.urls, "key": result.key,
-            "model": cfg.get("model_name") or "strata", "context": s.context, "name": s.name, "profile": result.profile, "running": True,
+            "model": cfg.get("model_name") or "nostroma", "context": s.context, "name": s.name, "profile": result.profile, "running": True,
             "tunnel": result.tunnel}
 
 
@@ -430,7 +430,7 @@ def run_monitor(info: dict, *, keep_default: bool = True, color: str = "auto") -
         try:
             runtime.stop(info["profile"], timeout=180)
         except Exception as e:                               # noqa: BLE001
-            print(f"strata: could not stop the server: {e}", file=sys.stderr)
+            print(f"nostroma: could not stop the server: {e}", file=sys.stderr)
             return 6
         acc.stop_tunnel(info["profile"])
         print("Stopped. The model is unloaded and the graphics memory is free.")
@@ -461,7 +461,7 @@ def run_tui(settings: S.LaunchSettings | None, *, catalog: Catalog | None = None
     result = app.run()
     if getattr(app, "return_code", 0) not in (0, None) or getattr(app, "_exception", None) is not None:
         # The screens stopped on an error of their own (not a launch failure, which the run screen shows). Never end quietly with exit 0.
-        print("strata: The launch screens stopped because of an unexpected problem, and nothing was started. "
+        print("nostroma: The launch screens stopped because of an unexpected problem, and nothing was started. "
               "Run the same command with --no-tui to see the steps as plain lines, and send the output if you ask for help.", file=sys.stderr)
         return 1
     if app.stopped_after_save:

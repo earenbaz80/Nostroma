@@ -1,8 +1,8 @@
 // Actual gated proposal packet contract, CPU-only; hand-specified expectations.
 // Includes immutable q bits, root rescue on all branches, NULL versus budget, and invalid packets.
 // Does not validate a GPU execution or main's final window copy/commit loop.
-#include "strata/core/gated_proposal.hpp"
-#include "strata/core/spec_proposal.hpp"
+#include "nostroma/core/gated_proposal.hpp"
+#include "nostroma/core/spec_proposal.hpp"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -14,8 +14,8 @@
 #include <string>
 
 namespace {
-namespace ap = strata::core::gated;
-namespace ac = strata::core::proposal;
+namespace ap = nostroma::core::gated;
+namespace ac = nostroma::core::proposal;
 constexpr int A=7, B=4097, C=8190, V=8192;
 constexpr float theta=.5f;
 using Row=std::array<int32_t,ap::kStride>;

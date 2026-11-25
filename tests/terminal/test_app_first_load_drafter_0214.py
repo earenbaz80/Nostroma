@@ -49,7 +49,7 @@ class SetupFirstLoadAndStartAgree(unittest.TestCase):
                 (mtp / "experts.bin").write_bytes(b"x" * 2048)
                 cfg = {"model_name": "qwen3.8-flash-next-iq3_s", "backend": "cuda",
                        "args": ["--pack", str(data / "packs" / "iq3_s"), "--native", str(Path(tmp) / "IQ3_S-00001-of-00002.gguf"), "--mtp", str(mtp), "--max-context", "131072"]}
-                path = Path(tmp) / "strata-iq3_s.json"
+                path = Path(tmp) / "nostroma-iq3_s.json"
                 path.write_text(json.dumps(cfg), encoding="utf-8")
                 self.assertEqual(_plan(config=str(path))["choice"], expected)
                 # 3. the start (serve/server.py runs drafting.apply on the same config): the same choice

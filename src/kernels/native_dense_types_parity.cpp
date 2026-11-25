@@ -11,8 +11,8 @@
 // exact multi-column layout) against single-column calls, bit for bit, and a zero activation giving a zero output.
 // --bench prints the single-column decode time of the type at 2560 x 8192 (a fused QKV-sized tensor), microseconds and GB/s.
 // Exit 77 without a GPU.
-#include "strata/kernels/iq_kernels.hpp"
-#include "strata/kernels/native_mmvq.hpp"
+#include "nostroma/kernels/iq_kernels.hpp"
+#include "nostroma/kernels/native_mmvq.hpp"
 
 #include "ggml.h"
 
@@ -28,7 +28,7 @@
 #include <string>
 #include <vector>
 
-namespace K = strata::kernels;
+namespace K = nostroma::kernels;
 
 namespace {
 int g_fail = 0;

@@ -238,8 +238,8 @@ try {
          modal may be covering — the setup screen renders one over the whole
          window, and clicking through it timed out. */
       await page.evaluate(() => {
-        const raw = JSON.parse(localStorage.getItem('strata.prefs.v2') ?? '{}');
-        localStorage.setItem('strata.prefs.v2', JSON.stringify({ ...raw, theme: 'dark' }));
+        const raw = JSON.parse(localStorage.getItem('nostroma.prefs.v2') ?? '{}');
+        localStorage.setItem('nostroma.prefs.v2', JSON.stringify({ ...raw, theme: 'dark' }));
       });
       await page.reload({ waitUntil: 'domcontentloaded' });
       await page.waitForTimeout(1200);

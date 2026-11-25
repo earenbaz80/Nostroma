@@ -1,21 +1,21 @@
-// src/image/te/te_dequant_check_main.cpp - test program strata-te-dequant-check (not shipped): the device decoders of
-// include/strata/image/te_dequant.hpp against the host reference, bit for bit.
+// src/image/te/te_dequant_check_main.cpp - test program nostroma-te-dequant-check (not shipped): the device decoders of
+// include/nostroma/image/te_dequant.hpp against the host reference, bit for bit.
 //
-//   strata-te-dequant-check <file.gguf> [--max-tensors N]
-//   strata-te-dequant-check --synthetic
+//   nostroma-te-dequant-check <file.gguf> [--max-tensors N]
+//   nostroma-te-dequant-check --synthetic
 //
 // With a file: every tensor of a supported type, decoded on the device and on the host, must give the same f16 bits;
 // prints per type the tensors, values and mismatches, and the device decode rate (GB of f16 written per second).
 // --synthetic: random blocks of every supported type (Q8_0, BF16 and F16 do not occur in the text encoder's file).
 // Exit 0 only when nothing differs.
-#include "strata/image/te_dequant.hpp"
+#include "nostroma/image/te_dequant.hpp"
 
-#define STRATA_GGUF_MAIN_DISABLED 1
-#include "strata/artifact/gguf_reader.hpp"
-#include "strata/kernels/f16_bits.hpp"
+#define NOSTROMA_GGUF_MAIN_DISABLED 1
+#include "nostroma/artifact/gguf_reader.hpp"
+#include "nostroma/kernels/f16_bits.hpp"
 
 #if defined(__HIP__) || defined(__HIPCC__) || defined(__HIP_PLATFORM_AMD__)
-#include "strata/hip_compat/cuda_runtime.h"
+#include "nostroma/hip_compat/cuda_runtime.h"
 #else
 #include <cuda_runtime.h>
 #endif
@@ -28,7 +28,7 @@
 #include <string>
 #include <vector>
 
-using namespace strata::image;
+using namespace nostroma::image;
 
 namespace {
 
@@ -75,7 +75,7 @@ bool check_one(uint32_t type, const uint8_t* raw, int64_t ne0, int64_t rows, Tal
 
 void put_f16(uint8_t* p, std::mt19937& rng) {
     std::uniform_real_distribution<float> u(-0.02f, 0.02f);
-    const uint16_t h = strata::kernels::f16_from_f32(u(rng));
+    const uint16_t h = nostroma::kernels::f16_from_f32(u(rng));
     p[0] = (uint8_t) (h & 0xFF);
     p[1] = (uint8_t) (h >> 8);
 }
@@ -132,14 +132,14 @@ int synthetic() {
 int main(int argc, char** argv) {
     if (argc >= 2 && std::strcmp(argv[1], "--synthetic") == 0) return synthetic();
     if (argc < 2) {
-        std::fprintf(stderr, "usage: strata-te-dequant-check <file.gguf> [--max-tensors N] | --synthetic\n");
+        std::fprintf(stderr, "usage: nostroma-te-dequant-check <file.gguf> [--max-tensors N] | --synthetic\n");
         return 2;
     }
     int max_t = 1 << 30;
     for (int i = 2; i + 1 < argc; ++i)
         if (std::strcmp(argv[i], "--max-tensors") == 0) max_t = std::atoi(argv[i + 1]);
     try {
-        strata::GgufFile g(argv[1]);
+        nostroma::GgufFile g(argv[1]);
         std::map<uint32_t, Tally> tally;
         int done = 0, skipped = 0;
         for (const auto& ti : g.tensors()) {
@@ -156,7 +156,7 @@ int main(int argc, char** argv) {
         uint64_t bad = 0;
         for (auto& [type, t] : tally) {
             std::printf("type %-6s: %3d tensors, %llu values, %llu mismatches, device decode %.1f GB/s of f16\n",
-                        strata::ggml_type_name(type), t.tensors, (unsigned long long) t.values,
+                        nostroma::ggml_type_name(type), t.tensors, (unsigned long long) t.values,
                         (unsigned long long) t.mismatches, t.dev_s > 0 ? t.values * 2 / t.dev_s / 1e9 : 0.0);
             bad += t.mismatches;
         }

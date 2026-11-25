@@ -1,15 +1,15 @@
-# DFlash2 experiment runner on strix. One engine process at a time; reads ids from C:\strata-test\dflash2\p\<name>.*.ids
+# DFlash2 experiment runner on strix. One engine process at a time; reads ids from C:\nostroma-test\dflash2\p\<name>.*.ids
 # usage: run_one.ps1 -Mode gen|genf|genfm|tap|tcycle -Name <prompt> [-MaxNew N] [-Cycle 1,2,...]
-param([string]$Mode, [string]$Name, [int]$MaxNew = 900, [string]$Cycle = "", [string]$Exe = "strata-hook.exe", [string]$Tag = "", [string]$Extra = "")
+param([string]$Mode, [string]$Name, [int]$MaxNew = 900, [string]$Cycle = "", [string]$Exe = "nostroma-hook.exe", [string]$Tag = "", [string]$Extra = "")
 $ErrorActionPreference = "Continue"
-$W = "C:\strata-test\dflash2"
-$D = "C:\Users\Administrator\Documents\Strata"
-$OWN = "C:\Users\Administrator\AppData\Local\Strata\terminal\0.1.46.1"
-$env:LOCALAPPDATA = "C:\strata-test\la"
-$env:APPDATA = "C:\strata-test\la"
+$W = "C:\nostroma-test\dflash2"
+$D = "C:\Users\Administrator\Documents\Nostroma"
+$OWN = "C:\Users\Administrator\AppData\Local\Nostroma\terminal\0.1.46.1"
+$env:LOCALAPPDATA = "C:\nostroma-test\la"
+$env:APPDATA = "C:\nostroma-test\la"
 New-Item -ItemType Directory -Force -Path $env:LOCALAPPDATA | Out-Null
 New-Item -ItemType Directory -Force -Path "$W\out" | Out-Null
-$env:STRATA_ARENA_PIN_GIB = "none"
+$env:NOSTROMA_ARENA_PIN_GIB = "none"
 $env:PATH = "$W\eng\rocm\bin;" + $env:PATH
 $mtp = $D + "\mtp\rt"
 $base = @("--pack", "$D\packs\iq3_s",
@@ -31,13 +31,13 @@ if ($Mode -eq "gen") {
   $a = $base + @("--spec", "4", "--spec-min-p", "0.5", "--mtp", $mtp, "--spec-follow", "$W\p\$Name.out.ids", "--max-new", "$n", "--tokens", $ids)
   if ($Mode -eq "genfm") { $a += @("--suffix-draft", "0") }
 } elseif ($Mode -eq "tap") {
-  $env:STRATA_TAP_FILE = "$W\out\tap_$Name.bin"
-  Remove-Item $env:STRATA_TAP_FILE -ErrorAction SilentlyContinue
+  $env:NOSTROMA_TAP_FILE = "$W\out\tap_$Name.bin"
+  Remove-Item $env:NOSTROMA_TAP_FILE -ErrorAction SilentlyContinue
   $first = (Get-Content "$W\p\$Name.first.ids" -Raw).Trim()
   $n = (Get-Content "$W\p\$Name.rest.ids" -Raw).Split(",").Count
   $a = $base + @("--spec", "8", "--spec-oracle", "$W\p\$Name.rest.ids", "--spec-follow", "$W\p\$Name.rest.ids", "--max-new", "$n", "--tokens", $first)
 } elseif ($Mode -eq "tcycle") {
-  $env:STRATA_SPEC_T_CYCLE = $Cycle
+  $env:NOSTROMA_SPEC_T_CYCLE = $Cycle
   $first = (Get-Content "$W\p\$Name.first.ids" -Raw).Trim()
   $a = $base + @("--spec", "8", "--spec-oracle", "$W\p\$Name.rest.ids", "--spec-follow", "$W\p\$Name.rest.ids", "--max-new", "$MaxNew", "--tokens", $first)
 } else { "bad mode"; exit 2 }

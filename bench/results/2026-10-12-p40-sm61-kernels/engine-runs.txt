@@ -1,8 +1,8 @@
 # Every request of the engine A/B (bench.py).  One server start per label; the card at 65 C before each.
 # A3..A6-base: a0116b2 unchanged.  B3-new, B4-new: the change without the GEMM route (its defaults).
-# B5-new, B6-new: with the GEMM route (STRATA_DENSE_F32=1 here).  off-switches: the B5/B6 build with
-# STRATA_DEQUANT_WIDE=0 STRATA_SM61_TABLE=0 STRATA_DENSE_F32=0.  Order as run: A3 B3 A4 B4, then A5 B5 A6 B6 off.
-# PR-default, PR-dense: the commits as pushed, one pass each, without and with STRATA_DENSE_F32=1 (the first
+# B5-new, B6-new: with the GEMM route (NOSTROMA_DENSE_F32=1 here).  off-switches: the B5/B6 build with
+# NOSTROMA_DEQUANT_WIDE=0 NOSTROMA_SM61_TABLE=0 NOSTROMA_DENSE_F32=0.  Order as run: A3 B3 A4 B4, then A5 B5 A6 B6 off.
+# PR-default, PR-dense: the commits as pushed, one pass each, without and with NOSTROMA_DENSE_F32=1 (the first
 # started at 54 C, the second at 64 C).
 A3-base-p1 short run 0: prompt 565 tok (565 read) at 208.4 tok/s | 200 generated at 32.1 tok/s | wall 9.0s
 A3-base-p1 short run 1: prompt 565 tok (565 read) at 202.9 tok/s | 200 generated at 35.0 tok/s | wall 8.5s

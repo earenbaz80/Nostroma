@@ -1,5 +1,5 @@
 """tools/image/gate/test_te_ref.py - TEST-ONLY: te_ref.py's pieces against independent scalar forms of the same maths
-(the GGUF block formats as include/strata/artifact/dequant.hpp writes them, the prompt-weight parser's documented cases),
+(the GGUF block formats as include/nostroma/artifact/dequant.hpp writes them, the prompt-weight parser's documented cases),
 and the encoder on a tiny random model (no model file needed).
 
     python -m pytest tools/image/gate/test_te_ref.py"""

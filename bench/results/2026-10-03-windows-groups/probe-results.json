@@ -1,6 +1,6 @@
 {
   "probe": "windows_processor_groups_affinity_probe.py",
-  "safety": "Separate helper process. Affinity modified only on its own short-lived Python test threads; no Strata/model/server/process affinity was queried or changed.",
+  "safety": "Separate helper process. Affinity modified only on its own short-lived Python test threads; no Nostroma/model/server/process affinity was queried or changed.",
   "timestamp_local": "2026-10-03 21:37:17 \u6771\u4eac (\u6a19\u6e96\u6642)",
   "os": {
     "platform": "Windows-11-10.0.26300-SP0",

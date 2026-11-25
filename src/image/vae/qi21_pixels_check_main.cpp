@@ -1,15 +1,15 @@
-// src/image/vae/qi21_pixels_check_main.cpp - test program strata-pixels-check (not shipped): qi21_float_to_u8 on a
+// src/image/vae/qi21_pixels_check_main.cpp - test program nostroma-pixels-check (not shipped): qi21_float_to_u8 on a
 // fixture of float values and the bytes stable-diffusion.cpp made of them.
 //
-//   strata-pixels-check FILE...     FILE: int32 n, then n float32 values, then n expected bytes
-#include "strata/image/qi21_pixels.hpp"
+//   nostroma-pixels-check FILE...     FILE: int32 n, then n float32 values, then n expected bytes
+#include "nostroma/image/qi21_pixels.hpp"
 
 #include <cstdint>
 #include <cstdio>
 #include <fstream>
 #include <vector>
 
-using namespace strata::image;
+using namespace nostroma::image;
 
 int main(int argc, char** argv) {
     int bad = 0;

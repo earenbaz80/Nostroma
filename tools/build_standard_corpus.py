@@ -3,7 +3,7 @@
 
     python tools/build_standard_corpus.py --tokenizer PACK/tokenizer [--out bench/prompts/standard-v1]
 
-`strata bench run` reads the bundle this writes and never builds prompts at run time, so every machine sends the same bytes. The
+`nostroma bench run` reads the bundle this writes and never builds prompts at run time, so every machine sends the same bytes. The
 bundle has one JSON file per scheduled request (the 22 required ones and the 12 of the optional concurrency stage), `build.json`
 (how it was made: the tokenizer and template hashes, the target and actual token counts) and `MANIFEST.sha256` (a `sha256sum`
 listing of every other file). The SHA-256 of that manifest is the protocol's `corpus_sha256`.
@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-PROTOCOL_ID = "strata-qwen38-thinking-v1-draft.1"
+PROTOCOL_ID = "nostroma-qwen38-thinking-v1-draft.1"
 BUNDLE = "standard-v1"
 
 SHORT_TASK = "Explain how a hash table finds a value, including collisions and one small example."
@@ -113,7 +113,7 @@ class Counter:
     """Token counts of a rendered request, with the tokenizer and the template the server uses."""
 
     def __init__(self, tokenizer_dir: Path, template_path: Path):
-        import strata_tokenizer as ST
+        import nostroma_tokenizer as ST
         from serve.frontend import ChatTemplate
         vocab = json.loads((tokenizer_dir / "vocab.json").read_text(encoding="utf-8"))
         tokens = [None] * len(vocab)

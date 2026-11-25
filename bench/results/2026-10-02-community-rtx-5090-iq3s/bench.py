@@ -21,13 +21,13 @@ import time
 import urllib.request
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[3]          # the Strata runtime folder
+ROOT = Path(__file__).resolve().parents[3]          # the Nostroma runtime folder
 sys.path.insert(0, str(ROOT / "tools"))
 from needle_bench import haystack, CHARS_PER_TOKEN  # noqa: E402
 
 URL = "http://127.0.0.1:8080/v1/chat/completions"
 MODEL = "qwen3.8-flash-next-iq3_s"
-LOG = ROOT / "strata-iq3_s.log"
+LOG = ROOT / "nostroma-iq3_s.log"
 LENGTHS = [1024, 4096, 32768, 131072]
 MAX_NEW = 256
 OUT = Path(__file__).with_name("runs.json")

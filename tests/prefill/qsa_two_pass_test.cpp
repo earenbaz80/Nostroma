@@ -1,4 +1,4 @@
-// tests/prefill/qsa_two_pass_test.cpp - STRATA_SELECT_TWO_PASS without a GPU (qsa_two_pass.hpp).
+// tests/prefill/qsa_two_pass_test.cpp - NOSTROMA_SELECT_TWO_PASS without a GPU (qsa_two_pass.hpp).
 //
 // 1. TF32: the host copy of cvt.rna.tf32.f32 rounds to nearest, ties away from zero.
 // 2. The bound: for random and adversarial indexer queries and keys, the single-pass score S1 and the 3xTF32 score S3
@@ -11,7 +11,7 @@
 //    candidate threshold), the identity: a host copy of the band kernel picks the blocks to score again, and the
 //    top-k of the resulting row (block_topk_kernel's rule) must be the top-k of the 3xTF32 row, id for id.
 // Exits non-zero on the first failure.  No GPU, no model.
-#include "strata/kernels/qsa_two_pass.hpp"
+#include "nostroma/kernels/qsa_two_pass.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -23,7 +23,7 @@
 #include <random>
 #include <vector>
 
-namespace tp = strata::kernels::two_pass;
+namespace tp = nostroma::kernels::two_pass;
 
 namespace {
 

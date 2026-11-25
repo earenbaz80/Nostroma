@@ -19,7 +19,7 @@ import importlib.util  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 NOISE = ROOT / "tools" / "image" / "sdcpp_noise"
-_spec = importlib.util.spec_from_file_location("strata_sdcpp_noise_apply_test", NOISE / "apply.py")
+_spec = importlib.util.spec_from_file_location("nostroma_sdcpp_noise_apply_test", NOISE / "apply.py")
 A = importlib.util.module_from_spec(_spec)             # not "import apply": sdcpp_native has an apply.py too
 _spec.loader.exec_module(A)
 
@@ -50,10 +50,10 @@ GOLDEN = {0: "ed8d8d740dbd5fe6", 42: "ab9095ca6f8db096", 4611686018427387904: "e
 
 PROGRAM = """#include <cstdio>
 #include <cstdlib>
-#include "strata_noise.hpp"
+#include "nostroma_noise.hpp"
 int main(int argc, char** argv) {
     const uint64_t seed = std::strtoull(argv[1], nullptr, 10);
-    const std::vector<float> o = strata_noise::randn(seed, 262144);
+    const std::vector<float> o = nostroma_noise::randn(seed, 262144);
     uint64_t h = 1469598103934665603ull;
     const unsigned char* p = (const unsigned char*) o.data();
     for (size_t i = 0; i < o.size() * 4; ++i) h = (h ^ p[i]) * 1099511628211ull;
@@ -76,13 +76,13 @@ class Apply(unittest.TestCase):
             sd = self.tree(d)
             A.apply(sd)
             engine = (sd / "src" / "pipeline" / "diffusion_engine.cpp").read_text(encoding="utf-8")
-            self.assertIn('#include "core/strata_philox_rng.hpp"', engine)
-            self.assertEqual(engine.count("strata_noise::requested(sd_ctx_params->model_args)"), 1)
-            self.assertIn("rng = std::make_shared<StrataPhiloxRNG>();", engine)
+            self.assertIn('#include "core/nostroma_philox_rng.hpp"', engine)
+            self.assertEqual(engine.count("nostroma_noise::requested(sd_ctx_params->model_args)"), 1)
+            self.assertIn("rng = std::make_shared<NostromaPhiloxRNG>();", engine)
             # the stock code is all still there, in the same order: the block only follows it
-            self.assertTrue(engine.index("sampler_rng = rng;") < engine.index("strata_noise::requested"))
-            self.assertTrue(engine.index("strata_noise::requested") < engine.index("ggml_log_set"))
-            for name in A.FILES + ("strata_sin_exc_data.inc",):
+            self.assertTrue(engine.index("sampler_rng = rng;") < engine.index("nostroma_noise::requested"))
+            self.assertTrue(engine.index("nostroma_noise::requested") < engine.index("ggml_log_set"))
+            for name in A.FILES + ("nostroma_sin_exc_data.inc",):
                 self.assertTrue((sd / "src" / "core" / name).is_file(), name)
             before = {p: p.read_bytes() for p in sd.rglob("*") if p.is_file()}
             A.apply(sd)                                   # again: nothing changes
@@ -102,14 +102,14 @@ class Apply(unittest.TestCase):
         body = src.split("= {", 1)[1].rsplit("};", 1)[0]
         got = bytes(int(x, 16) for x in re.findall(r"0x([0-9a-f]{2})", body))
         self.assertEqual(got, data)
-        self.assertIn(f"STRATA_SIN_EXC_DATA[]", src)
+        self.assertIn(f"NOSTROMA_SIN_EXC_DATA[]", src)
         self.assertLess(len(src), 1_200_000)             # about 1.1 MB of source for the 184 KB table
 
     def test_prepare_writes_the_generator_files(self):
         with tempfile.TemporaryDirectory() as d:
             A.prepare(Path(d) / "inc")
             names = sorted(p.name for p in (Path(d) / "inc").iterdir())
-            self.assertEqual(names, sorted(A.FILES + ("strata_sin_exc_data.inc",)))
+            self.assertEqual(names, sorted(A.FILES + ("nostroma_sin_exc_data.inc",)))
 
 
 @unittest.skipUnless(shutil.which("g++") or shutil.which("c++") or shutil.which("clang++"), "no C++ compiler")

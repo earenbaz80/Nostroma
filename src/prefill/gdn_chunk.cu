@@ -1,4 +1,4 @@
-// src/prefill/gdn_chunk.cu - see include/strata/prefill/gdn_chunk.hpp for the math and the contract.
+// src/prefill/gdn_chunk.cu - see include/nostroma/prefill/gdn_chunk.hpp for the math and the contract.
 //
 // Three kernels, the same three stages as llama.cpp-v100's gdn-chunk-sm70 (cumsum / kkt / fwd), hand-written
 // plain CUDA - FP32 throughout, no FP16 staging and no tensor cores yet (the TileLang m8n8k4 output of the
@@ -9,8 +9,8 @@
 // Per CTA: one (v head, 32-column slice) of the state, all chunks in order (the state slice lives in
 // registers - the chunk-serial scan of the reference's fwd kernel).  The per-chunk 64x64 matrices A and P are
 // computed once per (chunk, head) by the kkt kernel and read by the four column slices.
-#include "strata/prefill/gdn_chunk.hpp"
-#include "strata/env.hpp"
+#include "nostroma/prefill/gdn_chunk.hpp"
+#include "nostroma/env.hpp"
 
 #include <cuda_runtime.h>
 #if !defined(__HIPCC__)
@@ -23,12 +23,12 @@
 #include <cstdlib>
 #include <mutex>
 
-#include "strata/core/geometry.hpp"
+#include "nostroma/core/geometry.hpp"
 
-namespace strata::prefill {
+namespace nostroma::prefill {
 namespace {
 
-constexpr int S = strata::core::kCompiledGeometry.ssm_state_size, HK = strata::core::kCompiledGeometry.ssm_k_heads, HV = strata::core::kCompiledGeometry.ssm_v_heads, C = strata::core::kCompiledGeometry.ssm_conv_channels;  // as src/prefill/kernels.cu
+constexpr int S = nostroma::core::kCompiledGeometry.ssm_state_size, HK = nostroma::core::kCompiledGeometry.ssm_k_heads, HV = nostroma::core::kCompiledGeometry.ssm_v_heads, C = nostroma::core::kCompiledGeometry.ssm_conv_channels;  // as src/prefill/kernels.cu
 constexpr int CH = 64;                               // tokens per chunk (the reference's chunk)
 constexpr int NS = 32;                               // value columns per fwd CTA
 constexpr int NSE = S / NS;                          // 4 slices per head
@@ -524,7 +524,7 @@ int gdn_chunk_cc() {
 }  // namespace
 
 bool gdn_chunk_available() {
-#if defined(__HIPCC__) || !defined(STRATA_EXPERIMENTAL_SM60)
+#if defined(__HIPCC__) || !defined(NOSTROMA_EXPERIMENTAL_SM60)
     return false;  // the chunked path is compiled and dispatched only in the Volta experimental build
 #else
     return gdn_chunk_cc() == 70;
@@ -542,10 +542,10 @@ void gdn_chunk_recurrence(float* state, const float* h, const float* gate, const
     const int64_t T64 = T - T % CH;
     if (T64 <= 0) return;
     cudaStream_t cs = (cudaStream_t) stream;
-    // the wmma path is the default; STRATA_GDN_CHUNK=2 selects the FP32-only FMA scan (the parity test's
+    // the wmma path is the default; NOSTROMA_GDN_CHUNK=2 selects the FP32-only FMA scan (the parity test's
     // oracle - same math, no FP16 staging) and anything below sm_70 has no wmma to use.  Read per call (the
     // tests flip it between launches).
-    const char* forced_v = strata::env("NOSTROMA_GDN_CHUNK");
+    const char* forced_v = nostroma::env("NOSTROMA_GDN_CHUNK");
     const int forced = forced_v && *forced_v ? std::atoi(forced_v) : -1;
     int dev = 0;
     if (cudaGetDevice(&dev) != cudaSuccess) {
@@ -583,8 +583,8 @@ void gdn_chunk_recurrence(float* state, const float* h, const float* gate, const
     Ws& w = ws();
     const size_t chunks_total = (size_t) (T64 / CH);
     w.ensure(chunks_total < SEG ? (chunks_total ? chunks_total : 1) : SEG);
-    // STRATA_GDN_CHUNK_PROF=1: per-stage milliseconds over the whole call (a dev tool, not a hot path)
-    static const bool prof = strata::env("NOSTROMA_GDN_CHUNK_PROF") != nullptr;
+    // NOSTROMA_GDN_CHUNK_PROF=1: per-stage milliseconds over the whole call (a dev tool, not a hot path)
+    static const bool prof = nostroma::env("NOSTROMA_GDN_CHUNK_PROF") != nullptr;
     cudaEvent_t pe0{}, pe1{};
     float ms[3] = {0, 0, 0};
     if (prof) cudaEventCreate(&pe0), cudaEventCreate(&pe1);
@@ -636,4 +636,4 @@ void gdn_chunk_recurrence(float* state, const float* h, const float* gate, const
 #endif
 }
 
-}  // namespace strata::prefill
+}  // namespace nostroma::prefill

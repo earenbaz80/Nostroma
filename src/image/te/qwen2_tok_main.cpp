@@ -1,14 +1,14 @@
-// src/image/te/qwen2_tok_main.cpp - test program strata-te-tokens (not shipped) for include/strata/image/qwen2_tok.hpp.
+// src/image/te/qwen2_tok_main.cpp - test program nostroma-te-tokens (not shipped) for include/nostroma/image/qwen2_tok.hpp.
 //
-//   strata-te-tokens run   <merges> <cases.txt> <out.txt>   cases.txt: one case per line, "<name> <prompt as hex>";
+//   nostroma-te-tokens run   <merges> <cases.txt> <out.txt>   cases.txt: one case per line, "<name> <prompt as hex>";
 //                                                         out.txt: "<name> ok <n_system> <ids,...> <weights as f32 bits>"
 //                                                         or "<name> error <message>"
-//   strata-te-tokens subset <te.gguf> <cases.txt> <out merges> <merges.txt>   run the cases with the GGUF's merges
+//   nostroma-te-tokens subset <te.gguf> <cases.txt> <out merges> <merges.txt>   run the cases with the GGUF's merges
 //                                                         (merges.txt: the same list, one per line) and keep only
 //                                                         the merges they use (rank<TAB>merge), for a test that runs
 //                                                         without the 5 GB file
 // <merges>: a .gguf (tokenizer.ggml.merges) or a subset file whose first line is "n_merges <N>".
-#include "strata/image/qwen2_tok.hpp"
+#include "nostroma/image/qwen2_tok.hpp"
 
 #include <cstdio>
 #include <cstring>
@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 
-using namespace strata::image;
+using namespace nostroma::image;
 
 static std::string unhex(const std::string& h) {
     std::string s;
@@ -43,7 +43,7 @@ static std::unique_ptr<Qwen2Tok> load(const std::string& path, std::string* err)
 
 int main(int argc, char** argv) {
     if (argc < 5) {
-        std::fprintf(stderr, "usage: strata-te-tokens run|subset <merges|gguf> <cases.txt> <out>\n");
+        std::fprintf(stderr, "usage: nostroma-te-tokens run|subset <merges|gguf> <cases.txt> <out>\n");
         return 2;
     }
     const std::string mode = argv[1];

@@ -1,14 +1,14 @@
-// staged_fo_switch / staged_fo_off / staged_fo_decide / staged_entry_layer (include/strata/prefill/staged_fo_rule.hpp): the staged group entry takes a fused-only layer
-// with STRATA_PF_STAGED_FO=1, or by default on the measured class (STRATA_PF_STAGED_FO=0 turns it off).  No GPU, no model.
+// staged_fo_switch / staged_fo_off / staged_fo_decide / staged_entry_layer (include/nostroma/prefill/staged_fo_rule.hpp): the staged group entry takes a fused-only layer
+// with NOSTROMA_PF_STAGED_FO=1, or by default on the measured class (NOSTROMA_PF_STAGED_FO=0 turns it off).  No GPU, no model.
 #include <cstdio>
 
-#include "strata/prefill/staged_fo_rule.hpp"
+#include "nostroma/prefill/staged_fo_rule.hpp"
 
-using strata::prefill::staged_entry_layer;
-using strata::prefill::staged_fo_decide;
-using strata::prefill::staged_fo_off;
-using strata::prefill::short_read_default;
-using strata::prefill::staged_fo_switch;
+using nostroma::prefill::staged_entry_layer;
+using nostroma::prefill::staged_fo_decide;
+using nostroma::prefill::staged_fo_off;
+using nostroma::prefill::short_read_default;
+using nostroma::prefill::staged_fo_switch;
 
 static int failed = 0;
 #define CHECK(x) do { if (!(x)) { std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #x); ++failed; } } while (0)
@@ -36,28 +36,28 @@ int main() {
     CHECK(!staged_fo_decide("0", true));    // the way back: the measured class with the entry off
     CHECK(!staged_fo_decide("0", false));
     // the class default: a build without MMQ takes the entry on every class (when the prerequisites hold); a build with MMQ only on the measured class with every layer fused-only
-    static_assert(strata::prefill::staged_fo_class_default(true, false, true), "no MMQ, any class: on");
-    static_assert(strata::prefill::staged_fo_class_default(true, true, true), "no MMQ, the measured class: on");
-    static_assert(!strata::prefill::staged_fo_class_default(true, false, false), "no MMQ, prerequisites missing (no gather or no group entry): off");
-    static_assert(strata::prefill::staged_fo_class_default(false, true, true), "MMQ build, the measured class with every layer fused-only: on (as before)");
-    static_assert(!strata::prefill::staged_fo_class_default(false, false, true), "MMQ build, another class: off (as before)");
-    static_assert(!strata::prefill::staged_fo_class_default(false, true, false), "MMQ build, prerequisites missing: off");
-    CHECK(staged_fo_decide(nullptr, strata::prefill::staged_fo_class_default(true, false, true)));
-    CHECK(!staged_fo_decide("0", strata::prefill::staged_fo_class_default(true, false, true)));    // the way back stays
-    CHECK(!staged_fo_decide(nullptr, strata::prefill::staged_fo_class_default(false, false, true)));
+    static_assert(nostroma::prefill::staged_fo_class_default(true, false, true), "no MMQ, any class: on");
+    static_assert(nostroma::prefill::staged_fo_class_default(true, true, true), "no MMQ, the measured class: on");
+    static_assert(!nostroma::prefill::staged_fo_class_default(true, false, false), "no MMQ, prerequisites missing (no gather or no group entry): off");
+    static_assert(nostroma::prefill::staged_fo_class_default(false, true, true), "MMQ build, the measured class with every layer fused-only: on (as before)");
+    static_assert(!nostroma::prefill::staged_fo_class_default(false, false, true), "MMQ build, another class: off (as before)");
+    static_assert(!nostroma::prefill::staged_fo_class_default(false, true, false), "MMQ build, prerequisites missing: off");
+    CHECK(staged_fo_decide(nullptr, nostroma::prefill::staged_fo_class_default(true, false, true)));
+    CHECK(!staged_fo_decide("0", nostroma::prefill::staged_fo_class_default(true, false, true)));    // the way back stays
+    CHECK(!staged_fo_decide(nullptr, nostroma::prefill::staged_fo_class_default(false, false, true)));
     // --short-read: the class default only where the entry is on for a measured class with every layer fused-only; elsewhere the engine's own 64
-    static_assert(strata::prefill::kStagedEntryShortRead > 0 && strata::prefill::kStagedEntryShortRead < 64, "the entry's crossing is below the windows' 64");
-    static_assert(strata::prefill::short_read_default(64, true, true, true) == strata::prefill::kStagedEntryShortRead, "the class default");
-    static_assert(strata::prefill::short_read_default(64, true, true, false) == 64, "entry off (STRATA_PF_STAGED_FO=0): the windows' 64");
-    static_assert(strata::prefill::short_read_default(64, false, true, true) == 64, "another class: unchanged");
-    static_assert(strata::prefill::short_read_default(64, true, false, true) == 64, "a layer on MMQ or FP16: unchanged");
-    // Windows gfx1151, an all-trellis set on the fused kernels with a Hadamard-folded layer (Gyro-S, STRATA_PF_TQ_G1151 on): the windows' 64
-    static_assert(strata::prefill::short_read_default(64, true, true, true, true) == 64, "folded trellis set: the windows' 64");
-    static_assert(strata::prefill::short_read_default(64, true, true, false, true) == 64, "folded trellis set, entry off: 64");
-    static_assert(strata::prefill::short_read_default(64, true, true, true, false) == strata::prefill::kStagedEntryShortRead, "no folded trellis set: the class default as before");
-    static_assert(strata::prefill::short_read_default(64, false, true, true, false) == 64, "another class: unchanged");
+    static_assert(nostroma::prefill::kStagedEntryShortRead > 0 && nostroma::prefill::kStagedEntryShortRead < 64, "the entry's crossing is below the windows' 64");
+    static_assert(nostroma::prefill::short_read_default(64, true, true, true) == nostroma::prefill::kStagedEntryShortRead, "the class default");
+    static_assert(nostroma::prefill::short_read_default(64, true, true, false) == 64, "entry off (NOSTROMA_PF_STAGED_FO=0): the windows' 64");
+    static_assert(nostroma::prefill::short_read_default(64, false, true, true) == 64, "another class: unchanged");
+    static_assert(nostroma::prefill::short_read_default(64, true, false, true) == 64, "a layer on MMQ or FP16: unchanged");
+    // Windows gfx1151, an all-trellis set on the fused kernels with a Hadamard-folded layer (Gyro-S, NOSTROMA_PF_TQ_G1151 on): the windows' 64
+    static_assert(nostroma::prefill::short_read_default(64, true, true, true, true) == 64, "folded trellis set: the windows' 64");
+    static_assert(nostroma::prefill::short_read_default(64, true, true, false, true) == 64, "folded trellis set, entry off: 64");
+    static_assert(nostroma::prefill::short_read_default(64, true, true, true, false) == nostroma::prefill::kStagedEntryShortRead, "no folded trellis set: the class default as before");
+    static_assert(nostroma::prefill::short_read_default(64, false, true, true, false) == 64, "another class: unchanged");
     CHECK(short_read_default(64, true, true, true, true) == 64);
-    CHECK(short_read_default(64, true, true, true) == strata::prefill::kStagedEntryShortRead);
+    CHECK(short_read_default(64, true, true, true) == nostroma::prefill::kStagedEntryShortRead);
     // the layer rule: a layer with an MMQ tile is the entry's earlier rule, whatever the decision says
     static_assert(staged_entry_layer(true, false, false), "an MMQ layer keeps the entry");
     static_assert(staged_entry_layer(true, false, true), "an MMQ layer keeps the entry");

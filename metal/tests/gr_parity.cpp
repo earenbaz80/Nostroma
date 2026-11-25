@@ -16,7 +16,7 @@
 #include <vector>
 
 namespace {
-constexpr int N = strata_metal::geo::N, HC = strata_metal::geo::HC, LR = strata_metal::geo::LR, NIN = HC * N;   // the shape this build is compiled for (engine/geo.h)
+constexpr int N = nostroma_metal::geo::N, HC = nostroma_metal::geo::HC, LR = nostroma_metal::geo::LR, NIN = HC * N;   // the shape this build is compiled for (engine/geo.h)
 struct GrArgs { uint32_t n_embd, hc, hc_lr, n_tok, apply; float eps; };
 double median(std::vector<double> v) { std::sort(v.begin(), v.end()); return v[v.size() / 2]; }
 struct Err {
@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
         else if (a == "--ntok") ntoks = {std::atoi(argv[++i])};
     }
     mtl::Context cx;
-    const int lib = cx.compile({"quant.metal", "units.metal", "gr.metal"}, strata_metal::geo::prelude());
+    const int lib = cx.compile({"quant.metal", "units.metal", "gr.metal"}, nostroma_metal::geo::prelude());
     std::printf("device %s\n", cx.device_name().c_str());
     const int SETS = bench ? 48 : 1;
     const bool q8 = std::getenv("GR_Q8") != nullptr;   // the Q8_0 form of the HC matrices (gr_down_q8_*, gr_up_q8)

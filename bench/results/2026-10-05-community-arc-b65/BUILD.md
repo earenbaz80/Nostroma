@@ -1,9 +1,9 @@
 # Diagnostic-off source build and reproduction
 
-This repeats the original build/profile with only STRATA_DBG_NAN absent.
+This repeats the original build/profile with only NOSTROMA_DBG_NAN absent.
 
 
-The measurements use Strata v0.1.40 source (Intel engine label 0.1.39-sycl) at
+The measurements use Nostroma v0.1.40 source (Intel engine label 0.1.39-sycl) at
 `1735d6471df29b42c26170efaac1f1446a58640f`, ggml/llama.cpp
 `3cf03257f219afbe7334045ff7c6a06ac68c627d`, and Intel oneAPI DPC++ 2026.1.0.
 This is a SPIR-V/JIT Release build, not AOT. Compiler options include `-O3`,
@@ -40,17 +40,17 @@ With compatible oneAPI/compiler/MKL already installed, in a separate checkout:
 ```sh
 git checkout 1735d6471df29b42c26170efaac1f1446a58640f
 export REPORT=/absolute/path/to/this/report
-export STRATA_ROOT="$PWD"
+export NOSTROMA_ROOT="$PWD"
 git apply "$REPORT"/patches/*.patch
 git clone https://github.com/ggml-org/llama.cpp.git /absolute/path/to/llama.cpp
 git -C /absolute/path/to/llama.cpp checkout 3cf03257f219afbe7334045ff7c6a06ac68c627d
 source /opt/intel/oneapi/setvars.sh
 python3 -m venv .venv-b65
 .venv-b65/bin/pip install -r requirements.txt
-export PATH="$STRATA_ROOT/.venv-b65/bin:$PATH"
+export PATH="$NOSTROMA_ROOT/.venv-b65/bin:$PATH"
 cmake -S sycl -B build-sycl -G Ninja \
   -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx \
-  -DSTRATA_GGML_DIR=/absolute/path/to/llama.cpp -DCMAKE_BUILD_TYPE=Release
+  -DNOSTROMA_GGML_DIR=/absolute/path/to/llama.cpp -DCMAKE_BUILD_TYPE=Release
 cmake --build build-sycl -j4
 ```
 
@@ -76,7 +76,7 @@ export BENCH_ASSETS=/absolute/path/to/benchmark-assets
 python tools/iq_pack.py \
   --gguf "$BENCH_ASSETS/models/IQ2_XS/Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00001-of-00002.gguf" \
   --out "$BENCH_ASSETS/pack"
-python "$REPORT/prepare-mtp.py" --source "$STRATA_ROOT" --assets "$BENCH_ASSETS"
+python "$REPORT/prepare-mtp.py" --source "$NOSTROMA_ROOT" --assets "$BENCH_ASSETS"
 ```
 
 Run under your own bounded exclusive-GPU supervisor, with adequate pinned-memory
@@ -88,14 +88,14 @@ machine policies or stop other services for you.
 ```sh
 export ONEAPI_DEVICE_SELECTOR=level_zero:0 SYCL_CACHE_PERSISTENT=0
 export SYCL_PROGRAM_COMPILE_OPTIONS=-cl-fp32-correctly-rounded-divide-sqrt
-export STRATA_MIRROR_MIB=16384 STRATA_VERIFY_DEVICE_PLAN=1 STRATA_VERIFY_NO_HOST=1
-export STRATA_WARM_GRAPHS=0
-unset STRATA_DBG_NAN
-export STRATA_STAGER_THREADS=4 OMP_NUM_THREADS=4 MKL_NUM_THREADS=4
-unset STRATA_VERIFY_EAGER STRATA_DECODE_TIMING STRATA_PLE_TRACE
-sudo install -d -m700 -o "$(id -un)" /run/strata-community
-python "$REPORT/benchmark.py" --source "$STRATA_ROOT" \
-  --profile "$REPORT/profile.json" --ram /run/strata-community \
+export NOSTROMA_MIRROR_MIB=16384 NOSTROMA_VERIFY_DEVICE_PLAN=1 NOSTROMA_VERIFY_NO_HOST=1
+export NOSTROMA_WARM_GRAPHS=0
+unset NOSTROMA_DBG_NAN
+export NOSTROMA_STAGER_THREADS=4 OMP_NUM_THREADS=4 MKL_NUM_THREADS=4
+unset NOSTROMA_VERIFY_EAGER NOSTROMA_DECODE_TIMING NOSTROMA_PLE_TRACE
+sudo install -d -m700 -o "$(id -un)" /run/nostroma-community
+python "$REPORT/benchmark.py" --source "$NOSTROMA_ROOT" \
+  --profile "$REPORT/profile.json" --ram /run/nostroma-community \
   --out /absolute/path/to/new-results --runs 3
 ```
 
@@ -115,7 +115,7 @@ and full/sliced native Q8 matrices. Twelve small synthetic cases passed on the
 B65. To rebuild it after the engine build, with oneAPI and ninja on PATH:
 
 ```sh
-python build-stride-check.py --source "$STRATA_ROOT" --build "$STRATA_ROOT/build-sycl" --out /absolute/path/to/test-build
+python build-stride-check.py --source "$NOSTROMA_ROOT" --build "$NOSTROMA_ROOT/build-sycl" --out /absolute/path/to/test-build
 ```
 
 Run the resulting gemm-stride-check binary under the same exclusive-GPU/resource

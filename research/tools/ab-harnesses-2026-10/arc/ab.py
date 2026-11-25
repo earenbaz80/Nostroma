@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """ab.py (ARC-W): interleaved A/B of engine arms on the Arc box (one engine load per arm per round, order rotated).
 
-  ab.py --name N --rounds 2 --plan "short:128:2,p4k:8:2" --arm "A=/path/strata" --arm "B=/path/strata|STRATA_X=1;STRATA_Y=2|--spec 2 ..."
+  ab.py --name N --rounds 2 --plan "short:128:2,p4k:8:2" --arm "A=/path/nostroma" --arm "B=/path/nostroma|NOSTROMA_X=1;NOSTROMA_Y=2|--spec 2 ..."
 
 arm = name=engine[|env;env[|extra args]].  Summary: median per case of the LAST repeat of each load (the first read of a
 prompt in an engine is low), ratio to the first arm, and whether the greedy tokens equal the first arm's (same round).
 """
 import argparse, json, statistics, subprocess, sys
 
-W = "/mnt/models/strata-test/arc037"
+W = "/mnt/models/nostroma-test/arc037"
 
 
 def main():

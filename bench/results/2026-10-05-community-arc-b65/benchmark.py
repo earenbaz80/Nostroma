@@ -34,7 +34,7 @@ def main():
     ap.add_argument('--source', type=Path, required=True)
     ap.add_argument('--profile', type=Path, required=True)
     ap.add_argument('--out', type=Path, required=True)
-    ap.add_argument('--ram', type=Path, default=Path(os.environ.get('STRATA_TEST_RAM', '/run/strata-community')))
+    ap.add_argument('--ram', type=Path, default=Path(os.environ.get('NOSTROMA_TEST_RAM', '/run/nostroma-community')))
     ap.add_argument('--runs', type=int, default=3)
     args = ap.parse_args()
     assert 1 <= args.runs <= 3
@@ -43,16 +43,16 @@ def main():
     args.out.mkdir(exist_ok=True)
     assert not (args.out / 'requests.json').exists(), 'do not overwrite a consumed run'
     sys.path[:0] = [str(args.source), str(args.source / 'tools')]
-    from serve.server import StrataEngine, ENGINE_REQUEST
+    from serve.server import NostromaEngine, ENGINE_REQUEST
     from serve.frontend import ChatTemplate
-    from strata_tokenizer import Tokenizer
+    from nostroma_tokenizer import Tokenizer
 
-    class MeasuredEngine(StrataEngine):
+    class MeasuredEngine(NostromaEngine):
         def _parse_done(self, line):
             self.done_line = line
             return super()._parse_done(line)
 
-    assert 'STRATA_DBG_NAN' not in os.environ, 'qualification diagnostic must be absent'
+    assert 'NOSTROMA_DBG_NAN' not in os.environ, 'qualification diagnostic must be absent'
     refs=json.loads((Path(__file__).parent/'reference-output-hashes.json').read_text())
     profile = json.loads(args.profile.read_text())
     native_args = [os.path.expandvars(x) for x in profile['args']]
@@ -192,7 +192,7 @@ def main():
             raw = log.read_text()
             assert not re.search(r'\b[1-9]\d* (?:of \d+ logits )?non-finite\b|\bnonfinite [1-9]\d*', raw)
             runs[-1]['startup_lines'] = [line for line in raw.splitlines()
-                if re.match(r'^strata (?:generate|serve): (?:GPU \d+:|PCIe probe:|expert cache \d|\d+ of \d+ experts missing|\d+ MiB of VRAM free)', line)]
+                if re.match(r'^nostroma (?:generate|serve): (?:GPU \d+:|PCIe probe:|expert cache \d|\d+ of \d+ experts missing|\d+ MiB of VRAM free)', line)]
             runs[-1]['native_log_sha256'] = hashlib.sha256(raw.encode()).hexdigest()
             save()
             for _ in range(5):

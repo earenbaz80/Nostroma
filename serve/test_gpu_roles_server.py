@@ -45,7 +45,7 @@ class Roles(unittest.TestCase):
 
     def test_the_log_line_names_every_role(self):
         lines = card_roles_lines({"gpu_roles": {"0": "helper", "1": "main", "2": "off"}, "gpu": [0, 1], "args": []})
-        self.assertEqual(lines, ["[strata] card roles: Main GPU 1, Helper GPU 0, Off GPU 2 (numbers as nvidia-smi gives them)"])
+        self.assertEqual(lines, ["[nostroma] card roles: Main GPU 1, Helper GPU 0, Off GPU 2 (numbers as nvidia-smi gives them)"])
 
     def test_every_card_off(self):
         cfg = {"gpu_roles": {"0": "off", "1": "off"}, "gpu": [], "gpu_none": True, "args": []}

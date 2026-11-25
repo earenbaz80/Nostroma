@@ -23,11 +23,11 @@ do not establish general answer quality or performance on other workloads.
 - RAM: `/proc/meminfo` reported `MemTotal` 60.53 GiB and `lsmem` reported 65.5
   GiB online; the installed DIMM size was not measured (it needs root). Swap:
   31.99 GiB.
-- Storage: the model, pack and MTP files (87 GB under `/data/ai/Strata-data`)
+- Storage: the model, pack and MTP files (87 GB under `/data/ai/Nostroma-data`)
   sit on **ext4 on a Samsung 970 EVO Plus 2 TB NVMe** (`/dev/nvme0n1p2`, mounted
   at `/ssd`), reached through a **mergerfs** union mount at `/data`
   (`/ssd/data:/data1`, options `cache.files=off,category.create=ff,
-  func.getattr=newest`). Every Strata file resolves to the `/ssd/data` branch; the
+  func.getattr=newest`). Every Nostroma file resolves to the `/ssd/data` branch; the
   union's second branch (`/data1`, ZFS pool `data1` on an HGST HUH721010ALE600
   9.1 TB 7200 rpm disk) holds none of them. The engine opened the GGUFs through
   `/data/...`. Swap is a 32 GB file (`/swap/swapfile`) on btrfs
@@ -52,12 +52,12 @@ run used IQ2_XS):
 The engine loaded 46.84 GiB at 3.11 GiB/s at startup. Hashes were not re-verified
 for this run and the Hugging Face revision is not recorded here; the GGUF files on
 disk are dated 2026-10-02. The IQ3_S native pack
-(`/data/ai/Strata-data/packs/iq3_s`, 1.5 GB) and the Q2_0 MTP draft pack
-(`/data/ai/Strata-data/mtp/rt`, 787 MB) were prepared by the setup script from
+(`/data/ai/Nostroma-data/packs/iq3_s`, 1.5 GB) and the Q2_0 MTP draft pack
+(`/data/ai/Nostroma-data/mtp/rt`, 787 MB) were prepared by the setup script from
 those shards; `packs/iq3_s/conversions.json` names the two source shards and
 their byte sizes.
 
-The complete measured configuration is [strata-iq3_s.json](strata-iq3_s.json).
+The complete measured configuration is [nostroma-iq3_s.json](nostroma-iq3_s.json).
 Startup choices and the per-request engine lines are in
 [engine-excerpt.log](engine-excerpt.log).
 
@@ -79,7 +79,7 @@ Startup choices and the per-request engine lines are in
 The server was the one already running on this machine, started as:
 
 ```bash
-.venv/bin/python serve/server.py --engine strata --config strata-iq3_s.json \
+.venv/bin/python serve/server.py --engine nostroma --config nostroma-iq3_s.json \
   --port 8080 --open --host 0.0.0.0
 ```
 
@@ -96,7 +96,7 @@ was run as:
 
 ```bash
 .venv/bin/python bench/results/2026-09-30-community-rtx-5090/benchmark.py \
-  --root /data/ai/Strata --pack /data/ai/Strata-data/packs/iq3_s \
+  --root /data/ai/Nostroma --pack /data/ai/Nostroma-data/packs/iq3_s \
   --url http://127.0.0.1:8080 \
   --out bench/results/2026-10-06-community-rtx-5060ti \
   --targets 4096,32768,128000 --runs 3
@@ -154,7 +154,7 @@ Draft acceptance was 124–152 accepted of 163–180 offered.
   utilisation was at least 1% in 420 of 431 samples; peak power draw 146.2 W
   against the 180 W limit.
 - Host RAM peak: **55.26 GiB**, calculated as `MemTotal - MemAvailable`. This
-  includes Strata, other services and non-reclaimable system memory; it is not
+  includes Nostroma, other services and non-reclaimable system memory; it is not
   process RSS.
 - Swap was already at **3,874 MiB** of 31.99 GiB when sampling started and ended
   at **3,863 MiB**; it did not grow during the recall phase. The engine had been

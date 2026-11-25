@@ -16,12 +16,12 @@
  "engine_prompt_tps": 305.7,
  "engine_decode_tps": 38.4,
  "log_lines": [
-  "strata serve: prompt 1080 tokens = 0 reused + 1080 read in 3981 ms (271.3 tok/s), 256 generated in 7340 ms (34.9 tok/s), drafts accepted 153 of 206, 1 checkpoints",
-  "strata serve: decode expert cache hit rate: 48.3% (60475 hits / 125144 lookups)",
-  "strata serve: prompt 1143 tokens = 0 reused + 1143 read in 3739 ms (305.7 tok/s), 256 generated in 6671 ms (38.4 tok/s), drafts accepted 167 of 217, 1 checkpoints",
-  "strata serve: decode expert cache hit rate: 51.5% (64536 hits / 125382 lookups)"
+  "nostroma serve: prompt 1080 tokens = 0 reused + 1080 read in 3981 ms (271.3 tok/s), 256 generated in 7340 ms (34.9 tok/s), drafts accepted 153 of 206, 1 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 48.3% (60475 hits / 125144 lookups)",
+  "nostroma serve: prompt 1143 tokens = 0 reused + 1143 read in 3739 ms (305.7 tok/s), 256 generated in 6671 ms (38.4 tok/s), drafts accepted 167 of 217, 1 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 51.5% (64536 hits / 125382 lookups)"
  ],
- "answer_head": "Based on the provided `CMakeLists.txt` file, here is an explanation of its function and a proposed improvement.\n\n### Explanation of `CMakeLists.txt`\n\nThis file is the top-level build configuration for the **Strata Engine**, a C++/CUDA/HIP mixture-of-experts inference engine. Its primary responsibili",
+ "answer_head": "Based on the provided `CMakeLists.txt` file, here is an explanation of its function and a proposed improvement.\n\n### Explanation of `CMakeLists.txt`\n\nThis file is the top-level build configuration for the **Nostroma Engine**, a C++/CUDA/HIP mixture-of-experts inference engine. Its primary responsibili",
  "metrics_after": {
   "engine": {
    "model": "qwen3.8-flash-next-iq3_xxs",

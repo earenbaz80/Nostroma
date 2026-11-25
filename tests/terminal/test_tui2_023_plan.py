@@ -77,7 +77,7 @@ class PlanEngine(unittest.TestCase):
 
 
 class DraftingOffConfig(unittest.TestCase):
-    BASE = {"exe": "component:strata-engine", "port": 8080, "model_name": "m", "env": {},
+    BASE = {"exe": "component:nostroma-engine", "port": 8080, "model_name": "m", "env": {},
             "args": ["--native", "x.gguf", "--spec", "4", "--spec-min-p", "0.5", "--mtp", "/m/rt"]}
 
     def test_drafting_off_writes_no_mtp_path(self):

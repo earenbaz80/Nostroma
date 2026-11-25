@@ -5,19 +5,19 @@
 # What it does, in order (and nothing else):
 #   1. finds out which computer this is (Windows, processor, graphics card);
 #   2. downloads the Terminal archive named in the release folder's install-manifest.txt and checks its SHA-256 against it;
-#   3. unpacks it into  %LOCALAPPDATA%\Strata\terminal\<version>  (no administrator rights);
+#   3. unpacks it into  %LOCALAPPDATA%\Nostroma\terminal\<version>  (no administrator rights);
 #   4. checks the release's signed feed with the Terminal it just unpacked (`nostroma update --check`); if that fails it removes what it
 #      unpacked and stops;
-#   5. adds  %LOCALAPPDATA%\Strata\terminal\current\bin  to your user PATH and prints:  Installed. Run: nostroma launch
+#   5. adds  %LOCALAPPDATA%\Nostroma\terminal\current\bin  to your user PATH and prints:  Installed. Run: nostroma launch
 #
 # The engine and the model are not part of this: `nostroma launch` fetches the engine for your graphics card the first time you choose
 # a model, from the same release folder, signed.
 #
 # <feed> is where the release folder is hosted: GitHub Releases of earenbaz80/Nostroma (the "latest" release's files), built in as the default.
-# Set $env:STRATA_FEED to another folder (a URL) to use that instead, for example a local test feed:  $env:STRATA_FEED='http://127.0.0.1:8099'; irm http://127.0.0.1:8099/install.ps1 | iex
-# Optional: $env:NOSTROMA_DATA_DIR (default %LOCALAPPDATA%\Strata), $env:NOSTROMA_INSTALL_TEST_TRUST='1' (a test feed: trust only
-# its test-trust.json for step 4), $env:NOSTROMA_NO_PATH='1' (do not change the user PATH). The older STRATA_* names of the same
-# settings are still read, and win only when the NOSTROMA_* one is not set. Both names go on the PATH: nostroma, and the old strata.
+# Set $env:NOSTROMA_FEED to another folder (a URL) to use that instead, for example a local test feed:  $env:NOSTROMA_FEED='http://127.0.0.1:8099'; irm http://127.0.0.1:8099/install.ps1 | iex
+# Optional: $env:NOSTROMA_DATA_DIR (default %LOCALAPPDATA%\Nostroma), $env:NOSTROMA_INSTALL_TEST_TRUST='1' (a test feed: trust only
+# its test-trust.json for step 4), $env:NOSTROMA_NO_PATH='1' (do not change the user PATH). The older NOSTROMA_* names of the same
+# settings are still read, and win only when the NOSTROMA_* one is not set. Both names go on the PATH: nostroma, and the old nostroma.
 & {   # a child scope: `irm | iex` runs in the caller's scope, and this script's variables must not overwrite the caller's
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
@@ -27,7 +27,7 @@ function Die([string]$msg) { [Console]::Error.WriteLine("nostroma installer: $ms
 try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 } catch { }
 try { if ([Net.WebRequest]::DefaultWebProxy) { [Net.WebRequest]::DefaultWebProxy.Credentials = [Net.CredentialCache]::DefaultNetworkCredentials } } catch { }
 
-$feed = if ($env:NOSTROMA_FEED) { $env:NOSTROMA_FEED } elseif ($env:STRATA_FEED) { $env:STRATA_FEED } else { 'https://github.com/earenbaz80/Nostroma/releases/latest/download' }
+$feed = if ($env:NOSTROMA_FEED) { $env:NOSTROMA_FEED } elseif ($env:NOSTROMA_FEED) { $env:NOSTROMA_FEED } else { 'https://github.com/earenbaz80/Nostroma/releases/latest/download' }
 $feed = $feed.TrimEnd('/')
 $feedHost = try { ([Uri]$feed).Host } catch { '' }
 if (-not $feedHost) { $feedHost = $feed }
@@ -42,7 +42,7 @@ function Fetch([string]$url, [string]$out) {
             $req.Timeout = 15000                                   # the connection, TLS and the server's answer (its headers)
             if ($req -is [Net.HttpWebRequest]) {
                 $req.ReadWriteTimeout = 60000                      # no byte for 60 s ends the download
-                $req.UserAgent = 'strata-installer'
+                $req.UserAgent = 'nostroma-installer'
                 if ([Net.WebRequest]::DefaultWebProxy) { $req.Proxy = [Net.WebRequest]::DefaultWebProxy }   # with the Windows sign-in (set above)
             }
             $resp = $req.GetResponse()
@@ -72,7 +72,7 @@ function Fetch([string]$url, [string]$out) {
     }
 }
 if (-not $feed) {
-    Die 'this installer does not know where the Nostroma release folder is. Set $env:STRATA_FEED to its address and run it again, for example: $env:STRATA_FEED=''https://example.org/strata'''
+    Die 'this installer does not know where the Nostroma release folder is. Set $env:NOSTROMA_FEED to its address and run it again, for example: $env:NOSTROMA_FEED=''https://example.org/nostroma'''
 }
 if ([Environment]::OSVersion.Platform -ne 'Win32NT') { Die 'this is the Windows installer; on Linux or macOS use install.sh.' }
 $arch = $env:PROCESSOR_ARCHITEW6432; if (-not $arch) { $arch = $env:PROCESSOR_ARCHITECTURE }
@@ -85,10 +85,10 @@ Write-Host 'Nostroma Terminal installer'
 Write-Host "  This computer: Windows $arch ($platform)$(if ($gpu) { ", graphics: $gpu" })"
 Write-Host "  Release folder: $feed"
 
-$wantData = if ($env:NOSTROMA_DATA_DIR) { $env:NOSTROMA_DATA_DIR } else { $env:STRATA_DATA_DIR }
+$wantData = if ($env:NOSTROMA_DATA_DIR) { $env:NOSTROMA_DATA_DIR } else { $env:NOSTROMA_DATA_DIR }
 if (-not $wantData -and -not $env:LOCALAPPDATA) { Die 'Windows did not say where your user folder is. Set $env:NOSTROMA_DATA_DIR to a folder you own, for example $env:NOSTROMA_DATA_DIR=''C:\Nostroma'', and run this again.' }
-$data = if ($wantData) { $wantData } else { Join-Path $env:LOCALAPPDATA 'Strata' }
-$work = Join-Path ([IO.Path]::GetTempPath()) ("strata-install-" + [Guid]::NewGuid().ToString('N').Substring(0, 8))
+$data = if ($wantData) { $wantData } else { Join-Path $env:LOCALAPPDATA 'Nostroma' }
+$work = Join-Path ([IO.Path]::GetTempPath()) ("nostroma-install-" + [Guid]::NewGuid().ToString('N').Substring(0, 8))
 New-Item -ItemType Directory -Path $work | Out-Null
 try {
     try { Fetch "$feed/install-manifest.txt" (Join-Path $work 'manifest.txt') }
@@ -116,7 +116,7 @@ try {
     $incoming = "$dest.incoming"
     New-Item -ItemType Directory -Force -Path (Join-Path $data 'terminal') | Out-Null
     if (Test-Path $incoming) { Remove-Item -Recurse -Force $incoming }
-    $tooLong = 'If it says a path is too long, set $env:STRATA_DATA_DIR to a short folder such as C:\Strata and run this again; otherwise check the free disk space.'
+    $tooLong = 'If it says a path is too long, set $env:NOSTROMA_DATA_DIR to a short folder such as C:\Nostroma and run this again; otherwise check the free disk space.'
     try {
         # tar.exe (Windows 10 1803 and later) handles long paths; Expand-Archive in Windows PowerShell 5.1 does not.
         # tar.exe receives its arguments through the ANSI/OEM code page, so a folder with an accented letter in its name turns into one with a question mark and the
@@ -145,21 +145,21 @@ try {
     }
     catch { Remove-Item -Recurse -Force $incoming -ErrorAction SilentlyContinue; Die "the archive could not be unpacked ($($_.Exception.Message)). $tooLong Nothing was installed." }
     # the archive of a release folder is rooted at the bundle itself (control package) or in one folder (terminal archive)
-    if (-not (Test-Path (Join-Path $incoming 'bin\strata.cmd'))) {
-        $inner = Get-ChildItem $incoming -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'bin\strata.cmd') } | Select-Object -First 1
+    if (-not (Test-Path (Join-Path $incoming 'bin\nostroma.cmd'))) {
+        $inner = Get-ChildItem $incoming -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'bin\nostroma.cmd') } | Select-Object -First 1
         if (-not $inner) { Remove-Item -Recurse -Force $incoming; Die 'the archive does not look like a Nostroma Terminal.' }
         $moved = "$dest.moved"; Move-Item $inner.FullName $moved; Remove-Item -Recurse -Force $incoming; Move-Item $moved $incoming
     }
 
-    if ($env:NOSTROMA_INSTALL_TEST_TRUST -eq '1' -or $env:STRATA_INSTALL_TEST_TRUST -eq '1') {
+    if ($env:NOSTROMA_INSTALL_TEST_TRUST -eq '1' -or $env:NOSTROMA_INSTALL_TEST_TRUST -eq '1') {
         $trust = Join-Path $work 'test-trust.json'
         try { Fetch "$feed/test-trust.json" $trust } catch { Remove-Item -Recurse -Force $incoming; Die 'the test feed has no test-trust.json' }
-        $env:STRATA_UPDATE_TRUSTED_KEYS = $trust
+        $env:NOSTROMA_UPDATE_TRUSTED_KEYS = $trust
     }
     Write-Host "Checking the release's signature..."
-    $strata = Join-Path $incoming 'bin\strata.cmd'
+    $nostroma = Join-Path $incoming 'bin\nostroma.cmd'
     $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'      # a native program's stderr note must not stop the script
-    $out = & $strata update --check --no-engine --feed $feed 2>&1 | Out-String
+    $out = & $nostroma update --check --no-engine --feed $feed 2>&1 | Out-String
     $code = $LASTEXITCODE
     $ErrorActionPreference = $prevEap
     if ($code -ne 0) {
@@ -169,8 +169,8 @@ try {
     }
     Write-Host '  Signature ok.'
 
-    # an archive from before the command had two names carries only strata.cmd: the second name is the same launcher
-    $launcher = Join-Path $incoming 'bin\strata.cmd'
+    # an archive from before the command had two names carries only nostroma.cmd: the second name is the same launcher
+    $launcher = Join-Path $incoming 'bin\nostroma.cmd'
     $alias = Join-Path $incoming 'bin\nostroma.cmd'
     if ((Test-Path $launcher) -and -not (Test-Path $alias)) { Copy-Item -LiteralPath $launcher -Destination $alias }
     if (Test-Path $dest) {
@@ -181,21 +181,21 @@ try {
     $current = Join-Path $data 'terminal\current'
     if (Test-Path $current) { cmd /c rmdir "$current" | Out-Null }
     cmd /c mklink /J "$current" "$dest" | Out-Null
-    if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $current 'bin\strata.cmd'))) {
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $current 'bin\nostroma.cmd'))) {
         # a drive that cannot hold a junction (not NTFS) or a policy that forbids it: a small launcher in its place does the same job
         try {
             if (Test-Path $current) { Remove-Item -Recurse -Force $current -ErrorAction SilentlyContinue }
             New-Item -ItemType Directory -Force -Path (Join-Path $current 'bin') | Out-Null
-            foreach ($name in @('strata', 'nostroma')) {        # both names, the same launcher behind them
-                Set-Content -Encoding Ascii -Path (Join-Path $current "bin\$name.cmd") -Value @('@echo off', ('"' + (Join-Path $dest 'bin\strata.cmd') + '" %*'))
+            foreach ($name in @('nostroma', 'nostroma')) {        # both names, the same launcher behind them
+                Set-Content -Encoding Ascii -Path (Join-Path $current "bin\$name.cmd") -Value @('@echo off', ('"' + (Join-Path $dest 'bin\nostroma.cmd') + '" %*'))
             }
             Set-Content -Encoding Ascii -Path (Join-Path $current 'current.txt') -Value $dest
             Write-Host '  (this drive could not make a link, so a small launcher was used instead)'
         }
-        catch { Die "Nostroma was unpacked but its start command could not be set up ($($_.Exception.Message)). Run it directly: $dest\bin\strata.cmd" }
+        catch { Die "Nostroma was unpacked but its start command could not be set up ($($_.Exception.Message)). Run it directly: $dest\bin\nostroma.cmd" }
     }
     $bin = Join-Path $current 'bin'
-    $noPath = ($env:NOSTROMA_NO_PATH -eq '1' -or $env:STRATA_NO_PATH -eq '1')
+    $noPath = ($env:NOSTROMA_NO_PATH -eq '1' -or $env:NOSTROMA_NO_PATH -eq '1')
     if (-not $noPath) {
         $user = [Environment]::GetEnvironmentVariable('Path', 'User')
         if (-not $user) { $user = '' }
@@ -205,7 +205,7 @@ try {
         $env:Path = "$env:Path;$bin"
     }
     Write-Host 'Installed. Run: nostroma launch'
-    Write-Host "  (the old name, 'strata', still works)"
+    Write-Host "  (the old name, 'nostroma', still works)"
     if ($noPath) { Write-Host "  (the program is $bin\nostroma.cmd)" }
     else { Write-Host '  (open a new terminal window if the command is not found yet)' }
 }

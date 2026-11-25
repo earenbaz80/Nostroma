@@ -1,4 +1,4 @@
-# Community benchmark: RTX 3060 12 GB, Strata 0.1.41
+# Community benchmark: RTX 3060 12 GB, Nostroma 0.1.41
 
 Measured 2026-10-09 on Windows. Four original Qwen3.8-Flash-Next quantizations completed the prompt sweep through 128K. Q2_0, IQ3_XXS and IQ3_S also completed three 260,000-token requests. IQ2_XS at 260K was stopped by the harness memory guard. The only soak that completed is one 30-minute IQ3_S run, shorter than the hour asked for in [docs/TEST_REQUESTS.md](../../../docs/TEST_REQUESTS.md). Coding is HumanEval IDs 0-39 only.
 
@@ -10,7 +10,7 @@ Measured 2026-10-09 on Windows. Four original Qwen3.8-Flash-Next quantizations c
 - Core i7-12700, 12 physical cores / 20 threads. DDR4-3200 MT/s, 2 x 32 GiB; 63.78 GiB visible RAM.
 - Windows 11 Pro build 26300. Model/pack storage: TS2TMTE250S NVMe 2 TB on C:. Existing automatically managed pagefile 9.5 GiB; observed system commit limit 73.28 GiB. OS settings and other user applications were preserved; background load was not fully controlled.
 - Source tag v0.1.41, commit `fb58e0dbc8399662c0e47c76578c6e878b14f6cf`; official Windows release engine 0.1.41, CUDA 13.0. Binary SHA-256 `17dabc6a49746aa22beebdf354923ba5eeb21affc6597c6976ac430e46671518`.
-- Inference: Windows, Python 3.13.11. Code checking: WSL Ubuntu, EvalPlus 0.3.1, isolated `<home>/strata-bench-0141/.venv`.
+- Inference: Windows, Python 3.13.11. Code checking: WSL Ubuntu, EvalPlus 0.3.1, isolated `<home>/nostroma-bench-0141/.venv`.
 
 See [environment](environment.json), [hardware](hardware-windows.json).
 
@@ -26,15 +26,15 @@ Every server launch behind the tables below is listed by launch number in [launc
 
 ```text
 --resident-experts --resident-budget-gib 20
-STRATA_RESIDENT_HEADROOM_GIB=12
-STRATA_UNBUFFERED_LOAD=1
+NOSTROMA_RESIDENT_HEADROOM_GIB=12
+NOSTROMA_UNBUFFERED_LOAD=1
 ```
 
-Shared settings: context 131,072 through 128K, 262,144 for 260K; INT8 KV, resident KV window 32,768 with streaming; auto expert cache and prefill; default adaptive GPU/RAM expert swapping; GPU 0, no vision, reasoning off, temperature 0, parallel 1. MTP launch settings `--spec 4 --spec-min-p 0.5 --mtp <path>`; runtime reports spec 6, mtp_max 4, lookup 3. Actual chunk sizes, cache capacities, low-RAM messages and load timing are retained in [engine logs](engine-logs/). No experimental speed projection was requested. Launch 20 (IQ3_S without `STRATA_UNBUFFERED_LOAD`, so misses are read through the OS file cache) was a trial; its rows in `requests.csv` are not in the speed table.
+Shared settings: context 131,072 through 128K, 262,144 for 260K; INT8 KV, resident KV window 32,768 with streaming; auto expert cache and prefill; default adaptive GPU/RAM expert swapping; GPU 0, no vision, reasoning off, temperature 0, parallel 1. MTP launch settings `--spec 4 --spec-min-p 0.5 --mtp <path>`; runtime reports spec 6, mtp_max 4, lookup 3. Actual chunk sizes, cache capacities, low-RAM messages and load timing are retained in [engine logs](engine-logs/). No experimental speed projection was requested. Launch 20 (IQ3_S without `NOSTROMA_UNBUFFERED_LOAD`, so misses are read through the OS file cache) was a trial; its rows in `requests.csv` are not in the speed table.
 
 ## Method and timing boundaries
 
-Each server launch receives a 512-token warmup. Main requests are shareable synthetic code with a per-trial nonce; all accepted main measurements have matching local/engine prompt counts and zero reused tokens. Expert caches warm within a launch; the OS file cache is not flushed. These are not cold-load timings. Strata's setup calibration step was not run; no manual pcie-frac, pool-workers or adapt overrides were added, and no experimental control vector is present in the saved launch arguments.
+Each server launch receives a 512-token warmup. Main requests are shareable synthetic code with a per-trial nonce; all accepted main measurements have matching local/engine prompt counts and zero reused tokens. Expert caches warm within a launch; the OS file cache is not flushed. These are not cold-load timings. Nostroma's setup calibration step was not run; no manual pcie-frac, pool-workers or adapt overrides were added, and no experimental control vector is present in the saved launch arguments.
 
 Prompt throughput in tok/s is freshly read tokens * 1,000 / engine prompt milliseconds. Decode throughput comes from the engine, not tokens divided by total latency. Client TTFT starts at HTTP submission and ends at the first nonempty generated delta, ignoring keep-alives and empty deltas. Client total latency ends at response completion. Loading and warmup are excluded. Every successful speed/language/bridge request (a bridge request is one 4,096-token prompt sent at context 262,144) generated 256 tokens. Values below are median [minimum–maximum], with three repetitions unless stated otherwise. Failures and intentional cancellation are excluded from successful speed statistics.
 
@@ -128,7 +128,7 @@ Japanese checks are 12 small fixed JSON/string tasks with a fixed string/JSON pa
 
 ## Cache, CPU sharing and MTP
 
-Conversation cache: 512 MiB, four slots; continue and restore patterns, three each per model, 60 completed HTTP requests. Prefix reuse and parks/restores counters were observed. CPU sharing: default versus `STRATA_PREFILL_CPU_SHARE=0`, at 512/1,024 tokens, three each per model, 48 completed fresh requests. Default logs state CPU sharing for chunks below 1,024 tokens.
+Conversation cache: 512 MiB, four slots; continue and restore patterns, three each per model, 60 completed HTTP requests. Prefix reuse and parks/restores counters were observed. CPU sharing: default versus `NOSTROMA_PREFILL_CPU_SHARE=0`, at 512/1,024 tokens, three each per model, 48 completed fresh requests. Default logs state CPU sharing for chunks below 1,024 tokens.
 
 | Model | CPU condition-input | Runs | Prompt tok/s | Client TTFT seconds |
 | --- | --- | --- | --- | --- |
@@ -198,7 +198,7 @@ All four models rejected a 9,000-token over-context request with HTTP 400. After
 ## Soak and resource limits
 
 - IQ2_XS retry (launch 102): stopped by the memory guard after 2.7 s; one request completed, with the exact arithmetic check passing. Not a soak result.
-- IQ3_S (launch 103, resident with `STRATA_RESIDENT_HEADROOM_GIB=12` and `STRATA_UNBUFFERED_LOAD=1`): ran 1,801.3 s after startup, 22 requests completed, 6/6 exact arithmetic checks passed. This is the only completed soak.
+- IQ3_S (launch 103, resident with `NOSTROMA_RESIDENT_HEADROOM_GIB=12` and `NOSTROMA_UNBUFFERED_LOAD=1`): ran 1,801.3 s after startup, 22 requests completed, 6/6 exact arithmetic checks passed. This is the only completed soak.
 
 The original IQ2_XS native soak stopped during its first 128K request after completing 512/32K; it is not a successful 30-minute run. The IQ2_XS retry and the IQ3_S run use different configurations. No soak was run for Q2_0 or IQ3_XXS. Mixed prompts are 512/32K/128K with maximum 512 output tokens and interspersed exact 17x19 checks. An in-flight request at the 30-minute boundary may be intentionally deadline-stopped and is retained separately.
 
@@ -232,7 +232,7 @@ The harness samples RAM, system commit and GPU approximately once per second. It
 | IQ3_S | 128000 | 27.70 | 74.12% | 11508.0 | 89.0 |
 | IQ3_S | 260000 | 25.95 | 76.52% | 11508.0 | 90.0 |
 
-GPU "SW thermal slowdown" throttle flag was observed during the runs (the per-second samples are not attached). Background applications and cooling were not fully controlled. System commit is not physical resident RAM or measured paging. Guard stops do not establish engine OOM or an absolute model/context limit. Engine file_mb/ram_blobs/file_blobs counters cover decode only, not full-request I/O. System-wide disk counters are not Strata-only reads or paging counters.
+GPU "SW thermal slowdown" throttle flag was observed during the runs (the per-second samples are not attached). Background applications and cooling were not fully controlled. System commit is not physical resident RAM or measured paging. Guard stops do not establish engine OOM or an absolute model/context limit. Engine file_mb/ram_blobs/file_blobs counters cover decode only, not full-request I/O. System-wide disk counters are not Nostroma-only reads or paging counters.
 
 ## Failures, missing cases and reproducibility
 
@@ -240,4 +240,4 @@ IQ2_XS 260K reached the harness memory guard in three separate attempts (launche
 
 Column notes for `requests.csv`: `group` names the part of the run (`preparation` and `warmup` are requests sent after a launch before the measured trials and are not in the tables, `tool_followup` is the second request of a tool check, the others match the section names); `cached_tokens` is the server-reported prompt cache hit and `engine_reused` the engine's reused token count; times are seconds (`client_*`) or milliseconds (`engine_*_ms`); `prompt_tok_s` is `engine_prompt_read` * 1000 / `engine_prompt_ms`. The engine columns are empty on failed rows (`ok` false). Values taken from local records that are not attached: the binary SHA-256, pagefile and commit limit, PCIe link state, the runtime-reported spec/mtp_max/lookup values, the contents of the Japanese and tool responses, and the request-completion times behind the soak halves.
 
-Not attached: the per-request response and prompt files, the 1 Hz telemetry and thermal samples, and the concurrency burst files (about 88 MB). [requests.csv](requests.csv) keeps every request's timings and token counts; [measurements.csv](measurements.csv) has the per-condition medians used in the tables. [scripts/](scripts/) has the code that ran the benchmark: `strata_bench_run.py` builds the prompts and runs the sweep and the other measurement groups, `strata_bench_continue.py` runs the IQ3 resident part, `strata_bench_finish_code.py` and `strata_eval_subset.py` generate and grade the HumanEval subset, `strata_bench_soak_retry.py` and `strata_bench_iq3_extra_recall.py` run the soak and recall follow-ups, and `strata_bench_summarize.py` computes `measurements.csv`. `requests.csv`, `concurrency.csv` and `launches.json` were extracted from the harness records by a small script that is not attached. The scripts assume the original output paths and clock, so do not rerun them over this folder.
+Not attached: the per-request response and prompt files, the 1 Hz telemetry and thermal samples, and the concurrency burst files (about 88 MB). [requests.csv](requests.csv) keeps every request's timings and token counts; [measurements.csv](measurements.csv) has the per-condition medians used in the tables. [scripts/](scripts/) has the code that ran the benchmark: `nostroma_bench_run.py` builds the prompts and runs the sweep and the other measurement groups, `nostroma_bench_continue.py` runs the IQ3 resident part, `nostroma_bench_finish_code.py` and `nostroma_eval_subset.py` generate and grade the HumanEval subset, `nostroma_bench_soak_retry.py` and `nostroma_bench_iq3_extra_recall.py` run the soak and recall follow-ups, and `nostroma_bench_summarize.py` computes `measurements.csv`. `requests.csv`, `concurrency.csv` and `launches.json` were extracted from the harness records by a small script that is not attached. The scripts assume the original output paths and clock, so do not rerun them over this folder.

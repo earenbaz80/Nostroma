@@ -1,7 +1,7 @@
 """#465: "parallel": N - several requests decode together in the engine's batch slots (--batch N).
 
 A fake engine (a Python script speaking the engine's GEN / BGEN / BT / BDONE / BADM / BSTOP lines) runs behind the
-real StrataEngine and Service, so the server's side is tested without a GPU: requests up to N run at once, more
+real NostromaEngine and Service, so the server's side is tested without a GPU: requests up to N run at once, more
 wait for a slot, /metrics shows the slots, each request's history row is its own, and a conversation's next turn
 goes back to the slot that holds it."""
 import json
@@ -17,7 +17,7 @@ from unittest import mock
 
 from serve.frontend import ChatTemplate
 from serve import server
-from serve.server import ByteTokenizer, Service, StrataEngine, engine_args, parallel_args, serve
+from serve.server import ByteTokenizer, Service, NostromaEngine, engine_args, parallel_args, serve
 from nostroma_cli import bench
 from nostroma_cli.client import Endpoint
 
@@ -46,7 +46,7 @@ threading.Thread(target=reader, daemon=True).start()
 print("INFO engine=0.1.39" + (f" batch_slots={fit}" if fit >= 2 else "") +
       (" slot_cache=1" if "--slotcache" in args else "") + (f" batch_groups={groups}" if groups > 1 else ""), flush=True)
 if "--fake-stage-plan" in args:
-    print("strata serve: layer split: layers 0-11 (CUDA0), 12-23 (CUDA1), 24-35 (CUDA2), "
+    print("nostroma serve: layer split: layers 0-11 (CUDA0), 12-23 (CUDA1), 24-35 (CUDA2), "
           "36-47 (CUDA3), one hand-off per window", file=sys.stderr, flush=True)
 print("READY 4096 stop", flush=True)
 LONG = list(b"LONGREPLY")
@@ -215,19 +215,19 @@ class ParallelArgs(unittest.TestCase):
         import contextlib, io, os
         def said(args, env):
             buf = io.StringIO()
-            old = os.environ.get("STRATA_BATCH_MTP")
+            old = os.environ.get("NOSTROMA_BATCH_MTP")
             if env is None:
-                os.environ.pop("STRATA_BATCH_MTP", None)
+                os.environ.pop("NOSTROMA_BATCH_MTP", None)
             else:
-                os.environ["STRATA_BATCH_MTP"] = env
+                os.environ["NOSTROMA_BATCH_MTP"] = env
             try:
                 with contextlib.redirect_stdout(buf):
                     r = parallel_args({"parallel": 12}, args)
             finally:
                 if old is None:
-                    os.environ.pop("STRATA_BATCH_MTP", None)
+                    os.environ.pop("NOSTROMA_BATCH_MTP", None)
                 else:
-                    os.environ["STRATA_BATCH_MTP"] = old
+                    os.environ["NOSTROMA_BATCH_MTP"] = old
             self.assertEqual(r, ["--batch", "12"])
             return "at most" in buf.getvalue()
         self.assertTrue(said([], None))                  # 0.1.39: the window holds 8 rows
@@ -313,7 +313,7 @@ class DFlash2ChosenWithRequests(unittest.TestCase):
 
 class PickSlot(unittest.TestCase):
     def engine(self, n):
-        e = StrataEngine("missing-executable", [], lazy=True)
+        e = NostromaEngine("missing-executable", [], lazy=True)
         e.batch = n
         e.slot_order = list(range(n))
         e.slot_busy = [False] * n
@@ -342,7 +342,7 @@ class PickSlot(unittest.TestCase):
         # assistant header, so the held stream (prompt + reply) is no start of it.  The engine's turn checkpoint sits at
         # the last <|im_start|> of the old prompt: the prompt that agrees up to there belongs to that slot.  Before, both
         # went to the least recently used slot in turn, and the first one overwrote the other chat's cache.
-        T = StrataEngine.TURN_ID
+        T = NostromaEngine.TURN_ID
         hist_a, hist_b = list(range(1000, 1600)), list(range(2000, 2600))
         held_a = hist_a + [T, 7, 8, 9] + [50, 51, 52]                  # prompt (ends with the assistant header) + reply
         held_b = hist_b + [T, 7, 8, 9] + [60, 61]
@@ -370,7 +370,7 @@ class PickSlot(unittest.TestCase):
     def chat(base, turns=12, per=800):
         """A chat history of `turns` messages of `per` tokens each (every one opens with the turn marker), token ids
         distinct from any other chat's; ~9600 tokens, so its earlier message boundaries are past 8192."""
-        T = StrataEngine.TURN_ID
+        T = NostromaEngine.TURN_ID
         out = []
         for m in range(turns):
             out += [T] + list(range(base + m * per, base + m * per + per - 1))
@@ -378,15 +378,15 @@ class PickSlot(unittest.TestCase):
 
     def held_of(self, hist, q, reply):
         """what a slot holds after a request: the prompt (history, the question, the assistant header) and the reply"""
-        T = StrataEngine.TURN_ID
+        T = NostromaEngine.TURN_ID
         return hist + [T] + q + [T, 7, 8, 9] + reply
 
     def branch_of(self, hist, q):
-        T = StrataEngine.TURN_ID
+        T = NostromaEngine.TURN_ID
         return hist + [T] + q + [T, 7, 8, 9]
 
     def test_a_branch_goes_to_its_earlier_message_boundary(self):
-        T = StrataEngine.TURN_ID
+        T = NostromaEngine.TURN_ID
         hists = [self.chat(100000 * (i + 1)) for i in range(4)]
         e = self.engine(4)
         e.slot_held = [self.held_of(h, [31, 32, 33], [50, 51]) for h in hists]
@@ -411,7 +411,7 @@ class PickSlot(unittest.TestCase):
     def test_a_boundary_every_chat_shares_is_no_owner(self):
         # one client's chats share a long system prompt: its end is a boundary every slot agrees on, so it names
         # nobody; a new chat keeps the empty slot, then the least recent one
-        T = StrataEngine.TURN_ID
+        T = NostromaEngine.TURN_ID
         root = self.chat(500000, turns=11)                              # ~8800 shared tokens
         e = self.engine(4)
         e.slot_held = [self.held_of(root + self.chat(100000 * (i + 1), turns=1), [31], [50]) for i in range(3)] + [[]]
@@ -427,7 +427,7 @@ class PickSlot(unittest.TestCase):
         # the best source among ALL slots (copying it into the slot pick_slot chose, overwriting that one), so a
         # follow-up keeps its prefix only while its chat's slot was not overwritten.  Measured: the tokens reused.
         def old_pick(e, prompt):
-            T = StrataEngine.TURN_ID
+            T = NostromaEngine.TURN_ID
             free = [b for b in e.slot_order if not e.slot_busy[b]]
             def hp(b):
                 h = e.slot_held[b]
@@ -443,7 +443,7 @@ class PickSlot(unittest.TestCase):
             return min(free, key=lambda b: (bool(e.slot_held[b]), e.slot_used[b]))
 
         def run(pick):
-            T = StrataEngine.TURN_ID
+            T = NostromaEngine.TURN_ID
             hists = [self.chat(100000 * (i + 1)) for i in range(4)]
             e = self.engine(4)
             clock = [0.0]
@@ -498,13 +498,13 @@ class PickSlot(unittest.TestCase):
 
 
 class FakeEngineCase(unittest.TestCase):
-    """The real StrataEngine and Service over HTTP, the fake engine behind them."""
+    """The real NostromaEngine and Service over HTTP, the fake engine behind them."""
 
     def start(self, slots, fit=None, slot_cache=False, fail=False, reuse=False, says_groups=0,
               more=(), stage_plan=False, batch_sample=False, stage_sample=False):
         import serve.server as server
         self.tmp = tempfile.TemporaryDirectory()
-        script = Path(self.tmp.name) / "fake_strata.py"
+        script = Path(self.tmp.name) / "fake_nostroma.py"
         script.write_text(FAKE_BATCH, encoding="utf-8")
         self.log = Path(self.tmp.name) / "requests.log"
         real = server.subprocess.Popen
@@ -519,7 +519,7 @@ class FakeEngineCase(unittest.TestCase):
         extra += list(more)
         with mock.patch.object(server.subprocess, "Popen",
                                lambda cmd, **kw: real([sys.executable, str(script), *cmd[1:]], **kw)):
-            self.engine = StrataEngine("strata", extra, log=str(Path(self.tmp.name) / "engine.log") if stage_plan else None)
+            self.engine = NostromaEngine("nostroma", extra, log=str(Path(self.tmp.name) / "engine.log") if stage_plan else None)
         tok = ByteTokenizer()
         self.svc = Service(self.engine, tok, ChatTemplate(Path(__file__).parent / "chat_template.jinja"))
         self.httpd = serve(self.svc, port=0)
@@ -681,7 +681,7 @@ class BatchLegAccounting(FakeEngineCase):
 
 
 class ParallelService(FakeEngineCase):
-    """The real StrataEngine and Service over HTTP, the fake engine behind them: slots, queues, benchmarks, telemetry.
+    """The real NostromaEngine and Service over HTTP, the fake engine behind them: slots, queues, benchmarks, telemetry.
     The yielding, restart and failure tests are in serve/test_parallel_yield.py (this file alone ran past 100 s)."""
 
     def test_bgen_refused_by_the_engine_is_retried_not_a_400(self):
@@ -1001,7 +1001,7 @@ class ParallelService(FakeEngineCase):
 
     def test_a_burst_of_connections_is_not_reset(self):
         """30-40 clients at once got "connection reset by peer" with the listen backlog of 5 (4 x R9700 burst): the
-        server listens with a deep backlog (STRATA_HTTP_BACKLOG, 256), so 60 simultaneous requests all get answers."""
+        server listens with a deep backlog (NOSTROMA_HTTP_BACKLOG, 256), so 60 simultaneous requests all get answers."""
         import serve.server as server
         self.assertGreaterEqual(server.Server.request_queue_size, 64)
         self.start(2)
@@ -1097,9 +1097,9 @@ class ParallelService(FakeEngineCase):
 class EngineOwnedDefaults(unittest.TestCase):
     """The parallel stack, the GDN speedups, the Q8_0 hyper-connection read and the Metal fp16 windows are the engine's own defaults
     (src/core/arch_defaults.cpp, generate.cpp): the server adds none of them, and a value the config or the shell sets still reaches the engine."""
-    NAMES = ("STRATA_CKPT_POOL", "STRATA_CKPT_POOL_READY", "STRATA_SLOT_CKPT_MOVE", "STRATA_SLOT_COPY_DIRECT", "STRATA_SLOT_COPY_BATCHSYNC",
-             "STRATA_BATCH_GDN_GROUPS", "STRATA_BATCH_ATTN_ROWS", "STRATA_BATCH_SELF_COMMIT", "STRATA_QSA_SLOTS",
-             "STRATA_GDN_TC", "STRATA_GDN_CONVL2", "STRATA_GDN_CHUNKED", "STRATA_HC_Q8", "STRATA_METAL_F16")
+    NAMES = ("NOSTROMA_CKPT_POOL", "NOSTROMA_CKPT_POOL_READY", "NOSTROMA_SLOT_CKPT_MOVE", "NOSTROMA_SLOT_COPY_DIRECT", "NOSTROMA_SLOT_COPY_BATCHSYNC",
+             "NOSTROMA_BATCH_GDN_GROUPS", "NOSTROMA_BATCH_ATTN_ROWS", "NOSTROMA_BATCH_SELF_COMMIT", "NOSTROMA_QSA_SLOTS",
+             "NOSTROMA_GDN_TC", "NOSTROMA_GDN_CONVL2", "NOSTROMA_GDN_CHUNKED", "NOSTROMA_HC_Q8", "NOSTROMA_METAL_F16")
 
     def env_for(self, cfg, base=None):
         import os
@@ -1117,9 +1117,9 @@ class EngineOwnedDefaults(unittest.TestCase):
                 self.assertNotIn(k, env, (k, cfg))
 
     def test_explicit_values_reach_the_engine(self):
-        env = self.env_for({"parallel": 8, "args": [], "env": {"STRATA_BATCH_GDN_GROUPS": "0"}}, {"STRATA_CKPT_POOL": "0"})
-        self.assertEqual(env["STRATA_BATCH_GDN_GROUPS"], "0")
-        self.assertEqual(env["STRATA_CKPT_POOL"], "0")
+        env = self.env_for({"parallel": 8, "args": [], "env": {"NOSTROMA_BATCH_GDN_GROUPS": "0"}}, {"NOSTROMA_CKPT_POOL": "0"})
+        self.assertEqual(env["NOSTROMA_BATCH_GDN_GROUPS"], "0")
+        self.assertEqual(env["NOSTROMA_CKPT_POOL"], "0")
 
 
 if __name__ == "__main__":

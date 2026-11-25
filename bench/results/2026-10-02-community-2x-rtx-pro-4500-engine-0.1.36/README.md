@@ -10,7 +10,7 @@ Single stream only; one prompt family only (code explanation). Limits are listed
 - CPU: AMD Ryzen Threadripper 7960X, 24 cores / 48 threads. RAM: 64 GB DDR5 (61 GiB usable)
 - Storage: model on a 3.7 TB NVMe at PCIe 4.0 x4 (`/mnt/models`); a copy on a PCIe 5.0 x4 NVMe was tested for cold start only (see below)
 - OS: Ubuntu 26.04.1 LTS, kernel 7.0.0-38-generic. Driver 595.91.07. CUDA 13.4 toolkit (`/usr/local/cuda-13.4`)
-- Strata: tag v0.1.36, commit `36fa455e579b23a9c909c2c6fe1bddd9e51cb8ca`, **source build** (setup found no ready-made engine for v0.1.36 and compiled for SM 120; `engine/BUILD.json` in this folder)
+- Nostroma: tag v0.1.36, commit `36fa455e579b23a9c909c2c6fe1bddd9e51cb8ca`, **source build** (setup found no ready-made engine for v0.1.36 and compiled for SM 120; `engine/BUILD.json` in this folder)
 - Background workloads: none on the GPUs. No power limit changes.
 
 **Not only the engine changed since the 0.1.30 entry.** Between the two measurements the PC got an Ubuntu update with a
@@ -20,18 +20,18 @@ new NVIDIA driver (595.84 -> 595.91.07), a new kernel (7.0.0-31 -> -38) and CUDA
 ## Model and configuration
 
 - Model: `ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF`, quantization IQ3_XXS, files `Swift-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-0000{1,2}-of-00002.gguf` (39.8 GB + 36.2 GB), unchanged since the 0.1.30 entry
-- Vision encoder loaded (`--vision`), no images sent. Pack built by setup (`swift-iq3_xxs`), shipped expert profile, MTP runtime from `Strata-data/mtp/rt`
+- Vision encoder loaded (`--vision`), no images sent. Pack built by setup (`swift-iq3_xxs`), shipped expert profile, MTP runtime from `Nostroma-data/mtp/rt`
 - Context 262144, KV `k8v4`, expert cache auto, prefill auto, `--spec 5` (setup writes 4), `--spec-min-p 0.5`, layer split 25 over GPUs 0 and 1, `--vram-reserve-mib 700`
-- Reasoning at the server default, sampling `temperature 0`, no calibration, no experimental speed projection, no `STRATA_*` environment overrides
+- Reasoning at the server default, sampling `temperature 0`, no calibration, no experimental speed projection, no `NOSTROMA_*` environment overrides
 
-Config as run: `strata-swift-iq3_xxs.json` (this folder). Start: `serve/server.py --engine strata --config strata-swift-iq3_xxs.json --port 8080`.
+Config as run: `nostroma-swift-iq3_xxs.json` (this folder). Start: `serve/server.py --engine nostroma --config nostroma-swift-iq3_xxs.json --port 8080`.
 
 ## Method
 
 `bench.py` in this folder, identical to the 0.1.30 entry except for the log path:
 
 - chat completions, `temperature 0`, `max_tokens 256`; the reasoning text counts toward the 256 tokens
-- prompt = Strata's own source and docs (the 0.1.30 tree, the same text as before), cut to the target length, plus an "explain and propose three refactorings" task
+- prompt = Nostroma's own source and docs (the 0.1.30 tree, the same text as before), cut to the target length, plus an "explain and propose three refactorings" task
 - a random nonce at the start of every prompt, so nothing is reused from the cache (`reused` is 0 in `runs.json`)
 - one warm-up run per length, then 3 measured runs; speeds are read from the server log line
 - needle recall with `tools/needle_bench.py --lengths 32k,128k --depths 10,50,90`
@@ -88,6 +88,6 @@ at the same ~6.4 GiB/s on both. Raw outputs: `kaltstart/`.
 
 - No failures or skipped cases in the runs above.
 - Issue #420 (`mmq.cuh:1555 J_best=0` on 0.1.32): not reproduced on 0.1.36. Chat prompts of 55, 58, 61, 64, 67, 70, 73, 74, 76 and 101+ tokens ran without an abort and the log has no `J_best` line. I did not run the original request text. No FP16-fallback line appeared either.
-- Single stream only; no concurrency, no images, no `STRATA_PREFILL_MMQ=0` comparison.
+- Single stream only; no concurrency, no images, no `NOSTROMA_PREFILL_MMQ=0` comparison.
 - The 0.1.30 numbers were not repeated on the new driver (see above).
 - Output speed moves several percent with the generated text.

@@ -19,8 +19,8 @@
   "kernel": "7.0.0-38-generic",
   "cuda": "release 13.4, V13.4.92",
   "storage": "",
-  "strata_commit": "99f3dbd0b21d1401b3769e0c0d963913607f380b",
-  "strata_branch": "main",
+  "nostroma_commit": "99f3dbd0b21d1401b3769e0c0d963913607f380b",
+  "nostroma_branch": "main",
   "engine_version": "0.1.38",
   "model_name": "qwen3.8-flash-next-iq3_s",
   "context": {
@@ -33,61 +33,61 @@
    "available": true,
    "error": null
   },
-  "engine_launch_command": "/home/dgbox/Strata/engine/strata --serve --pack /home/dgbox/Strata-data/packs/iq3_s --native /home/dgbox/Strata-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf --ple-gguf /home/dgbox/Strata-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf --expert-profile /home/dgbox/Strata/data/expert-profile-learned-iq3s.bin --expert-cache auto --prefill auto --spec 4 --mtp /home/dgbox/Strata-data/mtp/rt --max-context 143360 --kv int8 --resident-experts --vision --vram-reserve-mib 989 --control-vector-scaled /home/dgbox/Strata/data/experimental-speed-projection/Qwen3.8-Flash-Next-experimental-speed-projection.gguf:1.0 --control-vector-layer-range 4 44 --cvec-mode project --cvec-dir per-layer --spec-min-p 0.5 --expert-profile-save /home/dgbox/Strata/data/expert-profile-learned-iq3s.bin --expert-profile-save-every 10",
+  "engine_launch_command": "/home/dgbox/Nostroma/engine/nostroma --serve --pack /home/dgbox/Nostroma-data/packs/iq3_s --native /home/dgbox/Nostroma-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf --ple-gguf /home/dgbox/Nostroma-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf --expert-profile /home/dgbox/Nostroma/data/expert-profile-learned-iq3s.bin --expert-cache auto --prefill auto --spec 4 --mtp /home/dgbox/Nostroma-data/mtp/rt --max-context 143360 --kv int8 --resident-experts --vision --vram-reserve-mib 989 --control-vector-scaled /home/dgbox/Nostroma/data/experimental-speed-projection/Qwen3.8-Flash-Next-experimental-speed-projection.gguf:1.0 --control-vector-layer-range 4 44 --cvec-mode project --cvec-dir per-layer --spec-min-p 0.5 --expert-profile-save /home/dgbox/Nostroma/data/expert-profile-learned-iq3s.bin --expert-profile-save-every 10",
   "model_files": [
    {
     "flag": "--pack",
-    "path": "/home/dgbox/Strata-data/packs/iq3_s",
+    "path": "/home/dgbox/Nostroma-data/packs/iq3_s",
     "kind": "dir"
    },
    {
     "flag": "--native",
-    "path": "/home/dgbox/Strata-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf",
+    "path": "/home/dgbox/Nostroma-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf",
     "size_bytes": 54817524224,
     "mtime": "2026-10-02T21:55:35"
    },
    {
     "flag": "--ple-gguf",
-    "path": "/home/dgbox/Strata-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf",
+    "path": "/home/dgbox/Nostroma-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf",
     "size_bytes": 28800138432,
     "mtime": "2026-09-30T17:44:33"
    },
    {
     "flag": "--expert-profile",
-    "path": "/home/dgbox/Strata/data/expert-profile-learned-iq3s.bin",
+    "path": "/home/dgbox/Nostroma/data/expert-profile-learned-iq3s.bin",
     "size_bytes": 196632,
     "mtime": "2026-10-03T15:20:08"
    },
    {
     "flag": "--mtp",
-    "path": "/home/dgbox/Strata-data/mtp/rt",
+    "path": "/home/dgbox/Nostroma-data/mtp/rt",
     "kind": "dir"
    },
    {
     "flag": "--control-vector-scaled",
-    "path": "/home/dgbox/Strata/data/experimental-speed-projection/Qwen3.8-Flash-Next-experimental-speed-projection.gguf",
+    "path": "/home/dgbox/Nostroma/data/experimental-speed-projection/Qwen3.8-Flash-Next-experimental-speed-projection.gguf",
     "size_bytes": 483520,
     "mtime": "2026-09-30T17:07:53"
    },
    {
     "flag": "--expert-profile-save",
-    "path": "/home/dgbox/Strata/data/expert-profile-learned-iq3s.bin",
+    "path": "/home/dgbox/Nostroma/data/expert-profile-learned-iq3s.bin",
     "size_bytes": 196632,
     "mtime": "2026-10-03T15:20:08"
    }
   ],
-  "server_config_path": "/home/dgbox/Strata/strata-iq3s-140k-resident.json",
+  "server_config_path": "/home/dgbox/Nostroma/nostroma-iq3s-140k-resident.json",
   "server_config": {
-   "exe": "/home/dgbox/Strata/engine/strata",
+   "exe": "/home/dgbox/Nostroma/engine/nostroma",
    "args": [
     "--pack",
-    "/home/dgbox/Strata-data/packs/iq3_s",
+    "/home/dgbox/Nostroma-data/packs/iq3_s",
     "--native",
-    "/home/dgbox/Strata-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf",
+    "/home/dgbox/Nostroma-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf",
     "--ple-gguf",
-    "/home/dgbox/Strata-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf",
+    "/home/dgbox/Nostroma-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf",
     "--expert-profile",
-    "/home/dgbox/Strata/data/expert-profile.bin",
+    "/home/dgbox/Nostroma/data/expert-profile.bin",
     "--expert-cache",
     "auto",
     "--prefill",
@@ -95,7 +95,7 @@
     "--spec",
     "4",
     "--mtp",
-    "/home/dgbox/Strata-data/mtp/rt",
+    "/home/dgbox/Nostroma-data/mtp/rt",
     "--max-context",
     "143360",
     "--kv",
@@ -105,7 +105,7 @@
     "--vram-reserve-mib",
     "989",
     "--control-vector-scaled",
-    "/home/dgbox/Strata/data/experimental-speed-projection/Qwen3.8-Flash-Next-experimental-speed-projection.gguf:1.0",
+    "/home/dgbox/Nostroma/data/experimental-speed-projection/Qwen3.8-Flash-Next-experimental-speed-projection.gguf:1.0",
     "--control-vector-layer-range",
     "4",
     "44",
@@ -116,16 +116,16 @@
     "--spec-min-p",
     "0.5"
    ],
-   "cwd": "/home/dgbox/Strata",
-   "tokenizer": "/home/dgbox/Strata-data/packs/iq3_s/tokenizer",
+   "cwd": "/home/dgbox/Nostroma",
+   "tokenizer": "/home/dgbox/Nostroma-data/packs/iq3_s/tokenizer",
    "model_name": "qwen3.8-flash-next-iq3_s",
    "draft_vocab": "cyrillic",
-   "expert_profile_save": "/home/dgbox/Strata/data/expert-profile-learned-iq3s.bin",
+   "expert_profile_save": "/home/dgbox/Nostroma/data/expert-profile-learned-iq3s.bin",
    "expert_profile_save_every": 10,
    "env": {
-    "STRATA_PF_FUSED": "1"
+    "NOSTROMA_PF_FUSED": "1"
    },
-   "log": "/home/dgbox/Strata/strata-iq3s-resident.log",
+   "log": "/home/dgbox/Nostroma/nostroma-iq3s-resident.log",
    "lib_dirs": [
     "/usr/local/cuda/bin",
     "/usr/local/cuda/lib64"
@@ -135,9 +135,9 @@
    "gpu": 0,
    "gpus_asked": true,
    "vision": {
-    "exe": "/home/dgbox/Strata/engine/strata-vision",
-    "mmproj": "/home/dgbox/Strata-data/models/mmproj-Qwen3.8-Flash-Next-BF16.gguf",
-    "model": "/home/dgbox/Strata-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf",
+    "exe": "/home/dgbox/Nostroma/engine/nostroma-vision",
+    "mmproj": "/home/dgbox/Nostroma-data/models/mmproj-Qwen3.8-Flash-Next-BF16.gguf",
+    "model": "/home/dgbox/Nostroma-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf",
     "gpu": true,
     "max_tokens": 1024
    },

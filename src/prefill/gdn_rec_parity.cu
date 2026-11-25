@@ -2,13 +2,13 @@
 //
 // src/prefill/kernels.cu runs gdn_rec_kh_kernel (the three value heads that share a key head in one thread, the
 // inputs staged in blocks of 8 tokens) on CUDA sm_80+ cards that hold all 64 of its blocks at once, and
-// gdn_rec_cols_pipe_kernel elsewhere and with STRATA_GDN_KEYHEAD=0.  Both are copied below verbatim, with the output
+// gdn_rec_cols_pipe_kernel elsewhere and with NOSTROMA_GDN_KEYHEAD=0.  Both are copied below verbatim, with the output
 // norm (gdn_out_norm_kernel) and the norm as it was before, which also stored the normalized value in FP32 although
 // nothing reads it.  The two recurrences do the same arithmetic in the same order per value head and column, so the
-// output, the state after it and the FP16 output must be the same bits.  STRATA_GDN_CHUNKED=1's recurrence in chunks
+// output, the state after it and the FP16 output must be the same bits.  NOSTROMA_GDN_CHUNKED=1's recurrence in chunks
 // (copied below too) sums in another order: it must stay within 1e-4 of gdn_rec_kh_kernel (largest |difference| over
 // largest |value|, the output and the state), also at T = 8192 and 32768; up to 8192 both are also measured against
-// the recurrence in FP64.  STRATA_GDN_TC=1's tensor-core scan (gdn_tc.cuh, included below) is held to the same 1e-4,
+// the recurrence in FP64.  NOSTROMA_GDN_TC=1's tensor-core scan (gdn_tc.cuh, included below) is held to the same 1e-4,
 // also on stress inputs (the state 100x smaller, 50x larger or zero, v 50x larger, slow gates, coherent keys).
 //
 // Synthetic inputs of the model's shape (q/k L2-normalized per key head as gdn_l2_kernel leaves them), no model.
@@ -23,7 +23,7 @@
 //                             SM, as on cards with more or fewer SMs (scale), and both with the engine's grids on
 //                             32 to all of this card's SMs, the others held by a sleeping kernel (fewer_sms)
 #include <cuda_fp16.h>
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 #include <cuda_runtime.h>
 
 #include <algorithm>
@@ -59,7 +59,7 @@ __device__ __forceinline__ uint16_t hf(float f) { return __half_as_ushort(__floa
 // ------------------------------------------------------------------ the engine's kernels (src/prefill/kernels.cu)
 // gdn_rec_cols_kernel with the next token's inputs (q/k rows, v, gate, beta) loaded into registers while this token
 // computes (software pipelining).  The same arithmetic in the same order: the same bits, and the same CB-column split.
-// STRATA_GDN_PIPELINE=0: gdn_rec_cols_kernel.
+// NOSTROMA_GDN_PIPELINE=0: gdn_rec_cols_kernel.
 __global__ void __launch_bounds__(CB * RG) gdn_rec_cols_pipe_kernel(float* __restrict__ state, const float* __restrict__ h,
                                                                       const float* __restrict__ gate,
                                                                       const float* __restrict__ beta,
@@ -126,33 +126,33 @@ __global__ void __launch_bounds__(CB * RG) gdn_rec_cols_pipe_kernel(float* __res
 // one of a token orders every read of rkv before the next token's writes, the next token's first one every read of ro
 // before the writes after it.  64 blocks instead of 192.  Per value head and column the same arithmetic in the same
 // order: the same bits (src/prefill/gdn_rec_parity.cu checks them and times the variants: 1.41x on a 4080 Super).
-// sm_80+ (gdn_keyhead_ok); STRATA_GDN_KEYHEAD=0: gdn_rec_cols_pipe_kernel.
+// sm_80+ (gdn_keyhead_ok); NOSTROMA_GDN_KEYHEAD=0: gdn_rec_cols_pipe_kernel.
 #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
-#define STRATA_GDN_CP_ASYNC 0   // Turing builds: plain copies (never launched there, see gdn_keyhead_ok)
+#define NOSTROMA_GDN_CP_ASYNC 0   // Turing builds: plain copies (never launched there, see gdn_keyhead_ok)
 #else
-#define STRATA_GDN_CP_ASYNC 1
+#define NOSTROMA_GDN_CP_ASYNC 1
 #endif
 __device__ __forceinline__ void gdn_cp4(float* smem, const float* gmem) {
-#if STRATA_GDN_CP_ASYNC
+#if NOSTROMA_GDN_CP_ASYNC
     asm volatile("cp.async.ca.shared.global [%0], [%1], 4;\n" ::"r"((unsigned) __cvta_generic_to_shared(smem)), "l"(gmem));
 #else
     *smem = *gmem;
 #endif
 }
 __device__ __forceinline__ void gdn_cp16(float* smem, const float* gmem) {
-#if STRATA_GDN_CP_ASYNC
+#if NOSTROMA_GDN_CP_ASYNC
     asm volatile("cp.async.cg.shared.global [%0], [%1], 16;\n" ::"r"((unsigned) __cvta_generic_to_shared(smem)), "l"(gmem));
 #else
     *reinterpret_cast<float4*>(smem) = *reinterpret_cast<const float4*>(gmem);
 #endif
 }
 __device__ __forceinline__ void gdn_cp_commit() {
-#if STRATA_GDN_CP_ASYNC
+#if NOSTROMA_GDN_CP_ASYNC
     asm volatile("cp.async.commit_group;\n" ::);
 #endif
 }
 __device__ __forceinline__ void gdn_cp_wait_prev() {   // every group but the newest has landed
-#if STRATA_GDN_CP_ASYNC
+#if NOSTROMA_GDN_CP_ASYNC
     asm volatile("cp.async.wait_group 1;\n" ::);
 #endif
 }
@@ -251,8 +251,8 @@ __global__ void __launch_bounds__(CB * RG) gdn_rec_kh_kernel(float* __restrict__
     }
 }
 
-// src/prefill/kernels.cu's chunked recurrence (STRATA_GDN_CHUNKED=1), copied as it is there
-// STRATA_GDN_CHUNKED=1 (opt-in): the recurrence in chunks of GCH tokens (the WY form of the gated delta rule, as
+// src/prefill/kernels.cu's chunked recurrence (NOSTROMA_GDN_CHUNKED=1), copied as it is there
+// NOSTROMA_GDN_CHUNKED=1 (opt-in): the recurrence in chunks of GCH tokens (the WY form of the gated delta rule, as
 // flash-linear-attention computes it), all in FP32.  Per value head, with g_t = exp(gate_t), gamma_t the gate's sum
 // from the chunk's start to t (inclusive) and S0 the state before the chunk:
 //   A[t][i] = beta_t exp(gamma_t - gamma_i) k_t.k_i (i < t),   T = (I + A)^-1 (unit lower triangular),
@@ -364,7 +364,7 @@ __global__ void __launch_bounds__(256) gdn_chunk_prep_kernel(const float* __rest
 
 __device__ __forceinline__ void gdn_pf_l2(const float* p) { asm volatile("prefetch.global.L2 [%0];" ::"l"(p)); }
 __device__ __forceinline__ void gdn_cp_wait_all() {
-#if STRATA_GDN_CP_ASYNC
+#if NOSTROMA_GDN_CP_ASYNC
     asm volatile("cp.async.wait_all;\n" ::);
 #endif
 }
@@ -569,8 +569,8 @@ cudaError_t gdn_rec_chunked(float* state, const float* h, const float* gate, con
             cudaGetLastError();
             return cudaErrorNotSupported;
         }
-        // as in kernels.cu: STRATA_GDN_CHUNKED=2 skips the SM-count test (to measure a card under 128 SMs)
-        static const bool any_sms = [] { const char* v = strata::env("NOSTROMA_GDN_CHUNKED"); return v != nullptr && std::atoi(v) >= 2; }();
+        // as in kernels.cu: NOSTROMA_GDN_CHUNKED=2 skips the SM-count test (to measure a card under 128 SMs)
+        static const bool any_sms = [] { const char* v = nostroma::env("NOSTROMA_GDN_CHUNKED"); return v != nullptr && std::atoi(v) >= 2; }();
         if (major < 8 || (!any_sms && sms < HK * (S / GDV)) || (size_t) smem < kChunkScanSmem)
             return cudaErrorNotSupported;
     }
@@ -596,7 +596,7 @@ cudaError_t gdn_rec_chunked(float* state, const float* h, const float* gate, con
     }
     return cudaSuccess;   // launch errors surface at the caller's check; an error above means nothing ran
 }
-// src/prefill/kernels.cu's tensor-core scan (STRATA_GDN_TC=1): the same text, included there too
+// src/prefill/kernels.cu's tensor-core scan (NOSTROMA_GDN_TC=1): the same text, included there too
 #include "gdn_tc.cuh"
 // src/prefill/kernels.cu's gdn_rec_tc, copied as it is there (with the raw device attributes, as gdn_rec_chunked above)
 cudaError_t gdn_rec_tc(float* state, const float* h, const float* gate, const float* beta, float* y, int64_t T,
@@ -955,22 +955,22 @@ int check_variant(const Inputs& in, const char* label, RecLaunch launch, const c
 }
 int check_chunked(int64_t T, uint64_t seed) {
     Inputs in(T, seed);
-    return check_variant(in, "chunked (STRATA_GDN_CHUNKED)", gdn_rec_chunked, "sm_80+, 128 SMs, 93.7 KB a block");
+    return check_variant(in, "chunked (NOSTROMA_GDN_CHUNKED)", gdn_rec_chunked, "sm_80+, 128 SMs, 93.7 KB a block");
 }
 constexpr const char* kTcNeeds = "sm_80+, 48 SMs, 122 KB a block";
 int check_tc(int64_t T, uint64_t seed) {
     Inputs in(T, seed);
-    return check_variant(in, "tc (STRATA_GDN_TC=1)", gdn_rec_tc, kTcNeeds);
+    return check_variant(in, "tc (NOSTROMA_GDN_TC=1)", gdn_rec_tc, kTcNeeds);
 }
 // the tensor-core scan on the stress inputs (Inputs): its f16 range handling has a case for each
 int check_tc_stress(int64_t T, uint64_t seed) {
     struct Case { const char* label; float state_scale, v_scale; bool slow_gates, coherent_keys; };
-    const Case cases[] = {{"tc (STRATA_GDN_TC=1), state0 x 0.01", 5e-4f, 1.0f, false, false},
-                          {"tc (STRATA_GDN_TC=1), state0 x 50", 2.5f, 1.0f, false, false},
-                          {"tc (STRATA_GDN_TC=1), state0 = 0", 0.0f, 1.0f, false, false},
-                          {"tc (STRATA_GDN_TC=1), v x 50", 0.05f, 50.0f, false, false},
-                          {"tc (STRATA_GDN_TC=1), slow gates", 0.05f, 1.0f, true, false},
-                          {"tc (STRATA_GDN_TC=1), coherent keys", 0.05f, 1.0f, false, true}};
+    const Case cases[] = {{"tc (NOSTROMA_GDN_TC=1), state0 x 0.01", 5e-4f, 1.0f, false, false},
+                          {"tc (NOSTROMA_GDN_TC=1), state0 x 50", 2.5f, 1.0f, false, false},
+                          {"tc (NOSTROMA_GDN_TC=1), state0 = 0", 0.0f, 1.0f, false, false},
+                          {"tc (NOSTROMA_GDN_TC=1), v x 50", 0.05f, 50.0f, false, false},
+                          {"tc (NOSTROMA_GDN_TC=1), slow gates", 0.05f, 1.0f, true, false},
+                          {"tc (NOSTROMA_GDN_TC=1), coherent keys", 0.05f, 1.0f, false, true}};
     int fails = 0;
     for (const Case& c : cases) {
         Inputs in(T, seed++, c.state_scale, c.v_scale, c.slow_gates, c.coherent_keys);
@@ -1295,7 +1295,7 @@ void bench(int64_t T, bool tc_only = false) {
     if (tc_only) {
         const float kh = median(t_tc[0]), tc = median(t_tc[1]);
         std::printf("    recurrence, gdn_rec_kh_kernel                  %8.2f ms  (%.3f us per token)\n", kh, 1000.0f * kh / (float) T);
-        std::printf("    recurrence, tensor-core chunked (STRATA_GDN_TC=1) %8.2f ms  (%.3f us per token)  %.2fx gdn_rec_kh_kernel\n",
+        std::printf("    recurrence, tensor-core chunked (NOSTROMA_GDN_TC=1) %8.2f ms  (%.3f us per token)  %.2fx gdn_rec_kh_kernel\n",
                     tc, 1000.0f * tc / (float) T, kh / tc);
         cudaEventDestroy(e0);
         cudaEventDestroy(e1);
@@ -1308,12 +1308,12 @@ void bench(int64_t T, bool tc_only = false) {
                 1000.0f * r1 / (float) T, r0 / r1);
     if (can_chunk) {
         const float kh = median(t_kc[0]), kc = median(t_kc[1]);
-        std::printf("    recurrence, chunked (STRATA_GDN_CHUNKED=1)     %8.2f ms  (%.3f us per token)  %.2fx gdn_rec_kh_kernel\n",
+        std::printf("    recurrence, chunked (NOSTROMA_GDN_CHUNKED=1)     %8.2f ms  (%.3f us per token)  %.2fx gdn_rec_kh_kernel\n",
                     kc, 1000.0f * kc / (float) T, kh / kc);
     }
     if (can_tc) {
         const float kh = median(t_tc[0]), tc = median(t_tc[1]);
-        std::printf("    recurrence, tensor-core chunked (STRATA_GDN_TC=1) %8.2f ms  (%.3f us per token)  %.2fx gdn_rec_kh_kernel\n",
+        std::printf("    recurrence, tensor-core chunked (NOSTROMA_GDN_TC=1) %8.2f ms  (%.3f us per token)  %.2fx gdn_rec_kh_kernel\n",
                     tc, 1000.0f * tc / (float) T, kh / tc);
     }
     std::printf("    output norm, before (FP32 and FP16 store)      %8.2f ms\n", n0);

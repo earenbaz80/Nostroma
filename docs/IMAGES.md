@@ -23,7 +23,7 @@ START-HERE.bat --setup --images qwen-image      # Windows
 For an install that is already set up, without running `nostroma install` again:
 
 ```sh
-.venv/bin/python tools/image/install.py --config strata-<model>.json
+.venv/bin/python tools/image/install.py --config nostroma-<model>.json
 ```
 
 Then request an image:

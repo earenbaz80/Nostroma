@@ -21,7 +21,7 @@ on:
       - third_party/**
       - tests/**
       - serve/**
-      - strata.py
+      - nostroma.py
       - setup.py
       - nostroma_cli/**
       - nostroma_control/**
@@ -46,7 +46,7 @@ on:
       - third_party/**
       - tests/**
       - serve/**
-      - strata.py
+      - nostroma.py
       - setup.py
       - nostroma_cli/**
       - nostroma_control/**
@@ -141,13 +141,13 @@ jobs:
       - name: Python packages
         run: python -m pip install -r requirements.txt -r requirements-dev.txt -r requirements-build.txt
       # Diagnostic, not a check: what a Windows PowerShell 5.1 child returns when its parent runs under PowerShell 7 (a user who starts
-      # the app or `strata` from a PowerShell 7 window). The tests drop PowerShell 7's PSModulePath entries; the product does not yet.
+      # the app or `nostroma` from a PowerShell 7 window). The tests drop PowerShell 7's PSModulePath entries; the product does not yet.
       - name: PowerShell 7 parent (diagnostic)
         if: ${{ startsWith(matrix.only, 'host') }}
         continue-on-error: true
         shell: pwsh
         env:
-          STRATA_HOME: ${{ runner.temp }}\ps7-probe
+          NOSTROMA_HOME: ${{ runner.temp }}\ps7-probe
         run: |
           "PSModulePath: $env:PSModulePath"
           "--- powershell.exe Get-CimInstance | Select-Object (as hardware.mjs)"

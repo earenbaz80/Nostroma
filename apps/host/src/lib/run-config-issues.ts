@@ -15,7 +15,7 @@ export function issueText(issue: RunConfigIssue): string {
       case 'unknown-key': return tr('"{0}" is not a setting Nostroma reads, so it is ignored.', [p.key]);
       case 'args-type': return tr('"args" must be a list of quoted text entries, for example ["--ple-io", "mmap"]. Numbers need quotes too.');
       case 'args-managed': return tr('Nostroma manages the network address, port and API key itself, so --host, --port and --api-key in "args" are not honoured.');
-      case 'env-type': return tr('"env" must be an object of STRATA_ names with quoted text values.');
+      case 'env-type': return tr('"env" must be an object of NOSTROMA_ names with quoted text values.');
       case 'env-value': return tr('"env" entry {0} must be quoted text, for example "1".', [p.name]);
       case 'sampling-type': return tr('"sampling" must be an object such as { "temperature": 0.7 }.');
       case 'bool': return tr('"{0}" must be true or false, not {1}.', [p.key, p.value ?? '']);

@@ -1,4 +1,4 @@
-# Arc Pro B65: Strata v0.1.40.2 on PCIe Gen4
+# Arc Pro B65: Nostroma v0.1.40.2 on PCIe Gen4
 
 Measured on 2026-10-07 by timnevits. **Official upstream release**, commit
 `e8ca9afd03d839d4f8dbbe82dffce7f8a3bafd7a`, with **no local engine patches**.
@@ -29,11 +29,11 @@ between configurations.
 
 One request, INT8 resident KV, four workers, automatic hot
 expert cache and streaming experts. Every missing expert is in a protected
-pinned host mirror (16 GiB cap). `STRATA_VERIFY_NO_HOST=1` keeps computation
+pinned host mirror (16 GiB cap). `NOSTROMA_VERIFY_NO_HOST=1` keeps computation
 on the GPU, including direct reads from that mirror. Native verify/commit
 graphs, MTP window 4/max 4/min-p 0.5 (up to three drafts). Thinking off,
 greedy/seed 17; prompt, conversation and suffix caches, short-read and expert
-adaptation off. `STRATA_DBG_NAN` and QFUSE absent. Allocation alias checking
+adaptation off. `NOSTROMA_DBG_NAN` and QFUSE absent. Allocation alias checking
 keeps its upstream default. The two 8K profiles reserve 3072 MiB and differ only in prefill batch size:
 [512](profile-8k-512.json), [4096](profile-8k-4096.json). The
 [262K profile](profile-262k-512.json) uses prefill 512, reserve 4096 MiB and

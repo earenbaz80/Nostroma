@@ -67,14 +67,14 @@ class FatalGpuRestart(unittest.TestCase):
     def test_the_request_in_flight_fails_as_an_engine_death_not_a_bad_request(self):
         eng = types.SimpleNamespace(last_err=None, ended=False)
         with self.assertRaises(S.EngineDied) as cm:
-            S.StrataEngine._raise_if_fatal_gpu(eng, "ERR fatal GPU error: cudaStreamSynchronize(s): an illegal memory access was encountered")
+            S.NostromaEngine._raise_if_fatal_gpu(eng, "ERR fatal GPU error: cudaStreamSynchronize(s): an illegal memory access was encountered")
         self.assertIn("illegal memory access", str(cm.exception))
         self.assertTrue(eng.ended)                                  # the next request starts the engine at once
         self.assertTrue(eng.last_err.startswith("fatal GPU error"))
 
     def test_an_ordinary_engine_error_stays_a_bad_request(self):
         eng = types.SimpleNamespace(last_err=None, ended=False)
-        S.StrataEngine._raise_if_fatal_gpu(eng, "ERR the prompt (9 tokens) and max_new 5 are more than the context 8")   # no exception
+        S.NostromaEngine._raise_if_fatal_gpu(eng, "ERR the prompt (9 tokens) and max_new 5 are more than the context 8")   # no exception
         self.assertFalse(eng.ended)
 
 

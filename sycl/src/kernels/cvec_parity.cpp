@@ -1,4 +1,4 @@
-// src/kernels/cvec_parity.cpp - the control vector kernel (strata/kernels/cvec.hpp) against a host reference.
+// src/kernels/cvec_parity.cpp - the control vector kernel (nostroma/kernels/cvec.hpp) against a host reference.
 //   1. project: h - s (h.v) v per stream and token, against double precision; the steered component is gone.
 //   2. add: h + d.
 //   3. switched off: R unchanged without a pending write; with one, R is BITWISE the write the fused read folds
@@ -8,9 +8,9 @@
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "strata/kernels/cvec.hpp"
-#include "strata/kernels/fused_gr.hpp"
-#include "strata/core/geometry.hpp"
+#include "nostroma/kernels/cvec.hpp"
+#include "nostroma/kernels/fused_gr.hpp"
+#include "nostroma/core/geometry.hpp"
 
 #include <cmath>
 #include <cstdio>
@@ -19,7 +19,7 @@
 #include <random>
 #include <vector>
 
-namespace k = strata::kernels;
+namespace k = nostroma::kernels;
 
 namespace {
 
@@ -67,7 +67,7 @@ void check(bool ok, const char* what) {
 }  // namespace
 
 int main() {
-    constexpr int64_t L = 48, N = strata::core::kCompiledGeometry.n_embd, HC = strata::core::kCompiledGeometry.hc, LR = strata::core::kCompiledGeometry.hc_lr, T = 5, D = HC * N;   // the compiled shape (Q4-SYCL)
+    constexpr int64_t L = 48, N = nostroma::core::kCompiledGeometry.n_embd, HC = nostroma::core::kCompiledGeometry.hc, LR = nostroma::core::kCompiledGeometry.hc_lr, T = 5, D = HC * N;   // the compiled shape (Q4-SYCL)
     constexpr int64_t kLayer = 7, kOff = 3;   // steered / not steered
     std::mt19937 rng(1234);
     std::normal_distribution<float> nd(0.0f, 1.0f);

@@ -1,6 +1,6 @@
-// keeping the KFD quiet on an integrated gfx11 GPU under Linux (include/strata/core/kfd_quiet.hpp).  No GPU: the switch rule and the
+// keeping the KFD quiet on an integrated gfx11 GPU under Linux (include/nostroma/core/kfd_quiet.hpp).  No GPU: the switch rule and the
 // load order's rule.  (The device rule itself is igpu_kfd_settle_default, checked in src/core/arch_defaults_test.cpp.)
-#include "strata/core/kfd_quiet.hpp"
+#include "nostroma/core/kfd_quiet.hpp"
 
 #include <cstdio>
 #include <string>
@@ -13,7 +13,7 @@
 #include <cstdlib>
 #endif
 
-using namespace strata::core::kfd_quiet;
+using namespace nostroma::core::kfd_quiet;
 
 namespace {
 int failed = 0;
@@ -28,9 +28,9 @@ void switches() {
     CHECK(!switch_on(nullptr, "0"));     // one fix off
     CHECK(!switch_on("1", "0"));
     CHECK(switch_on("yes", "on"));
-    CHECK(std::string(fix_env(Fix::Load)) == "STRATA_KFD_QUIET_LOAD");
-    CHECK(std::string(fix_env(Fix::Exit)) == "STRATA_KFD_QUIET_EXIT");
-    CHECK(std::string(fix_env(Fix::Xfer)) == "STRATA_KFD_QUIET_XFER");
+    CHECK(std::string(fix_env(Fix::Load)) == "NOSTROMA_KFD_QUIET_LOAD");
+    CHECK(std::string(fix_env(Fix::Exit)) == "NOSTROMA_KFD_QUIET_EXIT");
+    CHECK(std::string(fix_env(Fix::Xfer)) == "NOSTROMA_KFD_QUIET_XFER");
 }
 
 void load_order() {
@@ -46,7 +46,7 @@ void load_order() {
         CHECK(m.hc_check_early && m.settle_after_cache && m.first_prompt_buffers && m.cpu_share_buffers && m.staged_copy_warm);
     }
     CHECK(kStagedWarmBytes > (1u << 20));   // above the runtime's own staging threshold
-    // the class, STRATA_KFD_QUIET=0 or STRATA_KFD_QUIET_LOAD=0: the old order (the A/B arm of the same binary)
+    // the class, NOSTROMA_KFD_QUIET=0 or NOSTROMA_KFD_QUIET_LOAD=0: the old order (the A/B arm of the same binary)
     using P = std::pair<const char*, const char*>;
     for (const P& p : std::vector<P>{P{"0", nullptr}, P{nullptr, "0"}, P{"0", "0"}, P{"0", "1"}}) {
         const LoadMoves m = load_moves(true, p.first, p.second);
@@ -194,16 +194,16 @@ void stop_order() {
 }
 
 void noreg() {
-    CHECK(std::string(fix_env(Fix::NoReg)) == "STRATA_KFD_QUIET_NOREG");
-    // the class default: unregistered, unless a switch says 0 or STRATA_UMA_REGISTER=1 asks for the registration
+    CHECK(std::string(fix_env(Fix::NoReg)) == "NOSTROMA_KFD_QUIET_NOREG");
+    // the class default: unregistered, unless a switch says 0 or NOSTROMA_UMA_REGISTER=1 asks for the registration
     CHECK(noreg_default(true, nullptr, nullptr, nullptr));
     CHECK(noreg_default(true, "1", "1", nullptr));
     CHECK(noreg_default(true, nullptr, nullptr, "0"));
     CHECK(!noreg_default(false, nullptr, nullptr, nullptr));   // every other card keeps its registered arena
     CHECK(!noreg_default(false, "1", "1", nullptr));
-    CHECK(!noreg_default(true, "0", nullptr, nullptr));        // STRATA_KFD_QUIET=0
-    CHECK(!noreg_default(true, nullptr, "0", nullptr));        // STRATA_KFD_QUIET_NOREG=0
-    CHECK(!noreg_default(true, nullptr, nullptr, "1"));        // STRATA_UMA_REGISTER=1
+    CHECK(!noreg_default(true, "0", nullptr, nullptr));        // NOSTROMA_KFD_QUIET=0
+    CHECK(!noreg_default(true, nullptr, "0", nullptr));        // NOSTROMA_KFD_QUIET_NOREG=0
+    CHECK(!noreg_default(true, nullptr, nullptr, "1"));        // NOSTROMA_UMA_REGISTER=1
     // NOREG's own class: the Radeon 780M class only (gfx1103 = 110003); Strix Point, Strix Halo and discrete cards stay registered
     auto noreg_cls = [](const std::vector<const char*>& texts) {
         std::vector<Node> v;
@@ -225,11 +225,11 @@ void noreg() {
     CHECK(!noreg_on({kCpuNode, k780M, k890M}));     // every GPU node must be a gfx1103
     CHECK(!noreg_on({}));
     CHECK(!noreg_on({kCpuNode}));
-    // the switches still win on the 780M: STRATA_KFD_QUIET_NOREG=0 / STRATA_KFD_QUIET=0 / STRATA_UMA_REGISTER=1 register
+    // the switches still win on the 780M: NOSTROMA_KFD_QUIET_NOREG=0 / NOSTROMA_KFD_QUIET=0 / NOSTROMA_UMA_REGISTER=1 register
     CHECK(!noreg_default(noreg_cls({kCpuNode, k780M}), nullptr, "0", nullptr));
     CHECK(!noreg_default(noreg_cls({kCpuNode, k780M}), "0", nullptr, nullptr));
     CHECK(!noreg_default(noreg_cls({kCpuNode, k780M}), nullptr, nullptr, "1"));
-    // the user's STRATA_ARENA_PIN_GIB wins over the class default both ways
+    // the user's NOSTROMA_ARENA_PIN_GIB wins over the class default both ways
     CHECK(arena_unregistered(nullptr, noreg_on({kCpuNode, k780M})));
     CHECK(!arena_unregistered("0", noreg_on({kCpuNode, k780M})));
     CHECK(!arena_unregistered(nullptr, noreg_on({kCpuNode, k8060S})));
@@ -241,7 +241,7 @@ void noreg() {
         return nodes_in_class(v);
     };
     CHECK(cls({kCpuNode, k780M}) && cls({kCpuNode, k890M}) && cls({kCpuNode, k8060S}));
-    // the arena's mode: the user's STRATA_ARENA_PIN_GIB wins both ways; unset or empty, the engine's flag
+    // the arena's mode: the user's NOSTROMA_ARENA_PIN_GIB wins both ways; unset or empty, the engine's flag
     CHECK(arena_unregistered(nullptr, true));
     CHECK(arena_unregistered("", true));
     CHECK(!arena_unregistered(nullptr, false));
@@ -250,7 +250,7 @@ void noreg() {
     CHECK(!arena_unregistered("0", true));      // the user registers the whole arena
     CHECK(!arena_unregistered("8", true));      // ... or a capped part of it
     CHECK(!arena_unregistered("auto", true));
-    // the lock: never tried in the class default; a STRATA_ARENA_LOCK the user set decides; outside NOREG as before (lock unless "0")
+    // the lock: never tried in the class default; a NOSTROMA_ARENA_LOCK the user set decides; outside NOREG as before (lock unless "0")
     CHECK(!arena_lock_wanted(true, nullptr));
     CHECK(arena_lock_wanted(true, "1"));
     CHECK(!arena_lock_wanted(true, "0"));
@@ -261,8 +261,8 @@ void noreg() {
 }
 
 void lend() {
-    CHECK(std::string(fix_env(Fix::Lend)) == "STRATA_KFD_QUIET_LEND");
-    // the switch: written off by default; _LEND=1 on, =0 / STRATA_KFD_QUIET=0 / STRATA_PREFILL_BORROW=1 off; never outside the class
+    CHECK(std::string(fix_env(Fix::Lend)) == "NOSTROMA_KFD_QUIET_LEND");
+    // the switch: written off by default; _LEND=1 on, =0 / NOSTROMA_KFD_QUIET=0 / NOSTROMA_PREFILL_BORROW=1 off; never outside the class
     CHECK(!kNoLendDefaultOn);
     CHECK(lend_rule_on(true, nullptr, nullptr, nullptr) == kNoLendDefaultOn);
     CHECK(lend_rule_on(true, nullptr, nullptr, nullptr, true));    // the constant flipped: the class default
@@ -271,7 +271,7 @@ void lend() {
     CHECK(lend_rule_on(true, "1", "1", nullptr));
     CHECK(!lend_rule_on(true, nullptr, "0", nullptr, true));
     CHECK(!lend_rule_on(true, "0", "1", nullptr, true));
-    CHECK(!lend_rule_on(true, nullptr, "1", "1", true));          // STRATA_PREFILL_BORROW=1 keeps the loan
+    CHECK(!lend_rule_on(true, nullptr, "1", "1", true));          // NOSTROMA_PREFILL_BORROW=1 keeps the loan
     CHECK(lend_rule_on(true, nullptr, "1", "0"));
     CHECK(!lend_rule_on(false, nullptr, "1", nullptr, true));     // not the class
     // the pick: the chunk always comes back as it went in (8192 stays 8192: no drop to 2048)

@@ -30,7 +30,7 @@ def corpus_specs() -> dict[str, dict]:
     return {spec["id"]: spec for spec in bs.load_corpus().specs}
 
 
-class MockStrata:
+class MockNostroma:
     """A server that speaks enough of Nostroma's API: /health, /props, /v1/status, /metrics and streamed chat completions."""
 
     def __init__(self, model_file: Path):
@@ -64,14 +64,14 @@ class MockStrata:
                 if owner.dead and self.path == "/health":
                     return self._json(503, {"error": "down"})
                 if self.path == "/health":
-                    return self._json(200, {"service": "strata", "loaded": True})
+                    return self._json(200, {"service": "nostroma", "loaded": True})
                 if self.path == "/props":
                     return self._json(200, {"model_alias": "qwen3.8-flash-next", "chat_template": TEMPLATE,
                                             "default_generation_settings": {"n_ctx": 131072, "params": {"temperature": 0.7}},
                                             "total_slots": 1, "build_info": "Nostroma 0.1.45.3",
                                             "model_path": str(owner.model_file), "is_sleeping": False})
                 if self.path == "/v1/status":
-                    return self._json(200, {"service": "strata", "model": "qwen3.8-flash-next", "engine": "0.1.45.3",
+                    return self._json(200, {"service": "nostroma", "model": "qwen3.8-flash-next", "engine": "0.1.45.3",
                                             "machine": {"gpu": {"name": owner.gpu_name}},
                                             "activity": {"requests": owner.requests_before}})
                 if self.path == "/metrics":
@@ -183,7 +183,7 @@ class StandardBase(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.model = self.root / "Qwen3.8-Flash-Next-IQ2_XS-00001-of-00001.gguf"
         self.model.write_bytes(b"model bytes")
-        self.server = MockStrata(self.model)
+        self.server = MockNostroma(self.model)
         self.addCleanup(self.server.close)
         for name, value in (("nvidia_gpus", ([], None, None)), ("other_gpus", ([], None)), ("cpu_name", lambda: "Mock CPU"),
                             ("ram_bytes", lambda: 64 * 2 ** 30), ("storage_of", lambda path: [{"kind": "nvme", "model": "Mock SSD", "bus": "nvme"}]),
@@ -303,7 +303,7 @@ class DocsAndPackagingTests(unittest.TestCase):
 
     def test_the_launchers_point_at_the_standard_benchmark(self):
         for name in ("BENCH.bat", "bench.sh"):
-            self.assertIn("strata.py bench run", (self.ROOT / name).read_text(encoding="utf-8"))
+            self.assertIn("nostroma.py bench run", (self.ROOT / name).read_text(encoding="utf-8"))
 
 
 class ScoringTests(unittest.TestCase):
@@ -345,8 +345,8 @@ class RunTests(StandardBase):
         doc, out = self.run_standard()
         self.assertEqual(bs.validate(doc), [])
         run = doc["run"]
-        self.assertEqual((doc["format"], doc["schema_version"], run["status"]), ("strata-standard-benchmark", 1, "complete"))
-        self.assertEqual(doc["protocol"]["id"], "strata-qwen38-thinking-v1-draft.1")
+        self.assertEqual((doc["format"], doc["schema_version"], run["status"]), ("nostroma-standard-benchmark", 1, "complete"))
+        self.assertEqual(doc["protocol"]["id"], "nostroma-qwen38-thinking-v1-draft.1")
         self.assertEqual(doc["protocol"]["corpus_sha256"], bs.load_corpus().sha256)
         self.assertEqual(doc["protocol"]["git_commit"], COMMIT)
         self.assertEqual(len(doc["requests"]), 22)
@@ -614,7 +614,7 @@ class RunTests(StandardBase):
         with mock.patch.object(bench_facts, "git_commit", return_value=None):
             doc, _ = self.run_standard("nocommit")
         self.assertEqual(doc["run"]["status"], "nonconforming")
-        self.assertIn("/software/strata_commit", doc["missing"])
+        self.assertIn("/software/nostroma_commit", doc["missing"])
         self.assertIsNone(doc["protocol"]["git_commit"])
         doc2, _ = self.run_standard("nohash", hash_model=False)
         self.assertEqual(doc2["run"]["status"], "nonconforming")
@@ -764,7 +764,7 @@ class ValidatorTests(StandardBase):
         self.assertEqual(bs.load(out)["run"]["id"], doc["run"]["id"])
         self.assertIsNone(bs.load_if_standard(self.root / "nothing"))
         other = self.root / "other.json"
-        other.write_text(json.dumps({"kind": "strata.serving.benchmark"}), encoding="utf-8")
+        other.write_text(json.dumps({"kind": "nostroma.serving.benchmark"}), encoding="utf-8")
         self.assertIsNone(bs.load_if_standard(other))
         bad = json.loads((out / "results.json").read_text(encoding="utf-8"))
         bad["schema_version"] = 9
@@ -784,7 +784,7 @@ class CommandLineTests(StandardBase):
         out = self.root / "cli"
         code, text, errors = self.invoke("--url", self.server.url, "--out", str(out))
         self.assertEqual(code, 0, errors)
-        self.assertIn("Nostroma standard benchmark (strata-qwen38-thinking-v1-draft.1)", text)
+        self.assertIn("Nostroma standard benchmark (nostroma-qwen38-thinking-v1-draft.1)", text)
         self.assertIn("Sanity checks: 12 of 12 passed", text)
         self.assertIn("Report:", text)
         self.assertEqual(bs.load(out)["run"]["status"], "complete")
@@ -885,10 +885,10 @@ class CommandLineTests(StandardBase):
         self.assertIn('"summaries"', text)                      # a field name that equals the host name stays a field name
 
     def test_a_credential_of_none_is_no_key_and_the_word_is_left_alone(self):
-        """#4483: STRATA_KEY=none was sent as "Bearer none" and the word was replaced wherever it occurred."""
+        """#4483: NOSTROMA_KEY=none was sent as "Bearer none" and the word was replaced wherever it occurred."""
         out = self.root / "nonekey"
-        code, _, errors = self.invoke("--url", self.server.url, "--out", str(out), "--credential-env", "STRATA_TEST_KEY",
-                                      "--track-notes", "nonempty reasoning, none of the nodes", env={"STRATA_TEST_KEY": " None "})
+        code, _, errors = self.invoke("--url", self.server.url, "--out", str(out), "--credential-env", "NOSTROMA_TEST_KEY",
+                                      "--track-notes", "nonempty reasoning, none of the nodes", env={"NOSTROMA_TEST_KEY": " None "})
         self.assertEqual(code, 0, errors)
         doc = bs.load(out)
         self.assertFalse(doc["extensions"]["api_key_sent"])
@@ -981,10 +981,10 @@ class EngineProcessTests(unittest.TestCase):
             seen["command"] = command
             return Fake()
         target = mock.Mock()
-        target.get.return_value = {"service": "strata", "loaded": True}
+        target.get.return_value = {"service": "nostroma", "loaded": True}
         with tempfile.TemporaryDirectory() as temp, mock.patch("subprocess.Popen", popen):
             proc = bs.start_engine("run.json", target, Path(temp) / "engine.log", lambda m: None, 5)
-            self.assertEqual(seen["command"][1].replace("\\", "/").rsplit("/", 1)[-1], "strata.py")
+            self.assertEqual(seen["command"][1].replace("\\", "/").rsplit("/", 1)[-1], "nostroma.py")
             self.assertEqual(seen["command"][2:5], ["serve", "--profile", "run.json"])
             with mock.patch("subprocess.run") as run, mock.patch("os.killpg", create=True) as killpg:
                 bs.stop_engine(proc)
@@ -1153,7 +1153,7 @@ class RealRunFindingsTests(StandardBase):
     def test_the_runtime_is_the_one_the_engine_was_built_with(self):
         engine = self.root / "engine"
         engine.mkdir()
-        exe = engine / "strata"
+        exe = engine / "nostroma"
         exe.write_bytes(b"")
         self.assertIsNone(bench_facts.engine_build_runtime(str(exe)))
         (engine / "engine-component.json").write_text(json.dumps({"build_id": "a7bdbfdabc9a+cuda12.9"}), encoding="utf-8")
@@ -1168,13 +1168,13 @@ class RealRunFindingsTests(StandardBase):
     def test_the_engine_log_comes_from_the_run_configs_log_file(self):
         console = self.root / "engine.log"
         console.write_bytes(b"")
-        run_log = self.root / "strata-model.log"
+        run_log = self.root / "nostroma-model.log"
         run_log.write_bytes(b"old line from an earlier start\n")
         offset = run_log.stat().st_size
         with run_log.open("ab") as stream:
-            stream.write(b"strata serve: expert cache 1500 slots\n")
+            stream.write(b"nostroma serve: expert cache 1500 slots\n")
         kept = bs.engine_log_since(console, run_log, offset)
-        self.assertEqual(kept.read_bytes(), b"strata serve: expert cache 1500 slots\n")
+        self.assertEqual(kept.read_bytes(), b"nostroma serve: expert cache 1500 slots\n")
         self.assertEqual(bs.engine_log_since(console, None, 0), console)
         self.assertEqual(bs.engine_log_since(console, self.root / "missing.log", 0), console)
         self.assertEqual(bs.engine_log_since(console, run_log, run_log.stat().st_size), console)
@@ -1216,12 +1216,12 @@ class ArchiveCommitTests(unittest.TestCase):
     def test_an_explicit_commit_or_the_variable_wins_over_git(self):
         sha = "ab" * 20
         self.assertEqual(self.pt.build_commit(sha.upper()), sha)
-        with mock.patch.dict(os.environ, {"STRATA_COMMIT": "cd" * 20}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_COMMIT": "cd" * 20}):
             self.assertEqual(self.pt.build_commit(None), "cd" * 20)
 
     def test_a_tree_copy_without_git_has_no_commit(self):
         with mock.patch.dict(os.environ, {}, clear=False), mock.patch.object(self.pt.subprocess, "run") as run:
-            os.environ.pop("STRATA_COMMIT", None)
+            os.environ.pop("NOSTROMA_COMMIT", None)
             run.return_value = mock.Mock(stdout="fatal: not a git repository\n")
             self.assertIsNone(self.pt.build_commit("not a sha"))
 

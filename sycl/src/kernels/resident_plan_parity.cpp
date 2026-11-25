@@ -12,7 +12,7 @@
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "strata/kernels/verify_kernels.hpp"
+#include "nostroma/kernels/verify_kernels.hpp"
 
 #include <cstdint>
 #include <cstdio>
@@ -21,7 +21,7 @@
 #include <random>
 #include <vector>
 
-namespace k = strata::kernels;
+namespace k = nostroma::kernels;
 
 namespace {
 void ck(dpct::err0 e, const char *w) {

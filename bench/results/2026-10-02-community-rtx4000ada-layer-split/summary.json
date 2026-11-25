@@ -4,8 +4,8 @@
   "quantization": "IQ3_S",
   "kv": "INT8",
   "context_tokens": 131072,
-  "strata_commit": "d9ab8435f654c368c586340d490915f6addf56a3",
-  "strata_engine": "0.1.35",
+  "nostroma_commit": "d9ab8435f654c368c586340d490915f6addf56a3",
+  "nostroma_engine": "0.1.35",
   "two_gpu": {
     "requests": 12,
     "suite_wall_seconds": 85.044,

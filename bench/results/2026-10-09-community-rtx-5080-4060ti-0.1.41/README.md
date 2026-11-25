@@ -1,6 +1,6 @@
 # Community benchmark on RTX 5080 16 GB + RTX 4060 Ti 8 GB (helper expert cache), Ryzen 9 9950X3D, 96 GB
 
-Measured on 2026-10-09 by KarlGrier. Stock Strata v0.1.41 on the ISTA-DASLab IQ3_S file at a 131,072-token context: three
+Measured on 2026-10-09 by KarlGrier. Stock Nostroma v0.1.41 on the ISTA-DASLab IQ3_S file at a 131,072-token context: three
 runs each at 4,096, 32,768 and 128,000 prompt tokens, plus `tools/needle_bench.py` at 32k and 128k. Two more sets are
 listed separately because they are **not** v0.1.41 as released: the same runs on a private build (v0.1.41 with local
 patches), and two larger files measured on 2026-10-07/08 on an older private build as stand-ins for a bigger model.
@@ -14,7 +14,7 @@ Main limitation: one machine, one IQ3_S file, three runs per size, temperature 0
 - CPU: AMD Ryzen 9 9950X3D, 16 cores / 32 threads, AVX-512. RAM: 96 GB DDR5 (MemTotal 91.96 GiB). Storage: Samsung 9100
   PRO 2 TB (PCIe 5.0 NVMe) holds the model files.
 - OS: an Ubuntu 24.04-based distribution, Linux 7.0. NVIDIA driver 610.57.04, CUDA 13.3 (nvcc 13.3.73).
-- Strata: tag v0.1.41 (`fb58e0db`), source build: Release, `-DSTRATA_ENABLE_CUDA=ON -DSTRATA_BUILD_TESTS=OFF
+- Nostroma: tag v0.1.41 (`fb58e0db`), source build: Release, `-DNOSTROMA_ENABLE_CUDA=ON -DNOSTROMA_BUILD_TESTS=OFF
   -DCMAKE_CUDA_ARCHITECTURES="89;120"`, ggml from llama.cpp `3cf03257` (the commit `setup.py` pins). No other options.
 - Background: a desktop session on the integrated graphics, otherwise idle. One model server at a time.
 
@@ -33,11 +33,11 @@ Main limitation: one machine, one IQ3_S file, three runs per size, temperature 0
   so the model thinks first and the first streamed token is reasoning text).
 
 ```text
-strata --serve --pack <pack> --native <IQ3_S shard 1> --ple-gguf <IQ3_S shard 2> --expert-profile data/expert-profile.bin
+nostroma --serve --pack <pack> --native <IQ3_S shard 1> --ple-gguf <IQ3_S shard 2> --expert-profile data/expert-profile.bin
   --expert-cache auto --prefill auto:16384 --spec 4 --spec-min-p 0.5 --mtp <mtp/rt> --max-context 131072 --kv int8
   --kv-resident 32768 --pcie-frac 0 --ple-inflight 128 --vram-reserve-mib 713 --expert-cache-device1 3300
-env: CUDA_VISIBLE_DEVICES=<RTX 5080>,<RTX 4060 Ti> STRATA_IO_THREADS=64 CUDA_MODULE_LOADING=LAZY STRATA_GR_V3=1
-     STRATA_PF_FUSED=1 STRATA_MMVQ_IL=1 STRATA_ADAPT_LAG=2 STRATA_DISJOINT_ADAPT=1
+env: CUDA_VISIBLE_DEVICES=<RTX 5080>,<RTX 4060 Ti> NOSTROMA_IO_THREADS=64 CUDA_MODULE_LOADING=LAZY NOSTROMA_GR_V3=1
+     NOSTROMA_PF_FUSED=1 NOSTROMA_MMVQ_IL=1 NOSTROMA_ADAPT_LAG=2 NOSTROMA_DISJOINT_ADAPT=1
 served by serve/server.py on 127.0.0.1
 ```
 
@@ -79,8 +79,8 @@ served by serve/server.py on 127.0.0.1
 
 The same prompts, method and flags on v0.1.41 with 27 local patches (exact speculative sampling, a cost-aware draft
 length, decode kernel changes, a conversation cache in RAM, transplants of #567 / #652 / #619), with
-`STRATA_PREFILL_CPU_SHARE=0` and `--chat-cache 16 --chat-cache-mib 12288` (a local flag). These patches are not part
-of Strata; the numbers are here only so they are not taken for the release's.
+`NOSTROMA_PREFILL_CPU_SHARE=0` and `--chat-cache 16 --chat-cache-mib 12288` (a local flag). These patches are not part
+of Nostroma; the numbers are here only so they are not taken for the release's.
 
 | Configuration | Actual prompt tokens | Reused tokens | Generated tokens | Runs | Prompt tok/s median (range) | Decode tok/s median (range) | TTFT seconds median (range) |
 | --- | ---: | ---: | ---: | ---: | --- | --- | --- |
@@ -95,7 +95,7 @@ most 64.8 GiB RSS. Prompt reads are within 1 % of the release's; decode is 6–1
 
 To see how a model with more experts than this PC's RAM would run, two larger files were measured as stand-ins on
 v0.1.40.2 with 27 local patches (not v0.1.41, not the stock engine), served, with the server's sampling defaults
-(temperature 1.0, top_p 0.95, top_k 20), `STRATA_UNBUFFERED_LOAD=1` (forced direct reads: faster here than the automatic
+(temperature 1.0, top_p 0.95, top_k 20), `NOSTROMA_UNBUFFERED_LOAD=1` (forced direct reads: faster here than the automatic
 choice), and the largest RAM budget that a memory guard (it stops the server when MemAvailable stays below 6 GiB for 0.6 s)
 let through a full session; the local file's session had one 0.2-s sample at 5.67 GiB.
 

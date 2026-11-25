@@ -12,8 +12,8 @@ import re
 import uuid
 from pathlib import Path
 
-NEXT = "Pick another folder, for example one on a drive you own, like D:\\Strata-models. Nothing was downloaded or changed."
-NEXT_POSIX = "Pick another folder you own, for example ~/strata-models. Nothing was downloaded or changed."
+NEXT = "Pick another folder, for example one on a drive you own, like D:\\Nostroma-models. Nothing was downloaded or changed."
+NEXT_POSIX = "Pick another folder you own, for example ~/nostroma-models. Nothing was downloaded or changed."
 
 _WIN_BAD = re.compile(r'[<>"|?*\x00-\x1f]')
 _POSIX_SYSTEM = ("/bin", "/boot", "/dev", "/etc", "/lib", "/lib32", "/lib64", "/proc", "/root", "/run", "/sbin", "/sys", "/usr", "/var/lib", "/System",
@@ -61,7 +61,7 @@ def _is_system(full: str) -> bool:
 
 
 def _can_write(folder: Path) -> bool:
-    probe = folder / f".strata-write-test-{uuid.uuid4().hex[:8]}"
+    probe = folder / f".nostroma-write-test-{uuid.uuid4().hex[:8]}"
     try:
         with open(probe, "wb") as fh:
             fh.write(b"x")
@@ -81,13 +81,13 @@ def problem(raw: str | os.PathLike | None) -> tuple[str, str] | None:
         return None
     if _WIN_BAD.search(text.replace("\\\\?\\", "", 1)) or (os.name == "nt" and ":" in text[2:] and not text.startswith("\\\\?\\")):
         return (f"This does not look like one folder path: {text}.",
-                "Type one full path, like D:\\Strata-models, with nothing else in front of or behind it. Nothing was downloaded or changed."
-                if os.name == "nt" else "Type one full path, like ~/strata-models. Nothing was downloaded or changed.")
+                "Type one full path, like D:\\Nostroma-models, with nothing else in front of or behind it. Nothing was downloaded or changed."
+                if os.name == "nt" else "Type one full path, like ~/nostroma-models. Nothing was downloaded or changed.")
     path = Path(text).expanduser()
     if not path.is_absolute():
         return (f"This is not a full path: {text}.",
-                "Type the whole path, starting with the drive, like D:\\Strata-models. Nothing was downloaded or changed."
-                if os.name == "nt" else "Type the whole path, starting with /, like /data/strata-models. Nothing was downloaded or changed.")
+                "Type the whole path, starting with the drive, like D:\\Nostroma-models. Nothing was downloaded or changed."
+                if os.name == "nt" else "Type the whole path, starting with /, like /data/nostroma-models. Nothing was downloaded or changed.")
     full = os.path.abspath(path)
     if _is_system(full):
         return (f"{full} is a system folder, and Nostroma should not keep model files there.", _next())

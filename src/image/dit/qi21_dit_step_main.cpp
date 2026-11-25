@@ -1,7 +1,7 @@
-// src/image/dit/qi21_dit_step_main.cpp - test program strata-dit-step (not shipped): one Qwen-Image-2.1 DiT step in
-// Nostroma's own code (include/strata/image/qi21_dit.hpp) on the inputs stable-diffusion.cpp gave its DiT.
+// src/image/dit/qi21_dit_step_main.cpp - test program nostroma-dit-step (not shipped): one Qwen-Image-2.1 DiT step in
+// Nostroma's own code (include/nostroma/image/qi21_dit.hpp) on the inputs stable-diffusion.cpp gave its DiT.
 //
-//   strata-dit-step <dit.gguf> <out dir> <dump dir> [<dump dir> ...] [--repeat N] [--call K] [--f16-resident]
+//   nostroma-dit-step <dit.gguf> <out dir> <dump dir> [<dump dir> ...] [--repeat N] [--call K] [--f16-resident]
 //
 // Each dump dir holds the stage-hook dumps of one picture (tools/image/gate/stage_hooks.py): dit_x_<K> (the latent,
 // shape "W H C 1"), dit_t_<K> (the timestep) and cond (shape "context L").  Writes <out dir>/<dump parent name>/<dump name>/vel.bin, the
@@ -9,7 +9,7 @@
 // same inputs (the first runs the text prefix, the rest reuse it, like sampling steps 2..8) and every run must give
 // the same bytes.  Prints the open report, per run the step and prefix time, the memory peak of the DiT's own buffers
 // against the GGUF size, and DIT-STEP PASS / FAIL (FAIL = an error or runs that differ).
-#include "strata/image/qi21_dit.hpp"
+#include "nostroma/image/qi21_dit.hpp"
 
 #include <algorithm>
 #include <cstdio>
@@ -21,7 +21,7 @@
 #include <vector>
 
 namespace fs = std::filesystem;
-using namespace strata::image;
+using namespace nostroma::image;
 
 namespace {
 
@@ -46,7 +46,7 @@ std::vector<long long> read_shape(const fs::path& p) {
 
 int main(int argc, char** argv) {
     if (argc < 4) {
-        std::fprintf(stderr, "usage: strata-dit-step <dit.gguf> <out dir> <dump dir> [...] [--repeat N] [--call K]\n");
+        std::fprintf(stderr, "usage: nostroma-dit-step <dit.gguf> <out dir> <dump dir> [...] [--repeat N] [--call K]\n");
         return 2;
     }
     int repeat = 1, call = 0, flags = 0;

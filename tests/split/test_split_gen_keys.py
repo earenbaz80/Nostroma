@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 # keys the split engine's parse_gen accepts (some only note that they change nothing: pin, pcie_frac, spec_min_p, pipe, aux_cpus, cvec)
 ACCEPTED = {"temperature", "top_p", "top_k", "min_p", "penalty_repeat", "penalty_freq", "penalty_present", "penalty_last_n", "seed", "keep", "ckpt", "pin",
             "pcie_frac", "spec_min_p", "pipe", "aux_cpus", "cvec", "img_keys"}
-# keys the server does not send to a split engine: pen_from is dropped (StrataEngine.pen_from_key), logprobs / allowed / logit_bias are refused with a 400 first
+# keys the server does not send to a split engine: pen_from is dropped (NostromaEngine.pen_from_key), logprobs / allowed / logit_bias are refused with a 400 first
 # (refuse_for_split, logit_bias.validate_request)
 DROPPED = {"pen_from"}
 REFUSED = {"logprobs", "allowed", "logit_bias"}
@@ -75,9 +75,9 @@ class SplitGenKeys(unittest.TestCase):
     def test_pen_from_is_not_sent_to_a_split_engine_and_is_to_the_others(self):
         from serve import server
 
-        split = object.__new__(server.StrataEngine)
+        split = object.__new__(server.NostromaEngine)
         split.split_engine = True
-        other = object.__new__(server.StrataEngine)
+        other = object.__new__(server.NostromaEngine)
         other.split_engine = False
         self.assertEqual(split.pen_from_key(100, 130), "")
         self.assertEqual(other.pen_from_key(100, 130), " pen_from=99")
@@ -86,16 +86,16 @@ class SplitGenKeys(unittest.TestCase):
     def test_a_split_engine_name_is_found_by_its_executable(self):
         from serve import server
 
-        for exe, want in (("/x/strata-split-4-amd", True), ("/x/strata-split-2-sm86", True), ("C:/x/strata-split-2", True), ("/x/strata", False),
-                          ("/x/strata-vision", False)):
-            e = object.__new__(server.StrataEngine)
-            e.split_engine = __import__("os").path.basename(exe).startswith("strata-split")
+        for exe, want in (("/x/nostroma-split-4-amd", True), ("/x/nostroma-split-2-sm86", True), ("C:/x/nostroma-split-2", True), ("/x/nostroma", False),
+                          ("/x/nostroma-vision", False)):
+            e = object.__new__(server.NostromaEngine)
+            e.split_engine = __import__("os").path.basename(exe).startswith("nostroma-split")
             self.assertEqual(e.split_engine, want, exe)
 
     def test_logprobs_and_logit_bias_are_refused_with_a_400_for_a_split_engine(self):
         from serve import logit_bias, server
 
-        e = object.__new__(server.StrataEngine)
+        e = object.__new__(server.NostromaEngine)
         e.split_engine = True
         with self.assertRaises(ValueError) as cm:
             server.refuse_for_split(e, {"logprobs": True, "top_logprobs": 3})
@@ -104,7 +104,7 @@ class SplitGenKeys(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             logit_bias.validate_request({"logit_bias": {"5": 1.0}}, e, 1000)
         self.assertIn("--split-engine off", str(cm.exception))
-        other = object.__new__(server.StrataEngine)
+        other = object.__new__(server.NostromaEngine)
         other.split_engine = False
         server.refuse_for_split(other, {"logprobs": True, "top_logprobs": 3})   # other engines unchanged
 

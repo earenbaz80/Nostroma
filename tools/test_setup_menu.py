@@ -1,6 +1,6 @@
 """Tests for setup.py's model menu (0.1.44): the family order, NVFP4 hidden on AMD and Intel, the NVFP4 line's card note
 (RTX 50 native FP4, older RTX slower than UD-IQ4_XS), the Unsloth sizes in order with images on, and the prebuilt
-install removing a stale strata_kq library.
+install removing a stale nostroma_kq library.
 
     python -m unittest tools.test_setup_menu
 """
@@ -145,21 +145,21 @@ class UnslothDefaultEnv(unittest.TestCase):
 
     def test_q5_and_q6_turn_the_k_quant_prompt_kernels_on_q4_does_not(self):
         f = setup.unsloth_default_env
-        self.assertEqual(f("unsloth", "UD-Q5_K_XL", False, False)["STRATA_MMQ_KQ"], "1")
-        self.assertEqual(f("unsloth", "UD-Q6_K_XL", True, True)["STRATA_MMQ_KQ"], "1")
+        self.assertEqual(f("unsloth", "UD-Q5_K_XL", False, False)["NOSTROMA_MMQ_KQ"], "1")
+        self.assertEqual(f("unsloth", "UD-Q6_K_XL", True, True)["NOSTROMA_MMQ_KQ"], "1")
         for m in ("UD-Q4_K_XL", "UD-IQ4_XS", "Q8_0"):
-            self.assertNotIn("STRATA_MMQ_KQ", f("unsloth", m, False, False), m)
+            self.assertNotIn("NOSTROMA_MMQ_KQ", f("unsloth", m, False, False), m)
 
     def test_hc_q8_is_the_engines_own_default_not_setups(self):
         f = setup.unsloth_default_env
         for m in ("UD-IQ4_XS", "UD-Q4_K_XL", "UD-Q5_K_XL", "UD-Q6_K_XL", "Q8_0"):
             for hip in (False, True):
-                self.assertNotIn("STRATA_HC_Q8", f("unsloth", m, hip, True), (m, hip))
+                self.assertNotIn("NOSTROMA_HC_Q8", f("unsloth", m, hip, True), (m, hip))
 
     def test_tail_skip_off_only_when_every_expert_is_in_ram(self):
         f = setup.unsloth_default_env
-        self.assertEqual(f("unsloth", "UD-Q4_K_XL", False, False)["STRATA_ROUTE_TAIL_SKIP"], "0")
-        self.assertNotIn("STRATA_ROUTE_TAIL_SKIP", f("unsloth", "UD-Q4_K_XL", False, True))   # budget mode keeps the skip
+        self.assertEqual(f("unsloth", "UD-Q4_K_XL", False, False)["NOSTROMA_ROUTE_TAIL_SKIP"], "0")
+        self.assertNotIn("NOSTROMA_ROUTE_TAIL_SKIP", f("unsloth", "UD-Q4_K_XL", False, True))   # budget mode keeps the skip
 
     @mock.patch.object(setup, "WIN", False)       # "Linux" gfx12: setup asks the host OS (setup.WIN), so the test names Linux itself
     def test_tail_skip_stays_on_for_linux_gfx12(self):
@@ -167,17 +167,17 @@ class UnslothDefaultEnv(unittest.TestCase):
         f = setup.unsloth_default_env
         for arch in ("gfx1201", "gfx1200", "gfx1201:sramecc-:xnack-"):
             for m in ("UD-IQ4_XS", "UD-Q4_K_XL", "UD-Q5_K_XL", "UD-Q6_K_XL"):
-                self.assertNotIn("STRATA_ROUTE_TAIL_SKIP", f("unsloth", m, True, False, arch), (arch, m))
+                self.assertNotIn("NOSTROMA_ROUTE_TAIL_SKIP", f("unsloth", m, True, False, arch), (arch, m))
         # every other card keeps the 0: other AMD (gfx1100, gfx1151), NVIDIA, no arch given (the old signature)
         for arch in ("gfx1100", "gfx1151", "gfx1030", "", "sm_120"):
-            self.assertEqual(f("unsloth", "UD-Q4_K_XL", True, False, arch)["STRATA_ROUTE_TAIL_SKIP"], "0", arch)
-        self.assertEqual(f("unsloth", "UD-Q4_K_XL", False, False, "gfx1201")["STRATA_ROUTE_TAIL_SKIP"], "0")    # not hip
-        self.assertEqual(f("unsloth", "UD-Q4_K_XL", True, False)["STRATA_ROUTE_TAIL_SKIP"], "0")                 # the old call
+            self.assertEqual(f("unsloth", "UD-Q4_K_XL", True, False, arch)["NOSTROMA_ROUTE_TAIL_SKIP"], "0", arch)
+        self.assertEqual(f("unsloth", "UD-Q4_K_XL", False, False, "gfx1201")["NOSTROMA_ROUTE_TAIL_SKIP"], "0")    # not hip
+        self.assertEqual(f("unsloth", "UD-Q4_K_XL", True, False)["NOSTROMA_ROUTE_TAIL_SKIP"], "0")                 # the old call
         # Windows gfx12 was not measured: it keeps the 0
         old = setup.WIN
         try:
             setup.WIN = True
-            self.assertEqual(f("unsloth", "UD-Q4_K_XL", True, False, "gfx1201")["STRATA_ROUTE_TAIL_SKIP"], "0")
+            self.assertEqual(f("unsloth", "UD-Q4_K_XL", True, False, "gfx1201")["NOSTROMA_ROUTE_TAIL_SKIP"], "0")
         finally:
             setup.WIN = old
 
@@ -195,13 +195,13 @@ class EnginePlaceholders(unittest.TestCase):
         # No minimum may name an engine newer than this tree (a placeholder for a release that does not exist yet would make setup
         # ask for an engine nobody can download). The tree's version is read from CMakeLists.txt, so this does not go stale each release.
         text = (ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
-        tree = tuple(int(n) for n in re.search(r"project\(strata VERSION ([0-9.]+)", text).group(1).split("."))
+        tree = tuple(int(n) for n in re.search(r"project\(nostroma VERSION ([0-9.]+)", text).group(1).split("."))
         for what, minimum in [("MIN_ENGINE", setup.MIN_ENGINE), ("NVFP4_ENGINE", setup.NVFP4_ENGINE)] + [(m, setup.MODELS[m]["engine"]) for m in setup.MODELS if "engine" in setup.MODELS[m]]:
             self.assertLessEqual(tuple(minimum), tree[:len(minimum)], f"{what} {minimum} is ahead of the tree {tree}")
 
 
 class KqLibrary(unittest.TestCase):
-    def test_a_zip_without_strata_kq_does_not_leave_an_old_one(self):
+    def test_a_zip_without_nostroma_kq_does_not_leave_an_old_one(self):
         with tempfile.TemporaryDirectory() as d:
             eng, tmp = Path(d) / "engine", Path(d) / "new"
             eng.mkdir()
@@ -214,7 +214,7 @@ class KqLibrary(unittest.TestCase):
             self.assertFalse((eng / setup.KQ_LIB).exists())
             self.assertEqual((eng / setup.PREVIOUS_ENGINE / setup.KQ_LIB).read_bytes(), b"old kq")   # a rollback gets it back
 
-    def test_a_zip_with_strata_kq_replaces_it(self):
+    def test_a_zip_with_nostroma_kq_replaces_it(self):
         with tempfile.TemporaryDirectory() as d:
             eng, tmp = Path(d) / "engine", Path(d) / "new"
             eng.mkdir()

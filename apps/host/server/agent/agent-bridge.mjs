@@ -3,7 +3,7 @@
  *
  * What it owns
  *   - the pinned Harness process (one, lazily started, restarted only when a route it needs changed);
- *   - the stable Strata-chat -> Harness-session map, persisted next to the host's other state;
+ *   - the stable Nostroma-chat -> Harness-session map, persisted next to the host's other state;
  *   - one `session/follow` stream per live turn, projected into the NDJSON frames the chat UI renders;
  *   - approvals: the Harness `approval/request` waterfall in, the user's Approve/Deny back out;
  *   - Stop: `session/cancel` for exactly one session, resolved only once the turn has really ended.
@@ -342,8 +342,8 @@ export function createAgentBridge({ dataDir, componentsDir = null, bundledDir = 
     // Manual leaves the sandbox open and relies on the Nostroma gate to ask first. Without the gate it must not start.
     if (mode === 'manual' && !runtime.gateChecked) {
       try {
-        const probe = await runtime.gw.rpc('commands/execute', { agentId: sessionId, line: '/strata-gate', submittedAttachments: [] });
-        if (probe?.result?.kind !== 'success' || !String(probe.result.text ?? '').includes('strata-gate active')) throw new Error('the approval gate is not loaded');
+        const probe = await runtime.gw.rpc('commands/execute', { agentId: sessionId, line: '/nostroma-gate', submittedAttachments: [] });
+        if (probe?.result?.kind !== 'success' || !String(probe.result.text ?? '').includes('nostroma-gate active')) throw new Error('the approval gate is not loaded');
         runtime.gateChecked = true;
       } catch (e) {
         throw new AgentUnavailable('Nostroma could not make sure the coding assistant asks before changing anything, so nothing ran. Close and reopen Nostroma, then try again.', 'mode-unavailable', e.message);
@@ -1307,7 +1307,7 @@ ${note.text}
   /** What the chat holds now and the model's window, as the context plugin measures them (null when it cannot be read). */
   async function contextOf(runtime, sessionId) {
     try {
-      const r = await runtime.gw.rpc('commands/execute', { agentId: sessionId, line: '/strata-context', submittedAttachments: [] });
+      const r = await runtime.gw.rpc('commands/execute', { agentId: sessionId, line: '/nostroma-context', submittedAttachments: [] });
       if (r?.result?.kind !== 'success') return null;
       const v = JSON.parse(String(r.result.text));
       return Number.isFinite(v.tokens) ? { tokens: Math.round(v.tokens), window: Number(v.window) > 0 ? Math.round(v.window) : 0 } : null;

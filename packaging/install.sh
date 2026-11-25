@@ -6,28 +6,28 @@
 # What it does, in order (and nothing else):
 #   1. finds out which computer this is (system, processor, graphics card) so it can fetch the right archive;
 #   2. downloads the Terminal archive named in the release folder's install-manifest.txt and checks its SHA-256 against it;
-#   3. unpacks it into  ${XDG_DATA_HOME:-~/.local/share}/strata/terminal/<version>  (no administrator rights, nothing outside your home);
+#   3. unpacks it into  ${XDG_DATA_HOME:-~/.local/share}/nostroma/terminal/<version>  (no administrator rights, nothing outside your home);
 #   4. checks the release's signed feed with the Terminal it just unpacked (`nostroma update --check`); if that check fails, it removes
 #      what it unpacked and stops;
-#   5. puts `nostroma` and the older `strata` links in ~/.local/bin and prints:  Installed. Run: nostroma launch
+#   5. puts `nostroma` and the older `nostroma` links in ~/.local/bin and prints:  Installed. Run: nostroma launch
 #
 # The engine (the part that talks to your graphics card) and the model are NOT part of this: `nostroma launch` fetches the engine for
 # your card the first time you choose a model, from the same release folder, signed.
 #
 # <feed> is where the release folder is hosted: GitHub Releases of earenbaz80/Nostroma (the "latest" release's files), built in as the default.
-# Set NOSTROMA_FEED (the older STRATA_FEED still works) to another folder (a URL) to use that instead, for example a local test feed:
+# Set NOSTROMA_FEED (the older NOSTROMA_FEED still works) to another folder (a URL) to use that instead, for example a local test feed:
 # NOSTROMA_FEED=http://127.0.0.1:8099 sh install.sh
 #
-# Settings (all optional): NOSTROMA_FEED, NOSTROMA_DATA_DIR (default ~/.local/share/strata), NOSTROMA_BIN_DIR (default ~/.local/bin),
+# Settings (all optional): NOSTROMA_FEED, NOSTROMA_DATA_DIR (default ~/.local/share/nostroma), NOSTROMA_BIN_DIR (default ~/.local/bin),
 # NOSTROMA_INSTALL_TEST_TRUST=1 (a test feed: also fetch <feed>/test-trust.json and trust only that key for the check in step 4).
-# The older STRATA_* names of the same settings are still read, and win only when the NOSTROMA_* one is not set.
+# The older NOSTROMA_* names of the same settings are still read, and win only when the NOSTROMA_* one is not set.
 set -eu
 
-FEED="${NOSTROMA_FEED:-${STRATA_FEED:-https://github.com/earenbaz80/Nostroma/releases/latest/download}}"
+FEED="${NOSTROMA_FEED:-${NOSTROMA_FEED:-https://github.com/earenbaz80/Nostroma/releases/latest/download}}"
 FEED="${FEED%/}"
-DATA_DIR="${NOSTROMA_DATA_DIR:-${STRATA_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/strata}}"
-BIN_DIR="${NOSTROMA_BIN_DIR:-${STRATA_BIN_DIR:-$HOME/.local/bin}}"
-TEST_TRUST="${NOSTROMA_INSTALL_TEST_TRUST:-${STRATA_INSTALL_TEST_TRUST:-}}"
+DATA_DIR="${NOSTROMA_DATA_DIR:-${NOSTROMA_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/nostroma}}"
+BIN_DIR="${NOSTROMA_BIN_DIR:-${NOSTROMA_BIN_DIR:-$HOME/.local/bin}}"
+TEST_TRUST="${NOSTROMA_INSTALL_TEST_TRUST:-${NOSTROMA_INSTALL_TEST_TRUST:-}}"
 
 say() { printf '%s\n' "$*"; }
 die() { printf 'nostroma installer: %s\n' "$*" >&2; exit 1; }
@@ -47,8 +47,8 @@ real_path() {
   printf '%s/%s\n' "$here" "$(basename -- "$path")"
 }
 
-# A name is ours when it points at exactly what this installer links to: terminal/current/bin/strata, or
-# terminal/<version>/bin/strata where the version starts with a digit. The target is resolved first, so the same
+# A name is ours when it points at exactly what this installer links to: terminal/current/bin/nostroma, or
+# terminal/<version>/bin/nostroma where the version starts with a digit. The target is resolved first, so the same
 # folder spelled another way counts (a home reached through a link, `current` instead of the version it names, a
 # trailing slash), and so does a link into a data folder the user has moved away from since: changing
 # NOSTROMA_DATA_DIR does not turn the old name into someone else's file. A terminal of some other kind, one folder
@@ -57,7 +57,7 @@ is_our_name() {
   target=$(readlink "$1")
   case $target in /*) : ;; *) target=$(dirname -- "$1")/$target ;; esac
   real=$(real_path "$target")
-  [ "${real##*/}" = strata ] || return 1                       # the program itself
+  [ "${real##*/}" = nostroma ] || return 1                       # the program itself
   bin_dir=${real%/*}
   [ "${bin_dir##*/}" = bin ] || return 1
   slot=${bin_dir%/*}                                           # .../current or .../<version>
@@ -81,9 +81,9 @@ check_name() {
   fi
 }
 check_name "$BIN_DIR/nostroma"
-check_name "$BIN_DIR/strata"
+check_name "$BIN_DIR/nostroma"
 
-[ -n "$FEED" ] || die "this installer does not know where the Nostroma release folder is. Set NOSTROMA_FEED to its address and run it again, for example: NOSTROMA_FEED=https://example.org/strata sh install.sh"
+[ -n "$FEED" ] || die "this installer does not know where the Nostroma release folder is. Set NOSTROMA_FEED to its address and run it again, for example: NOSTROMA_FEED=https://example.org/nostroma sh install.sh"
 
 # Everything below is one function, called on the last line: a download that stops half-way is a syntax error (nothing runs), not a half installer.
 main() {
@@ -145,7 +145,7 @@ main() {
   say "  Release folder: $FEED"
 
   # ---- 2. download and check
-  work=$(mktemp -d "${TMPDIR:-/tmp}/strata-install.XXXXXX") || die "cannot make a temporary folder"
+  work=$(mktemp -d "${TMPDIR:-/tmp}/nostroma-install.XXXXXX") || die "cannot make a temporary folder"
   trap 'rm -rf "$work"' EXIT INT TERM
   host=$(printf '%s' "$FEED" | sed -n 's#^[A-Za-z][A-Za-z0-9+.-]*://\([^/:]*\).*#\1#p')
   host=${host:-$FEED}
@@ -166,22 +166,22 @@ main() {
   mkdir -p "$DATA_DIR/terminal" "$BIN_DIR"
   rm -rf "$dest.incoming"; mkdir -p "$dest.incoming"
   tar -xzf "$work/terminal.tar.gz" -C "$dest.incoming" || die "the archive could not be unpacked (is the disk full?). Nothing was installed."
-  if [ ! -f "$dest.incoming/bin/strata" ]; then                  # an archive with one top folder (a terminal archive instead of the feed's control package)
+  if [ ! -f "$dest.incoming/bin/nostroma" ]; then                  # an archive with one top folder (a terminal archive instead of the feed's control package)
     inner=$(ls -d "$dest.incoming"/*/ 2>/dev/null | head -1)
-    if [ -n "$inner" ] && [ -f "${inner}bin/strata" ]; then
+    if [ -n "$inner" ] && [ -f "${inner}bin/nostroma" ]; then
       mv "${inner%/}" "$dest.inner" && rm -rf "$dest.incoming" && mv "$dest.inner" "$dest.incoming"
     fi
   fi
-  [ -f "$dest.incoming/bin/strata" ] || { rm -rf "$dest.incoming"; die "the archive does not look like a Nostroma Terminal (no bin/strata). Nothing was installed."; }
-  chmod +x "$dest.incoming/bin/strata" 2>/dev/null || true
+  [ -f "$dest.incoming/bin/nostroma" ] || { rm -rf "$dest.incoming"; die "the archive does not look like a Nostroma Terminal (no bin/nostroma). Nothing was installed."; }
+  chmod +x "$dest.incoming/bin/nostroma" 2>/dev/null || true
 
   # ---- 4. the signed feed, checked with the Terminal just unpacked
   if [ "$TEST_TRUST" = 1 ]; then
     fetch "$FEED/test-trust.json" "$work/test-trust.json" || { rm -rf "$dest.incoming"; die "the test feed has no test-trust.json"; }
-    STRATA_UPDATE_TRUSTED_KEYS="$work/test-trust.json"; export STRATA_UPDATE_TRUSTED_KEYS
+    NOSTROMA_UPDATE_TRUSTED_KEYS="$work/test-trust.json"; export NOSTROMA_UPDATE_TRUSTED_KEYS
   fi
   say "Checking the release's signature…"
-  if ! "$dest.incoming/bin/strata" update --check --no-engine --feed "$FEED" >"$work/check.txt" 2>&1; then
+  if ! "$dest.incoming/bin/nostroma" update --check --no-engine --feed "$FEED" >"$work/check.txt" 2>&1; then
     sed -e 's/^/    /' "$work/check.txt" >&2
     rm -rf "$dest.incoming"
     die "the release folder's signed feed could not be verified, so nothing was installed. The reason is printed above; if it names a newer feed already accepted here, use the newest release folder, or follow the step it gives. If you trust this source and see no such reason, ask its owner to publish a signed feed."
@@ -193,13 +193,13 @@ main() {
   mv "$dest.incoming" "$dest"
   ln -sfn "$dest" "$DATA_DIR/terminal/current"
   ln -sf "$DATA_DIR/terminal/current/bin/nostroma" "$BIN_DIR/nostroma"
-  ln -sf "$DATA_DIR/terminal/current/bin/nostroma" "$BIN_DIR/strata"     # the name this command had before, the same program
+  ln -sf "$DATA_DIR/terminal/current/bin/nostroma" "$BIN_DIR/nostroma"     # the name this command had before, the same program
   case ":$PATH:" in
     *":$BIN_DIR:"*) say "Installed. Run: nostroma launch"
-                    say "  (the old name, 'strata', still works)" ;;
+                    say "  (the old name, 'nostroma', still works)" ;;
     *) say "Installed. Run: $BIN_DIR/nostroma launch"
        say "  (To type just 'nostroma', add this line to your shell profile: export PATH=\"$BIN_DIR:\$PATH\")"
-       say "  (the old name, 'strata', is put there too)" ;;
+       say "  (the old name, 'nostroma', is put there too)" ;;
   esac
 }
 

@@ -15,8 +15,8 @@
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "strata/kernels/iq_kernels.hpp"
-#include "strata/core/geometry.hpp"
+#include "nostroma/kernels/iq_kernels.hpp"
+#include "nostroma/core/geometry.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -28,12 +28,12 @@
 #include <string>
 #include <vector>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 // SYCL port only (iq_kernels.dp.cpp): the K-quant / Q5_1 / Q8_0 lane kernels with (true, the default) or without the
-// multi-entry split; STRATA_KQ_SPLIT=0 at startup is false
+// multi-entry split; NOSTROMA_KQ_SPLIT=0 at startup is false
 void native_expert_set_kq_split(bool on);
 }
-namespace k = strata::kernels;
+namespace k = nostroma::kernels;
 
 namespace {
 
@@ -617,10 +617,10 @@ void bench(dpct::queue_ptr s, std::mt19937 &rng) {
 // expert bytes it reads per microsecond.  NL layers (default 16), each with its own experts, so the weights stream from
 // DRAM; a call reads each of its groups' whole blobs (gate + up + down) once.  Shapes: one token (10 groups of 1), a
 // window of 2 tokens (16 groups, 20 entries) and of 4 (28 groups, 40 entries; native_grouped_parity's --bench).
-// STRATA_GU_LANES / STRATA_DOWN_LANES pick the lane split as in the engine.
+// NOSTROMA_GU_LANES / NOSTROMA_DOWN_LANES pick the lane split as in the engine.
 void kq_bench(dpct::queue_ptr s, std::mt19937& rng, int nl, bool host) {
     const int pairs[][2] = {{21, 20}, {23, 20}, {18, 42}, {12, 7}, {12, 8}, {13, 8},
-#ifdef STRATA_Q6K_EXPERTS
+#ifdef NOSTROMA_Q6K_EXPERTS
                             {14, 8},
 #endif
                             {8, 8}};
@@ -694,11 +694,11 @@ int main(int argc, char** argv) {
     auto kq_down = [&] {
         // Q4-SYCL: and the hidden width the build is compiled for (3072 in q4_mid, 4096 in q4_big; the pools' buffers follow it)
         std::vector<int64_t> Hs = {2048, 2560};
-        if (std::find(Hs.begin(), Hs.end(), (int64_t) strata::core::kCompiledGeometry.n_embd) == Hs.end()) Hs.push_back(strata::core::kCompiledGeometry.n_embd);
+        if (std::find(Hs.begin(), Hs.end(), (int64_t) nostroma::core::kCompiledGeometry.n_embd) == Hs.end()) Hs.push_back(nostroma::core::kCompiledGeometry.n_embd);
         const int gus[] = {12, 13};
         for (const int gu : gus)
             for (const int dt : {13
-#ifdef STRATA_Q6K_EXPERTS
+#ifdef NOSTROMA_Q6K_EXPERTS
                                  , 14
 #endif
                                 })
@@ -742,11 +742,11 @@ int main(int argc, char** argv) {
         return g_fail ? 1 : 0;
     }
     for (int gu : {16, 17, 18, 21, 22, 23, 29, 42, 12, 13,
-#ifdef STRATA_Q6K_EXPERTS
+#ifdef NOSTROMA_Q6K_EXPERTS
                    14,
 #endif
-                   8})        // STRATA_GU_FMTS
-        for (int dt : {20, 23, 42, 7, 8, 6, 13}) check(gu, dt, 512, 256, s, rng);   // STRATA_D_FMTS (6 = Q5_0: UD-IQ4_XS / Q3_K_XL); IQ4_XS: n_ff % 256
+                   8})        // NOSTROMA_GU_FMTS
+        for (int dt : {20, 23, 42, 7, 8, 6, 13}) check(gu, dt, 512, 256, s, rng);   // NOSTROMA_D_FMTS (6 = Q5_0: UD-IQ4_XS / Q3_K_XL); IQ4_XS: n_ff % 256
     kq_down();                                                          // Q4-KQ: Q5_K / Q6_K downs at widths 512 and 1024
     check(21, 20, 2560, 640, s, rng);                                   // a model's shapes
     // round 0214: every expert type pair of the new Unsloth Qwen3.8-Flash-Next sets at the model's 2560 x 640
@@ -756,12 +756,12 @@ int main(int argc, char** argv) {
     check(21, 23, 2560, 768, s, rng);
     // Q4-SYCL: the build's own expert shape (q4_lite 2048 x 512, q4_mid 3072 x 1024, q4_big 4096 x 1024): the UD mix's pairs (Q4_K / Q5_K gate/up;
     // Q5_K, Q6_K, Q5_1, IQ4_NL, Q8_0 downs) against the CPU reference and split vs per-entry
-    if (strata::core::kCompiledGeometry.n_embd != 2560 || strata::core::kCompiledGeometry.n_ff != 640) {
-        const int64_t KH = strata::core::kCompiledGeometry.n_embd, KF = strata::core::kCompiledGeometry.n_ff;
+    if (nostroma::core::kCompiledGeometry.n_embd != 2560 || nostroma::core::kCompiledGeometry.n_ff != 640) {
+        const int64_t KH = nostroma::core::kCompiledGeometry.n_embd, KF = nostroma::core::kCompiledGeometry.n_ff;
         std::printf("compiled shape %lld x %lld\n", (long long) KH, (long long) KF);
         for (int gu : {12, 13})
             for (int dt : {13,
-#ifdef STRATA_Q6K_EXPERTS
+#ifdef NOSTROMA_Q6K_EXPERTS
                            14,
 #endif
                            7, 8})   // (check_kq's reference has no IQ4_NL down: those pairs are in the loop below)

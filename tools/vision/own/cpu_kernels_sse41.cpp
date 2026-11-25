@@ -11,7 +11,7 @@
 #include <emmintrin.h>
 #include <smmintrin.h>
 
-namespace strata_vit {
+namespace nostroma_vit {
 namespace {
 namespace kn {
 
@@ -20,7 +20,7 @@ template <class T> inline T kmax(T a, T b) { return a < b ? b : a; }
 inline void kcopy(float* d, const float* s, int n) { for (int i = 0; i < n; ++i) d[i] = s[i]; }
 inline void kzero(float* d, int n) { for (int i = 0; i < n; ++i) d[i] = 0.0f; }
 
-#define STRATA_KN_RAW 1
+#define NOSTROMA_KN_RAW 1
 constexpr int VW = 4;
 typedef __m128 VR;
 inline VR vr_load(const float* p) { return _mm_loadu_ps(p); }
@@ -45,7 +45,7 @@ inline float vr_hmax(VR a) {
 }
 
 // The product's micro-kernel: the generic micro of cpu_kernels_impl.h on raw __m128, multiply then add.
-#define STRATA_KN_HAS_MICRO 1
+#define NOSTROMA_KN_HAS_MICRO 1
 template <int MR>
 inline void micro(const float* A, size_t lda, const float* B, size_t ldb, int K, float* C, size_t ldc, int init, const float* bias) {
     __m128 acc[MR][2];
@@ -150,19 +150,19 @@ inline void conv16(const void* Wm, int kind, size_t off, int n, float* out) {
 
 }  // namespace kn
 }  // namespace
-}  // namespace strata_vit
+}  // namespace nostroma_vit
 
-#define STRATA_KN_MR 6
+#define NOSTROMA_KN_MR 6
 #define KN_MIN(a, b) kmin(a, b)
 #define KN_MAX(a, b) kmax(a, b)
 #define KN_COPY(d, s, n) kcopy((d), (s), (n))
 #define KN_ZERO(d, n) kzero((d), (n))
-#define STRATA_KN_NAME "sse41"
-#define STRATA_KN_GETTER cpu_ops_sse41
+#define NOSTROMA_KN_NAME "sse41"
+#define NOSTROMA_KN_GETTER cpu_ops_sse41
 #include "cpu_kernels_impl.h"
 
 #else   // not x86-64: the tier does not exist, the dispatcher never asks for it
-namespace strata_vit {
+namespace nostroma_vit {
 const CpuOps& cpu_ops_sse41() { return cpu_ops_scalar(); }
 }
 #endif

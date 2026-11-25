@@ -20,14 +20,14 @@ PROGRAM = r'''
 #include <cstring>
 #include <cstdio>
 int main(int argc, char** argv) {
-    strata::image::StFile f;
-    std::string err = strata::image::st_read_header(argv[1], f);
+    nostroma::image::StFile f;
+    std::string err = nostroma::image::st_read_header(argv[1], f);
     if (!err.empty()) { std::printf("ERR %s\n", err.c_str()); return 1; }
     for (auto& kv : f.tensors) {
         std::printf("T %s %s", kv.first.c_str(), kv.second.dtype.c_str());
         for (auto s : kv.second.shape) std::printf(" %lld", (long long) s);
         std::vector<unsigned char> b;
-        err = strata::image::st_read_tensor(argv[1], f, kv.second, b);
+        err = nostroma::image::st_read_tensor(argv[1], f, kv.second, b);
         if (!err.empty()) { std::printf(" READERR %s\n", err.c_str()); return 1; }
         std::printf(" |");
         for (auto c : b) std::printf(" %02x", c);
@@ -36,11 +36,11 @@ int main(int argc, char** argv) {
     for (int th : {1, 3, 16}) {   // the whole data section in parallel parts: the same bytes as the tensor reads
         std::unique_ptr<unsigned char[]> all;
         size_t size = 0;
-        err = strata::image::st_read_all_parallel(argv[1], f, all, size, th);
+        err = nostroma::image::st_read_all_parallel(argv[1], f, all, size, th);
         if (!err.empty()) { std::printf("PARERR %s\n", err.c_str()); return 1; }
         for (auto& kv : f.tensors) {
             std::vector<unsigned char> b;
-            strata::image::st_read_tensor(argv[1], f, kv.second, b);
+            nostroma::image::st_read_tensor(argv[1], f, kv.second, b);
             if (b.size() && std::memcmp(b.data(), all.get() + kv.second.begin, b.size()) != 0) { std::printf("PARDIFF\n"); return 1; }
         }
     }

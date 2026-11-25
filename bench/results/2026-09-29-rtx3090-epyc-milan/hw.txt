@@ -2,7 +2,7 @@
 ## date (UTC)
 2026-09-29T22:07:24Z
 
-## strata version
+## nostroma version
 v0.1.26
 
 ## os

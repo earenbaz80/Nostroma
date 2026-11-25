@@ -9,9 +9,9 @@
 #include <sstream>
 #include <string>
 
-#include "strata/core/run_manifest.hpp"
+#include "nostroma/core/run_manifest.hpp"
 
-using strata::core::manifest::Manifest;
+using nostroma::core::manifest::Manifest;
 
 static int failed = 0;
 #define CHECK(x) do { if (!(x)) { std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #x); ++failed; } } while (0)
@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
     std::string keep;
     for (int i = 1; i + 1 < argc; ++i)
         if (!std::strcmp(argv[i], "--out")) keep = argv[i + 1];
-    const std::filesystem::path dir = std::filesystem::temp_directory_path() / "strata_manifest_test";
+    const std::filesystem::path dir = std::filesystem::temp_directory_path() / "nostroma_manifest_test";
     std::filesystem::create_directories(dir);
     const std::string f1 = (dir / "a.json").string(), f2 = (dir / "b.json").string();
     std::filesystem::remove(f1);
@@ -93,9 +93,9 @@ int main(int argc, char** argv) {
     CHECK(!a.flush_if_dirty("request"));
     a.path("decode", "route-tail-skip", true, "serve default");     // the same record again
     CHECK(!a.flush_if_dirty("request"));
-    a.path("decode", "route-tail-skip", false, "STRATA_ROUTE_TAIL_SKIP=0");
+    a.path("decode", "route-tail-skip", false, "NOSTROMA_ROUTE_TAIL_SKIP=0");
     CHECK(a.flush_if_dirty("request"));
-    CHECK(slurp(f1).find("STRATA_ROUTE_TAIL_SKIP=0") != std::string::npos);
+    CHECK(slurp(f1).find("NOSTROMA_ROUTE_TAIL_SKIP=0") != std::string::npos);
     CHECK(slurp(f1).find("\"stage\": \"request\"") != std::string::npos);
     CHECK(!a.flush_if_dirty("request"));
     a.tensors("dense", "F32", 1, 4);

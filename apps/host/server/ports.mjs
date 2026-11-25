@@ -4,10 +4,10 @@ import net from 'node:net';
 /** Why a listen failed, in words a person can act on (Windows keeps whole ranges for Hyper-V, WSL and Docker). */
 export function listenProblem(error, port, host = '127.0.0.1', platform = process.platform) {
   const code = error?.code;
-  if (code === 'EADDRINUSE') return `Port ${port} is already in use. Nostroma may already be running; close it or the other program, or start Nostroma with another port (STRATA_PORT).`;
-  if (code === 'EACCES' && platform !== 'win32') return `This system does not let Nostroma use port ${port}. On Linux and macOS, ports below 1024 need administrator rights. Start Nostroma with another port (STRATA_PORT), for example 8801.`;
-  if (code === 'EACCES') return `Windows or a firewall does not let Nostroma use port ${port}. Hyper-V, WSL and Docker keep ranges of ports for themselves (see "netsh int ipv4 show excludedportrange protocol=tcp"). Start Nostroma with another port (STRATA_PORT), for example 8801.`;
-  if (code === 'EADDRNOTAVAIL') return `${host} is not an address of this computer, so Nostroma cannot listen on it. Check STRATA_BIND.`;
+  if (code === 'EADDRINUSE') return `Port ${port} is already in use. Nostroma may already be running; close it or the other program, or start Nostroma with another port (NOSTROMA_PORT).`;
+  if (code === 'EACCES' && platform !== 'win32') return `This system does not let Nostroma use port ${port}. On Linux and macOS, ports below 1024 need administrator rights. Start Nostroma with another port (NOSTROMA_PORT), for example 8801.`;
+  if (code === 'EACCES') return `Windows or a firewall does not let Nostroma use port ${port}. Hyper-V, WSL and Docker keep ranges of ports for themselves (see "netsh int ipv4 show excludedportrange protocol=tcp"). Start Nostroma with another port (NOSTROMA_PORT), for example 8801.`;
+  if (code === 'EADDRNOTAVAIL') return `${host} is not an address of this computer, so Nostroma cannot listen on it. Check NOSTROMA_BIND.`;
   return `Nostroma cannot listen on ${host}:${port} (${error?.message ?? code}).`;
 }
 

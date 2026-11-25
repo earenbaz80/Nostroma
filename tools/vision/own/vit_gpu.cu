@@ -1,4 +1,4 @@
-// tools/vision/own/vit_gpu.cu - see vit_gpu.h.  One source for CUDA and HIP (STRATA_VIT_HIP maps the few runtime / BLAS names).
+// tools/vision/own/vit_gpu.cu - see vit_gpu.h.  One source for CUDA and HIP (NOSTROMA_VIT_HIP maps the few runtime / BLAS names).
 #include "vit_gpu.h"
 #include "vit_f16.h"
 
@@ -12,12 +12,12 @@
 #include <cstring>
 #include <thread>
 
-#if defined(STRATA_VIT_HIP)
+#if defined(NOSTROMA_VIT_HIP)
 #include <hip/hip_fp16.h>
 #include <hip/hip_runtime.h>
 #include <hipblas/hipblas.h>
-#if defined(STRATA_VIT_HIPBLASLT)
-// hipBLASLt for the matrix products (STRATA_VIT_LT / STRATA_VIT_LT_ATT, off by default): on gfx1151 the package's rocBLAS carries only its generic
+#if defined(NOSTROMA_VIT_HIPBLASLT)
+// hipBLASLt for the matrix products (NOSTROMA_VIT_LT / NOSTROMA_VIT_LT_ATT, off by default): on gfx1151 the package's rocBLAS carries only its generic
 // fallback kernels, and the products took 1.7 to 3.0 times mtmd-HIP's whole picture (RESULTS-OWN-3V.md 12.14, section 14)
 #include <hipblaslt/hipblaslt.h>
 #include <hipblaslt/hipblaslt-ext.hpp>
@@ -63,12 +63,12 @@
 #define VIT_SHFL_XOR(v, m) __shfl_xor_sync(0xffffffffu, (v), (m))
 #endif
 
-namespace strata_vit {
+namespace nostroma_vit {
 
 namespace {
 
 // the 16-bit kind a GEMM's input takes (its weight's).  K_BH: a BF16 matrix held as F16 (every BF16 value of the weights' and activations' range is an F16 value;
-// the activations are rounded to BF16 first, so the products see the BF16 values): gfx1151's default, elsewhere STRATA_VIT_BF16_AS_F16=1.
+// the activations are rounded to BF16 first, so the products see the BF16 values): gfx1151's default, elsewhere NOSTROMA_VIT_BF16_AS_F16=1.
 // K_HF: a BF16 matrix held as F16 with the activations written as F16 directly (clamped to +-65,504), the default for BF16 matrices elsewhere: BF16's 7-bit
 // mantissa on the inputs of the 27 blocks' products left 50 picture tokens of 12,308 under cosine 0.99 against the float32 reference on the CUDA reader,
 // 10 bits (F16) none in a CPU emulation (RESULTS-OWN-B18.md BLOCKS 16-18).  A matrix with a weight beyond F16's range stays K_BF16.
@@ -250,7 +250,7 @@ __global__ void __launch_bounds__(kSoftmaxThreads) k_softmax_rows_long(uint16_t*
     for (int j = threadIdx.x; j < n; j += blockDim.x) s[j] = f_to_f16bits(expf(__half2float(__ushort_as_half(s[j])) - m) * inv);
 }
 
-// y[i] rounded to the 16-bit kind and back (STRATA_VIT_REF_ROUND: ggml's GPU matrix product hands back its result in the weight's 16-bit type)
+// y[i] rounded to the 16-bit kind and back (NOSTROMA_VIT_REF_ROUND: ggml's GPU matrix product hands back its result in the weight's 16-bit type)
 __global__ void k_round(float* __restrict__ y, size_t n, int kind) {
     for (size_t i = (size_t) blockIdx.x * blockDim.x + threadIdx.x; i < n; i += (size_t) gridDim.x * blockDim.x) {
         const float v = y[i];
@@ -269,14 +269,14 @@ __global__ void k_cast(const float* __restrict__ in, size_t n, void* out, int ki
     for (size_t i = (size_t) blockIdx.x * blockDim.x + threadIdx.x; i < n; i += (size_t) gridDim.x * blockDim.x) store_kind(out, i, in[i], kind);
 }
 
-#if defined(STRATA_VIT_HIP)
-// n 16-bit values (K_F16: F16, else BF16) to float32 (STRATA_VIT_HPA16: a product computed with float32 accumulation and a 16-bit result, widened back)
+#if defined(NOSTROMA_VIT_HIP)
+// n 16-bit values (K_F16: F16, else BF16) to float32 (NOSTROMA_VIT_HPA16: a product computed with float32 accumulation and a 16-bit result, widened back)
 __global__ void k_widen16(const uint16_t* __restrict__ in, size_t n, float* __restrict__ out, int kind) {
     for (size_t i = (size_t) blockIdx.x * blockDim.x + threadIdx.x; i < n; i += (size_t) gridDim.x * blockDim.x)
         out[i] = kind == K_F16 ? __half2float(__ushort_as_half(in[i])) : __uint_as_float((uint32_t) in[i] << 16);
 }
 
-// The fused attention for gfx11 (RDNA3 / RDNA3.5: gfx1100-1103, gfx1150, gfx1151; STRATA_VIT_FA=1): S = Q K^T, the softmax and O = P V of a chunk of queries for
+// The fused attention for gfx11 (RDNA3 / RDNA3.5: gfx1100-1103, gfx1150, gfx1151; NOSTROMA_VIT_FA=1): S = Q K^T, the softmax and O = P V of a chunk of queries for
 // every head in one launch, flash-attention style, with the gfx11 WMMA instruction (16x16x16, F16 in, float32 accumulate, wave32).  One block = 4 waves =
 // 64 queries of one head; each wave owns 16 queries and walks the keys in tiles of kFaKeys.  Per tile: the scores of the wave's 16 queries (float32, never
 // rounded to 16 bits), an online softmax in float32 (running row maximum and sum, expf), P rounded to F16 for the second product, O += P V in float32
@@ -458,14 +458,14 @@ struct VitGpuImpl {
     uint16_t *d_q16 = nullptr, *d_k16 = nullptr, *d_v16 = nullptr;   // q (scaled by 1/sqrt(head size)), k, v [N][D], F16
     uint16_t* d_S = nullptr;       // the scores of a chunk of queries for every head, F16; the softmax turns them into the probabilities in place
     size_t sp_elems = 0;
-    int kRows = 512;      // rows per chunk of the matrix products (STRATA_VIT_ROWS overrides: a diagnostic)
-    size_t kScoreElems = (size_t) 8 << 20;     // scores per attention chunk, 8M: 16 MB of F16 (STRATA_VIT_SCORES, in M elements, overrides)
+    int kRows = 512;      // rows per chunk of the matrix products (NOSTROMA_VIT_ROWS overrides: a diagnostic)
+    size_t kScoreElems = (size_t) 8 << 20;     // scores per attention chunk, 8M: 16 MB of F16 (NOSTROMA_VIT_SCORES, in M elements, overrides)
     size_t kScoreElemsLarge = (size_t) 512 << 20;   // the chunk above 16,384 patches: 512M scores, 1 GB of F16 (see size_buffers)
-    bool scores_env = false;                   // STRATA_VIT_SCORES was given: one size for every picture
+    bool scores_env = false;                   // NOSTROMA_VIT_SCORES was given: one size for every picture
     // Above 16,384 patches a score row is padded to a multiple of 64 elements and the queries of an attention chunk are a multiple of 64: with the
     // picture's own row length (limit_7000x5000.png, 65,232 patches: 514 queries per chunk, rows not 128-byte aligned) the A4000 took 108.1 s against
     // 80.3 s aligned, while 65,536 patches took 80.9 s (RESULTS-OWN-3V.md 16.2).  Up to 16,384 patches: 8 and no rounding, as before.
-    // STRATA_VIT_NPAD / STRATA_VIT_QALIGN (diagnostics) set both for every picture.
+    // NOSTROMA_VIT_NPAD / NOSTROMA_VIT_QALIGN (diagnostics) set both for every picture.
     int n_pad = 0, q_align = 0;      // 0: the rule above
     int pad_for(size_t n) const { return n_pad ? n_pad : n > 16384 ? 64 : 8; }
     int align_for(size_t n) const { return q_align ? q_align : n > 16384 ? 64 : 1; }
@@ -474,15 +474,15 @@ struct VitGpuImpl {
     // kind, not measured with K_HF).  Pascal needs one of the F16 kinds: cuBLAS has no fast BF16 kernel there (a P100 spent 645 ms of a 1,024-token picture in
     // magma_sgemmEx for BF16 against 497 ms with F16 inputs; the 12-token picture 44 ms against 15; RESULTS-OWN-3V.md 16.1).  P100, 16 pictures against the
     // float32 reference: K_HF no token under cosine 0.99 (smallest 0.9970), K_BH 44 under 0.99 (smallest 0.866), the same encode time (13.23 against 13.24 s),
-    // loaded in 0.6 against 1.5 s (K_BH converts on the host).  STRATA_VIT_BF16_AS_F16 (a diagnostic) overrides: 0 = BF16 as stored (K_BF16), 1 = K_BH,
+    // loaded in 0.6 against 1.5 s (K_BH converts on the host).  NOSTROMA_VIT_BF16_AS_F16 (a diagnostic) overrides: 0 = BF16 as stored (K_BF16), 1 = K_BH,
     // 2 = K_HF (vit_gpu_bf16_mode in vit_f16.h).
     int bf16_mode = BF16_TO_F16;
     struct F16Note { std::string name; Kind kind; Bf16F16Count c; long long n; };
-    std::vector<F16Note> f16_notes;   // per BF16 matrix in K_HF mode: the kind it got and its counts (printed under STRATA_TRACE)
+    std::vector<F16Note> f16_notes;   // per BF16 matrix in K_HF mode: the kind it got and its counts (printed under NOSTROMA_TRACE)
 
-#if defined(STRATA_VIT_HIPBLASLT)
-    // hipBLASLt (HIP builds that found it).  STRATA_VIT_LT=1: the 16-bit weight products; STRATA_VIT_LT_ATT=1: the two batched attention products;
-    // STRATA_VIT_LT_SOL=<id>: that solution for the weight products instead of hipBLASLt's first heuristic answer; STRATA_VIT_LT_VERBOSE=1: the solution
+#if defined(NOSTROMA_VIT_HIPBLASLT)
+    // hipBLASLt (HIP builds that found it).  NOSTROMA_VIT_LT=1: the 16-bit weight products; NOSTROMA_VIT_LT_ATT=1: the two batched attention products;
+    // NOSTROMA_VIT_LT_SOL=<id>: that solution for the weight products instead of hipBLASLt's first heuristic answer; NOSTROMA_VIT_LT_VERBOSE=1: the solution
     // of every new shape and a summary on stderr.  The solution of a shape is chosen once per process, by id or as the heuristic's first answer that fits
     // the workspace, never by timing, so two processes take the same kernels.  A shape hipBLASLt cannot run goes to hipBLAS as before.
     struct LtPlan {
@@ -593,10 +593,10 @@ struct VitGpuImpl {
     }
     void lt_setup() {
         auto on = [](const char* name) { const char* e = std::getenv(name); return e && std::atoi(e) != 0; };
-        lt_weights = on("STRATA_VIT_LT");
-        lt_att = on("STRATA_VIT_LT_ATT");
-        lt_verbose = on("STRATA_VIT_LT_VERBOSE");
-        if (const char* e = std::getenv("STRATA_VIT_LT_SOL")) lt_sol = std::atoi(e);
+        lt_weights = on("NOSTROMA_VIT_LT");
+        lt_att = on("NOSTROMA_VIT_LT_ATT");
+        lt_verbose = on("NOSTROMA_VIT_LT_VERBOSE");
+        if (const char* e = std::getenv("NOSTROMA_VIT_LT_SOL")) lt_sol = std::atoi(e);
         if (!lt_weights && !lt_att) return;
         if (hipblasLtCreate(&lt) != HIPBLAS_STATUS_SUCCESS || cudaMalloc(&lt_ws, lt_ws_bytes) != cudaSuccess) {
             (void) cudaGetLastError();
@@ -621,17 +621,17 @@ struct VitGpuImpl {
     }
 #endif
 
-#if defined(STRATA_VIT_HIP)
-    // STRATA_VIT_HPA16=1 (on by default on gfx1151 only, see VitGpu::load): the 16-bit weight products ask rocBLAS for a 16-bit RESULT with float32 accumulation (BF16 -> BF16 and F16 -> F16,
+#if defined(NOSTROMA_VIT_HIP)
+    // NOSTROMA_VIT_HPA16=1 (on by default on gfx1151 only, see VitGpu::load): the 16-bit weight products ask rocBLAS for a 16-bit RESULT with float32 accumulation (BF16 -> BF16 and F16 -> F16,
     // compute 32F: rocBLAS's BB_HPA / HH_HPA kernels), then widen it to float32.  On gfx110x and gfx1151 the Windows ROCm package's rocBLAS has tuned kernels
     // for those types and only its generic fallback kernels for BF16 / F16 -> F32 (BS_HPA / HS_HPA), which our products asked for (lane COVER 11-11,
-    // phaseA-tests\par\RESULTS-COVER.md); mtmd's reader asks for the 16-bit result there.  STRATA_VIT_HPA16_ATT=1: the same for the attention's P*V product
+    // phaseA-tests\par\RESULTS-COVER.md); mtmd's reader asks for the 16-bit result there.  NOSTROMA_VIT_HPA16_ATT=1: the same for the attention's P*V product
     // (F16 -> F16, float32 accumulation; the score product S is F16 -> F16 already).  The result is the float32 sum rounded once to 16 bits.
     bool hpa16 = false, hpa16_att = false;
-    // [DRAFT, status: research] STRATA_VIT_FA (on by default on gfx1151 only, see VitGpu::load; =1 asks for it on another gfx11 card, =0 turns it off): the fused attention
+    // [DRAFT, status: research] NOSTROMA_VIT_FA (on by default on gfx1151 only, see VitGpu::load; =1 asks for it on another gfx11 card, =0 turns it off): the fused attention
     // k_attn_fa_gfx11 on gfx11 cards (wave32).  A launch takes at most fa_units query x key x head
-    // triples (STRATA_VIT_FA_UNITS overrides): 2^29, measured on the 780M with the first version at about 1.4 TFLOP/s as about 110 ms, so far
-    // from the Windows GPU timeout of 2 s on any gfx11 card, also at the 16,384-token limit (65,232 patches: about 130 launches a layer).  With STRATA_VIT_PROF the longest launch of an encode is printed.
+    // triples (NOSTROMA_VIT_FA_UNITS overrides): 2^29, measured on the 780M with the first version at about 1.4 TFLOP/s as about 110 ms, so far
+    // from the Windows GPU timeout of 2 s on any gfx11 card, also at the 16,384-token limit (65,232 patches: about 130 launches a layer).  With NOSTROMA_VIT_PROF the longest launch of an encode is printed.
     bool fa = false;
     long long fa_units = 1LL << 29;
     double fa_longest_ms = 0.0;
@@ -642,10 +642,10 @@ struct VitGpuImpl {
     // C = alpha * op(A) * op(B), batched, column-major as the BLAS wants it
     bool bgemm(bool ta, bool tb, int m, int n, int k, const void* A, cudaDataType_t at, int lda, long long sa, const void* B, cudaDataType_t bt, int ldb,
                long long sb, void* C, cudaDataType_t ct, int ldc, long long sc, int batch, std::string& err) {
-#if defined(STRATA_VIT_HIPBLASLT)
+#if defined(NOSTROMA_VIT_HIPBLASLT)
         if (lt_att && lt_mm(ta, tb, m, n, k, A, at, lda, sa, B, bt, ldb, sb, C, ct, ldc, sc, batch, -1)) return true;
 #endif
-#if defined(STRATA_VIT_HIP)
+#if defined(NOSTROMA_VIT_HIP)
         // a float32 result whose batches tile its rows (P*V: the heads side by side in a row of the context): 16-bit result, then widened
         if (hpa16_att && ct == CUDA_R_32F && at == CUDA_R_16F && bt == CUDA_R_16F && (long long) batch * sc == ldc && m <= ldc &&
             (size_t) n * ldc <= pv16_elems) {
@@ -667,7 +667,7 @@ struct VitGpuImpl {
 
     ~VitGpuImpl() {
         (void) cudaSetDevice(device);
-#if defined(STRATA_VIT_HIPBLASLT)
+#if defined(NOSTROMA_VIT_HIPBLASLT)
         lt_close();
 #endif
         for (void* p : allocs) (void) cudaFree(p);
@@ -742,18 +742,18 @@ struct VitGpuImpl {
         }
         return true;
     }
-    bool trace = false;               // STRATA_TRACE: the per-matrix F16 counts
+    bool trace = false;               // NOSTROMA_TRACE: the per-matrix F16 counts
     static cudaDataType_t dtype(Kind k) { return k == K_F32 ? CUDA_R_32F : (k == K_F16 || k == K_BH || k == K_HF) ? CUDA_R_16F : CUDA_R_16BF; }
 
     // y[M][N] (float32) = A[M][K] (kind of w) * w^T
     bool gemm(const DevW& w, const void* A, int M, void* y, cudaDataType_t kind_a, std::string& err) {
         const float alpha = 1.0f, beta = 0.0f;
         bool done = false;
-#if defined(STRATA_VIT_HIPBLASLT)
+#if defined(NOSTROMA_VIT_HIPBLASLT)
         if (lt_weights && kind_a != CUDA_R_32F)
             done = lt_mm(true, false, w.rows, M, w.cols, w.p, kind_a, w.cols, 0, A, kind_a, w.cols, 0, y, CUDA_R_32F, w.rows, 0, 1, lt_sol);
 #endif
-#if defined(STRATA_VIT_HIP)
+#if defined(NOSTROMA_VIT_HIP)
         if (!done && hpa16 && kind_a != CUDA_R_32F && (size_t) M * w.rows <= y16_elems) {
             const cublasStatus_t s = cublasGemmEx(blas, CUBLAS_OP_T, CUBLAS_OP_N, w.rows, M, w.cols, &alpha, w.p, kind_a, w.cols, A, kind_a, w.cols, &beta, d_y16,
                                                   kind_a, w.rows, VIT_COMPUTE_32F, VIT_GEMM_DEFAULT);
@@ -774,7 +774,7 @@ struct VitGpuImpl {
         }
         return true;
     }
-    bool round_out = false;           // STRATA_VIT_REF_ROUND=1 (a diagnostic, off by default): round every matrix product's result to its weight's 16-bit type
+    bool round_out = false;           // NOSTROMA_VIT_REF_ROUND=1 (a diagnostic, off by default): round every matrix product's result to its weight's 16-bit type
     static int blocks_for(size_t n, int per = 256) { return (int) std::min<size_t>((n + per - 1) / per, 65535); }
 
     bool size_buffers(int patches, std::string& err) {
@@ -797,7 +797,7 @@ struct VitGpuImpl {
         const size_t Np = padded(N);
         // above 16,384 patches (pictures of more than 4,096 tokens) the chunk is 512M scores (1 GB): with the 16 MB chunk such a picture runs 64 queries per
         // product and the attention is launch-bound (l620, 16,384 tokens: 33.4 s, 1.17 of mtmd-GPU; with 512M 24.8 s, 0.87, at 3,398 MiB against mtmd-GPU's
-        // 3,858; RESULTS-OWN-3V.md 12.11).  STRATA_VIT_SCORES sets both sizes.
+        // 3,858; RESULTS-OWN-3V.md 12.11).  NOSTROMA_VIT_SCORES sets both sizes.
         const size_t budget = (N > 16384 && !scores_env) ? kScoreElemsLarge : kScoreElems;
         sp_elems = std::min<size_t>((size_t) g.heads * N * Np, std::max<size_t>(budget, (size_t) g.heads * Np * 64));
         const size_t R = std::min<size_t>(N, (size_t) kRows);
@@ -806,7 +806,7 @@ struct VitGpuImpl {
         bool ok = alloc(d_x, N * D, err, false) && alloc(d_ctx, ctx_elems, err, false) && alloc(d_y, R * std::max<size_t>(3 * D, F), err, false) &&
                   alloc(d_a, R * D, err, false) && alloc(d_f16, R * F, err, false) &&
                   alloc(d_q16, N * D, err, false) && alloc(d_k16, N * D, err, false) && alloc(d_v16, N * D, err, false);
-#if defined(STRATA_VIT_HIP)
+#if defined(NOSTROMA_VIT_HIP)
         d_y16 = d_pv16 = nullptr;
         y16_elems = pv16_elems = 0;
         if (ok && hpa16) { y16_elems = R * std::max<size_t>(3 * D, F); ok = alloc(d_y16, y16_elems, err, false); }
@@ -836,12 +836,12 @@ static cudaError_t set_device_retrying(int device) {
     for (;;) {
         const cudaError_t e = cudaSetDevice(device);
         if (e == cudaSuccess) {
-            if (retries > 0 && std::getenv("STRATA_VIT_PROF"))
+            if (retries > 0 && std::getenv("NOSTROMA_VIT_PROF"))
                 std::fprintf(stderr, "vit-prof: GPU context made after %d retries, %.2f s\n", retries, std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
             return e;
         }
         (void) cudaGetLastError();
-#if defined(__linux__) && !defined(STRATA_VIT_HIP)   // SPARK-CTX-RETRY
+#if defined(__linux__) && !defined(NOSTROMA_VIT_HIP)   // SPARK-CTX-RETRY
         int integrated = 0;
         if (cudaDeviceGetAttribute(&integrated, cudaDevAttrIntegrated, device) != cudaSuccess) { integrated = 0; (void) cudaGetLastError(); }
         if (vit_gpu_retry_context(true, integrated != 0, e == cudaErrorMemoryAllocation, retries)) {
@@ -866,7 +866,7 @@ bool VitGpu::available(std::string& why) {
 }
 
 bool VitGpu::prefer_mtmd(bool bf16_matrices, int max_tokens, std::string& why) {
-#if defined(STRATA_VIT_HIP)
+#if defined(NOSTROMA_VIT_HIP)
     hipDeviceProp_t p;
     (void) bf16_matrices;
     (void) max_tokens;
@@ -898,10 +898,10 @@ bool VitGpu::load(const Gguf& gg, const VitGeometry& g, int device, int max_patc
     if (!vit_geometry_supported(g, why)) { err = "this tower is not supported: " + why; return false; }
     m.g = g;
     m.device = device;
-#if defined(STRATA_VIT_HIP)
-    bool fa_default = false;      // the fused attention is the default on gfx1151 (below); STRATA_VIT_FA overrides it either way
+#if defined(NOSTROMA_VIT_HIP)
+    bool fa_default = false;      // the fused attention is the default on gfx1151 (below); NOSTROMA_VIT_FA overrides it either way
 #endif
-#if !defined(STRATA_VIT_HIP)
+#if !defined(NOSTROMA_VIT_HIP)
     bool pascal = false;
     {   // Pascal (compute capability 6.x): the larger score chunk below; BF16 matrices take K_HF as on every other CUDA card (see bf16_mode)
         cudaDeviceProp p;
@@ -912,10 +912,10 @@ bool VitGpu::load(const Gguf& gg, const VitGeometry& g, int device, int max_patc
     {   // gfx1151 (Strix Halo): every product with a 16-bit result and float32 accumulation, BF16 matrices held as F16, so all of them run rocBLAS's tuned
         // HH_HPA kernels (F16 results, 10-bit mantissa).  Strix, 18 pictures at 1,024 tokens: Qwen3.8 0.54-0.83 of mtmd-HIP's time (median 0.66), Qwen3.6
         // 0.57-0.91 (median 0.67), rule 1 and 2 pass on both, byte-identical in and across processes; the BF16 results of BB_HPA missed rule 1 on 3 of the
-        // Qwen3.8 pictures and rule 2 on 3 (RESULTS-OWN-3V.md PART F2/F3).  STRATA_VIT_HPA16, STRATA_VIT_HPA16_ATT and STRATA_VIT_BF16_AS_F16 = 0 turn each off.
+        // Qwen3.8 pictures and rule 2 on 3 (RESULTS-OWN-3V.md PART F2/F3).  NOSTROMA_VIT_HPA16, NOSTROMA_VIT_HPA16_ATT and NOSTROMA_VIT_BF16_AS_F16 = 0 turn each off.
         // The fused attention k_attn_fa_gfx11 is on by default there too (Strix, RESULTS-OWN-3V.md PART F8): attention 0.50 of the default's time on the 1,024-token
         // picture, the whole picture 0.84-0.90, rule 1 and 2 on 18 of 18 pictures on both models, byte-identical in and across processes, longest launch 6 ms
-        // (17 ms at 65,536 patches, which read 0.999693 against mtmd-CPU).  STRATA_VIT_FA=0 turns it off.  gfx1151 only: gfx1103 and the other gfx11 cards keep it off
+        // (17 ms at 65,536 patches, which read 0.999693 against mtmd-CPU).  NOSTROMA_VIT_FA=0 turns it off.  gfx1151 only: gfx1103 and the other gfx11 cards keep it off
         // until they have their own gate.
         hipDeviceProp_t p;
         if (hipGetDeviceProperties(&p, device) == hipSuccess && vit_gpu_is_gfx1151(p.gcnArchName)) {
@@ -926,24 +926,24 @@ bool VitGpu::load(const Gguf& gg, const VitGeometry& g, int device, int max_patc
         (void) hipGetLastError();
     }
 #endif
-    m.bf16_mode = vit_gpu_bf16_mode(std::getenv("STRATA_VIT_BF16_AS_F16"), m.bf16_mode);
-    m.trace = std::getenv("STRATA_TRACE") != nullptr;
+    m.bf16_mode = vit_gpu_bf16_mode(std::getenv("NOSTROMA_VIT_BF16_AS_F16"), m.bf16_mode);
+    m.trace = std::getenv("NOSTROMA_TRACE") != nullptr;
     {
         const cudaError_t se = set_device_retrying(device);
         if (se != cudaSuccess) { err = std::string("cannot use GPU ") + std::to_string(device) + ": " + cudaGetErrorString(se); return false; }
     }
     if (cublasCreate(&m.blas) != CUBLAS_STATUS_SUCCESS) { err = "cannot create the BLAS handle"; return false; }
-#if defined(STRATA_VIT_HIPBLASLT)
+#if defined(NOSTROMA_VIT_HIPBLASLT)
     m.lt_setup();
 #endif
-#if defined(STRATA_VIT_HIP)
-    if (const char* e = std::getenv("STRATA_VIT_HPA16")) m.hpa16 = std::atoi(e) != 0;
-    if (const char* e = std::getenv("STRATA_VIT_HPA16_ATT")) m.hpa16_att = std::atoi(e) != 0;
+#if defined(NOSTROMA_VIT_HIP)
+    if (const char* e = std::getenv("NOSTROMA_VIT_HPA16")) m.hpa16 = std::atoi(e) != 0;
+    if (const char* e = std::getenv("NOSTROMA_VIT_HPA16_ATT")) m.hpa16_att = std::atoi(e) != 0;
     if (m.hpa16 || m.hpa16_att)
         std::fprintf(stderr, "vit-hpa16: 16-bit results with float32 accumulation for %s%s%s\n", m.hpa16 ? "the weight products" : "",
                      m.hpa16 && m.hpa16_att ? " and " : "", m.hpa16_att ? "the attention's P*V product" : "");
     bool want_fa = fa_default;
-    if (const char* e = std::getenv("STRATA_VIT_FA")) want_fa = std::atoi(e) != 0;
+    if (const char* e = std::getenv("NOSTROMA_VIT_FA")) want_fa = std::atoi(e) != 0;
     if (want_fa) {
         hipDeviceProp_t p;
         if (hipGetDeviceProperties(&p, device) == hipSuccess && std::string(p.gcnArchName).rfind("gfx11", 0) == 0 && p.warpSize == 32 && g.head_dim <= 96 && g.head_dim % 8 == 0)
@@ -951,7 +951,7 @@ bool VitGpu::load(const Gguf& gg, const VitGeometry& g, int device, int max_patc
         (void) hipGetLastError();
         std::fprintf(stderr, "vit-fa: fused attention %s\n", m.fa ? "on (gfx11 WMMA)" : "asked for but not available on this card (gfx11, wave32, head size <= 96 and a multiple of 8 only)");
     }
-    if (const char* e = std::getenv("STRATA_VIT_FA_UNITS")) { const long long u = std::atoll(e); if (u >= (1LL << 20)) m.fa_units = u; }
+    if (const char* e = std::getenv("NOSTROMA_VIT_FA_UNITS")) { const long long u = std::atoll(e); if (u >= (1LL << 20)) m.fa_units = u; }
 #endif
     // the patch embedding: the two temporal taps summed, kept in float32 (a small matrix)
     {
@@ -991,20 +991,20 @@ bool VitGpu::load(const Gguf& gg, const VitGeometry& g, int device, int max_patc
             std::fprintf(stderr, "vit-f16 trace: %s %s, %lld of %lld weights not exact in F16 (%lld beyond its range), largest error %.3g\n", f.name.c_str(),
                          f.kind == K_HF ? "F16" : "BF16", f.c.not_exact, f.n, f.c.overflow, f.c.max_abs_error);
     }
-#if !defined(STRATA_VIT_HIP)
+#if !defined(NOSTROMA_VIT_HIP)
     // Pascal with 16-bit matrices (F16, or BF16 held as F16): a 32M-score attention chunk (64 MB): the P*V product's tile is only partly used with a head
     // size of 72, and more queries per product made a 1,024-token picture 1,242 -> 1,064 ms on a P100 (BF16 file: at 1,362 MiB against mtmd-GPU's 1,364;
     // RESULTS-OWN-3V.md 16.1).  F16 file (Qwen3.6) on a P100: 1,243 -> 1,064 ms, 270 -> 263 ms at 350 tokens, rule 1 unchanged (min / mean 0.999865 / 0.999969 on 18 pictures)
     // (RESULTS-OWN-3V.md PART G), 48 MB more than the 16 MB chunk.
     if (pascal && !m.layers.empty() && (m.layers[0].qkv.kind == K_BH || m.layers[0].qkv.kind == K_HF || m.layers[0].qkv.kind == K_F16)) m.kScoreElems = (size_t) 32 << 20;
 #endif
-    if (const char* e = std::getenv("STRATA_VIT_REF_ROUND")) m.round_out = std::atoi(e) != 0;
-    if (const char* e = std::getenv("STRATA_VIT_ROWS")) { const int v = std::atoi(e); if (v >= 16) m.kRows = v; }
-    if (const char* e = std::getenv("STRATA_VIT_SCORES")) { const int v = std::atoi(e); if (v >= 1) { m.kScoreElems = (size_t) v << 20; m.scores_env = true; } }
-    // STRATA_VIT_SCORES_LARGE (M elements, a diagnostic): the chunk above 16,384 patches; a size the GPU cannot hold tests the fallback to the default chunk
-    if (const char* e = std::getenv("STRATA_VIT_SCORES_LARGE")) { const long v = std::atol(e); if (v >= 1) m.kScoreElemsLarge = (size_t) v << 20; }
-    if (const char* e = std::getenv("STRATA_VIT_NPAD")) { const int v = std::atoi(e); if (v >= 8 && v % 8 == 0) m.n_pad = v; }
-    if (const char* e = std::getenv("STRATA_VIT_QALIGN")) { const int v = std::atoi(e); if (v >= 1) m.q_align = v; }
+    if (const char* e = std::getenv("NOSTROMA_VIT_REF_ROUND")) m.round_out = std::atoi(e) != 0;
+    if (const char* e = std::getenv("NOSTROMA_VIT_ROWS")) { const int v = std::atoi(e); if (v >= 16) m.kRows = v; }
+    if (const char* e = std::getenv("NOSTROMA_VIT_SCORES")) { const int v = std::atoi(e); if (v >= 1) { m.kScoreElems = (size_t) v << 20; m.scores_env = true; } }
+    // NOSTROMA_VIT_SCORES_LARGE (M elements, a diagnostic): the chunk above 16,384 patches; a size the GPU cannot hold tests the fallback to the default chunk
+    if (const char* e = std::getenv("NOSTROMA_VIT_SCORES_LARGE")) { const long v = std::atol(e); if (v >= 1) m.kScoreElemsLarge = (size_t) v << 20; }
+    if (const char* e = std::getenv("NOSTROMA_VIT_NPAD")) { const int v = std::atoi(e); if (v >= 8 && v % 8 == 0) m.n_pad = v; }
+    if (const char* e = std::getenv("NOSTROMA_VIT_QALIGN")) { const int v = std::atoi(e); if (v >= 1) m.q_align = v; }
     return m.size_buffers(std::max(max_patches, 16), err);
 }
 
@@ -1025,8 +1025,8 @@ bool VitGpu::encode(const PreparedImage& img, std::vector<float>& rows, int& nx,
         if (e != cudaSuccess) { err = std::string(what) + ": " + cudaGetErrorString(e); return false; }
         return true;
     };
-    // STRATA_VIT_PROF=1 (a diagnostic, stderr only, off by default): the time of each stage, the GPU synchronised after every stage
-    static const bool prof = std::getenv("STRATA_VIT_PROF") != nullptr;
+    // NOSTROMA_VIT_PROF=1 (a diagnostic, stderr only, off by default): the time of each stage, the GPU synchronised after every stage
+    static const bool prof = std::getenv("NOSTROMA_VIT_PROF") != nullptr;
     double pt[11] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     auto pclock = [] { return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now().time_since_epoch()).count(); };
     double pmark = prof ? pclock() : 0.0;
@@ -1077,7 +1077,7 @@ bool VitGpu::encode(const PreparedImage& img, std::vector<float>& rows, int& nx,
         int QC = (int) std::max<size_t>(1, std::min<size_t>((size_t) N, m.sp_elems / ((size_t) H * Np)));
         const int qa = m.align_for((size_t) N);
         if (qa > 1 && QC < N && QC >= qa) QC -= QC % qa;
-#if defined(STRATA_VIT_HIP)
+#if defined(NOSTROMA_VIT_HIP)
         if (m.fa) {      // the fused attention, in launches of at most fa_units query x key x head triples (multiples of 64 queries)
             long long qf = std::max<long long>(kFaQ, m.fa_units / ((long long) N * H));
             qf = std::min<long long>((qf / kFaQ) * kFaQ, ((long long) N + kFaQ - 1) / kFaQ * kFaQ);
@@ -1152,13 +1152,13 @@ bool VitGpu::encode(const PreparedImage& img, std::vector<float>& rows, int& nx,
     if (prof)
         std::fprintf(stderr, "vit-prof N=%d: patch-matrix %.2f, patch-embed %.2f, ln+qkv %.2f, attention %.2f (S product %.2f, softmax %.2f), o-proj %.2f, ffn %.2f, merger %.2f, copy-out %.2f ms\n", N, pt[0], pt[1], pt[2],
                      pt[3] + pt[8] + pt[9], pt[8], pt[9], pt[4], pt[5], pt[6], pt[7]);
-#if defined(STRATA_VIT_HIP)
+#if defined(NOSTROMA_VIT_HIP)
     if (prof && m.fa) {
-        std::fprintf(stderr, "vit-prof fa: longest fused-attention launch %.2f ms (STRATA_VIT_FA_UNITS %lld)\n", m.fa_longest_ms, m.fa_units);
+        std::fprintf(stderr, "vit-prof fa: longest fused-attention launch %.2f ms (NOSTROMA_VIT_FA_UNITS %lld)\n", m.fa_longest_ms, m.fa_units);
         m.fa_longest_ms = 0.0;
     }
 #endif
     return true;
 }
 
-}  // namespace strata_vit
+}  // namespace nostroma_vit

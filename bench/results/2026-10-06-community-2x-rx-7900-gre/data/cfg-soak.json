@@ -1,5 +1,5 @@
 {
-  "exe": "<strata checkout>/engine/strata",
+  "exe": "<nostroma checkout>/engine/nostroma",
   "args": [
     "--pack",
     "<data root>/packs/coder-iq1_m",
@@ -8,7 +8,7 @@
     "--ple-gguf",
     "<data root>/models/coder-IQ1_M/Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00002-of-00002.gguf",
     "--expert-profile",
-    "<strata checkout>/expert-profile-learned-coder.bin",
+    "<nostroma checkout>/expert-profile-learned-coder.bin",
     "--expert-cache",
     "auto",
     "--prefill",
@@ -35,10 +35,10 @@
     "--resident-budget-gib",
     "30"
   ],
-  "cwd": "<strata checkout>",
+  "cwd": "<nostroma checkout>",
   "tokenizer": "<data root>/packs/coder-iq1_m/tokenizer",
   "model_name": "qwen3.8-flash-next-coder-iq1_m",
-  "log": "<strata checkout>/strata-coder-iq1_m.log",
+  "log": "<nostroma checkout>/nostroma-coder-iq1_m.log",
   "lib_dirs": [
     "<local opt>/rocm/lib"
   ],
@@ -52,19 +52,19 @@
   "layer_split": "27",
   "fit_max_tokens": true,
   "env": {
-    "STRATA_HIPBLASLT_TUNING": "<strata checkout>/tools/hip/gfx1100-hipblaslt-100202.txt",
-    "STRATA_ADAPT_NOWAIT": "1",
-    "STRATA_STAGE_TRIM": "1",
-    "STRATA_PREFILL_HELP": "1",
-    "STRATA_RING_BYTES": "1",
-    "STRATA_SPLIT_OWN": "1",
-    "STRATA_EXCHANGE_ROTATE": "1",
-    "STRATA_PF_FUSED": "1"
+    "NOSTROMA_HIPBLASLT_TUNING": "<nostroma checkout>/tools/hip/gfx1100-hipblaslt-100202.txt",
+    "NOSTROMA_ADAPT_NOWAIT": "1",
+    "NOSTROMA_STAGE_TRIM": "1",
+    "NOSTROMA_PREFILL_HELP": "1",
+    "NOSTROMA_RING_BYTES": "1",
+    "NOSTROMA_SPLIT_OWN": "1",
+    "NOSTROMA_EXCHANGE_ROTATE": "1",
+    "NOSTROMA_PF_FUSED": "1"
   },
   "draft_vocab": "en",
   "expert_profile_save": "expert-profile-learned-coder.bin",
   "vision": {
-    "exe": "<strata checkout>/engine/strata-vision",
+    "exe": "<nostroma checkout>/engine/nostroma-vision",
     "mmproj": "<data root>/models/mmproj-Qwen3.8-Flash-Next-BF16.gguf",
     "model": "<data root>/models/coder-IQ1_M/Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00001-of-00002.gguf",
     "gpu": false,

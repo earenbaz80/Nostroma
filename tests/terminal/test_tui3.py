@@ -50,7 +50,7 @@ class FailedStart(unittest.TestCase):
     def test_the_cause_comes_from_this_attempts_server_log_not_the_old_engine_log(self):
         engine = self.base / "engine.log"
         server = self.base / "srv.log"
-        engine.write_text("strata verify: captured the 2-token window\nlong ago error: old cause\n")
+        engine.write_text("nostroma verify: captured the 2-token window\nlong ago error: old cause\n")
         server.write_text("")
         cfg = self.base / "cfg.json"
         cfg.write_text(json.dumps({"log": str(engine)}))
@@ -118,14 +118,14 @@ class FolderChangeMovesNothing(unittest.TestCase):
         import io
         import setup
         base = self.home.base
-        old, new, root = base / "old-data", base / "new-data", base / "Strata"
+        old, new, root = base / "old-data", base / "new-data", base / "Nostroma"
         root.mkdir()
         weights = old / "models" / "Q2_0" / "w.gguf"
         weights.parent.mkdir(parents=True)
         weights.write_bytes(b"x" * 100)
         env = {"APPDATA": str(base / "appdata"), "XDG_CONFIG_HOME": str(base / "appdata")}
         with mock.patch.dict(os.environ, env), mock.patch.object(setup, "ROOT", root), mock.patch.object(setup, "_CONTROL_HOME", None):
-            os.environ.pop("STRATA_SETTINGS_FILE", None)
+            os.environ.pop("NOSTROMA_SETTINGS_FILE", None)
             setup.settings_path().parent.mkdir(parents=True, exist_ok=True)
             setup.settings_path().write_text(json.dumps({"data_dir": str(old), "installs": []}), encoding="utf-8")
             with contextlib.redirect_stdout(io.StringIO()):
@@ -264,7 +264,7 @@ class ReusedDataLine(unittest.TestCase):
         self.base = Path(self.tmp.name)
 
     def runner(self, cfg_args, **fields):
-        cfg = self.base / "strata-x.json"
+        cfg = self.base / "nostroma-x.json"
         cfg.write_text(json.dumps({"args": cfg_args}))
         s = S.LaunchSettings(family="qwen", model="Q2_0", context=32768, **fields)
         r = Runner(s, catalog=catalog())

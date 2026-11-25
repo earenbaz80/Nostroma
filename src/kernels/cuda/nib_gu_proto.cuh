@@ -1,4 +1,4 @@
-// src/kernels/cuda/nib_gu_proto.cuh - STRATA_NIB_GU_PROTO: a staging variant of nib_gu_kernel (STRATA_EXPERT_NIBBLE's
+// src/kernels/cuda/nib_gu_proto.cuh - NOSTROMA_NIB_GU_PROTO: a staging variant of nib_gu_kernel (NOSTROMA_EXPERT_NIBBLE's
 // 4-bit gate/up), included by iq_kernels.cu inside its anonymous namespace after nib_gu_kernel.
 //
 // The kernel keeps the S skeleton's per-row arithmetic by calling nib_row_dot_s itself (16 lanes a row, lane t's items
@@ -10,7 +10,7 @@
 //     every load issued before the first store, so only the stores sit between the two barriers.  The S skeleton's
 //     word loop (nib_pass_s) has a serial load -> store chain there that stalls all eight warps of the block.
 // The outputs are written without nib_pass_s's dynamically indexed s[t] (a select on t), the same values.
-// Id 31 = RB 2, the one STRATA_NIB_GU_PROTO=1 selects: one GP100 die (PH402), T=1, gate/up alone, IQ2_S / IQ3_XXS /
+// Id 31 = RB 2, the one NOSTROMA_NIB_GU_PROTO=1 selects: one GP100 die (PH402), T=1, gate/up alone, IQ2_S / IQ3_XXS /
 // IQ3_S x1.25-1.27 against the S / P skeleton, every gate and up row bitwise equal (iq_nibble_parity (7),
 // native_expert_bench --nibble --vs 31).
 #pragma once
@@ -76,7 +76,7 @@ __global__ void __launch_bounds__(256) nibx_gu_kernel(const unsigned long long* 
     static_assert(80 % RB == 0, "row blocks per block divide 80");
     const int ng = *n_groups;
     if (blockIdx.y >= (unsigned) ng) return;
-    STRATA_SHARED_ALIGN16_U32(s_buf, kNibSWords);
+    NOSTROMA_SHARED_ALIGN16_U32(s_buf, kNibSWords);
     block_q8_1* s_x = (block_q8_1*) s_buf;
     const int subwarp = threadIdx.x >> 4, t = threadIdx.x & 15;
     const int rb0 = blockIdx.x * RB;

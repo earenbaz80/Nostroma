@@ -1,4 +1,4 @@
-// src/prefill/qsa_nr_parity.cu - the QSA layer's fused norm + rope (rms_rope_rows, STRATA_QSA_FUSE_NR) against the chain it
+// src/prefill/qsa_nr_parity.cu - the QSA layer's fused norm + rope (rms_rope_rows, NOSTROMA_QSA_FUSE_NR) against the chain it
 // replaces (split_q + rms_rows + rope), compared BIT FOR BIT over the whole output, for the three uses in the prompt path:
 //   query   Qf [T, 24, 512] -> q [T, 24, 256]            (split, norm, rotate)
 //   key     Kc [T, 2, 256] in place                        (norm, rotate)
@@ -6,8 +6,8 @@
 // Every output element is checked (not a sample), the output buffers are poisoned with NaN first, and T runs through
 // 1 .. 8191 with several start positions, so a tile or row that is not written shows up.  Exit 77 when there is no GPU.
 //   qsa_nr_parity           the checks;   qsa_nr_parity --bench   and the timings at T = 2048 / 8191
-#include "strata/kernels/rope_scaling.hpp"
-#include "strata/prefill/kernels.hpp"
+#include "nostroma/kernels/rope_scaling.hpp"
+#include "nostroma/prefill/kernels.hpp"
 
 #include <cuda_runtime.h>
 
@@ -58,14 +58,14 @@ size_t diffs(const std::vector<float>& a, const std::vector<float>& b, size_t& f
 }  // namespace
 
 int main(int argc, char** argv) {
-    using namespace strata::prefill;
+    using namespace nostroma::prefill;
     int ndev = 0;
     if (cudaGetDeviceCount(&ndev) != cudaSuccess || ndev == 0) {
         std::printf("SKIP: no GPU\n");
         return 77;
     }
     const bool bench = argc > 1 && std::string(argv[1]) == "--bench";
-    const strata::kernels::RopeScaling& rs = strata::kernels::rope_scaling();
+    const nostroma::kernels::RopeScaling& rs = nostroma::kernels::rope_scaling();
     const int64_t TMAX = 8191;
     std::mt19937 rng(12345);
     std::vector<float> hqf((size_t) TMAX * 24 * 512), hk((size_t) TMAX * 512), hqi((size_t) TMAX * 512), wq(256), wk(256), wi(128);

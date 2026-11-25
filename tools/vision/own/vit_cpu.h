@@ -4,7 +4,7 @@
 // matrices), the matrix products are register-tiled float32 kernels with one source per ISA tier (AVX-512, AVX2, portable; cpu_kernels.h), the attention is
 // tiled with an online softmax (no score matrix, any picture size), the work runs on a small persistent fork-join team (cpu_team.h).
 // 16-bit rounding of the matrix inputs and q, k, v (as ggml's CPU path does): OFF by default for every weight type (vit_cpu_round_kind), so the tower
-// follows the float32 VitRef; STRATA_VIT_REF_ROUND=1 turns it on (the same switch as VitRef's, where it is off by default too).
+// follows the float32 VitRef; NOSTROMA_VIT_REF_ROUND=1 turns it on (the same switch as VitRef's, where it is off by default too).
 #pragma once
 
 #include "cpu_kernels.h"
@@ -17,10 +17,10 @@
 #include <string>
 #include <vector>
 
-namespace strata_vit {
+namespace nostroma_vit {
 
 // The 16-bit rounding the CPU tower applies to its matrix inputs and q, k, v: 0 none, 1 BF16, 2 F16.  weight_kind is the matrices' stored type (1 BF16,
-// 2 F16, anything else: none).  Default: none; env (STRATA_VIT_REF_ROUND's value, may be null) "1" rounds to the weight's type, "0" keeps none.
+// 2 F16, anything else: none).  Default: none; env (NOSTROMA_VIT_REF_ROUND's value, may be null) "1" rounds to the weight's type, "0" keeps none.
 int vit_cpu_round_kind(int weight_kind, const char* env);
 
 class VitCpu {
@@ -41,4 +41,4 @@ private:
     std::unique_ptr<Impl> impl_;
 };
 
-}  // namespace strata_vit
+}  // namespace nostroma_vit

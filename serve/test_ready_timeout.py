@@ -12,7 +12,7 @@ import urllib.request
 from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import serve.server as server                                            # noqa: E402
-from serve.server import StrataEngine, Service, ChatTemplate, ByteTokenizer, serve  # noqa: E402
+from serve.server import NostromaEngine, Service, ChatTemplate, ByteTokenizer, serve  # noqa: E402
 
 # never prints READY: the READY read times out and the process is killed
 SILENT = r'''
@@ -43,7 +43,7 @@ class ReadyTimeout(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory(); self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         self._patchers = [mock.patch.object(server, 'ENGINE_READY_S', 0.5),
-                          mock.patch.object(StrataEngine, 'RESTART_RETRY_S', 0.0)]
+                          mock.patch.object(NostromaEngine, 'RESTART_RETRY_S', 0.0)]
         for p in self._patchers:
             p.start(); self.addCleanup(p.stop)
 
@@ -57,7 +57,7 @@ class ReadyTimeout(unittest.TestCase):
         return str(script)
 
     def service(self, script, extra_args=()):
-        eng = StrataEngine(script, list(extra_args), lazy=True)
+        eng = NostromaEngine(script, list(extra_args), lazy=True)
         self.addCleanup(eng.close)
         return Service(eng, ByteTokenizer(), ChatTemplate(Path(__file__).parent / 'chat_template.jinja'))
 
@@ -108,13 +108,13 @@ class SpawnFailure(unittest.TestCase):
     """The engine program cannot be started at all (missing, not executable, or blocked by Windows - #735): the
     request that was loading it gets a 503 with the reason, not a dropped connection."""
     BODIES = {'/v1/chat/completions': {'messages': [{'role': 'user', 'content': 'hi'}], 'max_tokens': 8},
-              '/v1/messages': {'model': 'strata', 'max_tokens': 8, 'messages': [{'role': 'user', 'content': 'hi'}]},
+              '/v1/messages': {'model': 'nostroma', 'max_tokens': 8, 'messages': [{'role': 'user', 'content': 'hi'}]},
               '/v1/responses': {'input': 'hi', 'max_output_tokens': 8}}
 
     def test_missing_engine_answers_503_and_leaves_nothing_running(self):
         tmp = tempfile.TemporaryDirectory(); self.addCleanup(tmp.cleanup)
         root = Path(tmp.name)
-        eng = StrataEngine(str(root / 'no-such-engine'), [], log=str(root / 'engine.log'), lazy=True)
+        eng = NostromaEngine(str(root / 'no-such-engine'), [], log=str(root / 'engine.log'), lazy=True)
         svc = Service(eng, ByteTokenizer(), ChatTemplate(Path(__file__).parent / 'chat_template.jinja'))
         httpd = serve(svc, port=0)
         self.addCleanup(httpd.shutdown); self.addCleanup(httpd.server_close)

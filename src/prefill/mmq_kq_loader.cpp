@@ -1,9 +1,9 @@
-// src/prefill/mmq_kq_loader.cpp - opens strata_kq (src/prefill/mmq_kq_lib.cu), the library with the K-quant MMQ prompt
+// src/prefill/mmq_kq_loader.cpp - opens nostroma_kq (src/prefill/mmq_kq_lib.cu), the library with the K-quant MMQ prompt
 // kernels, from the engine's own folder - once, for the first model format that asks for it (moe_mmq.cu's supported()),
 // which the engine does before it sizes the expert cache (src/program/generate.cpp).  Without the library, or with an
 // interface of another version, the K-quants keep the FP16 prompt path and the engine says so once.
-#include "strata/prefill/mmq_kq_abi.hpp"
-#include "strata/env.hpp"
+#include "nostroma/prefill/mmq_kq_abi.hpp"
+#include "nostroma/env.hpp"
 
 #include <cuda_runtime.h>
 
@@ -24,12 +24,12 @@
 #include <unistd.h>
 #endif
 
-namespace strata::prefill::mmq::kq {
+namespace nostroma::prefill::mmq::kq {
 namespace {
 
 struct Lib {
     bool ok = false;
-    strata_kq_run_fn run = nullptr;
+    nostroma_kq_run_fn run = nullptr;
 };
 
 std::string own_folder() {
@@ -58,23 +58,23 @@ void* sym(void* h, const char* name) {
 
 Lib open_lib() {
     Lib L;
-    const std::string path = own_folder() + STRATA_KQ_LIB_NAME;
+    const std::string path = own_folder() + NOSTROMA_KQ_LIB_NAME;
 #if defined(_WIN32)
     void* h = (void*) LoadLibraryA(path.c_str());
 #else
     void* h = dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
 #endif
     if (h == nullptr) {
-        std::fprintf(stderr, "strata: K-quant prompt kernels (STRATA_MMQ_KQ=1): %s not found next to the engine - "
-                             "these experts take the FP16 prompt path\n", STRATA_KQ_LIB_NAME);
+        std::fprintf(stderr, "nostroma: K-quant prompt kernels (NOSTROMA_MMQ_KQ=1): %s not found next to the engine - "
+                             "these experts take the FP16 prompt path\n", NOSTROMA_KQ_LIB_NAME);
         return L;
     }
-    const auto abi = (strata_kq_abi_fn) sym(h, "strata_kq_abi");
-    const auto init = (strata_kq_init_fn) sym(h, "strata_kq_init");
-    L.run = (strata_kq_run_fn) sym(h, "strata_kq_run");
-    if (abi == nullptr || init == nullptr || L.run == nullptr || abi() / 100000 != STRATA_KQ_ABI_VERSION ||
+    const auto abi = (nostroma_kq_abi_fn) sym(h, "nostroma_kq_abi");
+    const auto init = (nostroma_kq_init_fn) sym(h, "nostroma_kq_init");
+    L.run = (nostroma_kq_run_fn) sym(h, "nostroma_kq_run");
+    if (abi == nullptr || init == nullptr || L.run == nullptr || abi() / 100000 != NOSTROMA_KQ_ABI_VERSION ||
         abi() % 100000 != abi_args_size()) {
-        std::fprintf(stderr, "strata: K-quant prompt kernels: %s is from another engine version - these experts take "
+        std::fprintf(stderr, "nostroma: K-quant prompt kernels: %s is from another engine version - these experts take "
                              "the FP16 prompt path\n", path.c_str());
         L.run = nullptr;
         return L;
@@ -86,7 +86,7 @@ Lib open_lib() {
     for (int d = 0; d < n; ++d) {
         const int e = init(d);
         if (e != 0) {
-            std::fprintf(stderr, "strata: K-quant prompt kernels: %s did not start on GPU %d (CUDA error %d) - these "
+            std::fprintf(stderr, "nostroma: K-quant prompt kernels: %s did not start on GPU %d (CUDA error %d) - these "
                                  "experts take the FP16 prompt path\n", path.c_str(), d, e);
             L.run = nullptr;
             cudaSetDevice(cur);
@@ -94,7 +94,7 @@ Lib open_lib() {
         }
     }
     cudaSetDevice(cur);
-    std::fprintf(stderr, "strata: K-quant prompt kernels from %s (STRATA_MMQ_KQ=1)\n", path.c_str());
+    std::fprintf(stderr, "nostroma: K-quant prompt kernels from %s (NOSTROMA_MMQ_KQ=1)\n", path.c_str());
     L.ok = true;
     return L;
 }
@@ -108,7 +108,7 @@ const Lib& lib() {
 
 bool wanted() {
     static const bool on = [] {
-        const char* v = strata::env("NOSTROMA_MMQ_KQ");
+        const char* v = nostroma::env("NOSTROMA_MMQ_KQ");
         return v != nullptr && v[0] == '1';
     }();
     return on;
@@ -122,4 +122,4 @@ int run(int type, const void* args, void* stream) {
     return lib().ok ? lib().run(dev, type, args, stream) : -1;
 }
 
-}  // namespace strata::prefill::mmq::kq
+}  // namespace nostroma::prefill::mmq::kq

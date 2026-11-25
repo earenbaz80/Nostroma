@@ -15,7 +15,7 @@ These are measurements of this installed stack, not a universal ranking of the m
 | RAM | 64 GB installed, approximately 61.66 GiB usable by Windows; DDR5-6000 |
 | Operating system | Windows 11 Home 25H2, build 26200.9457 |
 | Display driver | 32.0.31041.1004 |
-| Engine | Prebuilt Strata 0.1.40.3, windows-x64, HIP backend |
+| Engine | Prebuilt Nostroma 0.1.40.3, windows-x64, HIP backend |
 | Packaged runtime | BUILD.json records ROCm `10.2.0a20260930`, hipBLASLt version `100500` |
 | Wrapper checkout | `d5ea7133741e67743c0e886bb426c0ce8d69cf6c` |
 | Client stack | OpenCode 1.18.34 in Ubuntu 24.04 WSL; OpenChamber 1.24.2 frontend |
@@ -23,7 +23,7 @@ These are measurements of this installed stack, not a universal ranking of the m
 
 The engine's exact compiled source commit is not recorded; the wrapper checkout is **not** presented as the binary's build commit. Storage model, negotiated PCIe link, GPU power limits, temperature, and detailed CPU-worker defaults were not recorded. This was not an isolated benchmark workstation: browser, client services, WSL, and normal background applications were present.
 
-This uses native Windows HIP, **not** Vulkan inference or an engine running in WSL. Strata distributes experts and context storage across GPU and system memory; this is not an all-weights-in-VRAM configuration.
+This uses native Windows HIP, **not** Vulkan inference or an engine running in WSL. Nostroma distributes experts and context storage across GPU and system memory; this is not an all-weights-in-VRAM configuration.
 
 ## Model artifacts
 
@@ -45,7 +45,7 @@ The existing prepared IQ packs and expert profile were used. MTP used the prepar
 The tested arguments below use portable path labels instead of the contributor's file paths. These are engine argument details, not a complete standalone server launch command:
 
 ```text
-STRATA_HIP_WMMA=1
+NOSTROMA_HIP_WMMA=1
 --pack <PREPARED_PACK>
 --native <FIRST_GGUF_SHARD>
 --ple-gguf <SECOND_GGUF_SHARD>
@@ -63,7 +63,7 @@ STRATA_HIP_WMMA=1
 
 One parallel request; vision and experimental speed projection disabled. Sampling: temperature 1.0, top-p 0.95, top-k 20, min-p 0, seed 42, repetition penalty 1.0, presence and frequency penalties 0.
 
-Direct recall trials used low reasoning and a 1,024-token output cap, streaming requests, `cache_prompt=false`, and `strata_checkpoint=false`. All measured recall requests reported zero reused prompt tokens. Streaming first-token latency starts at client request submission and ends at the first nonempty reasoning, answer, or tool-call delta; first-answer latency excludes reasoning. End-to-end wall time includes HTTP and output reception but excludes model loading. Engine prompt and decode timing are reported separately, and decode counts include reasoning tokens.
+Direct recall trials used low reasoning and a 1,024-token output cap, streaming requests, `cache_prompt=false`, and `nostroma_checkpoint=false`. All measured recall requests reported zero reused prompt tokens. Streaming first-token latency starts at client request submission and ends at the first nonempty reasoning, answer, or tool-call delta; first-answer latency excludes reasoning. End-to-end wall time includes HTTP and output reception but excludes model loading. Engine prompt and decode timing are reported separately, and decode counts include reasoning tokens.
 
 Available physical RAM was sampled on Windows every 0.5 seconds for direct requests. Coding resource summaries use whole-host/whole-adapter counters, not process-isolated memory. Dedicated and shared GPU counter peaks are not simultaneous allocations and must not be added together or treated as extra VRAM capacity.
 
@@ -131,7 +131,7 @@ The answer was semantically correct but Markdown-fenced, hence failed strict JSO
 
 An OpenCode backend cache check used a different approximately 22K-input document followed by three short questions in the same session. The first assistant response took 62.468 seconds with 22,102 uncached tokens; follow-ups took 1.276, 1.181, and 1.085 seconds while reusing 22,205, 22,269, and 22,323 tokens. All four answers passed. These latencies come from assistant creation/completion timestamps, excluding the five-second polling interval. This was an API/backend test, not a timed OpenChamber UI benchmark or an uncached-versus-cached workload with identical prompts.
 
-Three final medium-reasoning smoke cases each ran once with an 8,192-token allowance: quote arithmetic (6.870 s), validation classification (5.343 s), and the correct `read_file` tool call (4.367 s). The first two used `response_format: {"type":"json_object"}` and passed semantic and strict JSON checks. Strata's response handling can buffer, validate, and canonicalize JSON, so their observed first-answer time is not raw engine first-token latency. This is not grammar-constrained decoding. The tool call was checked but **not executed**.
+Three final medium-reasoning smoke cases each ran once with an 8,192-token allowance: quote arithmetic (6.870 s), validation classification (5.343 s), and the correct `read_file` tool call (4.367 s). The first two used `response_format: {"type":"json_object"}` and passed semantic and strict JSON checks. Nostroma's response handling can buffer, validate, and canonicalize JSON, so their observed first-answer time is not raw engine first-token latency. This is not grammar-constrained decoding. The tool call was checked but **not executed**.
 
 ## Incidents and stability limits
 
@@ -147,9 +147,9 @@ No relevant Windows crash, display-driver, or WHEA events were observed during t
 
 ## Reproduction
 
-Start with Strata's supported setup and prepare the matching model and MTP packs. Use the tested 0.1.40.3 package for a version-matched comparison; a newer release is a separate experiment. Apply the argument settings above with paths and the HIP device ordinal appropriate to your computer. Do not copy private configuration from another machine or expose an unauthenticated server on the network.
+Start with Nostroma's supported setup and prepare the matching model and MTP packs. Use the tested 0.1.40.3 package for a version-matched comparison; a newer release is a separate experiment. Apply the argument settings above with paths and the HIP device ordinal appropriate to your computer. Do not copy private configuration from another machine or expose an unauthenticated server on the network.
 
-The exact direct prompts and scoring are in `scripts/reproduce_direct.py` and `scripts/benchmark.py`. The wrapper is adapted for portable command-line paths and an optional `STRATA_API_KEY` environment variable; it does not start/restart servers, modify configs, install software, or execute generated tools. Start a fresh engine separately for each prefill arm, change only its prefill argument, and verify its setting before running:
+The exact direct prompts and scoring are in `scripts/reproduce_direct.py` and `scripts/benchmark.py`. The wrapper is adapted for portable command-line paths and an optional `NOSTROMA_API_KEY` environment variable; it does not start/restart servers, modify configs, install software, or execute generated tools. Start a fresh engine separately for each prefill arm, change only its prefill argument, and verify its setting before running:
 
 ```text
 python scripts/reproduce_direct.py --base http://127.0.0.1:8081 --model qwen3.8-flash-next-iq2_xs --mode prefill --prefill 8192 --output new-prefill-8192.json

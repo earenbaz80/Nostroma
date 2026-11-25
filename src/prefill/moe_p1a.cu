@@ -1,4 +1,4 @@
-// src/prefill/moe_p1a.cu - see moe_p1a.hpp.  gfx11 device code; the engine takes it on gfx1151 only, behind STRATA_PF_P1A=1.
+// src/prefill/moe_p1a.cu - see moe_p1a.hpp.  gfx11 device code; the engine takes it on gfx1151 only, behind NOSTROMA_PF_P1A=1.
 //
 // The routed experts' prompt pass on the F16 matrix cores with F16 activations and H, the weight codes in registers
 // (gufo's RoutedPairF16Kernel / RoutedDownF16Kernel), on fused::group's tables and the native blobs:
@@ -40,7 +40,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-namespace strata::prefill::fused::p1a {
+namespace nostroma::prefill::fused::p1a {
 namespace {
 
 #if defined(__gfx1100__) || defined(__gfx1101__) || defined(__gfx1102__) || defined(__gfx1150__) || defined(__gfx1151__)
@@ -528,4 +528,4 @@ void down(const Batch& b, const NativeGeom& g, const int32_t* ts, const int2* ti
         down_kernel<kQ51><<<grid, 256, 0, s>>>(b, g, ts, tiles, (const __half*) h16, off, (__half*) d16, kMoeEmbd, kMoeFF);
 }
 
-}  // namespace strata::prefill::fused::p1a
+}  // namespace nostroma::prefill::fused::p1a

@@ -16,10 +16,10 @@
  "engine_prompt_tps": 526.3,
  "engine_decode_tps": 36.4,
  "log_lines": [
-  "strata serve: prompt 31616 tokens = 0 reused + 31616 read in 60075 ms (526.3 tok/s), 256 generated in 7026 ms (36.4 tok/s), drafts accepted 165 of 221, 2 checkpoints",
-  "strata serve: decode expert cache hit rate: 50.9% (64825 hits / 127353 lookups)"
+  "nostroma serve: prompt 31616 tokens = 0 reused + 31616 read in 60075 ms (526.3 tok/s), 256 generated in 7026 ms (36.4 tok/s), drafts accepted 165 of 221, 2 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 50.9% (64825 hits / 127353 lookups)"
  ],
- "answer_head": "The file `build-vision/CMakeCache.txt` is a **CMake configuration cache** for a specific build directory (`/home/chris/src/Strata/build-vision`).\n\n### What it does\n1.  **Stores Build Configuration:** It records the results of the initial `cmake` configuration step. This includes paths to compilers (",
+ "answer_head": "The file `build-vision/CMakeCache.txt` is a **CMake configuration cache** for a specific build directory (`/home/chris/src/Nostroma/build-vision`).\n\n### What it does\n1.  **Stores Build Configuration:** It records the results of the initial `cmake` configuration step. This includes paths to compilers (",
  "metrics_after": {
   "engine": {
    "model": "qwen3.8-flash-next-iq3_xxs",

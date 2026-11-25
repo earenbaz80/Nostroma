@@ -19,7 +19,7 @@ On Ubuntu 24.04 or newer, with Intel's GPU driver installed (`ls /dev/dri` shows
 sudo apt install docker.io git
 sudo usermod -aG docker,render $USER     # log out and in; `docker ps` must work without sudo
 cd Nostroma
-docker build --pull -t strata-sycl-dev sycl/tools                 # once, about 6 minutes, 13 GB
+docker build --pull -t nostroma-sycl-dev sycl/tools                 # once, about 6 minutes, 13 GB
 # build the engine: see "How to build it", then
 ./setup.sh --backend sycl [setup's options, e.g. --model IQ3_S --context 32768 --port 8085]
 ```
@@ -36,29 +36,29 @@ MTP draft layer and the context and KV questions are setup's own.
 | Part | What changes on an Arc |
 | --- | --- |
 | GPU check | The Arc is found in sysfs (vendor 8086 under `xe` or `i915`) and offered through setup's AMD path (it builds locally and has no images). |
-| Engine | Uses the SYCL build (`build-sycl-aot/strata` or `build-sycl/strata`, run in the `strata-sycl-dev` image by `sycl/serve/strata-sycl.sh`). |
+| Engine | Uses the SYCL build (`build-sycl-aot/nostroma` or `build-sycl/nostroma`, run in the `nostroma-sycl-dev` image by `sycl/serve/nostroma-sycl.sh`). |
 | RAM rule | Does not apply on an `xe` card: the port streams the experts from the GGUF into VRAM (`--stream-experts`), so RAM only decides KV streaming. `--check` lists what fits by VRAM. |
 | Config | Container paths and `"backend": "sycl"`. VRAM reserve 1,024 MiB up to 32K context and 2,048 MiB above, 300 MiB on a card under 12 GB. A `--vram-reserve-mib N` you give is kept. KV streaming (`--kv-resident 32768`) is on from 64K when the RAM holds the KV. |
 | Fit rule | A model that does not fit the card at the default context gets a context down the ladder 32K, 16K, 8K, a smaller prompt chunk and a lower reserve until it does. Setup prints one plain line per change. |
 | Prompt chunk | 4,096 tokens; 8,192 on a Battlemage card with 24 GB or more above 32K context. A `--prefill` in the config is kept. |
 | Alchemist (A-series) | A different config: [Arc A750 and the other Alchemist cards](#arc-a750-and-the-other-alchemist-cards). |
-| Engine settings | The config's `"env"` block reaches the engine. `strata-sycl.sh` forwards every `STRATA_`, `ONEAPI_`, `UR_`, `IGC_`, `SYCL_` and `ZES_` variable and sets `STRATA_VERIFY_DEVICE_PLAN=1`, `STRATA_VERIFY_NO_HOST=1` and `STRATA_STAGER_THREADS=12` unless the environment says otherwise (for example `"env": {"STRATA_VERIFY_NO_HOST": "0"}`). A value of `0` is not passed on, because the engine tests these switches by presence. |
+| Engine settings | The config's `"env"` block reaches the engine. `nostroma-sycl.sh` forwards every `NOSTROMA_`, `ONEAPI_`, `UR_`, `IGC_`, `SYCL_` and `ZES_` variable and sets `NOSTROMA_VERIFY_DEVICE_PLAN=1`, `NOSTROMA_VERIFY_NO_HOST=1` and `NOSTROMA_STAGER_THREADS=12` unless the environment says otherwise (for example `"env": {"NOSTROMA_VERIFY_NO_HOST": "0"}`). A value of `0` is not passed on, because the engine tests these switches by presence. |
 
-The models, packs and checkout must sit under the folder `strata-sycl.sh` mounts at `/work` (the one above the checkout, or
-`STRATA_SYCL_ROOT`). An earlier Nostroma install on the same PC keeps its data folder in `~/.config/nostroma/settings.json`; pass
+The models, packs and checkout must sit under the folder `nostroma-sycl.sh` mounts at `/work` (the one above the checkout, or
+`NOSTROMA_SYCL_ROOT`). An earlier Nostroma install on the same PC keeps its data folder in `~/.config/nostroma/settings.json`; pass
 `--data-dir <folder above the checkout>/Nostroma-data` to put this one under the mount. A symlink to a folder outside the mount does
 not work in the container; a hard link does. If a future `setup.py` drops a step this relies on, setup stops with a message
 instead of writing a wrong config.
 
 ## How to build it
 
-The engine is built in Docker, in the `strata-sycl-dev` image (oneAPI 2026.1 compiler, oneMKL and Level Zero, from a community
+The engine is built in Docker, in the `nostroma-sycl-dev` image (oneAPI 2026.1 compiler, oneMKL and Level Zero, from a community
 llama.cpp SYCL image), so the PC needs no oneAPI. From the checkout (the folder above it is what the container mounts at
 `/work`):
 
 ```sh
 cd Nostroma
-docker build --pull -t strata-sycl-dev sycl/tools     # once: about 6 minutes, a 13 GB image
+docker build --pull -t nostroma-sycl-dev sycl/tools     # once: about 6 minutes, a 13 GB image
 H=$(basename "$PWD")
 ```
 
@@ -67,7 +67,7 @@ Ahead-of-time code, no compile at the first start:
 
 ```sh
 docker run --rm -u $(id -u):$(id -g) -v "$PWD/..:/work" -e AOT=bmg-g31 -e REPO=/work/$H \
-    -e BUILD_DIR=/work/$H/build-sycl-aot strata-sycl-dev "cd /work/$H && bash sycl/tools/build.sh nostroma"
+    -e BUILD_DIR=/work/$H/build-sycl-aot nostroma-sycl-dev "cd /work/$H && bash sycl/tools/build.sh nostroma"
 ```
 
 **Arc A-series** (Alchemist: A750, A770, A580, A380): no `AOT=`. The code is compiled from SPIR-V at the first start (JIT, about
@@ -75,11 +75,11 @@ a minute). Nobody has run an AOT build for these cards.
 
 ```sh
 docker run --rm -u $(id -u):$(id -g) -v "$PWD/..:/work" -e REPO=/work/$H \
-    -e BUILD_DIR=/work/$H/build-sycl strata-sycl-dev "cd /work/$H && bash sycl/tools/build.sh nostroma"
+    -e BUILD_DIR=/work/$H/build-sycl nostroma-sycl-dev "cd /work/$H && bash sycl/tools/build.sh nostroma"
 ```
 
-The build takes about 3 minutes and ends with `BUILD EXIT 0` and `errors: 0`. Setup finds `build-sycl-aot/strata` or
-`build-sycl/strata`. Run the `docker build` again after pulling an update that changes `sycl/tools/Dockerfile`, and the
+The build takes about 3 minutes and ends with `BUILD EXIT 0` and `errors: 0`. Setup finds `build-sycl-aot/nostroma` or
+`build-sycl/nostroma`. Run the `docker build` again after pulling an update that changes `sycl/tools/Dockerfile`, and the
 `docker run` after every engine update (setup says when the engine is older than it needs).
 
 | `build.sh` variable | Effect |
@@ -87,7 +87,7 @@ The build takes about 3 minutes and ends with `BUILD EXIT 0` and `errors: 0`. Se
 | `AOT=bmg-g31` or `bmg-g21` | Ahead-of-time device code. Empty: SPIR-V, JIT at first start. |
 | `I8_ESIMD=OFF` | Build without the fused int8 ESIMD expert kernels (stubs; the prompt's experts take the slower XMX path, answers do not change). |
 | `ALLOW_BAD_OCLOC=1` | Build although this `ocloc` is known to crash on the Battlemage kernels |
-| `SPIN_MAX=N` | The bound on a device spin (`STRATA_SYCL_SPIN_MAX`); see [Things that matter](#things-that-matter-on-this-gpu) |
+| `SPIN_MAX=N` | The bound on a device spin (`NOSTROMA_SYCL_SPIN_MAX`); see [Things that matter](#things-that-matter-on-this-gpu) |
 
 `--pull` matters because the image starts from a community image whose tag moves, and `docker build` reuses an old copy unless
 told to fetch the current one. An old copy can hold a device compiler (ocloc from Compute Runtime 26.22.38646, IGC 2.36.3) that
@@ -96,11 +96,11 @@ with exit code 245`, #3219). `sycl/tools/build.sh` checks the version and stops 
 
 ## How to run it by hand
 
-A greedy test run, inside the `strata-sycl-dev` image, AOT build in `build-sycl-aot/`:
+A greedy test run, inside the `nostroma-sycl-dev` image, AOT build in `build-sycl-aot/`:
 
 ```sh
-STRATA_VERIFY_DEVICE_PLAN=1 STRATA_VERIFY_NO_HOST=1 \
-build-sycl/strata --pack <iq pack> --native <shard1> --ple-gguf <shard2> \
+NOSTROMA_VERIFY_DEVICE_PLAN=1 NOSTROMA_VERIFY_NO_HOST=1 \
+build-sycl/nostroma --pack <iq pack> --native <shard1> --ple-gguf <shard2> \
     --expert-profile data/expert-profile-coder.bin --expert-cache auto --stream-experts \
     --prefill auto --spec 4 --spec-min-p 0.5 --max-context 8192 --tokens <ids> --max-new 64 --greedy
 ```
@@ -108,18 +108,18 @@ build-sycl/strata --pack <iq pack> --native <shard1> --ple-gguf <shard2> \
 | Flag or variable | Meaning |
 | --- | --- |
 | `--stream-experts` | No resident host copy of the experts: every one goes from the GGUF into the VRAM cache through a small staging ring. The engine runs on 23 GiB of RAM; upstream needs 32 GB for this model. |
-| `STRATA_VERIFY_DEVICE_PLAN=1` | The GPU plans each layer itself |
-| `STRATA_VERIFY_NO_HOST=1` | The host waits for the whole window graph instead of per-layer rings. Required on `xe` whenever part of the experts is not in VRAM. |
+| `NOSTROMA_VERIFY_DEVICE_PLAN=1` | The GPU plans each layer itself |
+| `NOSTROMA_VERIFY_NO_HOST=1` | The host waits for the whole window graph instead of per-layer rings. Required on `xe` whenever part of the experts is not in VRAM. |
 | `--no-prefill-borrow` | The prompt path does not lend expert slots. The port borrows by default only above a 32K context (`--prefill-borrow` / `--no-prefill-borrow` decide explicitly). |
 
 With `--tokens-file` instead of `--tokens` for long prompts (80K ids exceed Linux's single-argument limit). With a native pack
 `--prefill-until N` skips the token loop, so compare output tokens between paths, never only timings.
 
-Serve the port with `serve/server.py --engine strata` and `sycl/serve/strata-sycl.sh` as the `exe`, which starts the binary inside
+Serve the port with `serve/server.py --engine nostroma` and `sycl/serve/nostroma-sycl.sh` as the `exe`, which starts the binary inside
 the oneAPI runtime image with the serve pipes attached. Paths in the config's `args` are the container's. A config:
 
 ```json
-{"engine": "nostroma", "exe": "<repo>/sycl/serve/strata-sycl.sh",
+{"engine": "nostroma", "exe": "<repo>/sycl/serve/nostroma-sycl.sh",
  "args": ["--pack", "/work/pack", "--native", "<shard 1>", "--ple-gguf", "<shard 2>",
           "--expert-profile", "data/expert-profile-coder.bin", "--expert-cache", "auto", "--stream-experts",
           "--prefill", "auto", "--spec", "4", "--spec-min-p", "0.5", "--mtp", "/work/mtp/rt",
@@ -130,8 +130,8 @@ the oneAPI runtime image with the serve pipes attached. Paths in the config's `a
 A native (IQ) pack takes `--spec` 2 at the smallest: the engine refuses `--spec 0` and `--spec 1` on one (it needs `--native SHARD1`, `--spec T`
 with T >= 2 and `--prefill CHUNK`), so speculative decoding cannot be turned off for these packs.
 
-With `--stream-experts` under `STRATA_VERIFY_NO_HOST=1` (the `strata-sycl.sh` default) there is no SSD expert tier: every expert
-must be in VRAM or in the pinned RAM mirror (`STRATA_MIRROR_MIB`), and the engine refuses to start when the two do not cover the model
+With `--stream-experts` under `NOSTROMA_VERIFY_NO_HOST=1` (the `nostroma-sycl.sh` default) there is no SSD expert tier: every expert
+must be in VRAM or in the pinned RAM mirror (`NOSTROMA_MIRROR_MIB`), and the engine refuses to start when the two do not cover the model
 ("REFUSED: N experts are neither in VRAM nor mirrored"). Raise the mirror or lower `--max-context`. So the reserve matters: on the B70
 with Coder IQ1_M 1,024 MiB fits all 12,288 experts with 2 GB of VRAM free.
 
@@ -143,19 +143,19 @@ with Coder IQ1_M 1,024 MiB fits all 12,288 experts with 2 GB of VRAM free.
   buffers into host RAM, the kernel runs out of memory, and the machine can livelock until its hardware watchdog resets it.
   Compute the KV size first and leave about 1.5 GB free.
 - **Thinking.** The model reasons before it answers. Put `{"reasoning_effort": "none"}` in
-  `strata-<model>.shared-settings.json` next to the config, or send `chat_template_kwargs: {"enable_thinking": false}` per
+  `nostroma-<model>.shared-settings.json` next to the config, or send `chat_template_kwargs: {"enable_thinking": false}` per
   request. Otherwise a short `max_tokens` is spent inside the think block and the answer looks empty.
 - **`/health` says 503 while loading;** the server polls `/props` instead.
 - **Bounded spins.** A device spin that never sees its flag makes the `xe` driver time out the queue and reset the GT, and the
-  card can stay wedged until a reboot. Every spin is capped. The cap is the build option `STRATA_SYCL_SPIN_MAX` (2,000,000
+  card can stay wedged until a reboot. Every spin is capped. The cap is the build option `NOSTROMA_SYCL_SPIN_MAX` (2,000,000
   reads, a few seconds, unless the build is an AOT build for a `bmg` card, which keeps 20,000).
 - **JIT builds** add `-ze-opt-greater-than-4GB-buffer-required` so kernels keep 64-bit addresses past 4 GiB into an allocation.
-  oneMKL's own precompiled kernels do not get it; the GEMM stages an operand past 4 GiB (`STRATA_SYCL_GEMM_STAGE=1` forces
+  oneMKL's own precompiled kernels do not get it; the GEMM stages an operand past 4 GiB (`NOSTROMA_SYCL_GEMM_STAGE=1` forces
   that on Battlemage).
 - **Aliased pages in big allocations (xe).** The driver can return a large arena with two 2 MiB pages mapped onto the same
   memory. Every allocation of 32 MiB or more goes through `nostroma::malloc_device_guarded`, which checks the range and allocates
-  again behind a spacer until it is clean (a warning names each retry; under 0.5 s at startup; `STRATA_ARENA_ALIAS_CHECK=0`
-  skips it). `STRATA_VERIFY_ALL_SLOTS=1` reads every filled cache slot back and compares it with the GGUF.
+  again behind a spacer until it is clean (a warning names each retry; under 0.5 s at startup; `NOSTROMA_ARENA_ALIAS_CHECK=0`
+  skips it). `NOSTROMA_VERIFY_ALL_SLOTS=1` reads every filled cache slot back and compares it with the GGUF.
 - **Monitor tab.** `server_intel.py` plugs `sycl/serve/xe_telemetry.py` into the Monitor (temperature, power, PCIe link from
   sysfs). Load and VRAM come from `/run/gpustat.json`, written by a small root sampler (`sycl/tools/gpustat.py`, installed with
   `gpustat.service`), because `xe` reports them per client in `/proc/*/fdinfo`, which only root can read. A run config may name
@@ -194,16 +194,16 @@ moves about 26 GB; bigger chunks read faster.
 - `setup_intel.py` writes `--prefill 4096` for a card with 24 GB or more (the chunk's buffers take about 700 cache slots).
   `--prefill 8192 --prefill-borrow` lends cache slots instead and keeps all of them for decode, at about 1 s of refill per
   prompt. Setup recommends 8,192 for a Battlemage card with 24 GB or more above 32K context.
-- `STRATA_PREFILL_FIRST` (a short first chunk that starts the GPU while PLE rows are read) defaults to 256 tokens only when the
+- `NOSTROMA_PREFILL_FIRST` (a short first chunk that starts the GPU while PLE rows are read) defaults to 256 tokens only when the
   cache holds every expert, else 0.
-- `STRATA_VERIFY_NO_HOST=1` is required whenever part of the experts is not in VRAM (`strata-sycl.sh` sets it). Without it the
+- `NOSTROMA_VERIFY_NO_HOST=1` is required whenever part of the experts is not in VRAM (`nostroma-sycl.sh` sets it). Without it the
   host/GPU handshake is not visible across the bus on `xe` and the logits turn NaN a few tokens in.
 - On `xe`, setup writes `data/expert-profile-sycl.bin`, a ranking built from the routing of 45 varied prompts, so the cache
   holds the experts a chat, code or non-English prompt uses (`tools/make_profile_mix.py`, `tools/collect_profile_traces.py`).
   An `i915` card keeps the shipped profile.
-- The prompt's expert copies run on the card's copy engine on Battlemage (`STRATA_COPY_ENGINE=1` forces it elsewhere, `=0`
+- The prompt's expert copies run on the card's copy engine on Battlemage (`NOSTROMA_COPY_ENGINE=1` forces it elsewhere, `=0`
   turns it off). The experts in the last 10% of the cache slots are also mirrored so that lent slots refill by DMA
-  (`STRATA_LEND_MIRROR=0` off).
+  (`NOSTROMA_LEND_MIRROR=0` off).
 
 > **Measured on:** Arc Pro B70 32 GB (xe, kernel 7.0, oneAPI 2026.1, PCIe 13.3 GB/s host to device), 60 GB RAM, Flash-Next IQ3_S,
 > 11.5k experts resident, greedy, `--spec 4 --spec-min-p 0.5 --mtp`, INT8 KV, `--stream-experts --vram-reserve-mib 1024
@@ -225,7 +225,7 @@ default (4, 0.5) stays. A `--prefill 8192` chunk is not bit-identical to 4096 (f
 **Fused int8 expert path (Battlemage default).** On a Battlemage GPU (B70, B580, B570, detected by device architecture) the
 engine computes the prompt's routed experts with ESIMD kernels that decode the quantized weights in registers into the s8 DPAS B
 operand and multiply them by q8_1 activations. Covered: gate/up IQ3_S, IQ3_XXS, IQ2_S and down IQ4_NL, Q2_0. Other formats keep
-the FP16 path, as does every other GPU. `STRATA_PREFILL_MMQ` unset is `auto`, which times both chains at the first layer of each
+the FP16 path, as does every other GPU. `NOSTROMA_PREFILL_MMQ` unset is `auto`, which times both chains at the first layer of each
 format and takes int8 below the measured crossover (130-250 rows per expert); `=0` turns it off, `=1` forces it. Activations are
 quantized, so bits differ from the FP16 path (KL 2e-4 nats mean over 6,002 positions, top-1 99.7%). Details:
 [INTEL_INT8_EXPERTS.md](INTEL_INT8_EXPERTS.md).
@@ -238,7 +238,7 @@ writes a different config for an `i915` card, and a 300 MiB VRAM reserve and `--
 | | Arc Pro B70 (`xe`, 32 GB) | Arc A750 (`i915`, 8 GB) |
 | --- | --- | --- |
 | Experts | `--stream-experts`: from the GGUF into VRAM, the rest in a pinned RAM mirror | No `--stream-experts`: all of them in a RAM arena (about 40 GiB for IQ3_XXS), a few hundred in VRAM, the CPU computes the others |
-| `STRATA_VERIFY_NO_HOST` | 1 (the wrapper's default) | 0, written to the config's `"env"` |
+| `NOSTROMA_VERIFY_NO_HOST` | 1 (the wrapper's default) | 0, written to the config's `"env"` |
 | `--vram-reserve-mib` | 1024 / 2048 | 300 |
 | `--ple-io` | `ram` | `ram` |
 | FP64 | Native | Emulated: `IGC_EnableDPEmulation=1`, `OverrideDefaultFP64Settings=1`, `NEOReadDebugKeys=1` in `"env"` |
@@ -248,20 +248,20 @@ writes a different config for an `i915` card, and a 300 MiB VRAM reserve and `--
   GB fails on the A750. Without the flag the engine loads the experts into an ordinary RAM arena and the CPU computes the experts
   that are not in the 0.67 GiB cache. That needs about 43 GB of RAM for IQ3_XXS plus the 29 GB n-gram table with `--ple-io ram`.
   Setup warns when the RAM is less than the model's.
-- **Why `STRATA_VERIFY_NO_HOST=0`.** With it set the GPU plans each layer itself and the CPU's experts are never asked for; the
+- **Why `NOSTROMA_VERIFY_NO_HOST=0`.** With it set the GPU plans each layer itself and the CPU's experts are never asked for; the
   window hangs (`Fence expiration time out` in the i915 log).
 - **FP64.** One kernel on the sampled path declared `double`; the sampler's tail now accumulates in float
-  (`-DSTRATA_SYCL_SAMPLER_FP64=1` keeps double). Setup still writes the three emulation keys for an A-series card, because other
+  (`-DNOSTROMA_SYCL_SAMPLER_FP64=1` keeps double). Setup still writes the three emulation keys for an A-series card, because other
   kernels that use double were not exercised without them on long contexts or with vision. On the A750 a sampled decode ran at
   12.0 tok/s without the emulation keys against 9.8 with them (median of 4 interleaved pairs).
-- **Prompt GDN recurrence** runs a sub-group kernel on Alchemist (variant 6, `STRATA_GDN_XE`): on by default there, `=0` off, `=1`
+- **Prompt GDN recurrence** runs a sub-group kernel on Alchemist (variant 6, `NOSTROMA_GDN_XE`): on by default there, `=0` off, `=1`
   on any Intel GPU with 16-lane sub-groups. On Battlemage it stays off (-3.5%).
-- **Grouped XMX expert launch** (`STRATA_PF_XMX=2`) is the default on Alchemist: the prompt path decodes and multiplies a group of
+- **Grouped XMX expert launch** (`NOSTROMA_PF_XMX=2`) is the default on Alchemist: the prompt path decodes and multiplies a group of
   experts in one fused launch on the XMX units. `=0` turns it off; `=1` dequantizes first and runs one grouped GEMM per product.
   Battlemage keeps the older path (the same kernels are 7-11% slower there).
 - **Streaming copies.** Only experts in USM host memory (the `--stream-experts` mirror) are copied directly; every other expert
   goes through the stager's pinned buffers, because SYCL has no `cudaHostRegister` and a direct copy out of pageable memory could
-  hang a prompt. `STRATA_PF_DMA_PAGEABLE=1` restores the direct copy.
+  hang a prompt. `NOSTROMA_PF_DMA_PAGEABLE=1` restores the direct copy.
 - The engine segfaults in a worker thread of the CPU pool when it exits (dmesg only, after the server printed "stopped"). It is
   not a GPU event.
 
@@ -302,10 +302,10 @@ of VRAM and on the card from 24 GB. `nostroma_control/vision_reader.py` is the o
 default with the CPU reader, a B-series card included. An Arc of 24 GB or more also keeps the CPU reader; `--vision gpu` asks for
 the GPU reader.
 
-- **CPU reader:** `strata-vision` (llama.cpp's mtmd). Setup compiles it into `engine-sycl/`, the server runs it on the host, and
-  the engine in the container reads the embeddings from the host's `/dev/shm`, which `strata-sycl.sh` shares
-  (`STRATA_SYCL_SHM=0` keeps a private one).
-- **SYCL reader:** `strata-vision-sycl`, the same program on llama.cpp's SYCL backend. `setup --backend sycl --vision gpu`
+- **CPU reader:** `nostroma-vision` (llama.cpp's mtmd). Setup compiles it into `engine-sycl/`, the server runs it on the host, and
+  the engine in the container reads the embeddings from the host's `/dev/shm`, which `nostroma-sycl.sh` shares
+  (`NOSTROMA_SYCL_SHM=0` keeps a private one).
+- **SYCL reader:** `nostroma-vision-sycl`, the same program on llama.cpp's SYCL backend. `setup --backend sycl --vision gpu`
   compiles it on the host when the oneAPI compiler (`icx`, `icpx`, `intel-oneapi-mkl-devel`) is installed; otherwise setup says so
   and keeps the CPU reader. It needs the PC's oneAPI runtime, not the container. If it does not start, the server falls back to
   the CPU reader with one log line. It takes VRAM the experts would use, which is why the rule gives it to 24 GB cards only. Nobody
@@ -319,11 +319,11 @@ the GPU reader.
 
 | Reader | Time per picture |
 | --- | ---: |
-| CPU (`strata-vision`) | 1.73 s |
-| SYCL (`strata-vision-sycl`), after a 30 s first start that compiles the kernels | 0.16 s |
+| CPU (`nostroma-vision`) | 1.73 s |
+| SYCL (`nostroma-vision-sycl`), after a 30 s first start that compiles the kernels | 0.16 s |
 
 The embeddings match the CPU reader's (cosine 0.9959 to 0.9999 over 8 pictures). A test picture (red circle, blue square, the words
-"STRATA 42") was answered correctly by both readers 10 of 10; two pictures in one request, a picture kept in a second turn's history,
+"NOSTROMA 42") was answered correctly by both readers 10 of 10; two pictures in one request, a picture kept in a second turn's history,
 and text requests after the pictures all answered, with no GPU fault in the kernel log.
 
 ## The SYCL port (`sycl/`)
@@ -370,7 +370,7 @@ mirror. They are refreshed by re-migration:
 
 **Not ported.** Three kernels carry inline PTX (`mma.sync`, `ldmatrix`, `cp.async`): `qsa_prompt_attn`, `qsa_select`'s block
 scores and `native_qsa_score`. The SYCL build takes the "older card" fallback the CUDA build uses below sm_80.
-`qsa_prompt_attn` also has an XMX version (`STRATA_PROMPT_ATTN_XMX=1`) that is correct but slower than the fallback. The ggml MMQ
+`qsa_prompt_attn` also has an XMX version (`NOSTROMA_PROMPT_ATTN_XMX=1`) that is correct but slower than the fallback. The ggml MMQ
 prefill path (`moe_mmq.cu`) is not built. `--peer-device` (a second GPU as an expert-cache tier) is stubbed and refuses with a
 message. The sm_90 thread-block-cluster sampler and QSA top-k have no SYCL counterpart. Images on the llama.cpp config are not wired;
 on the SYCL port they are ([Pictures](#pictures-on-an-arc)).
@@ -381,27 +381,27 @@ All are environment variables for the engine. Put them in the config's `"env"` b
 
 | Switch | Default | Effect |
 | --- | --- | --- |
-| `STRATA_VERIFY_NO_HOST` | 1 (`strata-sycl.sh`); 0 on `i915` | See above |
-| `STRATA_MIRROR_MIB` | Free RAM less 4 GiB | Size of the pinned host mirror for experts without a VRAM slot. Set `0` on a layer split where the mirror would not be used. |
-| `STRATA_PF_XMX` | 2 on Alchemist | Grouped XMX expert launch; `0` off, `1` dequantize first |
-| `STRATA_GDN_XE` | On for Alchemist | Sub-group GDN recurrence |
-| `STRATA_COPY_ENGINE` | On for Battlemage | Expert copies on the copy engine |
-| `STRATA_PREFILL_MMQ` | `auto` on Battlemage | Fused int8 prompt experts |
-| `STRATA_PREFILL_STREAM_ALL` | On when VRAM holds more than 90% of the (layer, expert) pairs | Copy every expert the cache does not hold, layer by layer; `=0` / `=1` force it |
-| `STRATA_PREFILL_FIRST` | 256 if the cache holds every expert, else 0 | Tokens in the short first prompt chunk |
-| `STRATA_LEND_MIRROR` | On | Mirror the experts in the last 10% of cache slots; `=0` off |
-| `STRATA_VERIFY_LEAN` | On | Decode graph without unanswered nodes; `=0` off |
-| `STRATA_FILL_SERIAL=1` | Off | The old serial expert-cache fill (the pipelined fill is the default) |
-| `STRATA_MMVQ_A2=0`, `STRATA_MMVQ_WIDE_32=0` | On | Restore the older matvec kernels |
-| `STRATA_MMVQ_LARGE_GRF` | On for Arc A-series | 256 registers per thread for the 2-8 column wide kernels |
-| `STRATA_Q6_PLANAR` | On | Q6_K output head and MTP head as planes (same bytes) |
-| `STRATA_ATTN_RS` | 2 | QSA prompt attention probability layout (bit-exact variants) |
-| `STRATA_IQ3S_WIDE=1` | Off | Wide kernel for dense IQ3_S matrices: neutral on one B70 (decode -0.3%), the author reports gains on two cards |
-| `STRATA_EXPERT_SPLIT=1` | Off | Upstream's i-quant multi kernels (-11 to -16% decode here) |
-| `STRATA_PROMPT_ATTN_XMX=1` | Off | joint_matrix prompt attention (-24% to -27% prompt on the B70) |
-| `STRATA_SYCL_GEMM_STAGE=1` | Off on Battlemage | Stage GEMM operands past 4 GiB |
-| `STRATA_I8_NO_ESIMD` | n/a | Compile-time: stubs for the int8 ESIMD kernels (set for a device without them) |
-| `STRATA_DBG_NAN=1` | Off | Report non-finite values, including the experts' FP16 inputs |
+| `NOSTROMA_VERIFY_NO_HOST` | 1 (`nostroma-sycl.sh`); 0 on `i915` | See above |
+| `NOSTROMA_MIRROR_MIB` | Free RAM less 4 GiB | Size of the pinned host mirror for experts without a VRAM slot. Set `0` on a layer split where the mirror would not be used. |
+| `NOSTROMA_PF_XMX` | 2 on Alchemist | Grouped XMX expert launch; `0` off, `1` dequantize first |
+| `NOSTROMA_GDN_XE` | On for Alchemist | Sub-group GDN recurrence |
+| `NOSTROMA_COPY_ENGINE` | On for Battlemage | Expert copies on the copy engine |
+| `NOSTROMA_PREFILL_MMQ` | `auto` on Battlemage | Fused int8 prompt experts |
+| `NOSTROMA_PREFILL_STREAM_ALL` | On when VRAM holds more than 90% of the (layer, expert) pairs | Copy every expert the cache does not hold, layer by layer; `=0` / `=1` force it |
+| `NOSTROMA_PREFILL_FIRST` | 256 if the cache holds every expert, else 0 | Tokens in the short first prompt chunk |
+| `NOSTROMA_LEND_MIRROR` | On | Mirror the experts in the last 10% of cache slots; `=0` off |
+| `NOSTROMA_VERIFY_LEAN` | On | Decode graph without unanswered nodes; `=0` off |
+| `NOSTROMA_FILL_SERIAL=1` | Off | The old serial expert-cache fill (the pipelined fill is the default) |
+| `NOSTROMA_MMVQ_A2=0`, `NOSTROMA_MMVQ_WIDE_32=0` | On | Restore the older matvec kernels |
+| `NOSTROMA_MMVQ_LARGE_GRF` | On for Arc A-series | 256 registers per thread for the 2-8 column wide kernels |
+| `NOSTROMA_Q6_PLANAR` | On | Q6_K output head and MTP head as planes (same bytes) |
+| `NOSTROMA_ATTN_RS` | 2 | QSA prompt attention probability layout (bit-exact variants) |
+| `NOSTROMA_IQ3S_WIDE=1` | Off | Wide kernel for dense IQ3_S matrices: neutral on one B70 (decode -0.3%), the author reports gains on two cards |
+| `NOSTROMA_EXPERT_SPLIT=1` | Off | Upstream's i-quant multi kernels (-11 to -16% decode here) |
+| `NOSTROMA_PROMPT_ATTN_XMX=1` | Off | joint_matrix prompt attention (-24% to -27% prompt on the B70) |
+| `NOSTROMA_SYCL_GEMM_STAGE=1` | Off on Battlemage | Stage GEMM operands past 4 GiB |
+| `NOSTROMA_I8_NO_ESIMD` | n/a | Compile-time: stubs for the int8 ESIMD kernels (set for a device without them) |
+| `NOSTROMA_DBG_NAN=1` | Off | Report non-finite values, including the experts' FP16 inputs |
 
 ## History / older measurements
 
@@ -474,12 +474,12 @@ copies overlapped): a cold fill of the Coder's 23.4 GiB went from 76.2 s to 18.8
 | #374 | First chunk's PLE rows read beside layer 0 | Part of 2,184-token prompt 784 to 825 tok/s |
 | #363 | PCIe expert call: group stride, fused SwiGLU + q8_1 | IQ2_XS decode +1.7% |
 | #407 | `--adapt-tuned` (opt-in) | Neutral |
-| #413 | DeltaNet recurrence per key head | 8% slower prompt: off (`STRATA_GDN_KEYHEAD=1`) |
+| #413 | DeltaNet recurrence per key head | 8% slower prompt: off (`NOSTROMA_GDN_KEYHEAD=1`) |
 
 **Alchemist prompt GDN kernel (Arc A770 16 GB, xe, oneAPI 2026.1 JIT, 2026-10-13).** `gdn_parity --prefill-tokens 8192` 51.0 to
 24.5 ms; 32,768 tokens 204-236 to 110-113 ms. End to end, Coder IQ1_M, `--max-context 131072 --kv int8 --kv-resident 20480
 --vram-reserve-mib 1200 --resident-experts`: prompt 386 to 396-407 tok/s at 8K and 478-480 to 511-518 at 32K. To check another
-Intel card: `STRATA_GDN_XE=1 ./gdn_parity --selftest --prefill-only`.
+Intel card: `NOSTROMA_GDN_XE=1 ./gdn_parity --selftest --prefill-only`.
 
 **Q6_K decode kernels (0.1.45, #2340, #2207).** B70, `mmvq_bench` Q6_K 2560x10240, 1 column 44.7 to 26.5 us, 4 columns 64.5 to
 46.2; A750 4 columns 251 to 102 us. End to end on the B70 (IQ3_S, 5 interleaved pairs, answers identical): decode 32.24 to 33.37
@@ -493,12 +493,12 @@ expert (a chunk of 8,192 tokens or more) the int8 chain stops winning (1.03x at 
 
 | Change | Result |
 | --- | --- |
-| `STRATA_GDN_XE=1` on Battlemage | 1,251 to 1,207 (-3.5%) |
-| `STRATA_PROMPT_ATTN_XMX=1` / `=32` | 1,258 to 952 / 913 |
-| `STRATA_ATTN_RS=2` (now default) | 1,254 to 1,265 (+0.9%) |
-| `STRATA_ATTN_RS=1` | 1,254 to 1,236 (-1.5%) |
+| `NOSTROMA_GDN_XE=1` on Battlemage | 1,251 to 1,207 (-3.5%) |
+| `NOSTROMA_PROMPT_ATTN_XMX=1` / `=32` | 1,258 to 952 / 913 |
+| `NOSTROMA_ATTN_RS=2` (now default) | 1,254 to 1,265 (+0.9%) |
+| `NOSTROMA_ATTN_RS=1` | 1,254 to 1,236 (-1.5%) |
 | Int8 expert groups of 24 or 32 | No effect |
-| Grouped XMX expert GEMM on Battlemage (`STRATA_PF_XMX=1/2`) | 11-15% slower |
+| Grouped XMX expert GEMM on Battlemage (`NOSTROMA_PF_XMX=1/2`) | 11-15% slower |
 | Miss-first / hit-first group order in the device plan | -3% / -7% |
 
 **Via the OpenAI API, sampled (0.1.31-sycl era).** 36 tok/s decode on a first turn, 33 on a follow-up, against 24-26 for llama.cpp
@@ -522,27 +522,27 @@ Packed Q2 / IQ4 lookup / IQ3_S sign arithmetic (the build option) and fourteen d
 +9.7% on a 4K prompt and +11.1% on a free-form answer against the build without them, same generated tokens, same logprobs to six
 decimals. Prompt speed is unchanged.
 
-* `STRATA_SYCL_IQ_DECODE_FAST` (CMake, default ON; `IQ_DECODE_FAST=OFF` for `sycl/tools/build.sh` and `packaging/build_sycl_linux.sh`):
+* `NOSTROMA_SYCL_IQ_DECODE_FAST` (CMake, default ON; `IQ_DECODE_FAST=OFF` for `sycl/tools/build.sh` and `packaging/build_sycl_linux.sh`):
   integer arithmetic with the same results as the helpers it replaces. It is the largest part of the gain (+5.9% alone).
 * Runtime controls. Unset: on for a Battlemage device, off for every other device (Arc A-series keeps the earlier kernels).
-  `STRATA_<name>=0` turns a control off, `=1` turns it on whatever the device. Restart after changing one.
+  `NOSTROMA_<name>=0` turns a control off, `=1` turns it on whatever the device. Restart after changing one.
 
 | Runtime control | On by default (Battlemage) | Selected work |
 |---|---|---|
-| `STRATA_MMVQ_SHAPE_RPW` | yes | Row reuse for bounded Q4_K/Q5_K projection shapes |
-| `STRATA_IQ3S_GU_ROW_REUSE` | yes | Reuse IQ3_S gate/up row inputs across two rows |
-| `STRATA_IQ2S_GU_ROW_REUSE` | yes | The same for IQ2_S |
-| `STRATA_IQ3XXS_GU_ROW_REUSE` | yes | The same for IQ3_XXS |
-| `STRATA_GR_LO_REUSE` | yes | Reuse the hyper-connection low-rank SiLU output on supported layouts |
-| `STRATA_ATTN_MERGE_ACTIVE` | yes | Merge only the active chunks in bounded batched QSA decode |
-| `STRATA_IQ3S_GU_SLM` | no | Stage native IQ3_S gate/up activations (unreachable while the IQ3_S row reuse is on) |
-| `STRATA_IQ4NL_DOWN_SLM` | no | Stage native IQ4_NL down activations |
-| `STRATA_EXPERT_ROW_E3` | no | Three-entry tails in the IQ2_S / IQ3_XXS row-reuse path |
-| `STRATA_RESIDENT_PLAN_COMPACT` | no | Size the resident routing work-group for the entry count |
-| `STRATA_GR_CACHED_NORM` | no | Reuse the hyper-connection normalized input on supported layouts |
-| `STRATA_GR_REDUCE_ILP` | no | Keep partial loads in flight in the cached-lo hyper-connection reduce |
-| `STRATA_Q6_SHAPE_GRF` | no | Large GRF for bounded Q6_K projection shapes |
-| `STRATA_GDN_QK_REG` | no | Register-broadcast QK for supported Battlemage GDN geometry |
+| `NOSTROMA_MMVQ_SHAPE_RPW` | yes | Row reuse for bounded Q4_K/Q5_K projection shapes |
+| `NOSTROMA_IQ3S_GU_ROW_REUSE` | yes | Reuse IQ3_S gate/up row inputs across two rows |
+| `NOSTROMA_IQ2S_GU_ROW_REUSE` | yes | The same for IQ2_S |
+| `NOSTROMA_IQ3XXS_GU_ROW_REUSE` | yes | The same for IQ3_XXS |
+| `NOSTROMA_GR_LO_REUSE` | yes | Reuse the hyper-connection low-rank SiLU output on supported layouts |
+| `NOSTROMA_ATTN_MERGE_ACTIVE` | yes | Merge only the active chunks in bounded batched QSA decode |
+| `NOSTROMA_IQ3S_GU_SLM` | no | Stage native IQ3_S gate/up activations (unreachable while the IQ3_S row reuse is on) |
+| `NOSTROMA_IQ4NL_DOWN_SLM` | no | Stage native IQ4_NL down activations |
+| `NOSTROMA_EXPERT_ROW_E3` | no | Three-entry tails in the IQ2_S / IQ3_XXS row-reuse path |
+| `NOSTROMA_RESIDENT_PLAN_COMPACT` | no | Size the resident routing work-group for the entry count |
+| `NOSTROMA_GR_CACHED_NORM` | no | Reuse the hyper-connection normalized input on supported layouts |
+| `NOSTROMA_GR_REDUCE_ILP` | no | Keep partial loads in flight in the cached-lo hyper-connection reduce |
+| `NOSTROMA_Q6_SHAPE_GRF` | no | Large GRF for bounded Q6_K projection shapes |
+| `NOSTROMA_GDN_QK_REG` | no | Register-broadcast QK for supported Battlemage GDN geometry |
 
 The eight "no" controls measured neutral or slightly slower on that configuration (an internal measurement; the single-control table is not published); they stay available for other models and cards. Unsupported layouts retain their
 existing paths. Explicit projection overrides take precedence over shape selection.

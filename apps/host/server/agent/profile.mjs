@@ -33,14 +33,14 @@ export const ASSUMED_API_CONTEXT = 128_000;
 /**
  * The three chat modes as Harness permission presets (see README, "Modes"). A preset is a
  * sandbox mode plus an approval policy; the Harness switches them with its own `/permission` command.
- *   manual  open sandbox + ask:        the Nostroma gate (plugins/strata-gate.mjs) asks BEFORE any change runs; nothing is denied first
+ *   manual  open sandbox + ask:        the Nostroma gate (plugins/nostroma-gate.mjs) asks BEFORE any change runs; nothing is denied first
  *   plan    read-only sandbox + never: nothing can change, and the agent is told not to ask
  *   bypass  danger-full-access + never: the Harness's own full-access, never-ask bundle (its `danger-full-access` preset)
  */
 export const MODE_PRESETS = Object.freeze({
-  manual: { key: 'strata-manual', sandbox: 'danger-full-access', approval: 'ask', name: 'Manual', description: 'Asks before changing a file or running a command that changes anything.' },
-  plan: { key: 'strata-plan', sandbox: 'read-only', approval: 'never', name: 'Plan', description: 'Read-only. Nothing is changed and no approval prompts appear.' },
-  bypass: { key: 'strata-bypass', sandbox: 'danger-full-access', approval: 'never', name: 'Bypass', description: 'Full access without approval prompts. Files and commands anywhere on this computer run without asking.' },
+  manual: { key: 'nostroma-manual', sandbox: 'danger-full-access', approval: 'ask', name: 'Manual', description: 'Asks before changing a file or running a command that changes anything.' },
+  plan: { key: 'nostroma-plan', sandbox: 'read-only', approval: 'never', name: 'Plan', description: 'Read-only. Nothing is changed and no approval prompts appear.' },
+  bypass: { key: 'nostroma-bypass', sandbox: 'danger-full-access', approval: 'never', name: 'Bypass', description: 'Full access without approval prompts. Files and commands anywhere on this computer run without asking.' },
 });
 export const DEFAULT_MODE = 'manual';
 /** Helper agents running at once when no local engine sets the limit (the Harness's own default). */
@@ -55,12 +55,12 @@ export const MIN_LOCAL_HELPERS = 4;
 export const modeOf = value => (Object.hasOwn(MODE_PRESETS, value) ? value : DEFAULT_MODE);
 
 /** The approval gate plugin (plain ESM, loaded by absolute path). */
-export const GATE_PLUGIN = fileURLToPath(new URL('./plugins/strata-gate.mjs', import.meta.url));
+export const GATE_PLUGIN = fileURLToPath(new URL('./plugins/nostroma-gate.mjs', import.meta.url));
 /** The app's web search (DuckDuckGo, or the person's own Exa / Perplexity key), registered with the Harness's web seam. */
-/** Compaction that measures the real prompt and summarises in pieces that fit the window (plugins/strata-context.mjs). */
-export const CONTEXT_PLUGIN = fileURLToPath(new URL('./plugins/strata-context.mjs', import.meta.url));
-export const MODELS_PLUGIN = fileURLToPath(new URL('./plugins/strata-models.mjs', import.meta.url));
-export const SEARCH_PLUGIN = fileURLToPath(new URL('./plugins/strata-search.mjs', import.meta.url));
+/** Compaction that measures the real prompt and summarises in pieces that fit the window (plugins/nostroma-context.mjs). */
+export const CONTEXT_PLUGIN = fileURLToPath(new URL('./plugins/nostroma-context.mjs', import.meta.url));
+export const MODELS_PLUGIN = fileURLToPath(new URL('./plugins/nostroma-models.mjs', import.meta.url));
+export const SEARCH_PLUGIN = fileURLToPath(new URL('./plugins/nostroma-search.mjs', import.meta.url));
 /** The app's own tool server for the tools a person writes (instructions, commands). */
 export const CUSTOM_TOOLS_SCRIPT = fileURLToPath(new URL('./custom-tools-mcp.mjs', import.meta.url));
 
@@ -87,7 +87,7 @@ export function mcpRows(servers, env, skipped = []) {
     if (ids.has(`mcp-${slug(name)}`)) { skipped.push({ name, why: 'duplicate' }); continue; }
     ids.add(`mcp-${slug(name)}`);
     const token = (kind, key, value) => {
-      const variable = `STRATA_MCP_${index}_${kind}_${slug(key).replace(/-/g, '_').toUpperCase()}`;
+      const variable = `NOSTROMA_MCP_${index}_${kind}_${slug(key).replace(/-/g, '_').toUpperCase()}`;
       env[variable] = String(value);
       return `@@JS:process.env.${variable}@@`;
     };
@@ -187,7 +187,7 @@ export function outputBudget(context, maxOutput = null) {
 /**
  * @param {object} input
  * @param {Array<{id:string,label?:string,baseUrl:string,modelId:string,context?:number,key?:string,vision?:boolean,slots?:number}>} input.local
- *        ready local instances; the first is the default route (`strata-local`)
+ *        ready local instances; the first is the default route (`nostroma-local`)
  * @param {Array<{id:string,name:string,baseUrl:string,protocol:string,apiKey?:string,models:Array<{id:string,name?:string,contextMax?:number|null}>}>} input.connections
  * @returns {{patch:string, env:Record<string,string>, routes:Array, defaultRoute:object|null, signature:string}}
  */
@@ -210,7 +210,7 @@ export function buildProfile({ local = [], connections = [], gate = true, tools 
     const keys = {};
     for (const budget of [0, ...BUDGETS]) {
       const key = `${route}~s${budget}`;
-      providers[key] = { ...def, displayName: `${def.displayName} (with your response settings)`, baseURL: `${proxyBase}/${key}/v1`, ...(budget ? { headers: { ...(def.headers ?? {}), 'x-strata-budget': String(budget) } } : {}) };
+      providers[key] = { ...def, displayName: `${def.displayName} (with your response settings)`, baseURL: `${proxyBase}/${key}/v1`, ...(budget ? { headers: { ...(def.headers ?? {}), 'x-nostroma-budget': String(budget) } } : {}) };
       shapeTargets[key] = realBase;
       for (const m of def.models) { const w = m.contextWindow, out = m.maxTokens; compaction.push({ provider: key, model: m.id, headroomTokens: compactionHeadroom(w, out) }); }
       keys[budget] = key;
@@ -219,11 +219,11 @@ export function buildProfile({ local = [], connections = [], gate = true, tools 
   }
 
   local.forEach((inst, index) => {
-    const route = index === 0 ? 'strata-local' : `strata-local-${slug(inst.id)}`;
-    const keyEnv = `STRATA_LOCAL_KEY_${index}`;
+    const route = index === 0 ? 'nostroma-local' : `nostroma-local-${slug(inst.id)}`;
+    const keyEnv = `NOSTROMA_LOCAL_KEY_${index}`;
     // pi-ai's OpenAI-compatible client insists on some key before it sends anything. A worker that
     // does not authenticate gets a fixed placeholder; one that does gets its real key, by reference.
-    env[keyEnv] = inst.key || 'strata-local';
+    env[keyEnv] = inst.key || 'nostroma-local';
     const context = inst.context ?? 32768;
     providers[route] = {
       displayName: inst.label ? `Nostroma (local) ${inst.label}` : 'Nostroma (local)',
@@ -252,7 +252,7 @@ export function buildProfile({ local = [], connections = [], gate = true, tools 
     const protocol = PROTOCOL[conn.protocol];
     if (!protocol) return;
     const route = `api-${slug(conn.id).slice(0, 12)}`;
-    const keyEnv = `STRATA_API_KEY_${slug(conn.id).replace(/-/g, '_').toUpperCase().slice(0, 12)}`;
+    const keyEnv = `NOSTROMA_API_KEY_${slug(conn.id).replace(/-/g, '_').toUpperCase().slice(0, 12)}`;
     // A model server on this network that wants no key (llama.cpp, LM Studio, another Nostroma) still needs some value: the OpenAI-style client
     // refuses to send anything without one, and the person saw "the model rejected the credentials".
     const keyless = !conn.apiKey && protocol === 'openai-completions';
@@ -297,7 +297,7 @@ export function buildProfile({ local = [], connections = [], gate = true, tools 
   const mcp = mcpRows({ ...(defaultInstance?.mcpServers ?? {}), ...(tools.servers ?? {}) }, mcpEnv, mcpSkipped);
   Object.assign(env, mcpEnv);
   // The person's own instruction and command tools come from the app's tool server; a command tool asks in Manual like any connected tool.
-  const own = (kind, on) => on && tools.toolFile ? [{ id: `mcp-strata-${kind}`, name: '@deepseek-ai/dsh-mcp-client', config: { serverName: `strata-${kind}`, transport: 'stdio', command: process.execPath, args: [CUSTOM_TOOLS_SCRIPT, kind, tools.toolFile] } }] : [];
+  const own = (kind, on) => on && tools.toolFile ? [{ id: `mcp-nostroma-${kind}`, name: '@deepseek-ai/dsh-mcp-client', config: { serverName: `nostroma-${kind}`, transport: 'stdio', command: process.execPath, args: [CUSTOM_TOOLS_SCRIPT, kind, tools.toolFile] } }] : [];
   // The browser: Playwright's tool server on the person's own Chrome or Edge, in a separate empty profile (what the Harness's own browser provider does). Every action asks in Manual.
   const browserRows = tools.browserEnabled && tools.browserPath && tools.browserCli
     ? [{ id: 'mcp-browser', name: '@deepseek-ai/dsh-mcp-client', config: { serverName: 'browser', transport: 'stdio', command: process.execPath, args: [tools.browserCli, '--browser', 'chromium', '--isolated', ...(envVar('BROWSER_HEADLESS') === '1' ? ['--headless'] : []), '--executable-path', tools.browserPath] } }] : [];
@@ -305,11 +305,11 @@ export function buildProfile({ local = [], connections = [], gate = true, tools 
   // Web search: DuckDuckGo with no key unless the person chose a keyed service AND saved its key (then that one; never a half-set-up one).
   const searchOn = !tools.off.has('search');
   const keyed = ['exa', 'perplexity', 'deepseek'].includes(tools.search.provider) && tools.search.key ? tools.search.provider : null;
-  if (searchOn && keyed) env.STRATA_SEARCH_KEY = tools.search.key;
+  if (searchOn && keyed) env.NOSTROMA_SEARCH_KEY = tools.search.key;
   const webRows = !searchOn ? [] : keyed === 'deepseek'
-    ? [{ id: 'web', config: { searchProvider: 'deepseek-official', fetchProvider: 'http' } }, { id: 'web-search-deepseek', config: { apiKeyEnv: 'STRATA_SEARCH_KEY' } }]
+    ? [{ id: 'web', config: { searchProvider: 'deepseek-official', fetchProvider: 'http' } }, { id: 'web-search-deepseek', config: { apiKeyEnv: 'NOSTROMA_SEARCH_KEY' } }]
     : [{ id: 'web', config: { searchProvider: keyed ?? DDG_PROVIDER_ID, fetchProvider: 'http' } }, { id: 'web-search-deepseek', disabled: true },
-      { insert: [{ id: 'strata-web-search', name: SEARCH_PLUGIN, config: { provider: keyed ?? 'duckduckgo', keyEnv: 'STRATA_SEARCH_KEY', ...(searchMock ? { mock: searchMock } : {}) } }] }];
+      { insert: [{ id: 'nostroma-web-search', name: SEARCH_PLUGIN, config: { provider: keyed ?? 'duckduckgo', keyEnv: 'NOSTROMA_SEARCH_KEY', ...(searchMock ? { mock: searchMock } : {}) } }] }];
   /** The models a helper agent may be started on: the table the model-choice plugin and the Harness's allow-list are written from. */
   const subagentRoutes = routes.map(r => ({ provider: r.route, model: r.modelId, name: r.name, connection: r.connectionName, local: r.kind === 'local' }));
   const entries = [
@@ -320,12 +320,12 @@ export function buildProfile({ local = [], connections = [], gate = true, tools 
     { id: 'subagent', config: { maxActiveSubagents: slots > 0 ? Math.max(slots, MIN_LOCAL_HELPERS) : DEFAULT_API_HELPERS } },
     // Manual asks before a change runs, so the person sees one Approve/Deny card and nothing has happened yet.
     // Its web question names the search service the person chose (a keyed one only when its key is saved), and the person's switch skips the question.
-    ...(gate ? [{ insert: [{ id: 'strata-gate', name: GATE_PLUGIN, config: { web: { provider: SEARCH_NAMES[keyed ?? 'builtin'], skipAsk: tools.webWithoutAsking === true } } }] }] : []),
-    // Compaction decides from what the model server measured, and its summary requests always fit the window (plugins/strata-context.mjs).
-    { insert: [{ id: 'strata-context', name: CONTEXT_PLUGIN, config: {} }] },
-    // Helper agents on a model the person names: every model the app can reach is allowed, and the plugin makes the choice forgiving (plugins/strata-models.mjs).
+    ...(gate ? [{ insert: [{ id: 'nostroma-gate', name: GATE_PLUGIN, config: { web: { provider: SEARCH_NAMES[keyed ?? 'builtin'], skipAsk: tools.webWithoutAsking === true } } }] }] : []),
+    // Compaction decides from what the model server measured, and its summary requests always fit the window (plugins/nostroma-context.mjs).
+    { insert: [{ id: 'nostroma-context', name: CONTEXT_PLUGIN, config: {} }] },
+    // Helper agents on a model the person names: every model the app can reach is allowed, and the plugin makes the choice forgiving (plugins/nostroma-models.mjs).
     ...(subagentRoutes.length ? [{ id: 'subagent-model-selection-settings', config: { enabled: true, allowedModels: subagentRoutes.map(r => ({ provider: r.provider, model: r.model })) } }] : []),
-    ...(subagentRoutes.length ? [{ insert: [{ id: 'strata-models', name: MODELS_PLUGIN, config: { routes: subagentRoutes } }] }] : []),
+    ...(subagentRoutes.length ? [{ insert: [{ id: 'nostroma-models', name: MODELS_PLUGIN, config: { routes: subagentRoutes } }] }] : []),
     ...(mcp.length || ownRows.length ? [{ insert: [...mcp, ...ownRows] }] : []),
     ...webRows,
     // The reminder tools would be a second scheduler beside the app's Tasks. The tool groups the person switched off in Settings -> Tools are left out.
@@ -345,7 +345,7 @@ export function buildProfile({ local = [], connections = [], gate = true, tools 
   const signature = createHash('sha256').update(patch).update(JSON.stringify(Object.entries(env).sort())).digest('hex').slice(0, 16);
   // What the agent is offered (tool groups, web search, tool servers, the person's own tools) decides whether a running agent must be
   // restarted for the next message; the routes are compared separately (a changed context size alone does not restart it).
-  const toolsSignature = createHash('sha256').update(JSON.stringify([mcp, ownRows, webRows, entries.find(e => e.id === 'preset-standard'), (env.NOSTROMA_SEARCH_KEY ?? env.STRATA_SEARCH_KEY) ?? '', mcpEnv])).digest('hex').slice(0, 16);
+  const toolsSignature = createHash('sha256').update(JSON.stringify([mcp, ownRows, webRows, entries.find(e => e.id === 'preset-standard'), (env.NOSTROMA_SEARCH_KEY ?? env.NOSTROMA_SEARCH_KEY) ?? '', mcpEnv])).digest('hex').slice(0, 16);
   return { patch, env, routes, defaultRoute, signature, toolsSignature, shapeTargets, mcpSkipped };
 }
 

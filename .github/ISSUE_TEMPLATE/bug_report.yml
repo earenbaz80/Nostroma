@@ -90,7 +90,7 @@ body:
     attributes:
       label: Logs
       description: |
-        The app: Settings > Engine > Diagnostics > View logs > Save logs, then drag the file in. The Terminal: paste the output of `nostroma doctor`. From source: drag in `strata-<model>.log` from your Nostroma folder.
+        The app: Settings > Engine > Diagnostics > View logs > Save logs, then drag the file in. The Terminal: paste the output of `nostroma doctor`. From source: drag in `nostroma-<model>.log` from your Nostroma folder.
         Remove API keys, passwords and private text first.
     validations:
       required: false

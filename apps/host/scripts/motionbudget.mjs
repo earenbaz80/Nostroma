@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Strata motion budget.
+ * Nostroma motion budget.
  *
  *   node scripts/motionbudget.mjs
  *

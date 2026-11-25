@@ -1,4 +1,4 @@
-# Provenance — R9700 / Windows / Strata 0.1.38 benchmark packet
+# Provenance — R9700 / Windows / Nostroma 0.1.38 benchmark packet
 
 Every value in this file was produced on the measurement machine on 2026-10-03 and is quoted
 verbatim (PowerShell output). It supplies the identity fields the report marks as `not recorded`
@@ -29,8 +29,8 @@ where the machine could still produce them.
 }
 ```
 
-`engine/strata.exe`: 65,104,896 bytes, 2026-10-03 13:08 (**size and timestamp only; no binary
-hash was taken**). The engine was the ready-made `strata-windows-x64-hip.zip` from the v0.1.38
+`engine/nostroma.exe`: 65,104,896 bytes, 2026-10-03 13:08 (**size and timestamp only; no binary
+hash was taken**). The engine was the ready-made `nostroma-windows-x64-hip.zip` from the v0.1.38
 release, not a source build.
 
 ## Model artefacts — SHA-256 (PowerShell `Get-FileHash`, verbatim)
@@ -68,7 +68,7 @@ recorded, so the report states the Windows figure and does not claim a kit size.
 - SHA-256 of the IQ2_XS expert pack (`packs/iq2_xs`) and of the MTP draft tensors (`mtp/rt`)
 - Engine binary hash; engine commit (only the v0.1.38 release and `engine/BUILD.json` above)
 - GPU power limit, clocks, thermals; PCIe link width/generation; storage device model
-- `strata-device --list-devices` / `--selftest` output (the Windows-AMD bundle
+- `nostroma-device --list-devices` / `--selftest` output (the Windows-AMD bundle
   `docs/AMD_HIP.md` asks for)
-- the hipBLASLt `STRATA_HIPBLASLT_VERBOSE=1` / `fallbacks=0` check
+- the hipBLASLt `NOSTROMA_HIPBLASLT_VERBOSE=1` / `fallbacks=0` check
 - peak RAM/VRAM during inference; paging/OOM counters

@@ -1,8 +1,8 @@
 // prefill_swiglu_quant_test - the prompt path's fused MMQ expert step against the kernels it replaces, byte for byte:
 // mmq::swiglu_quant against swiglu + quantize (the down product's q8_1 rows of H), for down types the packs have
-// (Q2_0, IQ4_NL, Q8_0), with the gate/up rows split (GGUF) and interleaved (the Strata pack), a zero row and a row
+// (Q2_0, IQ4_NL, Q8_0), with the gate/up rows split (GGUF) and interleaved (the Nostroma pack), a zero row and a row
 // with one huge value.  Exit 77 without a CUDA device.
-#include "strata/prefill/moe_mmq.hpp"
+#include "nostroma/prefill/moe_mmq.hpp"
 
 #include "ggml.h"
 
@@ -17,7 +17,7 @@
 #include <vector>
 
 namespace {
-namespace mmq = strata::prefill::mmq;
+namespace mmq = nostroma::prefill::mmq;
 
 void ck(cudaError_t e, const char* what) {
     if (e != cudaSuccess) throw std::runtime_error(std::string(what) + ": " + cudaGetErrorString(e));

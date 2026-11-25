@@ -1,10 +1,10 @@
-#include "strata/core/bw_dense_defaults.hpp"
-#include "strata/env.hpp"
-#include "strata/kernels/bf16_gemv.hpp"
-#include "strata/kernels/window_limits.hpp"
+#include "nostroma/core/bw_dense_defaults.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kernels/bf16_gemv.hpp"
+#include "nostroma/kernels/window_limits.hpp"
 #include "s26_tsum.cuh"
-#include "strata/kernels/bf16_bits.hpp"
-#include "strata/kernels/pdl.hpp"
+#include "nostroma/kernels/bf16_bits.hpp"
+#include "nostroma/kernels/pdl.hpp"
 
 #include <cuda_runtime.h>
 #include <cstdio>
@@ -13,7 +13,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 
 // The FP32-activation MMVF implementation below is adapted from llama.cpp
@@ -47,7 +47,7 @@ __device__ __forceinline__ float mmvf_warp_sum(float value) {
     return value;
 }
 
-// STRATA_MMVF_CHECK=1 (diagnostic): the constant-trip fast path also runs the plain loop with volatile loads (so the loads happen again, later) and
+// NOSTROMA_MMVF_CHECK=1 (diagnostic): the constant-trip fast path also runs the plain loop with volatile loads (so the loads happen again, later) and
 // compares each thread's accumulator bit for bit: g_mmvf_chk[0] checks, [1] differing accumulators, [2..4] block / thread / n_in of the first one.
 // A difference means the activations or weights changed between the early and the late loads (no arithmetic differs between the two loops).
 __device__ unsigned long long g_mmvf_chk[8];
@@ -71,7 +71,7 @@ __global__ void bf16_f32_mmvf_kernel(const float* __restrict__ x, const uint16_t
     __syncthreads();
     float acc = 0.0f;
     if (BLOCK_SIZE == 256 && fast != 0 && n_in == 2560) {
-        // STRATA_SMALL_UNR bit 0: the router-shaped single-column read, five passes of one weight pair each (all in range), constant
+        // NOSTROMA_SMALL_UNR bit 0: the router-shaped single-column read, five passes of one weight pair each (all in range), constant
         // trip count so the weight and activation loads of the five passes are in flight together.  The same FMAs in the same order.
         uint32_t wv[5];
         float2 xv[5];
@@ -117,8 +117,8 @@ __global__ void bf16_f32_mmvf_kernel(const float* __restrict__ x, const uint16_t
 template <int BLOCK_SIZE, int NT, bool EXACT_T = true>
 __global__ void bf16_f32_mmvf_multi_kernel(const float* x_, int64_t ldx, const uint16_t* __restrict__ w,
                                           float* y_, int64_t ldy, int n_in, int n_tok, int fast) {
-    const float* STRATA_PDL_RESTRICT x = x_;   // __restrict__ below sm_70 only (pdl.hpp, #1469)
-    float* STRATA_PDL_RESTRICT y = y_;
+    const float* NOSTROMA_PDL_RESTRICT x = x_;   // __restrict__ below sm_70 only (pdl.hpp, #1469)
+    float* NOSTROMA_PDL_RESTRICT y = y_;
     const int t = threadIdx.x;
     const uint16_t* row = w + (size_t) blockIdx.x * n_in;
     const uint32_t* weights2 = reinterpret_cast<const uint32_t*>(row);
@@ -141,7 +141,7 @@ __global__ void bf16_f32_mmvf_multi_kernel(const float* x_, int64_t ldx, const u
     }
     pdl_wait();
     if (BLOCK_SIZE == 256 && fast != 0 && n_in == 2560) {
-        // BW-DENSE (STRATA_SMALL_UNR bit 0): the router-shaped read (2560 inputs, 256 threads: five passes of one weight pair each, all
+        // BW-DENSE (NOSTROMA_SMALL_UNR bit 0): the router-shaped read (2560 inputs, 256 threads: five passes of one weight pair each, all
         // in range) with constant trip counts, so the activation loads of every pass are in flight together instead of one memory
         // latency a pass.  The same FMAs in the same order (pass ascending, w0 then w1): bitwise the loop below.
         float2 xin[NT][5];
@@ -215,11 +215,11 @@ __global__ void bf16_f32_mmvf_multi_kernel(const float* x_, int64_t ldx, const u
             if (EXACT_T || k < n_tok) y[(size_t) k * ldy + blockIdx.x] = acc[k];
 }
 
-// S25 (STRATA_MMVF_ROWS=1): RPB output rows per block. Each block read its row's weights once but all T activation
+// S25 (NOSTROMA_MMVF_ROWS=1): RPB output rows per block. Each block read its row's weights once but all T activation
 // rows again (n_out blocks x T x n_in floats through L2 - the part that grew with T); here a block reads the
 // activations once for RPB rows. Per output, thread t still walks pairs t, t + BLOCK_SIZE, ... with the same two
 // ordered FMAs and the same warp and block reductions: bit-identical to bf16_f32_mmvf_multi_kernel.
-// S26 STRATA_LFUSE=1 (AUX): one more block computes row 0 of w_aux into y_aux[k * ldy_aux] - the same per-output
+// S26 NOSTROMA_LFUSE=1 (AUX): one more block computes row 0 of w_aux into y_aux[k * ldy_aux] - the same per-output
 // code, so each aux output is bitwise what its own bf16_f32_mmvf_multi_kernel launch gave (the shared expert's gate)
 template <int BLOCK_SIZE, int NT, int RPB, bool TS = false, bool AUX = false>
 __global__ void bf16_f32_mmvf_rows_kernel(const float* __restrict__ x, int64_t ldx, const uint16_t* __restrict__ w,
@@ -264,7 +264,7 @@ __global__ void bf16_f32_mmvf_rows_kernel(const float* __restrict__ x, int64_t l
             }
         }
     }
-    if constexpr (TS) {   // S26 STRATA_TSUM=1: the RPB x NT warp sums (both stages) as transposed butterflies, bitwise the same
+    if constexpr (TS) {   // S26 NOSTROMA_TSUM=1: the RPB x NT warp sums (both stages) as transposed butterflies, bitwise the same
         constexpr int V = RPB * NT, P = s26ts::pow2_ceil(V);
         const int lane = t & 31, j = s26ts::tsum_token<P>(lane);
         const bool own = lane == s26ts::tsum_lane<P>(j) && j < V;
@@ -315,8 +315,8 @@ void launch_rows(const float* x, int64_t ldx, const uint16_t* w, float* y, int64
                  cudaStream_t st, const uint16_t* w_aux = nullptr, float* y_aux = nullptr, int64_t ldy_aux = 0) {
     constexpr int RPB = 4;
     const unsigned nb = (unsigned) ((n_out + RPB - 1) / RPB);
-    static const bool ts = [] { const char* v = strata::env("NOSTROMA_TSUM"); return v && v[0] == '1'; }();
-    if (w_aux != nullptr) {   // S26 STRATA_LFUSE: + one aux row block
+    static const bool ts = [] { const char* v = nostroma::env("NOSTROMA_TSUM"); return v && v[0] == '1'; }();
+    if (w_aux != nullptr) {   // S26 NOSTROMA_LFUSE: + one aux row block
 #define S26_AUX(TSV) \
         if (n_tok <= 4) bf16_f32_mmvf_rows_kernel<B, 4, RPB, TSV, true><<<nb + 1, B, 0, st>>>(x, ldx, w, y, ldy, n_in, n_out, n_tok, w_aux, y_aux, ldy_aux); \
         else bf16_f32_mmvf_rows_kernel<B, 8, RPB, TSV, true><<<nb + 1, B, 0, st>>>(x, ldx, w, y, ldy, n_in, n_out, n_tok, w_aux, y_aux, ldy_aux);
@@ -336,12 +336,12 @@ void launch_rows(const float* x, int64_t ldx, const uint16_t* w, float* y, int64
 void mmvf_chk_report() {
     unsigned long long h[8] = {};
     if (cudaMemcpyFromSymbol(h, g_mmvf_chk, sizeof(h)) != cudaSuccess) return;
-    std::fprintf(stderr, "strata mmvf check: %llu accumulators compared, %llu differ; first: block %llu thread %llu n_in %llu fast %08llx plain %08llx\n", h[0], h[1], h[2], h[3], h[4], h[5], h[6]);
+    std::fprintf(stderr, "nostroma mmvf check: %llu accumulators compared, %llu differ; first: block %llu thread %llu n_in %llu fast %08llx plain %08llx\n", h[0], h[1], h[2], h[3], h[4], h[5], h[6]);
 }
-// BW-DENSE STRATA_SMALL_UNR bit 0: see bf16_f32_mmvf_multi_kernel (bw_dense_defaults.hpp: on for a 12.0 card, else off; the variable wins)
+// BW-DENSE NOSTROMA_SMALL_UNR bit 0: see bf16_f32_mmvf_multi_kernel (bw_dense_defaults.hpp: on for a 12.0 card, else off; the variable wins)
 int mmvf_fast_bit() {
     static int per_dev[64];   // 0 unknown, else bit + 1
-    const char* e = strata::env("NOSTROMA_SMALL_UNR");
+    const char* e = nostroma::env("NOSTROMA_SMALL_UNR");
     if (e != nullptr) return std::atoi(e) & 1;
 #if defined(__HIPCC__)
     return 0;
@@ -353,17 +353,17 @@ int mmvf_fast_bit() {
         const bool ok = cudaDeviceGetAttribute(&ma, cudaDevAttrComputeCapabilityMajor, dev) == cudaSuccess &&
                         cudaDeviceGetAttribute(&mi, cudaDevAttrComputeCapabilityMinor, dev) == cudaSuccess;
         if (!ok) cudaGetLastError();
-        per_dev[dev] = 1 + (ok ? (strata::small_unr_default(ma, mi) & 1) : 0);
+        per_dev[dev] = 1 + (ok ? (nostroma::small_unr_default(ma, mi) & 1) : 0);
     }
     return per_dev[dev] - 1;
 #endif
 }
-// AMD-Q STRATA_MMVF_CHECK=1 (with the switch on): the kernel also computes the plain read and counts the accumulators that differ (2 = check mode)
+// AMD-Q NOSTROMA_MMVF_CHECK=1 (with the switch on): the kernel also computes the plain read and counts the accumulators that differ (2 = check mode)
 int mmvf_fast() {
     const int b = mmvf_fast_bit();
     if (b == 0) return 0;
     static const bool chk = [] {
-        const char* c = strata::env("NOSTROMA_MMVF_CHECK");
+        const char* c = nostroma::env("NOSTROMA_MMVF_CHECK");
         const bool on = c != nullptr && c[0] == '1';
         if (on) std::atexit(mmvf_chk_report);
         return on;
@@ -388,7 +388,7 @@ int mmvf_block_size(int64_t n_in) {
 bool bf16_gemv_fp32_mmvf_multi_aux(const float* x, int64_t ldx, const uint16_t* w, float* y, int64_t ldy,
                                    int64_t n_in, int64_t n_out, int n_tok, const uint16_t* w_aux, float* y_aux,
                                    int64_t ldy_aux, void* stream) {
-    static const bool rows = [] { const char* v = strata::env("NOSTROMA_MMVF_ROWS"); return v && v[0] == '1'; }();
+    static const bool rows = [] { const char* v = nostroma::env("NOSTROMA_MMVF_ROWS"); return v && v[0] == '1'; }();
     // exactly the conditions under which both calls would take the rows / multi kernels at the same block size
     if (!rows || n_out < 64 || n_tok < 2 || n_tok > 8 || n_in <= 0 || (n_in & 1) != 0 || (ldx & 1) != 0 || x == nullptr ||
         w == nullptr || y == nullptr || w_aux == nullptr || y_aux == nullptr || (reinterpret_cast<uintptr_t>(x) & 7u) != 0)
@@ -414,11 +414,11 @@ bool bf16_gemv_fp32_mmvf_multi_aux(const float* x, int64_t ldx, const uint16_t* 
 void bf16_gemv_fp32_mmvf_multi(const float* x, int64_t ldx, const uint16_t* w, float* y, int64_t ldy,
                                int64_t n_in, int64_t n_out, int n_tok, void* stream) {
     if (n_tok == 1 && ldy >= n_out) { bf16_gemv_fp32_mmvf(x, w, y, n_in, n_out, stream); return; }
-    if (n_tok < 1 || n_tok > STRATA_VERIFY_MAX_T || n_in <= 0 || (n_in & 1) != 0 || n_out <= 0 || (ldx & 1) != 0 ||
+    if (n_tok < 1 || n_tok > NOSTROMA_VERIFY_MAX_T || n_in <= 0 || (n_in & 1) != 0 || n_out <= 0 || (ldx & 1) != 0 ||
         x == nullptr || w == nullptr || y == nullptr || (reinterpret_cast<uintptr_t>(x) & 7u) != 0)
         throw std::invalid_argument("bf16_gemv_fp32_mmvf_multi: 1..8 rows (16 in a wide build), even n_in/ldx, aligned pointers");
     const cudaStream_t st = (cudaStream_t) stream;
-    static const bool rows = [] { const char* v = strata::env("NOSTROMA_MMVF_ROWS"); return v && v[0] == '1'; }();
+    static const bool rows = [] { const char* v = nostroma::env("NOSTROMA_MMVF_ROWS"); return v && v[0] == '1'; }();
     if (rows && n_out >= 64 && n_tok <= 8) {   // (the opt-in rows kernels hold 8 columns: a wider window takes the switch below)
         const int ni = (int) n_in, no = (int) n_out;
         switch (mmvf_block_size(n_in)) {
@@ -438,22 +438,22 @@ void bf16_gemv_fp32_mmvf_multi(const float* x, int64_t ldx, const uint16_t* w, f
     }
     // 9..16 rows (wide builds only): one exact instantiation per row count, each row's dot independent of the others.  7 and 8
     // rows stay with the default case below, the instantiation they always had.
-#if STRATA_VERIFY_MAX_T > 8
-#define STRATA_MMVF_W(N, T) case T: launch_pdl(bf16_f32_mmvf_multi_kernel<N, T, true>, dim3((unsigned) n_out), dim3(N), 0, st, x, ldx, w, y, ldy, (int) n_in, n_tok, mmvf_fast()); break;
-#if STRATA_VERIFY_MAX_T > 12
-#define STRATA_MMVF_W13(N) STRATA_MMVF_W(N, 13) STRATA_MMVF_W(N, 14) STRATA_MMVF_W(N, 15) STRATA_MMVF_W(N, 16)
+#if NOSTROMA_VERIFY_MAX_T > 8
+#define NOSTROMA_MMVF_W(N, T) case T: launch_pdl(bf16_f32_mmvf_multi_kernel<N, T, true>, dim3((unsigned) n_out), dim3(N), 0, st, x, ldx, w, y, ldy, (int) n_in, n_tok, mmvf_fast()); break;
+#if NOSTROMA_VERIFY_MAX_T > 12
+#define NOSTROMA_MMVF_W13(N) NOSTROMA_MMVF_W(N, 13) NOSTROMA_MMVF_W(N, 14) NOSTROMA_MMVF_W(N, 15) NOSTROMA_MMVF_W(N, 16)
 #else
-#define STRATA_MMVF_W13(N)
+#define NOSTROMA_MMVF_W13(N)
 #endif
-#define STRATA_MMVF_WIDE(N) \
-        STRATA_MMVF_W(N, 9) STRATA_MMVF_W(N, 10) STRATA_MMVF_W(N, 11) STRATA_MMVF_W(N, 12) \
-        STRATA_MMVF_W13(N)
+#define NOSTROMA_MMVF_WIDE(N) \
+        NOSTROMA_MMVF_W(N, 9) NOSTROMA_MMVF_W(N, 10) NOSTROMA_MMVF_W(N, 11) NOSTROMA_MMVF_W(N, 12) \
+        NOSTROMA_MMVF_W13(N)
 #else
-#define STRATA_MMVF_WIDE(N)
+#define NOSTROMA_MMVF_WIDE(N)
 #endif
-#define STRATA_MMVF_M(N) case N: \
+#define NOSTROMA_MMVF_M(N) case N: \
     switch (n_tok) { \
-        STRATA_MMVF_WIDE(N) \
+        NOSTROMA_MMVF_WIDE(N) \
         case 1: launch_pdl(bf16_f32_mmvf_multi_kernel<N, 1, true>, dim3((unsigned) n_out), dim3(N), 0, st, x, ldx, w, y, ldy, (int) n_in, n_tok, mmvf_fast()); break; \
         case 2: launch_pdl(bf16_f32_mmvf_multi_kernel<N, 2, true>, dim3((unsigned) n_out), dim3(N), 0, st, x, ldx, w, y, ldy, (int) n_in, n_tok, mmvf_fast()); break; \
         case 3: launch_pdl(bf16_f32_mmvf_multi_kernel<N, 3, true>, dim3((unsigned) n_out), dim3(N), 0, st, x, ldx, w, y, ldy, (int) n_in, n_tok, mmvf_fast()); break; \
@@ -463,13 +463,13 @@ void bf16_gemv_fp32_mmvf_multi(const float* x, int64_t ldx, const uint16_t* w, f
         default: launch_pdl(bf16_f32_mmvf_multi_kernel<N, 8, false>, dim3((unsigned) n_out), dim3(N), 0, st, x, ldx, w, y, ldy, (int) n_in, n_tok, mmvf_fast()); break; \
     } break
     switch (mmvf_block_size(n_in)) {
-        STRATA_MMVF_M(32); STRATA_MMVF_M(64); STRATA_MMVF_M(96); STRATA_MMVF_M(128);
-        STRATA_MMVF_M(160); STRATA_MMVF_M(192); STRATA_MMVF_M(224); STRATA_MMVF_M(256);
+        NOSTROMA_MMVF_M(32); NOSTROMA_MMVF_M(64); NOSTROMA_MMVF_M(96); NOSTROMA_MMVF_M(128);
+        NOSTROMA_MMVF_M(160); NOSTROMA_MMVF_M(192); NOSTROMA_MMVF_M(224); NOSTROMA_MMVF_M(256);
     }
-#undef STRATA_MMVF_M
-#undef STRATA_MMVF_WIDE
-#ifdef STRATA_MMVF_W
-#undef STRATA_MMVF_W
+#undef NOSTROMA_MMVF_M
+#undef NOSTROMA_MMVF_WIDE
+#ifdef NOSTROMA_MMVF_W
+#undef NOSTROMA_MMVF_W
 #endif
     const cudaError_t result = cudaGetLastError();
     if (result != cudaSuccess)
@@ -487,19 +487,19 @@ void bf16_gemv_fp32_mmvf(const float* x, const uint16_t* w, float* y,
         (reinterpret_cast<uintptr_t>(y) & 3u) != 0)
         throw std::invalid_argument("bf16_gemv_fp32_mmvf: null or misaligned pointer");
     const cudaStream_t st = (cudaStream_t) stream;
-#define STRATA_MMVF_CASE(N) case N: \
+#define NOSTROMA_MMVF_CASE(N) case N: \
     bf16_f32_mmvf_kernel<N><<<(unsigned) n_out, N, 0, st>>>(x, w, y, (int) n_in, mmvf_fast()); break
     switch (mmvf_block_size(n_in)) {
-        STRATA_MMVF_CASE(32);
-        STRATA_MMVF_CASE(64);
-        STRATA_MMVF_CASE(96);
-        STRATA_MMVF_CASE(128);
-        STRATA_MMVF_CASE(160);
-        STRATA_MMVF_CASE(192);
-        STRATA_MMVF_CASE(224);
-        STRATA_MMVF_CASE(256);
+        NOSTROMA_MMVF_CASE(32);
+        NOSTROMA_MMVF_CASE(64);
+        NOSTROMA_MMVF_CASE(96);
+        NOSTROMA_MMVF_CASE(128);
+        NOSTROMA_MMVF_CASE(160);
+        NOSTROMA_MMVF_CASE(192);
+        NOSTROMA_MMVF_CASE(224);
+        NOSTROMA_MMVF_CASE(256);
     }
-#undef STRATA_MMVF_CASE
+#undef NOSTROMA_MMVF_CASE
     const cudaError_t result = cudaGetLastError();
     if (result != cudaSuccess)
         throw std::runtime_error(std::string("bf16_gemv_fp32_mmvf launch: ") + cudaGetErrorString(result));
@@ -519,4 +519,4 @@ void bf16_gemv_fp32_mmvf_cols(const float* x, const uint16_t* w, float* y, int64
     }
 }
 
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels

@@ -1,4 +1,4 @@
-// 151-b70: fused int8 DPAS expert products (ESIMD, Battlemage) - see include/strata/prefill/esimd_moe.hpp and
+// 151-b70: fused int8 DPAS expert products (ESIMD, Battlemage) - see include/nostroma/prefill/esimd_moe.hpp and
 // docs/INTEL_INT8_EXPERTS.md (the behaviour note).
 //
 //  * Tile.  One hardware thread owns 16 output rows (a DPAS N tile; for gate/up the 16 virtual rows alternate gate/up) and up to
@@ -22,8 +22,8 @@
 //    value, gave wrong values / garbage pointers (the first weight read faulted the GPU); the kernels use constant-index reads
 //    (pick_expert) and 2-D grids.  gather<T, N, VS> with VS > 1 is not available on Battlemage.
 #include <sycl/sycl.hpp>
-#include "strata/env.hpp"
-#include "strata/kprof.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kprof.hpp"
 #include <sycl/ext/intel/esimd.hpp>
 #include <sycl/ext/intel/experimental/grf_size_properties.hpp>
 #include <sycl/ext/oneapi/matrix/matrix.hpp>
@@ -36,12 +36,12 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include "strata/sycl_queue.hpp"
-#include "strata/prefill/esimd_moe.hpp"
+#include "nostroma/sycl_queue.hpp"
+#include "nostroma/prefill/esimd_moe.hpp"
 
-#ifdef STRATA_I8_NO_ESIMD
+#ifdef NOSTROMA_I8_NO_ESIMD
 // an AOT build for a device without the s8 8x16x32 DPAS (Alchemist, Xe-HPC): no ESIMD kernels, available() is false
-namespace strata::prefill::i8 {
+namespace nostroma::prefill::i8 {
 void make_layout(Layout& lo, const int32_t* cnt, int n) {
     lo.n = n;
     int r = 0, t = 0;
@@ -59,9 +59,9 @@ void quantize_rows(const uint16_t*, const Layout&, int, int8_t*, float*, void*) 
 bool gate_up(int, const uint8_t* const*, size_t, int, const Layout&, int, const int8_t*, const float*, float*, void*) { return false; }
 void swiglu_quantize(const float*, const Layout&, int, int8_t*, float*, void*) {}
 bool down(int, const uint8_t* const*, size_t, int, const Layout&, int, const int8_t*, const float*, float*, void*) { return false; }
-}  // namespace strata::prefill::i8
+}  // namespace nostroma::prefill::i8
 #else
-namespace strata::prefill::i8 {
+namespace nostroma::prefill::i8 {
 namespace {
 #define GGML_TABLE_BEGIN(type, name, size) static const type name[size] = {
 #define GGML_TABLE_END() };
@@ -170,7 +170,7 @@ struct GArgs {
     int rowb;                         // bytes per weight row
     int ldy;
     uint32_t lim;                     // byte offset of the last dword of the matrix the clamped reads (ld32c) stay inside
-    int dbg;                          // bring-up switches (STRATA_I8_DBG): 1 skip the decode, 2 skip the activation loads, 4 skip the stores, 8 skip the K loop
+    int dbg;                          // bring-up switches (NOSTROMA_I8_DBG): 1 skip the decode, 2 skip the activation loads, 4 skip the stores, 8 skip the K loop
 };
 
 // The expert a work item belongs to, with constant-index reads of the kernel argument arrays.
@@ -207,7 +207,7 @@ template <int F, int MT, int G>
 void launch_gu(sycl::queue& q, const GArgs a, int nrowblocks) {
     auto props = sycl::ext::oneapi::experimental::properties{sycl::ext::intel::experimental::grf_size<G>};
     constexpr int NS = (F == T_IQ2S) ? 2 : 1;   // IQ2_S: two scales per 32 values -> two DPAS with the other half zeroed
-    strata::kprof::kp(&q, __FILE__, __func__, __LINE__)->submit([&](sycl::handler& h) {
+    nostroma::kprof::kp(&q, __FILE__, __func__, __LINE__)->submit([&](sycl::handler& h) {
         h.parallel_for<TagGu<F, MT, G>>(sycl::range<2>((size_t) nrowblocks, (size_t) a.ntiles), props, [=](sycl::id<2> id) SYCL_ESIMD_KERNEL {
             const int rbg = (int) id[0], nt = (int) id[1];
             const Pick pk = pick_expert(a, rbg);
@@ -348,7 +348,7 @@ void launch_gu(sycl::queue& q, const GArgs a, int nrowblocks) {
 template <int F, int MT, int G>
 void launch_dn(sycl::queue& q, const GArgs a, int nrowblocks) {
     auto props = sycl::ext::oneapi::experimental::properties{sycl::ext::intel::experimental::grf_size<G>};
-    strata::kprof::kp(&q, __FILE__, __func__, __LINE__)->submit([&](sycl::handler& h) {
+    nostroma::kprof::kp(&q, __FILE__, __func__, __LINE__)->submit([&](sycl::handler& h) {
         h.parallel_for<TagDn<F, MT, G>>(sycl::range<2>((size_t) nrowblocks, (size_t) a.ntiles), props, [=](sycl::id<2> id) SYCL_ESIMD_KERNEL {
             const int rbg = (int) id[0], nt = (int) id[1];
             const Pick pk = pick_expert(a, rbg);
@@ -479,7 +479,7 @@ void launch_gu_wg(sycl::queue& q, const GArgs a, int nrowblocks) {
     using L = WgLayout<F, MT>;
     auto props = sycl::ext::oneapi::experimental::properties{sycl::ext::intel::experimental::grf_size<G>};
     constexpr int NS = (F == T_IQ2S) ? 2 : 1;
-    strata::kprof::kp(&q, __FILE__, __func__, __LINE__)->submit([&](sycl::handler& h) {
+    nostroma::kprof::kp(&q, __FILE__, __func__, __LINE__)->submit([&](sycl::handler& h) {
         h.parallel_for<TagGuW<F, MT, G>>(sycl::nd_range<2>(sycl::range<2>((size_t) nrowblocks, (size_t) a.ntiles), sycl::range<2>(1, WGT)), props,
                                          [=](sycl::nd_item<2> it) SYCL_ESIMD_KERNEL {
             slm_init<L::TOTAL>();
@@ -647,7 +647,7 @@ template <int F, int MT, int G>
 void launch_dn_wg(sycl::queue& q, const GArgs a, int nrowblocks) {
     using L = WgLayout<F, MT>;
     auto props = sycl::ext::oneapi::experimental::properties{sycl::ext::intel::experimental::grf_size<G>};
-    strata::kprof::kp(&q, __FILE__, __func__, __LINE__)->submit([&](sycl::handler& h) {
+    nostroma::kprof::kp(&q, __FILE__, __func__, __LINE__)->submit([&](sycl::handler& h) {
         h.parallel_for<TagDnW<F, MT, G>>(sycl::nd_range<2>(sycl::range<2>((size_t) nrowblocks, (size_t) a.ntiles), sycl::range<2>(1, WGT)), props,
                                          [=](sycl::nd_item<2> it) SYCL_ESIMD_KERNEL {
             slm_init<L::TOTAL>();
@@ -754,21 +754,21 @@ int pick_mt(const Layout& lo) {
     return 8;
 }
 int dbg_flags() {
-    static const int v = [] { const char* s = strata::env("NOSTROMA_I8_DBG"); return s ? std::atoi(s) : 0; }();
+    static const int v = [] { const char* s = nostroma::env("NOSTROMA_I8_DBG"); return s ? std::atoi(s) : 0; }();
     return v;
 }
 int mt_for(const Layout& lo) {
-    static const int mo = [] { const char* s = strata::env("NOSTROMA_I8_MT"); return s ? std::atoi(s) : 0; }();
+    static const int mo = [] { const char* s = nostroma::env("NOSTROMA_I8_MT"); return s ? std::atoi(s) : 0; }();
     return mo ? mo : pick_mt(lo);
 }
 
-// register mode per tile height: STRATA_I8_GRF=128 (more threads per EU, spills at MT 8) or 256; default 256
+// register mode per tile height: NOSTROMA_I8_GRF=128 (more threads per EU, spills at MT 8) or 256; default 256
 int wg_for() {
-    static const int v = [] { const char* s = strata::env("NOSTROMA_I8_WG"); return s ? std::atoi(s) : 1; }();
+    static const int v = [] { const char* s = nostroma::env("NOSTROMA_I8_WG"); return s ? std::atoi(s) : 1; }();
     return v;
 }
 int grf_for(int mt) {
-    static const int g = [] { const char* s = strata::env("NOSTROMA_I8_GRF"); return s ? std::atoi(s) : 256; }();
+    static const int g = [] { const char* s = nostroma::env("NOSTROMA_I8_GRF"); return s ? std::atoi(s) : 256; }();
     (void) mt;
     return g == 128 ? 128 : 256;
 }
@@ -819,7 +819,7 @@ bool bmg_arch(const sycl::device& d) {
 }  // namespace
 
 bool battlemage(void* stream) {
-    sycl::queue& q = *strata::q_of(stream);
+    sycl::queue& q = *nostroma::q_of(stream);
     return bmg_arch(q.get_device());
 }
 
@@ -835,14 +835,14 @@ bool any_battlemage() {
 }
 
 bool available(void* stream) {
-    sycl::queue& q = *strata::q_of(stream);
+    sycl::queue& q = *nostroma::q_of(stream);
     static std::mutex mu;
     static std::unordered_map<sycl::device, bool> per_dev;
     std::lock_guard<std::mutex> lk(mu);
     const sycl::device d = q.get_device();
     if (auto it = per_dev.find(d); it != per_dev.end()) return it->second;
     const bool ok = [&] {
-        const char* v = strata::env("NOSTROMA_I8_FORCE");
+        const char* v = nostroma::env("NOSTROMA_I8_FORCE");
         if (v && v[0] == '0') return false;
         if (!d.has(sycl::aspect::ext_intel_esimd)) return false;
         namespace mx = sycl::ext::oneapi::experimental::matrix;
@@ -859,7 +859,7 @@ size_t xq_bytes(const Layout& lo, int K) { return (size_t) lo.tile0[lo.n] * 8 * 
 size_t dx_bytes(const Layout& lo, int K) { return (size_t) lo.tile0[lo.n] * (K / 32) * 8 * sizeof(float); }
 
 bool workspace(const Layout& lo, int K, int n_ff, Workspace& ws, void* stream) {
-    sycl::queue& q = *strata::q_of(stream);
+    sycl::queue& q = *nostroma::q_of(stream);
     static std::mutex mu;
     struct St { Workspace cur; size_t cap_x = 0, cap_h = 0; };
     static std::unordered_map<sycl::device, St> per_dev;
@@ -886,7 +886,7 @@ bool workspace(const Layout& lo, int K, int n_ff, Workspace& ws, void* stream) {
 
 void quantize_rows(const uint16_t* X, const Layout& lo, int K, int8_t* Xq, float* dx, void* stream) {
     if (lo.tile0[lo.n] == 0) return;
-    sycl::queue& q = *strata::q_of(stream);
+    sycl::queue& q = *nostroma::q_of(stream);
     QArgs a{};
     a.n = lo.n;
     for (int i = 0; i <= lo.n; ++i) { a.row0[i] = lo.row0[i]; a.tile0[i] = lo.tile0[i]; }
@@ -895,7 +895,7 @@ void quantize_rows(const uint16_t* X, const Layout& lo, int K, int8_t* Xq, float
     const size_t nthreads = (size_t) lo.tile0[lo.n] * a.nkb;
     const half* Xh = reinterpret_cast<const half*>(X);
     uint32_t* Xd = reinterpret_cast<uint32_t*>(Xq);
-    strata::kprof::kp(&q, __FILE__, __func__, __LINE__)->submit([&](sycl::handler& h) {
+    nostroma::kprof::kp(&q, __FILE__, __func__, __LINE__)->submit([&](sycl::handler& h) {
         h.parallel_for<QuantTag>(sycl::range<2>((size_t) lo.tile0[lo.n], (size_t) a.nkb), [=](sycl::id<2> id) SYCL_ESIMD_KERNEL {
             const int T = (int) id[0], kb = (int) id[1];
             // the expert of tile T, by constant-index reads of the argument arrays (see pick_expert)
@@ -932,7 +932,7 @@ void quantize_rows(const uint16_t* X, const Layout& lo, int K, int8_t* Xq, float
 
 void swiglu_quantize(const float* GU, const Layout& lo, int n_ff, int8_t* Hq, float* dh, void* stream) {
     if (lo.tile0[lo.n] == 0) return;
-    sycl::queue& q = *strata::q_of(stream);
+    sycl::queue& q = *nostroma::q_of(stream);
     QArgs a{};
     a.n = lo.n;
     for (int i = 0; i <= lo.n; ++i) { a.row0[i] = lo.row0[i]; a.tile0[i] = lo.tile0[i]; }
@@ -940,7 +940,7 @@ void swiglu_quantize(const float* GU, const Layout& lo, int n_ff, int8_t* Hq, fl
     a.ld = 2 * n_ff;
     const size_t nthreads = (size_t) lo.tile0[lo.n] * a.nkb;
     uint32_t* Hd = reinterpret_cast<uint32_t*>(Hq);
-    strata::kprof::kp(&q, __FILE__, __func__, __LINE__)->submit([&](sycl::handler& h) {
+    nostroma::kprof::kp(&q, __FILE__, __func__, __LINE__)->submit([&](sycl::handler& h) {
         h.parallel_for<SwigluTag>(sycl::range<2>((size_t) lo.tile0[lo.n], (size_t) a.nkb), [=](sycl::id<2> id) SYCL_ESIMD_KERNEL {
             const int T = (int) id[0], kb = (int) id[1];
             // the expert of tile T, by constant-index reads of the argument arrays (see pick_expert)
@@ -983,7 +983,7 @@ bool gate_up(int gu_type, const uint8_t* const* blob, size_t up_off, int n_ff, c
     if ((gu_type != T_IQ3S && gu_type != T_IQ3XXS && gu_type != T_IQ2S) || K % 256 != 0 || (2 * n_ff) % 16 != 0 ||
         (up_off & 3) != 0 || lo.n > kMaxGroup)
         return false;
-    sycl::queue& q = *strata::q_of(stream);
+    sycl::queue& q = *nostroma::q_of(stream);
     GArgs a{};
     for (int i = 0; i < lo.n; ++i) a.blob[i] = blob[i];
     a.sec_off = (uint32_t) up_off;
@@ -1020,7 +1020,7 @@ bool down(int d_type, const uint8_t* const* blob, size_t down_off, int n_embd, c
     if ((d_type != T_IQ4NL && d_type != T_Q2_0) || n_ff % block_vals_of(d_type) != 0 || n_embd % 16 != 0 || (down_off & 3) != 0 ||
         lo.n > kMaxGroup)
         return false;
-    sycl::queue& q = *strata::q_of(stream);
+    sycl::queue& q = *nostroma::q_of(stream);
     GArgs a{};
     for (int i = 0; i < lo.n; ++i) a.blob[i] = blob[i];
     a.sec_off = (uint32_t) down_off;
@@ -1049,5 +1049,5 @@ bool down(int d_type, const uint8_t* const* blob, size_t down_off, int n_embd, c
     });
 }
 
-}  // namespace strata::prefill::i8
-#endif  // STRATA_I8_NO_ESIMD
+}  // namespace nostroma::prefill::i8
+#endif  // NOSTROMA_I8_NO_ESIMD

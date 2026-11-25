@@ -18,7 +18,7 @@ NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
 class Procs(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="strata-procs-")
+        self.temp = tempfile.TemporaryDirectory(prefix="nostroma-procs-")
         self.addCleanup(self.temp.cleanup)
         patcher = mock.patch.dict(os.environ, {"LOCALAPPDATA": self.temp.name, "XDG_STATE_HOME": self.temp.name})
         patcher.start()
@@ -222,21 +222,21 @@ class WindowsOrphanScan(unittest.TestCase):
     """orphans_of on Windows reads names first and a command line only where the name can be the engine's file: 257 processes took
     4-9 s at every server start when every command line was read (30-150 ms for each protected process that refuses it)."""
 
-    ENGINE = r"C:\Strata\engine\strata-vision-hip.exe"
-    OTHER = r"C:\Old\engine\strata-vision-hip.exe"
+    ENGINE = r"C:\Nostroma\engine\nostroma-vision-hip.exe"
+    OTHER = r"C:\Old\engine\nostroma-vision-hip.exe"
 
     def table(self):
         e, o = self.ENGINE, self.OTHER
         # pid: (name or an exception, exe, cmdline or an exception)
         return {
-            101: ("strata-vision-hip.exe", e, [e, "--serve"]),        # an orphan
-            102: ("STRATA-VISION-HIP.EXE", e, [e, "--serve"]),        # upper case
-            103: ("STRATA~1.EXE", e, [e, "--serve"]),                 # started through its 8.3 path
+            101: ("nostroma-vision-hip.exe", e, [e, "--serve"]),        # an orphan
+            102: ("NOSTROMA-VISION-HIP.EXE", e, [e, "--serve"]),        # upper case
+            103: ("NOSTROMA~1.EXE", e, [e, "--serve"]),                 # started through its 8.3 path
             104: (PermissionError, e, [e, "--serve"]),                # the name cannot be read: read in full
             105: ("svchost.exe", r"C:\Windows\System32\svchost.exe", PermissionError),
             106: ("lsass.exe", r"C:\Windows\System32\lsass.exe", PermissionError),
-            107: ("strata-vision-hip.exe", o, [o, "--serve"]),        # another installation's engine
-            108: ("strata-vision-hip.exe", e, [e]),                   # not serving
+            107: ("nostroma-vision-hip.exe", o, [o, "--serve"]),        # another installation's engine
+            108: ("nostroma-vision-hip.exe", e, [e]),                   # not serving
             109: ("chrome.exe", r"C:\Chrome\chrome.exe", ["chrome.exe", "--serve"]),
         }
 
@@ -307,10 +307,10 @@ class WindowsOrphanScan(unittest.TestCase):
         self.assertEqual(sorted(asked_before), sorted(self.table()))
 
     def test_the_files_own_short_name_matches(self):
-        self.assertTrue(procs._name_may_be("SVIHIP~2.EXE", "strata-vision-hip.exe", "svihip~2.exe"))
-        self.assertTrue(procs._name_may_be("STRATA~3.EXE", "strata-vision-hip.exe", None))
-        self.assertFalse(procs._name_may_be("svchost.exe", "strata-vision-hip.exe", None))
-        self.assertFalse(procs._name_may_be("OTHER~1.EXE", "strata-vision-hip.exe", None))
+        self.assertTrue(procs._name_may_be("SVIHIP~2.EXE", "nostroma-vision-hip.exe", "svihip~2.exe"))
+        self.assertTrue(procs._name_may_be("NOSTROMA~3.EXE", "nostroma-vision-hip.exe", None))
+        self.assertFalse(procs._name_may_be("svchost.exe", "nostroma-vision-hip.exe", None))
+        self.assertFalse(procs._name_may_be("OTHER~1.EXE", "nostroma-vision-hip.exe", None))
 
     def test_a_hard_link_under_another_name_is_left_to_the_full_read_only_off_windows(self):
         # The full read matches any name that is the same file (os.path.samefile); the name filter does not. Nostroma never links an

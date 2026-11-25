@@ -29,7 +29,7 @@
     "engine_version": "0.2.12"
    },
    "config_file": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "args": [
      "--pack",
      "<ROOT>/data/packs/ud_q4_k_xl",
@@ -69,11 +69,11 @@
     "cwd": "<REPO>",
     "tokenizer": "<ROOT>/data/packs/ud_q4_k_xl/tokenizer",
     "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
-    "log": "<REPO>/strata-unsloth-ud-q4_k_xl.log",
+    "log": "<REPO>/nostroma-unsloth-ud-q4_k_xl.log",
     "lib_dirs": [],
     "port": 8080,
     "vision": {
-     "exe": "<ROOT>/engine/strata-vision",
+     "exe": "<ROOT>/engine/nostroma-vision",
      "mmproj": "<ROOT>/data/models/mmproj-Qwen3.8-Flash-Next-BF16.gguf",
      "model": "<ROOT>/data/models/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00003.gguf",
      "gpu": true,
@@ -81,7 +81,7 @@
     }
    },
    "engine": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "argv": [
      "--pack",
      "<ROOT>/data/packs/ud_q4_k_xl",
@@ -122,7 +122,7 @@
      "GGML_NO_BACKTRACE": "1"
     },
     "notes": [
-     "[strata] Drafting: MTP (the DFlash2 drafter isn't downloaded yet)"
+     "[nostroma] Drafting: MTP (the DFlash2 drafter isn't downloaded yet)"
     ]
    },
    "setup_says": [
@@ -162,7 +162,7 @@
     "<ROOT>/data"
    ],
    "config_file": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "args": [
      "--pack",
      "<ROOT>/data/packs/ud_q4_k_xl",
@@ -205,7 +205,7 @@
     "args_written": "=args"
    },
    "engine": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "argv": [
      "--pack",
      "<ROOT>/data/packs/ud_q4_k_xl",
@@ -241,8 +241,8 @@
      "GGML_NO_BACKTRACE": "1"
     },
     "notes": [
-     "[strata] drafting: DFlash2 alone (--draft dflash2, --draft-conf 0.35)",
-     "[strata] drafting: draft vocabulary: draft_vocab.bin (the default)"
+     "[nostroma] drafting: DFlash2 alone (--draft dflash2, --draft-conf 0.35)",
+     "[nostroma] drafting: draft vocabulary: draft_vocab.bin (the default)"
     ]
    }
   },
@@ -302,7 +302,7 @@
     }
    ],
    "config_file": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "args": [
      "--pack",
      "<ROOT>/data/packs/ud_q4_k_xl",
@@ -335,7 +335,7 @@
     "cwd": "<REPO>",
     "tokenizer": "<ROOT>/data/packs/ud_q4_k_xl/tokenizer",
     "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
-    "log": "<ROOT>/install/strata-unsloth-ud-q4_k_xl.log",
+    "log": "<ROOT>/install/nostroma-unsloth-ud-q4_k_xl.log",
     "lib_dirs": [],
     "port": 18500,
     "host": "127.0.0.1",
@@ -349,7 +349,7 @@
     "engine_ready_s": 946
    },
    "engine": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "argv": [
      "--pack",
      "<ROOT>/data/packs/ud_q4_k_xl",
@@ -385,8 +385,8 @@
      "GGML_NO_BACKTRACE": "1"
     },
     "notes": [
-     "[strata] drafting: DFlash2 alone (--draft dflash2, --draft-conf 0.35)",
-     "[strata] drafting: draft vocabulary: draft_vocab.bin (the default)"
+     "[nostroma] drafting: DFlash2 alone (--draft dflash2, --draft-conf 0.35)",
+     "[nostroma] drafting: draft vocabulary: draft_vocab.bin (the default)"
     ]
    }
   },
@@ -430,7 +430,7 @@
     }
    ],
    "config_file": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "args": [
      "--pack",
      "<ROOT>/data/packs/ud_q4_k_xl",
@@ -463,7 +463,7 @@
     "cwd": "<REPO>",
     "tokenizer": "<ROOT>/data/packs/ud_q4_k_xl/tokenizer",
     "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
-    "log": "<ROOT>/install/strata-unsloth-ud-q4_k_xl.log",
+    "log": "<ROOT>/install/nostroma-unsloth-ud-q4_k_xl.log",
     "lib_dirs": [],
     "port": 18500,
     "host": "127.0.0.1",
@@ -478,7 +478,7 @@
     "engine_ready_s": 946
    },
    "engine": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "argv": [
      "--pack",
      "<ROOT>/data/packs/ud_q4_k_xl",
@@ -514,8 +514,8 @@
      "GGML_NO_BACKTRACE": "1"
     },
     "notes": [
-     "[strata] drafting: DFlash2 alone (--draft dflash2, --draft-conf 0.35)",
-     "[strata] drafting: draft vocabulary: draft_vocab.bin (the default)"
+     "[nostroma] drafting: DFlash2 alone (--draft dflash2, --draft-conf 0.35)",
+     "[nostroma] drafting: draft vocabulary: draft_vocab.bin (the default)"
     ]
    }
   }

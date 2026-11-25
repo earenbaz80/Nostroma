@@ -82,37 +82,37 @@ export function resourceSettings(config,hardware,profile,model={},values={}){
  /* A reserve the person set is theirs, 0 included: no floor and no share of the card (#3215 #3270). Without one the card gets the safety default (defaultReserves). */
  const reserve=asked!==null?asked:defaults[profile];
  remove('--vram-reserve-mib');args.push('--vram-reserve-mib',String(reserve));
- // RAM: "leave 20% for my work". An engine that knows the setting (RAM_KEEP_MIN_ENGINE and newer) is asked to keep W GiB of the RAM free, W = ramKeepGib(RAM), as the env STRATA_RAM_KEEP_GIB: it decides from
+ // RAM: "leave 20% for my work". An engine that knows the setting (RAM_KEEP_MIN_ENGINE and newer) is asked to keep W GiB of the RAM free, W = ramKeepGib(RAM), as the env NOSTROMA_RAM_KEEP_GIB: it decides from
  // the RAM that is free at its start, not from the PC's total, using the full RAM copy of the experts (the arena) only if W GiB stay free after it and otherwise keeping the hottest experts in a RAM copy
  // that leaves max(W, its own safety headroom) free. An env variable and not the flag --ram-keep-gib, so that an engine without the setting never meets an argument it does not know. The engine in use
  // is the one the Engine tab selected (its version, model.engineVersion, or the folder named in the run config's exe); an older engine, or one whose version cannot be read, gets the rule of 0.2.9
  // unchanged, which every engine understands: a RAM budget of 80% of the PC (--resident-budget-gib, which implies --mmap-experts) when the model's experts do not fit there (the setup rule: experts plus
- // 10 GB), and a STRATA_RESIDENT_HEADROOM_GIB of 20% of the RAM. Full performance (and `nostroma serve`) pass nothing: the whole system, the arena whenever it fits; either rule is taken out again.
+ // 10 GB), and a NOSTROMA_RESIDENT_HEADROOM_GIB of 20% of the RAM. Full performance (and `nostroma serve`) pass nothing: the whole system, the arena whenever it fits; either rule is taken out again.
  if(baseline.ramBudget)remove('--resident-budget-gib');
  let env=null;
  const dropEnv=name=>{if(config.env&&name in config.env){env={...(env??config.env)};delete env[name];}};
- if(baseline.ramHeadroom)dropEnv('STRATA_RESIDENT_HEADROOM_GIB');
- if(baseline.ramKeep)dropEnv('STRATA_RAM_KEEP_GIB');
+ if(baseline.ramHeadroom)dropEnv('NOSTROMA_RESIDENT_HEADROOM_GIB');
+ if(baseline.ramKeep)dropEnv('NOSTROMA_RAM_KEEP_GIB');
  const ram=Number(hardware?.ram_gb)||0,arena=Number(model?.arenaGb)||0;let ramKeep=false,ramBudget=false,ramHeadroom=false;
- // The person's own RAM choice wins: a RAM mode or --ram-keep-gib in their args, and STRATA_RAM_KEEP_GIB or STRATA_RESIDENT_HEADROOM_GIB of theirs in the env (the engine reads those first).
- const mineEnv=Boolean((env??config.env)?.STRATA_RAM_KEEP_GIB);
+ // The person's own RAM choice wins: a RAM mode or --ram-keep-gib in their args, and NOSTROMA_RAM_KEEP_GIB or NOSTROMA_RESIDENT_HEADROOM_GIB of theirs in the env (the engine reads those first).
+ const mineEnv=Boolean((env??config.env)?.NOSTROMA_RAM_KEEP_GIB);
  const modes=['--resident-experts','--mmap-experts','--resident-budget-gib','--ram-keep-gib'];
  if(profile==='work'&&ram>0&&arena>0&&!modes.some(f=>args.includes(f))){
   if(engineKnowsRamKeep(engineVersionOfExe(config?.exe)??model?.engineVersion)){
-   if(!mineEnv){env={...(env??config.env??{}),STRATA_RAM_KEEP_GIB:String(ramKeepGib(ram))};ramKeep=true;}
+   if(!mineEnv){env={...(env??config.env??{}),NOSTROMA_RAM_KEEP_GIB:String(ramKeepGib(ram))};ramKeep=true;}
   }else if(ram*.8<arena+10){
    args.push('--resident-budget-gib',String(Math.max(8,Math.min(Math.floor(ram*.8)-10,Math.floor(arena/1.073741824)))));ramBudget=true;
-   if(!(env??config.env)?.STRATA_RESIDENT_HEADROOM_GIB){env={...(env??config.env??{}),STRATA_RESIDENT_HEADROOM_GIB:String(Math.ceil(ram*.2))};ramHeadroom=true;}
+   if(!(env??config.env)?.NOSTROMA_RESIDENT_HEADROOM_GIB){env={...(env??config.env??{}),NOSTROMA_RESIDENT_HEADROOM_GIB:String(Math.ceil(ram*.2))};ramHeadroom=true;}
   }
  }
  return {args,vram_reserve_mib:reserve,...(asked!==null?{}:{ui_reserve_applied:reserve}),...(env?{env}:{}),ui_resource_baseline:{...baseline,ramBudget,ramHeadroom,ramKeep}};
 }
 
 /** The RAM, in GiB, "Leave 20% for my work" asks the engine to keep free: a fifth of the PC's RAM rounded up, never under 5 or over 8
- *  (5 at 24 GB, 7 at 32 GB, 8 at 64 GB and above). The engine adds it to the arena's need and, when the arena does not fit, leaves it free beside the RAM copy. It is sent as the env variable STRATA_RAM_KEEP_GIB. */
+ *  (5 at 24 GB, 7 at 32 GB, 8 at 64 GB and above). The engine adds it to the arena's need and, when the arena does not fit, leaves it free beside the RAM copy. It is sent as the env variable NOSTROMA_RAM_KEEP_GIB. */
 export const ramKeepGib=ram=>Math.min(8,Math.max(5,Math.ceil((Number(ram)||0)*.2)));
 
-/** The first engine version that reads STRATA_RAM_KEEP_GIB / --ram-keep-gib (the setting was added in 0.1.56, the engine of the 0.2.9 update; the released 0.2.9 engine is 0.1.55). An engine older than this, or one whose version cannot be read, gets the
+/** The first engine version that reads NOSTROMA_RAM_KEEP_GIB / --ram-keep-gib (the setting was added in 0.1.56, the engine of the 0.2.9 update; the released 0.2.9 engine is 0.1.55). An engine older than this, or one whose version cannot be read, gets the
  *  rule of 0.2.9 instead. Lower it (or raise the engine's version) only together with the release that carries the setting. */
 export const RAM_KEEP_MIN_ENGINE='0.1.56';
 /** True when the engine with this version string knows the setting. Unknown or unreadable: false (the 0.2.9 rule works on every engine, an ignored env variable would keep no room). */
@@ -122,7 +122,7 @@ export function engineKnowsRamKeep(version){
  for(let i=0;i<4;i++){const a=have[i]??0,b=need[i]??0;if(a!==b)return a>b;}
  return true;
 }
-/** The version in the folder a run config's exe names (.../engine/0.1.55-windows-x86_64-cuda-cuda13/strata.exe), or null (the exe "component:strata-engine" means the active engine, whose version the caller gives). */
+/** The version in the folder a run config's exe names (.../engine/0.1.55-windows-x86_64-cuda-cuda13/nostroma.exe), or null (the exe "component:nostroma-engine" means the active engine, whose version the caller gives). */
 export const engineVersionOfExe=exe=>{const m=/engine[\\/](\d+(?:\.\d+)+)-/.exec(String(exe??''));return m?m[1]:null;};
 
 
@@ -158,10 +158,10 @@ export function saferStart(config,hardware,model,failure){
  const ram=Number(hardware?.ram_gb)||0,arena=Number(model?.arenaGb)||0;
  // Windows lets a program lock only about half the RAM for the graphics card; the engine pins the model's experts up to that.
  // When it ran out of locked memory, pin less of them: they stay in RAM, a little slower to reach.
- if(/pinned-memory-exhausted|mapped staging/i.test(text)&&!(env.NOSTROMA_ARENA_PIN_GIB ?? env.STRATA_ARENA_PIN_GIB)){
-  const hint=Number((text.match(/STRATA_ARENA_PIN_GIB=(\d+)/)??[])[1]);
+ if(/pinned-memory-exhausted|mapped staging/i.test(text)&&!(env.NOSTROMA_ARENA_PIN_GIB ?? env.NOSTROMA_ARENA_PIN_GIB)){
+  const hint=Number((text.match(/NOSTROMA_ARENA_PIN_GIB=(\d+)/)??[])[1]);
   const gib=hint>0?hint:ram>0?Math.max(4,Math.floor(ram/2)-8):16;
-  env.NOSTROMA_ARENA_PIN_GIB=env.STRATA_ARENA_PIN_GIB=String(gib);
+  env.NOSTROMA_ARENA_PIN_GIB=env.NOSTROMA_ARENA_PIN_GIB=String(gib);
   return {config:{...config,env},words:`Windows would not lock as much memory as the model asked for, so Nostroma started again and locks ${gib} GB of the model instead of all of it. Replies may start a little slower.`,detail:`NOSTROMA_ARENA_PIN_GIB=${gib}`};
  }
  if(['--resident-experts','--mmap-experts'].some(f=>args.includes(f)))return null;

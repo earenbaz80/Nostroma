@@ -1,7 +1,7 @@
 # Community benchmark: RTX 4090 Laptop GPU, Core i9-13900HX
 
 Measured on 2026-10-04 by [30crows](https://github.com/30crows) on a Lenovo Legion
-notebook (model 82WQ). This tests Strata 0.1.38 with the original Flash-Next IQ3_S
+notebook (model 82WQ). This tests Nostroma 0.1.38 with the original Flash-Next IQ3_S
 and one GPU, with a 131,072-token context limit and, in a second session, a
 262,144-token limit.
 
@@ -66,7 +66,7 @@ Setup command:
 - Low-RAM mode off; vision off; experimental speed projection off.
 - Reasoning disabled, temperature 0, maximum 256 generated tokens per speed run.
 
-The complete configuration is [strata-iq3_s.json](strata-iq3_s.json). The engine log
+The complete configuration is [nostroma-iq3_s.json](nostroma-iq3_s.json). The engine log
 of the measured session (from engine start to the last recall check) is
 [engine.log](engine.log). The server was started with `BROWSER=true ./run-iq3_s.sh`
 so that it opened no browser.
@@ -79,12 +79,12 @@ the repository root against the installed server:
 
 ```bash
 B=bench/results/2026-09-30-community-rtx-5090
-.venv/bin/python $B/monitor.py ~/strata-bench/telemetry.jsonl &
-.venv/bin/python $B/benchmark.py --root . --pack ../Strata-data/packs/iq3_s \
-  --url http://127.0.0.1:8080 --out ~/strata-bench
+.venv/bin/python $B/monitor.py ~/nostroma-bench/telemetry.jsonl &
+.venv/bin/python $B/benchmark.py --root . --pack ../Nostroma-data/packs/iq3_s \
+  --url http://127.0.0.1:8080 --out ~/nostroma-bench
 kill %1
 .venv/bin/python tools/needle_bench.py --url http://127.0.0.1:8080 \
-  --lengths 32k,128k --depths 10,50,90 --out ~/strata-bench/needles.json
+  --lengths 32k,128k --depths 10,50,90 --out ~/nostroma-bench/needles.json
 ```
 
 Before the benchmark, the same loaded engine answered one 1,000-token request
@@ -147,7 +147,7 @@ build, model files and power mode. Only the context changed:
 ```
 
 The resulting configuration differs from the 131,072-token one only in
-`--max-context 262144` ([context-262144/strata-iq3_s.json](context-262144/strata-iq3_s.json)).
+`--max-context 262144` ([context-262144/nostroma-iq3_s.json](context-262144/nostroma-iq3_s.json)).
 KV streaming stayed off, so the larger INT8 KV cache sits in VRAM and the expert
 cache shrank to **2,856 slots (5.47 GiB)** from 3,865 (7.38 GiB). Prefill still used
 8,192-token chunks and borrowed 2,319 slots (4.43 GiB). The PCIe probe reported

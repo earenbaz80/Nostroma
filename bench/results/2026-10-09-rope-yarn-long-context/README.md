@@ -2,7 +2,7 @@
 
 ![Three-code recall and fresh prefill time](overview.png)
 
-This report uses **Strata's existing YaRN implementation on unmodified main**.
+This report uses **Nostroma's existing YaRN implementation on unmodified main**.
 It adds a reproducible probe, per-run measurements, and a figure; no inference
 code, cache converter, or serving default changes are included.
 
@@ -11,7 +11,7 @@ code, cache converter, or serving default changes are included.
 - **Within this artifact's declared 262,144-token context:** retain the normal
   model/setup defaults. This long-context probe does not establish that enabling
   YaRN permanently improves short requests.
-- **Beyond the declared context:** Strata setup already selects experimental
+- **Beyond the declared context:** Nostroma setup already selects experimental
   YaRN and a covering scale. Continue using that documented behavior. Ordinary
   RoPE's successful 512K probe is not evidence of a safe 512K cutoff.
 - **At 1M:** compare the exact answers below. This is one three-fact retrieval
@@ -25,7 +25,7 @@ conversation, including shorter positions. A process uses one RoPE configuration
 ## Set up YaRN simply
 
 YaRN is already in main; this PR is not required to enable it. For an existing
-Strata installation, rerun setup with the desired total context capacity.
+Nostroma installation, rerun setup with the desired total context capacity.
 
 Linux:
 
@@ -65,8 +65,8 @@ Example request to a local server after setup (change the port/key if configured
 ```sh
 curl http://127.0.0.1:8080/v1/chat/completions \
   -H 'Content-Type: application/json' \
-  -H "Authorization: Bearer $STRATA_API_KEY" \
-  -d '{"model":"strata","messages":[{"role":"user","content":"Write a Python function that returns the maximum of a nonempty list."}],"max_tokens":128,"temperature":0,"reasoning_effort":"none"}'
+  -H "Authorization: Bearer $NOSTROMA_API_KEY" \
+  -d '{"model":"nostroma","messages":[{"role":"user","content":"Write a Python function that returns the maximum of a nonempty list."}],"max_tokens":128,"temperature":0,"reasoning_effort":"none"}'
 ```
 
 **Restart with the selected settings before starting the conversation.** Do not
@@ -75,7 +75,7 @@ Replay the canonical conversation under YaRN to build matching state. This
 report does not implement an in-place switch or validate approximate cache
 migration followed by continuation to 1M.
 
-See [Strata's existing context-extension documentation](../../../docs/DETAILS.md)
+See [Nostroma's existing context-extension documentation](../../../docs/DETAILS.md)
 and the earlier [1M YaRN measurement, #348](https://github.com/earenbaz80/Nostroma/issues/348).
 
 ## Workload and measurement boundaries
@@ -112,14 +112,14 @@ Use upstream main at `fb58e0dbc8399662c0e47c76578c6e878b14f6cf` and an existing
 ISTA IQ3_XXS configuration. Build on the benchmark GPU:
 
 ```sh
-cmake -S . -B build -DSTRATA_ENABLE_CUDA=ON \
+cmake -S . -B build -DNOSTROMA_ENABLE_CUDA=ON \
   -DCMAKE_CUDA_ARCHITECTURES=120 \
   -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc
-cmake --build build -j8 --target strata
+cmake --build build -j8 --target nostroma
 
 python bench/results/2026-10-09-rope-yarn-long-context/probe.py \
-  --config strata.json --exe build/strata --tokens 1048576 \
-  --rope yarn --output /tmp/strata-yarn-1m
+  --config nostroma.json --exe build/nostroma --tokens 1048576 \
+  --rope yarn --output /tmp/nostroma-yarn-1m
 ```
 
 For the ordinary-RoPE comparison, change only `--rope yarn` to `--rope none`
@@ -130,7 +130,7 @@ setup itself refuses ordinary RoPE beyond the declared context.
 The probe fixes FP16 KV, prefill 8192, MTP off, suffix drafting off, speculation
 width 2, parked-conversation RAM cache off, CPU prefill share zero, deterministic
 greedy decoding, and allocation capacity 1,048,832. Model/pack paths and the
-expert profile come from the supplied configuration. It needs Strata's existing
+expert profile come from the supplied configuration. It needs Nostroma's existing
 Python environment; no separate evaluation service is used.
 
 Run `python plot.py` in this directory to regenerate PNG and SVG figures from

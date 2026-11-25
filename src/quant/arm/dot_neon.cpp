@@ -1,13 +1,13 @@
 // src/quant/arm/dot_neon.cpp - the Neon contract: ggml-cpu's dot products as its Arm flavour compiles them (armv8.2-a + dotprod + fp16 + i8mm, no SVE: the
-// DGX Spark's STRATA_PORTABLE build and the Mac's native build).  The two-row i8mm forms are not here: the pool asks for one row at a time.
+// DGX Spark's NOSTROMA_PORTABLE build and the Mac's native build).  The two-row i8mm forms are not here: the pool asks for one row at a time.
 // Compiled with the flags of cmake/backends/quant.cmake (GCC: -ffp-contract=fast like ggml's gnu11 C; Clang: its default, contraction within an expression).
 #include "tier_common.hpp"
 
 #include "../generic.hpp"
 #include "../registry.hpp"
-#include "strata/quant/dot.hpp"
+#include "nostroma/quant/dot.hpp"
 
-namespace strata::quant {
+namespace nostroma::quant {
 namespace neon {
 
 #include "arm_helpers.inc"
@@ -31,4 +31,4 @@ const DotKernel kTable[] = {
 
 DotTable neon_dot_table() noexcept { return {kTable, (int) (sizeof kTable / sizeof kTable[0])}; }
 
-}  // namespace strata::quant
+}  // namespace nostroma::quant

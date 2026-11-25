@@ -29,7 +29,7 @@
     "engine_version": "0.2.12"
    },
    "config_file": {
-    "exe": "<ROOT>/engine/strata.exe",
+    "exe": "<ROOT>/engine/nostroma.exe",
     "args": [
      "--pack",
      "<ROOT>/data/packs/ud_q4_k_xl",
@@ -61,13 +61,13 @@
     "cwd": "<REPO>",
     "tokenizer": "<ROOT>/data/packs/ud_q4_k_xl/tokenizer",
     "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
-    "log": "<REPO>/strata-unsloth-ud-q4_k_xl.log",
+    "log": "<REPO>/nostroma-unsloth-ud-q4_k_xl.log",
     "lib_dirs": [],
     "port": 8080,
     "backend": "hip"
    },
    "engine": {
-    "exe": "<ROOT>/engine/strata.exe",
+    "exe": "<ROOT>/engine/nostroma.exe",
     "argv": [
      "--pack",
      "<ROOT>/data/packs/ud_q4_k_xl",
@@ -100,7 +100,7 @@
      "GGML_NO_BACKTRACE": "1"
     },
     "notes": [
-     "[strata] Drafting: MTP (the DFlash2 drafter isn't downloaded yet)"
+     "[nostroma] Drafting: MTP (the DFlash2 drafter isn't downloaded yet)"
     ]
    },
    "setup_says": [
@@ -117,7 +117,7 @@
    "fetches": [
     {
      "call": "ensure_tuned",
-     "file": "qwen3.8-flash-next-dflash2.strata1.q4_0-selq4.pack",
+     "file": "qwen3.8-flash-next-dflash2.nostroma1.q4_0-selq4.pack",
      "variant": "selq4",
      "backend": "hip",
      "gb": 0.34
@@ -140,7 +140,7 @@
     "<ROOT>/data"
    ],
    "config_file": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "args": [
      "--pack",
      "<ROOT>/data/packs/ud_q4_k_xl",
@@ -179,7 +179,7 @@
     "args_written": "=args"
    },
    "engine": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "argv": [
      "--pack",
      "<ROOT>/data/packs/ud_q4_k_xl",
@@ -200,7 +200,7 @@
      "--draft",
      "dflash2",
      "--draft-model",
-     "<ROOT>/data/dflash2/qwen3.8-flash-next-dflash2.strata1.q4_0-selq4.pack",
+     "<ROOT>/data/dflash2/qwen3.8-flash-next-dflash2.nostroma1.q4_0-selq4.pack",
      "--draft-fallback",
      "none",
      "--mtp-draft-vocab",
@@ -214,8 +214,8 @@
      "GGML_NO_BACKTRACE": "1"
     },
     "notes": [
-     "[strata] drafting: DFlash2 alone (--draft dflash2, --draft-conf 0.35)",
-     "[strata] drafting: draft vocabulary: draft_vocab.bin (the default)"
+     "[nostroma] drafting: DFlash2 alone (--draft dflash2, --draft-conf 0.35)",
+     "[nostroma] drafting: draft vocabulary: draft_vocab.bin (the default)"
     ]
    }
   },
@@ -225,7 +225,7 @@
    "fetches": [
     {
      "call": "ensure_tuned",
-     "file": "qwen3.8-flash-next-dflash2.strata1.q4_0-selq4.pack",
+     "file": "qwen3.8-flash-next-dflash2.nostroma1.q4_0-selq4.pack",
      "variant": "selq4",
      "backend": "hip",
      "gb": 0.34
@@ -277,7 +277,7 @@
     }
    ],
    "config_file": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "args": [
      "--pack",
      "<ROOT>/data/packs/ud_q4_k_xl",
@@ -305,7 +305,7 @@
     "cwd": "<REPO>",
     "tokenizer": "<ROOT>/data/packs/ud_q4_k_xl/tokenizer",
     "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
-    "log": "<ROOT>/install/strata-unsloth-ud-q4_k_xl.log",
+    "log": "<ROOT>/install/nostroma-unsloth-ud-q4_k_xl.log",
     "lib_dirs": [],
     "port": 18500,
     "backend": "hip",
@@ -320,7 +320,7 @@
     "engine_ready_s": 946
    },
    "engine": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "argv": [
      "--pack",
      "<ROOT>/data/packs/ud_q4_k_xl",
@@ -341,7 +341,7 @@
      "--draft",
      "dflash2",
      "--draft-model",
-     "<ROOT>/data/dflash2/qwen3.8-flash-next-dflash2.strata1.q4_0-selq4.pack",
+     "<ROOT>/data/dflash2/qwen3.8-flash-next-dflash2.nostroma1.q4_0-selq4.pack",
      "--draft-fallback",
      "none",
      "--mtp-draft-vocab",
@@ -355,8 +355,8 @@
      "GGML_NO_BACKTRACE": "1"
     },
     "notes": [
-     "[strata] drafting: DFlash2 alone (--draft dflash2, --draft-conf 0.35)",
-     "[strata] drafting: draft vocabulary: draft_vocab.bin (the default)"
+     "[nostroma] drafting: DFlash2 alone (--draft dflash2, --draft-conf 0.35)",
+     "[nostroma] drafting: draft vocabulary: draft_vocab.bin (the default)"
     ]
    }
   },
@@ -366,7 +366,7 @@
    "fetches": [
     {
      "call": "ensure_tuned",
-     "file": "qwen3.8-flash-next-dflash2.strata1.q4_0-selq4.pack",
+     "file": "qwen3.8-flash-next-dflash2.nostroma1.q4_0-selq4.pack",
      "variant": "selq4",
      "backend": "hip",
      "gb": 0.34
@@ -402,7 +402,7 @@
     }
    ],
    "config_file": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "args": [
      "--pack",
      "<ROOT>/data/packs/ud_q4_k_xl",
@@ -430,7 +430,7 @@
     "cwd": "<REPO>",
     "tokenizer": "<ROOT>/data/packs/ud_q4_k_xl/tokenizer",
     "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
-    "log": "<ROOT>/install/strata-unsloth-ud-q4_k_xl.log",
+    "log": "<ROOT>/install/nostroma-unsloth-ud-q4_k_xl.log",
     "lib_dirs": [],
     "port": 18500,
     "backend": "hip",
@@ -446,7 +446,7 @@
     "engine_ready_s": 946
    },
    "engine": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "argv": [
      "--pack",
      "<ROOT>/data/packs/ud_q4_k_xl",
@@ -467,7 +467,7 @@
      "--draft",
      "dflash2",
      "--draft-model",
-     "<ROOT>/data/dflash2/qwen3.8-flash-next-dflash2.strata1.q4_0-selq4.pack",
+     "<ROOT>/data/dflash2/qwen3.8-flash-next-dflash2.nostroma1.q4_0-selq4.pack",
      "--draft-fallback",
      "none",
      "--mtp-draft-vocab",
@@ -481,8 +481,8 @@
      "GGML_NO_BACKTRACE": "1"
     },
     "notes": [
-     "[strata] drafting: DFlash2 alone (--draft dflash2, --draft-conf 0.35)",
-     "[strata] drafting: draft vocabulary: draft_vocab.bin (the default)"
+     "[nostroma] drafting: DFlash2 alone (--draft dflash2, --draft-conf 0.35)",
+     "[nostroma] drafting: draft vocabulary: draft_vocab.bin (the default)"
     ]
    }
   }

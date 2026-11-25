@@ -1,7 +1,7 @@
-# Strata TPS benchmark results - Shin-BlackMamba - 2026-10-05 (corrected)
+# Nostroma TPS benchmark results - Shin-BlackMamba - 2026-10-05 (corrected)
 
-Engine: Strata Qwen3.8-Flash-Next on RTX 4070 Ti SUPER (16 GiB, sm_89).
-Image: strata:latest, sm_89 fat-binary, vision decoder NOT compiled.
+Engine: Nostroma Qwen3.8-Flash-Next on RTX 4070 Ti SUPER (16 GiB, sm_89).
+Image: nostroma:latest, sm_89 fat-binary, vision decoder NOT compiled.
 Container: --network host --gpus all --ulimit memlock=-1 --shm-size=4g.
 Bench harness: `run.py` issues, per row:
   1. **Cold prefill probe** (max_tokens=1, non-stream): `timings.prompt_per_second` after `POST /unload`

@@ -66,9 +66,9 @@ class FindOnPath(unittest.TestCase):
         with self.env(), mock.patch.object(access, "_cloudflared_places", return_value=[str(bad)]):
             self.assertIsNone(access.find_cloudflared())
 
-    def test_strata_cloudflared_picks_exactly_that_file(self):
+    def test_nostroma_cloudflared_picks_exactly_that_file(self):
         exe = fake_cloudflared(self.dir, version="2025.1.2", name="mine")
-        with self.env(STRATA_CLOUDFLARED=str(exe)):
+        with self.env(NOSTROMA_CLOUDFLARED=str(exe)):
             self.assertEqual(access._cloudflared_places(), [str(exe)])
             self.assertEqual(access.cloudflared_info()["version"], "2025.1.2")
 
@@ -77,7 +77,7 @@ class Places(unittest.TestCase):
     def test_the_usual_places_are_listed(self):
         with mock.patch.dict(os.environ, {"PATH": "/opt/x/bin"}, clear=False), mock.patch.object(access, "WINDOWS", False), \
                 mock.patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("STRATA_CLOUDFLARED", None)
+            os.environ.pop("NOSTROMA_CLOUDFLARED", None)
             places = [p.replace("\\", "/") for p in access._cloudflared_places()]
         for want in ("/opt/x/bin/cloudflared", "/usr/bin/cloudflared", "/usr/local/bin/cloudflared", "/opt/homebrew/bin/cloudflared"):
             self.assertIn(want, places)
@@ -87,7 +87,7 @@ class Places(unittest.TestCase):
     def test_windows_places_include_program_files(self):
         env = {"PATH": "", "ProgramFiles": r"C:\Program Files", "ProgramFiles(x86)": r"C:\Program Files (x86)"}
         with mock.patch.dict(os.environ, env, clear=False), mock.patch.object(access, "WINDOWS", True):
-            os.environ.pop("STRATA_CLOUDFLARED", None)
+            os.environ.pop("NOSTROMA_CLOUDFLARED", None)
             places = access._cloudflared_places()
         self.assertTrue(any("Program Files" in p and p.endswith("cloudflared.exe") for p in places))
 

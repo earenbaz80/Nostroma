@@ -1,6 +1,6 @@
-# Community benchmark: RTX 5060 Ti 16 GB + Xeon E5-2680 v4, Strata 0.1.41
+# Community benchmark: RTX 5060 Ti 16 GB + Xeon E5-2680 v4, Nostroma 0.1.41
 
-Measured on 2026-10-09 on Windows 10 with Strata 0.1.41. Two optimized,
+Measured on 2026-10-09 on Windows 10 with Nostroma 0.1.41. Two optimized,
 text-only Qwen3.8-Flash-Next configurations were measured with the repository's
 unchanged community benchmark.py: Coder IQ1_M and an abliterated Q2_0 derivative.
 Both use a 262,144-token context limit, INT8 KV and MTP speculative decoding.
@@ -12,14 +12,14 @@ stream-chunk dumps are intentionally omitted; see TRIMMED.md.
 
 - NVIDIA GeForce RTX 5060 Ti, 16,311 MiB reported VRAM, NVIDIA driver 595.97,
   180 W power limit.
-- PCIe Gen 3 x8 on this machine; Strata's startup transfer probe measured roughly
+- PCIe Gen 3 x8 on this machine; Nostroma's startup transfer probe measured roughly
   6.9 GB/s host-to-device during this tuning session.
 - Intel Xeon E5-2680 v4, 14 cores / 28 logical processors, 2.40 GHz base.
 - 64 GB RAM.
 - Windows 10 build 19045.6466.
-- Strata engine 0.1.41, release build, CUDA 13.0, portable NVIDIA package.
+- Nostroma engine 0.1.41, release build, CUDA 13.0, portable NVIDIA package.
   See BUILD.json.
-- The GPU was dedicated to Strata during the accepted benchmark runs. The operating
+- The GPU was dedicated to Nostroma during the accepted benchmark runs. The operating
   system itself was not isolated.
 
 ## Models and measured configurations
@@ -41,10 +41,10 @@ Measured engine settings include:
 - 700 MiB VRAM reserve
 - PLE direct I/O, inflight 256, row cache 1,048,576
 - kernel PCIe copy path
-- STRATA_PREFILL_CPU_SHARE=0 to retain the pre-0.1.41 short-chunk prompt path on
+- NOSTROMA_PREFILL_CPU_SHARE=0 to retain the pre-0.1.41 short-chunk prompt path on
   this heavily pinned Windows configuration
 
-Sanitized measured config: strata-coder-iq1_m-optimized.json.
+Sanitized measured config: nostroma-coder-iq1_m-optimized.json.
 
 ### Abliterated Q2_0
 
@@ -63,10 +63,10 @@ Measured engine settings include:
 - pcie-frac 0.20
 - 625 MiB VRAM reserve
 - PLE direct I/O, inflight 128, row cache 1,048,576
-- STRATA_Q2_BITPLANE=1
-- STRATA_PREFILL_CPU_SHARE=0
+- NOSTROMA_Q2_BITPLANE=1
+- NOSTROMA_PREFILL_CPU_SHARE=0
 
-Sanitized measured config: strata-q2_0-abliterated-optimized.json.
+Sanitized measured config: nostroma-q2_0-abliterated-optimized.json.
 
 ## Method
 
@@ -109,7 +109,7 @@ Median [minimum-maximum] of three runs.
 
 ## Notes and limitations
 
-- These are optimized local configurations, not Strata setup defaults.
+- These are optimized local configurations, not Nostroma setup defaults.
 - The Q2 arm uses an abliterated derivative and a locally trained expert profile;
   quality is not compared against the Coder arm.
 - The benchmark is synthetic code-explanation throughput. It does not measure answer

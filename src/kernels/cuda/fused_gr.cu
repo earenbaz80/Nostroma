@@ -1,18 +1,18 @@
-// src/kernels/cuda/fused_gr.cu - see include/strata/kernels/fused_gr.hpp.
-#include "strata/core/emulate.hpp"
-#include "strata/env.hpp"
-#include "strata/core/sm75_series.hpp"
-#include "strata/core/sm120_series.hpp"
-#include "strata/core/dispatch_stats.hpp"
-#include "strata/core/defaults_026.hpp"
-#define STRATA_Q81_FASTMATH_DIV 1   // #3948: the q8_1 tails divide as native_mmvq.cu (--use_fast_math) does, see q8_1_finite.hpp
-#include "strata/kernels/q8_1_finite.hpp"   // #606: q8_1_ds
-#include "strata/core/geometry.hpp"
-#include "strata/core/bw_dense_defaults.hpp"
-#include "strata/kernels/fused_gr.hpp"
-#include "strata/kernels/bf16_bits.hpp"
-#include "strata/kernels/verify_kernels.hpp"
-#include "strata/kernels/gfx_arch.hpp"
+// src/kernels/cuda/fused_gr.cu - see include/nostroma/kernels/fused_gr.hpp.
+#include "nostroma/core/emulate.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/core/sm75_series.hpp"
+#include "nostroma/core/sm120_series.hpp"
+#include "nostroma/core/dispatch_stats.hpp"
+#include "nostroma/core/defaults_026.hpp"
+#define NOSTROMA_Q81_FASTMATH_DIV 1   // #3948: the q8_1 tails divide as native_mmvq.cu (--use_fast_math) does, see q8_1_finite.hpp
+#include "nostroma/kernels/q8_1_finite.hpp"   // #606: q8_1_ds
+#include "nostroma/core/geometry.hpp"
+#include "nostroma/core/bw_dense_defaults.hpp"
+#include "nostroma/kernels/fused_gr.hpp"
+#include "nostroma/kernels/bf16_bits.hpp"
+#include "nostroma/kernels/verify_kernels.hpp"
+#include "nostroma/kernels/gfx_arch.hpp"
 #include "s26_tsum.cuh"
 
 #include <cuda_fp16.h>
@@ -29,20 +29,20 @@
 #include <string>
 #include <vector>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 
-constexpr int N = strata::core::kCompiledGeometry.n_embd;         // 2560 in Flash-Next
-constexpr int HC = strata::core::kCompiledGeometry.hc;           // streams
+constexpr int N = nostroma::core::kCompiledGeometry.n_embd;         // 2560 in Flash-Next
+constexpr int HC = nostroma::core::kCompiledGeometry.hc;           // streams
 constexpr int D = N * HC;       // 10240
-constexpr int LR = strata::core::kCompiledGeometry.hc_lr;         // 320
-// the latency-hidden norm/up (gr_norm_fast_kernel / gr_up_fast_kernel, STRATA_GR_FAST): gfx906's, built for CUDA too
-#if defined(STRATA_HIP_GFX906) || !defined(__HIPCC__)
-#define STRATA_GR_FAST_BUILD 1
+constexpr int LR = nostroma::core::kCompiledGeometry.hc_lr;         // 320
+// the latency-hidden norm/up (gr_norm_fast_kernel / gr_up_fast_kernel, NOSTROMA_GR_FAST): gfx906's, built for CUDA too
+#if defined(NOSTROMA_HIP_GFX906) || !defined(__HIPCC__)
+#define NOSTROMA_GR_FAST_BUILD 1
 #else
-#define STRATA_GR_FAST_BUILD 0
+#define NOSTROMA_GR_FAST_BUILD 0
 #endif
-static_assert(N == strata::core::kCompiledGeometry.n_embd && HC == strata::core::kCompiledGeometry.hc && LR == strata::core::kCompiledGeometry.hc_lr, "fused_gr is compiled for core/geometry.hpp");
+static_assert(N == nostroma::core::kCompiledGeometry.n_embd && HC == nostroma::core::kCompiledGeometry.hc && LR == nostroma::core::kCompiledGeometry.hc_lr, "fused_gr is compiled for core/geometry.hpp");
 constexpr int THREADS = 256;
 constexpr int WARPS = THREADS / 32;
 constexpr int DOWN_BLOCKS = LR / WARPS;          // 40 blocks of 8 rows; one more for the inject rows
@@ -110,7 +110,7 @@ __device__ __forceinline__ float dot8(const uint4 w, const float* x) {
     return dot8u_ptr(unpack8(w), x);
 }
 
-// STRATA_HC_Q8: a weight chunk of 8 values in one uint4 register either way - bf16 (4 words), or Q8 (8 int8 codes in
+// NOSTROMA_HC_Q8: a weight chunk of 8 values in one uint4 register either way - bf16 (4 words), or Q8 (8 int8 codes in
 // .x/.y and the chunk's 32-value block scale in .z), so the kernels keep their register budget.
 __device__ __forceinline__ float dot8q(const uint32_t a, const uint32_t b, const float* x) {
     float acc = 0.0f;
@@ -120,7 +120,7 @@ __device__ __forceinline__ float dot8q(const uint32_t a, const uint32_t b, const
     for (int i = 0; i < 4; ++i) acc = fmaf((float) (int8_t) (b >> (8 * i)), x[4 + i], acc);
     return acc;
 }
-/// STRATA_HC_REQ8: the chunk at element `e` (a multiple of 8) of a matrix - bf16 `wb`, or (Q8 and `sq` non-null)
+/// NOSTROMA_HC_REQ8: the chunk at element `e` (a multiple of 8) of a matrix - bf16 `wb`, or (Q8 and `sq` non-null)
 /// int8 codes with scales `sq`, packed into the same uint4 register as 8 int8 codes in .x/.y and the 32-value block's
 /// scale in .z.  Q8 is a template parameter: the BF16 instantiations compile exactly as before.
 template <bool Q8>
@@ -249,7 +249,7 @@ struct GrMulti {
 };
 
 
-// S26 STRATA_QFUSE=1: the q8_1 image of `mixed`, written by the up kernels below. A q8_1 block is 32 columns and an
+// S26 NOSTROMA_QFUSE=1: the q8_1 image of `mixed`, written by the up kernels below. A q8_1 block is 32 columns and an
 // up block owns UPM_COLS = 16, so the second of the two blocks that own a 32-column group (a per-group counter,
 // incremented after the block's writes are fenced, reset by that block for the next launch) reads the 32 values back
 // and quantizes them with native_quantize_q8_1_kernel's quantizer: one warp per token, the same XOR-tree max and sum,
@@ -460,7 +460,7 @@ __global__ void __launch_bounds__(THREADS) gr_up_multi_kernel(GrMulti m) {
         for (int c = 0; c < HC; ++c) s += g[k][c][col];
         m.a[k].mixed[d0 + col] = s / (float) HC;
     }
-    if (m.a[0].q8_mixed != nullptr) gr_q8_tail(m, d0);   // S26 STRATA_QFUSE
+    if (m.a[0].q8_mixed != nullptr) gr_q8_tail(m, d0);   // S26 NOSTROMA_QFUSE
 }
 
 // 149-cuda: the same up projection with one warp per row instead of eight rows per warp.  A block still covers
@@ -472,8 +472,8 @@ __global__ void __launch_bounds__(THREADS) gr_up_multi_kernel(GrMulti m) {
 constexpr int UPW_COLS = 2;
 constexpr int UPW_BLOCKS = N / UPW_COLS;
 
-/// STRATA_GR_UP_WIDE: the wide up read.  ON BY DEFAULT on a 12.0 card (sm120_series.hpp; STRATA_SM120_PERF=0 or
-/// STRATA_GR_UP_WIDE=0 turns it off, =1 forces it on any card).  Measured on the RTX PRO 5000 (IQ3_S, all experts
+/// NOSTROMA_GR_UP_WIDE: the wide up read.  ON BY DEFAULT on a 12.0 card (sm120_series.hpp; NOSTROMA_SM120_PERF=0 or
+/// NOSTROMA_GR_UP_WIDE=0 turns it off, =1 forces it on any card).  Measured on the RTX PRO 5000 (IQ3_S, all experts
 /// resident, 5 interleaved pairs of fresh engines): story 197.6 -> 201.3 tok/s (+1.9%), code 243.5 -> 245.1 (+0.7%),
 /// the produced token ids identical in 6/6 runs; the isolated read (fused_gr_bench) is bitwise the old kernel's.
 bool gr_up_wide_on() {
@@ -483,7 +483,7 @@ bool gr_up_wide_on() {
     return false;
 #else
     static const int env = [] {
-        const char* v = strata::env("NOSTROMA_GR_UP_WIDE");
+        const char* v = nostroma::env("NOSTROMA_GR_UP_WIDE");
         return v != nullptr ? (std::atoi(v) != 0 ? 1 : 0) : -1;
     }();
     if (env >= 0) return env != 0;
@@ -494,7 +494,7 @@ bool gr_up_wide_on() {
         int major = 0, minor = 0;
         cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, dev);
         cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, dev);
-        per_dev[dev] = strata::gr_up_wide_default(false, major, minor, strata::qwen_defaults_026()) ? 2 : 1;
+        per_dev[dev] = nostroma::gr_up_wide_default(false, major, minor, nostroma::qwen_defaults_026()) ? 2 : 1;
         cudaGetLastError();   // drop what an attribute query on a CPU-only box leaves behind
     }
     return per_dev[dev] == 2;
@@ -560,7 +560,7 @@ __global__ void __launch_bounds__(THREADS) gr_up_wide_kernel(GrMulti m) {
 // instead of one chain of 5 per row).  A row's last 8 chunks (lanes 0-7 of gr_up_multi_kernel) are held 4 rows to a
 // uint4 - lane 8 i + j holds chunk 32 + j of row i - and their dot is shuffled to lane j before it is added, so lane j
 // still sums its two dots in gr_up_multi_kernel's order.  Every row's lane sums, xor tree and epilogue are
-// gr_up_multi_kernel's: the same bits.  STRATA_GR_UP75=0 keeps gr_up_multi_kernel.
+// gr_up_multi_kernel's: the same bits.  NOSTROMA_GR_UP75=0 keeps gr_up_multi_kernel.
 template <int MAX_T = kFusedGrMaxT, bool EXACT_T = false>
 __global__ void __launch_bounds__(THREADS, 4) gr_up75_kernel(GrMulti m) {
     constexpr int RPW = HC * UPM_COLS / WARPS;    // 8 rows per warp: row r = warp + WARPS i -> stream i / 2
@@ -646,12 +646,12 @@ __global__ void __launch_bounds__(THREADS, 4) gr_up75_kernel(GrMulti m) {
         for (int c = 0; c < HC; ++c) s += g[k][c][col];
         m.a[k].mixed[d0 + col] = s / (float) HC;
     }
-    if (m.a[0].q8_mixed != nullptr) gr_q8_tail(m, d0);   // S26 STRATA_QFUSE, as gr_up_multi_kernel
+    if (m.a[0].q8_mixed != nullptr) gr_q8_tail(m, d0);   // S26 NOSTROMA_QFUSE, as gr_up_multi_kernel
 }
 
 
-// 143-amdk (STRATA_QFUSE_HC): gr_up_multi_kernel with 32 columns a block (512 threads, 80 blocks, the same 8 rows a warp), so a block owns a whole
-// q8_1 group of `mixed` and writes its image itself.  STRATA_QFUSE's version (16 columns a block) needs a counter, two fences and a last block
+// 143-amdk (NOSTROMA_QFUSE_HC): gr_up_multi_kernel with 32 columns a block (512 threads, 80 blocks, the same 8 rows a warp), so a block owns a whole
+// q8_1 group of `mixed` and writes its image itself.  NOSTROMA_QFUSE's version (16 columns a block) needs a counter, two fences and a last block
 // to finish the group; this one needs none.  Every row's math is gr_up_multi_kernel's.  Needs q8_mixed set for every token.
 constexpr int Q32_COLS = 32, Q32_THREADS = 512, Q32_WARPS = Q32_THREADS / 32, Q32_BLOCKS = N / Q32_COLS;
 template <int MAX_T = kFusedGrMaxT, bool EXACT_T = false>
@@ -728,7 +728,7 @@ __global__ void __launch_bounds__(Q32_THREADS) gr_up_q32_kernel(GrMulti m) {
 
 
 
-// ================================ hc read v3 (opt-in: STRATA_GR_V3=1) - two kernels, stream-split ================
+// ================================ hc read v3 (opt-in: NOSTROMA_GR_V3=1) - two kernels, stream-split ================
 // The norm kernel runs on only T blocks (~16 us of pure latency per call) and `down` on 41 blocks (~280 GB/s).
 // v3: `down` is split over (row group, stream[, column half]) = 164 or 328 blocks; each block stages its slice of
 // R' * w_norm for the T tokens, reduces that slice's sum of squares itself, and writes UNSCALED partial dots.  The
@@ -739,7 +739,7 @@ __global__ void __launch_bounds__(Q32_THREADS) gr_up_q32_kernel(GrMulti m) {
 // neither fits keeps the default kernels.
 constexpr int PR = LR + HC;                        // partial rows per (token, stream): 320 down + 4 inject
 
-// BW-DENSE (STRATA_GR_V3_PF): the v3 kernels issue their weight loads FIRST, into registers, so the DRAM fetch overlaps the
+// BW-DENSE (NOSTROMA_GR_V3_PF): the v3 kernels issue their weight loads FIRST, into registers, so the DRAM fetch overlaps the
 // prologue (gr_down: staging R / bo / w_norm into shared memory; gr_up: the partial sums -> lo) instead of starting behind it.
 // The same loads, the same values, the same arithmetic in the same order: bitwise the kernels without it (gr_v3_screen).
 // ld.global.nc as a volatile asm so the compiler cannot sink the load back to its first use, behind the barrier.
@@ -756,7 +756,7 @@ constexpr int TQ3 = N / 8 / 32;                    // uint4 weight chunks per la
 
 // PF (BW-DENSE, bitwise the PF = 0 kernel): bit 0 issues the staging's loads (R, bo, w_norm of every token) before using any
 // of them; bit 1 loads the warp's weight row into registers first. R2V == 1, S == 1 only.
-// RB (DF2-MORE, STRATA_GR_V3_PF bit 7 (windows of 5+ rows, 2 rows a warp) / bit 8 (4 rows, any window), R2V > 1 only, bitwise the RB = false kernel): the dot phase loops over the lane's chunks first, then the tokens, then
+// RB (DF2-MORE, NOSTROMA_GR_V3_PF bit 7 (windows of 5+ rows, 2 rows a warp) / bit 8 (4 rows, any window), R2V > 1 only, bitwise the RB = false kernel): the dot phase loops over the lane's chunks first, then the tokens, then
 // the warp's R2V rows, so a token's 8 activations are read from shared memory once for all R2V rows (it was once per row).  Each (row, token) accumulator
 // adds the same chunk dots in the same ascending order, then the same warp reduction.
 template <int S, int MAX_T = kFusedGrMaxT, bool EXACT_T = false, int R2V = 1, int PF = 0, bool RB = false>
@@ -1143,10 +1143,10 @@ __global__ void __launch_bounds__(THREADS) gr_up_v3_kernel(GrMulti m, const floa
     }
 }
 // ================================ #315: split / staged - the same arithmetic, split differently ==================
-// The multi read's variants beside the plain read (0.1.31's default; not main's opt-in STRATA_GR_V3 read, which sums
+// The multi read's variants beside the plain read (0.1.31's default; not main's opt-in NOSTROMA_GR_V3 read, which sums
 // in another order).  Every variant computes each output with exactly the plain read's operations in its order (so
 // bitwise the plain read and the single-token read); only who does what, and when, changes.  `fused_gr_check`
-// compares them on the card before a verify window uses them (STRATA_HC_SPLIT below).
+// compares them on the card before a verify window uses them (NOSTROMA_HC_SPLIT below).
 //  - the norm (split and staged): one block per token AND stream instead of one per token.  Each thread visits
 //    exactly the elements, in the order, it visited for that stream in the plain read, so every sum of squares and rs
 //    is the same; it stores R' * w_norm and scales it in place, with the plain read's two roundings.
@@ -1266,10 +1266,10 @@ __global__ void __launch_bounds__(THREADS) gr_norm_split_fast_kernel(GrMulti m) 
 }
 
 #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 800 && !defined(__HIPCC__)
-#define STRATA_GR_CP_ASYNC 1
+#define NOSTROMA_GR_CP_ASYNC 1
 #endif
 __device__ __forceinline__ void cp_async16(void* smem, const void* gmem) {
-#if defined(STRATA_GR_CP_ASYNC)
+#if defined(NOSTROMA_GR_CP_ASYNC)
     const unsigned sa = (unsigned) __cvta_generic_to_shared(smem);
     asm volatile("cp.async.cg.shared.global [%0], [%1], 16;\n" ::"r"(sa), "l"(gmem) : "memory");
 #else
@@ -1277,17 +1277,17 @@ __device__ __forceinline__ void cp_async16(void* smem, const void* gmem) {
 #endif
 }
 __device__ __forceinline__ void cp_async_commit() {
-#if defined(STRATA_GR_CP_ASYNC)
+#if defined(NOSTROMA_GR_CP_ASYNC)
     asm volatile("cp.async.commit_group;\n" ::: "memory");
 #endif
 }
 __device__ __forceinline__ void cp_async_wait1() {
-#if defined(STRATA_GR_CP_ASYNC)
+#if defined(NOSTROMA_GR_CP_ASYNC)
     asm volatile("cp.async.wait_group 1;\n" ::: "memory");
 #endif
 }
 __device__ __forceinline__ void cp_async_wait0() {
-#if defined(STRATA_GR_CP_ASYNC)
+#if defined(NOSTROMA_GR_CP_ASYNC)
     asm volatile("cp.async.wait_group 0;\n" ::: "memory");
 #endif
 }
@@ -1425,7 +1425,7 @@ int down_chunk(bool staged, int* tile_out) {
     if (!attr[dev]) {
         int optin = 0;
         cudaDeviceGetAttribute(&optin, cudaDevAttrMaxSharedMemoryPerBlockOptin, dev);
-        optin = strata::smem_optin_of(optin);   // STRATA_EMULATE_CC (tests only)
+        optin = nostroma::smem_optin_of(optin);   // NOSTROMA_EMULATE_CC (tests only)
         // the down kernel stages n_tok*TILEV floats of dynamic shared memory - 80 KB at the full 8 tokens of the
         // CUDA tile.  sm_75 gets the smaller tile: all eight tokens fit one 40 KiB launch there (no more slicing),
         // the TQ-5 prefetch holds half the registers, and the smaller blocks raise how many of the 41-block grid
@@ -1433,7 +1433,7 @@ int down_chunk(bool staged, int* tile_out) {
         // the down kernel's outputs (lo, inject_out) are strictly per-token, so the chunk boundaries are safe, and
         // the up kernel below still sees every token of the batch in one launch.
 #if defined(__HIPCC__)
-#if defined(STRATA_HIP_GFX906)
+#if defined(NOSTROMA_HIP_GFX906)
         const bool small_tile = false;  // gfx906: 64 KiB LDS, the N tile as before (8 tokens slice into launches)
 #else
         const bool small_tile = true;   // all eight tokens fit gfx1100's 64 KiB LDS at this tile
@@ -1442,7 +1442,7 @@ int down_chunk(bool staged, int* tile_out) {
         int cc_maj = 0, cc_min = 0;
         cudaDeviceGetAttribute(&cc_maj, cudaDevAttrComputeCapabilityMajor, dev);
         cudaDeviceGetAttribute(&cc_min, cudaDevAttrComputeCapabilityMinor, dev);
-        const bool small_tile = strata::cc_major_of(cc_maj) * 10 + strata::cc_minor_of(cc_min) == 75;
+        const bool small_tile = nostroma::cc_major_of(cc_maj) * 10 + nostroma::cc_minor_of(cc_min) == 75;
 #endif
         const int tv = small_tile ? (N / 2) : N;
         tile[dev] = tv;
@@ -1483,7 +1483,7 @@ int down_chunk(bool staged, int* tile_out) {
         int cc = 0, per_block = 0;
         cudaDeviceGetAttribute(&cc, cudaDevAttrComputeCapabilityMajor, dev);
         cudaDeviceGetAttribute(&per_block, cudaDevAttrMaxSharedMemoryPerBlock, dev);
-        cc = strata::cc_major_of(cc);
+        cc = nostroma::cc_major_of(cc);
         const int usable = (cc >= 7 && optin > 0) ? optin : per_block;
 #endif
         const int capacity = usable / (int) (tv * sizeof(float));
@@ -1498,60 +1498,60 @@ int down_chunk(bool staged, int* tile_out) {
 
 // The multi read as `variant` (kHcPlain, kHcSplit or kHcStaged): the norm, the down projection in launches of as
 // many tokens as fit the card, the up projection; the profile's stamps after the norm and after the down projection.
-// kHcPlain is the default read exactly as before (never main's opt-in STRATA_GR_V3 path, which fused_gr_read_multi
+// kHcPlain is the default read exactly as before (never main's opt-in NOSTROMA_GR_V3 path, which fused_gr_read_multi
 // takes first).
-#if STRATA_GR_FAST_BUILD
+#if NOSTROMA_GR_FAST_BUILD
 __global__ void __launch_bounds__(THREADS) gr_norm_fast_kernel(GrMulti m);   // below, with the AMD fast path
 __global__ void __launch_bounds__(THREADS) gr_up_fast_kernel(GrMulti m);
 }  // namespace
 static bool gr_fast();
 namespace {
 #endif
-// STRATA_GR_DOWN_MAX4=1 (opt-in): launches of up to 4 tokens hold 4 tokens' sums per thread instead of kFusedGrMaxT (the
+// NOSTROMA_GR_DOWN_MAX4=1 (opt-in): launches of up to 4 tokens hold 4 tokens' sums per thread instead of kFusedGrMaxT (the
 // same bits; checked bitwise on the 5070 for 0.1.40). Default off: a 10-pair interleaved decode A/B on the RTX 5070 (Q2_0,
 // default config) did not show the +2.8-3.5% of bench #832 (medians 0.97-0.99 of the off arm).
 bool gr_down_max4() {
     static const bool on = [] {
-        const char* v = strata::env("NOSTROMA_GR_DOWN_MAX4");
+        const char* v = nostroma::env("NOSTROMA_GR_DOWN_MAX4");
         return v != nullptr && std::atoi(v) != 0;
     }();
     return on;
 }
 
 // the split norm with registers (gr_norm_split_fast_kernel): on by default on gfx12; CUDA opt-in (measured on sm_70 only);
-// STRATA_GR_NORM_FAST=0 / 1 forces it off / on
+// NOSTROMA_GR_NORM_FAST=0 / 1 forces it off / on
 bool norm_fast_on() {
 #if defined(__HIPCC__)
-    static const int env = [] { const char* e = strata::env("NOSTROMA_GR_NORM_FAST"); return e != nullptr ? (std::atoi(e) != 0 ? 1 : 0) : -1; }();
+    static const int env = [] { const char* e = nostroma::env("NOSTROMA_GR_NORM_FAST"); return e != nullptr ? (std::atoi(e) != 0 ? 1 : 0) : -1; }();
     if (env >= 0) return env != 0;
     static int per_dev[64];   // 0 unknown, 1 no, 2 yes
     int dev = 0;
     if (cudaGetDevice(&dev) != cudaSuccess || dev < 0 || dev >= 64) return false;
     if (!per_dev[dev]) {
         cudaDeviceProp p;
-        per_dev[dev] = cudaGetDeviceProperties(&p, dev) == cudaSuccess && strata::kernels::gfx_arch_is_gfx12(p.gcnArchName) ? 2 : 1;
+        per_dev[dev] = cudaGetDeviceProperties(&p, dev) == cudaSuccess && nostroma::kernels::gfx_arch_is_gfx12(p.gcnArchName) ? 2 : 1;
     }
     return per_dev[dev] == 2;
 #else
-    // CUDA: opt-in with STRATA_GR_NORM_FAST=1 (measured on sm_70 only)
-    static const bool on = [] { const char* e = strata::env("NOSTROMA_GR_NORM_FAST"); return e != nullptr && std::atoi(e) != 0; }();
+    // CUDA: opt-in with NOSTROMA_GR_NORM_FAST=1 (measured on sm_70 only)
+    static const bool on = [] { const char* e = nostroma::env("NOSTROMA_GR_NORM_FAST"); return e != nullptr && std::atoi(e) != 0; }();
     return on;
 #endif
 }
 
-// STRATA_QFUSE_HC_LOCAL=0 puts the atomic-tail up kernel back under STRATA_QFUSE_HC (default: the 32-column kernel)
+// NOSTROMA_QFUSE_HC_LOCAL=0 puts the atomic-tail up kernel back under NOSTROMA_QFUSE_HC (default: the 32-column kernel)
 bool qfuse_hc_local() {
-    const char* e = strata::env("NOSTROMA_QFUSE_HC_LOCAL");
+    const char* e = nostroma::env("NOSTROMA_QFUSE_HC_LOCAL");
     return e == nullptr || std::atoi(e) != 0;
 }
 // Turing: gr_up75_kernel for 3+ tokens (bitwise gr_up_multi_kernel; fused_gr_bench cold on an RTX 2080 Ti, up incl. a
-// stamp: T 3 27.3 -> 24.6 us, T 4 33.2 -> 28.7, T 6 46.6 -> 36.6); STRATA_GR_UP75=0 / 1 forces it off / on
+// stamp: T 3 27.3 -> 24.6 us, T 4 33.2 -> 28.7, T 6 46.6 -> 36.6); NOSTROMA_GR_UP75=0 / 1 forces it off / on
 bool up75_on() {
     if (LR != 320) return false;   // the kernel holds the row's last 8 chunks 4 rows to a uint4: a tail of exactly 8 chunks
 #if defined(__HIPCC__)
     return false;
 #else
-    static const int env = [] { const char* v = strata::env("NOSTROMA_GR_UP75"); return v ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
+    static const int env = [] { const char* v = nostroma::env("NOSTROMA_GR_UP75"); return v ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
     if (env >= 0) return env != 0;
     static int per_dev[64];   // 0 unknown, 1 no, 2 yes
     int dev = 0;
@@ -1560,20 +1560,20 @@ bool up75_on() {
         int major = 0, minor = 0;
         cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, dev);
         cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, dev);
-        // Turing (STRATA_SM75_PERF=1), and a 12.0 card (sm120_series.hpp: RTX PRO 5000, a 4-token verify round -1.7%)
-        per_dev[dev] = strata::sm75_default(major, minor) || strata::sm120_default(major, minor) ? 2 : 1;
+        // Turing (NOSTROMA_SM75_PERF=1), and a 12.0 card (sm120_series.hpp: RTX PRO 5000, a 4-token verify round -1.7%)
+        per_dev[dev] = nostroma::sm75_default(major, minor) || nostroma::sm120_default(major, minor) ? 2 : 1;
     }
     return per_dev[dev] == 2;
 #endif
 }
 // sm_75 / a 12.0 card: the staged down kernel's tokens per block (gridDim.y = ct / tg), 0 = one block row for all of them.
-// STRATA_GR_DOWN_TG=n forces n where it divides the launch (0 = off).
+// NOSTROMA_GR_DOWN_TG=n forces n where it divides the launch (0 = off).
 int down_tg(int ct) {
 #if defined(__HIPCC__)
     (void) ct;
     return 0;
 #else
-    static const int env = [] { const char* v = strata::env("NOSTROMA_GR_DOWN_TG"); return v ? std::atoi(v) : -1; }();
+    static const int env = [] { const char* v = nostroma::env("NOSTROMA_GR_DOWN_TG"); return v ? std::atoi(v) : -1; }();
     if (ct < 2) return 0;
     if (env >= 0) return env > 0 && env <= 3 && ct % env == 0 ? env : 0;
     // fused_gr_bench cold on an RTX 2080 Ti (down incl. a stamp): T 4 29.1 -> 27.3 us, T 6 38.5 -> 32.2 with pairs;
@@ -1586,7 +1586,7 @@ int down_tg(int ct) {
         cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, dev);
         cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, dev);
         cudaDeviceGetAttribute(&sms, cudaDevAttrMultiProcessorCount, dev);
-        per_dev[dev] = strata::sm75_default(major, minor) ? 2 : strata::sm120_default(major, minor) ? (sms >= 80 ? 3 : 4) : 1;   // Turing, STRATA_SM75_PERF=1
+        per_dev[dev] = nostroma::sm75_default(major, minor) ? 2 : nostroma::sm120_default(major, minor) ? (sms >= 80 ? 3 : 4) : 1;   // Turing, NOSTROMA_SM75_PERF=1
     }
     // a 12.0 card (sm120_series.hpp) with 80+ SMs: one token a block row for every launch of 2+ tokens (RTX PRO 5000, fixed
     // rounds against token pairs: 2 tokens -2.1%, 3 -2.3%, 4 -0.2%, 5 -2.5%; pairs against no split at 4 tokens -2.4%); a
@@ -1596,17 +1596,17 @@ int down_tg(int ct) {
     return per_dev[dev] == 2 && (ct == 4 || ct == 6) ? 2 : 0;
 #endif
 }
-// STRATA_GR_R2 (v3 read, 5..8-token launches; default 2): 0 = the generic kernels as before, 1 / 2 / 4 = the exact-T kernels with that many down
+// NOSTROMA_GR_R2 (v3 read, 5..8-token launches; default 2): 0 = the generic kernels as before, 1 / 2 / 4 = the exact-T kernels with that many down
 // rows per warp (the same dots in the same order, so the same bits; fewer blocks stage the same activations less often)
 static int gr_r2() {
-    static const int v = [] { const char* e = strata::env("NOSTROMA_GR_R2"); return e != nullptr ? std::atoi(e) : 2; }();
+    static const int v = [] { const char* e = nostroma::env("NOSTROMA_GR_R2"); return e != nullptr ? std::atoi(e) : 2; }();
     return v == 1 || v == 2 || v == 4 ? v : 0;
 }
 void launch_multi(const GrMulti& m, int variant, cudaStream_t st, unsigned long long* stamp_buf, int stamp_i0) {
     const int n_tok = m.T;
-    const bool q8w = m.a[0].s_down != nullptr;   // STRATA_HC_REQ8: w_down / w_up hold int8 codes
-#if STRATA_GR_FAST_BUILD
-    // gfx906: the latency-hidden norm/up (STRATA_GR_FAST=0: off) - the same sums in the same order as the kernels
+    const bool q8w = m.a[0].s_down != nullptr;   // NOSTROMA_HC_REQ8: w_down / w_up hold int8 codes
+#if NOSTROMA_GR_FAST_BUILD
+    // gfx906: the latency-hidden norm/up (NOSTROMA_GR_FAST=0: off) - the same sums in the same order as the kernels
     // they replace (gr_parity checks the multi-token read against single-token calls bitwise)
     const bool fast = gr_fast();
     if (variant >= kHcSplit) {
@@ -1621,16 +1621,16 @@ void launch_multi(const GrMulti& m, int variant, cudaStream_t st, unsigned long 
     } else gr_norm_multi_kernel<<<n_tok, THREADS, 0, st>>>(m);
 #endif
     if (stamp_buf) gpu_stamp(stamp_buf, stamp_i0, (void*) st);
-    // STRATA_HC_Q8: the staged down kernel reads bf16 only, so Q8 weights take split's down kernel (the plain one)
+    // NOSTROMA_HC_Q8: the staged down kernel reads bf16 only, so Q8 weights take split's down kernel (the plain one)
     const bool staged = variant >= kHcStaged && m.a[0].s_down == nullptr;
     int tv = N;
     const int chunk_tok = down_chunk(staged, &tv);
     // BW-MEASURE: the hyper-connection read's form: var = layout variant (0 plain, 1 split, 2 staged), type = 1 for Q8 weights, n_in = down tile,
     // n_out = tokens a down launch, ncols = tokens
-    strata::dispatch::kernel(strata::dispatch::kHc, variant, m.a[0].s_down != nullptr ? 1 : 0, tv, chunk_tok, n_tok);
+    nostroma::dispatch::kernel(nostroma::dispatch::kHc, variant, m.a[0].s_down != nullptr ? 1 : 0, tv, chunk_tok, n_tok);
     const size_t per_tok = (staged ? (size_t) 2 * H_TILE : (size_t) tv) * sizeof(float);
     static const bool no_multi_gr = [] {
-        const char* no = strata::env("NOSTROMA_NO_MULTI_GR");
+        const char* no = nostroma::env("NOSTROMA_NO_MULTI_GR");
         return no != nullptr && no[0] != '\0' && no[0] != '0';
     }();
     const bool exact_t = !no_multi_gr;
@@ -1645,13 +1645,13 @@ void launch_multi(const GrMulti& m, int variant, cudaStream_t st, unsigned long 
             for (int k = 0; k < ct; ++k) c.a[k] = m.a[c0 + k];
         }
         const size_t smem = (size_t) ct * per_tok;
-        // #443, STRATA_GR_DOWN_MAX4: launches of up to 4 tokens hold 4 tokens' sums per thread instead of
+        // #443, NOSTROMA_GR_DOWN_MAX4: launches of up to 4 tokens hold 4 tokens' sums per thread instead of
         // kFusedGrMaxT - the same tile, block size, accumulation order and plain/split/staged path, so the same bits
         // (decided once per device: this runs per layer when decode is not captured)
         const bool max4 = ct <= 4 && gr_down_max4();
         if (staged) {
             // #783 PR-g (stuchapin909): a launch of exactly ct <= 6 tokens is its own instantiation, the loop bounds
-            // are compile-time (the same sums in the same order); STRATA_NO_MULTI_GR=1 keeps the generic kernels
+            // are compile-time (the same sums in the same order); NOSTROMA_NO_MULTI_GR=1 keeps the generic kernels
             const int tg = down_tg(ct);
             if (exact_t && tg > 0 && tg < ct) {
                 const dim3 grid(DOWN_BLOCKS + 1, (unsigned) (ct / tg));
@@ -1669,13 +1669,13 @@ void launch_multi(const GrMulti& m, int variant, cudaStream_t st, unsigned long 
             else if (max4) gr_down_staged_kernel<4><<<DOWN_BLOCKS + 1, THREADS, smem, st>>>(c);
             else gr_down_staged_kernel<><<<DOWN_BLOCKS + 1, THREADS, smem, st>>>(c);
         } else if (tv == (N / 2)) {
-            if (q8w) {   // STRATA_HC_REQ8
+            if (q8w) {   // NOSTROMA_HC_REQ8
                 if (max4) gr_down_multi_kernel<(N / 2), 4, true><<<DOWN_BLOCKS + 1, THREADS, smem, st>>>(c);
                 else gr_down_multi_kernel<(N / 2), kFusedGrMaxT, true><<<DOWN_BLOCKS + 1, THREADS, smem, st>>>(c);
             } else if (max4) gr_down_multi_kernel<(N / 2), 4><<<DOWN_BLOCKS + 1, THREADS, smem, st>>>(c);
             else gr_down_multi_kernel<(N / 2)><<<DOWN_BLOCKS + 1, THREADS, smem, st>>>(c);
         } else {
-            if (q8w) {   // STRATA_HC_REQ8
+            if (q8w) {   // NOSTROMA_HC_REQ8
                 if (max4) gr_down_multi_kernel<N, 4, true><<<DOWN_BLOCKS + 1, THREADS, smem, st>>>(c);
                 else gr_down_multi_kernel<N, kFusedGrMaxT, true><<<DOWN_BLOCKS + 1, THREADS, smem, st>>>(c);
             } else if (max4) gr_down_multi_kernel<N, 4><<<DOWN_BLOCKS + 1, THREADS, smem, st>>>(c);
@@ -1683,7 +1683,7 @@ void launch_multi(const GrMulti& m, int variant, cudaStream_t st, unsigned long 
         }
     }
     if (stamp_buf) gpu_stamp(stamp_buf, stamp_i0 + 1, (void*) st);
-    // 149-cuda: the wide up read (test arm; STRATA_GR_UP_WIDE=1).  The q8_1 tail of S26 needs the 16-column
+    // 149-cuda: the wide up read (test arm; NOSTROMA_GR_UP_WIDE=1).  The q8_1 tail of S26 needs the 16-column
     // blocks, so the wide kernel is only used when no q8_1 image is written.
     if (!q8w && m.a[0].q8_mixed == nullptr && gr_up_wide_on()) {
         switch (no_multi_gr ? kFusedGrMaxT : n_tok) {
@@ -1696,11 +1696,11 @@ void launch_multi(const GrMulti& m, int variant, cudaStream_t st, unsigned long 
             default: gr_up_wide_kernel<kFusedGrMaxT, false><<<UPW_BLOCKS, THREADS, 0, st>>>(m); break;
         }
     } else
-#if STRATA_GR_FAST_BUILD
+#if NOSTROMA_GR_FAST_BUILD
     if (fast && !q8w) gr_up_fast_kernel<<<UPM_BLOCKS, THREADS, 0, st>>>(m);
     else
 #endif
-#if !STRATA_GR_FAST_BUILD
+#if !NOSTROMA_GR_FAST_BUILD
     if (!q8w && m.a[0].q8_mixed != nullptr && qfuse_hc_local()) {
         switch (no_multi_gr ? kFusedGrMaxT : n_tok) {
             case 1: gr_up_q32_kernel<1, true><<<Q32_BLOCKS, Q32_THREADS, 0, st>>>(m); break;
@@ -1714,7 +1714,7 @@ void launch_multi(const GrMulti& m, int variant, cudaStream_t st, unsigned long 
         return;
     }
 #endif
-    if (q8w) {   // STRATA_HC_REQ8: the up kernel on int8 rows
+    if (q8w) {   // NOSTROMA_HC_REQ8: the up kernel on int8 rows
         switch (no_multi_gr ? kFusedGrMaxT : n_tok) {
             case 1: gr_up_multi_kernel<1, true, true><<<UPM_BLOCKS, THREADS, 0, st>>>(m); break;
             case 2: gr_up_multi_kernel<2, true, true><<<UPM_BLOCKS, THREADS, 0, st>>>(m); break;
@@ -1746,9 +1746,9 @@ void launch_multi(const GrMulti& m, int variant, cudaStream_t st, unsigned long 
     }
 }
 
-/// STRATA_HC_SPLIT: unset or 2 = the newest the check accepts (staged), 1 = at most split, 0 = the plain read
+/// NOSTROMA_HC_SPLIT: unset or 2 = the newest the check accepts (staged), 1 = at most split, 0 = the plain read
 int env_variant() {
-    const char* e = strata::env("NOSTROMA_HC_SPLIT");
+    const char* e = nostroma::env("NOSTROMA_HC_SPLIT");
     if (e == nullptr || e[0] == '\0') return kHcStaged;
     if (e[0] == '0') return kHcPlain;
     if (e[0] == '1') return kHcSplit;
@@ -1759,8 +1759,8 @@ int env_variant() {
 std::atomic<int> g_variant[64];
 
 
-#if STRATA_GR_FAST_BUILD
-// ---- AMD fast path (STRATA_GR_FAST, default 1; 0 = the old kernels): the same arithmetic per value in the same order, latency
+#if NOSTROMA_GR_FAST_BUILD
+// ---- AMD fast path (NOSTROMA_GR_FAST, default 1; 0 = the old kernels): the same arithmetic per value in the same order, latency
 // hidden.  gr_norm: one block per token (as before) but a thread's 10 float4 of R / bo / w_norm are loaded
 // before any is used, and xn stays in registers until rs is known (was: store, then re-read the 40 KB).
 // gr_up: a warp's 8 rows of w_up and their epilogue inputs are loaded before the dots (was: one row's load chain
@@ -1908,11 +1908,11 @@ __global__ void __launch_bounds__(THREADS) gr_up_fast_kernel(GrMulti m) {
         for (int c = 0; c < HC; ++c) s += g[k][c][col];
         m.a[k].mixed[d0 + col] = s / (float) HC;
     }
-    if (m.a[0].q8_mixed != nullptr) gr_q8_tail(m, d0);   // S26 STRATA_QFUSE, as gr_up_multi_kernel
+    if (m.a[0].q8_mixed != nullptr) gr_q8_tail(m, d0);   // S26 NOSTROMA_QFUSE, as gr_up_multi_kernel
 }
 #endif
 
-#if defined(STRATA_HIP_GFX906)
+#if defined(NOSTROMA_HIP_GFX906)
 // ---- AMD: `gr_down_multi` split along K.  The CUDA kernel is one warp per row of w_down (320 + 4 rows), 41
 // blocks: on a 60-CU gfx906 that left most of the card idle and read the 6.5 MB matrix at ~100 GB/s.  Here a block
 // is 8 wavefronts = 8 rows of one K-slice of 2048 (the slice of every token's xn staged in LDS once), 41 x 5
@@ -1988,7 +1988,7 @@ __global__ void gr_down_finish_kernel(GrMulti m) {
 
 #endif
 
-// ================================ S23 experiment (STRATA_HC_Q8=1): the read with the GGUF's Q8_0 projections ======
+// ================================ S23 experiment (NOSTROMA_HC_Q8=1): the read with the GGUF's Q8_0 projections ======
 // The pack holds the hyper-connection projections as BF16 (iq_pack.py --compat-bf16 rounds the GGUF's Q8_0 values to
 // BF16: 1.20 GiB per verify step); this read takes the Q8_0 bytes as stored (0.65 GiB - and the GGUF's own values,
 // not a rounding of them).  The layout is the stream split of the v3 read above, at 4 chunks per stream: `down` runs
@@ -2023,7 +2023,7 @@ __global__ void __launch_bounds__(THREADS) gr_down_q8_kernel(GrMulti m, float* _
     const int rg = blockIdx.x, kc = blockIdx.y, c = kc / Q8_CPS;
     const bool inj = rg == Q8_RG;
     // S25: the inject rows are F32 in the GGUF with BF16-exact values, so by default they are read as the pack's BF16
-    // (exact); a Q8_0 copy (STRATA_HC_Q8_INJECT=1) is the other option
+    // (exact); a Q8_0 copy (NOSTROMA_HC_Q8_INJECT=1) is the other option
     const bool inj_bf16 = inj && m.a[0].q8_inject == nullptr;
     const int nrows = inj ? (((m.a[0].q8_inject != nullptr || m.a[0].w_inject != nullptr) && warp < HC) ? 1 : 0) : Q8_RPW;
     const int row0 = inj ? warp : (rg * WARPS + warp) * Q8_RPW;
@@ -2202,12 +2202,12 @@ __global__ void __launch_bounds__(THREADS) gr_up_q8_kernel(GrMulti m, const floa
         for (int c = 0; c < HC; ++c) sum += g[k][c][col];
         m.a[k].mixed[d0 + col] = sum / (float) HC;
     }
-    if (m.a[0].q8_mixed != nullptr) gr_q8_tail(m, d0);   // S26 STRATA_QFUSE
+    if (m.a[0].q8_mixed != nullptr) gr_q8_tail(m, d0);   // S26 NOSTROMA_QFUSE
 }
 
 
-// STRATA_HC_Q8 on HIP gfx12: gr_up_q8_kernel with 32 columns / 512 threads a block, so a block owns a whole q8_1 group
-// (STRATA_QFUSE_HC: no counter, no fence; the same arithmetic per value as gr_up_q8_kernel)
+// NOSTROMA_HC_Q8 on HIP gfx12: gr_up_q8_kernel with 32 columns / 512 threads a block, so a block owns a whole q8_1 group
+// (NOSTROMA_QFUSE_HC: no counter, no fence; the same arithmetic per value as gr_up_q8_kernel)
 template <int T, int G = 1>
 __global__ void __launch_bounds__(Q32_THREADS) gr_up_q8_q32_kernel(GrMulti m, const float* __restrict__ part,
                                                            const float* __restrict__ ssg) {
@@ -2224,7 +2224,7 @@ __global__ void __launch_bounds__(Q32_THREADS) gr_up_q8_q32_kernel(GrMulti m, co
     bool applyA[NB][G];
     // G rows a warp are loaded together (weights, R, w_norm, bo, inj) before the first of them is computed and stored: the in-place
     // R_out store of one row otherwise ends the loads the compiler could issue for the next (G = 1 is the plain one-row loop).  (A
-    // pipelined variant, STRATA_GR_Q32_PL, was removed in 0.2.13: no gain over G = 2.)
+    // pipelined variant, NOSTROMA_GR_Q32_PL, was removed in 0.2.13: no gain over G = 2.)
     // Every row's arithmetic is unchanged, so the outputs are bitwise the same.
     auto load_grp = [&](int qq0, int bf) {
 #pragma unroll
@@ -2344,7 +2344,7 @@ __global__ void __launch_bounds__(Q32_THREADS) gr_up_q8_q32_kernel(GrMulti m, co
 
 
 
-// S26 STRATA_TSUM=1: gr_down_q8_kernel / gr_up_q8_kernel with each row's T per-token warp sums (and the sums of
+// S26 NOSTROMA_TSUM=1: gr_down_q8_kernel / gr_up_q8_kernel with each row's T per-token warp sums (and the sums of
 // squares) as one transposed butterfly (s26_tsum.cuh): bitwise the same values (S26 ws4 harness, every output equal,
 // T 1-4: 1.00 / 1.03 / 1.03 / 1.15x per read). PF (all rows' weights in registers before the part / lo phase) was
 // slower (0.92-1.03x) and is off.
@@ -2601,21 +2601,21 @@ __global__ void __launch_bounds__(THREADS) gr_up_q8_fast_kernel(GrMulti m, const
         for (int c = 0; c < HC; ++c) sum += g[k][c][col];
         m.a[k].mixed[d0 + col] = sum / (float) HC;
     }
-    if (m.a[0].q8_mixed != nullptr) gr_q8_tail(m, d0);   // S26 STRATA_QFUSE
+    if (m.a[0].q8_mixed != nullptr) gr_q8_tail(m, d0);   // S26 NOSTROMA_QFUSE
 }
 
 template <int T> void launch_q8_t(const GrMulti& m, float* part, float* ssg, cudaStream_t st, unsigned long long* stamp_buf,
                                   int stamp_i0) {
-    static const bool ts = [] { const char* v = strata::env("NOSTROMA_TSUM"); return v && v[0] == '1'; }();
+    static const bool ts = [] { const char* v = nostroma::env("NOSTROMA_TSUM"); return v && v[0] == '1'; }();
     if (stamp_buf) gpu_stamp(stamp_buf, stamp_i0, (void*) st);
-    static const bool pfs = [] { const char* v = strata::env("NOSTROMA_GR_Q8_PFS"); return v != nullptr && std::atoi(v) != 0; }();
+    static const bool pfs = [] { const char* v = nostroma::env("NOSTROMA_GR_Q8_PFS"); return v != nullptr && std::atoi(v) != 0; }();
     if (ts && pfs) gr_down_q8_fast_kernel<T, 4, true><<<dim3(LR / (WARPS * 4) + 1, Q8_NKC), THREADS, 0, st>>>(m, part, ssg);
     else if (ts) gr_down_q8_fast_kernel<T, 4><<<dim3(LR / (WARPS * 4) + 1, Q8_NKC), THREADS, 0, st>>>(m, part, ssg);
     else gr_down_q8_kernel<T><<<dim3(Q8_RG + 1, Q8_NKC), THREADS, 0, st>>>(m, part, ssg);
     if (stamp_buf) gpu_stamp(stamp_buf, stamp_i0 + 1, (void*) st);
-#if !STRATA_GR_FAST_BUILD
+#if !NOSTROMA_GR_FAST_BUILD
     if (m.a[0].q8_mixed != nullptr && qfuse_hc_local()) {   // HIP (not gfx906): the block owns a q8_1 group
-        static const int upg = [] { const char* v = strata::env("NOSTROMA_GR_Q32_G"); const int g = v ? std::atoi(v) : 1; return g == 2 || g == 4 || g == 8 ? g : 1; }();
+        static const int upg = [] { const char* v = nostroma::env("NOSTROMA_GR_Q32_G"); const int g = v ? std::atoi(v) : 1; return g == 2 || g == 4 || g == 8 ? g : 1; }();
         if (upg == 2) gr_up_q8_q32_kernel<T, 2><<<Q32_BLOCKS, Q32_THREADS, 0, st>>>(m, part, ssg);
         else if (upg == 4) gr_up_q8_q32_kernel<T, 4><<<Q32_BLOCKS, Q32_THREADS, 0, st>>>(m, part, ssg);
         else if (upg == 8) gr_up_q8_q32_kernel<T, 8><<<Q32_BLOCKS, Q32_THREADS, 0, st>>>(m, part, ssg);
@@ -2643,16 +2643,16 @@ void launch_q8(const GrMulti& m, float* scratch, cudaStream_t st, unsigned long 
 
 }  // namespace
 
-#if STRATA_GR_FAST_BUILD
-int g_gr_fast = -1;   // fused_gr_set_fast (the bench); -1 = STRATA_GR_FAST, else the card's default
+#if NOSTROMA_GR_FAST_BUILD
+int g_gr_fast = -1;   // fused_gr_set_fast (the bench); -1 = NOSTROMA_GR_FAST, else the card's default
 static bool gr_fast() {
-    static const int env = [] { const char* v = strata::env("NOSTROMA_GR_FAST"); return v ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
+    static const int env = [] { const char* v = nostroma::env("NOSTROMA_GR_FAST"); return v ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
     if (g_gr_fast >= 0) return g_gr_fast != 0;
     if (env >= 0) return env != 0;
 #if defined(__HIPCC__)
     return true;
 #else
-    { const char* v = strata::env("NOSTROMA_SM70_TABLE"); return cur_dev_volta() && v != nullptr && std::atoi(v) != 0; }   // PR 1401: opt-in   // CUDA: on Volta (V100-SXM2: 50.9 -> 46.7 us a read at T 1, bitwise); elsewhere opt-in
+    { const char* v = nostroma::env("NOSTROMA_SM70_TABLE"); return cur_dev_volta() && v != nullptr && std::atoi(v) != 0; }   // PR 1401: opt-in   // CUDA: on Volta (V100-SXM2: 50.9 -> 46.7 us a read at T 1, bitwise); elsewhere opt-in
 #endif
 }
 #else
@@ -2660,13 +2660,13 @@ int g_gr_fast = -1;
 #endif
 void fused_gr_set_fast(int on) { g_gr_fast = on; }
 
-// STRATA_GR_V3: the stream-split hyper-connection read (gr_down_v3_kernel / gr_up_v3_kernel).  Another summation order than the default
+// NOSTROMA_GR_V3: the stream-split hyper-connection read (gr_down_v3_kernel / gr_up_v3_kernel).  Another summation order than the default
 // read (~1e-7; a greedy tie can flip, so the answers are not byte-identical to 0.2.6's).  0.2.7: ON by default on a compute capability 12.0
-// card (RTX 50 / RTX PRO Blackwell: sm120_series.hpp, STRATA_SM120_PERF=0 turns the set off) with more than 13 GiB of memory, discrete;
+// card (RTX 50 / RTX PRO Blackwell: sm120_series.hpp, NOSTROMA_SM120_PERF=0 turns the set off) with more than 13 GiB of memory, discrete;
 // measured on the RTX PRO 5000 72 GB with every expert resident: code decode 245.1 -> 248.1 tok/s (+1.2%, identical tokens), a story prompt
-// +6.4% (tokens changed, not a claim), held-out document prompt +4.3%, with STRATA_PROMPT_ATTN_IMMA=1 +1.5% decode / +1.6-1.8% prompt together,
+// +6.4% (tokens changed, not a claim), held-out document prompt +4.3%, with NOSTROMA_PROMPT_ATTN_IMMA=1 +1.5% decode / +1.6-1.8% prompt together,
 // 5 pairs.  NOT a default elsewhere: it measured -3.0% / -5.9% on 2x RTX A4000 (sm_86) and +1.0% / -3.4% on an RTX 3060 (sm_86), and a 12 GB
-// sm_120 card (RTX 5070: streams most experts, the read is a small share of its window) is unmeasured.  STRATA_GR_V3=0 / 1 forces it off / on
+// sm_120 card (RTX 5070: streams most experts, the read is a small share of its window) is unmeasured.  NOSTROMA_GR_V3=0 / 1 forces it off / on
 // on any card; never in a HIP build (gfx12 reports compute capability 12.0 too).  Decided per card, first asked in fused_gr_check (before any
 // graph capture).
 static bool gr_v3_default_on(int dev) {
@@ -2680,21 +2680,21 @@ static bool gr_v3_default_on(int dev) {
         cudaDeviceProp p;
         const bool ok = cudaGetDeviceProperties(&p, dev) == cudaSuccess;
         if (!ok) cudaGetLastError();
-        per_dev[dev] = ok && strata::gr_v3_default(false, p.major, p.minor, p.integrated != 0, (double) p.totalGlobalMem, strata::qwen_defaults_026()) ? 2 : 1;
+        per_dev[dev] = ok && nostroma::gr_v3_default(false, p.major, p.minor, p.integrated != 0, (double) p.totalGlobalMem, nostroma::qwen_defaults_026()) ? 2 : 1;
     }
     return per_dev[dev] == 2;
 #endif
 }
 
 
-// BW-DENSE STRATA_GR_V3_PF: the v3 read's load-ordering variants, bitwise the kernels without them (gr_v3_screen: 0 differing, T 1-8).
+// BW-DENSE NOSTROMA_GR_V3_PF: the v3 read's load-ordering variants, bitwise the kernels without them (gr_v3_screen: 0 differing, T 1-8).
 // Bits 0-1 gr_down (1 = the staging's loads of every token in flight together, 2 = weight prefetch), bits 2-3 gr_up (1 = partial sums and
 // per-row inputs loaded before use, 2 = weight prefetch), bits 4-5 gr_down rows a warp 2 / 4 (T <= 4).  Measured on the RTX PRO 5000 (cold
 // weights, 16 sets, read = down + up): 5 (= down 1, up 1) is 4-8% faster at T 1-8 (T4 26.45 -> 24.90 us); weight prefetch and 2 / 4 rows a
 // warp are slower (2 = +17% at T4) and stay off.  Default: 5 on a compute capability 12.0 card, 0 elsewhere (unmeasured there);
-// STRATA_GR_V3_PF=0 restores the plain kernels, any value forces that mask.
+// NOSTROMA_GR_V3_PF=0 restores the plain kernels, any value forces that mask.
 static int v3_pf_mask() {
-    static const int env = [] { const char* e = strata::env("NOSTROMA_GR_V3_PF"); return e != nullptr ? std::atoi(e) : -1; }();
+    static const int env = [] { const char* e = nostroma::env("NOSTROMA_GR_V3_PF"); return e != nullptr ? std::atoi(e) : -1; }();
     if (env >= 0) return env;
 #if defined(__HIPCC__)
     return 0;
@@ -2707,12 +2707,12 @@ static int v3_pf_mask() {
         const bool ok = cudaDeviceGetAttribute(&ma, cudaDevAttrComputeCapabilityMajor, dev) == cudaSuccess &&
                         cudaDeviceGetAttribute(&mi, cudaDevAttrComputeCapabilityMinor, dev) == cudaSuccess;
         if (!ok) cudaGetLastError();
-        per_dev[dev] = 1 + (ok ? strata::gr_v3_pf_default(ma, mi) : 0);
+        per_dev[dev] = 1 + (ok ? nostroma::gr_v3_pf_default(ma, mi) : 0);
     }
     return per_dev[dev] - 1;
 #endif
 }
-static int g_v3_pf_force = -1;   // fused_gr_v3_pf (tests, benchmarks): the mask for every read; -1 = STRATA_GR_V3_PF
+static int g_v3_pf_force = -1;   // fused_gr_v3_pf (tests, benchmarks): the mask for every read; -1 = NOSTROMA_GR_V3_PF
 // A kernel's dynamic shared memory opt-in (and its carveout) belongs to the DEVICE it is set on, not to the process: a layer split or a tensor-parallel run launches the
 // same kernel on several cards, and a process-wide `static const bool once` set it on the first card that got there only.  The second card then launched past the
 // 48 KB default and failed ("invalid argument", reported inside a graph capture as "operation failed due to a previous error during capture", 0 tokens).
@@ -2759,7 +2759,7 @@ static void gr_down_r2_launch(const GrMulti& m, float* part, float* ssg, cudaStr
     constexpr size_t sm = (size_t) K * N * sizeof(float);
     gr_down_v3_kernel<1, K, true, R2V><<<dim3(LR / (WARPS * R2V) + 1, HC), THREADS, sm, st>>>(m, part, ssg);
 }
-// the same with the register-blocked dot phase (RB, STRATA_GR_V3_PF bit 7): its shared memory opt-in is set on first use
+// the same with the register-blocked dot phase (RB, NOSTROMA_GR_V3_PF bit 7): its shared memory opt-in is set on first use
 template <int K, int R2V>
 static void gr_down_rb_launch(const GrMulti& m, float* part, float* ssg, cudaStream_t st) {
     constexpr size_t sm = (size_t) K * N * sizeof(float);
@@ -2842,9 +2842,9 @@ static bool fused_gr_read_multi_slice(const FusedGrArgs* a, int n_tok, float* xn
             std::exit(1);
         }
     }
-    // S26 STRATA_QFUSE: every token needs its q8_1 destination; gr_up_q32_kernel / gr_up_q8_q32_kernel own whole 32-col
-    // groups and need no atomic counter buffer (q8_cnt is only used when STRATA_QFUSE_HC_LOCAL=0 or STRATA_HC_REQ8)
-#if !STRATA_GR_FAST_BUILD
+    // S26 NOSTROMA_QFUSE: every token needs its q8_1 destination; gr_up_q32_kernel / gr_up_q8_q32_kernel own whole 32-col
+    // groups and need no atomic counter buffer (q8_cnt is only used when NOSTROMA_QFUSE_HC_LOCAL=0 or NOSTROMA_HC_REQ8)
+#if !NOSTROMA_GR_FAST_BUILD
     const bool q32_no_cnt = qfuse_hc_local() && a[0].s_down == nullptr;
 #else
     const bool q32_no_cnt = false;
@@ -2857,7 +2857,7 @@ static bool fused_gr_read_multi_slice(const FusedGrArgs* a, int n_tok, float* xn
     m.T = n_tok;
     cudaStream_t st = (cudaStream_t) stream;
     if (a[0].q8_down != nullptr && a[0].q8_up != nullptr) {   // inject: Q8_0 copy, or the BF16 rows
-        launch_q8(m, xn_scratch, st, stamp_buf, stamp_i0);   // S23 experiment: STRATA_HC_Q8=1
+        launch_q8(m, xn_scratch, st, stamp_buf, stamp_i0);   // S23 experiment: NOSTROMA_HC_Q8=1
         const cudaError_t eq = cudaGetLastError();
         if (eq != cudaSuccess) {
             std::fprintf(stderr, "fused_gr_read_multi q8: %s\n", cudaGetErrorString(eq));
@@ -2865,8 +2865,8 @@ static bool fused_gr_read_multi_slice(const FusedGrArgs* a, int n_tok, float* xn
         }
         return q8;
     }
-    // the two-kernel read above (another summation order): STRATA_GR_V3=0 / 1, unset = gr_v3_default_on (a 12.0 card with > 13 GiB)
-    static const int v3_env = [] { const char* v = strata::env("NOSTROMA_GR_V3"); return v != nullptr ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
+    // the two-kernel read above (another summation order): NOSTROMA_GR_V3=0 / 1, unset = gr_v3_default_on (a 12.0 card with > 13 GiB)
+    static const int v3_env = [] { const char* v = nostroma::env("NOSTROMA_GR_V3"); return v != nullptr ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
     static int split3[64] = {};   // per device: 0 = not decided yet, 1 / 2 = column halves S, -1 = does not fit
     int dev3 = 0;
     cudaGetDevice(&dev3);
@@ -2883,7 +2883,7 @@ static bool fused_gr_read_multi_slice(const FusedGrArgs* a, int n_tok, float* xn
                 cudaFuncSetAttribute(gr_down_v3_kernel<1, kFusedGrMaxT, false>, cudaFuncAttributeMaxDynamicSharedMemorySize, need1) == cudaSuccess &&
                 cudaFuncSetAttribute(gr_down_v3_kernel<1, 6, true>, cudaFuncAttributeMaxDynamicSharedMemorySize, need6) == cudaSuccess &&
                 cudaFuncSetAttribute(gr_down_v3_kernel<1, 5, true>, cudaFuncAttributeMaxDynamicSharedMemorySize, need5) == cudaSuccess) {
-                if (kFusedGrMaxT >= 8) {   // the exact 7- and 8-token instantiations (STRATA_GR_R2: rows per warp 1 / 2 / 4)
+                if (kFusedGrMaxT >= 8) {   // the exact 7- and 8-token instantiations (NOSTROMA_GR_R2: rows per warp 1 / 2 / 4)
                     const int need7 = (int) (7 * N * sizeof(float)), need8 = (int) (8 * N * sizeof(float));
                     cudaFuncSetAttribute(gr_down_v3_kernel<1, 5, true, 2>, cudaFuncAttributeMaxDynamicSharedMemorySize, need5);
                     cudaFuncSetAttribute(gr_down_v3_kernel<1, 6, true, 2>, cudaFuncAttributeMaxDynamicSharedMemorySize, need6);
@@ -2906,7 +2906,7 @@ static bool fused_gr_read_multi_slice(const FusedGrArgs* a, int n_tok, float* xn
             } else if (need2 <= limit)
                 // #375 (kenh0u): the S = 2 split (a 64 KB opt-in card: Turing) disagrees with itself in gr_parity
                 // (graph replay vs direct call) - such a card keeps the default read until that split is fixed
-                std::fprintf(stderr, "strata: STRATA_GR_V3=1 needs the two-half split on this card, which fails its "
+                std::fprintf(stderr, "nostroma: NOSTROMA_GR_V3=1 needs the two-half split on this card, which fails its "
                                      "checks (#375): the default read is used\n");
             cudaGetLastError();   // drop any error the attempts left behind
             split3[dev3] = split;
@@ -2916,7 +2916,7 @@ static bool fused_gr_read_multi_slice(const FusedGrArgs* a, int n_tok, float* xn
     if (split > 0) {   // 2 kernels; scratch = partials + sums of squares
         float* part = xn_scratch;
         float* ssg = xn_scratch + (size_t) n_tok * HC * 2 * PR;   // room for S = 2
-        strata::dispatch::kernel(strata::dispatch::kHc, 20 + split, 0, N, LR, n_tok);   // BW-MEASURE: the stream-split (v3) bf16 read; it declines Q8 weights (s_down set)
+        nostroma::dispatch::kernel(nostroma::dispatch::kHc, 20 + split, 0, N, LR, n_tok);   // BW-MEASURE: the stream-split (v3) bf16 read; it declines Q8 weights (s_down set)
         const size_t sm = (size_t) n_tok * (N / split) * sizeof(float);
         if (stamp_buf) gpu_stamp(stamp_buf, stamp_i0, stream);
         const int pfm = g_v3_pf_force >= 0 ? g_v3_pf_force : v3_pf_mask();
@@ -2960,13 +2960,13 @@ static bool fused_gr_read_multi_slice(const FusedGrArgs* a, int n_tok, float* xn
         }
         return false;   // the v3 read: no q8_1 (the caller quantizes)
     }
-#if defined(STRATA_HIP_GFX906)
-    // gfx906, opt-in STRATA_GR_SPLIT=1: the latency-hidden norm/up (STRATA_GR_FAST) with the K-split down (~3% faster
+#if defined(NOSTROMA_HIP_GFX906)
+    // gfx906, opt-in NOSTROMA_GR_SPLIT=1: the latency-hidden norm/up (NOSTROMA_GR_FAST) with the K-split down (~3% faster
     // per verify window).  Its fixed-order finish sums the K slices in another order than the single-token
     // fused_gr_read, so the multi-token read is then no longer bitwise equal to T single-token calls (gr_parity's
     // contract); off by default for that reason.
-    static const bool split_on = strata::env("NOSTROMA_GR_SPLIT") && std::string(strata::env("NOSTROMA_GR_SPLIT")) == "1";
-    if (split_on && a[0].s_down == nullptr) {   // its K-split down reads bf16 rows (not STRATA_HC_REQ8)
+    static const bool split_on = nostroma::env("NOSTROMA_GR_SPLIT") && std::string(nostroma::env("NOSTROMA_GR_SPLIT")) == "1";
+    if (split_on && a[0].s_down == nullptr) {   // its K-split down reads bf16 rows (not NOSTROMA_HC_REQ8)
         const bool fast = gr_fast();
         if (fast) gr_norm_fast_kernel<<<n_tok, THREADS, 0, st>>>(m);
         else gr_norm_multi_kernel<<<n_tok, THREADS, 0, st>>>(m);
@@ -2982,10 +2982,10 @@ static bool fused_gr_read_multi_slice(const FusedGrArgs* a, int n_tok, float* xn
             std::fprintf(stderr, "fused_gr_read_multi: %s\n", cudaGetErrorString(e));
             std::exit(1);
         }
-        return false;   // the gfx906 STRATA_GR_SPLIT read: no q8_1 (the caller quantizes), like the v3 path above
+        return false;   // the gfx906 NOSTROMA_GR_SPLIT read: no q8_1 (the caller quantizes), like the v3 path above
     }
 #endif
-    // the default read (STRATA_GR_V3 unset): v1, or the bitwise-equal v2 / v3 this card's check accepted
+    // the default read (NOSTROMA_GR_V3 unset): v1, or the bitwise-equal v2 / v3 this card's check accepted
     launch_multi(m, fused_gr_variant(), st, stamp_buf, stamp_i0);
     const cudaError_t e = cudaGetLastError();
     if (e != cudaSuccess) {
@@ -2999,7 +2999,7 @@ static bool fused_gr_read_multi_slice(const FusedGrArgs* a, int n_tok, float* xn
 // (the same kernels, the same bits).  A wider window (9..16 rows: the batch groups of a four-card split) is read in
 // slices of at most kFusedGrMaxT tokens, in order on the stream.  Every token's outputs are strictly its own (no value
 // crosses tokens), so the slices are bitwise the one wide read; the cost is the hyper-connection weights read once per
-// slice.  The STRATA_QFUSE counters belong to token 0: each slice's first token carries them (the kernels zero them
+// slice.  The NOSTROMA_QFUSE counters belong to token 0: each slice's first token carries them (the kernels zero them
 // again for the next launch); the profile stamps are the first slice's.
 void fused_gr_v3_pf(int mask) { g_v3_pf_force = mask; }
 // The bench only: registers, spills, shared memory and resident blocks a multiprocessor of the v3 kernels (T = 4) on the current card, one line each.
@@ -3049,7 +3049,7 @@ bool fused_gr_read_multi(const FusedGrArgs* a, int n_tok, float* xn_scratch, voi
     return q8;
 }
 
-// STRATA_HC_Q8 on a bf16 pack: one warp a Q8_0 block, ggml's reference rounding (d = amax / 127 as fp16, q = round(x * (1 / d)))
+// NOSTROMA_HC_Q8 on a bf16 pack: one warp a Q8_0 block, ggml's reference rounding (d = amax / 127 as fp16, q = round(x * (1 / d)))
 __global__ void __launch_bounds__(256) gr_quantize_q8_0_kernel(const uint16_t* __restrict__ w, uint8_t* __restrict__ out, int64_t nb) {
     const int64_t b = (int64_t) blockIdx.x * 8 + (threadIdx.x >> 5);
     const int lane = threadIdx.x & 31;
@@ -3105,7 +3105,7 @@ void fused_gr_read(const FusedGrArgs& a, void* stream) {
             cudaFuncSetAttribute(gr_down_kernel<true>, cudaFuncAttributeMaxDynamicSharedMemorySize, (int) down_smem);
         });
     }
-    if (a.s_down != nullptr) {   // STRATA_HC_REQ8
+    if (a.s_down != nullptr) {   // NOSTROMA_HC_REQ8
         gr_down_kernel<true><<<DOWN_BLOCKS + 1, THREADS, down_smem, st>>>(a);
         gr_up_kernel<true><<<UP_BLOCKS, THREADS, 0, st>>>(a);
     } else {
@@ -3265,8 +3265,8 @@ int fused_gr_variant() {
     cudaGetDevice(&dev);
     const int v = dev >= 0 && dev < 64 ? g_variant[dev].load() : 0;
     if (v > 0) return v;
-    // not checked on this card: the plain read, unless STRATA_HC_SPLIT names a variant (a test such as gr_parity)
-    const char* e = strata::env("NOSTROMA_HC_SPLIT");
+    // not checked on this card: the plain read, unless NOSTROMA_HC_SPLIT names a variant (a test such as gr_parity)
+    const char* e = nostroma::env("NOSTROMA_HC_SPLIT");
     return e != nullptr && (e[0] == '1' || e[0] == '2') ? env_variant() : kHcPlain;
 }
 
@@ -3278,7 +3278,7 @@ void fused_gr_check() {
     const int want = env_variant();
     if (want == kHcPlain) {
         g_variant[dev].store(kHcPlain);
-        std::fprintf(stderr, "strata hc: CUDA%d: the hyper-connection read runs as the plain one (STRATA_HC_SPLIT=0)\n",
+        std::fprintf(stderr, "nostroma hc: CUDA%d: the hyper-connection read runs as the plain one (NOSTROMA_HC_SPLIT=0)\n",
                      dev);
         return;
     }
@@ -3290,18 +3290,18 @@ void fused_gr_check() {
     else if (okv[kHcSplit]) use = kHcSplit;
     g_variant[dev].store(use);
     if (!ran)
-        std::fprintf(stderr, "strata hc: CUDA%d: the check of split/staged could not run (%s)\n", dev, why[0].c_str());
+        std::fprintf(stderr, "nostroma hc: CUDA%d: the check of split/staged could not run (%s)\n", dev, why[0].c_str());
     static const char* const name[4] = {"", "plain", "split", "staged"};
     for (int v = kHcStaged; v >= kHcSplit; --v)
         if (v <= want && !okv[v] && ran)
-            std::fprintf(stderr, "strata hc: CUDA%d: the %s read differs from the plain read on this card - not used: "
+            std::fprintf(stderr, "nostroma hc: CUDA%d: the %s read differs from the plain read on this card - not used: "
                                  "%s\n", dev, name[v], why[v].c_str());
     static const char* const what[4] = {
         "", "the plain read (the norm per token, the down projection on 41 blocks)",
         "split (the norm per token and stream, then the plain read's down projection)",
         "staged (the norm per token and stream, the down projection's activations staged ahead by cp.async)"};
-    std::fprintf(stderr, "strata hc: CUDA%d: the hyper-connection read runs as %s%s\n", dev, what[use],
-                 use >= kHcSplit ? "; checked bit for bit against the plain read on this card (STRATA_HC_SPLIT=1 or 0 "
+    std::fprintf(stderr, "nostroma hc: CUDA%d: the hyper-connection read runs as %s%s\n", dev, what[use],
+                 use >= kHcSplit ? "; checked bit for bit against the plain read on this card (NOSTROMA_HC_SPLIT=1 or 0 "
                                    "for the earlier ones)" : "");
 }
 
@@ -3322,7 +3322,7 @@ void hc_q8_to_bf16(const void* codes, const float* scales, uint16_t* out, long l
     hc_q8_bf16_kernel<<<(unsigned) ((n + 255) / 256), 256, 0, (cudaStream_t) stream>>>((const int8_t*) codes, scales, out, n);
 }
 
-// ================================== the read as ONE persistent kernel (opt-in STRATA_HC_PERSIST=1, CUDA + HIP) ==============
+// ================================== the read as ONE persistent kernel (opt-in NOSTROMA_HC_PERSIST=1, CUDA + HIP) ==============
 // 80 blocks that must all be resident (a start-up run per T decides; larger T keep the default read) and two grid
 // barriers on an atomic counter.  Block b: (A) stages R' * w_norm for columns [128 b, 128 b + 128) (one stream) and writes
 // that slice's sum of squares and the UNSCALED partial dots of the 320 down + 4 inject rows (the v3 identity
@@ -3355,7 +3355,7 @@ struct PArgs {
     float* ssp;         // [T][NB]
     unsigned* bar;      // [0] count, [32] generation, [48] abort (a barrier that timed out)
     unsigned long long timeout_ticks;   // s_memrealtime ticks (100 MHz) a barrier waits before it aborts the read
-    double* partd;      // STRATA_HC_PERSIST=3 (a reference only): the partial dots and sums of squares in double
+    double* partd;      // NOSTROMA_HC_PERSIST=3 (a reference only): the partial dots and sums of squares in double
     double* sspd;
 };
 // Returns false when the read was aborted: a block waited longer than `ticks` (the 80 blocks were not all resident - the
@@ -3431,7 +3431,7 @@ __device__ __forceinline__ bool grid_sync(unsigned* bar, unsigned long long tick
     return s_abort == 0;
 #endif
 }
-// STRATA_HC_PERSIST=3 (a reference only, slow): every dot and sum accumulated in double
+// NOSTROMA_HC_PERSIST=3 (a reference only, slow): every dot and sum accumulated in double
 __device__ __forceinline__ double dot8d(const uint4 w, const float* x) {
     double acc = 0.0;
     const unsigned u[4] = {w.x, w.y, w.z, w.w};
@@ -3628,7 +3628,7 @@ KFn kernel_t(int T) {
     return nullptr;
 }
 bool dp_on() {
-    static const bool dp = [] { const char* v = strata::env("NOSTROMA_HC_PERSIST"); return v != nullptr && std::atoi(v) == 3; }();
+    static const bool dp = [] { const char* v = nostroma::env("NOSTROMA_HC_PERSIST"); return v != nullptr && std::atoi(v) == 3; }();
     return dp;
 }
 KFn kernel_for(int T) { return dp_on() ? kernel_t<true>(T) : kernel_t<false>(T); }
@@ -3648,7 +3648,7 @@ void launch(const FusedGrArgs* a, int n_tok, const DevState& st, cudaStream_t s,
     kernel_for(n_tok)<<<NB, THREADS, 0, s>>>(f);
 }
 bool env_on() {
-    static const bool on = [] { const char* v = strata::env("NOSTROMA_HC_PERSIST"); return v != nullptr && std::atoi(v) != 0; }();
+    static const bool on = [] { const char* v = nostroma::env("NOSTROMA_HC_PERSIST"); return v != nullptr && std::atoi(v) != 0; }();
     return on;
 }
 }  // namespace hcp
@@ -3664,13 +3664,13 @@ void fused_gr_persist_init() {
     cudaDeviceProp prop{};
     cudaGetDeviceProperties(&prop, dev);
     if (prop.warpSize != 32) {
-        std::fprintf(stderr, "strata hc: CUDA%d: STRATA_HC_PERSIST=1 is off here: the kernel is written for 32-lane waves "
+        std::fprintf(stderr, "nostroma hc: CUDA%d: NOSTROMA_HC_PERSIST=1 is off here: the kernel is written for 32-lane waves "
                              "(this card runs %d)\n", dev, prop.warpSize);
         return;
     }
 #if defined(__HIPCC__)
-    if (strata::kernels::gfx_arch_is_gfx12(prop.gcnArchName) || strata::kernels::gfx_arch_is_gfx11_wmma(prop.gcnArchName)) {
-        std::fprintf(stderr, "strata hc: CUDA%d: STRATA_HC_PERSIST=1 is off here: gfx11 / gfx12 have no s_memrealtime for the barrier "
+    if (nostroma::kernels::gfx_arch_is_gfx12(prop.gcnArchName) || nostroma::kernels::gfx_arch_is_gfx11_wmma(prop.gcnArchName)) {
+        std::fprintf(stderr, "nostroma hc: CUDA%d: NOSTROMA_HC_PERSIST=1 is off here: gfx11 / gfx12 have no s_memrealtime for the barrier "
                              "timeout (written and measured for gfx1030; an R9700 saw no gain from it, #2226)\n", dev);
         return;
     }
@@ -3684,7 +3684,7 @@ void fused_gr_persist_init() {
               cudaMemset(st.bar, 0, 64 * sizeof(unsigned)) == cudaSuccess;
     if (!ok) {
         cudaGetLastError();
-        std::fprintf(stderr, "strata hc: CUDA%d: STRATA_HC_PERSIST=1 is off here: workspace allocation failed\n", dev);
+        std::fprintf(stderr, "nostroma hc: CUDA%d: NOSTROMA_HC_PERSIST=1 is off here: workspace allocation failed\n", dev);
         return;
     }
     // the check: random weights and inputs with the pending write and the inject rows, against the default read; the
@@ -3779,17 +3779,17 @@ void fused_gr_persist_init() {
     cudaDeviceSynchronize();
     cudaGetLastError();
     if (!ok) {
-        std::fprintf(stderr, "strata hc: CUDA%d: STRATA_HC_PERSIST=1 is off here: the check failed at %d tokens "
+        std::fprintf(stderr, "nostroma hc: CUDA%d: NOSTROMA_HC_PERSIST=1 is off here: the check failed at %d tokens "
                              "(max relative difference %.3g)\n", dev, bad_t, worst);
         return;
     }
     if (max_t == 0) {
-        std::fprintf(stderr, "strata hc: CUDA%d: STRATA_HC_PERSIST=1 is off here: 80 blocks are not resident at once on %d "
+        std::fprintf(stderr, "nostroma hc: CUDA%d: NOSTROMA_HC_PERSIST=1 is off here: 80 blocks are not resident at once on %d "
                              "multiprocessors (the check timed out)\n", dev, mp);
         return;
     }
     st.max_t = max_t;
-    std::fprintf(stderr, "strata hc: CUDA%d: STRATA_HC_PERSIST=1: the verifier's hyper-connection read runs as one "
+    std::fprintf(stderr, "nostroma hc: CUDA%d: NOSTROMA_HC_PERSIST=1: the verifier's hyper-connection read runs as one "
                          "persistent kernel (80 blocks on %d multiprocessors, up to %d tokens; %d token counts timed out in "
                          "the check; checked against the default read, max relative difference %.2g)\n", dev, mp, max_t,
                  timeouts, worst);
@@ -3802,9 +3802,9 @@ bool fused_gr_read_persist(const FusedGrArgs* a, int n_tok, void* stream) {
     if (dev < 0 || dev >= 64) return false;
     const hcp::DevState& st = hcp::g_dev[dev];
     if (n_tok > st.max_t) return false;
-    if (a[0].q8_down != nullptr || a[0].q8_up != nullptr) return false;    // STRATA_HC_Q8: the default read
+    if (a[0].q8_down != nullptr || a[0].q8_up != nullptr) return false;    // NOSTROMA_HC_Q8: the default read
     for (int t = 0; t < n_tok; ++t)
-        if (a[t].q8_mixed != nullptr) return false;                         // STRATA_QFUSE: the default read
+        if (a[t].q8_mixed != nullptr) return false;                         // NOSTROMA_QFUSE: the default read
     hcp::launch(a, n_tok, st, (cudaStream_t) stream, hcp::kTicksRun);
     return true;
 }
@@ -3813,7 +3813,7 @@ void fused_gr_persist_init() {}
 bool fused_gr_read_persist(const FusedGrArgs*, int, void*) { return false; }
 #endif
 
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels
 
 
 

@@ -1,13 +1,13 @@
-"""tools/image/gate/dit_step_check.py - TEST-ONLY (OWN-5B D4): strata-dit-step's velocities against the reference.
+"""tools/image/gate/dit_step_check.py - TEST-ONLY (OWN-5B D4): nostroma-dit-step's velocities against the reference.
 
-For each case: velocity rel L2 to the f32 reference (dit_ref.py) for ours (strata-dit-step), the emulation with
+For each case: velocity rel L2 to the f32 reference (dit_ref.py) for ours (nostroma-dit-step), the emulation with
 float32 sums (dit_ref mode f16acc32, the stage rule's comparison since 11-11) and with exact sums (f16op), the D1+D2
 test build (sd.cpp's native runner with our GEMMs), stock sd.cpp and its native runner; and ours against the D1+D2
 build directly.  Then the stage rule over the cases given: (i) mean ours <= 1.25 x mean emulation, (ii) no case above
 1.5 x its emulation value, (iii) every case closer than stock and native - against both emulations.
 
     python -I -B dit_step_check.py --root R --ours O [--cases "512 p0,512 p5"]
-R = the Spark own5b folder (pics/, d0ref/ with d0ref/acc32 from dit_acc32_cases.py); O = strata-dit-step's out dir.
+R = the Spark own5b folder (pics/, d0ref/ with d0ref/acc32 from dit_acc32_cases.py); O = nostroma-dit-step's out dir.
 """
 from __future__ import annotations
 
@@ -73,7 +73,7 @@ def main(argv=None) -> int:
              "d1d2": compare(vel(P["d1d2"]), f32)["rel_l2"], "stock": compare(vel(P["stock"]), f32)["rel_l2"],
              "native": compare(vel(P["native"]), f32)["rel_l2"], "ours_vs_d1d2": compare(o, vel(P["d1d2"]))["rel_l2"]}
         rows.append(r)
-    print("| case | ours (strata-dit-step) | f32-sum emulation | ratio | exact-sum emulation | ratio | D1+D2 test build "
+    print("| case | ours (nostroma-dit-step) | f32-sum emulation | ratio | exact-sum emulation | ratio | D1+D2 test build "
           "| stock | native | ours vs D1+D2 build |")
     print("|---|---|---|---|---|---|---|---|---|---|")
     for r in rows:

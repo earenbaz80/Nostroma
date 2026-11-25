@@ -1,18 +1,18 @@
-#include "strata/core/remote_expert_opt.hpp"
-#include "strata/core/remote_experts.hpp"
-#include "strata/core/on_device.hpp"
-#include "strata/kernels/cpu/expert_layout.hpp"
-#include "strata/kernels/elementwise.hpp"
-#include "strata/kernels/verify_kernels.hpp"
-#include "strata/kernels/window_limits.hpp"
+#include "nostroma/core/remote_expert_opt.hpp"
+#include "nostroma/core/remote_experts.hpp"
+#include "nostroma/core/on_device.hpp"
+#include "nostroma/kernels/cpu/expert_layout.hpp"
+#include "nostroma/kernels/elementwise.hpp"
+#include "nostroma/kernels/verify_kernels.hpp"
+#include "nostroma/kernels/window_limits.hpp"
 
 #include <algorithm>
 #include <cstring>
 
-namespace strata::core {
+namespace nostroma::core {
 namespace {
-constexpr int64_t H = strata::kernels::cpu::H;
-constexpr int K = 10, MAXT = strata::kernels::kWindowMaxT, CAP = MAXT * K;   // (a window's rows)
+constexpr int64_t H = nostroma::kernels::cpu::H;
+constexpr int K = 10, MAXT = nostroma::kernels::kWindowMaxT, CAP = MAXT * K;   // (a window's rows)
 struct ReduceMeta { int32_t row[CAP]; float weight[CAP]; };
 
 bool check(cudaError_t status, std::string& err) {
@@ -126,10 +126,10 @@ void RemoteExpertOpt::combine(float* dst, float* scratch, int token_begin, int t
     const float* sum = m_sum_ + token_begin * H;
     if (skip) {
         // An all-primary device-planned group bypasses the host: ignore its stale sum.
-        strata::kernels::copy_or_zero_from_mapped(scratch, sum, tokens * H, skip, ring, stream);
+        nostroma::kernels::copy_or_zero_from_mapped(scratch, sum, tokens * H, skip, ring, stream);
         sum = scratch;
     }
-    strata::kernels::add_inplace(dst, sum, tokens * H, stream);
+    nostroma::kernels::add_inplace(dst, sum, tokens * H, stream);
 }
 
 bool RemoteExpertOpt::owns(int64_t layer, int32_t expert) const {
@@ -142,7 +142,7 @@ bool RemoteExpertOpt::adapt(const std::vector<float>& usage, const std::vector<i
                      const std::vector<std::pair<int32_t, int32_t>>& pending, int max_swaps,
                      ExpertSource& source) {
     if (max_swaps <= 0) return true;
-    const auto& lay = strata::kernels::cpu::expert_layout();
+    const auto& lay = nostroma::kernels::cpu::expert_layout();
     std::vector<uint8_t> resident(primary.size(), 0);
     for (size_t i = 0; i < primary.size(); ++i) resident[i] = primary[i] >= 0;
     for (const auto& [i, slot] : pending) resident[(size_t) i] = 1;
@@ -199,4 +199,4 @@ bool RemoteExpertOpt::adapt(const std::vector<float>& usage, const std::vector<i
     }
     return true;
 }
-} // namespace strata::core
+} // namespace nostroma::core

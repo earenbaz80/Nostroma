@@ -4,7 +4,7 @@ engines behind real schema-2 packages, the real start path for the test start.
 Proves: an update downloads (with resume), verifies signature and every hash, installs side by side, test-starts the new
 engine from a staging folder through the owner runtime, and only then switches; a failing test start leaves the old engine
 working; the previous version is kept and can be returned to; saved presets are marked, not touched; models are never
-fetched; nothing runs while an engine serves; and a start/serve process (STRATA_NO_ACQUIRE) cannot reach any of it."""
+fetched; nothing runs while an engine serves; and a start/serve process (NOSTROMA_NO_ACQUIRE) cannot reach any of it."""
 
 import hashlib
 import json
@@ -26,21 +26,21 @@ WINDOWS = os.name == "nt"
 
 class UpdaterCase(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="strata-updater-")
+        self.temp = tempfile.TemporaryDirectory(prefix="nostroma-updater-")
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.components = self.root / "components"
         self.state_base = self.root / "state"
         self.release = self.root / "release"
         self.release.mkdir()
-        for name in ("STRATA_NO_ACQUIRE", "STRATA_API_KEY", "STRATA_REQUIRE_SIGNED_COMPONENTS", "STRATA_UPDATE_TRUSTED_KEYS"):
+        for name in ("NOSTROMA_NO_ACQUIRE", "NOSTROMA_API_KEY", "NOSTROMA_REQUIRE_SIGNED_COMPONENTS", "NOSTROMA_UPDATE_TRUSTED_KEYS"):
             patch = mock.patch.dict(os.environ)
             patch.start()
             self.addCleanup(patch.stop)
             os.environ.pop(name, None)
         env = mock.patch.dict(os.environ, {
-            "STRATA_PROFILE_DIR": str(self.root / "profiles"), "STRATA_RUNTIME_DIR": str(self.root / "runtime"),
-            "STRATA_COMPONENTS_DIR": str(self.components), "STRATA_ENGINE_BACKEND": "cuda",
+            "NOSTROMA_PROFILE_DIR": str(self.root / "profiles"), "NOSTROMA_RUNTIME_DIR": str(self.root / "runtime"),
+            "NOSTROMA_COMPONENTS_DIR": str(self.components), "NOSTROMA_ENGINE_BACKEND": "cuda",
             "FAKE_ENGINE_MARK": str(self.root / "ran.txt")})
         env.start()
         self.addCleanup(env.stop)
@@ -61,7 +61,7 @@ class UpdaterCase(unittest.TestCase):
         # tester build passes its key
         self.test_keys = self.root / "test-trust.json"
         self.test_keys.write_text(json.dumps({"keys": [signing.public_part(self.key)]}))
-        patch = mock.patch.dict(os.environ, {"STRATA_UPDATE_TRUSTED_KEYS": str(self.test_keys)})
+        patch = mock.patch.dict(os.environ, {"NOSTROMA_UPDATE_TRUSTED_KEYS": str(self.test_keys)})
         patch.start()
         self.addCleanup(patch.stop)
         self.hardware = {"platform": PLATFORM, "backend": "cuda", "runtime": None, "nvidia_driver": "610.47",
@@ -90,7 +90,7 @@ class UpdaterCase(unittest.TestCase):
             pass
 
     def _run_config(self):
-        from tools.strata_tokenizer import BYTE_TO_UNICODE
+        from tools.nostroma_tokenizer import BYTE_TO_UNICODE
         tokenizer = self.root / "tokenizer"
         tokenizer.mkdir()
         tokens = [BYTE_TO_UNICODE[i] for i in range(256)] + ["ab", "<|im_start|>", "<|im_end|>", "<|endoftext|>"]
@@ -130,7 +130,7 @@ class UpdaterCase(unittest.TestCase):
         return folders
 
     def ctx(self, **over):
-        values = dict(components=self.components, source=self.server.url + "/strata-feed.json", trusted=self.trusted,
+        values = dict(components=self.components, source=self.server.url + "/nostroma-feed.json", trusted=self.trusted,
                       hardware=self.hardware, run_config=str(self.config), state_base=self.state_base, poll=0.05,
                       test_timeout=60, serving=lambda: [], environ=dict(os.environ))
         values.update(over)
@@ -162,7 +162,7 @@ class EngineUpdate(UpdaterCase):
         report = updater.check(self.ctx())
         self.assertEqual(report["engine"]["status"], "available")
         self.assertEqual((report["engine"]["installed"]["version"], report["engine"]["offered"]["version"]), ("0.1.45", "0.1.46"))
-        self.assertEqual([r[1] for r in self.server.requests], ["/strata-feed.json", "/strata-feed.json.sig"])
+        self.assertEqual([r[1] for r in self.server.requests], ["/nostroma-feed.json", "/nostroma-feed.json.sig"])
         self.assertEqual(self.engine_folders(), [f"0.1.45-{PLATFORM}-cuda-cuda13"])
 
     def test_update_downloads_verifies_test_starts_then_switches(self):
@@ -195,7 +195,7 @@ class EngineUpdate(UpdaterCase):
         self.assertEqual((marks[0]["from"]["version"], marks[0]["to"]["version"]), ("0.1.45", "0.1.46"))
         self.assert_user_data_untouched()
         # nothing but the feed and the engine archive was requested: no model, no app
-        self.assertEqual({r[1] for r in self.server.requests}, {"/strata-feed.json", "/strata-feed.json.sig", *{r[1] for r in self.archive_requests()}})
+        self.assertEqual({r[1] for r in self.server.requests}, {"/nostroma-feed.json", "/nostroma-feed.json.sig", *{r[1] for r in self.archive_requests()}})
         self.assertEqual(len(self.archive_requests()), 1)
         # a second update with nothing newer changes nothing and downloads nothing
         again = updater.run_update(self.ctx(), control=False)
@@ -411,7 +411,7 @@ class EngineUpdate(UpdaterCase):
     def test_a_process_that_forbids_acquiring_cannot_update(self):
         self.install_current()
         self.publish(("0.1.46", fx.GOOD_ENGINE))
-        with mock.patch.dict(os.environ, {"STRATA_NO_ACQUIRE": "1"}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_NO_ACQUIRE": "1"}):
             with self.assertRaises(acquisition.AcquisitionRefused):
                 updater.run_update(self.ctx(), control=False)
             with self.assertRaises(acquisition.AcquisitionRefused):
@@ -436,7 +436,7 @@ class StartPathSignature(UpdaterCase):
         super().setUp()
         self.pub = self.root / "feed-key.pub.json"
         self.pub.write_text(json.dumps({"keys": [signing.public_part(self.key)]}))
-        patch = mock.patch.dict(os.environ, {"STRATA_UPDATE_TRUSTED_KEYS": str(self.pub)})
+        patch = mock.patch.dict(os.environ, {"NOSTROMA_UPDATE_TRUSTED_KEYS": str(self.pub)})
         patch.start()
         self.addCleanup(patch.stop)
         ec.register_signature_verifier(None)
@@ -457,7 +457,7 @@ class StartPathSignature(UpdaterCase):
 
     def test_without_trusted_keys_a_signed_package_is_unverified_and_required_signing_refuses_it(self):
         folder = fx.build_package(self.root / "signed", "0.1.46", key=self.key)
-        with mock.patch.dict(os.environ, {"STRATA_UPDATE_TRUSTED_KEYS": ""}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_UPDATE_TRUSTED_KEYS": ""}):
             ec.register_signature_verifier(None)
             self.assertEqual(ec.verify_signature(ec.read_manifest(folder)), "unverified")
             with self.assertRaises(ec.IntegrityProblem):
@@ -502,7 +502,7 @@ class LazyModel(UpdaterCase):
             self.run_default({"ok": True, "state": "ready", "generation_ready": False}, {"ok": False, "state": "failed", "error": "probe_generation_no_tokens"})
     def expired(self, phase, words, busy):
         # #3683: the engine log always mentions VRAM, so a wait that expired used to be blamed on a busy graphics card
-        tail = " | strata serve: 358 MiB of VRAM free with everything loaded"
+        tail = " | nostroma serve: 358 MiB of VRAM free with everything loaded"
         with self.assertRaises(updater.TestStartFailed) as raised:
             self.run_default({"ok": False, "state": "starting", "error": "startup_wait_expired", "phase": phase}, {}, tail=tail)
         text = str(raised.exception)
@@ -552,10 +552,10 @@ class OtherComponents(UpdaterCase):
         public, secret = fx.minisign_pair()
         installer = os.urandom(5000)
         (self.release / "app").mkdir(parents=True, exist_ok=True)
-        (self.release / "app" / "Strata_setup.bin").write_bytes(installer)
+        (self.release / "app" / "Nostroma_setup.bin").write_bytes(installer)
         sig = fx.minisign_sign(installer + (b"x" if tamper else b""), secret)
         app = {"version": version, "notes": "Faster starts.", "pub_date": "2026-10-15T00:00:00Z",
-               "platforms": {feedmod.TAURI_TARGETS[PLATFORM]: {"url": "app/Strata_setup.bin", "signature": sig,
+               "platforms": {feedmod.TAURI_TARGETS[PLATFORM]: {"url": "app/Nostroma_setup.bin", "signature": sig,
                                                               "sha256": hashlib.sha256(installer).hexdigest(), "size": len(installer)}}}
         (self.root / "tauri.json").write_text(json.dumps(app))
         from feed_tool import build_feed
@@ -566,7 +566,7 @@ class OtherComponents(UpdaterCase):
 
     def test_the_app_installer_is_downloaded_and_its_signature_checked(self):
         public, installer = self.build_with_app()
-        ctx = self.ctx(app_version="0.1.0", environ={**os.environ, "STRATA_APP_UPDATE_PUBKEY": public})
+        ctx = self.ctx(app_version="0.1.0", environ={**os.environ, "NOSTROMA_APP_UPDATE_PUBKEY": public})
         report = updater.check(ctx)
         self.assertEqual((report["app"]["status"], report["app"]["offered"]), ("available", "0.2.0"))
         out = updater.run_update(ctx, engine=False, control=False, app=True)
@@ -576,11 +576,11 @@ class OtherComponents(UpdaterCase):
         self.assertEqual((self.release / "app" / "latest.json").exists(), True, "the Tauri updater's file is written beside the feed")
         self.assertEqual(self.engine_folders(), [], "an app-only update downloads 0 engine bytes")
         self.assertEqual(self.archive_requests(), [])
-        self.assertTrue(all(r[1].startswith(("/strata-feed", "/app/")) for r in self.server.requests))
+        self.assertTrue(all(r[1].startswith(("/nostroma-feed", "/app/")) for r in self.server.requests))
 
     def test_an_installer_with_a_bad_signature_is_deleted(self):
         public, _ = self.build_with_app(tamper=True)
-        ctx = self.ctx(app_version="0.1.0", environ={**os.environ, "STRATA_APP_UPDATE_PUBKEY": public})
+        ctx = self.ctx(app_version="0.1.0", environ={**os.environ, "NOSTROMA_APP_UPDATE_PUBKEY": public})
         out = updater.run_update(ctx, engine=False, control=False, app=True)
         self.assertEqual(out["exit_code"], 5)
         self.assertIn("signature", out["results"][0]["error"])
@@ -588,7 +588,7 @@ class OtherComponents(UpdaterCase):
 
     def test_no_app_key_no_app_download(self):
         self.build_with_app()
-        ctx = self.ctx(app_version="0.1.0", environ={k: v for k, v in os.environ.items() if k != "STRATA_APP_UPDATE_PUBKEY"})
+        ctx = self.ctx(app_version="0.1.0", environ={k: v for k, v in os.environ.items() if k != "NOSTROMA_APP_UPDATE_PUBKEY"})
         with mock.patch.object(updater, "app_public_key", return_value=None):
             out = updater.run_update(ctx, engine=False, control=False, app=True)
         self.assertEqual(out["exit_code"], 5)
@@ -597,7 +597,7 @@ class OtherComponents(UpdaterCase):
     def test_control_is_staged_run_once_and_pointed_at(self):
         bundle = self.root / "control-bundle"
         (bundle / "nostroma_control").mkdir(parents=True)
-        (bundle / "strata.py").write_text("print('strata 0.1.46 (python stub)')\n")
+        (bundle / "nostroma.py").write_text("print('nostroma 0.1.46 (python stub)')\n")
         (bundle / "nostroma_control" / "__init__.py").write_text("")
         from feed_tool import build_feed, pack_control
         (self.release / "control").mkdir()
@@ -607,14 +607,14 @@ class OtherComponents(UpdaterCase):
         self.assertEqual(out["results"][0]["status"], "updated", out)
         active = updater.active_control(self.components)
         self.assertEqual(active["version"], "0.1.46")
-        self.assertTrue((self.components / "control" / "0.1.46" / "strata.py").is_file())
+        self.assertTrue((self.components / "control" / "0.1.46" / "nostroma.py").is_file())
         again = updater.run_update(self.ctx(), engine=False, control=True)
         self.assertEqual(again["results"][0]["status"], "current")
 
     def test_a_control_that_cannot_run_is_not_switched_to(self):
         bundle = self.root / "control-bad"
         bundle.mkdir()
-        (bundle / "strata.py").write_text("import sys; sys.exit(9)\n")
+        (bundle / "nostroma.py").write_text("import sys; sys.exit(9)\n")
         from feed_tool import build_feed, pack_control
         (self.release / "control").mkdir()
         pack_control(bundle, self.release / "control", version="0.1.46", platform=PLATFORM)
@@ -628,7 +628,7 @@ class OtherComponents(UpdaterCase):
     def test_a_control_bundle_may_link_inside_itself_and_nowhere_else(self):
         bundle = self.root / "control-links"
         (bundle / "python" / "lib").mkdir(parents=True)
-        (bundle / "strata.py").write_text("print('strata 0.1.46 (stub)')\n")
+        (bundle / "nostroma.py").write_text("print('nostroma 0.1.46 (stub)')\n")
         (bundle / "python" / "lib" / "libpython3.12.so").write_bytes(b"lib")
         os.symlink("libpython3.12.so", bundle / "python" / "lib" / "libpython3.so")
         from feed_tool import build_feed, pack_control
@@ -647,19 +647,19 @@ class OtherComponents(UpdaterCase):
         from feed_tool import build_feed
         (self.release / "control").mkdir()
         archive = self.release / "control" / "evil.tar.gz"
-        good = self.root / "strata.py"
-        good.write_text("print('strata 0.1.46')\n")
+        good = self.root / "nostroma.py"
+        good.write_text("print('nostroma 0.1.46')\n")
         for target in ("/etc/passwd", "../../outside", "a/../../../outside"):
             with self.subTest(target=target):
                 with tarfile.open(archive, "w:gz") as tar:
-                    tar.add(good, arcname="strata.py")
+                    tar.add(good, arcname="nostroma.py")
                     info = tarfile.TarInfo("python/evil")
                     info.type, info.linkname = tarfile.SYMTYPE, target
                     tar.addfile(info)
                 data = archive.read_bytes()
                 (self.release / "control" / "evil.entry.json").write_text(json.dumps({
                     "version": "0.1.46", "platform": PLATFORM, "format": "tar.gz", "url": "control/evil.tar.gz", "size": len(data),
-                    "sha256": hashlib.sha256(data).hexdigest(), "installed_bytes": 100, "entry": "strata.py"}))
+                    "sha256": hashlib.sha256(data).hexdigest(), "installed_bytes": 100, "entry": "nostroma.py"}))
                 build_feed(self.release, key=self.key, sequence=self.sequence + 1, control_dir=self.release / "control")
                 self.sequence += 1
                 out = updater.run_update(self.ctx(), engine=False, control=True)
@@ -670,13 +670,13 @@ class OtherComponents(UpdaterCase):
 
 class Cli(UpdaterCase):
     """`nostroma update`, `nostroma components update|rollback` against a feed in a folder, with the test key file the way the
-    owner's local setup uses it (STRATA_UPDATE_TRUSTED_KEYS)."""
+    owner's local setup uses it (NOSTROMA_UPDATE_TRUSTED_KEYS)."""
 
     def setUp(self):
         super().setUp()
         self.pub = self.root / "feed-key.pub.json"
         self.pub.write_text(json.dumps({"keys": [signing.public_part(self.key)]}))
-        patch = mock.patch.dict(os.environ, {"STRATA_UPDATE_TRUSTED_KEYS": str(self.pub)})
+        patch = mock.patch.dict(os.environ, {"NOSTROMA_UPDATE_TRUSTED_KEYS": str(self.pub)})
         patch.start()
         self.addCleanup(patch.stop)
         patch = mock.patch.object(updater, "detect_hardware", return_value=dict(self.hardware))
@@ -786,20 +786,20 @@ class Cli(UpdaterCase):
     def test_an_untrusted_or_forbidden_update_is_exit_5_and_fetches_nothing(self):
         self.install_current()
         self.publish(("0.1.46", fx.GOOD_ENGINE))
-        with mock.patch.dict(os.environ, {"STRATA_UPDATE_TRUSTED_KEYS": ""}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_UPDATE_TRUSTED_KEYS": ""}):
             code, _, err = self.cli("update", *self.common())
             self.assertEqual(code, 5)
             self.assertIn("trusts no update key", err)
         wrong = self.root / "wrong.json"
         wrong.write_text(json.dumps({"keys": [signing.public_part(fx.make_key())]}))
-        with mock.patch.dict(os.environ, {"STRATA_UPDATE_TRUSTED_KEYS": str(wrong)}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_UPDATE_TRUSTED_KEYS": str(wrong)}):
             code, _, err = self.cli("update", *self.common())
             self.assertEqual(code, 5)
             self.assertIn("does not trust", err)
-        with mock.patch.dict(os.environ, {"STRATA_NO_ACQUIRE": "1"}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_NO_ACQUIRE": "1"}):
             code, _, err = self.cli("update", *self.common())
             self.assertEqual(code, 5)
-            self.assertIn("STRATA_NO_ACQUIRE", err)
+            self.assertIn("NOSTROMA_NO_ACQUIRE", err)
         self.assertEqual(self.resolved(), "0.1.45")
         self.assertEqual(self.archive_requests(), [])
 
@@ -827,7 +827,7 @@ class FailedStartRecords(LazyModel):
 
     def failing_start(self):
         def start(name, **kw):
-            runtime_dir = Path(os.environ["STRATA_RUNTIME_DIR"])           # the sandbox's, set by default_test_start
+            runtime_dir = Path(os.environ["NOSTROMA_RUNTIME_DIR"])           # the sandbox's, set by default_test_start
             runtime_dir.mkdir(parents=True, exist_ok=True)
             (runtime_dir / f"{name}.json").write_text(json.dumps({"pid": 4321, "token": "a1b2c3d4" * 8, "state": "starting"}), encoding="utf-8")
             (runtime_dir / f"{name}-{'a1b2c3d4' * 8}.child.json").write_text(json.dumps({"host_token": "a1b2c3d4" * 8, "child_pid": 111}), encoding="utf-8")

@@ -25,7 +25,7 @@ sda     ST4000VN008-2DR166   3,6T    1
 zram0                         16G    0
 nvme0n1 CT500P310SSD8      465,8G    0
 
-strata: 6f32ec070f23ced9f50e704d854d775da52591ab
+nostroma: 6f32ec070f23ced9f50e704d854d775da52591ab
 {
  "source": "local",
  "version": "0.1.39",

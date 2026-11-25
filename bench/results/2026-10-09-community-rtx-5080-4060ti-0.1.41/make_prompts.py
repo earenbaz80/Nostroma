@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""make_prompts.py - builds this report's prompts from Strata's own repository text, so anyone can rebuild them.
+"""make_prompts.py - builds this report's prompts from Nostroma's own repository text, so anyone can rebuild them.
 
 One ~1,000-token warm-up and three prompts each of 4,096, 32,768 and 128,000 tokens. The text is the tag's
 docs/*.md, src/**/*.cpp, src/**/*.cu, include/**/*.hpp, serve/**/*.py and tools/**/*.py in that order (the order
@@ -8,8 +8,8 @@ non-overlapping slice of that text and starts with its own run id, so no request
 the chat template's first tokens. Token counts are of the rendered prompt, with the model pack's tokenizer and chat
 template; the server reports the real count of each request.
 
-    git -C Strata checkout v0.1.41
-    python make_prompts.py --tree Strata --tokenizer-dir <pack>/tokenizer --out prompts.json
+    git -C Nostroma checkout v0.1.41
+    python make_prompts.py --tree Nostroma --tokenizer-dir <pack>/tokenizer --out prompts.json
 
 With the v0.1.41 tree and the IQ3_S pack's tokenizer this writes a file with sha256
 d1b10bd59376564bb826b290b50f684991988ec8765af99139e3bfbe044c8895."""
@@ -20,14 +20,14 @@ import sys
 from pathlib import Path
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--tree", required=True, help="a Strata checkout at v0.1.41")
+ap.add_argument("--tree", required=True, help="a Nostroma checkout at v0.1.41")
 ap.add_argument("--tokenizer-dir", required=True, help="the model pack's tokenizer/ folder")
 ap.add_argument("--out", default="prompts.json")
 a = ap.parse_args()
 TREE, TDIR = Path(a.tree).resolve(), Path(a.tokenizer_dir)
 sys.path.insert(0, str(TREE / "tools"))
 sys.path.insert(0, str(TREE))
-import strata_tokenizer as ST   # noqa: E402
+import nostroma_tokenizer as ST   # noqa: E402
 from serve.frontend import ChatTemplate   # noqa: E402
 
 vocab = json.loads((TDIR / "vocab.json").read_text(encoding="utf-8"))
@@ -53,7 +53,7 @@ out, cursor = [], 0
 for size, target, reps in PLAN:
     for r in range(reps):
         nonce = hashlib.sha1(f"cb-{size}-{r}".encode()).hexdigest()[:8]
-        head = f"[Run cb-{size}-r{r}-{nonce}] Below is source code and documentation from the Strata repository (tag v0.1.41).\n\n"
+        head = f"[Run cb-{size}-r{r}-{nonce}] Below is source code and documentation from the Nostroma repository (tag v0.1.41).\n\n"
         n = target - n_prompt([{"role": "user", "content": head + TASK}])
         for _ in range(8):            # decode/re-encode can move the count by a token or two
             body = tok.decode(ids[cursor:cursor + n])

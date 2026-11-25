@@ -55,7 +55,7 @@ def is_certificate_error(exc: BaseException | None) -> bool:
 
 
 TRY = ("Things to try, in this order: 1) check that the date and time of this PC are right; 2) in your antivirus or security suite, switch off "
-       "'HTTPS scanning' / 'web shield' for Strata, or add Nostroma and its Python to its exceptions, then try again; 3) if you use a company "
+       "'HTTPS scanning' / 'web shield' for Nostroma, or add Nostroma and its Python to its exceptions, then try again; 3) if you use a company "
        "or school network or proxy, ask the person who runs it to trust the download addresses, or try another network (a phone hotspot "
        "is enough to tell); 4) run Windows Update, which refreshes the certificates the PC trusts. Nostroma will not skip the check: "
        "an unchecked download could be a different file.")

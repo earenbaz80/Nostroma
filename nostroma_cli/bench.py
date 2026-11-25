@@ -227,7 +227,7 @@ def _request(root: str, credential: str | None, prompt: str, max_tokens: int,
     payload = {"messages": [{"role": "user", "content": prompt}],
                "stream": True, "max_tokens": max_tokens, "temperature": 0}
     headers = {"Content-Type": "application/json", "Accept": "text/event-stream",
-               "User-Agent": "Strata-Bench/0.1"}
+               "User-Agent": "Nostroma-Bench/0.1"}
     if credential:
         headers["Authorization"] = "Bearer " + credential
     request = urllib.request.Request(root + "/v1/chat/completions",
@@ -311,7 +311,7 @@ def _cancellable_request(root: str, credential: str | None, prompt: str, timeout
     payload = {"messages": [{"role": "user", "content": prompt}],
                "stream": True, "max_tokens": 512, "temperature": 0}
     headers = {"Content-Type": "application/json", "Accept": "text/event-stream",
-               "User-Agent": "Strata-Bench/0.1"}
+               "User-Agent": "Nostroma-Bench/0.1"}
     if credential:
         headers["Authorization"] = "Bearer " + credential
     request = urllib.request.Request(root + "/v1/chat/completions",
@@ -712,7 +712,7 @@ def progress(path: Path) -> dict:
                                                 "completed_phases", "current_phase", "last_completed",
                                                 "successful"} or
             type(record.get("schema_version")) is not int or record["schema_version"] != 1 or
-            record.get("kind") != "strata.serving.benchmark.progress" or
+            record.get("kind") != "nostroma.serving.benchmark.progress" or
             record.get("suite") not in SUITES or not re.fullmatch(r"[0-9a-f]{32}", str(record.get("instance_id"))) or
             not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\+00:00",
                              str(record.get("started_at"))) or
@@ -793,7 +793,7 @@ def run(endpoint: Endpoint, telemetry: Endpoint, out: Path, *, suite: str = "ser
     phases = []
     started = _utc_now()
     planned_phases = _planned_phase_kinds(suite, repeat)
-    progress_record = {"schema_version": 1, "kind": "strata.serving.benchmark.progress",
+    progress_record = {"schema_version": 1, "kind": "nostroma.serving.benchmark.progress",
                        "suite": suite, "instance_id": instance, "started_at": started,
                        "updated_at": started, "state": "running", "planned_phases": planned_phases,
                        "completed_phases": 0, "current_phase": None,
@@ -854,7 +854,7 @@ def run(endpoint: Endpoint, telemetry: Endpoint, out: Path, *, suite: str = "ser
             if require_managed_match and (not managed_after["matched"] or
                                           managed_after.get("instance_id") != managed_before.get("instance_id")):
                 success = False
-            report = {"schema_version": SCHEMA, "kind": "strata.serving.benchmark",
+            report = {"schema_version": SCHEMA, "kind": "nostroma.serving.benchmark",
                       "run_id": uuid.uuid4().hex, "suite": suite, "started_at": started,
                       "finished_at": _utc_now(), "server_root": endpoint.root,
                       "condition": condition, "environment": _environment(before),
@@ -900,7 +900,7 @@ def load(path: Path) -> dict:
         raise ProfileError("cannot read benchmark report", 5) from None
     planned = result.get("planned_phases") if isinstance(result, dict) else None
     if not isinstance(result, dict) or type(result.get("schema_version")) is not int or \
-            result.get("schema_version") != SCHEMA or result.get("kind") != "strata.serving.benchmark" or \
+            result.get("schema_version") != SCHEMA or result.get("kind") != "nostroma.serving.benchmark" or \
             not isinstance(result.get("phases"), list) or len(result["phases"]) > 21 or \
             not re.fullmatch(r"[0-9a-f]{32}", str(result.get("run_id", ""))) or \
             not isinstance(result.get("suite"), str) or result["suite"] not in SUITES or \
@@ -1070,7 +1070,7 @@ def compare(baseline: dict, candidate: dict) -> dict:
         new_values = [phase["metrics"][key]["candidate"] for phase in primary]
         medians[key] = _change(statistics.median(old_values) if all(x is not None for x in old_values) else None,
                                statistics.median(new_values) if all(x is not None for x in new_values) else None)
-    return {"schema_version": 1, "kind": "strata.serving.benchmark_comparison",
+    return {"schema_version": 1, "kind": "nostroma.serving.benchmark_comparison",
             "suite": baseline["suite"], "model_id": baseline["model_id"],
             "baseline": {"run_id": baseline["run_id"], "condition": baseline.get("condition"),
                          "profile_running_match": baseline.get("profile_running_match", "unverified")},

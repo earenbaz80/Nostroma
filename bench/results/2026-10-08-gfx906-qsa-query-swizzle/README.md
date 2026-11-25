@@ -14,7 +14,7 @@ The final hardened combined engine also passes a 200,000-token capacity run and 
 
 The change permutes only the shared-memory query layout in `attn_chunk_kernel`: `q(d) = d XOR ((d >> 3) & 4)`. The scoring loads invert the permutation. The mapping is bijective and self-inverse over the 256 dimensions, preserves 16-byte load alignment and the 12 KiB query tile, and leaves the logical floating-point operands and operation order unchanged. Score reduction, softmax, value accumulation and merge code are unchanged.
 
-Enable with `STRATA_GFX906_ATTN_QUERY_SWIZZLE=1`; the default is off. The runtime guard requires the calling thread's current device to be exactly gfx906, allowing normal architecture-feature suffixes, with a 64-lane wavefront. It checks the current device on each eligible dispatch, caches properties per thread and last device ordinal, and fails closed on HIP errors.
+Enable with `NOSTROMA_GFX906_ATTN_QUERY_SWIZZLE=1`; the default is off. The runtime guard requires the calling thread's current device to be exactly gfx906, allowing normal architecture-feature suffixes, with a 64-lane wavefront. It checks the current device on each eligible dispatch, caches properties per thread and last device ordinal, and fails closed on HIP errors.
 
 The opt-in applies to INT8 pools in `qsa_decode_attn_batch`, including PREFILL, VERIFY and MTP calls with `n_q=1`. A main model using k8v4 can still reach this path through its INT8 MTP drafter. `qsa_decode_attn_step`, other pool formats, lane-cell scoring and other GPU/default paths retain their existing dispatch.
 

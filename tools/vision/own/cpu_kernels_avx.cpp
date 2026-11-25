@@ -9,7 +9,7 @@
 #if defined(__x86_64__) || defined(_M_X64)
 #include <immintrin.h>
 
-namespace strata_vit {
+namespace nostroma_vit {
 namespace {
 namespace kn {
 
@@ -18,7 +18,7 @@ template <class T> inline T kmax(T a, T b) { return a < b ? b : a; }
 inline void kcopy(float* d, const float* s, int n) { for (int i = 0; i < n; ++i) d[i] = s[i]; }
 inline void kzero(float* d, int n) { for (int i = 0; i < n; ++i) d[i] = 0.0f; }
 
-#define STRATA_KN_RAW 1
+#define NOSTROMA_KN_RAW 1
 constexpr int VW = 8;
 typedef __m256 VR;
 inline VR vr_load(const float* p) { return _mm256_loadu_ps(p); }
@@ -45,7 +45,7 @@ inline float vr_hmax(VR a) {
     return _mm_cvtss_f32(s);
 }
 
-#define STRATA_KN_HAS_MICRO 1
+#define NOSTROMA_KN_HAS_MICRO 1
 template <int MR>
 inline void micro(const float* A, size_t lda, const float* B, size_t ldb, int K, float* C, size_t ldc, int init, const float* bias) {
     __m256 acc[MR][2];
@@ -156,19 +156,19 @@ inline void conv16(const void* Wm, int kind, size_t off, int n, float* out) {
 
 }  // namespace kn
 }  // namespace
-}  // namespace strata_vit
+}  // namespace nostroma_vit
 
-#define STRATA_KN_MR 6
+#define NOSTROMA_KN_MR 6
 #define KN_MIN(a, b) kmin(a, b)
 #define KN_MAX(a, b) kmax(a, b)
 #define KN_COPY(d, s, n) kcopy((d), (s), (n))
 #define KN_ZERO(d, n) kzero((d), (n))
-#define STRATA_KN_NAME "avx"
-#define STRATA_KN_GETTER cpu_ops_avx
+#define NOSTROMA_KN_NAME "avx"
+#define NOSTROMA_KN_GETTER cpu_ops_avx
 #include "cpu_kernels_impl.h"
 
 #else
-namespace strata_vit {
+namespace nostroma_vit {
 const CpuOps& cpu_ops_avx() { return cpu_ops_scalar(); }
 }
 #endif

@@ -10,7 +10,7 @@ from pathlib import Path
 from nostroma_cli.launch import runner as R
 from tests.terminal.launch_support import Home
 
-ENGINE_LINE = "strata: 4 requests at once do not fit in this PC's memory: start with --batch 3"
+ENGINE_LINE = "nostroma: 4 requests at once do not fit in this PC's memory: start with --batch 3"
 STEP = ("This PC's memory cannot hold that many requests at once. Lower Concurrent requests in the app (or `--parallel` in the Terminal) "
         "by one and start again.")
 FAILED = {"state": "failed", "error": "server_exited", "engine_exit_code": 1}
@@ -26,7 +26,7 @@ class BatchMemoryWords(unittest.TestCase):
 
     def test_the_step_says_to_lower_the_concurrent_requests(self):
         with Home() as h:
-            cfg = self.config(h, ["strata serve: prefill: copy stream", ENGINE_LINE])
+            cfg = self.config(h, ["nostroma serve: prefill: copy stream", ENGINE_LINE])
             text, nxt = R.explain_engine_exit(FAILED, cfg)
         self.assertIn(ENGINE_LINE, text)
         self.assertTrue(nxt.startswith(STEP), nxt)
@@ -35,7 +35,7 @@ class BatchMemoryWords(unittest.TestCase):
     def test_the_step_beats_the_shared_memory_advice_on_a_strix_halo(self):
         args = ["--expert-cache", "8000", "--resident-budget-gib", "38"]
         with Home() as h:
-            other = self.config(h, ["strata serve: something odd"], args)
+            other = self.config(h, ["nostroma serve: something odd"], args)
             _, control = R.explain_engine_exit(FAILED, other, shared_memory=True)
             self.assertIn("shares its memory with the RAM", control)        # the control: this config does get the advice for another failure
             cfg = self.config(h, [ENGINE_LINE], args)
@@ -45,7 +45,7 @@ class BatchMemoryWords(unittest.TestCase):
 
     def test_another_failure_keeps_its_own_step(self):
         with Home() as h:
-            cfg = self.config(h, ["strata serve: something odd"])
+            cfg = self.config(h, ["nostroma serve: something odd"])
             _, nxt = R.explain_engine_exit(FAILED, cfg)
         self.assertTrue(nxt.startswith("Run it again; if it repeats, report the log."), nxt)
 

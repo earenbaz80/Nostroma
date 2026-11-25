@@ -10,17 +10,17 @@ import { createControl } from '../server/control-runtime.mjs';
 
 /** The host in the packaged app with a stand-in for Nostroma Control: the move itself is Control's (tests/terminal/test_models_move.py). */
 function fixture(t, { plan = {}, move = null, unfinished = null } = {}) {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), 'strata-mfolder-')));
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'nostroma-mfolder-')));
   const install = join(root, 'install'), data = join(root, 'host'), oldFolder = join(root, 'old'), newFolder = join(root, 'new');
   for (const d of [install, data, oldFolder, newFolder]) mkdirSync(d, { recursive: true });
-  const earlier = { install: process.env.STRATA_INSTALL_DIR, terminal: process.env.STRATA_TERMINAL_SETTINGS_FILE, settings: process.env.STRATA_SETTINGS_FILE, comp: process.env.STRATA_COMPONENTS_DIR };
-  process.env.STRATA_INSTALL_DIR = install;
-  process.env.STRATA_TERMINAL_SETTINGS_FILE = join(root, 'terminal-settings.json');
-  process.env.STRATA_COMPONENTS_DIR = join(root, 'components');
-  delete process.env.STRATA_SETTINGS_FILE;
+  const earlier = { install: process.env.NOSTROMA_INSTALL_DIR, terminal: process.env.NOSTROMA_TERMINAL_SETTINGS_FILE, settings: process.env.NOSTROMA_SETTINGS_FILE, comp: process.env.NOSTROMA_COMPONENTS_DIR };
+  process.env.NOSTROMA_INSTALL_DIR = install;
+  process.env.NOSTROMA_TERMINAL_SETTINGS_FILE = join(root, 'terminal-settings.json');
+  process.env.NOSTROMA_COMPONENTS_DIR = join(root, 'components');
+  delete process.env.NOSTROMA_SETTINGS_FILE;
   const calls = [];
   const control = {
-    control: { dir: join(root, 'control'), python: join(root, 'control', 'python.exe'), cli: join(root, 'control', 'strata.py') }, version: '0.2.2',
+    control: { dir: join(root, 'control'), python: join(root, 'control', 'python.exe'), cli: join(root, 'control', 'nostroma.py') }, version: '0.2.2',
     async installedModels() { return { install_dir: install, models: [] }; },
     async engine() { return { usable: true, engine: { version: '0.2.2', root: root } }; },
     async importPlan() { return {}; },
@@ -47,13 +47,13 @@ function fixture(t, { plan = {}, move = null, unfinished = null } = {}) {
   const spawnProcess = () => { throw new Error('the host starts no process here'); };
   const native = createNativeControl({ control, directory: data, spawnProcess, fetcher: async () => Response.json({}), requests: () => [] });
   t.after(() => {
-    for (const [key, name] of [['install', 'STRATA_INSTALL_DIR'], ['terminal', 'STRATA_TERMINAL_SETTINGS_FILE'], ['settings', 'STRATA_SETTINGS_FILE'], ['comp', 'STRATA_COMPONENTS_DIR']]) {
+    for (const [key, name] of [['install', 'NOSTROMA_INSTALL_DIR'], ['terminal', 'NOSTROMA_TERMINAL_SETTINGS_FILE'], ['settings', 'NOSTROMA_SETTINGS_FILE'], ['comp', 'NOSTROMA_COMPONENTS_DIR']]) {
       if (earlier[key] === undefined) delete process.env[name]; else process.env[name] = earlier[key];
     }
     rmSync(root, { recursive: true, force: true });
   });
   native.setDownloadDirectory(oldFolder);
-  return { native, control, calls, root, install, oldFolder, newFolder, terminalFile: process.env.STRATA_TERMINAL_SETTINGS_FILE };
+  return { native, control, calls, root, install, oldFolder, newFolder, terminalFile: process.env.NOSTROMA_TERMINAL_SETTINGS_FILE };
 }
 const finish = async (native, id) => { for (let i = 0; i < 400; i++) { const job = native.state().jobs.find(j => j.id === id); if (job.state !== 'running') return job; await new Promise(r => setTimeout(r, 10)); } throw new Error('job did not finish'); };
 
@@ -68,16 +68,16 @@ test('the plan says what the picked folder means and keeps the person\'s spellin
   assert.deepEqual(f.calls[0], ['plan', f.oldFolder, f.newFolder]);
 });
 
-test('a whole drive is planned as <drive>\\Strata, shown as <drive>\\Strata\\Models', async t => {
+test('a whole drive is planned as <drive>\\Nostroma, shown as <drive>\\Nostroma\\Models', async t => {
   const f = fixture(t);
   const root = f.root.slice(0, f.root.indexOf(process.platform === 'win32' ? '\\' : '/') + 1) || '/';
-  const before = existsSync(join(root, 'Strata'));
+  const before = existsSync(join(root, 'Nostroma'));
   const plan = await f.native.planModelsFolder(root);
-  assert.equal(existsSync(join(root, 'Strata')), before, 'planning must not create or remove anything');
+  assert.equal(existsSync(join(root, 'Nostroma')), before, 'planning must not create or remove anything');
   assert.equal(plan.wholeDrive, true);
-  assert.equal(plan.folder, join(root, 'Strata'));
-  assert.equal(plan.shown, join(root, 'Strata', 'Models'));
-  // Planning must not touch the disk. This test never creates <drive>\Strata, so it never deletes it either (#4689).
+  assert.equal(plan.folder, join(root, 'Nostroma'));
+  assert.equal(plan.shown, join(root, 'Nostroma', 'Models'));
+  // Planning must not touch the disk. This test never creates <drive>\Nostroma, so it never deletes it either (#4689).
 });
 
 test('the card is blocked while a model runs or a job runs: a running model must be stopped on purpose', async t => {
@@ -103,13 +103,13 @@ test('Start empty: the old models are no longer listed (their run configs are se
   const oldFile = join(f.oldFolder, 'models', 'gyro-s', 'a.gguf');
   mkdirSync(join(f.oldFolder, 'models', 'gyro-s'), { recursive: true });
   writeFileSync(oldFile, 'x');
-  writeFileSync(join(f.install, 'strata-gyro-s.json'), JSON.stringify({ args: ['--native', oldFile] }));
-  writeFileSync(join(f.install, 'strata-other.json'), JSON.stringify({ args: ['--native', join(f.root, 'elsewhere', 'b.gguf')] }));
+  writeFileSync(join(f.install, 'nostroma-gyro-s.json'), JSON.stringify({ args: ['--native', oldFile] }));
+  writeFileSync(join(f.install, 'nostroma-other.json'), JSON.stringify({ args: ['--native', join(f.root, 'elsewhere', 'b.gguf')] }));
   const result = await f.native.startModelsFolder({ folder: f.newFolder, choice: 'empty' });
-  assert.deepEqual(result.setAside, ['strata-gyro-s.json']);
-  assert.equal(existsSync(join(f.install, 'strata-gyro-s.json')), false);
-  assert.equal(existsSync(join(f.install, 'old-models', 'strata-gyro-s.json')), true);
-  assert.equal(existsSync(join(f.install, 'strata-other.json')), true, 'a model elsewhere is not touched');
+  assert.deepEqual(result.setAside, ['nostroma-gyro-s.json']);
+  assert.equal(existsSync(join(f.install, 'nostroma-gyro-s.json')), false);
+  assert.equal(existsSync(join(f.install, 'old-models', 'nostroma-gyro-s.json')), true);
+  assert.equal(existsSync(join(f.install, 'nostroma-other.json')), true, 'a model elsewhere is not touched');
   assert.equal(existsSync(oldFile), true);
   assert.equal(f.native.state().downloadDirectory, f.newFolder);
 });
@@ -160,13 +160,13 @@ test('Move: Stop writes the cancel file and the run ends by itself', async t => 
 
 test('a move needs the app: the Control command line is built from the plan and the cancel file', async () => {
   const seen = [];
-  const control = createControl({ control: { dir: '/c', python: '/c/py', cli: '/c/strata.py' }, run: async (args, options) => { seen.push([args, options]); return args.includes('--plan') ? { code: 0, json: { ok: true, plan: { ok: true } }, text: '', stderr: '' } : { code: 0, json: { ok: true, event: 'result', done: true }, text: '', stderr: '' }; } });
+  const control = createControl({ control: { dir: '/c', python: '/c/py', cli: '/c/nostroma.py' }, run: async (args, options) => { seen.push([args, options]); return args.includes('--plan') ? { code: 0, json: { ok: true, plan: { ok: true } }, text: '', stderr: '' } : { code: 0, json: { ok: true, event: 'result', done: true }, text: '', stderr: '' }; } });
   assert.deepEqual(await control.planModelsMove('/old', '/new'), { ok: true });
   assert.deepEqual(seen[0][0], ['models', 'move', '/new', '--from', '/old', '--plan', '--output', 'json']);
   const result = await control.moveModels('/old', '/new', { installDir: '/i', cancelFile: '/c.cancel' });
   assert.equal(result.done, true);
   assert.deepEqual(seen[1][0], ['models', 'move', '/new', '--from', '/old', '--install-dir', '/i', '--cancel-file', '/c.cancel', '--output', 'jsonl']);
-  const failing = createControl({ control: { dir: '/c', python: '/c/py', cli: '/c/strata.py' }, run: async () => ({ code: 5, json: { ok: false, error: { code: 'disk_full', message: 'The drive ran out of space.', details: 'ENOSPC' }, moved: [] }, text: '', stderr: '' }) });
+  const failing = createControl({ control: { dir: '/c', python: '/c/py', cli: '/c/nostroma.py' }, run: async () => ({ code: 5, json: { ok: false, error: { code: 'disk_full', message: 'The drive ran out of space.', details: 'ENOSPC' }, moved: [] }, text: '', stderr: '' }) });
   await assert.rejects(failing.moveModels('/o', '/n'), e => e.code === 'disk_full' && e.details === 'ENOSPC' && /ran out of space/.test(e.message));
 });
 
@@ -195,7 +195,7 @@ test('Leave it keeps the old folder and asks Control to remove the partial copie
 
 test('the Control command lines for status, resume and leave', async () => {
   const seen = [];
-  const control = createControl({ control: { dir: '/c', python: '/c/py', cli: '/c/strata.py' }, run: async args => { seen.push(args); return args.includes('--status') ? { code: 0, json: { ok: true, interrupted: { from: '/o', to: '/n' } }, text: '', stderr: '' } : args.includes('--leave') ? { code: 0, json: { ok: true, removed: 0 }, text: '', stderr: '' } : { code: 0, json: { ok: true, event: 'result', done: true }, text: '', stderr: '' }; } });
+  const control = createControl({ control: { dir: '/c', python: '/c/py', cli: '/c/nostroma.py' }, run: async args => { seen.push(args); return args.includes('--status') ? { code: 0, json: { ok: true, interrupted: { from: '/o', to: '/n' } }, text: '', stderr: '' } : args.includes('--leave') ? { code: 0, json: { ok: true, removed: 0 }, text: '', stderr: '' } : { code: 0, json: { ok: true, event: 'result', done: true }, text: '', stderr: '' }; } });
   assert.equal((await control.interruptedModelsMove('/o')).to, '/n');
   await control.resumeModelsMove('/o', { installDir: '/i', cancelFile: '/c.cancel' });
   await control.leaveModelsMove('/o', { installDir: '/i' });

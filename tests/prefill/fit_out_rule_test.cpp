@@ -10,9 +10,9 @@
 #include <cstdio>
 #include <initializer_list>
 
-#include "strata/prefill/fit_out_rule.hpp"
+#include "nostroma/prefill/fit_out_rule.hpp"
 
-namespace fo = strata::prefill::fit_out;
+namespace fo = nostroma::prefill::fit_out;
 
 static int failed = 0;
 #define CHECK(x) do { if (!(x)) { std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #x); ++failed; } } while (0)
@@ -44,8 +44,8 @@ int main() {
     {
         fo::ScanCase c = on; c.auto_chunk = false; CHECK(fo::scan_tail(c) == -1);      // --prefill N
         c = on; c.one_gpu = false; CHECK(fo::scan_tail(c) == -1);                      // a split, a peer card, slots, head alias
-        c = on; c.tail_loan = false; CHECK(fo::scan_tail(c) == -1);                    // STRATA_PREFILL_TAIL_LOAN=0
-        c = on; c.equal_cut = false; CHECK(fo::scan_tail(c) == -1);                    // STRATA_PREFILL_EQUAL=0: today's count
+        c = on; c.tail_loan = false; CHECK(fo::scan_tail(c) == -1);                    // NOSTROMA_PREFILL_TAIL_LOAN=0
+        c = on; c.equal_cut = false; CHECK(fo::scan_tail(c) == -1);                    // NOSTROMA_PREFILL_EQUAL=0: today's count
         c = on; c.small_path = true; CHECK(fo::scan_tail(c) == -1);                    // the small-card prompt path
         c = on; c.fused_at_chunk = false; CHECK(fo::scan_tail(c) == -1);               // no fused layout: no tail is carved
     }

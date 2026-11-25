@@ -2,7 +2,7 @@
   "kind": "observational interactive sessions; not the controlled prefill A/B workload",
   "date": "2026-10-04",
   "q2_0": {
-    "strata": {
+    "nostroma": {
       "requests": 5,
       "output_tokens": 5552,
       "decode_seconds": 118.236,
@@ -20,7 +20,7 @@
     }
   },
   "unsloth_ud_iq4_xs": {
-    "strata": {
+    "nostroma": {
       "requests": 5,
       "output_tokens": 3670,
       "decode_seconds": 100.784,

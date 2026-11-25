@@ -14,7 +14,7 @@ const cwd = fileURLToPath(new URL('..', import.meta.url));
 const freePort = () => new Promise(resolve => { const s = net.createServer(); s.listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => resolve(p)); }); });
 
 test('every listen() of the host process, from its start until it answers, is on the loopback address', async t => {
-  const home = realpathSync(mkdtempSync(join(tmpdir(), 'strata-loop-'))); t.after(() => rmSync(home, { recursive: true, force: true }));
+  const home = realpathSync(mkdtempSync(join(tmpdir(), 'nostroma-loop-'))); t.after(() => rmSync(home, { recursive: true, force: true }));
   const log = join(home, 'listen-calls.jsonl');
   const hook = join(home, 'hook.cjs');
   writeFileSync(hook, `const fs = require('fs'); const net = require('net'); const dgram = require('dgram');
@@ -22,8 +22,8 @@ const note = (what, args) => { try { fs.appendFileSync(${JSON.stringify(log)}, J
 const l = net.Server.prototype.listen; net.Server.prototype.listen = function (...a) { note('listen', a); return l.apply(this, a); };
 const b = dgram.Socket.prototype.bind; dgram.Socket.prototype.bind = function (...a) { note('bind', a); return b.apply(this, a); };\n`);
   const port = await freePort();
-  const env = { ...process.env, STRATA_HOME: home, STRATA_PORT: String(port), STRATA_MODELS_DIR: join(home, 'm'), NODE_OPTIONS: `--require ${hook}` };
-  delete env.STRATA_SHARE_PORT; delete env.STRATA_TUNNEL_PORT; delete env.STRATA_BIND;
+  const env = { ...process.env, NOSTROMA_HOME: home, NOSTROMA_PORT: String(port), NOSTROMA_MODELS_DIR: join(home, 'm'), NODE_OPTIONS: `--require ${hook}` };
+  delete env.NOSTROMA_SHARE_PORT; delete env.NOSTROMA_TUNNEL_PORT; delete env.NOSTROMA_BIND;
   const child = spawn(process.execPath, ['server/index.mjs'], { cwd, env });
   let err = ''; child.stderr.on('data', d => { err += d; });
   t.after(() => { child.kill(); });

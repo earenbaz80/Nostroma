@@ -16,10 +16,10 @@
  "engine_prompt_tps": 1775.8,
  "engine_decode_tps": 89.2,
  "log_lines": [
-  "strata serve: prompt 4201 tokens = 0 reused + 4201 read in 2366 ms (1775.8 tok/s), 256 generated in 2868 ms (89.2 tok/s), drafts accepted 161 of 222, 1 checkpoints",
-  "strata serve: decode expert cache hit rate: 96.0% (144002 hits / 149996 lookups)"
+  "nostroma serve: prompt 4201 tokens = 0 reused + 4201 read in 2366 ms (1775.8 tok/s), 256 generated in 2868 ms (89.2 tok/s), drafts accepted 161 of 222, 1 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 96.0% (144002 hits / 149996 lookups)"
  ],
- "answer_head": "The `CMakeLists.txt` file is the top-level build configuration for the **Strata Engine**. Its primary responsibilities are:\n\n1.  **Project Definition**: Sets up the project name (`strata`), version (`0.1.26`), and C++20 standard.\n2.  **Backend Selection**: Manages mutually exclusive GPU backends (CU",
+ "answer_head": "The `CMakeLists.txt` file is the top-level build configuration for the **Nostroma Engine**. Its primary responsibilities are:\n\n1.  **Project Definition**: Sets up the project name (`nostroma`), version (`0.1.26`), and C++20 standard.\n2.  **Backend Selection**: Manages mutually exclusive GPU backends (CU",
  "metrics_after": {
   "engine": {
    "model": "qwen3.8-flash-next-iq3_xxs",

@@ -1,6 +1,6 @@
 """Tests for the patch that puts Nostroma's DiT GEMMs into the native Qwen-Image-2.1 runner of sd-cli
 (tools/image/sdcpp_dit/apply.py), on a stand-in checkout with the native runner applied by its own patch: the sources it
-copies (byte for byte), the CMake target, the runner's switch (strata_dit_gemm=1, off without it) and its gemm() branch,
+copies (byte for byte), the CMake target, the runner's switch (nostroma_dit_gemm=1, off without it) and its gemm() branch,
 that a second run changes nothing, and that a checkout without the native runner is refused.
 
     python -m unittest tools.test_sdcpp_dit
@@ -22,8 +22,8 @@ def load(name, path):
     return m
 
 
-D = load("strata_sdcpp_dit_apply_test", ROOT / "tools" / "image" / "sdcpp_dit" / "apply.py")
-N = load("strata_sdcpp_native_apply_for_dit_test", ROOT / "tools" / "image" / "sdcpp_native" / "apply.py")
+D = load("nostroma_sdcpp_dit_apply_test", ROOT / "tools" / "image" / "sdcpp_dit" / "apply.py")
+N = load("nostroma_sdcpp_native_apply_for_dit_test", ROOT / "tools" / "image" / "sdcpp_native" / "apply.py")
 
 CMAKE = "add_library(${SD_LIB} STATIC ${SD_LIB_SOURCES})\ntarget_include_directories(${SD_LIB} PUBLIC . src include)\n"
 BUILDERS = '#include "model/diffusion/minit2i.hpp"\n' + N.BUILDER_OLD
@@ -46,21 +46,21 @@ class DitApply(unittest.TestCase):
             sd = fake_tree(Path(td))
             D.apply(sd)
             for src, rel in D.FILES:
-                self.assertEqual((sd / "src" / "strata_dit" / rel).read_bytes(), (ROOT / src).read_bytes(), rel)
-            self.assertTrue((sd / "src" / "strata_dit" / D.HIP_COMPAT / "cublas_v2.h").is_file())
+                self.assertEqual((sd / "src" / "nostroma_dit" / rel).read_bytes(), (ROOT / src).read_bytes(), rel)
+            self.assertTrue((sd / "src" / "nostroma_dit" / D.HIP_COMPAT / "cublas_v2.h").is_file())
             nat = (sd / "src" / "model" / "diffusion" / "qwen_image_2_1_native.hpp").read_text()
-            self.assertEqual(nat.count('#include "strata/image/dit_gemm.hpp"'), 1)
-            self.assertEqual(nat.count('std::strstr(model_args, "strata_dit_gemm=1")'), 1)
-            self.assertEqual(nat.count("strata::image::dit_gemm("), 2)          # gemm() and the prelude / head helper
+            self.assertEqual(nat.count('#include "nostroma/image/dit_gemm.hpp"'), 1)
+            self.assertEqual(nat.count('std::strstr(model_args, "nostroma_dit_gemm=1")'), 1)
+            self.assertEqual(nat.count("nostroma::image::dit_gemm("), 2)          # gemm() and the prelude / head helper
             for part in ("timestep MLP, modulation and the final scale", ": txt_in", ": the output head"):
                 self.assertEqual(nat.count(part), 1, part)
             self.assertEqual(nat.count("} else\n#endif\n"), 3)                  # each falls back to the ggml block
-            self.assertEqual(nat.count("bool strata_gemm = false;"), 1)
+            self.assertEqual(nat.count("bool nostroma_gemm = false;"), 1)
             # without the argument the old ggml_mul_mat path is still there, right after the branch
             self.assertIn("#endif\n            ggml_tensor* y = ggml_mul_mat(g.ctx, weight, rows(g.ctx, src, n));", nat)
             cm = (sd / "CMakeLists.txt").read_text()
-            self.assertEqual(cm.count("add_library(strata_dit STATIC"), 2)          # CUDA and HIP branches
-            self.assertEqual(cm.count("target_compile_definitions(${SD_LIB} PRIVATE SD_STRATA_DIT)"), 1)
+            self.assertEqual(cm.count("add_library(nostroma_dit STATIC"), 2)          # CUDA and HIP branches
+            self.assertEqual(cm.count("target_compile_definitions(${SD_LIB} PRIVATE SD_NOSTROMA_DIT)"), 1)
             before = {p: p.read_bytes() for p in sd.rglob("*") if p.is_file()}
             D.apply(sd)
             after = {p: p.read_bytes() for p in sd.rglob("*") if p.is_file()}

@@ -3,16 +3,16 @@
 //   1. `auto` picks the most groups, at most one per stage, that divide the slots;
 //   2. a layer split with --batch >= 2 and no --batch-groups means `auto` (0.1.41);
 //   3. --batch-mtp (or --adapt-async 1) turns that default into one group, and says which feature did it;
-//      with STRATA_PIPED_MTP and one slot per group, --batch-mtp keeps the pipeline and drafts in it;
+//      with NOSTROMA_PIPED_MTP and one slot per group, --batch-mtp keeps the pipeline and drafts in it;
 //   4. a number or `auto` given explicitly is honoured, with or without those features;
 //   5. no layer split: the number given (1) stays;
-//   6. STRATA_PIPE_ADAPT_EVERY: off unless a positive number; a round is due after N group windows, never with the tier
+//   6. NOSTROMA_PIPE_ADAPT_EVERY: off unless a positive number; a round is due after N group windows, never with the tier
 //      off, beside --adapt-async, while a prompt is read or while the last round's copies are in flight.
-#include "strata/program/batch_groups.hpp"
+#include "nostroma/program/batch_groups.hpp"
 
 #include <cstdio>
 
-namespace bg = strata::program::batch_groups;
+namespace bg = nostroma::program::batch_groups;
 
 namespace {
 int g_fail = 0;
@@ -58,34 +58,34 @@ int main() {
         i.mtp_serial = true;
         r = bg::resolve(i);
         check(r.groups == 1 && r.from_auto && r.serial == bg::Serial::BatchMtp && r.would_be == 2 && !r.mtp_dropped,
-              "STRATA_BATCH_MTP_SERIAL: one group, because of --batch-mtp");
+              "NOSTROMA_BATCH_MTP_SERIAL: one group, because of --batch-mtp");
         check(bg::serial_what(r.serial)[0] == '-', "the reason names the feature");
     }
-    {   // STRATA_PIPED_MTP: the pipelined groups draft too, with any number of slots per group
+    {   // NOSTROMA_PIPED_MTP: the pipelined groups draft too, with any number of slots per group
         bg::Input i = in(4, 3);
         i.batch_mtp = true;
         i.mtp_piped = true;
         auto r = bg::resolve(i);
         check(r.groups == 4 && r.mtp_piped && !r.mtp_dropped && r.serial == bg::Serial::None,
-              "STRATA_PIPED_MTP, 4 slots on 4 GPUs: 4 groups of 1 slot, and the drafts stay");
+              "NOSTROMA_PIPED_MTP, 4 slots on 4 GPUs: 4 groups of 1 slot, and the drafts stay");
         i.batch = 8;   // two slots per group: the group's window carries both slots' rows, each with its own drafts
         r = bg::resolve(i);
         check(r.groups == 4 && r.mtp_piped && !r.mtp_dropped && r.serial == bg::Serial::None,
-              "STRATA_PIPED_MTP, 8 slots on 4 GPUs: 4 groups of 2 slots, and the drafts stay");
+              "NOSTROMA_PIPED_MTP, 8 slots on 4 GPUs: 4 groups of 2 slots, and the drafts stay");
         i.batch = 4;
         i.mtp_serial = true;   // asked for the serial windows: those win
         r = bg::resolve(i);
         check(r.groups == 1 && !r.mtp_piped && r.serial == bg::Serial::BatchMtp,
-              "STRATA_PIPED_MTP with STRATA_BATCH_MTP_SERIAL: one serial group");
+              "NOSTROMA_PIPED_MTP with NOSTROMA_BATCH_MTP_SERIAL: one serial group");
         i.mtp_serial = false;
         i.batch_mtp = false;
         r = bg::resolve(i);
-        check(r.groups == 4 && !r.mtp_piped && !r.mtp_dropped, "STRATA_PIPED_MTP without --batch-mtp: nothing to draft");
+        check(r.groups == 4 && !r.mtp_piped && !r.mtp_dropped, "NOSTROMA_PIPED_MTP without --batch-mtp: nothing to draft");
         i.batch_mtp = true;
         i.set = true;
         i.given = 1;   // one group: the serial windows, where --batch-mtp's own drafts run
         r = bg::resolve(i);
-        check(r.groups == 1 && !r.mtp_piped && !r.mtp_dropped, "STRATA_PIPED_MTP, --batch-groups 1: the serial path, --batch-mtp runs there");
+        check(r.groups == 1 && !r.mtp_piped && !r.mtp_dropped, "NOSTROMA_PIPED_MTP, --batch-groups 1: the serial path, --batch-mtp runs there");
     }
     {   // 0.1.49.2 port: --batch-groups given EXPLICITLY (a number or `auto`) must not silently
         // drop the drafts: the operator asked for those groups, and one slot per group still drafts.
@@ -97,31 +97,31 @@ int main() {
         i.given = 4;
         auto r = bg::resolve(i);
         check(r.groups == 4 && r.mtp_piped && !r.mtp_dropped && r.serial == bg::Serial::None,
-              "STRATA_PIPED_MTP, --batch-groups auto given: 4 groups of 1 slot, and the drafts stay");
+              "NOSTROMA_PIPED_MTP, --batch-groups auto given: 4 groups of 1 slot, and the drafts stay");
         i.auto_given = false;  // --batch-groups 4
         r = bg::resolve(i);
         check(r.groups == 4 && r.mtp_piped && !r.mtp_dropped && r.serial == bg::Serial::None,
-              "STRATA_PIPED_MTP, --batch-groups 4 given: 4 groups of 1 slot, and the drafts stay");
+              "NOSTROMA_PIPED_MTP, --batch-groups 4 given: 4 groups of 1 slot, and the drafts stay");
         i.given = 2;           // two slots per group: the group's window carries both slots' rows
         r = bg::resolve(i);
         check(r.groups == 2 && r.mtp_piped && !r.mtp_dropped,
-              "STRATA_PIPED_MTP, --batch-groups 2 given: 2 groups of 2 slots, and the drafts stay");
+              "NOSTROMA_PIPED_MTP, --batch-groups 2 given: 2 groups of 2 slots, and the drafts stay");
     }
-    {   // 0.2.7: two NVIDIA cards pipeline by default; the serial default is opt-in (STRATA_BATCH_GROUPS_NV_SERIAL=1, STRATA_DEFAULTS=026)
+    {   // 0.2.7: two NVIDIA cards pipeline by default; the serial default is opt-in (NOSTROMA_BATCH_GROUPS_NV_SERIAL=1, NOSTROMA_DEFAULTS=026)
         check(!bg::nv_serial_wanted(nullptr, false), "NV_SERIAL unset: the pipeline");
         check(!bg::nv_serial_wanted("", false), "NV_SERIAL empty: the pipeline");
         check(!bg::nv_serial_wanted("0", false), "NV_SERIAL=0: the pipeline");
         check(bg::nv_serial_wanted("1", false), "NV_SERIAL=1: serial");
         check(bg::nv_serial_wanted("yes", false), "NV_SERIAL=yes: serial");
-        check(bg::nv_serial_wanted(nullptr, true), "STRATA_DEFAULTS=026: serial (v0.2.6's behaviour)");
-        check(!bg::nv_serial_wanted("0", true), "an explicit NV_SERIAL=0 wins over STRATA_DEFAULTS=026");
-        check(bg::nv_serial_wanted("", true), "NV_SERIAL empty and STRATA_DEFAULTS=026: serial");
+        check(bg::nv_serial_wanted(nullptr, true), "NOSTROMA_DEFAULTS=026: serial (v0.2.6's behaviour)");
+        check(!bg::nv_serial_wanted("0", true), "an explicit NV_SERIAL=0 wins over NOSTROMA_DEFAULTS=026");
+        check(bg::nv_serial_wanted("", true), "NV_SERIAL empty and NOSTROMA_DEFAULTS=026: serial");
         bg::Input i = in(4, 1);
         i.nv_serial_faster = bg::nv_serial_wanted(nullptr, false);
         auto r = bg::resolve(i);
         check(r.groups == 2 && r.serial == bg::Serial::None, "2 cards, 4 slots, nothing given: 2 pipelined groups, whatever the residency");
     }
-    {   // STRATA_PIPED_MTP unset: nothing changes, whatever --batch-mtp and the groups say
+    {   // NOSTROMA_PIPED_MTP unset: nothing changes, whatever --batch-mtp and the groups say
         bg::Input i = in(4, 1);
         i.batch_mtp = true;
         auto r = bg::resolve(i);
@@ -138,7 +138,7 @@ int main() {
         i.mtp_serial = true;
         r = bg::resolve(i);
         check(r.groups == 1 && !r.mtp_piped && !r.mtp_dropped && r.serial == bg::Serial::BatchMtp,
-              "unset, STRATA_BATCH_MTP_SERIAL: one serial group (as before)");
+              "unset, NOSTROMA_BATCH_MTP_SERIAL: one serial group (as before)");
     }
     {
         bg::Input i = in(2, 1);
@@ -152,7 +152,7 @@ int main() {
         i.adapt_async = true;
         check(bg::resolve(i).serial == bg::Serial::AdaptAsync, "both: --adapt-async 1 still gives one group");
         i.mtp_serial = true;
-        check(bg::resolve(i).serial == bg::Serial::BatchMtp, "both with STRATA_BATCH_MTP_SERIAL: --batch-mtp is named");
+        check(bg::resolve(i).serial == bg::Serial::BatchMtp, "both with NOSTROMA_BATCH_MTP_SERIAL: --batch-mtp is named");
     }
     {   // nothing to give way: the slots do not divide, so auto is one group anyway and there is nothing to say
         bg::Input i = in(3, 1);
@@ -208,7 +208,7 @@ int main() {
         check(bg::resolve(i).groups == 2, "an explicit number without a split is returned (the engine warns)");
     }
 
-    // STRATA_PIPE_ADAPT_EVERY
+    // NOSTROMA_PIPE_ADAPT_EVERY
     check(bg::pipe_adapt_every(nullptr) == 0 && bg::pipe_adapt_every("") == 0 && bg::pipe_adapt_every("0") == 0,
           "pipe adapt: unset, empty or 0 is off");
     check(bg::pipe_adapt_every("-5") == 0 && bg::pipe_adapt_every("off") == 0, "pipe adapt: negative or not a number is off");

@@ -4,7 +4,7 @@ import { lstatSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 export const HARNESS_BUDGET_PATCH = Object.freeze({
-  id: 'strata-pi-ai-context-safety-v2',
+  id: 'nostroma-pi-ai-context-safety-v2',
   package: '@earendil-works/pi-ai',
   version: '1.1.0',
   file: 'node_modules/@earendil-works/pi-ai/dist/api/simple-options.js',

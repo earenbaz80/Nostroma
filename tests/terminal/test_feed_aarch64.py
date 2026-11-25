@@ -1,4 +1,4 @@
-"""The Linux ARM64 (DGX Spark) Terminal reads strata-feed-linux-aarch64.json; every other machine reads strata-feed.json, as before.
+"""The Linux ARM64 (DGX Spark) Terminal reads nostroma-feed-linux-aarch64.json; every other machine reads nostroma-feed.json, as before.
 
 Why: a Control older than 0.1.53 refuses a feed that names a platform it does not know, so the linux-aarch64 entries cannot be in the common
 feed. Same format, same signing key; only the file name differs.
@@ -23,8 +23,8 @@ from nostroma_cli import update_cmd  # noqa: E402
 from nostroma_control import feed as feedmod  # noqa: E402
 from nostroma_control import updater  # noqa: E402
 
-COMMON = "strata-feed.json"
-ARM = "strata-feed-linux-aarch64.json"
+COMMON = "nostroma-feed.json"
+ARM = "nostroma-feed-linux-aarch64.json"
 RELEASE = "https://github.com/earenbaz80/Nostroma/releases/latest/download"
 
 
@@ -109,7 +109,7 @@ class ReadsTheRightFile(unittest.TestCase):
         tmp = folder / "_tmp"
         feed_tool.build_feed(tmp, key=self.key, sequence=sequence)
         for suffix in ("", ".sig"):
-            shutil.copy2(tmp / ("strata-feed.json" + suffix), folder / (name + suffix))
+            shutil.copy2(tmp / ("nostroma-feed.json" + suffix), folder / (name + suffix))
         shutil.rmtree(tmp)
 
     def test_a_folder_with_both_files(self):

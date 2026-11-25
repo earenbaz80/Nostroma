@@ -1,7 +1,7 @@
 """docker/entrypoint.sh: environment variables become `nostroma launch` flags, the key never appears on a command line, an engine
 that does not fit the card ends the start with a plain message, a started server is kept up, and SIGTERM runs `launch --stop`.
 
-Runs the real script in a temporary tree with a stub for the `strata` command (POSIX sh needed: skipped on Windows).
+Runs the real script in a temporary tree with a stub for the `nostroma` command (POSIX sh needed: skipped on Windows).
 
     python -m unittest tools.test_docker_entrypoint
 """
@@ -32,7 +32,7 @@ case "$*" in
   *"launch --status"*) echo '{"running": [{"name": "docker", "state": "ready"}]}'; exit 0 ;;
   *"--show-key"*) echo "KEY-FROM-PRESET-0123456789"; exit 0 ;;
   *"launch --stop"*) echo "stopped" >> "$STUB_LOG"; exit 0 ;;
-  *"launch --no-tui"*) echo "key-env=${STRATA_LAUNCH_KEY:-}" >> "$STUB_LOG"; [ -n "${STUB_FAIL:-}" ] && exit 6; exit 0 ;;
+  *"launch --no-tui"*) echo "key-env=${NOSTROMA_LAUNCH_KEY:-}" >> "$STUB_LOG"; [ -n "${STUB_FAIL:-}" ] && exit 6; exit 0 ;;
 esac
 exit 0
 """
@@ -44,19 +44,19 @@ class Entrypoint(unittest.TestCase):
         self.tmp = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
         (self.tmp / "opt" / "terminal" / "bin").mkdir(parents=True)
-        stub = self.tmp / "opt" / "terminal" / "bin" / "strata"
+        stub = self.tmp / "opt" / "terminal" / "bin" / "nostroma"
         stub.write_text(STUB, encoding="utf-8")
         stub.chmod(0o755)
         self.log = self.tmp / "calls.log"
         text = (ROOT / "docker" / "entrypoint.sh").read_text(encoding="utf-8")
-        text = (text.replace("/opt/strata", str(self.tmp / "opt")).replace("/data", str(self.tmp / "data"))
-                .replace("/run/strata-phase", str(self.tmp / "phase")).replace("mkdir -p ", "mkdir -p " + str(self.tmp / "run") + " ", 1))
+        text = (text.replace("/opt/nostroma", str(self.tmp / "opt")).replace("/data", str(self.tmp / "data"))
+                .replace("/run/nostroma-phase", str(self.tmp / "phase")).replace("mkdir -p ", "mkdir -p " + str(self.tmp / "run") + " ", 1))
         self.script = self.tmp / "entry.sh"
         self.script.write_text(text, encoding="utf-8")
 
     def env(self, **extra):
         env = {k: v for k, v in os.environ.items() if k not in ("MODEL", "API_KEY", "CONTEXT", "VISION", "TUNE", "PORT", "GPU", "GPUS")}
-        env.update(STUB_LOG=str(self.log), STRATA_CPUINFO=str(self.tmp / "cpuinfo"), **extra)
+        env.update(STUB_LOG=str(self.log), NOSTROMA_CPUINFO=str(self.tmp / "cpuinfo"), **extra)
         (self.tmp / "cpuinfo").write_text("flags : fpu avx2 sse4_2\n")
         return env
 
@@ -83,12 +83,12 @@ class Entrypoint(unittest.TestCase):
         (self.tmp / "models").mkdir()
         (self.tmp / "models" / "m-00001-of-00002.gguf").write_text("x")
         p = self.start(MODEL="IQ3_XXS", CONTEXT="64k", PARALLEL="2", VISION="yes", TUNE="quick", GPUS="0,1", PORT="8123", PRESET="office",
-                       API_KEY="a-long-enough-key-123456", MODEL_PATH=str(self.tmp / "models"), STRATA_SET="prefill=65536 STRATA_PIN_BY_NEED=1")
+                       API_KEY="a-long-enough-key-123456", MODEL_PATH=str(self.tmp / "models"), NOSTROMA_SET="prefill=65536 NOSTROMA_PIN_BY_NEED=1")
         log = self.wait_for("--show-key")
         line = self.launch_line(log)
         for want in ("--access lan", "--port 8123", "--model IQ3_XXS", "--model-path " + str(self.tmp / "models"), "--context 64k", "--parallel 2",
-                     "--vision on", "--gpu 0,1", "--tune quick", "--set prefill=65536", "--set STRATA_PIN_BY_NEED=1",
-                     "--save-preset office", "--api-key-env STRATA_LAUNCH_KEY"):
+                     "--vision on", "--gpu 0,1", "--tune quick", "--set prefill=65536", "--set NOSTROMA_PIN_BY_NEED=1",
+                     "--save-preset office", "--api-key-env NOSTROMA_LAUNCH_KEY"):
             self.assertIn(want, line)
         self.assertNotIn("a-long-enough-key", line)                      # the key is passed by environment, never on a command line
         self.assertIn("key-env=a-long-enough-key-123456", log)
@@ -151,24 +151,24 @@ class Entrypoint(unittest.TestCase):
     def test_a_changed_card_drops_the_saved_run_settings_of_the_old_card(self):
         install = self.tmp / "data" / "install"
         install.mkdir(parents=True)
-        (install / "strata-q2_0.json").write_text('{"gpu": 3, "args": []}')
-        (install / "strata-iq3_s.json").write_text('{"gpu": 1, "args": []}')
+        (install / "nostroma-q2_0.json").write_text('{"gpu": 3, "args": []}')
+        (install / "nostroma-iq3_s.json").write_text('{"gpu": 1, "args": []}')
         p = self.start(MODEL="Q2_0", GPU="1")
         line = self.launch_line(self.wait_for("--show-key"))
         self.assertIn("--gpu 1", line)
         code, out, err = self.stop(p)
         self.assertIn("making them again", out)
-        self.assertFalse((install / "strata-q2_0.json").exists())          # card 3 -> 1: made again from the files
-        self.assertTrue((install / "strata-iq3_s.json").exists())          # already card 1: kept
+        self.assertFalse((install / "nostroma-q2_0.json").exists())          # card 3 -> 1: made again from the files
+        self.assertTrue((install / "nostroma-iq3_s.json").exists())          # already card 1: kept
 
     def test_all_cards_leaves_the_saved_run_settings_alone(self):
         install = self.tmp / "data" / "install"
         install.mkdir(parents=True)
-        (install / "strata-q2_0.json").write_text('{"gpu": 3, "args": []}')
+        (install / "nostroma-q2_0.json").write_text('{"gpu": 3, "args": []}')
         p = self.start(MODEL="Q2_0", GPUS="all")
         self.wait_for("--show-key")
         self.stop(p)
-        self.assertTrue((install / "strata-q2_0.json").exists())
+        self.assertTrue((install / "nostroma-q2_0.json").exists())
 
     def test_a_volume_of_the_older_image_is_moved_not_downloaded_again(self):
         data = self.tmp / "data"
@@ -184,7 +184,7 @@ class Entrypoint(unittest.TestCase):
         p = self.start(MODEL="IQ3_XXS")
         self.wait_for("--show-key")
         code, out, err = self.stop(p)
-        new = data / "Strata-data"
+        new = data / "Nostroma-data"
         moved = new / "models" / "Qwen3.8-Flash-Next-IQ3_XXS" / "a-00001-of-00002.gguf"
         self.assertEqual(moved.read_text(), "weights")
         self.assertEqual(moved.stat().st_ino, ino)                          # renamed, not copied
@@ -198,22 +198,22 @@ class Entrypoint(unittest.TestCase):
         data = self.tmp / "data"
         (data / "models" / "t").mkdir(parents=True)
         (data / "models" / "t" / "f.gguf").write_text("old")
-        (data / "Strata-data" / "models" / "t").mkdir(parents=True)
-        (data / "Strata-data" / "models" / "t" / "f.gguf").write_text("new")
+        (data / "Nostroma-data" / "models" / "t").mkdir(parents=True)
+        (data / "Nostroma-data" / "models" / "t" / "f.gguf").write_text("new")
         # the older copy stays where it is, so the guard for model files left in the older place (#3421) would stop the start
         # ("Nothing was downloaded."); ALLOW_DOWNLOAD=1 goes on with a warning, which is what this test is about
         p = self.start(MODEL="IQ3_XXS", ALLOW_DOWNLOAD="1")
         self.wait_for("--show-key")
         self.stop(p)
-        self.assertEqual((data / "Strata-data" / "models" / "t" / "f.gguf").read_text(), "new")   # never overwritten
+        self.assertEqual((data / "Nostroma-data" / "models" / "t" / "f.gguf").read_text(), "new")   # never overwritten
         self.assertEqual((data / "models" / "t" / "f.gguf").read_text(), "old")
 
     def test_older_model_files_that_were_not_moved_stop_the_start_unless_downloading_is_allowed(self):
         data = self.tmp / "data"
         (data / "models" / "t").mkdir(parents=True)
         (data / "models" / "t" / "f.gguf").write_text("old")
-        (data / "Strata-data" / "models" / "t").mkdir(parents=True)
-        (data / "Strata-data" / "models" / "t" / "f.gguf").write_text("new")
+        (data / "Nostroma-data" / "models" / "t").mkdir(parents=True)
+        (data / "Nostroma-data" / "models" / "t" / "f.gguf").write_text("new")
         p = self.start(MODEL="IQ3_XXS")
         out, err = p.communicate(timeout=30)
         code = p.returncode
@@ -226,32 +226,32 @@ class Entrypoint(unittest.TestCase):
         install.mkdir(parents=True)
         here = self.tmp / "opt" / "components" / "engine" / "0.1.46-cuda12"
         here.mkdir(parents=True)
-        (here / "strata-vision").write_text("x")
+        (here / "nostroma-vision").write_text("x")
         gone = self.tmp / "opt" / "components" / "engine" / "0.1.46-cuda13"
-        (install / "strata-a.json").write_text('{"exe": "component:strata-engine", "vision": {"exe": "%s/strata-vision"}}' % gone)
-        (install / "strata-b.json").write_text('{"exe": "component:strata-engine", "vision": {"exe": "%s/strata-vision"}}' % here)
-        (install / "strata-c.json").write_text('{"exe": "component:strata-engine", "args": []}')
-        (install / "strata-bad.json").write_text("not json")
+        (install / "nostroma-a.json").write_text('{"exe": "component:nostroma-engine", "vision": {"exe": "%s/nostroma-vision"}}' % gone)
+        (install / "nostroma-b.json").write_text('{"exe": "component:nostroma-engine", "vision": {"exe": "%s/nostroma-vision"}}' % here)
+        (install / "nostroma-c.json").write_text('{"exe": "component:nostroma-engine", "args": []}')
+        (install / "nostroma-bad.json").write_text("not json")
         p = self.start(MODEL="IQ3_XXS")
         self.wait_for("--show-key")
         code, out, err = self.stop(p)
-        self.assertFalse((install / "strata-a.json").exists())
-        self.assertTrue((install / "strata-b.json").exists())
-        self.assertTrue((install / "strata-c.json").exists())
-        self.assertTrue((install / "strata-bad.json").exists())
-        self.assertIn("strata-a.json", out)
+        self.assertFalse((install / "nostroma-a.json").exists())
+        self.assertTrue((install / "nostroma-b.json").exists())
+        self.assertTrue((install / "nostroma-c.json").exists())
+        self.assertTrue((install / "nostroma-bad.json").exists())
+        self.assertIn("nostroma-a.json", out)
         self.assertIn("does not have", out)
 
     def test_nvidia_card_without_gpu_access_ends_before_any_work(self):
         dev = self.tmp / "dev"
         dev.mkdir()
-        r = subprocess.run([SH, str(self.script)], env=self.env(STUB_BACKEND="cuda", STRATA_DEV_DIR=str(dev), MODEL="Q2_0"),
+        r = subprocess.run([SH, str(self.script)], env=self.env(STUB_BACKEND="cuda", NOSTROMA_DEV_DIR=str(dev), MODEL="Q2_0"),
                            capture_output=True, text=True, timeout=30)
         self.assertEqual(r.returncode, 3)
         self.assertIn("--gpus all", r.stderr)
         self.assertNotIn("launch --no-tui", self.log.read_text())
         (dev / "nvidia0").write_text("")                                  # with the device files the start goes on
-        p = self.start(STUB_BACKEND="cuda", STRATA_DEV_DIR=str(dev), MODEL="Q2_0")
+        p = self.start(STUB_BACKEND="cuda", NOSTROMA_DEV_DIR=str(dev), MODEL="Q2_0")
         self.wait_for("launch --no-tui")
         self.stop(p)
 
@@ -281,7 +281,7 @@ class Entrypoint(unittest.TestCase):
         self.assertIn("Starting Nostroma: the model files in " + str(self.tmp / "g"), out)
 
     def test_other_commands_run_instead_of_the_server(self):
-        r = subprocess.run([SH, str(self.script), "strata", "launch", "--plan", "--model", "q2_0"], env=self.env(), capture_output=True,
+        r = subprocess.run([SH, str(self.script), "nostroma", "launch", "--plan", "--model", "q2_0"], env=self.env(), capture_output=True,
                            text=True, timeout=30)
         self.assertEqual(r.returncode, 0)
         self.assertIn("launch --plan --model q2_0", self.log.read_text())

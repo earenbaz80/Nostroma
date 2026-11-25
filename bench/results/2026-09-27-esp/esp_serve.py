@@ -13,12 +13,12 @@ import sys
 import threading
 
 S = os.path.dirname(os.path.abspath(__file__))
-E = r"C:\Users\AI-Server\Desktop\Strata\Public\Engine"
+E = r"C:\Users\AI-Server\Desktop\Nostroma\Public\Engine"
 sys.path.insert(0, E)
-from serve.server import StrataEngine  # noqa: E402
+from serve.server import NostromaEngine  # noqa: E402
 
-EXE = E + r"\build-dev\strata.exe"
-VEC = r"C:\Users\AI-Server\Desktop\Strata\experimental-speed-projection\Qwen3.8-Flash-Next-experimental-speed-projection.gguf"
+EXE = E + r"\build-dev\nostroma.exe"
+VEC = r"C:\Users\AI-Server\Desktop\Nostroma\experimental-speed-projection\Qwen3.8-Flash-Next-experimental-speed-projection.gguf"
 TEXTS = {"code": S + r"\p512.ids", "doc": S + r"\4k-02-long-doc-1k.ids", "chat": S + r"\4k-04-chat-1k.ids"}
 OUT = S + r"\esp-serve"
 VEC_ARGS = ["--control-vector-scaled", VEC + ":1.0", "--control-vector-layer-range", "4", "44",
@@ -35,7 +35,7 @@ def engine(extra):
     a[a.index("--expert-cache") + 1] = "4000"
     env = dict(os.environ)
     env["PATH"] = os.pathsep.join(c["lib_dirs"]) + os.pathsep + env["PATH"]
-    return StrataEngine(EXE, a + ["--pcie-frac", "0", "--adapt-swaps", "0"] + extra, cwd=c["cwd"],
+    return NostromaEngine(EXE, a + ["--pcie-frac", "0", "--adapt-swaps", "0"] + extra, cwd=c["cwd"],
                         log=OUT + r"\engine.log", env=env)
 
 

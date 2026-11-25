@@ -1,8 +1,8 @@
-// tools/sm60_dp4a_check.cu - proves the sm_60 STRATA_DP4A fallback in include/strata/kernels/dp4a.hpp is
+// tools/sm60_dp4a_check.cu - proves the sm_60 NOSTROMA_DP4A fallback in include/nostroma/kernels/dp4a.hpp is
 // bit-exact with a plain signed byte-wise dot product, and times it against that byte loop.
 //
 // It includes the committed header, so the check covers the code the kernels compile, not a copy.  On sm_61+
-// STRATA_DP4A is the hardware __dp4a and the check still applies.  No CMake target; build by hand:
+// NOSTROMA_DP4A is the hardware __dp4a and the check still applies.  No CMake target; build by hand:
 //
 //   nvcc -O3 -arch=sm_60 -Iinclude tools/sm60_dp4a_check.cu -o sm60_dp4a_check && ./sm60_dp4a_check
 //
@@ -11,7 +11,7 @@
 #include <cstdio>
 #include <cuda_runtime.h>
 
-#include "strata/kernels/dp4a.hpp"
+#include "nostroma/kernels/dp4a.hpp"
 
 // Reference: the signed-byte semantics __dp4a(int, int, int) has for these operands.
 __device__ __forceinline__ int byte_dp4a(const int a, const int b, const int c) {
@@ -46,27 +46,27 @@ __global__ void check(unsigned long long* mismatches, int iters) {
             a = (int) (((uint32_t) a & ~(0xffu << sh)) | (((t >> 8) & 0xffu) << sh));
             b = (int) (((uint32_t) b & ~(0xffu << sh)) | ((t & 0xffu) << sh));
         }
-        bad += byte_dp4a(a, b, c) != STRATA_DP4A(a, b, c);
+        bad += byte_dp4a(a, b, c) != NOSTROMA_DP4A(a, b, c);
     }
     atomicAdd(mismatches, bad);
 }
 
-template <bool STRATA>
+template <bool NOSTROMA>
 __global__ void bench(int* out, int iters) {
     int a = threadIdx.x * 0x01020304, b = blockIdx.x * 0x05060708 + 1, acc = 0;
     for (int i = 0; i < iters; ++i) {
-        acc = STRATA ? STRATA_DP4A(a, b, acc) : byte_dp4a(a, b, acc);
+        acc = NOSTROMA ? NOSTROMA_DP4A(a, b, acc) : byte_dp4a(a, b, acc);
         a ^= acc; b += 0x01010101;
     }
     out[blockIdx.x * blockDim.x + threadIdx.x] = acc;
 }
 
-template <bool STRATA>
+template <bool NOSTROMA>
 float time_it(int* out) {
     cudaEvent_t t0, t1; cudaEventCreate(&t0); cudaEventCreate(&t1);
-    bench<STRATA><<<BLOCKS, THREADS>>>(out, 1 << 12);  // warm-up
+    bench<NOSTROMA><<<BLOCKS, THREADS>>>(out, 1 << 12);  // warm-up
     cudaEventRecord(t0);
-    bench<STRATA><<<BLOCKS, THREADS>>>(out, 1 << 16);
+    bench<NOSTROMA><<<BLOCKS, THREADS>>>(out, 1 << 16);
     cudaEventRecord(t1); cudaEventSynchronize(t1);
     float ms; cudaEventElapsedTime(&ms, t0, t1);
     cudaEventDestroy(t0); cudaEventDestroy(t1);
@@ -85,9 +85,9 @@ int main() {
     check<<<BLOCKS, THREADS>>>(d_bad, ITERS);
     unsigned long long bad = 0;
     cudaError_t e = cudaMemcpy(&bad, d_bad, sizeof(bad), cudaMemcpyDeviceToHost);
-    float byte_ms = time_it<false>(d_out), strata_ms = time_it<true>(d_out);
+    float byte_ms = time_it<false>(d_out), nostroma_ms = time_it<true>(d_out);
     printf("cases=%llu mismatches=%llu\n", (unsigned long long) BLOCKS * THREADS * ITERS, bad);
-    printf("byte loop %.1f ms  STRATA_DP4A %.1f ms  speedup %.2fx\n", byte_ms, strata_ms, byte_ms / strata_ms);
+    printf("byte loop %.1f ms  NOSTROMA_DP4A %.1f ms  speedup %.2fx\n", byte_ms, nostroma_ms, byte_ms / nostroma_ms);
     if (e == cudaSuccess) e = cudaGetLastError();
     printf("cuda: %s\n", cudaGetErrorString(e));
     cudaFree(d_bad); cudaFree(d_out);

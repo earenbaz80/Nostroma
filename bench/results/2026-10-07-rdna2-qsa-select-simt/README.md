@@ -1,16 +1,16 @@
 # RX 6900 XT (gfx1030): the FP32 tiled QSA block scorer on HIP (2026-10-07)
 
-`STRATA_SELECT_SIMT=1` runs the FP32 tiled scorer of 65ce329 (konijiwa110's #742) on HIP cards too, tiled
+`NOSTROMA_SELECT_SIMT=1` runs the FP32 tiled scorer of 65ce329 (konijiwa110's #742) on HIP cards too, tiled
 32/128/16/8 on gfx103x. Without it the prompt path scores the QSA blocks on the warp kernel, as before.
 
 ## Rig
 
 - 2x RX 6900 XT 16 GB (gfx1030, PCIe 4.0 x8 each), Ryzen 5 5600X, 128 GB DDR4-3200, Ubuntu 26.04, Linux 7.0, ROCm 10.0.0.
-- Engine: `origin/main` at `d5ea713` (0.1.40.3) with this change, built with `-DSTRATA_ENABLE_HIP=ON
-  -DCMAKE_HIP_ARCHITECTURES=gfx1030 -DSTRATA_PREFILL_MMQ=ON -DSTRATA_NATIVE_EXPERTS=ON`.
+- Engine: `origin/main` at `d5ea713` (0.1.40.3) with this change, built with `-DNOSTROMA_ENABLE_HIP=ON
+  -DCMAKE_HIP_ARCHITECTURES=gfx1030 -DNOSTROMA_PREFILL_MMQ=ON -DNOSTROMA_NATIVE_EXPERTS=ON`.
 - Model: Qwen3.8-Flash-Next GSQ-RCO IQ3_S, MTP head, layer split over both cards, `--kv int8 --kv-resident 32768
-  --max-context 131072 --ple-io ram --spec 4`, `STRATA_HIP_PROMPT_F16=1 STRATA_SH_STREAM=1
-  STRATA_HIP_ADAPT_KERNEL_COPY=1 STRATA_PREFILL_CPU_SHARE=auto STRATA_IO_THREADS=128`.
+  --max-context 131072 --ple-io ram --spec 4`, `NOSTROMA_HIP_PROMPT_F16=1 NOSTROMA_SH_STREAM=1
+  NOSTROMA_HIP_ADAPT_KERNEL_COPY=1 NOSTROMA_PREFILL_CPU_SHARE=auto NOSTROMA_IO_THREADS=128`.
 
 ## `qsa_select_bench`, one card, 256 queries (two runs each, min / max)
 

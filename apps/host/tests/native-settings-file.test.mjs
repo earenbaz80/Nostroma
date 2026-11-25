@@ -6,7 +6,7 @@ import { syncBuiltinESMExports } from 'node:module';
 import { join } from 'node:path';
 import { nativeFixture, finishJob } from './helpers/native-fixture.mjs';
 
-const configOf = f => join(f.repo, 'strata-iq2_xs.json');
+const configOf = f => join(f.repo, 'nostroma-iq2_xs.json');
 
 for (const validFirst of [true, false]) test(`a load ${validFirst ? 'uses a valid' : 'refuses an invalid'} captured config even if the file changes after reading`, async t => {
   const f = nativeFixture();
@@ -57,14 +57,14 @@ test('the settings file is found, checked, and opened in the text editor', async
     await f.control.refresh();
     const info = f.control.settingsFile('iq2_xs');
     assert.equal(info.path, configOf(f));
-    assert.equal(info.name, 'strata-iq2_xs.json');
+    assert.equal(info.name, 'nostroma-iq2_xs.json');
     assert.equal(info.ok, true);
     assert.match(info.note, /apply the next time the model starts/);
     assert.ok(info.issues.every(i => i.level === 'warning'), 'the fixture’s own extra key is a warning at most');
     const seen = [];
     const opened = await f.control.openSettingsFile('iq2_xs', { recorder: seen, platform: 'win32' });
     assert.deepEqual(seen, [['notepad.exe', info.path]]);
-    assert.equal(opened.name, 'strata-iq2_xs.json');
+    assert.equal(opened.name, 'nostroma-iq2_xs.json');
     assert.throws(() => f.control.settingsFile('../etc/passwd'), /installed model/);
   } finally { await f.cleanup(); }
 });
@@ -81,7 +81,7 @@ test('a mistake in the file holds the start back with its line; a typo’d key o
     assert.equal(done.state, 'error');
     assert.match(done.error, /^The settings file for this model has a mistake, so the model was not started\. Line \d+: The settings file is not valid JSON/);
     assert.equal(f.control.state().instances.length, 0, 'no engine was started');
-    assert.equal(f.calls.filter(c => /strata\.py|serve/.test(JSON.stringify(c.args))).length, 0);
+    assert.equal(f.calls.filter(c => /nostroma\.py|serve/.test(JSON.stringify(c.args))).length, 0);
     // 2. a bad value
     const config = JSON.parse(good); config.parallel = 99; config.lazy_load = 'yes';
     writeFileSync(path, JSON.stringify(config, null, 2));

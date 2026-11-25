@@ -1,24 +1,24 @@
 # V100 (sm_70): three decode kernels that were built for other cards (2026-10-07)
 
 On a V100 a verify window's GPU work is mostly memory-bound GEMVs that ran at a third to a half of the card's HBM2
-bandwidth. Three kernels Strata already has for other cards are now Volta's defaults, each with exactly the old
+bandwidth. Three kernels Nostroma already has for other cards are now Volta's defaults, each with exactly the old
 arithmetic, so every output is bitwise the old one:
 
 | What | Was on sm_70 | Now on sm_70 | Switch (old path) |
 | --- | --- | --- | --- |
-| Routed experts in VRAM (`native_expert_grouped`) | the CUDA layout (mode 0) | gfx906's mode 8: the codebook grid and the group's q8_1 activations in shared memory, SwiGLU + q8_1 in the gate/up epilogue; IQ2_XXS gate/up added to it (CUDA only) | `STRATA_EXP_MODE=0` |
-| Dense 2-4 column GEMVs and the head (`native_mmvq_il`) | `native_mmvq` (the interleaved kernel was sm_80+) | the interleaved kernel with a rows table read off a V100 | `STRATA_MMVQ_IL=0` |
-| Hyper-connection read, up projection | `gr_up_multi_kernel` | gfx906's `gr_up_fast_kernel` (built for CUDA, now also writes the QFUSE q8_1 tail) | `STRATA_GR_FAST=0` |
+| Routed experts in VRAM (`native_expert_grouped`) | the CUDA layout (mode 0) | gfx906's mode 8: the codebook grid and the group's q8_1 activations in shared memory, SwiGLU + q8_1 in the gate/up epilogue; IQ2_XXS gate/up added to it (CUDA only) | `NOSTROMA_EXP_MODE=0` |
+| Dense 2-4 column GEMVs and the head (`native_mmvq_il`) | `native_mmvq` (the interleaved kernel was sm_80+) | the interleaved kernel with a rows table read off a V100 | `NOSTROMA_MMVQ_IL=0` |
+| Hyper-connection read, up projection | `gr_up_multi_kernel` | gfx906's `gr_up_fast_kernel` (built for CUDA, now also writes the QFUSE q8_1 tail) | `NOSTROMA_GR_FAST=0` |
 
 Every other card keeps what it ran: the new paths are picked only when the device is sm_70 (and gfx906 keeps its own
 defaults). The idea of putting the lattice codebook in shared memory on Volta comes from 1Cat-vLLM's SM70 GGUF kernels
-(`csrc/sm70_turbomind/ops/gguf_dp4a.cuh`); Strata's gfx906 kernels already did the same, so no 1Cat code was copied.
+(`csrc/sm70_turbomind/ops/gguf_dp4a.cuh`); Nostroma's gfx906 kernels already did the same, so no 1Cat code was copied.
 
 ## Rig
 
 - Tesla V100-SXM2-32GB (sm_70, PCIe gen3 x16), driver 580.159, a rented container (vast.ai): 2x Xeon Gold 6130, a
   cgroup quota of ~15 CPUs, 180 GB RAM. CUDA 12.8, GCC 11.4, Ubuntu 22.04.
-- Engine: `main` at `e8ca9af` (0.1.40.2) with this change, `-DCMAKE_CUDA_ARCHITECTURES=70 -DSTRATA_EXPERIMENTAL_SM60=ON`.
+- Engine: `main` at `e8ca9af` (0.1.40.2) with this change, `-DCMAKE_CUDA_ARCHITECTURES=70 -DNOSTROMA_EXPERIMENTAL_SM60=ON`.
 - Model: setup's IQ2_XS (`./setup.sh --cuda 12 --build --model IQ2_XS`), setup's config (`--spec 4 --kv int8
   --kv-resident 32768 --max-context 131072 --expert-cache auto`) plus `--pool-workers 14` (the container's quota; with
   setup's default of 32 workers the pool is throttled and decode halves).
@@ -56,7 +56,7 @@ there (below).
 
 ## Engine: GPU time per verify window
 
-`STRATA_DECODE_TIMING=1 STRATA_VERIFY_PROFILE=1`, `tools/ab_engine.py`: one server start per arm and round, the arms'
+`NOSTROMA_DECODE_TIMING=1 NOSTROMA_VERIFY_PROFILE=1`, `tools/ab_engine.py`: one server start per arm and round, the arms'
 order alternating, 3 rounds; per round three short chats (256 tokens) and one 6,345-token prompt (122-128 tokens).
 `orig` is `e8ca9af` as setup built it, `off` this branch with the three switches above set to the old paths, `v70`
 this branch. Medians over the rounds of the engine's own stage table (ms per window, GDN + QSA layers):
@@ -92,10 +92,10 @@ The GPU-side table above is the reliable comparison; on a PC whose CPU keeps up,
 Each change keeps the old sums in the old order, so the engine's output is unchanged by construction; checked with:
 
 - `native_expert_bench` on all 48 layers of the IQ2_XS shard, T = 1-4: mode 8 bitwise mode 0.
-- `native_grouped_parity` (every gate/up x down format, window shapes, `STRATA_EXP_MODE` 0, 2, 7, 8): 0 failures.
+- `native_grouped_parity` (every gate/up x down format, window shapes, `NOSTROMA_EXP_MODE` 0, 2, 7, 8): 0 failures.
 - `mmvq_il_parity`: OK (every case, T 2-4, rows 1/2/4 and the table, bitwise); `mmvq_multi_parity`: ok.
 - `fused_gr_bench` (fast vs old, bitwise), `gr_multi_parity` OK, `gr_parity` 0 failures.
-- The whole `ctest` on the V100 (`-DSTRATA_BUILD_TESTS=ON`): 124 passed, 2 skipped (`prefill_fused_*`, sm_80+), 3 failed
+- The whole `ctest` on the V100 (`-DNOSTROMA_BUILD_TESTS=ON`): 124 passed, 2 skipped (`prefill_fused_*`, sm_80+), 3 failed
   for this rig, not the change: `expert_multi_test` (the CPU has no AVX512-VNNI), `platform_memory_test` (`mlock` in
   the container), `ple_parity` (wants the Q2_0 pack's second shard; this rig has IQ2_XS).
 

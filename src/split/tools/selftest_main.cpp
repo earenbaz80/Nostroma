@@ -1,4 +1,4 @@
-// Standalone run of the engine's kernel self-test (src/selftest.cu) on one card: no model, no engine. Built by the optional CMake target strata-split-selftest
+// Standalone run of the engine's kernel self-test (src/selftest.cu) on one card: no model, no engine. Built by the optional CMake target nostroma-split-selftest
 // (src/split/CMakeLists.txt; HIP only, off by default). Prints the card and the result; exit 0 when every test passed.
 //   selftest_main [device]
 #include <hip/hip_runtime.h>

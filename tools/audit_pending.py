@@ -19,7 +19,7 @@ el repo, la raíz del sistema— la herramienta se niega con exit 2 en vez de re
 Uso (la raíz por defecto es la de este repositorio, así que vale desde cualquier carpeta):
     python3 tools/audit_pending.py                     # este repositorio
     python3 tools/audit_pending.py --selftest          # valida el script con un proyecto falso
-    python3 tools/audit_pending.py --root /ruta/a/Strata-main
+    python3 tools/audit_pending.py --root /ruta/a/Nostroma-main
     python3 tools/audit_pending.py --json audit.json
     python3 tools/audit_pending.py --no-dynamic        # sin pruebas de extracción
 
@@ -534,7 +534,7 @@ def check_host(root: Path):
 def dynamic_extraction():
     """Mide el comportamiento del INTÉRPRETE, no del proyecto."""
     out = []
-    base = Path(tempfile.mkdtemp(prefix="strata-audit-"))
+    base = Path(tempfile.mkdtemp(prefix="nostroma-audit-"))
     try:
         evil = base / "evil.tar"
 
@@ -820,7 +820,7 @@ def _verdict_of(rows, label):
 
 
 def run_selftest() -> int:
-    base = Path(tempfile.mkdtemp(prefix="strata-selftest-"))
+    base = Path(tempfile.mkdtemp(prefix="nostroma-selftest-"))
     suites = [
         ("1", "updater / versión", lambda: check_updater(base)),
         ("2", "privilegios", lambda: check_docker(base)),
@@ -913,7 +913,7 @@ def run_selftest() -> int:
 
         # control: una raíz que no es un checkout se rechaza (raíz del sistema, carpeta cualquiera) y la del fixture pasa
         root_ok = (root_problem(Path("/").resolve()) is not None
-                   and root_problem(Path(tempfile.mkdtemp(prefix="strata-no-checkout-"))) is not None
+                   and root_problem(Path(tempfile.mkdtemp(prefix="nostroma-no-checkout-"))) is not None
                    and root_problem(base) is None)
         print(f"  {'ok    ' if root_ok else 'FALLO '}[5] raíz: se niega fuera de un checkout de Nostroma y acepta el del fixture")
         if not root_ok:
@@ -993,7 +993,7 @@ CHECKOUT_MARKERS = ("CMakeLists.txt", "serve/server.py", "packaging")
 
 
 def root_problem(root: Path):
-    """Por qué `root` no es un checkout de Strata, o None cuando lo es.
+    """Por qué `root` no es un checkout de Nostroma, o None cuando lo es.
 
     Copiado fuera del repositorio, la raíz por defecto del script viaja con él: una copia en /tmp hacía que el escaneo saliera a
     recorrer el disco entero (y a marcar archivos del sistema). Un checkout es donde viven apps/host y el motor; cualquier otra
@@ -1001,13 +1001,13 @@ def root_problem(root: Path):
     """
     if root.parent == root:                                   # / en POSIX, C:\\ en Windows
         return (f"{root} es la raíz del sistema de archivos, no un checkout de Nostroma: ahí no hay apps/host, y recorrerla leería el "
-                f"disco entero. Indicá el repositorio: --root <ruta a Strata-main>.")
+                f"disco entero. Indicá el repositorio: --root <ruta a Nostroma-main>.")
     if not (root / "apps" / "host").is_dir():
         return (f"{root} no es un checkout de Nostroma: no tiene apps/host, que es lo que audita esta herramienta. Con una raíz "
-                f"equivocada recorrería un árbol ajeno. Indicá el repositorio: --root <ruta a Strata-main>.")
+                f"equivocada recorrería un árbol ajeno. Indicá el repositorio: --root <ruta a Nostroma-main>.")
     if not any((root / marker).exists() for marker in CHECKOUT_MARKERS):
         return (f"{root} tiene apps/host pero nada más de Nostroma ({', '.join(CHECKOUT_MARKERS)}: ninguna existe), así que no es la raíz "
-                f"del repositorio y el resto de las comprobaciones darían cualquier cosa. Indicá el repositorio: --root <ruta a Strata-main>.")
+                f"del repositorio y el resto de las comprobaciones darían cualquier cosa. Indicá el repositorio: --root <ruta a Nostroma-main>.")
     return None
 
 

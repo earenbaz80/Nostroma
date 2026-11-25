@@ -16,7 +16,7 @@
 #      to the registry already (`docker login ghcr.io`; the workflow logs in with GITHUB_TOKEN).
 #
 #   --release-tag TAG    the release, for example v0.2.7; the image version is the tag without the leading v
-#   --source DIR|URL     use this folder or URL (with strata-feed.json, its .sig and the archives) instead of the GitHub release
+#   --source DIR|URL     use this folder or URL (with nostroma-feed.json, its .sig and the archives) instead of the GitHub release
 #   --version V          image version (default: the tag without v)
 #   --flavors LIST       comma separated (default: all that the release has: cuda13 cuda12 rocm-gfx120x rocm-gfx110x rocm-gfx1151 sycl)
 #   --image NAME         image repository (default ghcr.io/earenbaz80/Nostroma)
@@ -24,7 +24,7 @@
 #   --push               push the images (default: build only)
 #   --no-latest          do not tag / push latest-<flavor>
 #   --keep-images        do not remove the local images after the run (default: removed only when this script pushed them)
-# Environment: STRATA_DOCKER_BUILD_OPTS adds options to `docker build` (see build.sh).
+# Environment: NOSTROMA_DOCKER_BUILD_OPTS adds options to `docker build` (see build.sh).
 set -eu
 
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
@@ -55,7 +55,7 @@ command -v docker >/dev/null || { echo "publish.sh: docker not found" >&2; exit 
 PY=${PYTHON:-python3}
 
 own_work=""
-if [ -z "$work" ]; then work=$(mktemp -d "${TMPDIR:-/tmp}/strata-docker-pkgs.XXXXXX"); own_work=1; fi
+if [ -z "$work" ]; then work=$(mktemp -d "${TMPDIR:-/tmp}/nostroma-docker-pkgs.XXXXXX"); own_work=1; fi
 mkdir -p "$work"
 cleanup() { if [ -n "$own_work" ]; then rm -rf "$work"; fi; }
 trap cleanup EXIT
@@ -75,7 +75,7 @@ for flavor in $(echo "$flavor_list" | tr ',' ' '); do
   "$here/build.sh" --flavor "$bflavor" --engine "$folder" --tag "$img" --version "$version" --repo "$repo"
   [ -n "$latest" ] && docker tag "$img" "$image:latest-$flavor"
   # the image starts and its Terminal runs (no GPU needed for this)
-  docker run --rm --entrypoint /opt/strata/terminal/bin/strata "$img" --version
+  docker run --rm --entrypoint /opt/nostroma/terminal/bin/nostroma "$img" --version
   rm -rf "$folder"
   if [ -n "$push" ]; then
     docker push "$img"

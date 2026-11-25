@@ -23,7 +23,7 @@ SM_OLD = ("sm_60", "sm_61", "sm_70", "sm_75", "sm_80", "sm_86", "sm_89", "comput
 def pkg(platform, backend, variant, archs, driver=None):
     return {"version": V, "platform": platform, "backend": backend, "variant": variant, "archs": list(archs),
             "min_driver": {"nvidia": driver} if driver else {}, "min_runtime": None,
-            "build_id": f"rel-{platform}-{backend}-{variant}", "format": "tar.gz", "url": f"strata-engine-{platform}-{variant}.tar.gz",
+            "build_id": f"rel-{platform}-{backend}-{variant}", "format": "tar.gz", "url": f"nostroma-engine-{platform}-{variant}.tar.gz",
             "size": 1000, "sha256": "a" * 64, "manifest_sha256": "b" * 64, "installed_bytes": 2000, "notes": ""}
 
 
@@ -187,19 +187,19 @@ class PackedOnWindows(unittest.TestCase):
     def test_programs_are_recognised_by_their_header_so_a_linux_package_packed_on_windows_keeps_them_executable(self):
         with tempfile.TemporaryDirectory() as t:
             root = Path(t)
-            (root / "strata-vision").write_bytes(b"\x7fELF\x02\x01" + bytes(20))
+            (root / "nostroma-vision").write_bytes(b"\x7fELF\x02\x01" + bytes(20))
             (root / "libx.dylib").write_bytes(b"\xcf\xfa\xed\xfe" + bytes(20))
             (root / "run.sh").write_bytes(b"#!/bin/sh\n")
             (root / "BUILD.json").write_text("{}")
             (root / "kernel.hsaco").write_bytes(b"\x00\x01\x02\x03")
-            names = ("strata-vision", "libx.dylib", "run.sh", "BUILD.json", "kernel.hsaco")
+            names = ("nostroma-vision", "libx.dylib", "run.sh", "BUILD.json", "kernel.hsaco")
             self.assertEqual([feed_tool._is_native_executable(root / n) for n in names], [True, True, True, False, False])
             if os.name == "nt":                     # the owner's release PC: the archive is what matters
                 archive = root / "a.tar.gz"
-                feed_tool._write_archive([(n, root / n) for n in ("strata-vision", "BUILD.json")], archive, "tar.gz", None)
+                feed_tool._write_archive([(n, root / n) for n in ("nostroma-vision", "BUILD.json")], archive, "tar.gz", None)
                 with tarfile.open(archive) as tar:
                     modes = {m.name: m.mode for m in tar.getmembers()}
-                self.assertEqual(modes, {"strata-vision": 0o755, "BUILD.json": 0o644})
+                self.assertEqual(modes, {"nostroma-vision": 0o755, "BUILD.json": 0o644})
 
 
 if __name__ == "__main__":

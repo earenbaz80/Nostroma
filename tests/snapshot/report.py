@@ -51,7 +51,7 @@ def drafter(rec) -> str:
         return "DSpark " + a[a.index("--dspark") + 1]
     if "--draft" in a:
         pack = a[a.index("--draft-model") + 1]
-        return "DFlash2 %s conf %s spec %s" % ("tuned" if "strata1" in pack else "stock", a[a.index("--draft-conf") + 1], a[a.index("--spec") + 1])
+        return "DFlash2 %s conf %s spec %s" % ("tuned" if "nostroma1" in pack else "stock", a[a.index("--draft-conf") + 1], a[a.index("--spec") + 1])
     return "MTP" if "--mtp" in a else "none"
 
 
@@ -94,7 +94,7 @@ def differences(data, a="launch", b="app_plain"):
 
 def short(v) -> str:
     s = json.dumps(v) if not isinstance(v, str) else v
-    s = s.replace("<ROOT>", "").replace("/local/Strata/launch/", "launch/")
+    s = s.replace("<ROOT>", "").replace("/local/Nostroma/launch/", "launch/")
     return s if len(s) < 48 else s[:45] + "..."
 
 

@@ -1,5 +1,5 @@
 // metal/src/engine/window.cpp - the decode window on Metal: Verifier::init/run/commit's Metal side (the one backend
-// hook, src/core/verify.cpp under STRATA_GPU_METAL).  Everything above it - the decode loop, MTP control, the serve
+// hook, src/core/verify.cpp under NOSTROMA_GPU_METAL).  Everything above it - the decode loop, MTP control, the serve
 // protocol, the PLE table reads, the file tier - is the shared host code.
 //
 // The window is mac-kern's chain (metal/kernels, tests/token_chain.cpp) on the model GGUF itself: shard 1 is mmapped
@@ -12,7 +12,7 @@
 // block's projections run on the GPU; its norms, gate and conv (10240 values) on the CPU between two command buffers
 // (layer 0 | layers 1..47 + head).
 #include "gguf_lite.h"
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 #include "mtl_rt.h"
 #include "resource_path.h"
 #include "ref_quant.h"
@@ -22,17 +22,17 @@
 #include "msl_libs.h"
 #include "../../tests/coop_probe.h"
 
-#include "strata/artifact/gguf_reader.hpp"
-#include "strata/core/weights.hpp"
-#include "strata/core/dflash2.hpp"
-#include "strata/core/layer.hpp"
-#include "strata/core/conversation_cache.hpp"
-#include "strata/core/session.hpp"
-#include "strata/kernels/ngram.hpp"
-#include "strata/kernels/sampler.hpp"
-namespace strata::gpu { void* host_view(const void* device_pointer); }
-#include "strata/kernels/cpu/hadamard.hpp"
-#include "strata/kernels/cpu/expert_layout.hpp"
+#include "nostroma/artifact/gguf_reader.hpp"
+#include "nostroma/core/weights.hpp"
+#include "nostroma/core/dflash2.hpp"
+#include "nostroma/core/layer.hpp"
+#include "nostroma/core/conversation_cache.hpp"
+#include "nostroma/core/session.hpp"
+#include "nostroma/kernels/ngram.hpp"
+#include "nostroma/kernels/sampler.hpp"
+namespace nostroma::gpu { void* host_view(const void* device_pointer); }
+#include "nostroma/kernels/cpu/hadamard.hpp"
+#include "nostroma/kernels/cpu/expert_layout.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -58,13 +58,13 @@ namespace strata::gpu { void* host_view(const void* device_pointer); }
 #include <thread>
 #include <vector>
 
-namespace strata::gpu { uint64_t purge_device_allocations(size_t min_bytes); }   // metal/src/gpu/runtime.cpp
+namespace nostroma::gpu { uint64_t purge_device_allocations(size_t min_bytes); }   // metal/src/gpu/runtime.cpp
 
 namespace {
-std::string engine_msl_dir() { return strata_metal::resource("STRATA_METAL_ENGINE_KERNELS", "engine-msl", STRATA_METAL_ENGINE_KERNELS_DEFAULT); }
+std::string engine_msl_dir() { return nostroma_metal::resource("NOSTROMA_METAL_ENGINE_KERNELS", "engine-msl", NOSTROMA_METAL_ENGINE_KERNELS_DEFAULT); }
 }  // namespace
 
-namespace strata::metal_engine {
+namespace nostroma::metal_engine {
 
 // The prompt GDN scan kernel, chosen by chip and prompt length (gdn_prompt.metal, gdn_scan_r<IB, TB>; every choice is
 // bit-identical to gdn_scanr_4: the token order and the arithmetic are the same, only the staged block size TB changes, which
@@ -72,10 +72,10 @@ namespace strata::metal_engine {
 //   Apple M4 (the base chip): gdn_scanr_4_8, 1.16x on the scan, 1.11x on the GDN prompt stage, T 512..32K
 //   Apple M5 Max: gdn_scanr_4_4 from T >= 4096 (1.04x at 4K, 1.10x at 16K); below that the default is as fast
 //   anything else (other chips, unknown names): gdn_scanr_4 as before
-// STRATA_METAL_GDN_SCAN=<gdn_scanr_4 | gdn_scanr_4_8 | gdn_scanr_4_4 | gdn_scanr_4_2> forces a kernel (A/B and diagnosis).
+// NOSTROMA_METAL_GDN_SCAN=<gdn_scanr_4 | gdn_scanr_4_8 | gdn_scanr_4_4 | gdn_scanr_4_2> forces a kernel (A/B and diagnosis).
 static const char* gdn_scan_name(const std::string& device, int T) {
     static const std::string forced = [] {
-        const char* e = strata::env("NOSTROMA_METAL_GDN_SCAN");
+        const char* e = nostroma::env("NOSTROMA_METAL_GDN_SCAN");
         const std::string s = e ? e : "";
         return (s == "gdn_scanr_4" || s == "gdn_scanr_4_8" || s == "gdn_scanr_4_4" || s == "gdn_scanr_4_2") ? s : std::string();
     }();
@@ -87,18 +87,18 @@ static const char* gdn_scan_name(const std::string& device, int T) {
 
 // The M5 family's dense GEMM tiles for the prompt (bit-identical to the 64 x 64 tile: the tile only splits the output; measured on
 // an M5 Max, T = 2048 / 4096): the GDN out projection (N 2560, K 6144) 64 x 128 (1.17 -> 0.99 ms), the wide input projections
-// (N >= 6144) 128 x 64.  Other chips keep 64 x 64 (M4: no gain).  STRATA_METAL_GEMM_TILES=0 keeps the old tiles everywhere.
+// (N >= 6144) 128 x 64.  Other chips keep 64 x 64 (M4: no gain).  NOSTROMA_METAL_GEMM_TILES=0 keeps the old tiles everywhere.
 static void gemm_tile(const std::string& device, int Nn, int K, int& tm, int& tn) {
-    static const bool off = [] { const char* e = strata::env("NOSTROMA_METAL_GEMM_TILES"); return e && std::string(e) == "0"; }();
+    static const bool off = [] { const char* e = nostroma::env("NOSTROMA_METAL_GEMM_TILES"); return e && std::string(e) == "0"; }();
     if (off || device.rfind("Apple M5", 0) != 0) return;
-    if (Nn == strata_metal::geo::N && K == strata_metal::geo::ZV) { tm = 64; tn = 128; }
+    if (Nn == nostroma_metal::geo::N && K == nostroma_metal::geo::ZV) { tm = 64; tn = 128; }
     else if (Nn >= 6144) { tm = 128; tn = 64; }
 }
 // The four GDN input projections (qkv, z, alpha, beta) as ONE GEMM with a 16480 float output row (M5 family: 3.09 -> 2.87 ms a layer at
 // T = 2048; gdn_pre / gdn_post read the pieces at that stride, function constant 7).  Bit-identical to the separate GEMMs.
-// STRATA_METAL_GDN_FUSE=0 keeps the separate ones.
+// NOSTROMA_METAL_GDN_FUSE=0 keeps the separate ones.
 static bool gdn_fused_inputs(const std::string& device) {
-    static const bool off = [] { const char* e = strata::env("NOSTROMA_METAL_GDN_FUSE"); return e && std::string(e) == "0"; }();
+    static const bool off = [] { const char* e = nostroma::env("NOSTROMA_METAL_GDN_FUSE"); return e && std::string(e) == "0"; }();
     return !off && device.rfind("Apple M5", 0) == 0;
 }
 
@@ -106,7 +106,7 @@ namespace {
 
 int g_slot_cap = 0;   // --batch N: the window keeps N + 1 sequences' running states side by side (set_batch_slots)
 
-// Q4-KQ: the kernel sources define STRATA_KQ_DOWN to instantiate the K-quant / IQ4_XS / IQ3_S down experts (moe.metal, moe_mm.metal).
+// Q4-KQ: the kernel sources define NOSTROMA_KQ_DOWN to instantiate the K-quant / IQ4_XS / IQ3_S down experts (moe.metal, moe_mm.metal).
 // The host asks for them only when a layer's down tensor has one of those types, so a Flash-Next set (Q5_1 / Q5_0 / Q8_0 / IQ4_NL / Q2_0
 // downs) compiles the same kernel text as before and pays nothing for them.
 std::string kq_down_prelude(const gguf::File& f) {
@@ -115,12 +115,12 @@ std::string kq_down_prelude(const gguf::File& f) {
         if (!t) continue;
         if (t->type == ref::Q3_K || t->type == ref::Q4_K || t->type == ref::Q5_K || t->type == ref::Q6_K || t->type == ref::IQ3_S ||
             t->type == ref::IQ4_XS)
-            return "#define STRATA_KQ_DOWN 1\n";
+            return "#define NOSTROMA_KQ_DOWN 1\n";
     }
     return "";
 }
 
-namespace geo = strata_metal::geo;   // engine/geo.h: the shape this build is compiled for (kCompiledGeometry); Flash-Next's numbers by default
+namespace geo = nostroma_metal::geo;   // engine/geo.h: the shape this build is compiled for (kCompiledGeometry); Flash-Next's numbers by default
 constexpr int N = geo::N, HC = geo::HC, LR = geo::LR, NFF = geo::NFF, TOPK = geo::TOPK, NEXP = geo::NEXP, MAXT = 8, NVOCAB_MAX = 248320;
 constexpr int G_NL = geo::NL, G_QI = geo::QI, G_NGDN = geo::NGDN, G_SS = geo::SS, G_HK = geo::HK, G_HV = geo::HV, G_CONV = geo::CONV,
               G_ZV = geo::ZV, G_GDNF = geo::GDN_FUSED, G_QH = geo::QH, G_QKV = geo::QKV, G_QD = geo::QD, G_IH = geo::IH, G_ID = geo::ID,
@@ -129,7 +129,7 @@ constexpr int G_NL = geo::NL, G_QI = geo::QI, G_NGDN = geo::NGDN, G_SS = geo::SS
 // bytes of the running state of one sequence, per layer
 constexpr size_t GST_B = (size_t) 4 * G_SS * G_HV * G_SS;                       // GDN recurrence
 constexpr size_t HIST_B = (size_t) 4 * G_CONV * 3;                              // GDN conv history
-constexpr size_t PLEH_B = (size_t) 4 * strata::kernels::NG_HIST * G_HCD;        // PLE history
+constexpr size_t PLEH_B = (size_t) 4 * nostroma::kernels::NG_HIST * G_HCD;        // PLE history
 constexpr size_t TAIL_B = (size_t) 4 * 4 * G_ID;                                // indexer raw tail (4 cells)
 constexpr size_t DEAD_B = (size_t) 4 * G_ID;                                    // indexer tail-block key
 constexpr int P_MAXE = 128, P_GEXP = 16, P_GSTART = P_GEXP + P_MAXE, P_ETOK = P_GSTART + P_MAXE + 4,
@@ -145,24 +145,24 @@ struct QsaArgs { uint32_t pos0, pos_base, max_cells, n_tok; float eps; };
 struct GlueArgs { uint32_t n, n_tok, n_embd, topk; };
 struct ArgArgs { uint32_t n_vocab, parts; };
 // the routed gate/up's i-quant grids from constant memory (QUANT_CTAB, function constant 23 of quant.metal): bitwise
-// the threadgroup copy's values, 3-7% faster on the M5 Max; STRATA_METAL_CTAB=0 turns it off
+// the threadgroup copy's values, 3-7% faster on the M5 Max; NOSTROMA_METAL_CTAB=0 turns it off
 bool metal_ctab() {
     static const bool on = [] {
-        const char* e = strata::env("NOSTROMA_METAL_CTAB");
+        const char* e = nostroma::env("NOSTROMA_METAL_CTAB");
         return !(e && std::string(e) == "0");
     }();
     return on;
 }
-// STRATA_METAL_F16=1 (opt-in): the decode windows' (resident model, with the head) dense GEMVs of Q2_0, the K-quants and IQ4_XS on the fp16 path -
+// NOSTROMA_METAL_F16=1 (opt-in): the decode windows' (resident model, with the head) dense GEMVs of Q2_0, the K-quants and IQ4_XS on the fp16 path -
 // the weights decoded into half, the window's x as half planes the writers of x add (function constant 25), the
 // products of a half unit summed in half, the scales and the units' sum in float (gemv.metal gemv16)
 // Unset (owner yes 2026-11-07; was nostroma_control/mac_fit.py engine_env): on for a resident IQ3_S or Q2_0 pack, found from the file name the launcher's
 // models carry ("...-IQ3_S-0000N-of-0000M.gguf", "...-Q2_0-..."), decided once the model is open (f16_auto_for).  M5 Max: decode +9 to +15%
-// (Q2_0) and +9 to +12% (IQ3_S), top-1 agreement 97.1% / 96.2%, mean KL 0.009 / 0.016, 61-task suite the same.  STRATA_METAL_F16=0 turns it off,
+// (Q2_0) and +9 to +12% (IQ3_S), top-1 agreement 97.1% / 96.2%, mean KL 0.009 / 0.016, 61-task suite the same.  NOSTROMA_METAL_F16=0 turns it off,
 // =1 turns it on for any pack.
 bool g_f16_auto = false;
 bool metal_f16() {
-    static const int mode = [] { const char* e = strata::env("NOSTROMA_METAL_F16"); return e == nullptr || *e == '\0' ? -1 : (std::string(e) == "1" ? 1 : 0); }();
+    static const int mode = [] { const char* e = nostroma::env("NOSTROMA_METAL_F16"); return e == nullptr || *e == '\0' ? -1 : (std::string(e) == "1" ? 1 : 0); }();
     return mode == 1 || (mode < 0 && g_f16_auto);
 }
 bool f16_auto_for(const std::string& path, bool streaming) {
@@ -187,7 +187,7 @@ bool gemv16_tile(int L, int R, int S, int K) {
                                              {4, 1, 4, 1}, {32, 1, 8, 2}, {16, 1, 8, 4}, {2, 1, 4, 1}, {2, 2, 4, 1}, {1, 1, 4, 1}};
     return std::find(std::begin(t16), std::end(t16), std::array<int, 4>{L, R, S, K}) != std::end(t16);
 }
-// the writers of the window's x: their pipelines with the half planes (function constant 25) under STRATA_METAL_F16
+// the writers of the window's x: their pipelines with the half planes (function constant 25) under NOSTROMA_METAL_F16
 mtl::Constants x16c(mtl::Constants c = {}) { return metal_f16() ? c.b(25, true) : c; }
 std::string x16k(const std::string& k) { return metal_f16() ? k + "#h" : k; }
 
@@ -205,7 +205,7 @@ struct Act {
     mtl::Buffer b;
     int n = 0;
     size_t plane_bytes() const { return (size_t) 4 * MAXT * n; }
-    size_t x16_bytes() const { return plane_bytes() * 4 + plane_bytes() / 16; }   // the half planes' start (STRATA_METAL_F16)
+    size_t x16_bytes() const { return plane_bytes() * 4 + plane_bytes() / 16; }   // the half planes' start (NOSTROMA_METAL_F16)
 };
 
 double now_ms() { return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
@@ -238,39 +238,39 @@ const int32_t* g_mrope_dev = nullptr;
 
 class Window {
 public:
-    bool init(const strata::core::ModelGeometry& g, strata::core::SessionState& ss, const std::string& shard1, int max_t,
+    bool init(const nostroma::core::ModelGeometry& g, nostroma::core::SessionState& ss, const std::string& shard1, int max_t,
               int64_t max_cells, std::string& err);
     bool run(int T, const int32_t* tokens, int64_t pos0, bool head, int32_t* out, std::string& err);
     bool commit(int n_keep, std::string& err);
     bool finish(int Tn, const int32_t* tokens, int64_t pos0, bool head, int32_t* out, double t0);
     // The request's sampling for the head rows of the windows that follow (sample.metal): null = greedy, the in-graph argmax.  `hist` is the penalty
     // history, Tn rows of hist_len tokens (the last penalty_last_n of a row count, -1 = unused), read when the window's rows are sampled.
-    void set_sampling(const strata::kernels::SamplerParams* sp, const int32_t* hist, int hist_len);
+    void set_sampling(const nostroma::kernels::SamplerParams* sp, const int32_t* hist, int hist_len);
     bool sample_rows(int Tn, int32_t* out, std::string& err);
-    bool sample_slot_row(int row, const strata::kernels::SamplerParams& sp, const int32_t* hist, int hist_len, int32_t* tok, std::string& err);   // one slot's row of a batch window, its own params
-    bool sample_run(int row0, int n, const strata::kernels::SamplerParams& sp, const int32_t* hist, int hl, std::string& err);   // after run(): replaces out[0..Tn) (and tokout_) by the sampled tokens
+    bool sample_slot_row(int row, const nostroma::kernels::SamplerParams& sp, const int32_t* hist, int hist_len, int32_t* tok, std::string& err);   // one slot's row of a batch window, its own params
+    bool sample_run(int row0, int n, const nostroma::kernels::SamplerParams& sp, const int32_t* hist, int hl, std::string& err);   // after run(): replaces out[0..Tn) (and tokout_) by the sampled tokens
     bool copy_logits(int t, float* host) const;
     int64_t vocab() const { return n_vocab_; }
     bool ready() const { return cx_ != nullptr; }
     bool streaming() const { return stream_; }
     // --serve's conversation checkpoints: the window's running state (the GDN recurrences and conv histories, the
     // PLE history, each QSA layer's indexer tail and tail-block key); the KV and pooled keys are positional
-    bool checkpoint_save(strata::core::ConversationCheckpoint& c, std::string& err);
-    bool checkpoint_restore(const strata::core::ConversationCheckpoint& c, std::string& err);
+    bool checkpoint_save(nostroma::core::ConversationCheckpoint& c, std::string& err);
+    bool checkpoint_restore(const nostroma::core::ConversationCheckpoint& c, std::string& err);
     // Conversation parking reads the K/V from the session's QsaStates.  On Metal the K/V lives only in this window's buffers
     // (the session's own pools are never written), so each owned QsaState is pointed at the window's buffers: the same
     // cell-major layout the generic snapshot copies as byte prefixes (kq/vq cells*512 B, scales cells*16 B, pooled rows*512 B).
-    void bind_session(strata::core::SessionState& ss);
-    void bind_draft(strata::core::QsaState& st);
+    void bind_session(nostroma::core::SessionState& ss);
+    void bind_draft(nostroma::core::QsaState& st);
     bool mtp_ready() const { return mtp_on_; }
     void reset();   // a new sequence (session_zero): the running state zeroed
     // ---- batch slots (--batch N): each slot is another sequence's running state (GDN recurrence and conv history, the PLE
     // history, each QSA layer's K/V, indexer tail and pooled keys).  The live members always hold ONE sequence's state (the
     // main one between calls); a slot's lives in a stash and is swapped in for its window (activate): the buffer objects stay
     // where they are (the cached dispatches point at them), only their contents are exchanged.
-    bool slots_init(const std::vector<strata::core::SessionState*>& slots, std::string& err);
+    bool slots_init(const std::vector<nostroma::core::SessionState*>& slots, std::string& err);
     int n_slots() const { return sets_.empty() ? 0 : (int) sets_.size() - 1; }
-    int set_of(const strata::core::SessionState* s) const {
+    int set_of(const nostroma::core::SessionState* s) const {
         auto it = set_of_ss_.find(s);
         return it == set_of_ss_.end() ? 0 : it->second;
     }
@@ -312,7 +312,7 @@ public:
 private:
     const gguf::Tensor& T(const std::string& name) const {
         const gguf::Tensor* t = f_.find(name);
-        if (!t) { std::fprintf(stderr, "strata metal: the model has no tensor %s\n", name.c_str()); std::exit(2); }
+        if (!t) { std::fprintf(stderr, "nostroma metal: the model has no tensor %s\n", name.c_str()); std::exit(2); }
         return *t;
     }
     const mtl::Pipeline* P(int lib, const std::string& fn, const mtl::Constants& c, const std::string& key) {
@@ -326,11 +326,11 @@ private:
     void push(std::vector<mtl::Dispatch>& ds, mtl::Dispatch d) {
         d.barrier = !nb_;
         nb_ = false;
-        // timing only (WRONG answers): STRATA_METAL_SKIP=a,b,... runs the dispatches whose pipeline name contains one
+        // timing only (WRONG answers): NOSTROMA_METAL_SKIP=a,b,... runs the dispatches whose pipeline name contains one
         // of the words as empty grids (the marginal cost of a kernel class by leaving it out)
         static const std::vector<std::string> skip = [] {
             std::vector<std::string> v;
-            if (const char* e = strata::env("NOSTROMA_METAL_SKIP")) {
+            if (const char* e = nostroma::env("NOSTROMA_METAL_SKIP")) {
                 std::string s = e, w;
                 for (char c : s + ",") { if (c == ',') { if (!w.empty()) v.push_back(w); w.clear(); } else w += c; }
             }
@@ -364,17 +364,17 @@ private:
                    const mtl::Buffer& inj_in, const mtl::Buffer& inj_out, bool apply, const Act& out, bool final_, int ntok);
     const gguf::Tensor& TM(const std::string& name) const {
         const gguf::Tensor* x = fm_.find(name);
-        if (!x) { std::fprintf(stderr, "strata metal: the MTP model has no tensor %s\n", name.c_str()); std::exit(2); }
+        if (!x) { std::fprintf(stderr, "nostroma metal: the MTP model has no tensor %s\n", name.c_str()); std::exit(2); }
         return *x;
     }
     size_t NM(const std::string& name) const {   // the folded (1 + w) copy of an F32 norm of the MTP model
         auto it = mnorm_off_.find(name);
-        if (it == mnorm_off_.end()) { std::fprintf(stderr, "strata metal: no MTP norm %s\n", name.c_str()); std::exit(2); }
+        if (it == mnorm_off_.end()) { std::fprintf(stderr, "nostroma metal: no MTP norm %s\n", name.c_str()); std::exit(2); }
         return it->second;
     }
 
-    strata::core::SessionState* ss_ = nullptr;        // the session whose sequence the live state is (the main one, or a batch slot's)
-    strata::core::SessionState* main_ss_ = nullptr;   // the main session: it owns the PLE table (read by every slot)
+    nostroma::core::SessionState* ss_ = nullptr;        // the session whose sequence the live state is (the main one, or a batch slot's)
+    nostroma::core::SessionState* main_ss_ = nullptr;   // the main session: it owns the PLE table (read by every slot)
     gguf::File f_;
     std::unique_ptr<mtl::Context> cx_;
     mtl::Buffer W_;
@@ -388,7 +388,7 @@ private:
     }
     int lib_ = -1, lgdn_ = -1, lqsa_ = -1, lsmp_ = -1, lple_ = -1;
     bool samp_on_ = false;
-    strata::kernels::SamplerParams samp_;
+    nostroma::kernels::SamplerParams samp_;
     const int32_t* samp_hist_ = nullptr;
     int samp_hist_len_ = 0;
     mtl::Buffer sbias_, shist_, scv_, sci_;
@@ -433,7 +433,7 @@ private:
         ysh_, sg_, qfull_, kcur_, vcur_, iqr_, ikr_, qcur_, qidx_, scores_, qids_, part_, cs_, lm_, apv_, api_, tokout_,
         emb_, pkey_, pval_, qkvL_, alL_, beL_, zL_, ydump_, keyn_, qn_, gated_, normW_, pleHist_;
     Act XA_, XF_, XY_, XQ_, XH_, XE_;
-    mtl::Buffer h16_;   // STRATA_METAL_F16: the routed gate/up's h as half, for the down
+    mtl::Buffer h16_;   // NOSTROMA_METAL_F16: the routed gate/up's h as half, for the down
     int cur_inj_ = 0;
     // state
     std::vector<mtl::Buffer> gst_, ghist_[2], kq_, vq_, ksc_, vsc_, tail_, dead_, pooled_;
@@ -445,7 +445,7 @@ private:
     size_t st_gst_ = 0, st_hist_ = 0, st_kq_ = 0, st_sc_ = 0, st_tail_ = 0, st_dead_ = 0, st_pooled_ = 0, st_ple_ = 0;   // bytes between sets
     bool rows_ = false;       // the window being built / run holds one token of each of rows_n_ DIFFERENT sequences (batch slots)
     int rows_n_ = 0;
-    strata::core::SessionState* rows_ss_[MAXT] = {};
+    nostroma::core::SessionState* rows_ss_[MAXT] = {};
     int rows_set_[MAXT] = {};
     static mtl::Buffer view_of(const mtl::Buffer& big, size_t off, size_t bytes) {
         mtl::Buffer v = big;
@@ -464,38 +464,38 @@ private:
         int hp = 0, pend_fold = 0, last_T = 0;
         bool last_head = true;
         int32_t last_tokens[MAXT] = {};
-        strata::core::SessionState* ss = nullptr;
+        nostroma::core::SessionState* ss = nullptr;
     };
     std::vector<std::unique_ptr<SeqSet>> sets_;     // [0] the spare the main state is exchanged with, [b + 1] slot b
-    std::map<const strata::core::SessionState*, int> set_of_ss_;
+    std::map<const nostroma::core::SessionState*, int> set_of_ss_;
     int active_ = 0;
     void swap_state(SeqSet& o);
     void alloc_set(SeqSet& o, bool real, int idx = 0);
     int hp_ = 0;                     // which of the two history buffers holds the committed conv history (all layers)
     // commit(n) of a window of several tokens: the GDN fold of the kept prefix waits for the next window and runs at
     // the start of its command buffer (one submit and wait less a round).  Nothing else reads the GDN state between
-    // the two (the drafter reads the window's rows and its own caches).  STRATA_METAL_LAZY_FOLD=0: at commit.
+    // the two (the drafter reads the window's rows and its own caches).  NOSTROMA_METAL_LAZY_FOLD=0: at commit.
     int pend_fold_ = 0;
     bool win_head_ = true;      // the window being encoded has the head
     bool last_head_ = true;     // the last window had it
     // token_chain's --fuse (mac-kern): the GDN step writes the prepared y planes itself (no xprep), and a window whose
     // context is within the selection budget skips the QSA score and top-k (the cell list is the identity: qids_
-    // holds it from init, restored after a window that selected).  STRATA_METAL_FUSE=0: off.
+    // holds it from init, restored after a window that selected).  NOSTROMA_METAL_FUSE=0: off.
     // gr_norm2 / moe_combine_sh2 (gr.metal, glue.metal): the same arithmetic with the loads batched ahead of the stores / sums (the
-    // originals wait one memory latency per loop iteration).  Bitwise the same outputs.  STRATA_METAL_LDB=0: the original kernels.
-    bool ldb_ = !(strata::env("NOSTROMA_METAL_LDB") && std::string(strata::env("NOSTROMA_METAL_LDB")) == "0");
+    // originals wait one memory latency per loop iteration).  Bitwise the same outputs.  NOSTROMA_METAL_LDB=0: the original kernels.
+    bool ldb_ = !(nostroma::env("NOSTROMA_METAL_LDB") && std::string(nostroma::env("NOSTROMA_METAL_LDB")) == "0");
     const char* k_norm() const { return ldb_ ? "gr_norm2" : "gr_norm"; }
     const char* k_comb() const { return ldb_ ? "moe_combine_sh2" : "moe_combine_sh"; }
-    bool fuse_ = !(strata::env("NOSTROMA_METAL_FUSE") && std::string(strata::env("NOSTROMA_METAL_FUSE")) == "0");
+    bool fuse_ = !(nostroma::env("NOSTROMA_METAL_FUSE") && std::string(nostroma::env("NOSTROMA_METAL_FUSE")) == "0");
     bool qdirty_ = false;
-    // STRATA_METAL_KPROF=T (test tooling): once, after the 20th cached window of T tokens with the head, the GPU time
+    // NOSTROMA_METAL_KPROF=T (test tooling): once, after the 20th cached window of T tokens with the head, the GPU time
     // of each kernel class alone (the window's own dispatches of that pipeline + weight role, run by themselves)
     void kprof(const std::vector<mtl::Dispatch>& ds, int Tn);
-    // STRATA_METAL_STEPPROF=T (measurement, round 0215): once, after the 20th cached head window of T tokens, where one decode step's GPU time
-    // goes IN SITU, by part: the window's dispatch list is run as prefixes ending at every barrier group (STRATA_METAL_STEPPROF_REPS runs each,
+    // NOSTROMA_METAL_STEPPROF=T (measurement, round 0215): once, after the 20th cached head window of T tokens, where one decode step's GPU time
+    // goes IN SITU, by part: the window's dispatch list is run as prefixes ending at every barrier group (NOSTROMA_METAL_STEPPROF_REPS runs each,
     // default 5, median); a group's time is the difference of two prefixes, so the gaps between dispatches and the overlap of the groups that
     // share a barrier are inside the numbers.  Also the weight bytes read per part (dense from the tensor table, experts from the routed ids of
-    // every layer: the distinct experts) and the GB/s each part reaches.  STRATA_METAL_STEPPROF_OUT=path: one line per group.
+    // every layer: the distinct experts) and the GB/s each part reaches.  NOSTROMA_METAL_STEPPROF_OUT=path: one line per group.
     void stepprof(const std::vector<mtl::Dispatch>& ds, int Tn);
     void fold(std::vector<mtl::Dispatch>& ds, int n_keep, int hp);
     // the encoded window per (T, head, hp_): built once, then only the positions are patched (the host's encode cost)
@@ -505,7 +505,7 @@ private:
         std::vector<std::pair<int, int>> qsa;   // (dispatch, kind): 0 QsaArgs n_tok = T, 1 the merge (MAXT), 2 the scores
     };
     std::map<int, Cached> wcache_;
-    bool f16_enc_ = false;   // STRATA_METAL_F16: a decode window is being encoded (the MTP layer stays fp32)
+    bool f16_enc_ = false;   // NOSTROMA_METAL_F16: a decode window is being encoded (the MTP layer stays fp32)
     std::vector<std::pair<int, int>>* rec_ = nullptr;
     // ---- SSD streaming (stream.h): the dense weights in W_, the routed experts in the arena
     std::unique_ptr<ExpertStream> st_;
@@ -550,7 +550,7 @@ private:
     int last_n_disp_ = 0;
     int32_t last_tokens_[MAXT] = {};
     std::vector<float> last_norm_;   // the window's normalized PLE rows (T x hc_dim), for commit
-    // STRATA_METAL_LOGPOS=<path> (test tooling, one-token windows): per decode position the log-probability of the
+    // NOSTROMA_METAL_LOGPOS=<path> (test tooling, one-token windows): per decode position the log-probability of the
     // token that came next (the next window's input: with --spec-follow, the forced text) and the top 64, in the
     // KL harness's row format (phaseA-tests cuda_p0/cuda_kl.py load_lp): pos, target, lp, argmax, 4 x 0, id:lp ...
     std::FILE* logpos_ = nullptr;
@@ -561,7 +561,7 @@ private:
     std::vector<float> lp_row_;
     std::vector<std::pair<float, int32_t>> lp_top_;
     void logpos(int Tn, const int32_t* tokens, int64_t pos0, bool head);
-    // STRATA_METAL_PROFILE=1: where a window's time goes, per window size (printed when the window goes away)
+    // NOSTROMA_METAL_PROFILE=1: where a window's time goes, per window size (printed when the window goes away)
     struct Prof { int64_t n = 0; double pre = 0, rg = 0, gpu = 0, fin = 0, all = 0; };
     std::map<int, Prof> prof_;
     Prof cprof_, dprof_;   // commit (folds), the draft rounds
@@ -572,14 +572,14 @@ public:
     ~Window();
     void prof_add(bool draft, double ms) { Prof& x = draft ? dprof_ : cprof_; ++x.n; x.all += ms; }
 private:
-    // the Q8_0 copies of the hyper-connection matrices (the default; STRATA_HC_Q8=0: the BF16 originals)
+    // the Q8_0 copies of the hyper-connection matrices (the default; NOSTROMA_HC_Q8=0: the BF16 originals)
     // Gyro (agentionai's Hadamard-folded trellis experts, native_experts.txt v5 + hadamard.txt): the gate/up input is
     // H (s * x) and the down input H h, per block of 128; XR_ holds the rotated rows, hsx_/hsh_ the +/-1 signs
     bool had_on_ = false;
     int had_block_ = 128;
     bool gyro_dense_ = false;   // a trellis-expert file: its dense K-quants get their own GEMV tiles (gemv() below)
-    bool had_gu(int l) const { return had_on_ && strata::kernels::cpu::hadamard_spec().gu(l); }
-    bool had_dn(int l) const { return had_on_ && strata::kernels::cpu::hadamard_spec().down(l); }
+    bool had_gu(int l) const { return had_on_ && nostroma::kernels::cpu::hadamard_spec().gu(l); }
+    bool had_dn(int l) const { return had_on_ && nostroma::kernels::cpu::hadamard_spec().down(l); }
     mtl::Buffer XR_, hsx_, hsh_;
     // one rotation dispatch: rows of `width` values (a multiple of 128) in place or from x to y; f16 = half rows
     void had_rows(std::vector<mtl::Dispatch>& ds, int lib, const std::string& pfx, const mtl::Buffer& x, size_t x_off,
@@ -602,7 +602,7 @@ private:
     gguf::Tensor mhead_t_;
     std::vector<int32_t> dvocab_;
     // the draft layer's BF16 matrices in Q8_0 (half the bytes a draft step reads; drafts only: the verify window
-    // decides every token).  STRATA_METAL_MTP_Q8=0 keeps BF16.
+    // decides every token).  NOSTROMA_METAL_MTP_Q8=0 keeps BF16.
     mtl::Buffer mq8_;
     std::map<std::string, gguf::Tensor> mq8t_;
     const mtl::Buffer& MB(const std::string& name) const { return mq8t_.count(name) ? mq8_ : Wm_; }
@@ -614,8 +614,8 @@ private:
     PromptBufs pb_;
     // The drafter's K/V rows of a prompt chunk run on a second queue while the next chunk's main work runs on the first (the two touch
     // different buffers: the chunk's final residual rows are double-buffered, pb_.R / pb_.R2).  The drafter's rows of chunk c+1 wait for
-    // chunk c's (they share the drafter's cache and scratch).  STRATA_METAL_MTP_OVERLAP=0: each chunk's rows run before the next chunk.
-    bool mtp_ovl_ = !(strata::env("NOSTROMA_METAL_MTP_OVERLAP") && std::string(strata::env("NOSTROMA_METAL_MTP_OVERLAP")) == "0");
+    // chunk c's (they share the drafter's cache and scratch).  NOSTROMA_METAL_MTP_OVERLAP=0: each chunk's rows run before the next chunk.
+    bool mtp_ovl_ = !(nostroma::env("NOSTROMA_METAL_MTP_OVERLAP") && std::string(nostroma::env("NOSTROMA_METAL_MTP_OVERLAP")) == "0");
     void* mtp_async_ = nullptr;
     void mtp_wait() { if (mtp_async_) { cx_->wait_async(mtp_async_); mtp_async_ = nullptr; } }
     mtl::Buffer mpemb_;                    // the drafter's prompt embedding rows (mtp_prefill, one command buffer)
@@ -649,7 +649,7 @@ private:
     bool pc_setup(int C);
     void pc_kprof(const std::vector<mtl::Dispatch>& ds, int nT, int64_t pos0);
     // the chunk's host rows (the embedding rows and the PLE table rows): computed on a thread while the GPU runs the previous
-    // chunk (STRATA_METAL_PROMPT_HOSTPIPE=0 computes them inline before each chunk)
+    // chunk (NOSTROMA_METAL_PROMPT_HOSTPIPE=0 computes them inline before each chunk)
     struct PcHost {
         int nT = 0;
         int64_t pos0 = -1;
@@ -662,7 +662,7 @@ private:
     std::future<PcHost> pc_next_;
     void pc_drain() { if (pc_next_.valid()) pc_next_.wait(); }
     bool pc_chunk(const int64_t* tokens, int nT, int64_t pos0, std::string& err, const int64_t* next_tokens = nullptr, int next_nT = 0);
-    // the draft round in one command buffer (msl/mtp_chain.metal): STRATA_METAL_MTP_CHAIN=0 runs a command buffer
+    // the draft round in one command buffer (msl/mtp_chain.metal): NOSTROMA_METAL_MTP_CHAIN=0 runs a command buffer
     // per step with the host's pick and embedding (as before)
     int lchain_ = -1;
     bool chain_ = false;
@@ -673,7 +673,7 @@ namespace {
 // A repack (metal_repack.py: <file>.repack.lock) or setup's model preparation (.preparing.lock) beside the GPU's file holds a lock
 // with its pid.  The repack and the pack move 100+ GB through the disk and one holds up to 20 GB of memory: an engine of 70-90 GB
 // beside them is what froze the 128 GB M5 Max twice (watchdog panics, 2026-10-13).  Returns the pid of a live one, else 0.
-// STRATA_METAL_IGNORE_REPACK=1 starts anyway (your choice).
+// NOSTROMA_METAL_IGNORE_REPACK=1 starts anyway (your choice).
 long repack_pid_running(const std::string& model_file) {
     namespace fs = std::filesystem;
     std::error_code ec;
@@ -691,32 +691,32 @@ long repack_pid_running(const std::string& model_file) {
 }
 }  // namespace
 
-bool Window::init(const strata::core::ModelGeometry& g, strata::core::SessionState& ss, const std::string& shard1,
+bool Window::init(const nostroma::core::ModelGeometry& g, nostroma::core::SessionState& ss, const std::string& shard1,
                   int max_t, int64_t max_cells, std::string& err) {
     ss_ = &ss;
     main_ss_ = &ss;
     max_t_ = std::min(max_t, MAXT);
     max_cells_ = max_cells;
-    // The 19 fields the CUDA guard compares with the compiled shape (strata::geometry_unsupported, + rms_eps); the two it leaves free are
+    // The 19 fields the CUDA guard compares with the compiled shape (nostroma::geometry_unsupported, + rms_eps); the two it leaves free are
     // checked here: the routed experts per layer (the router kernels take NL = 16, i.e. 512, and 8, i.e. 256 for the expert-pruned
     // Coder) and the experts per token (the kernels are built for TOPK).
     const bool experts_ok = g.n_expert == NEXP || (NEXP == 512 && g.n_expert == 256);
-    if (!strata::geometry_unsupported(g).empty() || !experts_ok || g.n_expert_used != TOPK) {
+    if (!nostroma::geometry_unsupported(g).empty() || !experts_ok || g.n_expert_used != TOPK) {
         err = "metal window: the geometry differs from Qwen3.8-Flash-Next's";
         return false;
     }
     nexp_ = (int) g.n_expert;   // 512, or 256 (the expert-pruned Coder); the routers' logits rows keep a 512-float stride either way
     eps_ = 1e-6f;
     const double t0 = now_ms();
-    if (const long rp = repack_pid_running(shard1); rp > 0 && !(strata::env("NOSTROMA_METAL_IGNORE_REPACK") && std::string(strata::env("NOSTROMA_METAL_IGNORE_REPACK")) == "1")) {
+    if (const long rp = repack_pid_running(shard1); rp > 0 && !(nostroma::env("NOSTROMA_METAL_IGNORE_REPACK") && std::string(nostroma::env("NOSTROMA_METAL_IGNORE_REPACK")) == "1")) {
         err = "metal window: a model repack or setup's preparation is running here (pid " + std::to_string(rp) + "): the engine is not started "
-              "beside it (it froze a 128 GB Mac twice); wait for it to finish, or set STRATA_METAL_IGNORE_REPACK=1";
+              "beside it (it froze a 128 GB Mac twice); wait for it to finish, or set NOSTROMA_METAL_IGNORE_REPACK=1";
         return false;
     }
     if (!f_.open(shard1, err)) return false;
     cx_ = std::make_unique<mtl::Context>();
     stream_ = ExpertStream::wanted(f_, *cx_);
-    g_f16_auto = f16_auto_for(f_.path, stream_);   // STRATA_METAL_F16 unset: a resident IQ3_S / Q2_0 pack takes the fp16 decode windows
+    g_f16_auto = f16_auto_for(f_.path, stream_);   // NOSTROMA_METAL_F16 unset: a resident IQ3_S / Q2_0 pack takes the fp16 decode windows
     if (stream_) {
         // the model does not fit: the dense weights are read into memory below, the experts stream from the SSD
         st_ = std::make_unique<ExpertStream>();
@@ -755,7 +755,7 @@ bool Window::init(const strata::core::ModelGeometry& g, strata::core::SessionSta
     n_vocab_ = (int64_t) T("output.weight").shape[1];
     if (const gguf::Tensor* e0 = f_.find("blk.0.ffn_gate_exps.weight")) gyro_dense_ = e0->type >= 144;
     {
-        using namespace strata_metal;
+        using namespace nostroma_metal;
         auto cc = [&](const MslLib& L) { return cx_->compile(L.files, L.prelude); };
         lib_ = cc(lib_core(metal_f16(), kq_down_prelude(f_)));
         lgdn_ = cc(lib_gdn());
@@ -806,7 +806,7 @@ bool Window::init(const strata::core::ModelGeometry& g, strata::core::SessionSta
     XA_ = act(N); XF_ = act(N); XY_ = act(G_ZV); XQ_ = act(G_QOUT); XH_ = act(NFF); XE_ = act(N);
     if (metal_f16()) h16_ = A(2 * (size_t) MAXT * TOPK * NFF);
     {   // Gyro (native_experts.txt v5 + hadamard.txt): the rotation's signs and the rotated gate/up input
-        const auto& hs = strata::kernels::cpu::hadamard_spec();
+        const auto& hs = nostroma::kernels::cpu::hadamard_spec();
         had_on_ = hs.any();
         if (had_on_) {
             had_block_ = hs.block;
@@ -816,14 +816,14 @@ bool Window::init(const strata::core::ModelGeometry& g, strata::core::SessionSta
             }
             XR_ = A(4 * MAXT * N);
             auto upload = [&](int w, mtl::Buffer& b) {
-                if (const float* sg = strata::kernels::cpu::hadamard_signs(w)) {
+                if (const float* sg = nostroma::kernels::cpu::hadamard_signs(w)) {
                     b = A(4 * (size_t) w);
                     std::memcpy(b.ptr, sg, 4 * (size_t) w);
                 }
             };
             upload(N, hsx_);
             upload(NFF, hsh_);
-            std::fprintf(stderr, "strata metal: Hadamard-folded experts (block %d): the gate/up and down inputs are rotated on the GPU\n",
+            std::fprintf(stderr, "nostroma metal: Hadamard-folded experts (block %d): the gate/up and down inputs are rotated on the GPU\n",
                          had_block_);
         }
     }
@@ -853,10 +853,10 @@ bool Window::init(const strata::core::ModelGeometry& g, strata::core::SessionSta
         }
     }
     bind_session(ss);
-    // ---- the HC read in Q8_0 (the owner's default on Metal, as STRATA_HC_Q8 on gfx12): the BF16 down / up / inject
+    // ---- the HC read in Q8_0 (the owner's default on Metal, as NOSTROMA_HC_Q8 on gfx12): the BF16 down / up / inject
     // matrices quantized once at load (ggml's q8_0 rule, ref_quant), read by gr_down_q8 / gr_up_q8
     {
-        const char* e = strata::env("NOSTROMA_HC_Q8");
+        const char* e = nostroma::env("NOSTROMA_HC_Q8");
         hc_q8_ = !(e && std::string(e) == "0");
     }
     {
@@ -890,7 +890,7 @@ bool Window::init(const strata::core::ModelGeometry& g, strata::core::SessionSta
                     const uint8_t* src = (const uint8_t*) f_.map + x.offset;
                     if (stream_) {   // F_NOCACHE reads: the page cache is kept for the arena
                         raw.resize(x.bytes);
-                        if (!st_->read(raw.data(), x.bytes, x.offset)) { std::fprintf(stderr, "strata metal: read failed\n"); std::exit(6); }
+                        if (!st_->read(raw.data(), x.bytes, x.offset)) { std::fprintf(stderr, "nostroma metal: read failed\n"); std::exit(6); }
                         src = raw.data();
                     }
                     ref::dequant(x.type, src, tmp.data(), ne);
@@ -902,7 +902,7 @@ bool Window::init(const strata::core::ModelGeometry& g, strata::core::SessionSta
                 }
             });
         for (auto& x : th) x.join();
-        std::fprintf(stderr, "strata metal: HC read in Q8_0 (STRATA_HC_Q8=0: BF16): %zu matrices, %.0f MB, made in %.0f ms\n",
+        std::fprintf(stderr, "nostroma metal: HC read in Q8_0 (NOSTROMA_HC_Q8=0: BF16): %zu matrices, %.0f MB, made in %.0f ms\n",
                      names.size(), tot / 1e6, now_ms() - tq);
     }
     if (stream_) {
@@ -910,7 +910,7 @@ bool Window::init(const strata::core::ModelGeometry& g, strata::core::SessionSta
         if (hc_q8_)
             for (const auto& kv : q8off_) skip.push_back(kv.first);
         if (!st_->load_dense(f_, *cx_, skip, W_, err)) return false;
-        const char* e = strata::env("NOSTROMA_METAL_PREFETCH");
+        const char* e = nostroma::env("NOSTROMA_METAL_PREFETCH");
         st_pred_ = !(e && std::atoi(e) <= 0);
         if (st_pred_) predL_ = A(4 * (size_t) G_NL * MAXT * 512);
         if (st_pred_ && st_->ahead2() > 0) predL2_ = A(4 * (size_t) G_NL * MAXT * 512);
@@ -931,9 +931,9 @@ bool Window::init(const strata::core::ModelGeometry& g, strata::core::SessionSta
         for (size_t i = 0; i < ne; ++i) dst[i] = ref::f32_to_f16(src[i]);
         plekw_own_ = true;
     }
-    ple_hist_.assign((size_t) strata::kernels::NG_HIST * strata::kernels::NG_HC_DIM, 0.0f);
-    last_norm_.assign((size_t) MAXT * strata::kernels::NG_HC_DIM, 0.0f);
-    std::fprintf(stderr, "strata metal: decode window on %s: %s %s (%.1f GB), %d cells, PLE %s, ready in %.0f ms\n",
+    ple_hist_.assign((size_t) nostroma::kernels::NG_HIST * nostroma::kernels::NG_HC_DIM, 0.0f);
+    last_norm_.assign((size_t) MAXT * nostroma::kernels::NG_HC_DIM, 0.0f);
+    std::fprintf(stderr, "nostroma metal: decode window on %s: %s %s (%.1f GB), %d cells, PLE %s, ready in %.0f ms\n",
                  cx_->device_name().c_str(), shard1.c_str(), stream_ ? "streamed from the SSD (experts)" : "wrapped",
                  f_.file_bytes / 1e9, MAXC, ple_on_ ? "on" : "OFF", now_ms() - t0);
     return true;
@@ -947,7 +947,7 @@ void Window::gemv(std::vector<mtl::Dispatch>& ds, const gguf::Tensor& t, const A
     if (n_in >= 6144) { L = 32; Rr = 1; S = 8; K = 2; }
     else if (n_in == 640) { L = 8; Rr = 1; S = 4; K = 1; }
     else if (n_out <= 640 || ty == ref::Q2_0 || ty == ref::BF16) { L = 32; Rr = 1; S = 4; K = 1; }
-    static const bool gyro_tiles = !(strata::env("NOSTROMA_METAL_GYRO_TILES") && std::string(strata::env("NOSTROMA_METAL_GYRO_TILES")) == "0");   // off: the A/B arm
+    static const bool gyro_tiles = !(nostroma::env("NOSTROMA_METAL_GYRO_TILES") && std::string(nostroma::env("NOSTROMA_METAL_GYRO_TILES")) == "0");   // off: the A/B arm
     if (gyro_dense_ && gyro_tiles && ntok >= 2) {
         // Gyro's dense weights are Q5_K / Q6_K / Q8_0 (3.6 GB a token).  gemv_parity --one on the M4, 2 tokens: Q5_K 2560->10240
         // 261 us with 16,1,4,1 against 210 with 2,1,4,1 (-20%), 2560->6144 158 -> 129, 6144->2560 162 -> 139, 2560->12288
@@ -958,8 +958,8 @@ void Window::gemv(std::vector<mtl::Dispatch>& ds, const gguf::Tensor& t, const A
     }
     {
         // windows of several tokens: NR rows a lane share each x load (the window's cost is its x traffic).  The sums
-        // run in the same order for any NR, so the answers do not change.  STRATA_METAL_GEMV_NR (1, 2): the tile.
-        static const int nr_env = [] { const char* e = strata::env("NOSTROMA_METAL_GEMV_NR"); return e ? std::atoi(e) : 1; }();
+        // run in the same order for any NR, so the answers do not change.  NOSTROMA_METAL_GEMV_NR (1, 2): the tile.
+        static const int nr_env = [] { const char* e = nostroma::env("NOSTROMA_METAL_GEMV_NR"); return e ? std::atoi(e) : 1; }();
         if (ntok > 1 && nr_env == 2 && n_out >= 2048) {
             if (S == 8 && K == 2) { S = 4; K = 2; }
             if (S == 8 && K == 1) S = 4;
@@ -1023,7 +1023,7 @@ void Window::gr_read(std::vector<mtl::Dispatch>& ds, const std::string& pre, boo
     const bool q8 = is_q8(tdn) && is_q8(tup);
     const bool injf = q8 && !final_ && !q8off_.count(tin.name) && tin.type == ref::F32;
     mtl::Dispatch d2;
-    static const bool hcld = strata::env("NOSTROMA_METAL_HCLD") && std::string(strata::env("NOSTROMA_METAL_HCLD")) == "1";   // OFF (measured -10.9%, 4 of 4 rounds, M5 Max UD-Q4_K_XL): the HC kernels' units loaded two or three at a time, bitwise the same; registers and occupancy, as the earlier gemvu / moeu unrolls
+    static const bool hcld = nostroma::env("NOSTROMA_METAL_HCLD") && std::string(nostroma::env("NOSTROMA_METAL_HCLD")) == "1";   // OFF (measured -10.9%, 4 of 4 rounds, M5 Max UD-Q4_K_XL): the HC kernels' units loaded two or three at a time, bitwise the same; registers and occupancy, as the earlier gemvu / moeu unrolls
     const char* dn = injf ? (hcld ? "gr_downp_q8f_8_8" : "gr_down_q8f_8_8") : q8 ? (hcld ? "gr_downp_q8_8_8" : "gr_down_q8_8_8") : "gr_down_8_8";
     d2.p = P(lib_, dn, mtl::Constants().i(1, ntok), std::string(dn) + "#" + std::to_string(ntok));
     d2.args = {mtl::Arg::B(*bd, od), mtl::Arg::B(*bi, oi), mtl::Arg::B(xn_), mtl::Arg::B(lo_),
@@ -1259,13 +1259,13 @@ void Window::layer(std::vector<mtl::Dispatch>& ds, int l, int ntok, int64_t pos0
         const bool m4 = !m5_layout();
         int dl = dq2 || (m4 && td.type == ref::Q8_0) ? 8 : 4,
             dr = dq2 || (m4 && (td.type == ref::Q8_0 || td.type == ref::Q5_1 || td.type == ref::Q5_0)) ? 1 : 2;
-        {   // STRATA_METAL_MOE_GU=L,R,S / STRATA_METAL_MOE_DN=L,R,S (tile screens: lanes per row, rows per lane, simdgroups; an instantiated moe_gu_ / moe_down_ combination)
+        {   // NOSTROMA_METAL_MOE_GU=L,R,S / NOSTROMA_METAL_MOE_DN=L,R,S (tile screens: lanes per row, rows per lane, simdgroups; an instantiated moe_gu_ / moe_down_ combination)
             static const auto parse = [](const char* name, int* o) {
                 const char* e = std::getenv(name);
                 return e && std::sscanf(e, "%d,%d,%d", &o[0], &o[1], &o[2]) == 3;
             };
             static int gu_o[3], dn_o[3];
-            static const bool gu_e = parse("STRATA_METAL_MOE_GU", gu_o), dn_e = parse("STRATA_METAL_MOE_DN", dn_o);
+            static const bool gu_e = parse("NOSTROMA_METAL_MOE_GU", gu_o), dn_e = parse("NOSTROMA_METAL_MOE_DN", dn_o);
             if (gu_e && !tq_) { gl = gu_o[0]; gr = gu_o[1]; gs = gu_o[2]; }
             if (dn_e && !dq2) { dl = dn_o[0]; dr = dn_o[1]; ds_ = dn_o[2]; }
         }
@@ -1361,7 +1361,7 @@ void gnorm(const float* x, const float* w, float* y, int n_embd, int hc, float e
 // The PLE block (ple.hpp) for the window's T rows on the CPU, after layer 0 (its pending write applied to R): R +=
 // gated + silu(conv); the normalized rows go to last_norm_ (the history advances at commit).
 void Window::ple_cpu(int Tn) {
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     const int hc_dim = NG_HC_DIM;
     const float* nkey = (const float*) ((const uint8_t*) W_.ptr + T("blk.1.ple_norm_key.weight").offset);
     const float* nqry = (const float*) ((const uint8_t*) W_.ptr + T("blk.1.ple_norm_query.weight").offset);
@@ -1421,12 +1421,12 @@ bool Window::run(int Tn, const int32_t* tokens, int64_t pos0, bool head, int32_t
     }
     // ---- the PLE rows (the table read is the shared host code's), projected on the GPU
     if (ple_on_) {
-        strata::core::SessionState& ss = *ss_;
-        uint32_t rows[MAXT * strata::kernels::PLE_N_HEADS];
+        nostroma::core::SessionState& ss = *ss_;
+        uint32_t rows[MAXT * nostroma::kernels::PLE_N_HEADS];
         int32_t prev[2] = {ss.ple_prev[0], ss.ple_prev[1]};
         for (int t = 0; t < Tn; ++t) {
             if (rows_) { prev[0] = rows_ss_[t]->ple_prev[0]; prev[1] = rows_ss_[t]->ple_prev[1]; }   // (batch slots: each row its own sequence)
-            strata::kernels::ngram_rows(&tokens[t], prev, 1, main_ss_->ple.consts, rows + t * strata::kernels::PLE_N_HEADS);
+            nostroma::kernels::ngram_rows(&tokens[t], prev, 1, main_ss_->ple.consts, rows + t * nostroma::kernels::PLE_N_HEADS);
             if (!rows_) { prev[0] = prev[1]; prev[1] = tokens[t]; }
         }
         if (!main_ss_->ple.table->gather_batch(rows, (size_t) Tn, emb_.as<float>(), err)) return false;
@@ -1464,12 +1464,12 @@ bool Window::run(int Tn, const int32_t* tokens, int64_t pos0, bool head, int32_t
         const double r0 = now_ms();
         last_gpu_ms_ = 1000.0 * run_ds(c);
         {
-            static const int kt = strata::env("NOSTROMA_METAL_KPROF") ? std::atoi(strata::env("NOSTROMA_METAL_KPROF")) : 0;
+            static const int kt = nostroma::env("NOSTROMA_METAL_KPROF") ? std::atoi(nostroma::env("NOSTROMA_METAL_KPROF")) : 0;
             static int seen = 0;
             if (kt == Tn && head && ++seen == 20 && !stream_) kprof(c.ds, Tn);
-            static const int st = strata::env("NOSTROMA_METAL_STEPPROF") ? std::atoi(strata::env("NOSTROMA_METAL_STEPPROF")) : 0;
+            static const int st = nostroma::env("NOSTROMA_METAL_STEPPROF") ? std::atoi(nostroma::env("NOSTROMA_METAL_STEPPROF")) : 0;
             static int seen2 = 0;
-            static const int st_at = strata::env("NOSTROMA_METAL_STEPPROF_AT") ? std::atoi(strata::env("NOSTROMA_METAL_STEPPROF_AT")) : 20;
+            static const int st_at = nostroma::env("NOSTROMA_METAL_STEPPROF_AT") ? std::atoi(nostroma::env("NOSTROMA_METAL_STEPPROF_AT")) : 20;
             if (st == Tn && head && ++seen2 == st_at && !stream_) stepprof(c.ds, Tn);
         }
         tp_rg_ = now_ms() - r0;
@@ -1506,7 +1506,7 @@ bool Window::run(int Tn, const int32_t* tokens, int64_t pos0, bool head, int32_t
         d1.tg[0] = 256;
         push(ds, d1);
         // the PLE block on the GPU (msl/ple.metal): norms, gate, conv, the residual update
-        struct PleArgs { uint32_t n_embd, hc; float eps; } pa{N, HC, strata::kernels::NG_RMS_EPS};
+        struct PleArgs { uint32_t n_embd, hc; float eps; } pa{N, HC, nostroma::kernels::NG_RMS_EPS};
         auto off = [&](const char* n) { return T(n).offset; };
         mtl::Dispatch g1, g2, g3, g4;
         g1.p = P(lple_, "ple_gnorm", {}, "ple_gnorm");
@@ -1596,11 +1596,11 @@ bool Window::finish_rows(int Tn, const int32_t* tokens, int32_t* out, double t0)
         SeqSet& s = *sets_[(size_t) rows_set_[t]];
         s.hp = 1 - s.hp;
         if (ple_on_) {
-            const float* norm = normW_.as<float>() + (size_t) t * strata::kernels::NG_HC_DIM;
-            for (int c = 0; c < strata::kernels::NG_HC_DIM; ++c) {
-                float* col = s.pleHist.as<float>() + (size_t) c * strata::kernels::NG_HIST;
-                for (int r = 0; r + 1 < strata::kernels::NG_HIST; ++r) col[r] = col[r + 1];
-                col[strata::kernels::NG_HIST - 1] = norm[c];
+            const float* norm = normW_.as<float>() + (size_t) t * nostroma::kernels::NG_HC_DIM;
+            for (int c = 0; c < nostroma::kernels::NG_HC_DIM; ++c) {
+                float* col = s.pleHist.as<float>() + (size_t) c * nostroma::kernels::NG_HIST;
+                for (int r = 0; r + 1 < nostroma::kernels::NG_HIST; ++r) col[r] = col[r + 1];
+                col[nostroma::kernels::NG_HIST - 1] = norm[c];
             }
         }
         s.ss->ple_prev[0] = s.ss->ple_prev[1];
@@ -1637,17 +1637,17 @@ void stream_atexit() {
 }  // namespace
 
 // The arena, once the rest is allocated (the MTP layer loads after init): what the GPU working set and the RAM leave
-// with STRATA_METAL_KEEP_FREE_GB kept for macOS (default: 7 GB, or 15% of the RAM when that is more - the M5 Max
+// with NOSTROMA_METAL_KEEP_FREE_GB kept for macOS (default: 7 GB, or 15% of the RAM when that is more - the M5 Max
 // froze with an 89 GB arena and 7 GB left beside a 50 GB n-gram table read through the file cache; arena_budget.h);
-// STRATA_METAL_ARENA_GB sets it.
+// NOSTROMA_METAL_ARENA_GB sets it.
 bool Window::stream_arena(std::string& err) {
     uint64_t phys = 0;
     size_t len = sizeof phys;
     sysctlbyname("hw.memsize", &phys, &len, nullptr, 0);
     const double gb = 1e9;
-    if (!(strata::env("NOSTROMA_METAL_KEEP_HOST_WEIGHTS") && std::string(strata::env("NOSTROMA_METAL_KEEP_HOST_WEIGHTS")) == "1")) {
-        const uint64_t g = strata::gpu::purge_device_allocations(32u << 20);
-        std::fprintf(stderr, "strata metal stream: %.2f GB of the host code's device weight copies given back (unused by the "
+    if (!(nostroma::env("NOSTROMA_METAL_KEEP_HOST_WEIGHTS") && std::string(nostroma::env("NOSTROMA_METAL_KEEP_HOST_WEIGHTS")) == "1")) {
+        const uint64_t g = nostroma::gpu::purge_device_allocations(32u << 20);
+        std::fprintf(stderr, "nostroma metal stream: %.2f GB of the host code's device weight copies given back (unused by the "
                              "Metal window)\n", g / 1e9);
     }
     const double used = (double) cx_->allocated();
@@ -1675,39 +1675,39 @@ bool Window::stream_arena(std::string& err) {
         if (sysctlbyname("vm.vm_page_filecache_min", &pages, &pl, nullptr, 0) == 0) am.filecache_min = (double) pages * (double) vm_page_size;
     }
     am.available = avail_now();
-    if (main_ss_ && main_ss_->ple.table && main_ss_->ple.table->mode() == strata::kernels::PleIo::Mmap)
+    if (main_ss_ && main_ss_->ple.table && main_ss_->ple.table->mode() == nostroma::kernels::PleIo::Mmap)
         am.ple_mapped = (double) ss_->ple.table->rows() * 192.0;   // a row is at most 192 bytes (Q8_0 + its scale)
-    if (const char* e = strata::env("NOSTROMA_METAL_KEEP_FREE_GB")) am.keep_gb = std::atof(e);
-    if (const char* e = strata::env("NOSTROMA_METAL_ARENA_GB")) am.arena_gb = std::atof(e);
-    if (const char* e = strata::env("NOSTROMA_METAL_LEAVE_SHARE")) am.leave_share = std::atof(e);   // for measuring; the default is kLeaveShare
+    if (const char* e = nostroma::env("NOSTROMA_METAL_KEEP_FREE_GB")) am.keep_gb = std::atof(e);
+    if (const char* e = nostroma::env("NOSTROMA_METAL_ARENA_GB")) am.arena_gb = std::atof(e);
+    if (const char* e = nostroma::env("NOSTROMA_METAL_LEAVE_SHARE")) am.leave_share = std::atof(e);   // for measuring; the default is kLeaveShare
     const double keep = arena_keep(am);
     const double avail = am.available;
     double budget = arena_budget(am);
     if (budget < 2 * gb) {
-        std::fprintf(stderr, "strata metal stream: only %.1f GB left for the expert arena (the GPU working set %.1f GB, RAM %.1f GB, "
+        std::fprintf(stderr, "nostroma metal stream: only %.1f GB left for the expert arena (the GPU working set %.1f GB, RAM %.1f GB, "
                              "%.1f GB allocated): expect a low hit rate\n", budget / gb, cx_->recommended_working_set() / gb,
                      phys / gb, used / gb);
         budget = std::max(budget, 1.0 * gb);
     }
     std::string prof;
-    if (const char* e = strata::env("NOSTROMA_METAL_EXPERT_PROFILE")) prof = e;
-    else prof = strata_metal::resource(nullptr, "data", STRATA_METAL_DATA_DEFAULT) + "/expert-profile.bin";
-    std::fprintf(stderr, "strata metal stream: %.2f GB allocated before the arena (the process holds %.2f GB, %.2f GB resident); "
+    if (const char* e = nostroma::env("NOSTROMA_METAL_EXPERT_PROFILE")) prof = e;
+    else prof = nostroma_metal::resource(nullptr, "data", NOSTROMA_METAL_DATA_DEFAULT) + "/expert-profile.bin";
+    std::fprintf(stderr, "nostroma metal stream: %.2f GB allocated before the arena (the process holds %.2f GB, %.2f GB resident); "
                          "RAM %.1f GB (%.1f GB available, %.1f GB kept for macOS), GPU working set %.1f GB\n", used / gb,
                  pm0.footprint / gb, pm0.rss / gb, phys / gb, avail / gb, keep / gb, cx_->recommended_working_set() / gb);
     {   // the planned total: arena + the Metal buffers (or the process's own count when it is more) + the n-gram table's
         // reserve, against the cap (arena_budget.h: footprint_cap)
         const FootprintPlan fp = footprint_plan(am, budget);
-        std::fprintf(stderr, "strata metal stream: planned resident footprint %.1f GB = arena %.1f + %.1f held before it + %.1f "
+        std::fprintf(stderr, "nostroma metal stream: planned resident footprint %.1f GB = arena %.1f + %.1f held before it + %.1f "
                              "reserved for the n-gram table; cap %.1f GB = the lesser of the GPU working set %.1f GB and the RAM "
                              "%.1f GB less %.1f GB left to macOS and its file cache%s\n",
                      fp.total / gb, fp.arena / gb, fp.base / gb, fp.ple / gb, fp.cap / gb, cx_->recommended_working_set() / gb,
                      phys / gb, (am.phys - fp.cap) / gb,
-                     am.arena_gb >= 0 && fp.over() ? " - STRATA_METAL_ARENA_GB is above the cap: kept as set (your choice), but "
+                     am.arena_gb >= 0 && fp.over() ? " - NOSTROMA_METAL_ARENA_GB is above the cap: kept as set (your choice), but "
                                                      "a Mac that runs short of memory can freeze (watchdog panics seen at 90+ GB "
                                                      "resident of 128)" : "");
     }
-    const char* epg = strata::env("NOSTROMA_METAL_PROMPT_GEMM");
+    const char* epg = nostroma::env("NOSTROMA_METAL_PROMPT_GEMM");
     const bool pg_on = !(epg && std::string(epg) == "0");
     bool minimal = false;   // the arena's least layout (the min slots) is not shrunk further: it goes ahead, filled in steps
     for (int tries = 0;; ++tries) {
@@ -1718,7 +1718,7 @@ bool Window::stream_arena(std::string& err) {
             break;
         if (st_->shrink_to() == 0 || tries == 4) return false;
         if ((double) st_->shrink_to() + 64.0 * (1 << 20) >= budget) minimal = true;   // no smaller layout than this one
-        std::fprintf(stderr, "strata metal stream: less memory is free than when the arena was planned: %.1f -> %.1f GB\n",
+        std::fprintf(stderr, "nostroma metal stream: less memory is free than when the arena was planned: %.1f -> %.1f GB\n",
                      budget / gb, st_->shrink_to() / gb);
         budget = (double) st_->shrink_to();
     }
@@ -1726,7 +1726,7 @@ bool Window::stream_arena(std::string& err) {
     {   // what the process really holds now, against the plan and the cap (a number that disagrees is a bug in the count)
         const ProcMem pm1 = proc_mem();
         const double cap = footprint_cap(am);
-        std::fprintf(stderr, "strata metal stream: resident footprint after the fill: the process holds %.1f GB (%.1f GB resident), "
+        std::fprintf(stderr, "nostroma metal stream: resident footprint after the fill: the process holds %.1f GB (%.1f GB resident), "
                              "planned %.1f GB, cap %.1f GB%s\n", pm1.footprint / gb, pm1.rss / gb,
                      footprint_plan(am, (double) st_->arena_used_bytes()).total / gb, cap / gb,
                      pm1.footprint > cap ? " - OVER THE CAP" : "");
@@ -1737,7 +1737,7 @@ bool Window::stream_arena(std::string& err) {
 }
 
 void Window::logpos(int Tn, const int32_t* tokens, int64_t pos0, bool head) {
-    static const char* path = strata::env("NOSTROMA_METAL_LOGPOS");
+    static const char* path = nostroma::env("NOSTROMA_METAL_LOGPOS");
     if (path == nullptr || !head) return;
     if (logpos_ == nullptr) logpos_ = std::fopen(path, "ab");
     if (logpos_ == nullptr) return;
@@ -1810,9 +1810,9 @@ void Window::kprof(const std::vector<mtl::Dispatch>& ds, int Tn) {
         rows.push_back({m, c + " x" + std::to_string(v.size())});
     }
     std::sort(rows.rbegin(), rows.rend());
-    std::fprintf(stderr, "strata metal kprof: window T%d, %zu dispatches, GPU %.3f ms; classes alone (serialized) sum %.3f ms:\n",
+    std::fprintf(stderr, "nostroma metal kprof: window T%d, %zu dispatches, GPU %.3f ms; classes alone (serialized) sum %.3f ms:\n",
                  Tn, ds.size(), all, sum);
-    for (const auto& [m, c] : rows) std::fprintf(stderr, "strata metal kprof: %8.3f ms %5.1f%%  %s\n", m, 100.0 * m / sum, c.c_str());
+    for (const auto& [m, c] : rows) std::fprintf(stderr, "nostroma metal kprof: %8.3f ms %5.1f%%  %s\n", m, 100.0 * m / sum, c.c_str());
 }
 
 void Window::stepprof(const std::vector<mtl::Dispatch>& ds, int Tn) {
@@ -1877,8 +1877,8 @@ void Window::stepprof(const std::vector<mtl::Dispatch>& ds, int Tn) {
     std::vector<size_t> routes;
     for (size_t i = 0; i < n; ++i)
         if (pname.count(ds[i].p) && pname[ds[i].p].rfind("moe_route", 0) == 0) routes.push_back(i);
-    const int reps = strata::env("NOSTROMA_METAL_STEPPROF_REPS") ? std::max(1, std::atoi(strata::env("NOSTROMA_METAL_STEPPROF_REPS"))) : 5;
-    std::fprintf(stderr, "strata metal stepprof: T%d, %zu dispatches in %zu barrier groups, %zu layers routed, %d reps per prefix\n", Tn, n, m, routes.size(), reps);
+    const int reps = nostroma::env("NOSTROMA_METAL_STEPPROF_REPS") ? std::max(1, std::atoi(nostroma::env("NOSTROMA_METAL_STEPPROF_REPS"))) : 5;
+    std::fprintf(stderr, "nostroma metal stepprof: T%d, %zu dispatches in %zu barrier groups, %zu layers routed, %d reps per prefix\n", Tn, n, m, routes.size(), reps);
     for (int i = 0; i < 40; ++i) cx_->run_graph(ds);   // clocks up
     const double full = [&] { std::vector<double> t; for (int i = 0; i < 15; ++i) t.push_back(1000.0 * cx_->run_graph(ds)); std::sort(t.begin(), t.end()); return t[7]; }();
     std::vector<std::vector<double>> tp(m + 1);
@@ -1889,7 +1889,7 @@ void Window::stepprof(const std::vector<mtl::Dispatch>& ds, int Tn) {
         const double sc = full / fr;
         tp[0].push_back(sc * 1000.0 * cx_->run_graph(ds, 0));
         for (size_t j = 1; j <= m; ++j) tp[j].push_back(sc * 1000.0 * cx_->run_graph(ds, gs[j]));
-        std::fprintf(stderr, "strata metal stepprof: pass %d: whole window %.3f ms (cool %.3f, scale %.3f)\n", r, fr, full, sc);
+        std::fprintf(stderr, "nostroma metal stepprof: pass %d: whole window %.3f ms (cool %.3f, scale %.3f)\n", r, fr, full, sc);
     }
     std::vector<double> t(m + 1);
     for (size_t j = 0; j <= m; ++j) { std::sort(tp[j].begin(), tp[j].end()); t[j] = tp[j][tp[j].size() / 2]; }
@@ -1914,7 +1914,7 @@ void Window::stepprof(const std::vector<mtl::Dispatch>& ds, int Tn) {
     // per group: time, part (the experts if the group has any, else the dispatch with the most weight bytes, else the first), bytes
     struct Row { double ms = 0, bytes = 0; int groups = 0, disp = 0; };
     std::map<std::string, Row> by;
-    FILE* of = strata::env("NOSTROMA_METAL_STEPPROF_OUT") ? std::fopen(strata::env("NOSTROMA_METAL_STEPPROF_OUT"), "w") : nullptr;
+    FILE* of = nostroma::env("NOSTROMA_METAL_STEPPROF_OUT") ? std::fopen(nostroma::env("NOSTROMA_METAL_STEPPROF_OUT"), "w") : nullptr;
     size_t layer_gu = 0, layer_dn = 0;
     for (size_t j = 0; j < m; ++j) {
         const double ms = t[j + 1] - t[j];
@@ -1938,7 +1938,7 @@ void Window::stepprof(const std::vector<mtl::Dispatch>& ds, int Tn) {
     if (of) std::fclose(of);
     double sum = 0, sumb = 0;
     for (auto& [k, r] : by) { sum += r.ms; sumb += r.bytes; }
-    std::fprintf(stderr, "strata metal stepprof: window T%d: whole-window GPU %.3f ms (median of 15), prefix chain %.3f ms (empty-list base %.3f ms), weight bytes %.1f MiB (experts %.1f MiB, distinct per layer avg %.2f)\n",
+    std::fprintf(stderr, "nostroma metal stepprof: window T%d: whole-window GPU %.3f ms (median of 15), prefix chain %.3f ms (empty-list base %.3f ms), weight bytes %.1f MiB (experts %.1f MiB, distinct per layer avg %.2f)\n",
                  Tn, full, t[m] - t[0], t[0], sumb / 1048576.0, expert_total / 1048576.0,
                  distinct.empty() ? 0.0 : std::accumulate(distinct.begin(), distinct.end(), 0.0) / (double) distinct.size());
     std::vector<std::pair<double, std::string>> rows;
@@ -1946,12 +1946,12 @@ void Window::stepprof(const std::vector<mtl::Dispatch>& ds, int Tn) {
     std::sort(rows.rbegin(), rows.rend());
     for (const auto& [ms, k] : rows) {
         const Row& r = by[k];
-        std::fprintf(stderr, "strata metal stepprof: %-22s %8.3f ms %5.1f%%  %5d disp %5d groups  %9.1f MiB  %7.1f GB/s\n", k.c_str(), ms, 100.0 * ms / sum, r.disp, r.groups,
+        std::fprintf(stderr, "nostroma metal stepprof: %-22s %8.3f ms %5.1f%%  %5d disp %5d groups  %9.1f MiB  %7.1f GB/s\n", k.c_str(), ms, 100.0 * ms / sum, r.disp, r.groups,
                      r.bytes / 1048576.0, r.bytes > 0 && ms > 0 ? r.bytes / 1e9 / (ms / 1000.0) : 0.0);
     }
     std::string ds_str;
     for (size_t i = 0; i < distinct.size(); ++i) ds_str += std::to_string(distinct[i]) + (i + 1 < distinct.size() ? "," : "");
-    std::fprintf(stderr, "strata metal stepprof: distinct experts per layer: %s\n", ds_str.c_str());
+    std::fprintf(stderr, "nostroma metal stepprof: distinct experts per layer: %s\n", ds_str.c_str());
     std::fflush(stderr);
 }
 
@@ -1961,14 +1961,14 @@ Window::~Window() {
     print_prof();
 }
 
-// STRATA_METAL_PROFILE=1: the per-window time split.  Printed once: at the window's destruction, or at process exit
+// NOSTROMA_METAL_PROFILE=1: the per-window time split.  Printed once: at the window's destruction, or at process exit
 // (the serve loop leaves through exit() without destroying the window)
 void Window::print_prof(bool periodic) {
-    if ((prof_printed_ && !periodic) || strata::env("NOSTROMA_METAL_PROFILE") == nullptr) return;
+    if ((prof_printed_ && !periodic) || nostroma::env("NOSTROMA_METAL_PROFILE") == nullptr) return;
     prof_printed_ = !periodic;
     auto line = [](const char* what, const Prof& x) {
         if (x.n == 0) return;
-        std::fprintf(stderr, "strata metal profile: %-10s %6lld x  %.3f ms: host before %.3f, run_graph %.3f (GPU %.3f, so "
+        std::fprintf(stderr, "nostroma metal profile: %-10s %6lld x  %.3f ms: host before %.3f, run_graph %.3f (GPU %.3f, so "
                              "encode/submit/wait %.3f), patch+finish %.3f\n", what, (long long) x.n, x.all / x.n, x.pre / x.n,
                      x.rg / x.n, x.gpu / x.n, (x.rg - x.gpu) / x.n, x.fin / x.n);
     };
@@ -1984,7 +1984,7 @@ bool Window::finish(int Tn, const int32_t* tokens, int64_t pos0, bool head, int3
     ++win_n_[Tn];
     win_ms_[Tn] += now_ms() - t0;
     win_gpu_[Tn] += last_gpu_ms_;
-    static const bool prof = strata::env("NOSTROMA_METAL_PROFILE") != nullptr;
+    static const bool prof = nostroma::env("NOSTROMA_METAL_PROFILE") != nullptr;
     if (prof) {
         Prof& x = prof_[Tn * 2 + (head ? 1 : 0)];
         const double t1 = now_ms();
@@ -1993,9 +1993,9 @@ bool Window::finish(int Tn, const int32_t* tokens, int64_t pos0, bool head, int3
         static int nprof = 0;
         if (++nprof % 100 == 0) print_prof(true);   // cumulative; the serve loop may leave without a destructor
     }
-    {   // STRATA_METAL_NFCHECK=1 (test tooling): every head window's logits scanned for non-finite values and the largest |logit| kept;
-        // a line for the first five bad windows, and a count every 500 head windows and at the 5000th (the numeric health of STRATA_METAL_F16 and the like)
-        static const bool nfc = strata::env("NOSTROMA_METAL_NFCHECK") != nullptr;
+    {   // NOSTROMA_METAL_NFCHECK=1 (test tooling): every head window's logits scanned for non-finite values and the largest |logit| kept;
+        // a line for the first five bad windows, and a count every 500 head windows and at the 5000th (the numeric health of NOSTROMA_METAL_F16 and the like)
+        static const bool nfc = nostroma::env("NOSTROMA_METAL_NFCHECK") != nullptr;
         if (nfc && head) {
             static long long nwin = 0, nbad_win = 0, nbad_val = 0;
             static float maxabs = 0.0f;
@@ -2011,10 +2011,10 @@ bool Window::finish(int Tn, const int32_t* tokens, int64_t pos0, bool head, int3
             if (bad) {
                 ++nbad_win; nbad_val += bad;
                 if (nbad_win <= 5)
-                    std::fprintf(stderr, "strata metal: NFCHECK non-finite logits: %lld values in a %d-token window at position %lld\n", bad, Tn, (long long) pos0);
+                    std::fprintf(stderr, "nostroma metal: NFCHECK non-finite logits: %lld values in a %d-token window at position %lld\n", bad, Tn, (long long) pos0);
             }
             if (nwin % 500 == 0 || nwin == 5000)
-                std::fprintf(stderr, "strata metal: NFCHECK %lld head windows, %lld with non-finite logits (%lld values), largest |logit| %.2f\n",
+                std::fprintf(stderr, "nostroma metal: NFCHECK %lld head windows, %lld with non-finite logits (%lld values), largest |logit| %.2f\n",
                              nwin, nbad_win, nbad_val, (double) maxabs);
         }
     }
@@ -2024,7 +2024,7 @@ bool Window::finish(int Tn, const int32_t* tokens, int64_t pos0, bool head, int3
     for (int t = 0; t < Tn; ++t) out[t] = head ? tokout_.as<int32_t>()[t] : -1;
     last_T_ = Tn;
     for (int t = 0; t < Tn; ++t) last_tokens_[t] = tokens[t];
-    static const bool trace = strata::env("NOSTROMA_METAL_TRACE") != nullptr;
+    static const bool trace = nostroma::env("NOSTROMA_METAL_TRACE") != nullptr;
     if (trace && head) {
         // the pick and its margin over the runner-up (a near tie says a backend difference may flip it)
         const float* lg = lm_.as<float>();
@@ -2033,7 +2033,7 @@ bool Window::finish(int Tn, const int32_t* tokens, int64_t pos0, bool head, int3
             if (i1 < 0 || lg[i] > lg[i1]) { i2 = i1; i1 = i; }
             else if (i2 < 0 || lg[i] > lg[i2]) i2 = i;
         }
-        std::fprintf(stderr, "strata metal: window pos %lld token %d -> %d (top %d %.4f, 2nd %d %.4f, margin %.4f) %.2f ms (GPU %.2f ms, %d dispatches)\n",
+        std::fprintf(stderr, "nostroma metal: window pos %lld token %d -> %d (top %d %.4f, 2nd %d %.4f, margin %.4f) %.2f ms (GPU %.2f ms, %d dispatches)\n",
                      (long long) pos0, tokens[0], out[0], i1, lg[i1], i2, lg[i2], lg[i1] - lg[i2], now_ms() - t0, last_gpu_ms_, last_n_disp_);
     }
     return true;
@@ -2118,7 +2118,7 @@ void Window::alloc_set(SeqSet& o, bool real, int idx) {
     if (real) o.ple_hist.assign(ple_hist_.size(), 0.0f);
 }
 
-bool Window::slots_init(const std::vector<strata::core::SessionState*>& slots, std::string& err) {
+bool Window::slots_init(const std::vector<nostroma::core::SessionState*>& slots, std::string& err) {
     if (!sets_.empty()) return true;   // (asked once)
     if (cx_ == nullptr) { err = "metal window: slots before the window is up"; return false; }
     std::vector<std::unique_ptr<SeqSet>> v;
@@ -2144,7 +2144,7 @@ bool Window::slots_init(const std::vector<strata::core::SessionState*>& slots, s
         h[0] = (uint32_t) st_kq_; h[1] = (uint32_t) (st_sc_ / 2); h[2] = (uint32_t) (st_tail_ / 4); h[3] = (uint32_t) (st_dead_ / 4);
         h[4] = (uint32_t) (st_pooled_ / 4); h[5] = (uint32_t) (st_gst_ / 4); h[6] = (uint32_t) (st_hist_ / 4); h[7] = (uint32_t) (st_ple_ / 4);
     }
-    std::fprintf(stderr, "strata metal: %zu batch slots, each with its own running state and K/V (%.2f GB each, %.2f GB in all)\n",
+    std::fprintf(stderr, "nostroma metal: %zu batch slots, each with its own running state and K/V (%.2f GB each, %.2f GB in all)\n",
                  slots.size(), slots.empty() ? 0.0 : (double) bytes / (double) slots.size() / 1e9, (double) bytes / 1e9);
     return true;
 }
@@ -2159,7 +2159,7 @@ void Window::activate(int set) {
 
 bool Window::run_slots(const int* rows, int S, const int32_t* tokens, const int64_t* pos, int32_t* out, std::string& err) {
     if (sets_.empty()) { err = "metal window: no batch slots"; return false; }
-    static const bool one_window = !(strata::env("NOSTROMA_METAL_BATCH_ROWS") && std::string(strata::env("NOSTROMA_METAL_BATCH_ROWS")) == "0");
+    static const bool one_window = !(nostroma::env("NOSTROMA_METAL_BATCH_ROWS") && std::string(nostroma::env("NOSTROMA_METAL_BATCH_ROWS")) == "0");
     if (one_window && bigs_ok_) {
         activate(0);
         return run_rows(rows, S, tokens, pos, out, err);
@@ -2211,12 +2211,12 @@ bool Window::slot_copy(bool into_slot, int b, int64_t upto, bool kv_only, std::s
     return true;
 }
 
-namespace { strata::core::QsaState* g_draft_state = nullptr; }   // the drafter's QsaState (MtpDrafter::kv_state), bound once the window has the draft layer
+namespace { nostroma::core::QsaState* g_draft_state = nullptr; }   // the drafter's QsaState (MtpDrafter::kv_state), bound once the window has the draft layer
 
-static void bind_qsa(strata::core::QsaState& st, const mtl::Buffer& kq, const mtl::Buffer& vq, const mtl::Buffer& ksc,
+static void bind_qsa(nostroma::core::QsaState& st, const mtl::Buffer& kq, const mtl::Buffer& vq, const mtl::Buffer& ksc,
                      const mtl::Buffer& vsc, const mtl::Buffer* pooled, const mtl::Buffer* tail, const mtl::Buffer* dead,
                      int64_t cells) {
-    const int64_t page = strata::kernels::qsa_real_shapes().page_size;
+    const int64_t page = nostroma::kernels::qsa_real_shapes().page_size;
     st.kv_int8 = true; st.kv_q4 = false; st.kv_hybrid = false; st.kv_rot = false;
     st.k_q = (int8_t*) kq.ptr; st.v_q = (int8_t*) vq.ptr;
     st.k_scale = (uint16_t*) ksc.ptr; st.v_scale = (uint16_t*) vsc.ptr;
@@ -2229,7 +2229,7 @@ static void bind_qsa(strata::core::QsaState& st, const mtl::Buffer& kq, const mt
     if (dead) st.idx_dead = (float*) dead->ptr;
 }
 
-void Window::bind_session(strata::core::SessionState& ss) {
+void Window::bind_session(nostroma::core::SessionState& ss) {
     if (!ss.qsa_states) return;
     const int64_t n = ss.qsa_alloc, o = ss.qsa_ord0;
     if (n != (int64_t) kq_.size() || o != 0) return;   // a carved session: not this window's whole model
@@ -2238,13 +2238,13 @@ void Window::bind_session(strata::core::SessionState& ss) {
                  &pooled_[(size_t) j], &tail_[(size_t) j], &dead_[(size_t) j], max_cells_);
 }
 
-void Window::bind_draft(strata::core::QsaState& st) {
+void Window::bind_draft(nostroma::core::QsaState& st) {
     if (mkq_.empty()) return;
     // the draft layer has no indexer (the snapshot saves no pooled rows for it); its tail/dead ring is not part of the image
     bind_qsa(st, mkq_[0], mvq_[0], mksc_[0], mvsc_[0], nullptr, nullptr, nullptr, max_cells_);
 }
 
-bool Window::checkpoint_save(strata::core::ConversationCheckpoint& c, std::string& err) {
+bool Window::checkpoint_save(nostroma::core::ConversationCheckpoint& c, std::string& err) {
     (void) err;
     if (pend_fold_ > 0) {   // the last commit's fold first: the checkpoint is the state after it
         std::vector<mtl::Dispatch> ds;
@@ -2294,7 +2294,7 @@ void Window::reset() {
     }
 }
 
-bool Window::checkpoint_restore(const strata::core::ConversationCheckpoint& c, std::string& err) {
+bool Window::checkpoint_restore(const nostroma::core::ConversationCheckpoint& c, std::string& err) {
     const size_t gs = GST_B, hs = HIST_B, ts = 3 * 4 * G_ID, tsw = TAIL_B, dsz = DEAD_B;
     if (c.gdn.size() != gst_.size() * (gs + hs) || c.ple.size() != (size_t) PLEH_B ||
         (c.tails.size() != tail_.size() * ts && c.tails.size() != tail_.size() * tsw) || c.dead.size() != dead_.size() * dsz) {
@@ -2319,12 +2319,12 @@ bool Window::checkpoint_restore(const strata::core::ConversationCheckpoint& c, s
 
 bool Window::commit(int n_keep, std::string& err) {
     if (n_keep < 1 || n_keep > last_T_) { err = "metal window: commit count out of range"; return false; }
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     if (last_T_ > 1) {
         // the GDN layers: the kept prefix folded into the state (gdn_step over n_keep tokens from the window's own
         // inputs, with commit; bitwise the window's trajectory).  K/V and indexer cells past the prefix are rewritten
         // when those positions run again, before anything reads them.
-        static const bool lazy = !(strata::env("NOSTROMA_METAL_LAZY_FOLD") && std::string(strata::env("NOSTROMA_METAL_LAZY_FOLD")) == "0");
+        static const bool lazy = !(nostroma::env("NOSTROMA_METAL_LAZY_FOLD") && std::string(nostroma::env("NOSTROMA_METAL_LAZY_FOLD")) == "0");
         int nf = n_keep;
         if (nf > 0) {
             if (lazy) {
@@ -2338,7 +2338,7 @@ bool Window::commit(int n_keep, std::string& err) {
             hp_ = 1 - hp_;
         }
     }
-    strata::core::SessionState& ss = *ss_;
+    nostroma::core::SessionState& ss = *ss_;
     for (int t = 0; t < n_keep; ++t) {
         if (ple_on_) {
             const float* norm = normW_.as<float>() + (size_t) t * NG_HC_DIM;
@@ -2374,11 +2374,11 @@ bool Window::mtp_load(const std::string& gguf_path, int max_t, std::string& err)
         for (uint64_t i = 0; i < x.bytes / 4; ++i) dst[i] = src[i] + 1.0f;
     }
     {
-        const strata_metal::MslLib L = strata_metal::lib_mtp(engine_msl_dir());
+        const nostroma_metal::MslLib L = nostroma_metal::lib_mtp(engine_msl_dir());
         lmtp_ = cx_->compile(L.files, L.prelude);
     }
     {
-        const char* e = strata::env("NOSTROMA_METAL_MTP_Q8");
+        const char* e = nostroma::env("NOSTROMA_METAL_MTP_Q8");
         if (!(e && std::string(e) == "0")) {
             size_t tot = 0;
             std::vector<std::string> names;
@@ -2432,9 +2432,9 @@ bool Window::mtp_load(const std::string& gguf_path, int max_t, std::string& err)
         // the subset setup put beside the draft layer (--draft-vocab: <mtp>/rt/draft_vocab.bin, as CUDA reads it),
         // else the repository's default
         const std::string beside = gguf_path.substr(0, gguf_path.find_last_of('/') + 1) + "rt/draft_vocab.bin";
-        if (const char* e = strata::env("NOSTROMA_METAL_DRAFT_VOCAB")) vp = e;
+        if (const char* e = nostroma::env("NOSTROMA_METAL_DRAFT_VOCAB")) vp = e;
         else if (FILE* t = std::fopen(beside.c_str(), "rb")) { std::fclose(t); vp = beside; }
-        else vp = strata_metal::resource(nullptr, "data", STRATA_METAL_DATA_DEFAULT) + "/draft_vocab.bin";
+        else vp = nostroma_metal::resource(nullptr, "data", NOSTROMA_METAL_DATA_DEFAULT) + "/draft_vocab.bin";
         FILE* f = vp == "full" ? nullptr : std::fopen(vp.c_str(), "rb");
         if (f) {
             int32_t id;
@@ -2458,11 +2458,11 @@ bool Window::mtp_load(const std::string& gguf_path, int max_t, std::string& err)
     {
         const int ty = T("token_embd.weight").type;
         const int ok_types[] = {30, 8, 2, 6, 20, 23, 42, 21, 11, 12, 13, 14, 18};
-        const char* e = strata::env("NOSTROMA_METAL_MTP_CHAIN");
+        const char* e = nostroma::env("NOSTROMA_METAL_MTP_CHAIN");
         chain_ = !(e && std::string(e) == "0") && std::find(std::begin(ok_types), std::end(ok_types), ty) != std::end(ok_types);
         if (chain_) {
             {
-                const strata_metal::MslLib L = strata_metal::lib_mtp_chain(engine_msl_dir());
+                const nostroma_metal::MslLib L = nostroma_metal::lib_mtp_chain(engine_msl_dir());
                 lchain_ = cx_->compile(L.files, L.prelude);
             }
             dout_ = A(4 * MAXT); dprob_ = A(4 * MAXT); posv_ = A(4 * N);
@@ -2489,15 +2489,15 @@ bool Window::mtp_load(const std::string& gguf_path, int max_t, std::string& err)
                 ref::dequant(te.type, (const uint8_t*) W_.ptr + te.offset + (size_t) probe[k] * rb, ref_row.data(), N);
                 for (int i = 0; i < N; ++i) worst = std::max(worst, (double) std::fabs(ref_row[i] - memb_.as<float>()[i]));
             }
-            std::fprintf(stderr, "strata metal: MTP draft round in one command buffer (embedding type %d on the GPU: max "
+            std::fprintf(stderr, "nostroma metal: MTP draft round in one command buffer (embedding type %d on the GPU: max "
                                  "|GPU - host| %.3g over %d rows)\n", ty, worst, MAXT);
             if (worst > 1e-6) {
-                std::fprintf(stderr, "strata metal: the GPU embedding differs from the host's: a command buffer per step\n");
+                std::fprintf(stderr, "nostroma metal: the GPU embedding differs from the host's: a command buffer per step\n");
                 chain_ = false;
             }
         }
     }
-    std::fprintf(stderr, "strata metal: MTP draft layer from %s (%.2f GB, %zu norms folded), draft head over %s tokens\n",
+    std::fprintf(stderr, "nostroma metal: MTP draft layer from %s (%.2f GB, %zu norms folded), draft head over %s tokens\n",
                  gguf_path.c_str(), fm_.file_bytes / 1e9, mnorm_off_.size(),
                  dvocab_.empty() ? "all" : std::to_string(dvocab_.size()).c_str());
     return true;
@@ -2786,7 +2786,7 @@ void Window::mtp_pick(std::vector<mtl::Dispatch>& ds, int j, bool embed) {
 
 // One round (mtp.hpp's draft()): the window's rows 0..a-1 caught up (K/V), then the full layer on row a (draft 0) and
 // on its own output for the next drafts.  By default the whole round is one command buffer (the pick, its
-// probability and the next step's embedding on the GPU); STRATA_METAL_MTP_CHAIN=0: a command buffer per step, the
+// probability and the next step's embedding on the GPU); NOSTROMA_METAL_MTP_CHAIN=0: a command buffer per step, the
 // host picking and dequantizing.  The embedding rows: the catch-up's at memb_ rows 0..a-1, draft 0's at row a.
 bool Window::mtp_draft(int Tn, const int32_t* tokens, int64_t p, int a, int max_steps, int32_t* drafts, float* probs,
                        float min_p, int* n_drafts, std::string& err) {
@@ -2858,8 +2858,8 @@ bool Window::copy_logits(int t, float* host) const {
 // as grouped GEMMs (v2 on the M4, v3 on the M5).  The GDN state, the conv history, the K/V and indexer cells and the
 // PLE history are the decode window's own, so decoding goes on from them.  With SSD streaming the experts of a layer
 // are put in place at the layer's handshake (the arena's misses) and the next layer's are streamed in behind it.
-// STRATA_METAL_PROMPT_GEMM=0: prompts through the decode window (8 rows at a time).  Its numerics differ from the
-// window's (fp16 operands): STRATA_METAL_PROMPT_GEMM_MIN (default 64) keeps shorter prompts on the window path.
+// NOSTROMA_METAL_PROMPT_GEMM=0: prompts through the decode window (8 rows at a time).  Its numerics differ from the
+// window's (fp16 operands): NOSTROMA_METAL_PROMPT_GEMM_MIN (default 64) keeps shorter prompts on the window path.
 namespace {
 struct PgDq { uint32_t n_in, n_out, row_bytes, perm; };
 struct PgGemm { int M, N, K, pad; };
@@ -2896,11 +2896,11 @@ int Window::prompt_chunk_rows() const { return pg_ ? pg_->MT : 0; }
 
 bool Window::prompt_gemm_on(int64_t n) const {
     static const bool on = [] {
-        const char* e = strata::env("NOSTROMA_METAL_PROMPT_GEMM");
+        const char* e = nostroma::env("NOSTROMA_METAL_PROMPT_GEMM");
         return e ? std::string(e) != "0" : true;
     }();
     static const int64_t mn = [] {
-        const char* e = strata::env("NOSTROMA_METAL_PROMPT_GEMM_MIN");
+        const char* e = nostroma::env("NOSTROMA_METAL_PROMPT_GEMM_MIN");
         return e ? (int64_t) std::atoll(e) : (int64_t) 64;
     }();
     return on && n >= mn && pg_ != nullptr;
@@ -2909,7 +2909,7 @@ bool Window::prompt_gemm_on(int64_t n) const {
 bool Window::prompt_gemm_init(std::string& err) {
     if (pg_) return true;
     if (stream_ && !st_->ready()) return stream_arena(err);   // it makes the prompt buffers after the arena
-    const char* ec = strata::env("NOSTROMA_METAL_PROMPT_CHUNK");
+    const char* ec = nostroma::env("NOSTROMA_METAL_PROMPT_CHUNK");
     // Streaming: every chunk makes one pass over the layer's experts that are not in the arena, so a longer chunk
     // streams each expert fewer times. M5 Max, UD-Q5, warm: 1024 -> 700 tok/s at 4K, 2048 -> 920, 4096 -> 1,100 (32K the
     // same). The longer chunk's buffers (4.3 GB) come out of the arena only while a prompt runs, so it is the default on a
@@ -2924,17 +2924,17 @@ bool Window::prompt_gemm_init(std::string& err) {
     p.MT = C;
     p.QS = std::min(C, 256);
     {
-        using namespace strata_metal;
+        using namespace nostroma_metal;
         auto cc = [&](const MslLib& L) { return cx_->compile(L.files, L.prelude); };
         p.lib = cc(lib_prompt(kq_down_prelude(f_)));
         p.lgdn = cc(lib_prompt_gdn());
         p.lqsa = cc(lib_prompt_qsa());
     }
     p.k4 = ::coop_k4(*cx_);
-    const char* eg = strata::env("NOSTROMA_METAL_PROMPT_EXPERTS");   // v2 | v3 (default: v3 with the M5's layout)
+    const char* eg = nostroma::env("NOSTROMA_METAL_PROMPT_EXPERTS");   // v2 | v3 (default: v3 with the M5's layout)
     p.gu_v3 = p.dn_v3 = eg ? std::string(eg) == "v3" : p.k4;
     if (T("blk.0.ffn_gate_exps.weight").type >= 144) p.gu_v3 = p.dn_v3 = false;   // the trellis experts have the v2 kernels only
-    const char* eq = strata::env("NOSTROMA_METAL_PROMPT_QSA");       // v1 | flash (default: flash with the M5's layout)
+    const char* eq = nostroma::env("NOSTROMA_METAL_PROMPT_QSA");       // v1 | flash (default: flash with the M5's layout)
     p.flash = eq ? std::string(eq) == "flash" : p.k4;
     const size_t MT = (size_t) C;
     p.maxrows = C * TOPK + nexp_ * p.TM;
@@ -2993,7 +2993,7 @@ bool Window::prompt_gemm_init(std::string& err) {
     }
     make();
     pg_ = pg.release();
-    std::fprintf(stderr, "strata metal: prompts on the matrix units in chunks of %d (experts %s, QSA %s, matmul2d layout %s; "
+    std::fprintf(stderr, "nostroma metal: prompts on the matrix units in chunks of %d (experts %s, QSA %s, matmul2d layout %s; "
                          "%.2f GB of buffers%s)\n", C, p.gu_v3 ? "v3" : "v2", p.flash ? "flash" : "v1", p.k4 ? "K4" : "other",
                  need / 1e9, stream_ ? ", in the expert arena while a prompt runs" : "");
     (void) err;
@@ -3028,12 +3028,12 @@ bool Window::prompt_chunk(const int32_t* tokens, int Tn, int64_t pos0, std::stri
             for (int c = 1; c < HC; ++c) std::memcpy(r + (size_t) c * N, r, (size_t) N * 4);
         }
     }
-    strata::core::SessionState& ss = *ss_;
+    nostroma::core::SessionState& ss = *ss_;
     if (ple_on_) {
-        std::vector<uint32_t> rows((size_t) T * strata::kernels::PLE_N_HEADS);
+        std::vector<uint32_t> rows((size_t) T * nostroma::kernels::PLE_N_HEADS);
         int32_t prev[2] = {ss.ple_prev[0], ss.ple_prev[1]};
         for (int t = 0; t < T; ++t) {
-            strata::kernels::ngram_rows(&tokens[t], prev, 1, ss.ple.consts, rows.data() + (size_t) t * strata::kernels::PLE_N_HEADS);
+            nostroma::kernels::ngram_rows(&tokens[t], prev, 1, ss.ple.consts, rows.data() + (size_t) t * nostroma::kernels::PLE_N_HEADS);
             prev[0] = prev[1];
             prev[1] = tokens[t];
         }
@@ -3288,7 +3288,7 @@ bool Window::prompt_chunk(const int32_t* tokens, int Tn, int64_t pos0, std::stri
             GrArgs a{N, HC, LR, (uint32_t) T, 1u, eps_};
             D(P(lib_, "gr_norm", {}, "gr_norm"), {mtl::Arg::B(p.R), mtl::Arg::B(p.bo), mtl::Arg::B(p.inj[ci]), mtl::Arg::B(W_, tn.offset),
                                                   mtl::Arg::B(p.YE), mtl::Arg::V(a)}, HC, T, 256);
-            struct PleArgs { uint32_t n_embd, hc; float eps; } pl{N, HC, strata::kernels::NG_RMS_EPS};
+            struct PleArgs { uint32_t n_embd, hc; float eps; } pl{N, HC, nostroma::kernels::NG_RMS_EPS};
             auto off = [&](const char* n) { return TN(n).offset; };
             D(P(lple_, "ple_gnorm", {}, "ple_gnorm"), {mtl::Arg::B(p.pkey), mtl::Arg::B(W_, off("blk.1.ple_norm_key.weight")),
                                                       mtl::Arg::B(p.keyn), mtl::Arg::V(pl)}, HC, T, 256);
@@ -3321,12 +3321,12 @@ bool Window::prompt_chunk(const int32_t* tokens, int Tn, int64_t pos0, std::stri
     }
     pg_ms_ += now_ms() - t0;
     pg_tok_ += T;
-    static const bool trace = strata::env("NOSTROMA_METAL_TRACE") != nullptr;
-    if (trace) std::fprintf(stderr, "strata metal: prompt chunk pos %lld, %d rows: %.0f ms\n", (long long) pos0, T, now_ms() - t0);
+    static const bool trace = nostroma::env("NOSTROMA_METAL_TRACE") != nullptr;
+    if (trace) std::fprintf(stderr, "nostroma metal: prompt chunk pos %lld, %d rows: %.0f ms\n", (long long) pos0, T, now_ms() - t0);
     // the window's state after the chunk: the conv history turned, the PLE history and token window advanced
     hp_ = 1 - hp_;
     if (ple_on_) {
-        using namespace strata::kernels;
+        using namespace nostroma::kernels;
         float* hist = pleHist_.as<float>();
         const float* nw = p.normW.as<float>();
         for (int c = 0; c < NG_HC_DIM; ++c) {
@@ -3346,7 +3346,7 @@ bool Window::prompt_chunk(const int32_t* tokens, int Tn, int64_t pos0, std::stri
 }
 
 // ---- the request's sampling (sample.metal): the chain over the window's head rows, after run() has left the logits in lm_
-void Window::set_sampling(const strata::kernels::SamplerParams* sp, const int32_t* hist, int hist_len) {
+void Window::set_sampling(const nostroma::kernels::SamplerParams* sp, const int32_t* hist, int hist_len) {
     samp_on_ = sp != nullptr;
     if (sp) samp_ = *sp;
     samp_hist_ = hist;
@@ -3360,7 +3360,7 @@ bool Window::sample_rows(int Tn, int32_t* out, std::string& err) {
     return true;
 }
 
-bool Window::sample_slot_row(int row, const strata::kernels::SamplerParams& sp, const int32_t* hist, int hist_len, int32_t* tok, std::string& err) {
+bool Window::sample_slot_row(int row, const nostroma::kernels::SamplerParams& sp, const int32_t* hist, int hist_len, int32_t* tok, std::string& err) {
     if (row < 0 || row >= MAXT) return true;
     if (!sample_run(row, 1, sp, hist, hist_len, err)) return false;
     *tok = tokout_.as<int32_t>()[row];
@@ -3368,7 +3368,7 @@ bool Window::sample_slot_row(int row, const strata::kernels::SamplerParams& sp, 
 }
 
 // the chain over logits rows [row0, row0 + n) of lm_, written to tokout_[row0 ..]; row r's draw is Philox(seed, counter + r - row0)
-bool Window::sample_run(int row0, int n, const strata::kernels::SamplerParams& sp, const int32_t* hist_in, int hl, std::string& err) {
+bool Window::sample_run(int row0, int n, const nostroma::kernels::SamplerParams& sp, const int32_t* hist_in, int hl, std::string& err) {
     const int Tn = n;
     const int64_t V = n_vocab_;
     constexpr uint32_t PARTS = 64;
@@ -3386,7 +3386,7 @@ bool Window::sample_run(int row0, int n, const strata::kernels::SamplerParams& s
             sbias_ = cx_->alloc(4 * (size_t) V);
             sbias_cap_ = 4 * (size_t) V;
         }
-        std::memcpy(sbias_.ptr, strata::gpu::host_view(sp.logit_bias), 4 * (size_t) V);   // (a cudaMalloc'd array: the runtime's CPU view)
+        std::memcpy(sbias_.ptr, nostroma::gpu::host_view(sp.logit_bias), 4 * (size_t) V);   // (a cudaMalloc'd array: the runtime's CPU view)
         flags |= 1u;
     } else if (!sbias_.handle) {
         sbias_ = cx_->alloc(16);
@@ -3397,7 +3397,7 @@ bool Window::sample_run(int row0, int n, const strata::kernels::SamplerParams& s
         pen_n = (uint32_t) std::min(sp.penalty_last_n, hl);
         const size_t need = 4 * (size_t) MAXT * (size_t) hl;
         if (shist_cap_ < need) { if (shist_.handle) cx_->free(shist_); shist_ = cx_->alloc(need); shist_cap_ = need; }
-        std::memcpy(shist_.ptr, strata::gpu::host_view(hist_in), 4 * (size_t) Tn * (size_t) hl);
+        std::memcpy(shist_.ptr, nostroma::gpu::host_view(hist_in), 4 * (size_t) Tn * (size_t) hl);
         flags |= 4u;
     } else if (!shist_.handle) {
         shist_ = cx_->alloc(16); shist_cap_ = 16;
@@ -3433,9 +3433,9 @@ bool Window::sample_run(int row0, int n, const strata::kernels::SamplerParams& s
     const double t0 = now_ms();
     cx_->run_graph({d1, d2});
     ++samp_windows_;
-    static const bool st = strata::env("NOSTROMA_METAL_SAMPLE_STATS") != nullptr;
+    static const bool st = nostroma::env("NOSTROMA_METAL_SAMPLE_STATS") != nullptr;
     if (st && samp_windows_ % 200 == 0)
-        std::fprintf(stderr, "strata metal: sampler %llu windows, last %d rows in %.2f ms\n", (unsigned long long) samp_windows_, Tn, now_ms() - t0);
+        std::fprintf(stderr, "nostroma metal: sampler %llu windows, last %d rows in %.2f ms\n", (unsigned long long) samp_windows_, Tn, now_ms() - t0);
     return true;
 }
 
@@ -3449,14 +3449,14 @@ void set_model_shard(const char* shard1) { g_shard1 = shard1 ? shard1 : ""; }
 void set_batch_slots(int n) { g_slot_cap = n > 0 ? std::min(n, 8) : 0; }
 
 // The draft vocabulary the build ships (data/draft_vocab.bin beside the build, else the compiled-in data folder): what a DFlash2-alone start without <mtp>/draft_vocab.bin
-// uses (generate.cpp), and what Window::df2_bind falls back to.  STRATA_METAL_DRAFT_VOCAB names another file, or "full" for the whole head.
+// uses (generate.cpp), and what Window::df2_bind falls back to.  NOSTROMA_METAL_DRAFT_VOCAB names another file, or "full" for the whole head.
 std::string draft_vocab_default() {
-    const char* e = strata::env("NOSTROMA_METAL_DRAFT_VOCAB");
+    const char* e = nostroma::env("NOSTROMA_METAL_DRAFT_VOCAB");
     if (e != nullptr && e[0] != 0 && std::string(e) != "full") return e;
-    return strata_metal::resource(nullptr, "data", STRATA_METAL_DATA_DEFAULT) + "/draft_vocab.bin";
+    return nostroma_metal::resource(nullptr, "data", NOSTROMA_METAL_DATA_DEFAULT) + "/draft_vocab.bin";
 }
 bool draft_vocab_whole_head() {
-    const char* e = strata::env("NOSTROMA_METAL_DRAFT_VOCAB");
+    const char* e = nostroma::env("NOSTROMA_METAL_DRAFT_VOCAB");
     return e != nullptr && std::string(e) == "full";
 }
 
@@ -3467,7 +3467,7 @@ Window* g_the_window = nullptr;
 void* window_create() {
     if (g_the_window == nullptr) {
         g_the_window = new Window();
-        if (strata::env("NOSTROMA_METAL_PROFILE")) std::atexit([] { if (g_the_window) g_the_window->print_prof(); });
+        if (nostroma::env("NOSTROMA_METAL_PROFILE")) std::atexit([] { if (g_the_window) g_the_window->print_prof(); });
     }
     return g_the_window;
 }
@@ -3482,7 +3482,7 @@ void window_destroy(void* w) {
         window_register(nullptr);
     }
 }
-bool window_init(void* w, const strata::core::ModelGeometry& g, strata::core::SessionState& ss, int max_t, int64_t max_cells,
+bool window_init(void* w, const nostroma::core::ModelGeometry& g, nostroma::core::SessionState& ss, int max_t, int64_t max_cells,
                  int64_t* n_vocab, std::string& err) {
     Window* x = (Window*) w;
     if (!x->ready()) {
@@ -3495,45 +3495,45 @@ bool window_init(void* w, const strata::core::ModelGeometry& g, strata::core::Se
     *n_vocab = x->vocab();
     return true;
 }
-bool window_ensure(const strata::core::ModelGeometry& g, strata::core::SessionState& ss, int64_t max_cells, std::string& err) {
+bool window_ensure(const nostroma::core::ModelGeometry& g, nostroma::core::SessionState& ss, int64_t max_cells, std::string& err) {
     int64_t nv = 0;
     return window_init(window_create(), g, ss, MAXT, max_cells, &nv, err);
 }
-bool window_sample_slot_row(void* w, int row, const strata::kernels::SamplerParams& sp, const int32_t* hist, int hist_len, int32_t* tok, std::string& err) {
+bool window_sample_slot_row(void* w, int row, const nostroma::kernels::SamplerParams& sp, const int32_t* hist, int hist_len, int32_t* tok, std::string& err) {
     return ((Window*) w)->sample_slot_row(row, sp, hist, hist_len, tok, err);
 }
-void window_set_sampling(void* w, const strata::kernels::SamplerParams* sp, const int32_t* hist, int hist_len) {
+void window_set_sampling(void* w, const nostroma::kernels::SamplerParams* sp, const int32_t* hist, int hist_len) {
     ((Window*) w)->set_sampling(sp, hist, hist_len);
 }
 bool window_run(void* w, int T, const int32_t* tokens, int64_t pos0, bool head, int32_t* out, std::string& err) {
-    // STRATA_LOGPOS (the quant yardstick, the KL harness): every window's head logits are read, also the prompt's
+    // NOSTROMA_LOGPOS (the quant yardstick, the KL harness): every window's head logits are read, also the prompt's
     // windows that sample nothing (head_sampling off)
-    static const bool logpos = strata::env("NOSTROMA_LOGPOS") != nullptr;
+    static const bool logpos = nostroma::env("NOSTROMA_LOGPOS") != nullptr;
     Window* win = (Window*) w;
     if (!win->run(T, tokens, pos0, head || logpos, out, err)) return false;
     return !head || win->sample_rows(T, out, err);   // a sampled / penalised / biased request: the head rows' tokens by the sampler chain (nothing to do for greedy)
 }
-void window_reset(const strata::core::SessionState* ss) {
+void window_reset(const nostroma::core::SessionState* ss) {
     if (g_the_window == nullptr || !g_the_window->ready()) return;
     g_the_window->activate(g_the_window->set_of(ss));
     g_the_window->reset();
     g_the_window->activate(0);
 }
-bool window_checkpoint_save(strata::core::ConversationCheckpoint& c, const strata::core::SessionState* ss, std::string& err) {
+bool window_checkpoint_save(nostroma::core::ConversationCheckpoint& c, const nostroma::core::SessionState* ss, std::string& err) {
     if (g_the_window == nullptr || !g_the_window->ready()) { err = "metal window: not up"; return false; }
     g_the_window->activate(g_the_window->set_of(ss));   // a batch slot's session: that slot's running state
     const bool ok = g_the_window->checkpoint_save(c, err);
     g_the_window->activate(0);
     return ok;
 }
-bool window_checkpoint_restore(const strata::core::ConversationCheckpoint& c, const strata::core::SessionState* ss, std::string& err) {
+bool window_checkpoint_restore(const nostroma::core::ConversationCheckpoint& c, const nostroma::core::SessionState* ss, std::string& err) {
     if (g_the_window == nullptr || !g_the_window->ready()) { err = "metal window: not up"; return false; }
     g_the_window->activate(g_the_window->set_of(ss));
     const bool ok = g_the_window->checkpoint_restore(c, err);
     g_the_window->activate(0);
     return ok;
 }
-bool window_init_slots(void* w, const std::vector<strata::core::SessionState*>& slots, std::string& err) {
+bool window_init_slots(void* w, const std::vector<nostroma::core::SessionState*>& slots, std::string& err) {
     return ((Window*) w)->slots_init(slots, err);
 }
 bool window_run_slots(void* w, const int* rows, int S, const int32_t* tokens, const int64_t* pos, int32_t* out, std::string& err) {
@@ -3554,7 +3554,7 @@ bool window_commit(void* w, int n_keep, std::string& err) {
 }
 bool window_copy_logits(void* w, int t, float* host) { return ((Window*) w)->copy_logits(t, host); }
 
-// the MTP hook (src/core/mtp.cpp under STRATA_GPU_METAL): the drafter lives beside the decode window it reads
+// the MTP hook (src/core/mtp.cpp under NOSTROMA_GPU_METAL): the drafter lives beside the decode window it reads
 namespace {
 Window* g_window = nullptr;
 }
@@ -3564,10 +3564,10 @@ std::string g_mtp_path;
 int g_mtp_max_t = 0;
 bool mtp_load(const std::string& rt_dir, int max_t, std::string& err) {
     (void) err;
-    // the MTP model in GGUF form (tools/mtp_pack.py) beside the rt directory: STRATA_METAL_MTP_GGUF, else
+    // the MTP model in GGUF form (tools/mtp_pack.py) beside the rt directory: NOSTROMA_METAL_MTP_GGUF, else
     // <rt>/../mtp-q2_0.gguf
     std::string path;
-    if (const char* e = strata::env("NOSTROMA_METAL_MTP_GGUF")) path = e;
+    if (const char* e = nostroma::env("NOSTROMA_METAL_MTP_GGUF")) path = e;
     else {
         std::string d = rt_dir;
         while (!d.empty() && d.back() == '/') d.pop_back();
@@ -3578,7 +3578,7 @@ bool mtp_load(const std::string& rt_dir, int max_t, std::string& err) {
     g_mtp_max_t = max_t;
     return true;
 }
-void mtp_bind_state(strata::core::QsaState& st) {
+void mtp_bind_state(nostroma::core::QsaState& st) {
     g_draft_state = &st;
     if (g_the_window && g_the_window->mtp_ready()) g_the_window->bind_draft(st);
 }
@@ -3600,12 +3600,12 @@ bool prompt_run(const int64_t* tokens, int64_t n, int64_t pos0, const float* con
 bool prompt_run_rows(const int64_t* tokens, int64_t n, int64_t pos0,
                      const std::function<bool(const float*, int64_t, int64_t, std::string&)>& on_chunk, std::string& err) {
     if (g_window == nullptr) { err = "metal prompt: the decode window is not up yet"; return false; }
-    static const bool windows = strata::env("NOSTROMA_METAL_PROMPT") && std::string(strata::env("NOSTROMA_METAL_PROMPT")) == "window";
-    static const int64_t min_rows = strata::env("NOSTROMA_METAL_PROMPT_MIN") ? std::atoll(strata::env("NOSTROMA_METAL_PROMPT_MIN")) : 32;
+    static const bool windows = nostroma::env("NOSTROMA_METAL_PROMPT") && std::string(nostroma::env("NOSTROMA_METAL_PROMPT")) == "window";
+    static const int64_t min_rows = nostroma::env("NOSTROMA_METAL_PROMPT_MIN") ? std::atoll(nostroma::env("NOSTROMA_METAL_PROMPT_MIN")) : 32;
     if (!windows && !g_window->streaming() && n >= min_rows) return g_window->prompt(tokens, n, pos0, on_chunk, err);
     if (!windows && g_window->streaming()) {
-        const char* e = strata::env("NOSTROMA_METAL_PROMPT_GEMM");
-        const char* em = strata::env("NOSTROMA_METAL_PROMPT_GEMM_MIN");
+        const char* e = nostroma::env("NOSTROMA_METAL_PROMPT_GEMM");
+        const char* em = nostroma::env("NOSTROMA_METAL_PROMPT_GEMM_MIN");
         const int64_t mn = em ? std::atoll(em) : 64;
         if (!(e && std::string(e) == "0") && n >= mn) {
             if (!g_window->prompt_gemm_init(err)) return false;
@@ -3648,16 +3648,16 @@ bool mtp_draft(int T, const int32_t* tokens, int64_t p, int a, int max_steps, in
 #include "prompt_chain.inc"
 #include "dflash2.inc"
 
-}  // namespace strata::metal_engine
-namespace strata::gpu { void* host_view(const void* device_pointer); }
-namespace strata::kernels {
+}  // namespace nostroma::metal_engine
+namespace nostroma::gpu { void* host_view(const void* device_pointer); }
+namespace nostroma::kernels {
 void mrope_table_set(const int32_t* device_table) {
-    strata::metal_engine::g_mrope_dev = device_table;
-    strata::metal_engine::g_mrope_host =
-        device_table ? (const int32_t*) strata::gpu::host_view(device_table) : nullptr;
+    nostroma::metal_engine::g_mrope_dev = device_table;
+    nostroma::metal_engine::g_mrope_host =
+        device_table ? (const int32_t*) nostroma::gpu::host_view(device_table) : nullptr;
 }
-const int32_t* mrope_table() { return strata::metal_engine::g_mrope_dev; }
-}  // namespace strata::kernels
-namespace strata::metal_engine {
+const int32_t* mrope_table() { return nostroma::metal_engine::g_mrope_dev; }
+}  // namespace nostroma::kernels
+namespace nostroma::metal_engine {
 
-}  // namespace strata::metal_engine
+}  // namespace nostroma::metal_engine

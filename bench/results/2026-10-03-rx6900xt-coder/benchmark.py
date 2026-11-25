@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Measure Strata streaming latency and engine throughput using only Python's stdlib.
+"""Measure Nostroma streaming latency and engine throughput using only Python's stdlib.
 
 Run against an already-started local server. This script does not install or start
-Strata, clear server state, or contact any host other than the configured URL.
+Nostroma, clear server state, or contact any host other than the configured URL.
 """
 import argparse
 import hashlib
@@ -52,7 +52,7 @@ def read_log_from(path, offset):
 
 
 def request_body(content, maximum=256):
-    return {"model": "strata", "messages": [{"role": "user", "content": content}],
+    return {"model": "nostroma", "messages": [{"role": "user", "content": content}],
             "temperature": 0, "reasoning_effort": "none", "max_tokens": maximum,
             "stream": True, "stream_options": {"include_usage": True}}
 
@@ -108,12 +108,12 @@ def summarize(values):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--url", default=DEFAULT_URL, help="Strata base URL (default: %(default)s)")
+    parser.add_argument("--url", default=DEFAULT_URL, help="Nostroma base URL (default: %(default)s)")
     parser.add_argument("--cases", default=DEFAULT_CASES, help="comma-separated subset of short,4k,32k")
     parser.add_argument("--runs", type=int, default=3, help="measured runs per case (default: %(default)s)")
     parser.add_argument("--out", type=Path, default=Path(__file__).resolve().parent,
                         help="directory for raw.jsonl, summary.json, and log snippets")
-    parser.add_argument("--log", type=Path, help="optional Strata engine log to capture per-run appended lines")
+    parser.add_argument("--log", type=Path, help="optional Nostroma engine log to capture per-run appended lines")
     parser.add_argument("--api-key", default="", help="API key, if the local server requires one")
     args = parser.parse_args()
     if args.runs < 1:
@@ -267,7 +267,7 @@ def main():
                 target = 4096 if case == "4k" else 32768
                 def count_tokens(text):
                     result = json_request(base + "/v1/messages/count_tokens",
-                                          {"model": "strata", "messages": [{"role": "user", "content": text}]},
+                                          {"model": "nostroma", "messages": [{"role": "user", "content": text}]},
                                           headers=headers, timeout=180)
                     return int(result["input_tokens"])
                 content, maximum = sized_prompt(target, nonce, count_tokens), 256

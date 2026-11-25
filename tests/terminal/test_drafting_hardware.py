@@ -79,7 +79,7 @@ class IntelCardsAreToldByName(unittest.TestCase):
 
 
 class WhereTheEngineCanRunIt(unittest.TestCase):
-    """DFlash2 exists in the engines of drafting.DFLASH2_BACKENDS (CUDA, HIP, Metal; CMakeLists.txt STRATA_HAVE_DFLASH2): the choice is offered, and applied, only there."""
+    """DFlash2 exists in the engines of drafting.DFLASH2_BACKENDS (CUDA, HIP, Metal; CMakeLists.txt NOSTROMA_HAVE_DFLASH2): the choice is offered, and applied, only there."""
 
     def test_the_matrix(self):
         h = drafting.hardware_support
@@ -395,7 +395,7 @@ class TheTerminalStep(unittest.TestCase):
         self.assertEqual(en["df06"], drafting.mtp_line(drafting.NOT_THIS_CARD))
         self.assertEqual(en["df07"], "There is no internet connection, so the DFlash2 drafter can't be downloaded now.")
         # The app swaps the brand on the way out (apps/host/src/lib/i18n.ts), so its catalogue is read the same way here.
-        self.assertEqual(re.sub(r"\bStrata\b", "Nostroma", en["df09"]), drafting.ONE_REQUEST_NOTE)
+        self.assertEqual(re.sub(r"\bNostroma\b", "Nostroma", en["df09"]), drafting.ONE_REQUEST_NOTE)
         self.assertEqual(en["df10"], drafting.line("off", drafting.NONE_HERE))
         self.assertEqual(en["df11"], drafting.line("dflash2", drafting.NO_MTP))
         self.assertEqual(en["df12"].replace("{0}", "1.2"), "Choosing DFlash2 downloads its drafter: about 1.2 GB, once.")

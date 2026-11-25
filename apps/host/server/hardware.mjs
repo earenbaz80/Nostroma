@@ -45,7 +45,7 @@ export async function detect({ force = false } = {}) {
 
   const platform = process.platform;
   const arch = process.arch;
-  // Tests only: STRATA_TEST_HARDWARE='{"totalGb":128,"freeGb":100,"gpus":[...]}' stands in for the probes, so a
+  // Tests only: NOSTROMA_TEST_HARDWARE='{"totalGb":128,"freeGb":100,"gpus":[...]}' stands in for the probes, so a
   // test about routing or lifecycle does not depend on how much memory the machine running it has.
   const forced = testHardware();
   const totalGb = forced?.totalGb ?? os.totalmem() / 1024 ** 3;

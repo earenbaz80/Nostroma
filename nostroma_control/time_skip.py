@@ -238,7 +238,7 @@ def sha256_file(path: Path, chunk: int = 1 << 20) -> str:
     return h.hexdigest()
 
 
-def inventory(root: Path, ignore: Iterable[str] = (".git", "__pycache__", ".strata")) -> list[dict[str, Any]]:
+def inventory(root: Path, ignore: Iterable[str] = (".git", "__pycache__", ".nostroma")) -> list[dict[str, Any]]:
     """A sorted relative-path/digest inventory of a directory tree.
 
     Digests are what make a checkpoint an identity rather than a label. Directories that belong to
@@ -268,7 +268,7 @@ def inventory_digest(items: Sequence[dict[str, Any]]) -> str:
     return h.hexdigest()
 
 
-def copy_tree(src: Path, dst: Path, ignore: Iterable[str] = (".git", "__pycache__", ".strata")) -> None:
+def copy_tree(src: Path, dst: Path, ignore: Iterable[str] = (".git", "__pycache__", ".nostroma")) -> None:
     skip = set(ignore)
     if dst.exists():
         shutil.rmtree(dst)
@@ -718,10 +718,10 @@ class TimeSkipStore:
     def load_checks(self, workspace: Path) -> list[CheckSpec]:
         """Read the declared checks for a workspace.
 
-        `.strata/checks.json` holds ``{"checks": [...]}``. Absent file means no checks, which makes
+        `.nostroma/checks.json` holds ``{"checks": [...]}``. Absent file means no checks, which makes
         every run inconclusive by construction rather than accidentally successful.
         """
-        path = Path(workspace) / ".strata" / "checks.json"
+        path = Path(workspace) / ".nostroma" / "checks.json"
         if not path.exists():
             return []
         raw = json.loads(path.read_text(encoding="utf-8"))

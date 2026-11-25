@@ -1,7 +1,7 @@
 # v100/gdn-chunk: chunked GDN prompt recurrence and Volta recurrence variants (2026-10-02)
 
 Measured on the V100-SXM2-16GB x2 (one card, CUDA 12.8, driver 570.x), build:
-`-DSTRATA_EXPERIMENTAL_SM60=ON -DCMAKE_CUDA_ARCHITECTURES=70`, Release.  `bench/gdn_chunk_bench`
+`-DNOSTROMA_EXPERIMENTAL_SM60=ON -DCMAKE_CUDA_ARCHITECTURES=70`, Release.  `bench/gdn_chunk_bench`
 (CUDA events, real GDN geometry S=128 / 16 q/k heads / 48 v heads / C=10240, one `gdn_recurrence`
 call per side including the out norm, 5-20 iterations).
 
@@ -23,7 +23,7 @@ call per side including the out norm, 5-20 iterations).
   (parity below) but 4-6x SLOWER than the recurrence as implemented: with 128 threads and the
   ~84 KB tile staging a CTA only feeds ~4 warps to the tensor cores, and every phase is
   latency-bound (measured ablation: staging+Gram+U GEMMs alone = 2.4 ms of the wmma kernel's
-  4.6 ms at T=1024).  Opt-in only (STRATA_GDN_CHUNK=1 wmma / 2 FMA).
+  4.6 ms at T=1024).  Opt-in only (NOSTROMA_GDN_CHUNK=1 wmma / 2 FMA).
 
 ## Error bounds (`gdn_chunk_parity`, vs a double-precision transcription of the recurrence)
 

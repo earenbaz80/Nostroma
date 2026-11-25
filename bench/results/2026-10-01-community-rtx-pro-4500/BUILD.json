@@ -1,13 +1,13 @@
 {
-  "strata_commit": "9259cad4cfa3543cd3b8decab5962672b968c649",
-  "strata_commit_date": "2026-10-01T06:27:52+02:00",
+  "nostroma_commit": "9259cad4cfa3543cd3b8decab5962672b968c649",
+  "nostroma_commit_date": "2026-10-01T06:27:52+02:00",
   "engine_version": "0.1.31",
   "source_build": true,
   "release_binary": false,
   "build_system": "CMake + Ninja",
   "cmake_flags": {
-    "STRATA_ENABLE_CUDA": "ON",
-    "STRATA_BUILD_TESTS": "OFF",
+    "NOSTROMA_ENABLE_CUDA": "ON",
+    "NOSTROMA_BUILD_TESTS": "OFF",
     "CMAKE_CUDA_ARCHITECTURES": "120",
     "CMAKE_CUDA_COMPILER": "/opt/cuda/bin/nvcc",
     "CMAKE_CUDA_HOST_COMPILER": "/usr/bin/g++-15"
@@ -17,7 +17,7 @@
     "nvcc": "release 13.3, V13.3.73 (build cuda_13.3.r13.3/compiler.38244171_0)",
     "nvcc_ccbin": "g++-15",
     "gcc_host_compiler": "g++-15 (GCC) 15.3.0",
-    "python_venv": "/mnt/fast/src/strata-0131/.venv (Python 3.13.15)"
+    "python_venv": "/mnt/fast/src/nostroma-0131/.venv (Python 3.13.15)"
   },
   "driver_and_runtime": {
     "nvidia_driver": "615.71.09",
@@ -34,7 +34,7 @@
       "Qwen3.8-Flash-Next-UD-Q4_K_XL-00003-of-00004.gguf": "56758f40269cad5cd9b0d3d6fbae0f40f6d5be6de49e4ab392dbe83157d9cbd3",
       "Qwen3.8-Flash-Next-UD-Q4_K_XL-00004-of-00004.gguf": "753bda48b98ba4f1636134a90a967de1b2d3908a236c026e464777342e53510a"
     },
-    "shards_verified_against": "docs/UNSLOTH_Q4.md in the strata-0131 checkout",
+    "shards_verified_against": "docs/UNSLOTH_Q4.md in the nostroma-0131 checkout",
     "pack_tool": "tools/iq_pack.py --compat-bf16",
     "experts_bin": false,
     "note": "GGUF shards are read in place (--mmap-experts); no separate experts.bin was produced."
@@ -57,7 +57,7 @@
     }
   },
   "optional_flag_tested": {
-    "STRATA_KQ256": "1 (multi-token AVX2 kernels for Q4_K/Q5_1/Q8_0 experts); compared against the default (unset) on short and codegen only"
+    "NOSTROMA_KQ256": "1 (multi-token AVX2 kernels for Q4_K/Q5_1/Q8_0 experts); compared against the default (unset) on short and codegen only"
   },
   "model_pack_ud_iq4_xs": {
     "repo": "unsloth/Qwen3.8-Flash-Next-GGUF",
@@ -106,13 +106,13 @@
   },
   "needle_check": {
     "pack": "UD-Q4_K_XL only",
-    "config": "configs/strata-ud-q4_k_xl-128k.json (139,264 max-context)",
+    "config": "configs/nostroma-ud-q4_k_xl-128k.json (139,264 max-context)",
     "tool": "tools/needle_bench.py --lengths 32k,128k --depths 10,50,90",
     "result": "6 of 6 found",
     "output_file": "needles.json"
   },
   "harness": {
-    "repo_path": "~/ai/bench/strata-vs-exl3 (local, not published)",
+    "repo_path": "~/ai/bench/nostroma-vs-exl3 (local, not published)",
     "script": "bench.py",
     "prompt_builder": "make_prompts.py",
     "frozen_on": "2026-09-28",

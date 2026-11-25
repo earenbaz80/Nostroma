@@ -1001,7 +1001,7 @@ class PicturesScreen(Base):
         return next((x for x in self.ctx.rows if (x.family, x.model) == (s.family, s.model)), None)
 
     def reader(self) -> str:
-        """"present" when the installed engine carries the picture reader (strata-vision), "missing" when an engine is installed without it,
+        """"present" when the installed engine carries the picture reader (nostroma-vision), "missing" when an engine is installed without it,
         "unknown" before any engine is installed (the first launch fetches it)."""
         return self.ctx.catalog.reader_state()
 
@@ -1301,7 +1301,7 @@ class AdvancedScreen(Base):
         if self.mode:
             return
         self.mode = "add"
-        self.open_field("edit", "", "name=value, e.g. prefill=65536 or STRATA_PIN_BY_NEED=1")
+        self.open_field("edit", "", "name=value, e.g. prefill=65536 or NOSTROMA_PIN_BY_NEED=1")
         self.say("Type the setting as name=value (the name of a newer engine's flag is fine).")
 
     def action_filter(self) -> None:

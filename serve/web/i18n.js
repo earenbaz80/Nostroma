@@ -71,7 +71,7 @@
   }
 
   const api = {LANGUAGES, tr, apply, setLanguage, get lang() { return lang; }, fill, pick};
-  root.StrataI18n = api;
+  root.NostromaI18n = api;
   root.tr = tr;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

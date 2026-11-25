@@ -6,8 +6,8 @@ call per product). `gemm_iq_f16_grouped` (`src/kernels/cuda/iq_kernels.cu`) runs
 the FP16 tensor cores (WMMA, FP32 sums): a block takes 128 weight rows of one expert and up to 256 of its token rows,
 dequantizes each weight superblock once into shared memory with `dq_dispatch` (the FP16 path's own formulas), and
 streams the FP16 activations through it, the next tile prefetched into registers. sm_70 takes it by default for the
-layers MMQ would take and for IQ1_M (which then rides MMQ's grouping); `STRATA_PF_WMMA=0` is the old path,
-`STRATA_PF_WMMA=1` turns it on for any CUDA card (not measured elsewhere).
+layers MMQ would take and for IQ1_M (which then rides MMQ's grouping); `NOSTROMA_PF_WMMA=0` is the old path,
+`NOSTROMA_PF_WMMA=1` turns it on for any CUDA card (not measured elsewhere).
 
 ## Rig
 
@@ -18,7 +18,7 @@ on 11, IQ1_M on 3; down Q2_0), setup's config (`--prefill auto`: 8,192-token chu
 ## Prompt speed
 
 `tools/ab_engine.py`, 3 rounds, the arms' order alternating, one server start per arm and round; the server's own
-prompt tokens/s. `orig`: `e8ca9af` as setup built it; `off`: this branch with `STRATA_PF_WMMA=0`; `new`: this branch.
+prompt tokens/s. `orig`: `e8ca9af` as setup built it; `off`: this branch with `NOSTROMA_PF_WMMA=0`; `new`: this branch.
 
 | Prompt | orig | off | new | new vs orig |
 | --- | ---: | ---: | ---: | ---: |
@@ -26,7 +26,7 @@ prompt tokens/s. `orig`: `e8ca9af` as setup built it; `off`: this branch with `S
 | 6,345 tokens (median of 3) | 1,390 tok/s | 1,393 | 1,534 | **+10.3%** |
 
 All runs: `ab-runs.jsonl` (the spread between rounds is under 1%). The engine's phase table
-(`STRATA_PREFILL_TIMING=1`, the 26,352-token prompt, ms):
+(`NOSTROMA_PREFILL_TIMING=1`, the 26,352-token prompt, ms):
 
 | | orig | new |
 | --- | ---: | ---: |
@@ -42,7 +42,7 @@ Decode does not use this path (decode tok/s in the same runs: within the noise).
 - `pf_wmma_parity` (synthetic, no model): every format it takes (IQ2_XXS, IQ2_S, IQ1_M gate/up, 1280 x 2560; Q2_0 down,
   2560 x 640), 7 experts with 0-300 rows, against a double-precision product of the same FP16 weights and activations:
   max error 4.4e-4 to 5.2e-4 of outputs up to ~110 (Q2_0: 2.8e-6 of 1.16) - FP32 summation order.
-- **Teacher-forced** (`STRATA_LOGPOS` with `STRATA_LOGPOS_TOPK=20`; a long random-word prompt read by the batched path,
+- **Teacher-forced** (`NOSTROMA_LOGPOS` with `NOSTROMA_LOGPOS_TOPK=20`; a long random-word prompt read by the batched path,
   then a continuation read through the decode windows with `--short-read 1024`, each token's log-probability against
   the text). MMQ is not a reference either - its activations are q8_1, these are FP16 - so the table puts the change
   next to what MMQ alone does when only the chunk size changes:

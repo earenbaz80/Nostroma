@@ -7,7 +7,7 @@ starts the engine as the Terminal would (serve, the build's defaults - no --look
 repeated three times, twice, and fails on an ERR line or on a request that did not end with DONE.  With --need-drafts it also
 requires that drafts were offered, i.e. that lookup windows really ran.
 
-  check_lookup_window_serve.py --exe build/strata --pack-tokenizer PACK/tokenizer -- <engine args without --serve>
+  check_lookup_window_serve.py --exe build/nostroma --pack-tokenizer PACK/tokenizer -- <engine args without --serve>
 Exit 0 = pass, 1 = fail.
 """
 import argparse
@@ -27,7 +27,7 @@ PROMPT = ("<|im_start|>user\nRepeat the following text exactly, three times in a
 
 def prompt_ids(tokenizer_dir: Path) -> list:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    import strata_tokenizer as ST
+    import nostroma_tokenizer as ST
     vocab = json.loads((tokenizer_dir / "vocab.json").read_text(encoding="utf-8"))
     tokens = [None] * len(vocab)
     for t, i in vocab.items():

@@ -1,7 +1,7 @@
 """QAGUI-STRIX 11-09 (APP-WIN item 3): on Windows Strix Halo the app's Models-screen Load rewrote the reserve setup wrote (700) to 1024, 2048 with pictures,
 while `nostroma launch` started the same model with 700.  The app's Load ("Leave room for my work" and "Full performance", what the Models screen passes)
 now starts the engine as `nostroma launch` does, from the run config setup writes; the only difference allowed is the work profile's --pool-workers (the
-profile's meaning) and the variables it sets (allowlist.ENV_BY_DESIGN, STRATA_RAM_KEEP_GIB).
+profile's meaning) and the variables it sets (allowlist.ENV_BY_DESIGN, NOSTROMA_RAM_KEEP_GIB).
 
   python -m pytest tests/snapshot/test_strix_app_reserve.py -q        (needs Node, as the app entries of the snapshot do)
 """
@@ -24,7 +24,7 @@ from tests.snapshot.driver import drive, drive_app, drive_launch  # noqa: E402
 from tests.snapshot.matrix import machine, model_set  # noqa: E402
 from tests.snapshot.world import World  # noqa: E402
 
-NODE = os.environ.get("STRATA_SNAPSHOT_NODE") or shutil.which("node")
+NODE = os.environ.get("NOSTROMA_SNAPSHOT_NODE") or shutil.which("node")
 
 
 def flag(argv: list[str], name: str):
@@ -70,7 +70,7 @@ class StrixAppReserve(unittest.TestCase):
                 with world.patched():
                     rec = drive_launch(world)
             else:
-                with mock.patch.dict(os.environ, {"STRATA_SNAPSHOT_APP_ARGS": json.dumps(app_args or {})}):
+                with mock.patch.dict(os.environ, {"NOSTROMA_SNAPSHOT_APP_ARGS": json.dumps(app_args or {})}):
                     rec = drive_app(world, "models")
             self.assertNotIn("failed", rec, json.dumps(rec.get("failed")))
             # each entry runs in its own scratch world: its folder is written as <ROOT> so two engine lines can be compared

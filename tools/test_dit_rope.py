@@ -29,7 +29,7 @@ GLIBC = platform.system() == "Linux" and platform.libc_ver()[0] == "glibc"
 
 
 def build(td: Path) -> Path:
-    exe = td / "strata-dit-rope"
+    exe = td / "nostroma-dit-rope"
     r = subprocess.run([CXX, "-std=c++17", "-O2", "-I", str(ROOT / "include"),
                         str(ROOT / "src" / "image" / "dit" / "qi21_rope.cpp"),
                         str(ROOT / "src" / "image" / "dit" / "qi21_rope_main.cpp"), "-o", str(exe)],

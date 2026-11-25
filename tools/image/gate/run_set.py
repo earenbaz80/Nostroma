@@ -5,7 +5,7 @@
                              [--native] [--noise] [--threads N] [--min-free-gb N] [--steps N] [--build NAME]
                              [--dump] [--cond-from TAG] [--latent-from TAG] [--noise-from DIR] [--exit-after K]
                              [--env K=V ...] [--extra-args "sd-cli args"] [--model-arg K=V ...]
---noise: the config's images "noise" is "strata" (--model-args strata_noise=1); the build must have the generator.
+--noise: the config's images "noise" is "nostroma" (--model-args nostroma_noise=1); the build must have the generator.
 --build NAME uses <root>/build-NAME.json (e.g. a stage_hooks.py variant); --dump/--cond-from/--latent-from/
 --noise-from/--exit-after drive that variant's hooks (OWN5_* variables, see stage_hooks.py), per picture.
 

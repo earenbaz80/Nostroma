@@ -1,8 +1,8 @@
-"""Fresh ordinary-RoPE / YaRN retrieval using an unmodified Strata executable.
+"""Fresh ordinary-RoPE / YaRN retrieval using an unmodified Nostroma executable.
 
-Run from a configured Strata checkout, using its Python environment:
+Run from a configured Nostroma checkout, using its Python environment:
 python bench/results/2026-10-09-rope-yarn-long-context/probe.py \
-  --config strata.json --exe build/strata --tokens 1048576 --rope yarn --output /new/run
+  --config nostroma.json --exe build/nostroma --tokens 1048576 --rope yarn --output /new/run
 Each invocation starts and closes an isolated engine. No server or saved cache.
 """
 import argparse
@@ -17,9 +17,9 @@ from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[3]
 sys.path[:0]=[str(ROOT),str(ROOT/'tools')]
-from serve.server import StrataEngine,child_env
+from serve.server import NostromaEngine,child_env
 from serve.frontend import ChatTemplate
-import strata_tokenizer as ST
+import nostroma_tokenizer as ST
 
 
 def main():
@@ -61,8 +61,8 @@ def main():
     args+=['--kv','fp16','--spec','2','--suffix-draft','0','--conversation-cache-mib','0',
            '--prefill','8192','--max-context',str(a.capacity),'--rope-scaling',a.rope]
     if a.rope=='yarn':args+=['--rope-scale','4','--yarn-orig-ctx','262144']
-    env=child_env(cfg);env['STRATA_PREFILL_CPU_SHARE']='0'
-    for key in ('STRATA_LOGPOS','STRATA_MIGRATION_LOGITS','STRATA_MIGRATION_LOGITS_FROM'):env.pop(key,None)
+    env=child_env(cfg);env['NOSTROMA_PREFILL_CPU_SHARE']='0'
+    for key in ('NOSTROMA_LOGPOS','NOSTROMA_MIGRATION_LOGITS','NOSTROMA_MIGRATION_LOGITS_FROM'):env.pop(key,None)
     result=dict(input_tokens=len(ids),input_sha256=hashlib.sha256(token_json.encode()).hexdigest(),
                 rope=a.rope,capacity=a.capacity,argv=args,expected='CEDAR-731|MARBLE-482|QUARTZ-956',
                 executable_sha256=hashlib.sha256(a.exe.read_bytes()).hexdigest(),samples_per_condition=1)
@@ -82,7 +82,7 @@ def main():
     worker=threading.Thread(target=monitor,daemon=True);worker.start()
     try:
         start=time.perf_counter()
-        engine=StrataEngine(str(a.exe.resolve()),args,cwd=str(ROOT),log=str(a.output/'engine.log'),env=env)
+        engine=NostromaEngine(str(a.exe.resolve()),args,cwd=str(ROOT),log=str(a.output/'engine.log'),env=env)
         result['startup_s']=time.perf_counter()-start
         first=None;out=[];start=time.perf_counter()
         for token in engine.generate(ids,64,{'temperature':0},threading.Event()):

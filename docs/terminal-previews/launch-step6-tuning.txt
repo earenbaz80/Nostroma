@@ -34,4 +34,4 @@
  where they are and stay usable; the new folder is for new downloads.
  Type to change the folder   Enter next   Esc back   ? help
  ! This is not a full path: C:/Users/AI-Server/Documents/Nostroma. Type the whole path, starting with /, like
- /data/strata-models. Nothing was downloaded or changed.
+ /data/nostroma-models. Nothing was downloaded or changed.

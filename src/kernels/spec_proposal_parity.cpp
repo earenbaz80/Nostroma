@@ -3,9 +3,9 @@
 // at each ID independently of an exp implementation. A top-k1 fixture gives
 // exact p=delta. Thus no test-only inspection API or SamplerTraceRow is needed.
 // These finite per-token checks do not claim arbitrary-logit bitwise equality.
-#include "strata/core/spec_prob.hpp"
-#include "strata/core/spec_proposal.hpp"
-#include "strata/kernels/sampler.hpp"
+#include "nostroma/core/spec_prob.hpp"
+#include "nostroma/core/spec_proposal.hpp"
+#include "nostroma/kernels/sampler.hpp"
 #include <cuda_runtime.h>
 #include <algorithm>
 #include <array>
@@ -21,8 +21,8 @@
 
 namespace {
 constexpr int V=8192, MaxT=3, A=7, B=4097, C=8190;
-constexpr int Entries=strata::core::kSpecQEntries, Stride=strata::core::kSpecQStride;
-constexpr int Error=strata::core::proposal::kProposalSamplerErrorToken;
+constexpr int Entries=nostroma::core::kSpecQEntries, Stride=nostroma::core::kSpecQStride;
+constexpr int Error=nostroma::core::proposal::kProposalSamplerErrorToken;
 using Mass=std::array<float,3>;
 constexpr std::array<int,3> IDs{{A,B,C}};
 struct Result {int token;bool accepted;};
@@ -69,12 +69,12 @@ Result reference(const Case& c,int row,uint64_t seed,const Mass* alternate=nullp
     if(!null) {
         const double qd=point?1:mass(q,d);
         if(!(qd>0) || !std::isfinite(qd))return {Error,false};
-        if(pd>0 && (double)uniform(seed,pos|strata::core::kSpecCtrAccept)*qd<pd)return {d,true};
+        if(pd>0 && (double)uniform(seed,pos|nostroma::core::kSpecCtrAccept)*qd<pd)return {d,true};
     }
     std::array<double,3> weights{};
     for(int i=0;i<3;++i)weights[i]=point?(IDs[i]==d?0:p[i]):std::max(0.0,p[i]-mass(q,IDs[i]));
     if(weights[0]+weights[1]+weights[2]<=0)return {Error,false};
-    return {choose(weights,uniform(seed,pos|strata::core::kSpecCtrResid),true),false};
+    return {choose(weights,uniform(seed,pos|nostroma::core::kSpecCtrResid),true),false};
 }
 struct Device {
     float* logits=nullptr;int* out=nullptr;int32_t* draft=nullptr;int32_t* mu=nullptr;
@@ -122,10 +122,10 @@ int run() {
         cu(cudaMemcpy(d.mu,packed.data(),packed.size()*sizeof(int32_t),cudaMemcpyHostToDevice),"copy mu");
         if(!c.drafts.empty())cu(cudaMemcpy(d.draft,c.drafts.data(),c.drafts.size()*sizeof(int32_t),cudaMemcpyHostToDevice),"copy drafts");
         for(uint64_t seed:seeds) {
-            strata::kernels::SamplerParams p;p.top_k=c.error?1:3;p.top_p=1;p.min_p=0;p.temperature=1;p.seed=seed;p.counter=365;
+            nostroma::kernels::SamplerParams p;p.top_k=c.error?1:3;p.top_p=1;p.min_p=0;p.temperature=1;p.seed=seed;p.counter=365;
             const int32_t* drafts=c.drafts.empty()?nullptr:d.draft;
             cu(cudaMemcpy(d.logits,logits.data(),logits.size()*sizeof(float),cudaMemcpyHostToDevice),"copy logits");
-            require(strata::kernels::sample_tokens_proposal(d.logits,c.T,V,nullptr,0,p,drafts,d.mu,c.nq,d.out,nullptr),"proposal Split refused");
+            require(nostroma::kernels::sample_tokens_proposal(d.logits,c.T,V,nullptr,0,p,drafts,d.mu,c.nq,d.out,nullptr),"proposal Split refused");
             cu(cudaDeviceSynchronize(),"proposal sync");std::vector<int> out(c.T);
             cu(cudaMemcpy(out.data(),d.out,c.T*sizeof(int),cudaMemcpyDeviceToHost),"copy out");
             for(int t=0;t<c.T;++t) {
@@ -149,7 +149,7 @@ int run() {
             }
             if(c.legacy_equal) {
                 cu(cudaMemcpy(d.logits,logits.data(),logits.size()*sizeof(float),cudaMemcpyHostToDevice),"legacy logits");
-                require(strata::kernels::sample_tokens_spec(d.logits,c.T,V,nullptr,0,p,drafts,d.mu,c.nq,d.out,nullptr),"legacy Split refused");
+                require(nostroma::kernels::sample_tokens_spec(d.logits,c.T,V,nullptr,0,p,drafts,d.mu,c.nq,d.out,nullptr),"legacy Split refused");
                 cu(cudaDeviceSynchronize(),"legacy sync");std::vector<int> old(c.T);
                 cu(cudaMemcpy(old.data(),d.out,c.T*sizeof(int),cudaMemcpyDeviceToHost),"legacy output");
                 require(old==out,"explicit proposal call changed legacy full-q result");

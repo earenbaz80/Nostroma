@@ -165,7 +165,7 @@ export function TaskBoard({ query, canRun, onViewResult }: { query: string; canR
       if (action === 'stop-task') await api.post(`/api/tasks/${card.id}/stop`);
       else if (action === 'run-again') await api.post(`/api/tasks/${card.id}/run`);
       else if (action === 'dismiss') await api.patch(`/api/tasks/${card.id}`, { ackedAt: new Date().toISOString() });
-      window.dispatchEvent(new Event('strata:tasks'));
+      window.dispatchEvent(new Event('nostroma:tasks'));
     } catch (e) {
       pushToast('error', 'That did not work', e instanceof Error ? e.message : String(e));
     } finally {

@@ -1,7 +1,7 @@
 # Community benchmark: 2x Tesla P100 PCIe 16GB, Xeon E5-2699 v4
 
 Measured on 2026-10-06 by lech (local machine, headless server). This tests
-Strata 0.1.39 with `ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF` IQ3_S, a
+Nostroma 0.1.39 with `ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF` IQ3_S, a
 two-GPU layer split (P100 pair), and a 128,000-token context limit.
 
 Median decode throughput was **31.2 tok/s at 127,736 prompt tokens** with a
@@ -16,7 +16,7 @@ They do not establish general answer quality or performance on other workloads.
   (`current_link_speed` 8.0 GT/s, `current_link_width` 16). GPUs 1 and 2 were
   selected for the run (`--layer-split auto`: CUDA0 = layers 0-22,
   CUDA1 = layers 23-47). A Tesla P4 and a GTX 750 Ti (display) are present but
-  unused by Strata.
+  unused by Nostroma.
 - Intel Xeon E5-2699 v4 @ 2.20 GHz (22 cores / 44 threads); the engine selected
   21 expert-pool workers plus its host thread.
 - 125.67 GiB installed RAM (Linux). Storage: KINGSTON SNV3S4000G 3.6 TB NVMe
@@ -24,10 +24,10 @@ They do not establish general answer quality or performance on other workloads.
   read through the file cache, `--ple-io` default). 8 GiB zram swap.
 - Fedora Linux 44 Workstation, kernel 7.2.8-200.fc44.x86_64, NVIDIA driver
   580.178.04, CUDA 12.8 (NVCC 12.8.93).
-- Strata source commit `6f32ec070f23ced9f50e704d854d775da52591ab` (v0.1.39),
+- Nostroma source commit `6f32ec070f23ced9f50e704d854d775da52591ab` (v0.1.39),
   engine 0.1.39, built on this machine by `setup.sh` (CUDA 12 build; the
   `cc14` conda GCC and the bundled CUDA toolkit were used as
-  `CXX`/`STRATA_NVCC`). Engine binary SHA-256
+  `CXX`/`NOSTROMA_NVCC`). Engine binary SHA-256
   `b31c67ae34fdbf11392c58a4721c93333b6e6b67fda861de22ed4a41eddb7571`.
 - Background workloads: LM Studio was running but idle (no served models
   competing for the P100 pair); the user agreed to keep the machine otherwise
@@ -50,8 +50,8 @@ directories by the downloader):
 See [model-sha256.txt](model-sha256.txt). The IQ3_S pack was prepared by the
 unmodified installer (`setup.sh --family qwen --model IQ3_S --gpus 1,2 --cuda
 12 --vision gpu`); pack metadata is in
-`/home/lech/Strata-data/packs/iq3_s/conversions.json`. MTP draft experts were
-fetched by the installer into `/home/lech/Strata-data/mtp/rt` (SHA-256:
+`/home/lech/Nostroma-data/packs/iq3_s/conversions.json`. MTP draft experts were
+fetched by the installer into `/home/lech/Nostroma-data/mtp/rt` (SHA-256:
 experts.bin `09398406be61f1f54c93861f449e48b8df0bfccbc9ec9b2b7636775a6ea9244f`,
 dense.bin `c724dc0b0822ada5d2977bf5bde821605feabaa64ea2e0045b67ca656329070a`,
 draft_vocab.bin `b1e1d3a7a9e4bf862dcd5923ce661fb59bbd07907e594df5cf86a62ac235cb91`).
@@ -73,13 +73,13 @@ The bundled expert profile was used without calibration (SHA-256
 - Reasoning disabled (`reasoning_effort: none`), temperature 0, maximum 256
   generated tokens per speed run.
 
-The complete measured configuration is [strata-iq3_s.json](strata-iq3_s.json);
+The complete measured configuration is [nostroma-iq3_s.json](nostroma-iq3_s.json);
 the launcher is [run-iq3_s.sh](run-iq3_s.sh). Engine startup lines (arena,
 cache sizing, layer split) are in [engine-startup.log](engine-startup.log).
 
 ```text
-/home/lech/Strata/.venv/bin/python /home/lech/Strata/serve/server.py \
-  --engine strata --config /home/lech/Strata/strata-iq3_s.json --port 8080
+/home/lech/Nostroma/.venv/bin/python /home/lech/Nostroma/serve/server.py \
+  --engine nostroma --config /home/lech/Nostroma/nostroma-iq3_s.json --port 8080
 ```
 
 ## Method and reproduction
@@ -90,7 +90,7 @@ script as the RTX 5090 community report) against the running server:
 
 ```bash
 .venv/bin/python bench/results/2026-10-06-community-2x-p100/benchmark.py \
-  --root /home/lech/Strata --pack /home/lech/Strata-data/packs/iq3_s \
+  --root /home/lech/Nostroma --pack /home/lech/Nostroma-data/packs/iq3_s \
   --url http://127.0.0.1:8080 \
   --out bench/results/2026-10-06-community-2x-p100 \
   --targets 127736 --runs 3

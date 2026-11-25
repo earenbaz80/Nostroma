@@ -423,7 +423,7 @@ def config_for(inp: SetupInputs, lib) -> SetupConfig:
         args += ["--control-vector-scaled", f"{esp}:1.0", "--control-vector-layer-range", "4", "44",
                  "--cvec-mode", "project", "--cvec-dir", "per-layer"]
     cfg = {"exe": engine_exe(eng), "args": args, "cwd": str(ROOT), "tokenizer": str(pack / "tokenizer"),
-           "model_name": f"{fam['name']}-{model.lower()}", "log": str(home() / f"strata-{tag.lower()}.log"),
+           "model_name": f"{fam['name']}-{model.lower()}", "log": str(home() / f"nostroma-{tag.lower()}.log"),
            "lib_dirs": lib_dirs, "port": port}
     if cuda_tk == 12:                                  # the experimental CUDA 12 engine (engine-cuda12/)
         cfg["cuda"] = 12
@@ -439,10 +439,10 @@ def config_for(inp: SetupInputs, lib) -> SetupConfig:
         else:
             table = hipblaslt_table(gpu["arch"], lib_dirs, meta.get("hipblaslt_version"), [eng / "tuning"])
             if table:
-                cfg["env"] = {"STRATA_HIPBLASLT_TUNING": str(table)}
+                cfg["env"] = {"NOSTROMA_HIPBLASLT_TUNING": str(table)}
         if GFX1103_OPT_IN and gfx_arch_is(gpu["arch"], "gfx1103") and not WIN:
             # the 780M's KFD queues are evicted (a GPU reset) while transparent huge pages move the pinned expert arena
-            cfg.setdefault("env", {})["STRATA_NO_ARENA_THP"] = "1"
+            cfg.setdefault("env", {})["NOSTROMA_NO_ARENA_THP"] = "1"
             # the exact gfx1151 speed switches measured on this chip (GFX1103_SWITCHES): the engine has no arch defaults
             # for gfx1103, so setup writes them into the config.  They are setup's own (SETUP_ENV), so a re-run refreshes
             # them and turning the opt-in off takes them out again.
@@ -458,10 +458,10 @@ def config_for(inp: SetupInputs, lib) -> SetupConfig:
         # <arch>-rocblas-<version>.txt for its own library, or runs the default kernels and says so in its log.
         rocblas_tables = sorted(p.name for p in (ROOT / "tools" / "hip").glob(f"{gpu['arch']}-rocblas-*.txt"))
         if rocblas_tables:
-            cfg.setdefault("env", {})["STRATA_ROCBLAS_TUNING"] = str(ROOT / "tools" / "hip")
+            cfg.setdefault("env", {})["NOSTROMA_ROCBLAS_TUNING"] = str(ROOT / "tools" / "hip")
             ok(f"rocBLAS tuning tables for {gpu['arch']}: {', '.join(rocblas_tables)} (the engine takes the one of its rocBLAS build)")
         if resident:   # ROCm: large page-locked host allocations can fail or be slow for the CPU; keep the copy pageable
-            cfg.setdefault("env", {})["STRATA_RESIDENT_PIN"] = "0"
+            cfg.setdefault("env", {})["NOSTROMA_RESIDENT_PIN"] = "0"
     if gpu["count"] > 1 or a.gpu is not None:
         cfg["gpu"] = gpu["index"]                      # the engine is told this card (issue #51)
         cfg["gpus_asked"] = True                       # chosen at setup: not asked again at start
@@ -474,7 +474,7 @@ def config_for(inp: SetupInputs, lib) -> SetupConfig:
         recommend_remote_expert_opt(cfg, off=a.no_remote_expert_opt)
         replica_done = False
         if a.replicas is None and a.layer_split in (None, "auto") and (getattr(a, "replica_profile", False) or
-                                                                       os.environ.get("NOSTROMA_REPLICA_PROFILE", os.environ.get("STRATA_REPLICA_PROFILE"))):
+                                                                       os.environ.get("NOSTROMA_REPLICA_PROFILE", os.environ.get("NOSTROMA_REPLICA_PROFILE"))):
             try:                                       # the opt-in replica profile (nostroma_control/replica_profile.py)
                 from nostroma_control import replica_profile
                 if getattr(a, "replica_profile", False):
@@ -548,7 +548,7 @@ def config_for(inp: SetupInputs, lib) -> SetupConfig:
             cfg["parallel"] = 1
             ok("parallel requests: one at a time (--parallel 1)")
     if vision != "none":
-        old_cfg = home() / f"strata-{tag.lower()}.json"
+        old_cfg = home() / f"nostroma-{tag.lower()}.json"
         vt = vision_tokens(a.vision_tokens, vision, old_cfg if old_cfg.is_file() else adopted)
         cfg["vision"] = {"exe": str(eng / VEXE), "mmproj": str(mmproj),     # the text model, opened vocab-only:
                          "model": str(ready_paths(model, models_dir)["dense"] if ready else shards[0]),
@@ -562,7 +562,7 @@ def config_for(inp: SetupInputs, lib) -> SetupConfig:
         warn("--vision-tokens: images are off for this model, so it is not used")
     if a.images:                                       # only when given: else an earlier "images" is carried over
         cfg["images"] = setup_images(a, gpu, hip, Path(a.models_dir))
-    cfg_path = home() / f"strata-{tag.lower()}.json"
+    cfg_path = home() / f"nostroma-{tag.lower()}.json"
     cal = setup_calibration(cfg, hip)                  # #566: Linux HIP too; the tuning is offered on NVIDIA only
     if cal is not None:
         sys.path.insert(0, str(ROOT / "tools"))

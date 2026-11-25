@@ -1,7 +1,7 @@
 """The product never starts a debugger on a user's machine (nostroma_control/childenv.py).
 
 ggml's abort path forks `gdb --batch -ex attach <pid>` (Linux; lldb and backtrace_symbols after it).  Every child Nostroma starts therefore gets
-GGML_NO_BACKTRACE=1, unless a developer sets STRATA_BACKTRACE=1.  These tests check the helper, the environment of every spawn site that builds one, and
+GGML_NO_BACKTRACE=1, unless a developer sets NOSTROMA_BACKTRACE=1.  These tests check the helper, the environment of every spawn site that builds one, and
 list every place product code starts a process, so a new one has to be looked at (does it start a Nostroma program? then it needs the variable).
 
     python -m pytest tests/terminal/test_no_debugger_children.py
@@ -95,7 +95,7 @@ class SpawnEnvironments(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             (Path(d) / "engine-component.json").write_text("{}", encoding="utf-8")
             with mock.patch.object(engine_component, "package_lib_dirs", return_value=[]):
-                self.assertEqual(tuning.engine_env(Path(d) / "strata")[NO_BACKTRACE], "1")
+                self.assertEqual(tuning.engine_env(Path(d) / "nostroma")[NO_BACKTRACE], "1")
 
     def test_the_tuning_workers(self):
         from serve import lifeline
@@ -107,7 +107,7 @@ class SpawnEnvironments(unittest.TestCase):
             raise OSError("not started in this test")
 
         with tempfile.TemporaryDirectory() as d, mock.patch.object(lifeline, "popen", fake_popen):
-            exe = Path(d) / "strata"
+            exe = Path(d) / "nostroma"
             exe.write_text("", encoding="utf-8")
             for env in ({"PATH": "x"}, None):
                 seen.clear()
@@ -141,8 +141,8 @@ class EntryPointsSetItForEveryChild(unittest.TestCase):
 # Every place product code starts a process, with what it starts.  A file may hold at most this many; a new site fails the test until it is
 # listed here (and, when it starts a Nostroma program - the engine, the picture reader, sd-cli, setup, a worker - it builds its environment with
 # quiet_crash_env or inherits the one an entry point set).
-STRATA_PROGRAMS = {
-    "serve/server.py": 7,              # the engine, the picture reader (env from child_env / vision_env), the strata-device probe, before_load commands
+NOSTROMA_PROGRAMS = {
+    "serve/server.py": 7,              # the engine, the picture reader (env from child_env / vision_env), the nostroma-device probe, before_load commands
     "serve/images.py": 1,              # sd-cli (image_env)
     "serve/lifeline.py": 4,            # the wrapper every child goes through (ps, a watcher); no program of ours of its own
     "serve/winjob.py": 2,              # lifeline.popen's Windows start inside the job (suspended, then resumed) + the plain Popen off Windows: the caller's env as given
@@ -153,7 +153,7 @@ STRATA_PROGRAMS = {
     "nostroma_control/tuning.py": 1,     # engine --help (engine_env)
     "nostroma_control/shape_engine.py": 2,  # engine --version / --geometry (inherit)
     "nostroma_control/updater.py": 3,       # --version probes (inherit)
-    "nostroma_cli/bench_standard.py": 2,    # `strata.py serve` (inherits: cli.main sets it) + taskkill
+    "nostroma_cli/bench_standard.py": 2,    # `nostroma.py serve` (inherits: cli.main sets it) + taskkill
     "nostroma_cli/launch/runner.py": 2,     # setup.py and the other children (_env)
     "nostroma_cli/launch/params.py": 2,     # engine --help (inherits)
     "nostroma_cli/cli.py": 2,               # setup.py, the revise command
@@ -191,7 +191,7 @@ def spawn_sites() -> dict:
     files = []
     for d in ("serve", "nostroma_control", "nostroma_cli"):
         files += sorted((ROOT / d).rglob("*.py"))
-    files += [ROOT / "strata.py", ROOT / "setup.py"]
+    files += [ROOT / "nostroma.py", ROOT / "setup.py"]
     out = {}
     for p in files:
         rel = p.relative_to(ROOT).as_posix()
@@ -206,14 +206,14 @@ def spawn_sites() -> dict:
 
 class EverySpawnSiteIsListed(unittest.TestCase):
     def test_no_process_is_started_that_nobody_has_looked_at(self):
-        known = {**STRATA_PROGRAMS, **OTHER_PROGRAMS}
+        known = {**NOSTROMA_PROGRAMS, **OTHER_PROGRAMS}
         new = {rel: n for rel, n in spawn_sites().items() if n > known.get(rel, 0)}
         self.assertEqual(new, {}, "a new place that starts a process: if it starts a Nostroma program (engine, picture reader, sd-cli, setup, a worker) "
                                   "its environment must carry GGML_NO_BACKTRACE (nostroma_control.childenv.quiet_crash_env); then list it in "
-                                  "STRATA_PROGRAMS (or OTHER_PROGRAMS when it starts nothing of ours) in tests/terminal/test_no_debugger_children.py")
+                                  "NOSTROMA_PROGRAMS (or OTHER_PROGRAMS when it starts nothing of ours) in tests/terminal/test_no_debugger_children.py")
 
     def test_the_two_lists_do_not_overlap(self):
-        self.assertEqual(set(STRATA_PROGRAMS) & set(OTHER_PROGRAMS), set())
+        self.assertEqual(set(NOSTROMA_PROGRAMS) & set(OTHER_PROGRAMS), set())
 
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@
 #include <cstring>
 #include <thread>
 
-namespace strata_vit {
+namespace nostroma_vit {
 
 namespace {
 
@@ -195,7 +195,7 @@ bool VitRef::load(const Gguf& gg, const VitGeometry& g, std::string& err) {
         !read_t(gg, "mm.2.weight", mm2_w_, err) || !read_t(gg, "mm.2.bias", mm2_b_, err))
         return false;
     act_round_ = 0;
-    if (const char* e = std::getenv("STRATA_VIT_REF_ROUND"); e && std::atoi(e) != 0) {
+    if (const char* e = std::getenv("NOSTROMA_VIT_REF_ROUND"); e && std::atoi(e) != 0) {
         const GgufTensorInfo* t = gg.tensor("v.blk.0.attn_qkv.weight");
         act_round_ = t && t->type == GT_BF16 ? 1 : t && t->type == GT_F16 ? 2 : 0;
     }
@@ -371,4 +371,4 @@ bool VitRef::encode(const PreparedImage& img, int threads, std::vector<float>& r
     return true;
 }
 
-}  // namespace strata_vit
+}  // namespace nostroma_vit

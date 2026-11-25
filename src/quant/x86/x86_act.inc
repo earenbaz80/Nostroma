@@ -1,12 +1,12 @@
 // x86_act.inc - ggml's x86 Q8_0 and Q8_1 activation quantizers (arch/x86/quants.c at the pin; MIT, The ggml authors), tier namespace as x86_dots.inc.
 // Round to nearest EVEN (_mm256_round_ps NEAREST), unlike the Generic quantizers' roundf.  Needs hsum_i32_8 / hsum_i32_4 from x86_dots.inc.
 
-void quantize_q8_0(const float* STRATA_RESTRICT x, void* STRATA_RESTRICT vy, int64_t k) {
+void quantize_q8_0(const float* NOSTROMA_RESTRICT x, void* NOSTROMA_RESTRICT vy, int64_t k) {
     assert(QK8_0 == 32);
     assert(k % QK8_0 == 0);
     const int nb = k / QK8_0;
 
-    block_q8_0* STRATA_RESTRICT y = (block_q8_0*) vy;
+    block_q8_0* NOSTROMA_RESTRICT y = (block_q8_0*) vy;
 
 #if defined(__AVX2__) || defined(__AVX__)
     for (int i = 0; i < nb; i++) {
@@ -99,11 +99,11 @@ void quantize_q8_0(const float* STRATA_RESTRICT x, void* STRATA_RESTRICT vy, int
 #endif
 }
 
-void quantize_q8_1(const float* STRATA_RESTRICT x, void* STRATA_RESTRICT vy, int64_t k) {
+void quantize_q8_1(const float* NOSTROMA_RESTRICT x, void* NOSTROMA_RESTRICT vy, int64_t k) {
     assert(k % QK8_1 == 0);
     const int nb = k / QK8_1;
 
-    block_q8_1* STRATA_RESTRICT y = (block_q8_1*) vy;
+    block_q8_1* NOSTROMA_RESTRICT y = (block_q8_1*) vy;
 #if defined(__AVX2__) || defined(__AVX__)
     for (int i = 0; i < nb; i++) {
         // Load elements into 4 AVX vectors

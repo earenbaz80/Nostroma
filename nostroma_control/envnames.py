@@ -1,9 +1,9 @@
-"""The environment variables moved from ``STRATA_*`` to ``NOSTROMA_*``.
+"""The environment variables moved from ``NOSTROMA_*`` to ``NOSTROMA_*``.
 
 This is the Python twin of ``apps/host/server/env-compat.mjs``, and it keeps the same five names so a reader of either
 file sees the same contract. The new name wins when both are set; the old one is still read, so a launcher, a preset or
 a script made before the rename keeps working; and a child gets both spellings, so the engine (which still reads
-``STRATA_*``) sees a setting that was written with the new name.
+``NOSTROMA_*``) sees a setting that was written with the new name.
 
 Nothing is added for a name that is not set, so a machine that sets neither gets the environment it had before.
 """
@@ -13,13 +13,13 @@ import os
 import sys
 
 NEW = "NOSTROMA_"
-OLD = "STRATA_"
+OLD = "NOSTROMA_"
 
 _warned: set[str] = set()
 
 
 def env_var(name: str, env=None) -> str | None:
-    """The value of ``NOSTROMA_<name>``, or the older ``STRATA_<name>`` when only that one is set."""
+    """The value of ``NOSTROMA_<name>``, or the older ``NOSTROMA_<name>`` when only that one is set."""
     source = os.environ if env is None else env
     value = source.get(NEW + name)
     return source.get(OLD + name) if value is None else value
@@ -41,7 +41,7 @@ def set_env_vars(target: dict, values: dict) -> dict:
 def child_env(values=None) -> dict:
     """An environment for a child process with both spellings of every name it sets.
 
-    The engine and the older Python code read ``STRATA_*``; the host reads ``NOSTROMA_*``. With this they see the same
+    The engine and the older Python code read ``NOSTROMA_*``; the host reads ``NOSTROMA_*``. With this they see the same
     settings. When both spellings are set, the new one wins in both, so the engine cannot read a value the Terminal and
     the app ignore: that is the precedence the release notes promise.
     """

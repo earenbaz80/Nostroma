@@ -18,6 +18,6 @@ const { join } = require('node:path');
 const entry = join(__dirname, 'index.mjs');
 
 import(pathToFileURL(entry).href).catch((err) => {
-  process.stderr.write(`[strata] the App Host failed to load from ${entry}: ${err && err.stack ? err.stack : err}\n`);
+  process.stderr.write(`[nostroma] the App Host failed to load from ${entry}: ${err && err.stack ? err.stack : err}\n`);
   process.exitCode = 1;
 });

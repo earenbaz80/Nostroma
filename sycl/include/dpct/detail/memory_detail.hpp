@@ -826,7 +826,7 @@ public:
     static_assert((Memory == global) || (Memory == constant) ||
                       (Memory == shared),
                   "device memory region should be global, constant or shared");
-    // Strata: the pointer table, mem_mgr and dev_mgr are made at the first get_ptr_impl() (sycl/tools/fixups.py)
+    // Nostroma: the pointer table, mem_mgr and dev_mgr are made at the first get_ptr_impl() (sycl/tools/fixups.py)
   }
 
   /// Constructor with range
@@ -955,7 +955,7 @@ private:
   bool _reference;
   value_t *_host_ptr;
   std::vector<value_t *> _device_ptrs;
-  std::optional<sycl::queue> _q;   // Strata: a default-built sycl::queue picks a device (sycl/tools/fixups.py)
+  std::optional<sycl::queue> _q;   // Nostroma: a default-built sycl::queue picks a device (sycl/tools/fixups.py)
 };
 template <class T, memory_region Memory>
 class device_memory<T, Memory, 0> : public device_memory<T, Memory, 1> {

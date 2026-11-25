@@ -97,7 +97,7 @@ picture). The rule is the same on NVIDIA and AMD.
 | `--vision off` | no pictures (also "No" in the app and in `nostroma launch`) |
 | `--vision cpu` / `--vision gpu` | choose the reader |
 
-- **AMD:** `strata-vision-hip` is the card's reader. If it cannot start, Nostroma uses the CPU reader ([AMD_HIP.md](AMD_HIP.md)).
+- **AMD:** `nostroma-vision-hip` is the card's reader. If it cannot start, Nostroma uses the CPU reader ([AMD_HIP.md](AMD_HIP.md)).
 - **Mac:** pictures run on the GPU ([MAC.md](MAC.md)).
 - **Intel Arc:** an Arc with 24 GB or more keeps the CPU reader unless you pass `--vision gpu`. A Battlemage card (B580, B70) has pictures off until you pass `--vision on` ([INTEL.md](INTEL.md)).
 
@@ -180,8 +180,8 @@ nostroma launch --family gyro --model Gyro-S
 
 | App name | `--model` | What it is | Download |
 | --- | --- | --- | ---: |
-| **NVFP4 (Nostroma's version)** | `NVFP4` | Nostroma's own conversion (GPTQ; the ready pack is sergqwer's strata-nvfp4). Best quality of the three | 128 GB |
-| **NVFP4 (NVIDIA's version)** | `NVFP4-NVIDIA` | NVIDIA's own checkpoint (plain rounding), converted for Strata. Same size and speed as the first | 128 GB |
+| **NVFP4 (Nostroma's version)** | `NVFP4` | Nostroma's own conversion (GPTQ; the ready pack is sergqwer's nostroma-nvfp4). Best quality of the three | 128 GB |
+| **NVFP4 (NVIDIA's version)** | `NVFP4-NVIDIA` | NVIDIA's own checkpoint (plain rounding), converted for Nostroma. Same size and speed as the first | 128 GB |
 | **NVFP4 (NVIDIA, trained for FP4)** | `NVFP4-QAD` | NVIDIA's retrained model, slightly faster on short prompts | 102 GB (+110 GB of disk to prepare) |
 
 All three need about 80 GB of RAM to keep every expert in RAM, run on NVIDIA cards only and read pictures. RTX 50 cards

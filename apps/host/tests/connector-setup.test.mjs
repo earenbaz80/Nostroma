@@ -35,7 +35,7 @@ async function untilAsked(isAsked){
 // (search:false, an empty environment): a cloudflared installed on the machine that runs the test (PATH, /usr/local/bin, ~/.local/bin)
 // would otherwise be used, nothing would be downloaded, and the test would wait for ever for a request that never comes.
 test('failed concurrent setup shares one download, cleans up and can be retried', {timeout:30000}, async () => {
-  const directory=await mkdtemp(join(tmpdir(),'strata-connector-test-'));
+  const directory=await mkdtemp(join(tmpdir(),'nostroma-connector-test-'));
   let requests=0, release;
   const installer=createConnectorInstaller({directory,platform:'linux',arch:'x64',env:{},home:directory,search:false,fetchImpl:async()=>{
     requests++;

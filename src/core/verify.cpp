@@ -1,26 +1,26 @@
-// src/core/verify.cpp - see include/strata/core/verify.hpp.
+// src/core/verify.cpp - see include/nostroma/core/verify.hpp.
 // HostGraphLaunch (the graph launched by the calling thread, or by a helper thread so this one can serve the doorbells): CUDA builds,
-// and the Windows HIP build (STRATA_VERIFY_ASYNC_LAUNCH=1 launches from a helper thread; STRATA_LAUNCH_PROBE=1 logs the launch timing).
-#if (!defined(STRATA_USE_HIP) && !defined(STRATA_HIP_GFX906)) || (defined(STRATA_USE_HIP) && !defined(STRATA_HIP_GFX906) && defined(_WIN32))
-#define STRATA_VERIFY_HGL 1
+// and the Windows HIP build (NOSTROMA_VERIFY_ASYNC_LAUNCH=1 launches from a helper thread; NOSTROMA_LAUNCH_PROBE=1 logs the launch timing).
+#if (!defined(NOSTROMA_USE_HIP) && !defined(NOSTROMA_HIP_GFX906)) || (defined(NOSTROMA_USE_HIP) && !defined(NOSTROMA_HIP_GFX906) && defined(_WIN32))
+#define NOSTROMA_VERIFY_HGL 1
 #endif
-#include "strata/core/batch_rows.hpp"
-#include "strata/env.hpp"
-#include "strata/core/sm75_series.hpp"
-#include "strata/core/sm120_series.hpp"
-#include "strata/core/defaults_026.hpp"
-#include "strata/kernels/gfx_arch.hpp"
-#include "strata/core/verify.hpp"
-#include "strata/core/window_evict.hpp"
-#include "strata/core/expert_nibble.hpp"
-#include "strata/core/pin_budget.hpp"
-#if defined(STRATA_VERIFY_HGL)
-#include "strata/core/host_graph_launch.hpp"
+#include "nostroma/core/batch_rows.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/core/sm75_series.hpp"
+#include "nostroma/core/sm120_series.hpp"
+#include "nostroma/core/defaults_026.hpp"
+#include "nostroma/kernels/gfx_arch.hpp"
+#include "nostroma/core/verify.hpp"
+#include "nostroma/core/window_evict.hpp"
+#include "nostroma/core/expert_nibble.hpp"
+#include "nostroma/core/pin_budget.hpp"
+#if defined(NOSTROMA_VERIFY_HGL)
+#include "nostroma/core/host_graph_launch.hpp"
 #endif
-#include "strata/core/remote_expert_opt.hpp"
-#include "strata/core/dma_batch.hpp"
-#include "strata/core/spec_prob.hpp"
-#include "strata/core/spec_proposal.hpp"
+#include "nostroma/core/remote_expert_opt.hpp"
+#include "nostroma/core/dma_batch.hpp"
+#include "nostroma/core/spec_prob.hpp"
+#include "nostroma/core/spec_proposal.hpp"
 #if defined(_WIN32)
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -29,46 +29,46 @@
 #include <intrin.h>
 #endif
 
-#include "strata/core/native_head.hpp"
-#include "strata/core/on_device.hpp"
-#include "strata/core/peer_experts.hpp"
-#include "strata/kernels/iq_kernels.hpp"
-#include "strata/kernels/cpu/expert_layout.hpp"
-#include "strata/kernels/cpu/hadamard.hpp"
-#include "strata/kernels/bf16_gemv.hpp"
-#include "strata/kernels/native_router.hpp"
-#include "strata/kernels/native_moe.hpp"
-#include "strata/kernels/cpu/expert.hpp"
-#include "strata/kernels/elementwise.hpp"
-#include "strata/kernels/qsa_prompt_attn.hpp"
-#include "strata/kernels/fused_gr.hpp"
-#include "strata/kernels/route_prior.hpp"
-#include "strata/kernels/cvec.hpp"
-#include "strata/kernels/gr.hpp"
-#include "strata/kernels/kv_q4.hpp"
-#include "strata/kernels/kv_q8.hpp"
-#include "strata/kernels/native_mmvq.hpp"
-#include "strata/core/dispatch_stats.hpp"
-#include "strata/kernels/native_gr_postops.hpp"
-#include "strata/kernels/native_ple_postops.hpp"
-#include "strata/kernels/native_qsa.hpp"
-#include "strata/kernels/native_qsa_indexer.hpp"
-#include "strata/kernels/native_rope.hpp"
-#include "strata/kernels/ngram.hpp"
-#include "strata/kernels/pdl.hpp"
-#include "strata/kernels/ple.hpp"
-#include "strata/kernels/qsa.hpp"
-#include "strata/kernels/qsa_decode_attn.hpp"
-#include "strata/kernels/qsa_select.hpp"
-#include "strata/kernels/quantize_act.hpp"
-#include "strata/kernels/rope.hpp"
-#include "strata/kernels/s2_expert_grouped.hpp"
-#include "strata/kernels/sampler.hpp"
-#include "strata/core/progress.hpp"
-#include "strata/kernels/shared_expert.hpp"
-#include "strata/kernels/verify_kernels.hpp"
-#if defined(STRATA_HAVE_DFLASH2)
-#include "strata/kernels/dflash2.hpp"
+#include "nostroma/core/native_head.hpp"
+#include "nostroma/core/on_device.hpp"
+#include "nostroma/core/peer_experts.hpp"
+#include "nostroma/kernels/iq_kernels.hpp"
+#include "nostroma/kernels/cpu/expert_layout.hpp"
+#include "nostroma/kernels/cpu/hadamard.hpp"
+#include "nostroma/kernels/bf16_gemv.hpp"
+#include "nostroma/kernels/native_router.hpp"
+#include "nostroma/kernels/native_moe.hpp"
+#include "nostroma/kernels/cpu/expert.hpp"
+#include "nostroma/kernels/elementwise.hpp"
+#include "nostroma/kernels/qsa_prompt_attn.hpp"
+#include "nostroma/kernels/fused_gr.hpp"
+#include "nostroma/kernels/route_prior.hpp"
+#include "nostroma/kernels/cvec.hpp"
+#include "nostroma/kernels/gr.hpp"
+#include "nostroma/kernels/kv_q4.hpp"
+#include "nostroma/kernels/kv_q8.hpp"
+#include "nostroma/kernels/native_mmvq.hpp"
+#include "nostroma/core/dispatch_stats.hpp"
+#include "nostroma/kernels/native_gr_postops.hpp"
+#include "nostroma/kernels/native_ple_postops.hpp"
+#include "nostroma/kernels/native_qsa.hpp"
+#include "nostroma/kernels/native_qsa_indexer.hpp"
+#include "nostroma/kernels/native_rope.hpp"
+#include "nostroma/kernels/ngram.hpp"
+#include "nostroma/kernels/pdl.hpp"
+#include "nostroma/kernels/ple.hpp"
+#include "nostroma/kernels/qsa.hpp"
+#include "nostroma/kernels/qsa_decode_attn.hpp"
+#include "nostroma/kernels/qsa_select.hpp"
+#include "nostroma/kernels/quantize_act.hpp"
+#include "nostroma/kernels/rope.hpp"
+#include "nostroma/kernels/s2_expert_grouped.hpp"
+#include "nostroma/kernels/sampler.hpp"
+#include "nostroma/core/progress.hpp"
+#include "nostroma/kernels/shared_expert.hpp"
+#include "nostroma/kernels/verify_kernels.hpp"
+#if defined(NOSTROMA_HAVE_DFLASH2)
+#include "nostroma/kernels/dflash2.hpp"
 #endif
 
 #include <algorithm>
@@ -86,35 +86,35 @@
 #include <cstdlib>
 #include <cstring>
 #include <exception>
-#include "strata/platform/cpu_relax.hpp"
+#include "nostroma/platform/cpu_relax.hpp"
 
-#if defined(STRATA_GPU_METAL)
+#if defined(NOSTROMA_GPU_METAL)
 // The Metal backend's decode window (metal/src/engine/window.cpp): this file's init/run/commit hand over to it.
-namespace strata::metal_engine {
+namespace nostroma::metal_engine {
 void window_destroy(void* w);
 void* window_create();
-bool window_init(void* w, const strata::core::ModelGeometry& g, strata::core::SessionState& ss, int max_t, int64_t max_cells,
+bool window_init(void* w, const nostroma::core::ModelGeometry& g, nostroma::core::SessionState& ss, int max_t, int64_t max_cells,
                  int64_t* n_vocab, std::string& err);
 bool window_run(void* w, int T, const int32_t* tokens, int64_t pos0, bool head, int32_t* out, std::string& err);
 bool window_commit(void* w, int n_keep, std::string& err);
 bool window_copy_logits(void* w, int t, float* host);
-void window_set_sampling(void* w, const strata::kernels::SamplerParams* sp, const int32_t* hist, int hist_len);
-bool window_sample_slot_row(void* w, int row, const strata::kernels::SamplerParams& sp, const int32_t* hist, int hist_len, int32_t* tok, std::string& err);
-bool window_init_slots(void* w, const std::vector<strata::core::SessionState*>& slots, std::string& err);
+void window_set_sampling(void* w, const nostroma::kernels::SamplerParams* sp, const int32_t* hist, int hist_len);
+bool window_sample_slot_row(void* w, int row, const nostroma::kernels::SamplerParams& sp, const int32_t* hist, int hist_len, int32_t* tok, std::string& err);
+bool window_init_slots(void* w, const std::vector<nostroma::core::SessionState*>& slots, std::string& err);
 bool window_run_slots(void* w, const int* rows, int S, const int32_t* tokens, const int64_t* pos, int32_t* out, std::string& err);
 bool window_taps(void* w, const std::vector<int>& layers, const float** tap_dev, std::string& err);   // dflash2.inc
-}  // namespace strata::metal_engine
+}  // namespace nostroma::metal_engine
 #endif
 
-namespace strata::core {
+namespace nostroma::core {
 namespace {
 
 constexpr float EPS = 1e-6f;
 using Clock = std::chrono::steady_clock;
 double ms_since(Clock::time_point t) { return std::chrono::duration<double, std::milli>(Clock::now() - t).count(); }
-const bool g_dbg = strata::env("NOSTROMA_VERIFY_DEBUG") != nullptr;
-inline bool g_lfuse() { static const bool on = [] { const char* v = strata::env("NOSTROMA_LFUSE"); return v != nullptr && v[0] == '1'; }(); return on; }
-// STRATA_ROUTE_RESIDENT=<margin logits> (+ STRATA_ROUTE_RESIDENT_RANKS=lo-hi, default 6-9): residency-biased routing.
+const bool g_dbg = nostroma::env("NOSTROMA_VERIFY_DEBUG") != nullptr;
+inline bool g_lfuse() { static const bool on = [] { const char* v = nostroma::env("NOSTROMA_LFUSE"); return v != nullptr && v[0] == '1'; }(); return on; }
+// NOSTROMA_ROUTE_RESIDENT=<margin logits> (+ NOSTROMA_ROUTE_RESIDENT_RANKS=lo-hi, default 6-9): residency-biased routing.
 struct RouteResidentCfg;
 RouteResidentCfg& route_resident_cfg();
 struct RouteResidentCfg {
@@ -169,31 +169,31 @@ struct RouteResidentCfg {
 RouteResidentCfg& route_resident_cfg() {
     static RouteResidentCfg c;
     static const bool parsed = [] {
-        if (const char* v = strata::env("NOSTROMA_ROUTE_RESIDENT")) c.margin = (float) std::atof(v);
-        if (const char* v = strata::env("NOSTROMA_ROUTE_RESIDENT_RANKS")) std::sscanf(v, "%d-%d", &c.lo, &c.hi);
+        if (const char* v = nostroma::env("NOSTROMA_ROUTE_RESIDENT")) c.margin = (float) std::atof(v);
+        if (const char* v = nostroma::env("NOSTROMA_ROUTE_RESIDENT_RANKS")) std::sscanf(v, "%d-%d", &c.lo, &c.hi);
         return true;
     }();
     (void) parsed;
     return c;
 }
-inline bool g_lfuse_gate() { static const bool on = [] { const char* v = strata::env("NOSTROMA_LFUSE_GATE"); return v == nullptr || v[0] != '0'; }(); return on; }
-inline bool g_lfuse_pair() { static const bool on = [] { const char* v = strata::env("NOSTROMA_LFUSE_PAIR"); return v == nullptr || v[0] != '0'; }(); return on; }
-inline bool g_qdedup() { static const bool on = [] { const char* v = strata::env("NOSTROMA_VERIFY_QDEDUP"); return v != nullptr && std::atoi(v) != 0; }(); return on; }
-// S26 STRATA_QFUSE=1: activation q8_1 images written by their producers (the GDN output norm) - the same bytes
+inline bool g_lfuse_gate() { static const bool on = [] { const char* v = nostroma::env("NOSTROMA_LFUSE_GATE"); return v == nullptr || v[0] != '0'; }(); return on; }
+inline bool g_lfuse_pair() { static const bool on = [] { const char* v = nostroma::env("NOSTROMA_LFUSE_PAIR"); return v == nullptr || v[0] != '0'; }(); return on; }
+inline bool g_qdedup() { static const bool on = [] { const char* v = nostroma::env("NOSTROMA_VERIFY_QDEDUP"); return v != nullptr && std::atoi(v) != 0; }(); return on; }
+// S26 NOSTROMA_QFUSE=1: activation q8_1 images written by their producers (the GDN output norm) - the same bytes
 // fork F4 (Eddoursul): 2-4 token dense projections read an interleaved copy of the q8_1 activations (bitwise the same
-// outputs); STRATA_MMVQ_IL=0 keeps native_mmvq's multi-column kernels
-inline bool g_mmvq_il() { static const bool on = [] { const char* v = strata::env("NOSTROMA_MMVQ_IL"); return v == nullptr || v[0] != '0'; }(); return on; }
-// STRATA_SELECT_LONG=1 (opt-in): a window graph past select_long_at() cells takes the long-context QSA select
+// outputs); NOSTROMA_MMVQ_IL=0 keeps native_mmvq's multi-column kernels
+inline bool g_mmvq_il() { static const bool on = [] { const char* v = nostroma::env("NOSTROMA_MMVQ_IL"); return v == nullptr || v[0] != '0'; }(); return on; }
+// NOSTROMA_SELECT_LONG=1 (opt-in): a window graph past select_long_at() cells takes the long-context QSA select
 // (qsa_block_topk_long's multi-CTA top-k through topk_scratch_, qsa_block_scores_long's shuffle-free decode scorer;
 // both compute capability 6.x by default, the same ids and score bits).  Each costs ~6 more kernels a call, which only
 // a longer context pays back (4x GP100: 0.5 ms a window more at 1K, even at 30K, 4.0-4.7 ms less at 300K), so the
 // verifier keeps a second set of window graphs for it.  Off: no scratch, no second graphs.
 inline bool select_long_on() {
     static const bool on = [] {
-        const char* v = strata::env("NOSTROMA_SELECT_LONG");
+        const char* v = nostroma::env("NOSTROMA_SELECT_LONG");
         if (v == nullptr || v[0] != '1') return false;
-        if (strata::kernels::qsa_topk_multi_scratch_ints(1) <= 0) {   // a build without the multi-CTA kernels: no second graphs
-            std::fprintf(stderr, "strata verify: STRATA_SELECT_LONG=1 needs the CUDA build with STRATA_EXPERIMENTAL_SM60; "
+        if (nostroma::kernels::qsa_topk_multi_scratch_ints(1) <= 0) {   // a build without the multi-CTA kernels: no second graphs
+            std::fprintf(stderr, "nostroma verify: NOSTROMA_SELECT_LONG=1 needs the CUDA build with NOSTROMA_EXPERIMENTAL_SM60; "
                                  "ignored\n");
             return false;
         }
@@ -201,43 +201,43 @@ inline bool select_long_on() {
     }();
     return on;
 }
-// STRATA_SELECT_LONG_AT: the threshold in cells (default 65536; 0: always)
+// NOSTROMA_SELECT_LONG_AT: the threshold in cells (default 65536; 0: always)
 inline int64_t select_long_at() {
     static const int64_t at = [] {
-        const char* v = strata::env("NOSTROMA_SELECT_LONG_AT");
+        const char* v = nostroma::env("NOSTROMA_SELECT_LONG_AT");
         return v != nullptr && v[0] != 0 ? (int64_t) std::atoll(v) : (int64_t) 65536;
     }();
     return at;
 }
-// 143-amdk: STRATA_QFUSE_HC - only the hyper-connection read writes its consumer's q8_1 image (not the GDN recurrence): gfx12 default (=0 / 1 forces off / on)
+// 143-amdk: NOSTROMA_QFUSE_HC - only the hyper-connection read writes its consumer's q8_1 image (not the GDN recurrence): gfx12 default (=0 / 1 forces off / on)
 inline bool g_qfuse_hc() {
-#if defined(STRATA_USE_HIP)
+#if defined(NOSTROMA_USE_HIP)
     static const bool on = [] {
-        const char* v = strata::env("NOSTROMA_QFUSE_HC");
+        const char* v = nostroma::env("NOSTROMA_QFUSE_HC");
         if (v != nullptr) return std::atoi(v) != 0;
         int dev = 0;
         cudaDeviceProp p;
         return cudaGetDevice(&dev) == cudaSuccess && cudaGetDeviceProperties(&p, dev) == cudaSuccess &&
-               strata::kernels::gfx_arch_is_gfx12(p.gcnArchName);
+               nostroma::kernels::gfx_arch_is_gfx12(p.gcnArchName);
     }();
     return on;
 #else
     return false;
 #endif
 }
-// STRATA_GRAPH_PRIO=1 (opt-in): the window graph's kernel nodes keep their capturing stream's
+// NOSTROMA_GRAPH_PRIO=1 (opt-in): the window graph's kernel nodes keep their capturing stream's
 // priority (side_ high, sh_cs_ low).  Unset / 0: every node at the launch stream's priority, as before.
 [[maybe_unused]] inline bool graph_prio_on() {   // (every HIP caller is guarded off)
-#if defined(STRATA_USE_HIP) || defined(STRATA_HIP_GFX906) || defined(STRATA_GPU_METAL)
+#if defined(NOSTROMA_USE_HIP) || defined(NOSTROMA_HIP_GFX906) || defined(NOSTROMA_GPU_METAL)
     return false;
 #else
-    static const bool on = [] { const char* v = strata::env("NOSTROMA_GRAPH_PRIO"); return v != nullptr && std::atoi(v) != 0; }();
+    static const bool on = [] { const char* v = nostroma::env("NOSTROMA_GRAPH_PRIO"); return v != nullptr && std::atoi(v) != 0; }();
     return on;
 #endif
 }
-// STRATA_GRAPH_PRIO: the capture and graph queries by CUDA version (13 renamed the edge-data forms: the same split as
+// NOSTROMA_GRAPH_PRIO: the capture and graph queries by CUDA version (13 renamed the edge-data forms: the same split as
 // verify_kernels.cu's and the PDL edge check above).  Nothing is returned for the edge data.
-#if !defined(STRATA_USE_HIP) && !defined(STRATA_HIP_GFX906) && !defined(STRATA_GPU_METAL)
+#if !defined(NOSTROMA_USE_HIP) && !defined(NOSTROMA_HIP_GFX906) && !defined(NOSTROMA_GPU_METAL)
 inline cudaError_t prio_capture_deps(cudaStream_t s, cudaStreamCaptureStatus* st, const cudaGraphNode_t** deps, size_t* n) {
 #if CUDART_VERSION >= 13000
     return cudaStreamGetCaptureInfo(s, st, nullptr, nullptr, deps, nullptr, n);
@@ -257,13 +257,13 @@ inline cudaError_t prio_node_deps(cudaGraphNode_t node, cudaGraphNode_t* deps, s
 #endif
 }
 #endif
-// fork 34a35db + b063c13 (Eddoursul), STRATA_SIDE_MIXER=1 / =2: the mixer's work that reads only the layer's input on
+// fork 34a35db + b063c13 (Eddoursul), NOSTROMA_SIDE_MIXER=1 / =2: the mixer's work that reads only the layer's input on
 // branches of the window's graph (bitwise the same outputs); 0 = in line, and no branch stream is created.  Unset: 2 on a
-// compute capability 12.0 card (sm120_series.hpp; STRATA_SM120_PERF=0 turns it off), 0 elsewhere.
+// compute capability 12.0 card (sm120_series.hpp; NOSTROMA_SM120_PERF=0 turns it off), 0 elsewhere.
 inline int g_side_mixer() {
-    static const int env = [] { const char* v = strata::env("NOSTROMA_SIDE_MIXER"); return v ? std::max(0, std::min(2, std::atoi(v))) : -1; }();
+    static const int env = [] { const char* v = nostroma::env("NOSTROMA_SIDE_MIXER"); return v ? std::max(0, std::min(2, std::atoi(v))) : -1; }();
     if (env >= 0) return env;
-#if defined(STRATA_USE_HIP) || defined(STRATA_GPU_METAL)
+#if defined(NOSTROMA_USE_HIP) || defined(NOSTROMA_GPU_METAL)
     return 0;
 #else
     static int per_dev[64];   // 0 unknown, else mode + 1
@@ -274,23 +274,23 @@ inline int g_side_mixer() {
         const bool ok = cudaDeviceGetAttribute(&maj, cudaDevAttrComputeCapabilityMajor, dev) == cudaSuccess &&
                         cudaDeviceGetAttribute(&mnr, cudaDevAttrComputeCapabilityMinor, dev) == cudaSuccess;
         if (!ok) cudaGetLastError();
-        per_dev[dev] = 1 + (ok && strata::sm120_default(maj, mnr) ? 2 : 0);
+        per_dev[dev] = 1 + (ok && nostroma::sm120_default(maj, mnr) ? 2 : 0);
     }
     return per_dev[dev] - 1;
 #endif
 }
-// STRATA_ROUTE_PRIOR=lambda: residency-biased routing (the top-10 picked again with a logit bonus for the resident
-// experts; route_prior.cu).  OFF unless asked for (STRATA_ROUTE_PRIOR=1.5, strata::kRoutePriorSmallCard in sm120_series.hpp, is the value the
+// NOSTROMA_ROUTE_PRIOR=lambda: residency-biased routing (the top-10 picked again with a logit bonus for the resident
+// experts; route_prior.cu).  OFF unless asked for (NOSTROMA_ROUTE_PRIOR=1.5, nostroma::kRoutePriorSmallCard in sm120_series.hpp, is the value the
 // app's Expert-settings row writes): 0.2.7 turned 1.5 on by itself on a discrete NVIDIA card of 13 GiB or less, and the owner took that default
 // back on 2026-10-29 (#4402: repetition loops and weaker results in long agent sessions).  With nothing set this is 0.2.6's behaviour, exactly.
 // Measured on an RTX 3060 12 GB only (IQ3_XXS; at 1.5 story +15%, code +37% decode against off).  Any value in the variable wins on every card.
 // The value is read once.
 inline float g_route_prior() {
-    static const char* const env_s = strata::env("NOSTROMA_ROUTE_PRIOR");
-    static const float lambda = strata::route_prior_resolve(env_s, false, false, 0.0);
+    static const char* const env_s = nostroma::env("NOSTROMA_ROUTE_PRIOR");
+    static const float lambda = nostroma::route_prior_resolve(env_s, false, false, 0.0);
     return lambda;
 }
-inline bool g_qfuse() { static const bool on = [] { const char* v = strata::env("NOSTROMA_QFUSE"); return v != nullptr && std::atoi(v) != 0; }(); return on; }
+inline bool g_qfuse() { static const bool on = [] { const char* v = nostroma::env("NOSTROMA_QFUSE"); return v != nullptr && std::atoi(v) != 0; }(); return on; }
 #define VDBG(...) do { if (g_dbg) { std::fprintf(stderr, "verify dbg: " __VA_ARGS__); std::fflush(stderr); } } while (0)
 
 struct Bump {
@@ -304,23 +304,23 @@ struct Bump {
 };
 
 // #649 (HIP, opt-in A/Bs for the gfx1030 verify timeouts; CUDA never reads them)
-//   STRATA_VERIFY_COHERENT=1  the handshake words and rows in explicitly coherent (fine-grained) host memory
-//   STRATA_DOORBELL_STORE=1   the GPU stores each step's ring instead of read-modify-writing it over PCIe
+//   NOSTROMA_VERIFY_COHERENT=1  the handshake words and rows in explicitly coherent (fine-grained) host memory
+//   NOSTROMA_DOORBELL_STORE=1   the GPU stores each step's ring instead of read-modify-writing it over PCIe
 bool env_on(const char* name) {
-    const char* e = strata::env(name);          // NOSTROMA_* wins, the old STRATA_* name still works (strata/env.hpp)
+    const char* e = nostroma::env(name);          // NOSTROMA_* wins, the old NOSTROMA_* name still works (nostroma/env.hpp)
     return e != nullptr && e[0] != 0 && e[0] != '0';
 }
-#if defined(STRATA_USE_HIP)
+#if defined(NOSTROMA_USE_HIP)
 const bool g_coherent = env_on("NOSTROMA_VERIFY_COHERENT");
 const bool g_doorbell_store = env_on("NOSTROMA_DOORBELL_STORE");
 #endif
 const bool g_trace = env_on("NOSTROMA_VERIFY_TRACE");
-// STRATA_LAUNCH_PROBE (STRIX-TDR): process start, and the first windows' launch timing
+// NOSTROMA_LAUNCH_PROBE (STRIX-TDR): process start, and the first windows' launch timing
 const Clock::time_point g_proc_t0 = Clock::now();
 Clock::time_point probe_proc_t0() { return g_proc_t0; }
 const bool g_no_multi_gr = env_on("NOSTROMA_NO_MULTI_GR");   // #783 PR-g: per-token GR reads/writes and generic-T kernels again
 const bool g_no_batch_kv = env_on("NOSTROMA_NO_BATCH_KV_STEP");   // #783 PR-d: per-token K/V and indexer appends again
-// STRATA_BATCH_SELF_COMMIT=1 (opt-in): a batch window whose rows are each another slot's one token keeps them itself,
+// NOSTROMA_BATCH_SELF_COMMIT=1 (opt-in): a batch window whose rows are each another slot's one token keeps them itself,
 // as a one-token window does (record_window): the GDN conv histories and states advance inside the window graph, and
 // no commit graph runs after it.  Such a window's commit is unconditional (each slot keeps its one row), and the rest
 // of the commit graph only repeats what the window wrote: the indexer tails are put back and appended again from the
@@ -329,7 +329,7 @@ const bool g_no_batch_kv = env_on("NOSTROMA_NO_BATCH_KV_STEP");   // #783 PR-d: 
 // after namespace-scope constants are initialised, so a constant here would never see them.
 bool batch_self_commit_on() { static const bool v = env_on("NOSTROMA_BATCH_SELF_COMMIT"); return v; }
 #define g_batch_self_commit (batch_self_commit_on())
-// STRATA_QSA_SLOTS=1 (opt-in): in a batch window, a QSA layer's block scores, top-k and attention run as one launch
+// NOSTROMA_QSA_SLOTS=1 (opt-in): in a batch window, a QSA layer's block scores, top-k and attention run as one launch
 // each over the window's rows (up to 8 per launch, each row reading its own slot's indexer keys and K/V) instead of
 // one call per row; every row is computed by the same kernel with the same arithmetic as its own call.  Not with a
 // streamed KV cache (a row's block resolve could evict the blocks an earlier row of the same slot selected).
@@ -350,15 +350,15 @@ bool batch_self_commits(const int* rows, int S) { return g_batch_self_commit && 
 // shared expert takes to run, so there the fork starts off: same binary, same 48,067-token prompt, three runs each on a
 // Radeon AI PRO R9700 (gfx1201, ROCm 6.4.3), the fork off decodes at 62.9 t/s against 43.4 t/s with it on.  The
 // profiler turns the fork off to time the stages, so a profiled run never showed that.  #816 reports the same fall on a
-// gfx1030 (RX 6800, Windows, 42.5 -> 56.4 t/s).  STRATA_SH_STREAM overrides either default: `=1` forks, `=0` does not.
+// gfx1030 (RX 6800, Windows, 42.5 -> 56.4 t/s).  NOSTROMA_SH_STREAM overrides either default: `=1` forks, `=0` does not.
 // Strix Halo (gfx1151, unified memory) is the exception: the fork pays there (+1.8% UD-IQ4_XS, +6.7% UD-Q4_K_XL decode
-// at 8K, ids identical), so the gfx1151 arch table sets STRATA_SH_STREAM=1 on Linux.  On Windows gfx1151 the fork is slower (0.2.7,
+// at 8K, ids identical), so the gfx1151 arch table sets NOSTROMA_SH_STREAM=1 on Linux.  On Windows gfx1151 the fork is slower (0.2.7,
 // Qwen IQ3_S: decode -6.4% with it, ids identical), so there the table leaves it out and this default (off on HIP) applies.
 // Read on first use, after that table ran.
 bool sh_stream_on() {
     static const bool on = [] {
-        if (const char* v = strata::env("NOSTROMA_SH_STREAM")) return v[0] != '0';
-#if defined(STRATA_USE_HIP)
+        if (const char* v = nostroma::env("NOSTROMA_SH_STREAM")) return v[0] != '0';
+#if defined(NOSTROMA_USE_HIP)
         return false;
 #else
         return true;
@@ -374,11 +374,11 @@ bool sh_stream_on() {
 // would free it sits behind the launch.  So the first launch of each window graph reads the rows and raises the flag BEFORE
 // the launch (the wait then passes at once); later launches keep the order that overlaps the read with layer 0 (reading
 // first costs about 1.4% decode on gfx1151).  Mode 0: never, 1: every launch, 2: the first launch of each graph.  Default:
-// 2 on HIP, 0 elsewhere (the CUDA path is unchanged).  STRATA_VERIFY_EARLY_PLE_FLAG=0 / 1 / 2 forces a mode.
+// 2 on HIP, 0 elsewhere (the CUDA path is unchanged).  NOSTROMA_VERIFY_EARLY_PLE_FLAG=0 / 1 / 2 forces a mode.
 int early_ple_flag_mode() {
     static const int mode = [] {
-        if (const char* v = strata::env("NOSTROMA_VERIFY_EARLY_PLE_FLAG")) return std::atoi(v) < 0 ? 0 : std::min(2, std::atoi(v));
-#if defined(STRATA_USE_HIP)
+        if (const char* v = nostroma::env("NOSTROMA_VERIFY_EARLY_PLE_FLAG")) return std::atoi(v) < 0 ? 0 : std::min(2, std::atoi(v));
+#if defined(NOSTROMA_USE_HIP)
         return 2;
 #else
         return 0;
@@ -389,19 +389,19 @@ int early_ple_flag_mode() {
 
 // A one-token window always keeps its token, so its graph advances the sequence state itself (the GDN conv history
 // and recurrence state) and Verifier::commit launches no commit graph after it (eddoursul's fork, F7).  CUDA only:
-// HIP keeps the commit graph after every window (STRATA_ONE_TOKEN_COMMIT=0 does too).
-// The head's hyper-connection read for the window's tokens in one launch set (CUDA; HIP: opt-in STRATA_HEAD_MIX_MULTI=1, which the
+// HIP keeps the commit graph after every window (NOSTROMA_ONE_TOKEN_COMMIT=0 does too).
+// The head's hyper-connection read for the window's tokens in one launch set (CUDA; HIP: opt-in NOSTROMA_HEAD_MIX_MULTI=1, which the
 // gfx12 table sets; =0 keeps gr_read per token): bitwise the same sums.
 bool head_mix_multi_enabled() {
-#if defined(STRATA_USE_HIP)
+#if defined(NOSTROMA_USE_HIP)
     static const bool on = [] {
-        const char* v = strata::env("NOSTROMA_HEAD_MIX_MULTI");
+        const char* v = nostroma::env("NOSTROMA_HEAD_MIX_MULTI");
         return v != nullptr && std::atoi(v) != 0;
     }();
     return on;
 #else
     static const bool on = [] {
-        const char* v = strata::env("NOSTROMA_HEAD_MIX_MULTI");
+        const char* v = nostroma::env("NOSTROMA_HEAD_MIX_MULTI");
         return v == nullptr || std::atoi(v) != 0;
     }();
     return on;
@@ -410,11 +410,11 @@ bool head_mix_multi_enabled() {
 
 // 143-amdk: the wait for a host flag folded into the copy that follows it (wait_copy_i32_from_mapped,
 // copy_rows_from_mapped_after): same reads, same values, one kernel node fewer each.  A dependent kernel costs ~2.4 us in a
-// gfx1201 graph whatever it does; measured on gfx12 only, so it is on there by default.  STRATA_FUSE_WAIT=0 / 1 forces it
+// gfx1201 graph whatever it does; measured on gfx12 only, so it is on there by default.  NOSTROMA_FUSE_WAIT=0 / 1 forces it
 // off / on (HIP builds; a CUDA build never fuses).
-// the Turing series (STRATA_SM75_PERF=1, sm75_series.hpp) defaults of the CUDA build's switches below, read per device
+// the Turing series (NOSTROMA_SM75_PERF=1, sm75_series.hpp) defaults of the CUDA build's switches below, read per device
 bool device_is_sm75() {
-#if defined(STRATA_USE_HIP)
+#if defined(NOSTROMA_USE_HIP)
     return false;
 #else
     static int per_dev[64];   // 0 unknown, 1 no, 2 yes
@@ -425,16 +425,16 @@ bool device_is_sm75() {
         const bool ok = cudaDeviceGetAttribute(&maj, cudaDevAttrComputeCapabilityMajor, dev) == cudaSuccess &&
                         cudaDeviceGetAttribute(&mnr, cudaDevAttrComputeCapabilityMinor, dev) == cudaSuccess;
         if (!ok) cudaGetLastError();
-        per_dev[dev] = ok && strata::sm75_default(maj, mnr) ? 2 : 1;   // a Turing card with STRATA_SM75_PERF=1
+        per_dev[dev] = ok && nostroma::sm75_default(maj, mnr) ? 2 : 1;   // a Turing card with NOSTROMA_SM75_PERF=1
     }
     return per_dev[dev] == 2;
 #endif
 }
 
 bool fuse_wait_on() {
-#if defined(STRATA_USE_HIP)
+#if defined(NOSTROMA_USE_HIP)
     static const int env = [] {
-        const char* v = strata::env("NOSTROMA_FUSE_WAIT");
+        const char* v = nostroma::env("NOSTROMA_FUSE_WAIT");
         return v != nullptr ? (std::atoi(v) != 0 ? 1 : 0) : -1;
     }();
     if (env >= 0) return env != 0;
@@ -443,49 +443,49 @@ bool fuse_wait_on() {
     if (cudaGetDevice(&dev) != cudaSuccess || dev < 0 || dev >= 64) return false;
     if (!per_dev[dev]) {
         cudaDeviceProp p;
-        per_dev[dev] = cudaGetDeviceProperties(&p, dev) == cudaSuccess && strata::kernels::gfx_arch_is_gfx12(p.gcnArchName) ? 2 : 1;
+        per_dev[dev] = cudaGetDeviceProperties(&p, dev) == cudaSuccess && nostroma::kernels::gfx_arch_is_gfx12(p.gcnArchName) ? 2 : 1;
     }
     return per_dev[dev] == 2;
 #else
-    // CUDA: STRATA_FUSE_WAIT=1 folds both waits (the plan's and the CPU rows'), =2 only the plan's, =0 neither.  Turing
+    // CUDA: NOSTROMA_FUSE_WAIT=1 folds both waits (the plan's and the CPU rows'), =2 only the plan's, =0 neither.  Turing
     // default 2 (RTX 2080 Ti, Flash-Next Q2_0, two runs each: +0.6..+1.4 % decode); the rows' version makes every row
     // block of the copy poll the flag over PCIe and was -1.5 % there, so it stays opt-in.
-    static const int env = [] { const char* v = strata::env("NOSTROMA_FUSE_WAIT"); return v != nullptr ? std::atoi(v) : -1; }();
+    static const int env = [] { const char* v = nostroma::env("NOSTROMA_FUSE_WAIT"); return v != nullptr ? std::atoi(v) : -1; }();
     if (env >= 0) return env == 1 || env == 2;
     return device_is_sm75();
 #endif
 }
-// 143-amdk's rows version of the folded wait (copy_rows_from_mapped_after): HIP with fuse_wait_on, CUDA STRATA_FUSE_WAIT=1
+// 143-amdk's rows version of the folded wait (copy_rows_from_mapped_after): HIP with fuse_wait_on, CUDA NOSTROMA_FUSE_WAIT=1
 bool fuse_rows_on() {
-#if defined(STRATA_USE_HIP)
+#if defined(NOSTROMA_USE_HIP)
     return fuse_wait_on();
 #else
-    static const bool on = [] { const char* v = strata::env("NOSTROMA_FUSE_WAIT"); return v != nullptr && std::atoi(v) == 1; }();
+    static const bool on = [] { const char* v = nostroma::env("NOSTROMA_FUSE_WAIT"); return v != nullptr && std::atoi(v) == 1; }();
     return on;
 #endif
 }
 
-// 143-amdk: STRATA_FUSE_CONVAB=1 - the GDN conv and the a/b projections in one launch.  Opt-in: measured -0.3% on gfx1201 (the a/b dot chain is the longer one).
+// 143-amdk: NOSTROMA_FUSE_CONVAB=1 - the GDN conv and the a/b projections in one launch.  Opt-in: measured -0.3% on gfx1201 (the a/b dot chain is the longer one).
 bool fuse_convab_on() {
-#if defined(STRATA_USE_HIP)
-    static const bool on = [] { const char* v = strata::env("NOSTROMA_FUSE_CONVAB"); return v != nullptr && std::atoi(v) != 0; }();
+#if defined(NOSTROMA_USE_HIP)
+    static const bool on = [] { const char* v = nostroma::env("NOSTROMA_FUSE_CONVAB"); return v != nullptr && std::atoi(v) != 0; }();
     return on;
 #else
     return false;
 #endif
 }
 
-// 143-amdk: STRATA_FUSE_HITS - moe_hit_add folded into the combine (gfx12 default; =0 / 1 forces off / on)
+// 143-amdk: NOSTROMA_FUSE_HITS - moe_hit_add folded into the combine (gfx12 default; =0 / 1 forces off / on)
 bool fuse_hits_on() {
-#if defined(STRATA_USE_HIP)
-    static const int env = [] { const char* v = strata::env("NOSTROMA_FUSE_HITS"); return v != nullptr ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
+#if defined(NOSTROMA_USE_HIP)
+    static const int env = [] { const char* v = nostroma::env("NOSTROMA_FUSE_HITS"); return v != nullptr ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
     if (env >= 0) return env != 0;
     static int per_dev[64];   // 0 unknown, 1 no, 2 yes
     int dev = 0;
     if (cudaGetDevice(&dev) != cudaSuccess || dev < 0 || dev >= 64) return false;
     if (!per_dev[dev]) {
         cudaDeviceProp p;
-        per_dev[dev] = cudaGetDeviceProperties(&p, dev) == cudaSuccess && strata::kernels::gfx_arch_is_gfx12(p.gcnArchName) ? 2 : 1;
+        per_dev[dev] = cudaGetDeviceProperties(&p, dev) == cudaSuccess && nostroma::kernels::gfx_arch_is_gfx12(p.gcnArchName) ? 2 : 1;
     }
     return per_dev[dev] == 2;
 #else
@@ -494,15 +494,15 @@ bool fuse_hits_on() {
 }
 
 bool one_token_self_commit() {
-#if defined(STRATA_USE_HIP)
+#if defined(NOSTROMA_USE_HIP)
     static const bool on = [] {
-        const char* v = strata::env("NOSTROMA_ONE_TOKEN_COMMIT");   // HIP: opt-in (=1)
+        const char* v = nostroma::env("NOSTROMA_ONE_TOKEN_COMMIT");   // HIP: opt-in (=1)
         return v != nullptr && std::atoi(v) != 0;
     }();
     return on;
 #else
     static const bool on = [] {
-        const char* v = strata::env("NOSTROMA_ONE_TOKEN_COMMIT");
+        const char* v = nostroma::env("NOSTROMA_ONE_TOKEN_COMMIT");
         return v == nullptr || std::atoi(v) != 0;
     }();
     return on;
@@ -510,7 +510,7 @@ bool one_token_self_commit() {
 }
 
 bool mapped(size_t bytes, void** h, void** d) {
-#if defined(STRATA_USE_HIP)
+#if defined(NOSTROMA_USE_HIP)
     if (g_coherent) {
         if (hipHostMalloc(h, bytes, hipHostMallocMapped | hipHostMallocCoherent |
                                         (peer_portable() ? hipHostMallocPortable : 0)) != hipSuccess)
@@ -519,12 +519,12 @@ bool mapped(size_t bytes, void** h, void** d) {
         return cudaHostGetDevicePointer(d, *h, 0) == cudaSuccess;
     }
 #endif
-    if (strata::core::host_alloc_guarded(h, bytes, cudaHostAllocMapped | (peer_portable() ? cudaHostAllocPortable : 0)) != cudaSuccess) return false;   // multi-GPU: portable only with a peer - the peer card writes its rows into them
+    if (nostroma::core::host_alloc_guarded(h, bytes, cudaHostAllocMapped | (peer_portable() ? cudaHostAllocPortable : 0)) != cudaSuccess) return false;   // multi-GPU: portable only with a peer - the peer card writes its rows into them
     std::memset(*h, 0, bytes);
     return cudaHostGetDevicePointer(d, *h, 0) == cudaSuccess;
 }
 
-strata::kernels::QsaShapes shapes_of(const ModelGeometry& g) { return qsa_shapes(g); }
+nostroma::kernels::QsaShapes shapes_of(const ModelGeometry& g) { return qsa_shapes(g); }
 
 const WeightRef* need(const LayerView& v, const char* suffix, std::string& err) {
     const WeightRef* r = v.get(suffix);
@@ -557,7 +557,7 @@ void release_live_verifiers(std::FILE* f) {
             const Clock::time_point t0 = Clock::now();
             const bool done = v->release_gpu_waits(5000);
             if (f != nullptr)
-                std::fprintf(f, "strata: released the verify window's GPU waits (#267): the GPU %s\n",
+                std::fprintf(f, "nostroma: released the verify window's GPU waits (#267): the GPU %s\n",
                              done ? ("finished in " + std::to_string((long long) ms_since(t0)) + " ms").c_str()
                                   : "did not finish within 5 s");
         }
@@ -574,7 +574,7 @@ bool release_live_verifiers_within(int ms) {
         }
     return all;
 }
-// #649: the host side of STRATA_VERIFY_TRACE - a ring of the last kTraceN handshake events of every verifier
+// #649: the host side of NOSTROMA_VERIFY_TRACE - a ring of the last kTraceN handshake events of every verifier
 struct TraceEv {
     int64_t t_ns;
     const void* who;
@@ -592,23 +592,23 @@ std::string released_note(bool drained) {
     return drained ? "; its GPU waits were released and the GPU finished (#267)"
                    : "; its GPU waits were released but the GPU did not finish within 5 s (#267)";
 }
-// #267 test hook: STRATA_TEST_VERIFY_STALL=N withholds the last layer's flag in the N-th window (1-based), so the
+// #267 test hook: NOSTROMA_TEST_VERIFY_STALL=N withholds the last layer's flag in the N-th window (1-based), so the
 // GPU spins on a flag nobody raises - the bounded window wait and the release are then what ends it.  Unset: never.
 const int64_t g_test_stall = [] {
-    const char* e = strata::env("NOSTROMA_TEST_VERIFY_STALL");
+    const char* e = nostroma::env("NOSTROMA_TEST_VERIFY_STALL");
     return e != nullptr ? (int64_t) std::atoll(e) : (int64_t) 0;
 }();
-// The overlapped split's hand-off wait on the GPU is bounded: STRATA_SPLIT_WAIT_MS (default 30000, 0 = no bound).
+// The overlapped split's hand-off wait on the GPU is bounded: NOSTROMA_SPLIT_WAIT_MS (default 30000, 0 = no bound).
 // The host's own per-layer wait (20 s, #267) normally ends a stalled window first; this bound is the backstop for
 // a host that is gone (a killed process must not leave a kernel spinning on its card).
 const unsigned long long g_split_wait_ns = [] {
-    const char* e = strata::env("NOSTROMA_SPLIT_WAIT_MS");
+    const char* e = nostroma::env("NOSTROMA_SPLIT_WAIT_MS");
     return (unsigned long long) (e != nullptr ? std::atoll(e) : 30000) * 1000000ull;
 }();
-// test hook: STRATA_TEST_HANDOFF_DROP=N - the writing stage's N-th window (1-based) leaves its hand-off flag down, as
+// test hook: NOSTROMA_TEST_HANDOFF_DROP=N - the writing stage's N-th window (1-based) leaves its hand-off flag down, as
 // if the publish were lost; the reading stage's bounded wait (or the host's) must then end the window cleanly.
 const int64_t g_test_drop = [] {
-    const char* e = strata::env("NOSTROMA_TEST_HANDOFF_DROP");
+    const char* e = nostroma::env("NOSTROMA_TEST_HANDOFF_DROP");
     return e != nullptr ? (int64_t) std::atoll(e) : (int64_t) 0;
 }();
 }  // namespace
@@ -622,7 +622,7 @@ bool Verifier::release_gpu_waits(int timeout_ms) {
     for (uint32_t* p : {h_flag_, h_flagA_, h_flagB_, hflag_in_h_})   // + an overlapped split's hand-off wait
         if (p != nullptr) *(volatile uint32_t*) p = UINT32_MAX;
     std::atomic_thread_fence(std::memory_order_seq_cst);
-    strata_store_fence();
+    nostroma_store_fence();
     const OnDevice on_device(device_);
     const Clock::time_point t0 = Clock::now();
     for (cudaStream_t s : {cs_, copy_}) {
@@ -654,7 +654,7 @@ void Verifier::trace_dump(std::FILE* f) const {
                                           "PCIe grp", "waitCPU", "combine", "", "head", "", "", "", "", "", ""};
     const uint64_t end = g_trace_next.load();
     const uint64_t n = end < 160 ? end : 160;
-    std::fprintf(f, "strata verify trace (#649): the last %llu handshake events (host clock, us before the last; "
+    std::fprintf(f, "nostroma verify trace (#649): the last %llu handshake events (host clock, us before the last; "
                     "words: seq = GPU rang, flag = CPU served, A = plan, B = copies)\n", (unsigned long long) n);
     const int64_t t_last = n ? g_trace_ring[(end - 1) % kTraceN].t_ns : 0;
     for (uint64_t i = end - n; i < end; ++i) {
@@ -672,7 +672,7 @@ void Verifier::trace_dump(std::FILE* f) const {
         if (t != 0 && t < t0) t0 = t;
     }
     if (t0 == ~0ull) {
-        std::fprintf(f, "strata verify trace: no GPU breadcrumb in this window (the GPU never started it)\n");
+        std::fprintf(f, "nostroma verify trace: no GPU breadcrumb in this window (the GPU never started it)\n");
         return;
     }
     int64_t last_l = -1;
@@ -680,7 +680,7 @@ void Verifier::trace_dump(std::FILE* f) const {
         for (int i = 0; i < kProfPer; ++i)
             for (int grp = 0; grp < 2; ++grp)
                 if (trace_h_[(size_t) ((l * kProfPer + i) * 2 + grp)] != 0) last_l = l;
-    std::fprintf(f, "strata verify trace: GPU breadcrumbs (us after the window's first), the GPU got as far as layer "
+    std::fprintf(f, "nostroma verify trace: GPU breadcrumbs (us after the window's first), the GPU got as far as layer "
                     "%lld:\n", (long long) last_l);
     for (int64_t l = std::max<int64_t>(0, last_l - 2); l <= std::min<int64_t>(g_->n_layers, last_l + 1); ++l)
         for (int grp = 0; grp < 2; ++grp) {
@@ -706,13 +706,13 @@ void Verifier::diag(std::FILE* f) const {
     std::fprintf(f, "  verify window%s: %d tokens at position %lld, host at layer step %u; the GPU rang %u; flags: "
                     "served %u, plan (A) %u, copies (B) %u\n", current ? "" : " (last window, not the current stage)",
                  last_t_, (long long) last_pos0_, cur_layer_ + 1, rd(h_seq_), rd(h_flag_), rd(h_flagA_), rd(h_flagB_));
-    trace_dump(f);   // #649: STRATA_VERIFY_TRACE=1 only
+    trace_dump(f);   // #649: NOSTROMA_VERIFY_TRACE=1 only
 }
 
 
 Verifier::~Verifier() {
-#if defined(STRATA_GPU_METAL)
-    strata::metal_engine::window_destroy(metal_);
+#if defined(NOSTROMA_GPU_METAL)
+    nostroma::metal_engine::window_destroy(metal_);
     metal_ = nullptr;
 #endif
     const Verifier* self = this;
@@ -744,7 +744,7 @@ Verifier::~Verifier() {
     if (qcnt_) cudaFree(qcnt_);
     if (d_spec_) cudaFree(d_spec_);
     if (tap_file_) std::fclose(tap_file_);
-#if !defined(STRATA_GPU_METAL)   // (on Metal tap_dev_ is the window's unified-memory buffer, not an allocation of this object)
+#if !defined(NOSTROMA_GPU_METAL)   // (on Metal tap_dev_ is the window's unified-memory buffer, not an allocation of this object)
     if (tap_dev_) cudaFree(tap_dev_);
 #endif
     if (tap_scratch_) cudaFree(tap_scratch_);
@@ -857,7 +857,7 @@ bool Verifier::gather_taps(float* landing, int landing_device, int row0, int row
     return true;
 }
 
-// STRATA_TAP_FILE: one record per row of the window: int32 position, int32 input token, then n_taps x n_embd floats
+// NOSTROMA_TAP_FILE: one record per row of the window: int32 position, int32 input token, then n_taps x n_embd floats
 void Verifier::tap_write(int T, const int32_t* tokens, int64_t pos0) {
     if (tap_file_ == nullptr) return;
     const size_t per = tap_layers_.size() * (size_t) g_->n_embd;
@@ -899,9 +899,9 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
     release_gpu_fn().store(&release_live_verifiers);
     release_gpu_within_fn().store(&release_live_verifiers_within);
     cudaGetDevice(&device_);   // a layer split's stage on another GPU: its streams, graphs and buffers live there
-    rr_stats_ = route_resident_cfg().stats_on(device_);   // STRATA_ROUTE_RESIDENT: this GPU's counters, outside graph capture
-    strata::kernels::fused_gr_check();   // once per card: which bitwise-equal hyper-connection read runs there
-    strata::kernels::fused_gr_persist_init();   // opt-in STRATA_HC_PERSIST=1 (HIP)
+    rr_stats_ = route_resident_cfg().stats_on(device_);   // NOSTROMA_ROUTE_RESIDENT: this GPU's counters, outside graph capture
+    nostroma::kernels::fused_gr_check();   // once per card: which bitwise-equal hyper-connection read runs there
+    nostroma::kernels::fused_gr_persist_init();   // opt-in NOSTROMA_HC_PERSIST=1 (HIP)
     wt_ = &wt;
     g_ = &g;
     ss_ = &ss;
@@ -910,12 +910,12 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
     max_t_ = max_t;
     sampling_.greedy = true;      // a fresh verifier samples greedily until set_sampling says otherwise
     sampling_.temperature = 0.0f;
-#if defined(STRATA_GPU_METAL)
-    if (metal_ == nullptr) metal_ = strata::metal_engine::window_create();
-    if (!strata::metal_engine::window_init(metal_, g, ss, max_t, ss.qsa_states[ss.qsa_primary()].max_cells, &n_vocab_, err)) return false;
+#if defined(NOSTROMA_GPU_METAL)
+    if (metal_ == nullptr) metal_ = nostroma::metal_engine::window_create();
+    if (!nostroma::metal_engine::window_init(metal_, g, ss, max_t, ss.qsa_states[ss.qsa_primary()].max_cells, &n_vocab_, err)) return false;
     if (!tap_req_.empty()) {   // DFlash2: the Metal window writes the taps itself (metal/src/engine/dflash2.inc); tap_dev() is its unified-memory buffer
         const float* tp = nullptr;
-        if (!strata::metal_engine::window_taps(metal_, tap_req_, &tp, err)) return false;
+        if (!nostroma::metal_engine::window_taps(metal_, tap_req_, &tp, err)) return false;
         tap_layers_ = tap_req_;
         tap_dev_ = const_cast<float*>(tp);
         tap_on_ = true;
@@ -924,8 +924,8 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
 #endif
     // a window past kVerifyMaxT tokens runs as two token groups of at most kVerifyMaxT (record_window): the CPU experts
     // see one group at a time (and take a wider group as jobs of at most cpu::MAXT tokens)
-    if (max_t < 2 || max_t > strata::kernels::kVerifyLongT) {
-        err = "verify: the window must hold 2.." + std::to_string(strata::kernels::kVerifyLongT) + " tokens";
+    if (max_t < 2 || max_t > nostroma::kernels::kVerifyLongT) {
+        err = "verify: the window must hold 2.." + std::to_string(nostroma::kernels::kVerifyLongT) + " tokens";
         return false;
     }
     if (hits.d_res == nullptr || hits.cache_base == nullptr || hits.blob <= 0) {
@@ -940,7 +940,7 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
         err = "verify: " + why + " (the verify window reproduces the default native decode path)";
         return false;
     }
-    if (!strata::kernels::fused_gr_supported(g.n_embd, g.hc, g.hc_lr) || ss.k != (int) strata::core::kCompiledGeometry.n_expert_used || g.ssm_state_size != 128 ||
+    if (!nostroma::kernels::fused_gr_supported(g.n_embd, g.hc, g.hc_lr) || ss.k != (int) nostroma::core::kCompiledGeometry.n_expert_used || g.ssm_state_size != 128 ||
         g.ssm_d_conv != 4) {
         err = "verify: geometry differs from the artifact's";
         return false;
@@ -955,28 +955,28 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
     if (wo == nullptr) { err = "verify: output.weight is missing"; return false; }
     n_vocab_ = wo->ne1;
 
-    const strata::kernels::QsaShapes s = shapes_of(g);
-    cap_ = strata::kernels::qsa_selection_width(strata::kernels::kTopkMaxCells, s);
+    const nostroma::kernels::QsaShapes s = shapes_of(g);
+    cap_ = nostroma::kernels::qsa_selection_width(nostroma::kernels::kTopkMaxCells, s);
     max_blocks_ = ss.qsa_states[ss.qsa_primary()].max_cells / s.idx_block + 2;
-    attn_scratch_floats_ = (int64_t) strata::kernels::qsa_decode_attn_scratch_floats(cap_, s);
+    attn_scratch_floats_ = (int64_t) nostroma::kernels::qsa_decode_attn_scratch_floats(cap_, s);
 
     const uint64_t T = (uint64_t) max_t, N = (uint64_t) g.n_embd, HC = (uint64_t) g.hc, K = (uint64_t) ss.k;
     const uint64_t C = (uint64_t) g.ssm_conv_channels, ZV = (uint64_t) g.ssm_value_dim, HV = (uint64_t) g.ssm_v_heads;
     const uint64_t NH = (uint64_t) g.n_head, HD = (uint64_t) g.head_dim, NKV = (uint64_t) g.n_head_kv;
     const uint64_t IQ = (uint64_t) g.idx_q_heads, ID = (uint64_t) g.idx_key_dim;
     const uint64_t nG = (uint64_t) g.n_gdn_layers(), nQ = (uint64_t) g.n_qsa_layers();
-    const uint64_t HS = (uint64_t) strata::kernels::NG_HIST * strata::kernels::NG_HC_DIM;
+    const uint64_t HS = (uint64_t) nostroma::kernels::NG_HIST * nostroma::kernels::NG_HC_DIM;
     const uint64_t TS = (uint64_t) (s.idx_block - 1) * ID;
     const int max_in = (int) std::max<uint64_t>(std::max<uint64_t>(N, ZV), NH * HD);
 
     // ---- mapped staging
     bool ok = mapped(T * 4, (void**) &h_tok_, (void**) &m_tok_) &&
-              mapped(T * strata::kernels::kStepCount * 4, (void**) &h_step_, (void**) &m_step_) &&
+              mapped(T * nostroma::kernels::kStepCount * 4, (void**) &h_step_, (void**) &m_step_) &&
               mapped(T * (NH + NKV + IQ) * 4, (void**) &h_pos_, (void**) &m_pos_) &&
               mapped((2 + T) * 4 + 16, (void**) &h_commit_, (void**) &m_commit_) &&
               mapped(T * N * 4, (void**) &h_ple_, (void**) &m_ple_) &&
               mapped(T * 4 + 16, (void**) &h_out_, (void**) &m_out_) &&
-              mapped((size_t) strata::kernels::kVerifyLongT * strata::kernels::kNonfiniteBlocks * 4, (void**) &h_nf_,
+              mapped((size_t) nostroma::kernels::kVerifyLongT * nostroma::kernels::kNonfiniteBlocks * 4, (void**) &h_nf_,
                      (void**) &m_nf_) &&
               mapped(T * N * 4, (void**) &h_x_, (void**) &m_x_) &&
               mapped(T * K * 4, (void**) &h_ids_, (void**) &m_ids_) &&
@@ -987,12 +987,12 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
               mapped(64, (void**) &h_flagB_, (void**) &m_flagB_) &&
               mapped(64, (void**) &h_plan_err_, (void**) &m_plan_err_) &&
               mapped(T * K * N * 4, (void**) &h_ymiss_, (void**) &m_ymiss_);
-    if (!ok) { err = "verify: mapped staging allocation failed " + strata::core::pin_exhausted_hint(); return false; }
-    // DFlash2 taps: set_taps (the drafter) or STRATA_TAP_FILE (the research dump); off, and nothing is allocated or captured, otherwise
-    const char* tap_path = strata::env("NOSTROMA_TAP_FILE");
+    if (!ok) { err = "verify: mapped staging allocation failed " + nostroma::core::pin_exhausted_hint(); return false; }
+    // DFlash2 taps: set_taps (the drafter) or NOSTROMA_TAP_FILE (the research dump); off, and nothing is allocated or captured, otherwise
+    const char* tap_path = nostroma::env("NOSTROMA_TAP_FILE");
     if (tap_path != nullptr && tap_path[0] == '\0') tap_path = nullptr;
     // A layer split's stage taps the requested layers inside its own range [lb_, le_) into its own buffer [max_t][its taps][n_embd];
-    // gather_taps() lands every stage's rows on the drafter's card.  The research dump (STRATA_TAP_FILE) needs the whole model in one verifier.
+    // gather_taps() lands every stage's rows on the drafter's card.  The research dump (NOSTROMA_TAP_FILE) needs the whole model in one verifier.
     const bool tap_whole = lb_ == 0 && le_ == g.n_layers;
     if (!tap_whole) tap_path = nullptr;
     if (tap_path != nullptr || !tap_req_.empty()) {
@@ -1000,7 +1000,7 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
         if (tap_path == nullptr) {
             for (int l : tap_req_) if (l >= lb_ && l < le_ && l < g.n_layers - 1) tap_layers_.push_back(l);
         } else {
-            const char* tl = strata::env("NOSTROMA_TAP_LAYERS");
+            const char* tl = nostroma::env("NOSTROMA_TAP_LAYERS");
             std::string list = tl != nullptr && tl[0] != '\0' ? tl : "5,15,25,35,45";
             for (size_t i = 0; i < list.size();) {
                 const size_t j = list.find(',', i);
@@ -1024,11 +1024,11 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
         }
         if (tap_path != nullptr) {
             tap_file_ = std::fopen(tap_path, "wb");
-            if (tap_file_ == nullptr) { err = std::string("verify: cannot write STRATA_TAP_FILE ") + tap_path; return false; }
+            if (tap_file_ == nullptr) { err = std::string("verify: cannot write NOSTROMA_TAP_FILE ") + tap_path; return false; }
             const int32_t hdr[4] = {0x50415453 /* 'STAP' */, 1, (int32_t) N, (int32_t) nt};
             std::fwrite(hdr, sizeof hdr, 1, tap_file_);
             for (int l : tap_layers_) { const int32_t v = l; std::fwrite(&v, sizeof v, 1, tap_file_); }
-            std::fprintf(stderr, "strata: STRATA_TAP_FILE %s: %zu taps of %lld floats per row\n", tap_path, nt, (long long) N);
+            std::fprintf(stderr, "nostroma: NOSTROMA_TAP_FILE %s: %zu taps of %lld floats per row\n", tap_path, nt, (long long) N);
         }
         tap_on_ = true;
     }
@@ -1052,7 +1052,7 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
         dst2_off_ = (ptr_off + 4 * cap + (cap + 1) + 1 + 1) & ~1ll;
         plan_i32_ = dst2_off_ + 2 * kStagingBlobs;
         if (!mapped((size_t) plan_i32_ * 4 * 2 + 64, (void**) &h_plan_, (void**) &m_plan_)) {
-            err = "verify: mapped plan allocation failed " + strata::core::pin_exhausted_hint();
+            err = "verify: mapped plan allocation failed " + nostroma::core::pin_exhausted_hint();
             return false;
         }
         sink_.counts = h_plan_;
@@ -1073,22 +1073,22 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
     // Hadamard-folded; its one reader is that layer's f.had_gu branch in the expert-input step below
     bool had_gu_any = false;
     {
-        const auto& lay = strata::kernels::cpu::expert_layout();
+        const auto& lay = nostroma::kernels::cpu::expert_layout();
         for (size_t l = 0; lay.native && l < lay.fmt.size(); ++l) had_gu_any = had_gu_any || lay.fmt[l].had_gu;
     }
     // ---- the device arena: the same sequence counted, then carved
     auto carve = [&](Bump& b) {
-        tok_ = b.take<int32_t>(T); step_ = b.take<int32_t>(T * strata::kernels::kStepCount);
+        tok_ = b.take<int32_t>(T); step_ = b.take<int32_t>(T * nostroma::kernels::kStepCount);
         pos_ = b.take<int32_t>(T * (NH + NKV + IQ)); commit_ = b.take<int32_t>(2 + T);
         ple_ = b.take<float>(T * N); emb_ = b.take<float>(T * N); R_ = b.take<float>(T * HC * N);
         mixed_ = b.take<float>(T * N); bo_ = b.take<float>(T * N);
         inj_ = b.take<float>(T * HC); inj2_ = b.take<float>(T * HC);
         lo_ = b.take<float>(T * (uint64_t) g.hc_lr); rs_ = b.take<float>(T * HC); xn_ = b.take<float>(T * HC * N);
         // the q8_1 activations of one token group (or one column chunk of the head): at most kVerifyMaxT columns
-        const int qcols = (int) std::min<uint64_t>(T, (uint64_t) strata::kernels::kVerifyMaxT);
-        xq_ = b.take<uint8_t>(strata::kernels::native_q8_1_bytes(max_in, qcols));
-        sh_xq_ = b.take<uint8_t>(strata::kernels::native_q8_1_bytes(max_in, qcols));
-        xil_ = b.take<uint8_t>(strata::kernels::native_q8_1_il_bytes(max_in, std::max(4, qcols)));   // 147-verify: 5-8 columns too
+        const int qcols = (int) std::min<uint64_t>(T, (uint64_t) nostroma::kernels::kVerifyMaxT);
+        xq_ = b.take<uint8_t>(nostroma::kernels::native_q8_1_bytes(max_in, qcols));
+        sh_xq_ = b.take<uint8_t>(nostroma::kernels::native_q8_1_bytes(max_in, qcols));
+        xil_ = b.take<uint8_t>(nostroma::kernels::native_q8_1_il_bytes(max_in, std::max(4, qcols)));   // 147-verify: 5-8 columns too
         qkv_L_ = b.take<float>(nG * T * C); h_L_ = b.take<float>(nG * T * C);
         gate_L_ = b.take<float>(nG * T * HV); beta_L_ = b.take<float>(nG * T * HV);
         z_ = b.take<float>(T * ZV); y_ = b.take<float>(T * ZV); y_dummy_ = b.take<float>(T * ZV);
@@ -1096,8 +1096,8 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
         kcur_ = b.take<float>(T * NKV * HD); vcur_ = b.take<float>(T * NKV * HD);
         idx_raw_L_ = b.take<float>(nQ * T * ID); qidx_ = b.take<float>(T * IQ * ID);
         scores_ = b.take<float>(T * (uint64_t) max_blocks_); sel_ = b.take<int32_t>(T * (uint64_t) cap_);
-        if (select_long_on() && strata::kernels::qsa_topk_multi_scratch_ints(T) > 0)   // STRATA_SELECT_LONG only
-            topk_scratch_ = b.take<int32_t>((uint64_t) strata::kernels::qsa_topk_multi_scratch_ints(T));
+        if (select_long_on() && nostroma::kernels::qsa_topk_multi_scratch_ints(T) > 0)   // NOSTROMA_SELECT_LONG only
+            topk_scratch_ = b.take<int32_t>((uint64_t) nostroma::kernels::qsa_topk_multi_scratch_ints(T));
         attn_ = b.take<float>(T * NH * HD); attn32_ = b.take<float>(T * NH * HD);
         attn_scratch_ = b.take<float>(T * (uint64_t) attn_scratch_floats_);
         tail_snap_ = b.take<float>(nQ * TS);
@@ -1105,21 +1105,21 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
         shared_ = b.take<float>(T * N); parts_ = b.take<float>(T * K * N); hit_out_ = b.take<float>(T * K * N);
         hit_slot_ = b.take<int32_t>(T * K); hit_dst_ = b.take<int32_t>(T * K); hit_count_ = b.take<int32_t>(4);
         plan_ = b.take<int32_t>(2 * ((uint64_t) plan_i32_ + 16));
-        staging_ = b.take<uint8_t>((uint64_t) kStagingBlobs * strata::kernels::cpu::expert_layout().max_blob);
+        staging_ = b.take<uint8_t>((uint64_t) kStagingBlobs * nostroma::kernels::cpu::expert_layout().max_blob);
         hit_xq_ = b.take<uint8_t>(T * (N / 32) * 34); hit_xs_ = b.take<float>(T * (N / 32));
         nat_xq_ = b.take<uint8_t>(T * (N / 32) * 36);
         nat_xr_ = had_gu_any ? b.take<float>(T * N) : nullptr;
         hit_scratch_ = b.take<uint8_t>(std::max<uint64_t>(
-            strata::kernels::moe_hit_grouped_scratch_bytes((int64_t) (T * K), g.n_embd, g.n_ff),
-            strata::kernels::native_expert_scratch_bytes((int64_t) (T * K), g.n_ff)));
+            nostroma::kernels::moe_hit_grouped_scratch_bytes((int64_t) (T * K), g.n_embd, g.n_ff),
+            nostroma::kernels::native_expert_scratch_bytes((int64_t) (T * K), g.n_ff)));
         head_mixed_ = b.take<float>(T * N); head_inj_ = b.take<float>(HC);
         sh_bf16_ = b.take<uint16_t>(T * N); sh_gate_ = b.take<float>(T * (uint64_t) g.n_ff);
         sh_up_ = b.take<float>(T * (uint64_t) g.n_ff); sh_g_ = b.take<float>(T + 4);
         head_logits_ = b.take<float>(T * (uint64_t) n_vocab_);
-        arg_scratch_ = b.take<uint8_t>(strata::kernels::argmax_rows_scratch_bytes((int) T));
+        arg_scratch_ = b.take<uint8_t>(nostroma::kernels::argmax_rows_scratch_bytes((int) T));
         one_ = b.take<int32_t>(4);
         hist_snap_ = b.take<float>(T * HS);
-        ple_key_ = b.take<float>(T * (uint64_t) strata::kernels::NG_HC_DIM); ple_val_ = b.take<float>(T * N);
+        ple_key_ = b.take<float>(T * (uint64_t) nostroma::kernels::NG_HC_DIM); ple_val_ = b.take<float>(T * N);
     };
     Bump count;
     carve(count);
@@ -1142,18 +1142,18 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
             trace_h_ = trace_m_ = nullptr;
             trace_n_ = 0;
         }
-#if defined(STRATA_USE_HIP)
-        std::fprintf(stderr, "strata verify trace (#649): on; coherent words %s, doorbell %s, HIP_HOST_COHERENT=%s "
+#if defined(NOSTROMA_USE_HIP)
+        std::fprintf(stderr, "nostroma verify trace (#649): on; coherent words %s, doorbell %s, HIP_HOST_COHERENT=%s "
                              "HSA_ENABLE_SDMA=%s GPU_MAX_HW_QUEUES=%s\n", g_coherent ? "explicit" : "default",
                      g_doorbell_store ? "stored" : "incremented", std::getenv("HIP_HOST_COHERENT") ? std::getenv("HIP_HOST_COHERENT") : "-",
                      std::getenv("HSA_ENABLE_SDMA") ? std::getenv("HSA_ENABLE_SDMA") : "-",
                      std::getenv("GPU_MAX_HW_QUEUES") ? std::getenv("GPU_MAX_HW_QUEUES") : "-");
 #else
-        std::fprintf(stderr, "strata verify trace (#649): on\n");
+        std::fprintf(stderr, "nostroma verify trace (#649): on\n");
 #endif
     }
-    prof_on_ = strata::env("NOSTROMA_VERIFY_PROFILE") != nullptr;
-    if (const char* rs = strata::env("NOSTROMA_ROUTE_STATS"); rs != nullptr && rs[0] == '1') {
+    prof_on_ = nostroma::env("NOSTROMA_VERIFY_PROFILE") != nullptr;
+    if (const char* rs = nostroma::env("NOSTROMA_ROUTE_STATS"); rs != nullptr && rs[0] == '1') {
         const size_t nrs = (size_t) 17 * (size_t) g.n_layers * 16;   // [T 0..16][layer][row 0..15]
         if (cudaMalloc((void**) &rs_dev_, nrs * 8) == cudaSuccess) {
             cudaMemset(rs_dev_, 0, nrs * 8);
@@ -1179,34 +1179,34 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
         }
     }
     {   // APR (prism.hadamard, hadamard.txt): the sign vectors on this device, before any graph capture
-        had_sx_ = strata::kernels::hadamard_device_signs(strata::kernels::cpu::hadamard_signs((int) g.n_embd), (int) g.n_embd);
-        had_sh_ = strata::kernels::hadamard_device_signs(strata::kernels::cpu::hadamard_signs((int) g.n_ff), (int) g.n_ff);
+        had_sx_ = nostroma::kernels::hadamard_device_signs(nostroma::kernels::cpu::hadamard_signs((int) g.n_embd), (int) g.n_embd);
+        had_sh_ = nostroma::kernels::hadamard_device_signs(nostroma::kernels::cpu::hadamard_signs((int) g.n_ff), (int) g.n_ff);
     }
     sink_.staging = (unsigned long long) staging_;
     sink_.staging_cap = kStagingBlobs;
     (void) TS;
-    // STRATA_GRAPH_PRIO=1 (opt-in): the window's streams carry priorities that their captured kernel
+    // NOSTROMA_GRAPH_PRIO=1 (opt-in): the window's streams carry priorities that their captured kernel
     // nodes keep (the window graph is instantiated with cudaGraphInstantiateFlagUseNodePriority): the GDN gates / QSA
     // indexer branch (side_) at the device's highest, cs_ and side2_ in the middle, the shared expert (sh_cs_) at the
     // lowest (= the default).  The indexer chain's 1-block kernels are then dispatched ahead of the q GEMV's queued
     // blocks, and the shared expert behind the experts.  Unset: every stream at the default priority, as before.
     int gp_lo = 0, gp_hi = 0;
-#if !defined(STRATA_USE_HIP) && !defined(STRATA_HIP_GFX906)
+#if !defined(NOSTROMA_USE_HIP) && !defined(NOSTROMA_HIP_GFX906)
     const bool gprio = graph_prio_on() && cudaDeviceGetStreamPriorityRange(&gp_lo, &gp_hi) == cudaSuccess && gp_lo != gp_hi;
     if (graph_prio_on() && !gprio) (void) cudaGetLastError();   // (only a failed range query's error: unset clears nothing)
 #else
     const bool gprio = false;   // (HIP: the default priority, as make_stream's below)
 #endif
     const int gp_mid = gprio ? (gp_lo + gp_hi) / 2 : 0;
-    if (gprio) std::fprintf(stderr, "strata verify: STRATA_GRAPH_PRIO: stream priorities side %d, cs / side2 %d, shared expert %d\n",
+    if (gprio) std::fprintf(stderr, "nostroma verify: NOSTROMA_GRAPH_PRIO: stream priorities side %d, cs / side2 %d, shared expert %d\n",
                             gp_hi, gp_mid, gp_lo);
-    // STRATA_PIPED_CONCURRENT=1 (opt-in): a prompt can run on the same GPU while the batch windows run, so the windows'
+    // NOSTROMA_PIPED_CONCURRENT=1 (opt-in): a prompt can run on the same GPU while the batch windows run, so the windows'
     // streams get the device's highest priority (HIP: the default priority, as the drafter's)
     auto make_stream = [&](cudaStream_t* s, int gp = 0) -> cudaError_t {
-#if !defined(STRATA_USE_HIP) && !defined(STRATA_HIP_GFX906)
-        static const bool hi = [] {   // (STRATA_PIPED_CONCURRENT_PRIO=0: the default priority)
-            const char* v = strata::env("NOSTROMA_PIPED_CONCURRENT");
-            const char* p = strata::env("NOSTROMA_PIPED_CONCURRENT_PRIO");
+#if !defined(NOSTROMA_USE_HIP) && !defined(NOSTROMA_HIP_GFX906)
+        static const bool hi = [] {   // (NOSTROMA_PIPED_CONCURRENT_PRIO=0: the default priority)
+            const char* v = nostroma::env("NOSTROMA_PIPED_CONCURRENT");
+            const char* p = nostroma::env("NOSTROMA_PIPED_CONCURRENT_PRIO");
             return v != nullptr && std::atoi(v) != 0 && (p == nullptr || std::atoi(p) != 0);
         }();
         int lo = 0, top = 0;
@@ -1216,7 +1216,7 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
                 return cudaSuccess;
             cudaGetLastError();   // (only the failed priority call's error: the default path clears nothing)
         }
-        if (gprio) {   // STRATA_GRAPH_PRIO: this stream's own priority (gp)
+        if (gprio) {   // NOSTROMA_GRAPH_PRIO: this stream's own priority (gp)
             if (cudaStreamCreateWithPriority(s, cudaStreamNonBlocking, gp) == cudaSuccess) return cudaSuccess;
             cudaGetLastError();
         }
@@ -1226,12 +1226,12 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
         return cudaStreamCreateWithFlags(s, cudaStreamNonBlocking);
     };
     bool copy_made = false;
-#if defined(STRATA_USE_HIP) && !defined(STRATA_HIP_GFX906)
-    // engine-latency, STRATA_COPY_HIP_PRIO=1 (opt-in): the copy stream at high priority, so it gets a hardware queue of
+#if defined(NOSTROMA_USE_HIP) && !defined(NOSTROMA_HIP_GFX906)
+    // engine-latency, NOSTROMA_COPY_HIP_PRIO=1 (opt-in): the copy stream at high priority, so it gets a hardware queue of
     // its own (ROCm hands queues out per priority).  Sharing one with the window's stream, --pcie-mode dma's copies and
     // their host function queue behind the window's graph, which spins on the flag they raise (a timeout at layer 1).
     {
-        static const bool cp = [] { const char* v = strata::env("NOSTROMA_COPY_HIP_PRIO"); return v != nullptr && std::atoi(v) != 0; }();
+        static const bool cp = [] { const char* v = nostroma::env("NOSTROMA_COPY_HIP_PRIO"); return v != nullptr && std::atoi(v) != 0; }();
         int lo = 0, hi = 0;
         if (cp && hipDeviceGetStreamPriorityRange(&lo, &hi) == hipSuccess)
             copy_made = hipStreamCreateWithPriority(&copy_, hipStreamNonBlocking, hi) == hipSuccess;
@@ -1254,10 +1254,10 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
         err = "verify: event create failed";
         return false;
     }
-    {   // STRATA_DF_BRANCH=1 (opt-in): the mixer's side branches.  Off by default: on Linux (open modules, GSP) a
+    {   // NOSTROMA_DF_BRANCH=1 (opt-in): the mixer's side branches.  Off by default: on Linux (open modules, GSP) a
         // stage's window with the branches stopped inside its graph when an NVML query (nvidia-smi) came between
         // requests (2x RTX 3090 and 2x RTX 2080 Ti, #905); never seen on Windows.  0 / unset: one stream, as before
-        const char* v = strata::env("NOSTROMA_DF_BRANCH");
+        const char* v = nostroma::env("NOSTROMA_DF_BRANCH");
         df_branch_ = v != nullptr && std::atoi(v) != 0;
         if (df_branch_ && df_fork_ == nullptr) {
             bool okb = cudaEventCreateWithFlags(&df_fork_, cudaEventDisableTiming) == cudaSuccess;
@@ -1274,10 +1274,10 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
     ar_off_ = false;
     h_res_ = hits.h_res;
     if (hits.h_res == nullptr || hits.d_res == nullptr || hits.cache_base == nullptr)
-        strata::dispatch::note("init: all-resident graph declined: no expert table on this device (no cache, or no residency map)");
+        nostroma::dispatch::note("init: all-resident graph declined: no expert table on this device (no cache, or no residency map)");
     if (h_plan_err_ != nullptr) *(volatile uint32_t*) h_plan_err_ = 0;
     if (hits.h_res != nullptr && hits.d_res != nullptr && hits.cache_base != nullptr) {
-        const char* v_ar = strata::env("NOSTROMA_VERIFY_ALL_RESIDENT");
+        const char* v_ar = nostroma::env("NOSTROMA_VERIFY_ALL_RESIDENT");
         if (v_ar == nullptr || std::atoi(v_ar) != 0) {
             bool all_ok = true;
             for (int64_t l = lb_; l < le_ && all_ok; ++l) {
@@ -1289,10 +1289,10 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
                 }
             }
             all_resident_ = all_ok;
-            if (all_ok) strata::dispatch::note("init: all-resident graph selected (every expert of this stage is in VRAM)");
-            else strata::dispatch::note("init: all-resident graph declined: some expert is not resident (doorbell graph with CPU / PCIe experts)");
+            if (all_ok) nostroma::dispatch::note("init: all-resident graph selected (every expert of this stage is in VRAM)");
+            else nostroma::dispatch::note("init: all-resident graph declined: some expert is not resident (doorbell graph with CPU / PCIe experts)");
         } else
-            strata::dispatch::note("init: all-resident graph declined: STRATA_VERIFY_ALL_RESIDENT=0");
+            nostroma::dispatch::note("init: all-resident graph declined: NOSTROMA_VERIFY_ALL_RESIDENT=0");
     }
     if (g_side_mixer() > 0 &&
         ((gprio ? make_stream(&side_, gp_hi) : cudaStreamCreateWithFlags(&side_, cudaStreamNonBlocking)) != cudaSuccess ||
@@ -1304,14 +1304,14 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
         err = "verify: the mixer branch's stream / events could not be created";
         return false;
     }
-    // E-6: a layer whose routed experts are all resident is planned on the device (STRATA_VERIFY_DEVICE_PLAN=1: on;
+    // E-6: a layer whose routed experts are all resident is planned on the device (NOSTROMA_VERIFY_DEVICE_PLAN=1: on;
     // exact, but neutral on RIBPC 1-2 GPUs: off by default)
     {
-        const char* v = strata::env("NOSTROMA_VERIFY_DEVICE_PLAN");
+        const char* v = nostroma::env("NOSTROMA_VERIFY_DEVICE_PLAN");
         // (not with set_always_publish: the device table may lag the host's while windows are in flight)
         device_plan_ = !all_resident_ && !always_publish_ && (v != nullptr && std::atoi(v) != 0);
     }
-    // (halo's STRATA_VERIFY_RESIDENT=1 is this window's all_resident_ graph above, which 0.1.39 has on by default)
+    // (halo's NOSTROMA_VERIFY_RESIDENT=1 is this window's all_resident_ graph above, which 0.1.39 has on by default)
     if (g_qfuse() || g_qfuse_hc()) {   // S26: the HC read's q8_1 group counters, zeroed once (each launch leaves them zero)
         if (cudaMalloc((void**) &qcnt_, sizeof(unsigned) * (size_t) (g.n_embd / 32)) != cudaSuccess ||
             cudaMemset(qcnt_, 0, sizeof(unsigned) * (size_t) (g.n_embd / 32)) != cudaSuccess) {
@@ -1331,7 +1331,7 @@ bool Verifier::init(const WeightTable& wt, const ModelGeometry& g, SessionState&
         }
         if (!ok2) { cudaGetLastError(); all_resident_ = false; device_plan_ = false; }
     }
-    std::fprintf(stderr, "strata verify: window up to %d tokens, %.1f MiB of device buffers%s\n", max_t,
+    std::fprintf(stderr, "nostroma verify: window up to %d tokens, %.1f MiB of device buffers%s\n", max_t,
                  (double) count.used / 1048576.0,
                  all_resident_ ? " (100% VRAM resident: zero-doorbell graph)" : "");
     return true;
@@ -1350,7 +1350,7 @@ const float* Verifier::final_R(int t) const { return R_ + (size_t) t * (size_t) 
 // while the GPU combines A and runs A's layer l+1.  B's mixer only needs A's mixer of the same layer (K/V, GDN
 // state), never A's experts, so nothing waits that did not wait before.  Every token's arithmetic is unchanged.
 bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     const ModelGeometry& g = *g_;
     const WeightTable& wt = *wt_;
     SessionState& ss = *ss_;
@@ -1370,13 +1370,13 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
     const int G = ((split_ && T >= 2) || T > kVerifyMaxT) && !batch_rec_ ? 2 : 1;
     // Pipelined windows must wait for the host verdict/snapshot fence before mutating state.
     const bool self_commit = T == 1 && !always_publish_ && !batch_rec_ && !g_qfuse() && one_token_self_commit();   // see Verifier::commit
-    static const bool dec_batch = [] { const char* v = strata::env("NOSTROMA_DEC_BATCH"); return v == nullptr || std::atoi(v) != 0; }();
-    // fork 34a35db: the GDN gates and the QSA indexer beside the projections (STRATA_SIDE_MIXER=1; 0 / unset = in line)
+    static const bool dec_batch = [] { const char* v = nostroma::env("NOSTROMA_DEC_BATCH"); return v == nullptr || std::atoi(v) != 0; }();
+    // fork 34a35db: the GDN gates and the QSA indexer beside the projections (NOSTROMA_SIDE_MIXER=1; 0 / unset = in line)
     const int side_mixer_mode = g_side_mixer();
     const bool side_mixer = side_mixer_mode >= 1;
     const bool side_proj = side_mixer_mode >= 2 && !batch_rec_;   // fork b063c13: the GDN gate projection, the QSA queries
     auto branch = [&](cudaEvent_t e, cudaStream_t from, cudaStream_t to, const char* what) {
-        if (to == side_) note_prio_fork(from);   // STRATA_GRAPH_PRIO: where the high-priority branch leaves cs
+        if (to == side_) note_prio_fork(from);   // NOSTROMA_GRAPH_PRIO: where the high-priority branch leaves cs
         if (cudaEventRecord(e, from) == cudaSuccess && cudaStreamWaitEvent(to, e, 0) == cudaSuccess) return true;
         err = std::string("verify: the mixer branch could not ") + what;
         return false;
@@ -1388,14 +1388,14 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
         if (trace_m_ != nullptr) gpu_stamp(trace_m_, (int) ((l * kProfPer + i) * 2 + grp), cs);   // #649
     };
     const int tb_[2] = {0, (T + 1) / 2}, te_[2] = {G == 2 ? (T + 1) / 2 : T, T};
-    // S26 STRATA_LFUSE=1: where the shared expert's gate / scale fusions apply (the paths they replace are the ones taken)
+    // S26 NOSTROMA_LFUSE=1: where the shared expert's gate / scale fusions apply (the paths they replace are the ones taken)
     auto lfuse_on = [&](int n) {
         return g_lfuse() && ar_on() && native_moe_combine_enabled() && dec_batch && n > 1 && n <= 8 &&
                shared_expert_native_bf16_enabled();
     };
     bool sg_gated_[2] = {false, false};   // per group: the combine applies the shared gate
     if (!batch_rec_) groups_[T] = G;
-    // Programmatic dependent launch (pdl.hpp; sm_90+, opt-in: STRATA_DF_PDL=1): the window's quantizations and dense
+    // Programmatic dependent launch (pdl.hpp; sm_90+, opt-in: NOSTROMA_DF_PDL=1): the window's quantizations and dense
     // projections may start while the kernel before them finishes, loading their weights before they wait for its
     // output.  Only a launch whose predecessors in the graph are all kernels gets programmatic edges; every value is
     // the same as without them.
@@ -1403,18 +1403,18 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
         bool prev;
         explicit PdlScope(bool on) : prev(pdl_scope()) { pdl_scope() = on; }
         ~PdlScope() { pdl_scope() = prev; }
-    } pdl_window(G == 1 && pdl_supported() && (strata::env("NOSTROMA_DF_PDL") != nullptr || (ar_on() && !batch_rec_)));
-    // BW-MEASURE (dispatch counters, include/strata/core/dispatch_stats.hpp): the window's counts go to the bin of this T and graph kind
+    } pdl_window(G == 1 && pdl_supported() && (nostroma::env("NOSTROMA_DF_PDL") != nullptr || (ar_on() && !batch_rec_)));
+    // BW-MEASURE (dispatch counters, include/nostroma/core/dispatch_stats.hpp): the window's counts go to the bin of this T and graph kind
     // (0 = zero-doorbell all-resident, 1 = doorbell graph with CPU / PCIe experts, 2 = batch)
-    strata::dispatch::Scope dsp_scope(T, batch_rec_ ? 2 : (ar_on() ? 0 : 1));
-    strata::dispatch::notef("win groups=%ld all_resident=%ld device_plan=%ld", (long) G, (long) ar_on(), (long) device_plan_);
-    strata::dispatch::notef("win pdl=%ld side_mixer=%ld side_proj=%ld", (long) (G == 1 && pdl_supported() && (strata::env("NOSTROMA_DF_PDL") != nullptr || (ar_on() && !batch_rec_))), (long) side_mixer_mode, (long) side_proj);
-    strata::dispatch::notef("win df_branch=%ld sh_stream=%ld prof=%ld", (long) (df_branch_ && G == 1 && !batch_rec_ && !prof_on_ && !side_mixer), (long) sh_stream_on(), (long) prof_on_);
-    // STRATA_DF_BRANCH: mixer work that reads only the layer's input runs on a side stream inside the graph.  fork(i)
+    nostroma::dispatch::Scope dsp_scope(T, batch_rec_ ? 2 : (ar_on() ? 0 : 1));
+    nostroma::dispatch::notef("win groups=%ld all_resident=%ld device_plan=%ld", (long) G, (long) ar_on(), (long) device_plan_);
+    nostroma::dispatch::notef("win pdl=%ld side_mixer=%ld side_proj=%ld", (long) (G == 1 && pdl_supported() && (nostroma::env("NOSTROMA_DF_PDL") != nullptr || (ar_on() && !batch_rec_))), (long) side_mixer_mode, (long) side_proj);
+    nostroma::dispatch::notef("win df_branch=%ld sh_stream=%ld prof=%ld", (long) (df_branch_ && G == 1 && !batch_rec_ && !prof_on_ && !side_mixer), (long) sh_stream_on(), (long) prof_on_);
+    // NOSTROMA_DF_BRANCH: mixer work that reads only the layer's input runs on a side stream inside the graph.  fork(i)
     // makes side i depend on everything captured on `cs` so far, join(i) makes `cs` depend on everything captured on
     // side i: a branch never races with what came before its fork or after its join.  Not in a split or batch window,
     // nor under the stage profiler (whose stamps are on `cs`).
-    const bool br = df_branch_ && G == 1 && !batch_rec_ && !prof_on_ && !side_mixer;   // STRATA_SIDE_MIXER wins
+    const bool br = df_branch_ && G == 1 && !batch_rec_ && !prof_on_ && !side_mixer;   // NOSTROMA_SIDE_MIXER wins
     auto fork = [&](int i) {
         cudaEventRecord(df_fork_, cs);
         cudaStreamWaitEvent(df_side_[i], df_fork_, 0);
@@ -1427,7 +1427,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
     // a batch window: row t is slot t, whose state lives in its own session
     auto slot_ss = [&](int t) -> SessionState& { return batch_rec_ ? *slots_[(size_t) brow_[t]] : ss; };
     const int hrow0 = batch_rec_ ? row_base_ : 0;   // a slot group's own hand-off rows
-    // STRATA_BATCH_SELF_COMMIT: the window keeps its rows (no commit graph, nothing to snapshot for one)
+    // NOSTROMA_BATCH_SELF_COMMIT: the window keeps its rows (no commit graph, nothing to snapshot for one)
     const bool keep_rows = batch_rec_ && batch_self_commits(brow_, T);
 
     // ---- the window's inputs, from mapped staging.  With branches the steps and positions (first read by the first
@@ -1509,16 +1509,16 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
             }
             float* normalized = (float*) ((uint8_t*) ss.ple.scratch + ple_block_scratch_bytes());
             static const bool ple_batch_env = [] {
-                const char* e = strata::env("NOSTROMA_PLE_BATCH");
+                const char* e = nostroma::env("NOSTROMA_PLE_BATCH");
                 return !e || e[0] != '0';
             }();
             const bool ple_batch_kv = ple_batch_env && dec_batch && n > 1 && ss.ple.w.key_bf16 != nullptr &&
                                       ss.ple.w.value_bf16 != nullptr && ple_native_bf16_enabled() &&
                                       ple_native_postops_enabled();
-            // S25 (STRATA_PLE_BATCH=1): the key and value projections depend only on each row's n-gram embedding, so
+            // S25 (NOSTROMA_PLE_BATCH=1): the key and value projections depend only on each row's n-gram embedding, so
             // the group's rows run through the multi-row forms of the same kernels (the weights read once); every
             // row's arithmetic is the single-row call's. The history-dependent rest stays row by row.
-            static const bool ple_batch = [] { const char* e = strata::env("NOSTROMA_PLE_BATCH"); return e && e[0] == '1'; }();
+            static const bool ple_batch = [] { const char* e = nostroma::env("NOSTROMA_PLE_BATCH"); return e && e[0] == '1'; }();
             PleWeights pw = ss.ple.w;
             const bool nkey = pw.key_native_data != nullptr && pw.key_bf16 == nullptr;
             const bool batched = !ple_batch_kv && ple_batch && n > 1 && (pw.key_bf16 != nullptr || nkey) && ple_native_bf16_enabled();
@@ -1548,16 +1548,16 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
                     return false;
                 }
             }
-            // STRATA_DF_PLE (opt-in: STRATA_DF_PLE=1): the window's post-projection steps in one pass, bitwise the per-token loop
+            // NOSTROMA_DF_PLE (opt-in: NOSTROMA_DF_PLE=1): the window's post-projection steps in one pass, bitwise the per-token loop
             // below (the norms divide at run time as its norms do; the history advances token by token), which also
             // writes the commit's history snapshots.  Scratch: layer 0's expert rows, combined by now, and the
             // hyper-connection read's `lo_`, which the read below rewrites.
             static const bool ple_post_env = [] {
-                const char* e = strata::env("NOSTROMA_DF_PLE");
+                const char* e = nostroma::env("NOSTROMA_DF_PLE");
                 return e != nullptr && std::atoi(e) != 0;
             }();
             const bool ple_post = ple_batch_kv && ple_post_env && !batch_rec_;
-            // #783 PR-g (stuchapin909): the window's residual writes in one launch (STRATA_NO_MULTI_GR=1: per token)
+            // #783 PR-g (stuchapin909): the window's residual writes in one launch (NOSTROMA_NO_MULTI_GR=1: per token)
             const bool multi_write = !ple_post && dec_batch && !g_no_multi_gr && n > 1;
             if (multi_write) gr_write_multi(Rt(tb), bo_ + tb * N, inj2_ + tb * HC, gs, Rt(tb), n, cs);
             if (ple_post) {
@@ -1601,7 +1601,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
             pending = false;
         }
         auto gr_read_group = [&](int half, bool apply, float* inj_prev, float* inj_out) {
-            strata::dispatch::notef("hc read: weights Q8_0 copies=%ld (0 = bf16 rows), half=%ld, qfuse=%ld", (long) (wd[half]->hc_q8 != nullptr), (long) half, (long) (qcnt_ != nullptr));
+            nostroma::dispatch::notef("hc read: weights Q8_0 copies=%ld (0 = bf16 rows), half=%ld, qfuse=%ld", (long) (wd[half]->hc_q8 != nullptr), (long) half, (long) (qcnt_ != nullptr));
             FusedGrArgs fa[kFusedGrWideT];
             for (int t = tb; t < te; ++t) {
                 FusedGrArgs& a = fa[t - tb];
@@ -1614,19 +1614,19 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
                 a.s_down = wd[half]->q8_scale; a.s_up = wu[half]->q8_scale;
                 a.eps = EPS; a.lo = lo_ + t * g.hc_lr; a.rs = rs_ + t * HC;
                 a.inject_out = inj_out + t * HC; a.mixed = mixed_ + t * N;
-                if (qcnt_ != nullptr) {   // S26 STRATA_QFUSE: the consumer's q8_1 image written by the read itself
+                if (qcnt_ != nullptr) {   // S26 NOSTROMA_QFUSE: the consumer's q8_1 image written by the read itself
                     a.q8_cnt = qcnt_;
                     if (half == 0) a.q8_mixed = xq_ + (size_t) (t - tb) * (N / 32) * 36;
-                    else if (strata::kernels::cpu::expert_layout().native) a.q8_mixed = nat_xq_ + (size_t) t * (N / 32) * 36;
+                    else if (nostroma::kernels::cpu::expert_layout().native) a.q8_mixed = nat_xq_ + (size_t) t * (N / 32) * 36;
                 }
             }
-            if (strata::kernels::fused_gr_read_persist(fa, n, cs)) return false;   // STRATA_HC_PERSIST=1; q8_mixed is never set there
+            if (nostroma::kernels::fused_gr_read_persist(fa, n, cs)) return false;   // NOSTROMA_HC_PERSIST=1; q8_mixed is never set there
             return fused_gr_read_multi(fa, n, xn_ + (size_t) tb * HC * N, cs, (prof_on_ && grp == 0) ? prof_ : nullptr,
                                 (int) (l * kProfPer + (half == 0 ? 27 : 30)));
         };
-        const bool q8_attn = gr_read_group(0, pending, inj2_, inj_);   // true: xq_ holds mixed's q8_1 (STRATA_QFUSE)
-        {   // measurement only: STRATA_DUMMY_NODES=k adds k empty kernel nodes per layer (what one node costs in a window)
-            static const int dummy = [] { const char* e = strata::env("NOSTROMA_DUMMY_NODES"); return e != nullptr ? std::atoi(e) : 0; }();
+        const bool q8_attn = gr_read_group(0, pending, inj2_, inj_);   // true: xq_ holds mixed's q8_1 (NOSTROMA_QFUSE)
+        {   // measurement only: NOSTROMA_DUMMY_NODES=k adds k empty kernel nodes per layer (what one node costs in a window)
+            static const int dummy = [] { const char* e = nostroma::env("NOSTROMA_DUMMY_NODES"); return e != nullptr ? std::atoi(e) : 0; }();
             for (int d = 0; d < dummy; ++d) gpu_noop(cs);
         }
         if (inputs_pending) {   // the window's steps and positions, before the first mixer reads them
@@ -1637,14 +1637,14 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
         float* xm = mixed_ + tb * N;
         bool il_ready = false;   // xil_ holds xq_'s interleaved copy (reset whenever xq_ is rewritten)
         // a projection input's q8_1 blocks and their interleaved copy in one launch (native_quantize_q8_1_il, the same
-        // bytes): Turing default (+0.5..+1 % decode, two launches fewer per GDN layer and per QSA layer); STRATA_QIL=0 / 1
+        // bytes): Turing default (+0.5..+1 % decode, two launches fewer per GDN layer and per QSA layer); NOSTROMA_QIL=0 / 1
         // forces it off / on
         auto quant_in = [&](const float* x, int n_in) {
-#if !defined(STRATA_USE_HIP)
-            static const int qil_env = [] { const char* v = strata::env("NOSTROMA_QIL"); return v != nullptr ? std::atoi(v) : -1; }();
+#if !defined(NOSTROMA_USE_HIP)
+            static const int qil_env = [] { const char* v = nostroma::env("NOSTROMA_QIL"); return v != nullptr ? std::atoi(v) : -1; }();
             const bool qil = qil_env >= 0 ? qil_env != 0 : device_is_sm75();
             if (qil && n >= 2 && n <= 4 && g_mmvq_il()) {
-                strata::kernels::native_quantize_q8_1_il(x, xq_, xil_, n_in, n, cs);
+                nostroma::kernels::native_quantize_q8_1_il(x, xq_, xil_, n_in, n, cs);
                 il_ready = true;
                 return;
             }
@@ -1653,12 +1653,12 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
             il_ready = false;
         };
         auto mm = [&](const WeightRef* w, float* out, int n_in, int n_out) {
-            if (g_mmvq_il() && strata::kernels::native_mmvq_il_supported(w->native_type, n, n_out)) {
+            if (g_mmvq_il() && nostroma::kernels::native_mmvq_il_supported(w->native_type, n, n_out)) {
                 if (!il_ready && n >= 2) {   // one column reads the plain q8_1 blocks
-                    strata::kernels::native_q8_1_interleave(xq_, xil_, n_in, n, cs);
+                    nostroma::kernels::native_q8_1_interleave(xq_, xil_, n_in, n, cs);
                     il_ready = true;
                 }
-                strata::kernels::native_mmvq_il(w->native_type, w->native_data, xq_, xil_, out, n_in, n_out, n, cs);
+                nostroma::kernels::native_mmvq_il(w->native_type, w->native_data, xq_, xil_, out, n_in, n_out, n, cs);
             } else {
                 native_mmvq(w->native_type, w->native_data, xq_, out, n_in, n_out, n, cs);
             }
@@ -1695,19 +1695,19 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
                     // the branch reads F4's interleaved copy too (written on cs before the fork; bitwise native_mmvq's
                     // output), and qkv is recorded before the branch's launch, so its grid is dispatched first and the
                     // conv / recurrence that wait for it start sooner (z is read only after the recurrence)
-                    const bool g_il = g_mmvq_il() && strata::kernels::native_mmvq_il_supported(wg->native_type, n, (int) ZV);
+                    const bool g_il = g_mmvq_il() && nostroma::kernels::native_mmvq_il_supported(wg->native_type, n, (int) ZV);
                     if (g_il && !il_ready && n >= 2) {
-                        strata::kernels::native_q8_1_interleave(xq_, xil_, (int) N, n, cs);
+                        nostroma::kernels::native_q8_1_interleave(xq_, xil_, (int) N, n, cs);
                         il_ready = true;
                     }
                     if (!branch(pfork_, cs, side2_, "fork")) return false;
                     mm(wqkv, qkv + (size_t) tb * C, (int) N, (int) C);
-                    if (g_il) strata::kernels::native_mmvq_il(wg->native_type, wg->native_data, xq_, xil_, z_ + (size_t) tb * ZV,
+                    if (g_il) nostroma::kernels::native_mmvq_il(wg->native_type, wg->native_data, xq_, xil_, z_ + (size_t) tb * ZV,
                                                               (int) N, (int) ZV, n, side2_);
                     else native_mmvq(wg->native_type, wg->native_data, xq_, z_ + (size_t) tb * ZV, (int) N, (int) ZV, n, side2_);
                     if (cudaEventRecord(pjoin_, side2_) != cudaSuccess) { err = "verify: the gate projection's branch could not join"; return false; }
                 }
-                if (br) {   // STRATA_DF_BRANCH: a/b and z beside q/k/v and the conv; all of them read only this layer's input
+                if (br) {   // NOSTROMA_DF_BRANCH: a/b and z beside q/k/v and the conv; all of them read only this layer's input
                     fork(0);
                     gdn_ab_multi(xm, (const uint16_t*) wa->data, (const uint16_t*) wb->data, (const float*) wdt->data,
                                  (const float*) wsa->data, gate + (size_t) tb * HV, beta + (size_t) tb * HV, (int) N,
@@ -1717,8 +1717,8 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
                                 df_side_[1]);
                 }
                 const bool fuse_ab = fuse_convab_on() && !br && !batch_rec_ && !prof_on_ && !sidem;   // the side mixer computes the gates on its branch
-                strata::dispatch::notef("gdn layer: side_gates=%ld side_proj=%ld df_branch=%ld", (long) sidem, (long) side_proj, (long) br);
-                strata::dispatch::notef("gdn layer: conv+ab fused=%ld batch_rows=%ld", (long) fuse_ab, (long) batch_rec_);
+                nostroma::dispatch::notef("gdn layer: side_gates=%ld side_proj=%ld df_branch=%ld", (long) sidem, (long) side_proj, (long) br);
+                nostroma::dispatch::notef("gdn layer: conv+ab fused=%ld batch_rows=%ld", (long) fuse_ab, (long) batch_rec_);
                 if (!side_proj) mm(wqkv, qkv + (size_t) tb * C, (int) N, (int) C);   // with side_proj: above, first
                 stamp(l, 2, grp);
                 if (batch_rec_) {   // contiguous rows may be proposals for the same slot
@@ -1764,12 +1764,12 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
                 }
                 }
                 // the recurrence from the untouched state over tokens [0, te); outputs only for this group's
-                static const bool gdn_groups_on = [] {   // STRATA_BATCH_GDN_GROUPS=1, all slots in one launch
-                    const char* v = strata::env("NOSTROMA_BATCH_GDN_GROUPS");
+                static const bool gdn_groups_on = [] {   // NOSTROMA_BATCH_GDN_GROUPS=1, all slots in one launch
+                    const char* v = nostroma::env("NOSTROMA_BATCH_GDN_GROUPS");
                     return v != nullptr && std::atoi(v) != 0;
                 }();
                 if (batch_rec_ && gdn_groups_on && te - tb <= 8) {
-                    strata::kernels::GdnGroups gg;
+                    nostroma::kernels::GdnGroups gg;
                     for (int t = tb; t < te;) {
                         const int first = t;
                         while (t < te && brow_[t] == brow_[first]) ++t;
@@ -1777,10 +1777,10 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
                         gg.state[gg.n] = sx.gdn_state + (size_t) (gi - sx.gdn_ord0) * gdn_floats;
                         gg.first[gg.n] = first;
                         gg.ntok[gg.n] = t - first;
-                        gg.keep[gg.n] = keep_rows ? one_ : nullptr;   // STRATA_BATCH_SELF_COMMIT: the window keeps its one-row groups itself
+                        gg.keep[gg.n] = keep_rows ? one_ : nullptr;   // NOSTROMA_BATCH_SELF_COMMIT: the window keeps its one-row groups itself
                         ++gg.n;
                     }
-                    strata::kernels::gdn_step_norm_groups(gg, hb, (int) C, gate, beta, z_, (const float*) wnm->data, EPS,
+                    nostroma::kernels::gdn_step_norm_groups(gg, hb, (int) C, gate, beta, z_, (const float*) wnm->data, EPS,
                                                           y_, (int) HK, (int) HV, keep_rows, cs);
                 } else
                 if (batch_rec_) {   // each slot's recurrence over its own proposed-token group
@@ -1798,7 +1798,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
                 gdn_step_norm_multi(state, hb, (int) C, gate, beta, z_, (const float*) wnm->data, EPS, y_, (int) HK,
                                     (int) HV, te, self_commit ? one_ : nullptr, cs, tb, g_qfuse() ? (void*) xq_ : nullptr);
                 stamp(l, 6, grp);
-                // STRATA_QFUSE: done above by gdn_step_norm_multi - but a batch's per-slot recurrence passes it no q8_1
+                // NOSTROMA_QFUSE: done above by gdn_step_norm_multi - but a batch's per-slot recurrence passes it no q8_1
                 // destination (#1139: the out-projection read stale bytes), so that case quantizes here as without it
                 if (!g_qfuse() || batch_rec_) quant_in(y_ + (size_t) tb * ZV, (int) ZV);
                 else il_ready = false;
@@ -1824,7 +1824,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
                     else rope_neox_apply(data, data, rows, cols, (int) s.n_rot, st.cos_tab, st.sin_tab, pos, sx);
                 };
                 // #783 PR-f (stuchapin909): the per-head RMSNorm and the rope in one launch, bit-identical to the pair
-                // (rope_parity check 6); STRATA_NO_NORM_ROPE=1 keeps the two; off on HIP until its parity check passes
+                // (rope_parity check 6); NOSTROMA_NO_NORM_ROPE=1 keeps the two; off on HIP until its parity check passes
                 const bool fuse_nr = native_qsa_enabled() && native_rope_enabled() && native_norm_rope_usable((int) HD, (int) s.n_rot);
                 auto norm_rope = [&](float* data, const WeightRef* norm, int rows, int cols, const int32_t* pos) {
                     if (fuse_nr && native_norm_rope_usable(cols, (int) s.n_rot)) {
@@ -1836,20 +1836,20 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
                 };
                 float* idx_raw = idx_raw_L_ + (size_t) qi * MT * ID;
                 // the per-token GEMVs / norms / RoPEs / copies of this layer as one launch over the
-                // window's rows each - row-wise identical arithmetic (STRATA_DEC_BATCH=0: token by token)
-                // STRATA_DF_QB_Q4 (default on since 0.1.45; STRATA_DF_QB_Q4=0 gives the old token-by-token path): a Q4_0 KV cache
+                // window's rows each - row-wise identical arithmetic (NOSTROMA_DEC_BATCH=0: token by token)
+                // NOSTROMA_DF_QB_Q4 (default on since 0.1.45; NOSTROMA_DF_QB_Q4=0 gives the old token-by-token path): a Q4_0 KV cache
                 // takes the batched window too - its one per-token extra, the query's rotation, is row-wise and the batched
                 // path rotates (270650e).  The generated ids are identical (p620 gfx1201, A4000 sm_86, P100 sm_60, short and
                 // long prompts), and the 6-token verify graph is 1950 nodes instead of 2610 (#2403: an RX 6900 XT faulted in
                 // the first verify graph launch with --kv q4_0 + KV streaming + MTP; whether the graph size is the cause is
                 // not confirmed)
                 static const bool qb_q4 = [] {
-                    const char* e = strata::env("NOSTROMA_DF_QB_Q4");
+                    const char* e = nostroma::env("NOSTROMA_DF_QB_Q4");
                     return e == nullptr || std::atoi(e) != 0;
                 }();
                 const bool qb = dec_batch && n > 1 && native_qsa_enabled() && native_rope_enabled() && (!st.kv_q4 || qb_q4);
                 if (!q8_attn) quant_in(xm, (int) N);
-                // STRATA_DF_BRANCH: the query side (q and its norm/RoPE/rotation on side 0, the indexer query on side 1)
+                // NOSTROMA_DF_BRANCH: the query side (q and its norm/RoPE/rotation on side 0, the indexer query on side 1)
                 // beside the K/V side; the indexer query joins before the block scores, the query before attention
                 const bool qbr = br && qb;
                 if (qbr) {
@@ -1865,12 +1865,12 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
                                               IQ * ID, N, IQ * ID, n, df_side_[1]);
                     norm_rope_on(qidx_ + tb * IQ * ID, wiqn, (int) (n * IQ), (int) ID, pos_i + tb * IQ, df_side_[1]);
                 }
-                // STRATA_SIDE_MIXER=1 / =2 (fork Eddoursul 34a35db + b063c13): the indexer's key projection,
+                // NOSTROMA_SIDE_MIXER=1 / =2 (fork Eddoursul 34a35db + b063c13): the indexer's key projection,
                 // the tail's snapshot, its keys appended, its query projection, norm and RoPE, the block scores and the
                 // top-k read only the mixer's input and the indexer's own state - =1 runs them on a branch beside the
                 // attention's projections; =2 also the queries' chain on a second branch.  Each step below is
                 // the in-line code with its stream as a parameter; with the switch off they run on cs in the same order
-                // as before (STRATA_DF_BRANCH, the same idea for fewer of these steps, is off whenever this is on).
+                // as before (NOSTROMA_DF_BRANCH, the same idea for fewer of these steps, is off whenever this is on).
                 auto norm_rope_s = [&](float* data, const WeightRef* norm, int rows, int cols, const int32_t* pos, cudaStream_t ns) {
                     if (fuse_nr && native_norm_rope_usable(cols, (int) s.n_rot)) {
                         native_qsa_rms_norm_rope(data, cols, (const float*) norm->data, data, rows, cols, (int) s.n_rot, EPS,
@@ -1922,7 +1922,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
                         }
                 };
                 auto idx_select = [&](cudaStream_t ns) {
-                    if (sel_long_) {   // STRATA_SELECT_LONG: the long-context window graphs (the same ids)
+                    if (sel_long_) {   // NOSTROMA_SELECT_LONG: the long-context window graphs (the same ids)
                         qsa_block_scores_long(st.idx_pooled, st.idx_dead, qidx_ + tb * IQ * ID, step_ + tb * kStepCount, n,
                                               max_blocks_, s, scores_ + (size_t) tb * max_blocks_, ns, -1);
                         qsa_block_topk_long(scores_ + (size_t) tb * max_blocks_, step_ + tb * kStepCount, n, max_blocks_,
@@ -1938,10 +1938,10 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
                 // F4's kernel too, its copy written on cs before the fork - bitwise the same), the q/gate
                 // split with norm and RoPE, the rotation
                 const bool q_il = side_proj && g_mmvq_il() &&
-                                  strata::kernels::native_mmvq_il_supported(wq->native_type, n, (int) (NH * 2 * HD));
+                                  nostroma::kernels::native_mmvq_il_supported(wq->native_type, n, (int) (NH * 2 * HD));
                 auto q_chain = [&](cudaStream_t ns) -> bool {
                     if (ns == cs) mm(wq, qfull_ + tb * NH * 2 * HD, (int) N, (int) (NH * 2 * HD));
-                    else if (q_il) strata::kernels::native_mmvq_il(wq->native_type, wq->native_data, xq_, xil_,
+                    else if (q_il) nostroma::kernels::native_mmvq_il(wq->native_type, wq->native_data, xq_, xil_,
                                                                    qfull_ + tb * NH * 2 * HD, (int) N, (int) (NH * 2 * HD), n, ns);
                     else native_mmvq(wq->native_type, wq->native_data, xq_, qfull_ + tb * NH * 2 * HD, (int) N,
                                      (int) (NH * 2 * HD), n, ns);
@@ -1986,7 +1986,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
                 }
                 if (side_proj) {   // the queries beside the keys and values (fork b063c13)
                     if (q_il && !il_ready && n >= 2) {   // the copy before the fork (mm(wk) / mm(wv) on cs reuse it)
-                        strata::kernels::native_q8_1_interleave(xq_, xil_, (int) N, n, cs);
+                        nostroma::kernels::native_q8_1_interleave(xq_, xil_, (int) N, n, cs);
                         il_ready = true;
                     }
                     if (!branch(pfork_, cs, side2_, "fork") || !q_chain(side2_)) return false;
@@ -2065,20 +2065,20 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
                 bool streamed = false;   // a streamed KV cache keeps the per-row resolve-then-attend order
                 if (batch_rec_ && g_qsa_slots)
                     for (int t = tb; t < te; ++t) streamed = streamed || slot_ss(t).qsa_states[qi].kv_mode == 1;
-                // STRATA_BATCH_ATTN_ROWS=1: the window's rows in ONE launch per step - scores with each row's
+                // NOSTROMA_BATCH_ATTN_ROWS=1: the window's rows in ONE launch per step - scores with each row's
                 // own indexer keys, the top-k over all rows (row-independent), attention with each row's own pools -
                 // instead of 3-4 one-row launches per row; the same per-row arithmetic.  Not with KV streaming
                 // (qsa_kv_resolve has work per slot then).
                 static const bool attn_rows = [] {
-                    const char* v = strata::env("NOSTROMA_BATCH_ATTN_ROWS");
+                    const char* v = nostroma::env("NOSTROMA_BATCH_ATTN_ROWS");
                     return v != nullptr && std::atoi(v) != 0;
                 }();
-                bool rows_ok = batch_rec_ && attn_rows && te - tb <= strata::kernels::kAttnRowsMax;
+                bool rows_ok = batch_rec_ && attn_rows && te - tb <= nostroma::kernels::kAttnRowsMax;
                 for (int t = tb; rows_ok && t < te; ++t) rows_ok = slot_ss(t).qsa_states[qi].kv_mode != 1;
                 if (rows_ok) {
                     const int n_rows = te - tb;
-                    strata::kernels::QsaScoreRows sr;
-                    strata::kernels::QsaAttnPoolsRows pr;
+                    nostroma::kernels::QsaScoreRows sr;
+                    nostroma::kernels::QsaAttnPoolsRows pr;
                     sr.n = pr.n = n_rows;
                     for (int t = tb; t < te; ++t) {
                         const QsaState& sx = slot_ss(t).qsa_states[qi];
@@ -2156,14 +2156,14 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
                 stamp(l, 12, grp);
                 if (qbr) join(0);   // the query, for attention
                 const QsaAttnPools pools = qsa_attn_pools(st);
-                // STRATA_QSA_SPLIT_ATTN=1: the split tensor-core attention where it applies (int8 KV, sm_80+)
-                static const bool split_attn = [] { const char* v = strata::env("NOSTROMA_QSA_SPLIT_ATTN"); return v != nullptr && std::atoi(v) != 0; }();
+                // NOSTROMA_QSA_SPLIT_ATTN=1: the split tensor-core attention where it applies (int8 KV, sm_80+)
+                static const bool split_attn = [] { const char* v = nostroma::env("NOSTROMA_QSA_SPLIT_ATTN"); return v != nullptr && std::atoi(v) != 0; }();
                 if (!(split_attn && qsa_decode_attn_split(qcur_ + tb * NH * HD, pools, sel_ + (size_t) tb * cap_,
                                                           step_ + tb * kStepCount, cap_, s,
                                                           attn_scratch_ + (size_t) tb * attn_scratch_floats_,
                                                           (uint64_t) n * (uint64_t) attn_scratch_floats_, attn_ + tb * NH * HD, n, cs)))
                 {
-                strata::dispatch::notef("qsa layer: decode attention batch kernels (split tensor-core attention off or declined) kv_rot=%ld", (long) st.kv_rot);
+                nostroma::dispatch::notef("qsa layer: decode attention batch kernels (split tensor-core attention off or declined) kv_rot=%ld", (long) st.kv_rot);
                 qsa_decode_attn_batch(qcur_ + tb * NH * HD, pools, sel_ + (size_t) tb * cap_, step_ + tb * kStepCount, cap_,
                                       s, attn_scratch_ + (size_t) tb * attn_scratch_floats_, attn_ + tb * NH * HD, n, cs);
                 }
@@ -2189,12 +2189,12 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
             return false;
         }
         stamp(l, 16, grp);
-        const bool q8_ffn = gr_read_group(1, true, inj_, inj2_);   // true: nat_xq_ holds the MoE input's q8_1 (STRATA_QFUSE)
+        const bool q8_ffn = gr_read_group(1, true, inj_, inj2_);   // true: nat_xq_ holds the MoE input's q8_1 (NOSTROMA_QFUSE)
         stamp(l, 32, grp);   // the profile only: the FFN-side read ends here, the router starts
         // with CPU experts in the window the shared expert forks off once the doorbell is published (it no longer
-        // competes with it for the GPU's first microseconds); STRATA_SH_FORK_LATE=0 forks at the top as before
+        // competes with it for the GPU's first microseconds); NOSTROMA_SH_FORK_LATE=0 forks at the top as before
         static const bool sh_fork_late_env = [] {
-            const char* e = strata::env("NOSTROMA_SH_FORK_LATE");
+            const char* e = nostroma::env("NOSTROMA_SH_FORK_LATE");
             return !e || e[0] != '0';
         }();
         const bool sh_fork = sh_stream_on() && !prof_on_ && sh_cs_ != nullptr && ev_fork_ != nullptr && ev_join_ != nullptr;
@@ -2206,9 +2206,9 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
             cudaStreamWaitEvent(sh_cs_, ev_fork_, 0);
         }
         // the window's rows routed in 2 launches (one router GEMV reading the weight once, one
-        // top-10) instead of 2 per token; every row's arithmetic is the single-token call's (STRATA_DEC_BATCH=0: old)
+        // top-10) instead of 2 per token; every row's arithmetic is the single-token call's (NOSTROMA_DEC_BATCH=0: old)
         const WeightRef* w_router = v.get("ffn_gate_inp.weight");
-        // S26 STRATA_LFUSE=1: the shared expert's gate row rides in the router GEMV launch, its sigmoid + row scale
+        // S26 NOSTROMA_LFUSE=1: the shared expert's gate row rides in the router GEMV launch, its sigmoid + row scale
         // move into the combine, gate + up share one launch (all bitwise; resident combine path, 2-8 rows only)
         const WeightRef* w_sgi = lfuse_on(n) && g_lfuse_gate() ? v.get("ffn_gate_inp_shexp.weight") : nullptr;
         bool sg_ready = false;
@@ -2223,11 +2223,11 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
                                           NE, n, cs);
                 native_router_top10_multi(logits_ + tb * NE, ids_ + tb * K, w_ + tb * K, n, cs);
             } catch (const std::exception& e) { err = "verify router: " + std::string(e.what()); return false; }
-#if defined(STRATA_HIP_GFX906)
+#if defined(NOSTROMA_HIP_GFX906)
         } else if (dec_batch) {
             // gfx906: the Coder's 256-expert router (the native router is 512 x 10 only) for the whole window in one
             // multi-column BF16 projection and one top-k, bitwise the per-token calls (route_window_parity); ~3 ms
-            // of a ~55 ms verify window on 2x MI50.  STRATA_ROUTE_PER_TOKEN=1: the per-token calls.
+            // of a ~55 ms verify window on 2x MI50.  NOSTROMA_ROUTE_PER_TOKEN=1: the per-token calls.
             if (!moe_route_window(wt, g, l, K, ss.moe, mixed_ + tb * N, logits_ + tb * NE, ids_ + tb * K, w_ + tb * K, n,
                                   cs, err))
                 return false;
@@ -2238,16 +2238,16 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
             mb.logits = logits_ + t * NE; mb.ids = ids_ + t * K; mb.weights = w_ + t * K;
             if (!moe_route(wt, g, l, K, mb, mixed_ + t * N, cs, err, nullptr)) return false;
         }
-        strata::dispatch::notef("router layer: batched native router=%ld, shared-expert gate in the router launch=%ld, route_prior=%ld", (long) (dec_batch && n > 1 && w_router != nullptr && native_router_enabled() && NE == 512 && K == 10), (long) sg_ready, (long) (g_route_prior() > 0.0f));
-        // STRATA_ROUTE_PRIOR=lambda (changes the output): the top-10 picked again with a logit bonus for the resident
-        // experts; the weights stay the router's (route_prior.cu).  g_route_prior() above: off unless STRATA_ROUTE_PRIOR is set
+        nostroma::dispatch::notef("router layer: batched native router=%ld, shared-expert gate in the router launch=%ld, route_prior=%ld", (long) (dec_batch && n > 1 && w_router != nullptr && native_router_enabled() && NE == 512 && K == 10), (long) sg_ready, (long) (g_route_prior() > 0.0f));
+        // NOSTROMA_ROUTE_PRIOR=lambda (changes the output): the top-10 picked again with a logit bonus for the resident
+        // experts; the weights stay the router's (route_prior.cu).  g_route_prior() above: off unless NOSTROMA_ROUTE_PRIOR is set
         // (measured on an RTX 3060 12 GB at 2.0: story +37.6%, code +35.2%; on an RTX PRO 5000 72 GB -1.9% / -0.5%, on 2x RTX A4000
         // -4.2% / +11.0%, so it only helps a card that streams most experts).
         const float route_prior = g_route_prior();
         if (route_prior > 0.0f && NE == 512 && K == 10 && hits_.d_res != nullptr)
             route_prior_top10(logits_ + tb * NE, hits_.d_res + l * g.n_expert, route_prior, ids_ + tb * K, w_ + tb * K, n, cs);
         if (route_resident_cfg().margin > 0.0f && NE == 512 && K == 10 && hits_.d_res != nullptr) {
-            // STRATA_ROUTE_RESIDENT: after the router, before the plan/doorbell read ids_/w_ (opt-in, changes the output)
+            // NOSTROMA_ROUTE_RESIDENT: after the router, before the plan/doorbell read ids_/w_ (opt-in, changes the output)
             try {
                 native_route_resident(logits_ + tb * NE, ids_ + tb * K, w_ + tb * K, hits_.d_res + l * g.n_expert, n,
                                       route_resident_cfg().margin, route_resident_cfg().lo, route_resident_cfg().hi,
@@ -2255,7 +2255,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
             } catch (const std::exception& e) { err = "verify route-resident: " + std::string(e.what()); return false; }
         }
         if (rs_on_ && G == 1 && n <= 16 && T <= 16)
-            strata::kernels::route_marginal_stats(ids_ + tb * K, n, (int) K, rs_dev_ + ((size_t) T * (size_t) g.n_layers + (size_t) l) * 16, cs);
+            nostroma::kernels::route_marginal_stats(ids_ + tb * K, n, (int) K, rs_dev_ + ((size_t) T * (size_t) g.n_layers + (size_t) l) * 16, cs);
         if (ar_on()) {
             resident_plan(ids_ + tb * K, n * (int) K, (int) K, hits_.d_res + l * g.n_expert, (int) g.n_expert,
                           hits_.cache_base, slot_off_d_, (long long) hits_.blob,
@@ -2266,7 +2266,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
                               hits_.cache_base, slot_off_d_, (long long) hits_.blob,
                               plan_ + (size_t) grp * (size_t) (plan_i32_ + 16), (long long) max_t_ * K, skip_ + grp,
                               (uint32_t) ((l - lb_) * G + grp + 1), cs);
-#if defined(STRATA_USE_HIP)
+#if defined(NOSTROMA_USE_HIP)
             if (g_doorbell_store)   // #649 A/B: the step's ring stored, not incremented over PCIe
                 doorbell_publish_value(xm, ids_ + tb * K, w_ + tb * K, (int64_t) n * N, (int64_t) n * K, m_x_ + tb * N,
                                        m_ids_ + tb * K, m_w_ + tb * K, m_seq_, (uint32_t) ((l - lb_) * G + grp + 1), cs);
@@ -2289,7 +2289,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
             }
         }
         stamp(l, 17, grp);
-        bool qdedup = false;   // STRATA_VERIFY_QDEDUP took effect: the experts' q8_1 image of xm is already made
+        bool qdedup = false;   // NOSTROMA_VERIFY_QDEDUP took effect: the experts' q8_1 image of xm is already made
         {
             const WeightRef *wgi = need(v, "ffn_gate_inp_shexp.weight", err), *wsg = need(v, "ffn_gate_shexp.weight", err),
                             *wsu = need(v, "ffn_up_shexp.weight", err), *wsd = need(v, "ffn_down_shexp.weight", err);
@@ -2302,10 +2302,10 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
             nsw.up_type = wsu->native_type; nsw.up_data = wsu->native_data;
             nsw.down_type = wsd->native_type; nsw.down_data = wsd->native_data;
             nsw.q8_1 = sh_fork ? sh_xq_ : xq_;
-            // STRATA_VERIFY_QDEDUP=1 (not with the forked shared-expert stream, which quantizes into its own buffer): the
+            // NOSTROMA_VERIFY_QDEDUP=1 (not with the forked shared-expert stream, which quantizes into its own buffer): the
             // experts' q8_1 image of xm is made first and the shared expert's gate/up read it (quantize_q8_1_rows and
             // native_quantize_q8_1 write the same bytes)
-            qdedup = g_qdedup() && !sh_fork && strata::kernels::cpu::expert_layout().native;
+            qdedup = g_qdedup() && !sh_fork && nostroma::kernels::cpu::expert_layout().native;
             if (qdedup && !q8_ffn) quantize_q8_1_rows(xm, n, N, nat_xq_ + (size_t) tb * (N / 32) * 36, cs);
             if (!shared_expert_native_bf16_enabled()) {
                 if (dec_batch) f32_to_bf16_bulk(mixed_ + tb * N, sh_bf16_ + tb * N, (int64_t) n * N, sh_stream);   // contiguous rows
@@ -2326,12 +2326,12 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
                 cudaEventRecord(ev_join_, sh_cs_);
             }
         }
-        if (strata::kernels::cpu::expert_layout().native) {
+        if (nostroma::kernels::cpu::expert_layout().native) {
             // APR: Hadamard-folded gate/up take H (s * x); xm itself stays as it is (the shared expert above and the
             // doorbell copy for the CPU pool, which rotates its own in native_quant_act). The q8_1 image of xm that
-            // STRATA_QFUSE / STRATA_VERIFY_QDEDUP may already have written is of the unrotated input, so a folded layer
+            // NOSTROMA_QFUSE / NOSTROMA_VERIFY_QDEDUP may already have written is of the unrotated input, so a folded layer
             // always rewrites it from the rotated rows (same stream, after the shared expert has read it).
-            const auto& f = strata::kernels::cpu::expert_layout().fmt[(size_t) l];
+            const auto& f = nostroma::kernels::cpu::expert_layout().fmt[(size_t) l];
             if (f.had_gu) {   // nat_xr_ exists: init carved it because this layer is folded (had_gu_any)
                 hadamard_rows(xm, nat_xr_ + (size_t) tb * N, n, N, f.had_block, had_sx_, cs);
                 quantize_q8_1_rows(nat_xr_ + (size_t) tb * N, n, N, nat_xq_ + (size_t) tb * (N / 32) * 36, cs);
@@ -2346,7 +2346,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
 
     // ---------------------------------------------------------------- post(l, group): experts, combine
     static const bool fuse_head_gr_env = [] {
-        const char* e = strata::env("NOSTROMA_FUSE_HEAD_GR");
+        const char* e = nostroma::env("NOSTROMA_FUSE_HEAD_GR");
         return e && e[0] == '1';
     }();
     const bool fuse_head_gr = fuse_head_gr_env && (le_ == g.n_layers) && (head_ != nullptr && head_->loaded()) &&
@@ -2366,18 +2366,18 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
         const int32_t* p_start2 = pl + ptr_off + 4 * capx;
         float* hit_out = hit_out_ + (size_t) tb * K * N;
         float* parts_out = parts_ + (size_t) tb * K * N;
-        const auto& lay = strata::kernels::cpu::expert_layout();
+        const auto& lay = nostroma::kernels::cpu::expert_layout();
         // plan v0.3 P6: the VRAM groups now; the PCIe groups once the copy engine has landed them in staging.
         // `gy`: the native launch's groups side by side (0: cap, one block row per possible group).
-        // `vram`: the groups point into this GPU's expert slots - a layer STRATA_EXPERT_NIBBLE converted holds its
+        // `vram`: the groups point into this GPU's expert slots - a layer NOSTROMA_EXPERT_NIBBLE converted holds its
         // gate/up there as 4-bit codes (expert_nibble.hpp); the PCIe share's blobs (host memory, staging) never do.
         auto grouped = [&](const unsigned long long* gp, const int32_t* gs, const int32_t* gn, int64_t gy, float* dst_buf,
                            bool vram) {
             if (lay.native) {
                 // the layer's GGUF formats (i-quant gate/up, Q2_0 / IQ4_NL down)
                 const auto& f = lay.fmt[(size_t) l];
-#if STRATA_EXPERT_NIBBLE_BUILT
-                NativeExpertLayout L = vram && strata::core::nibble::layer(l).on
+#if NOSTROMA_EXPERT_NIBBLE_BUILT
+                NativeExpertLayout L = vram && nostroma::core::nibble::layer(l).on
                                            ? native_expert_layout_nib(f.gu_type, f.d_type, f.n_embd, f.n_ff)
                                            : native_expert_layout(f.gu_type, f.d_type, f.n_embd, f.n_ff);
 #else
@@ -2394,12 +2394,12 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
         };
         bool hits_in_combine = false;
         if (ar_on()) {
-            strata::dispatch::note("experts layer: all-resident device plan, grouped experts straight into the parts (no doorbell, no CPU rows)");
+            nostroma::dispatch::note("experts layer: all-resident device plan, grouped experts straight into the parts (no doorbell, no CPU rows)");
             stamp(l, 19, grp);
             grouped(p_ptr, p_start, p_counts, 0, parts_out, true);
             stamp(l, 20, grp);
         } else {
-            strata::dispatch::notef("experts layer: partial residency, plan from %ld (1 = device plan, 0 = host pool), pcie_mode=%ld, remote_opt=%ld", (long) device_plan_, (long) sink_.pcie_mode, (long) (remote_opt_ != nullptr));
+            nostroma::dispatch::notef("experts layer: partial residency, plan from %ld (1 = device plan, 0 = host pool), pcie_mode=%ld, remote_opt=%ld", (long) device_plan_, (long) sink_.pcie_mode, (long) (remote_opt_ != nullptr));
             if (device_plan_) {   // E-6: skipped when the device planned this group (all its experts resident)
                 wait_flag_ge_or(m_flagA_, ring, skip_ + grp, cs);
                 copy_i32_from_mapped_unless(pl, m_plan_ + (size_t) grp * (size_t) plan_i32_, plan_i32_, skip_ + grp, ring, cs);
@@ -2424,7 +2424,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
             if (sink_.pcie_mode == 2) {                            // stage it with a copy kernel, then point at staging
                 const int64_t per = G == 2 ? kStagingBlobs / 2 : kStagingBlobs;
                 uint8_t* stage = staging_ + (size_t) (grp * per) * lay.max_blob;
-                const unsigned long long* p_dst2 = (const unsigned long long*) (pl + dst2_off_);   // STRATA_ADAPT_FETCH
+                const unsigned long long* p_dst2 = (const unsigned long long*) (pl + dst2_off_);   // NOSTROMA_ADAPT_FETCH
                 fetch_blobs(p_ptr2, p_counts + 2, stage, (int64_t) lay.blob_bytes(l), (int) per, cs, p_dst2);
                 rebase_ptrs((unsigned long long*) p_ptr2, p_counts + 2, stage, (int64_t) lay.blob_bytes(l), cs, p_dst2);
             }
@@ -2461,7 +2461,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
             hits_in_combine = fuse_hits_on() && !prof_on_ && !remote_opt_ && !sg_gated_[grp] && dec_batch && n > 1 &&
                               native_moe_combine_enabled() && n <= 8 &&
                               native_moe_combine_hits_supported(parts_ + (size_t) tb * K * N, shared_ + tb * N, bo_ + tb * N, N, K, n);
-            strata::dispatch::notef("experts layer: cpu rows via %ld (1 = fused wait+copy, 0 = wait then copy), hits in combine=%ld", (long) (fuse_rows_on() && !prof_on_ && !remote_opt_ && dec_batch && m_bal_ == nullptr), (long) hits_in_combine);
+            nostroma::dispatch::notef("experts layer: cpu rows via %ld (1 = fused wait+copy, 0 = wait then copy), hits in combine=%ld", (long) (fuse_rows_on() && !prof_on_ && !remote_opt_ && dec_batch && m_bal_ == nullptr), (long) hits_in_combine);
             if (!hits_in_combine) moe_hit_add(parts_out, hit_out, p_dst, p_counts + 1, cap, N, cs);
         }
         // Same condition as `sh_fork` above, which is per group and out of scope here: wait only when the fork
@@ -2469,8 +2469,8 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
         if (sh_stream_on() && !prof_on_ && sh_cs_ != nullptr && ev_fork_ != nullptr && ev_join_ != nullptr) {
             cudaStreamWaitEvent(cs, ev_join_, 0);
         }
-        strata::dispatch::notef("combine layer: kind %ld (0 per-token, 1 multi, 2 multi+hits, 3 multi+hits gated)", (long) (sg_gated_[grp] ? 3 : hits_in_combine ? 2 : (dec_batch && n > 1 && native_moe_combine_enabled()) ? 1 : 0));
-        if (sg_gated_[grp]) {   // STRATA_LFUSE: the shared expert's gate was not applied: the combine applies it (all rows are hits)
+        nostroma::dispatch::notef("combine layer: kind %ld (0 per-token, 1 multi, 2 multi+hits, 3 multi+hits gated)", (long) (sg_gated_[grp] ? 3 : hits_in_combine ? 2 : (dec_batch && n > 1 && native_moe_combine_enabled()) ? 1 : 0));
+        if (sg_gated_[grp]) {   // NOSTROMA_LFUSE: the shared expert's gate was not applied: the combine applies it (all rows are hits)
             try {
                 native_moe_combine_multi_hits_gated(parts_out, w_ + tb * K, shared_ + tb * N, sh_g_ + tb, bo_ + tb * N, N, K, n, cs);
             } catch (const std::exception& e) { err = "verify combine: " + std::string(e.what()); return false; }
@@ -2498,8 +2498,8 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
             // the layer's completed output: R with this FFN half's write applied (the next layer's read would fold it), the mean of
             // the hc streams, all rows of the group in one launch
             const int64_t nt = (int64_t) tap_layers_.size();
-#if defined(STRATA_HAVE_DFLASH2)
-            strata::kernels::df2_tap_gr(Rt(tb), HC * N, bo_ + tb * N, N, inj2_ + tb * HC, HC, tap_dev_ + ((size_t) tb * nt + (size_t) tap_slot_[(size_t) l]) * N,
+#if defined(NOSTROMA_HAVE_DFLASH2)
+            nostroma::kernels::df2_tap_gr(Rt(tb), HC * N, bo_ + tb * N, N, inj2_ + tb * HC, HC, tap_dev_ + ((size_t) tb * nt + (size_t) tap_slot_[(size_t) l]) * N,
                                         nt * N, n, N, (int) HC, cs);
 #else   // builds without the DFlash2 kernels (Metal, SYCL): the research dump's per-row path
             for (int t = tb; t < te; ++t) {
@@ -2551,13 +2551,13 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
         if (!hn || !hd || !hu) { err = "verify: an output_hc_* weight is missing"; return false; }
       for (int h0 = 0; h0 < T; h0 += kFusedGrMaxT) {
         const int HT = std::min(T - h0, kFusedGrMaxT);   // this chunk's columns: h0 .. h0 + HT
-        // S25 (STRATA_HC_Q8=1): the final mixer from the GGUF's Q8_0 projections too, through the same multi read
+        // S25 (NOSTROMA_HC_Q8=1): the final mixer from the GGUF's Q8_0 projections too, through the same multi read
         // (no pending write, no inject)
         const bool mix_q8 = hd->hc_q8 != nullptr && hu->hc_q8 != nullptr && head_ != nullptr && head_->loaded();
         bool q8_head = false;   // the fused read wrote the head's q8_1 activation image (xq_) itself
-        strata::dispatch::notef("head: final mixer q8=%ld fuse_head_gr=%ld native_head=%ld", (long) mix_q8, (long) fuse_head_gr, (long) (head_ != nullptr && head_->loaded()));
+        nostroma::dispatch::notef("head: final mixer q8=%ld fuse_head_gr=%ld native_head=%ld", (long) mix_q8, (long) fuse_head_gr, (long) (head_ != nullptr && head_->loaded()));
         if (head_ != nullptr && head_->loaded())   // the head matrix itself is counted by native_mmvq / native_mmvq_il (n_out = the vocabulary)
-            strata::dispatch::notef("head: type %ld, T=%ld columns, vocabulary %ld", (long) head_->type(), (long) T, (long) n_vocab_);
+            nostroma::dispatch::notef("head: type %ld, T=%ld columns, vocabulary %ld", (long) head_->type(), (long) T, (long) n_vocab_);
         if (mix_q8) {
             FusedGrArgs fa[kFusedGrMaxT];
             for (int t = h0; t < h0 + HT; ++t) {
@@ -2626,9 +2626,9 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
             try {
                 float* const hl = head_logits_ + (size_t) h0 * (size_t) n_vocab_;
                 if (!q8_head) native_quantize_q8_1(head_mixed_ + (size_t) h0 * N, xq_, (int) N, HT, cs);   // (else the fused read wrote this chunk's image at xq_)
-                if (g_mmvq_il() && strata::kernels::native_mmvq_il_supported(head_->type(), (int) HT, (int) n_vocab_)) {
-                    if (HT >= 2) strata::kernels::native_q8_1_interleave(xq_, xil_, (int) N, (int) HT, cs);
-                    strata::kernels::native_mmvq_il(head_->type(), head_->weights(), xq_, xil_, hl, (int) N,
+                if (g_mmvq_il() && nostroma::kernels::native_mmvq_il_supported(head_->type(), (int) HT, (int) n_vocab_)) {
+                    if (HT >= 2) nostroma::kernels::native_q8_1_interleave(xq_, xil_, (int) N, (int) HT, cs);
+                    nostroma::kernels::native_mmvq_il(head_->type(), head_->weights(), xq_, xil_, hl, (int) N,
                                                     (int) n_vocab_, (int) HT, cs);
                 } else
                 native_mmvq(head_->type(), head_->weights(), xq_, hl, (int) N, (int) n_vocab_, HT, cs);
@@ -2650,7 +2650,7 @@ bool Verifier::record_window(int T, cudaStream_t cs, std::string& err) {
             sample_tokens(head_logits_, T, (int) n_vocab_, nullptr, 0, sp, m_out_, cs);
         }
         // #879: whether each row's logits are all finite, beside the pick (read after the window's own sync)
-        if (nan_guard_on()) strata::kernels::logits_nonfinite_rows(head_logits_, T, (int) n_vocab_, m_nf_, cs);
+        if (nan_guard_on()) nostroma::kernels::logits_nonfinite_rows(head_logits_, T, (int) n_vocab_, m_nf_, cs);
     }
     stamp(g.n_layers, 1, 0);
     if (tap_on_ && !batch_rec_ && tap_file_ != nullptr) copy_from_mapped(m_tap_, tap_dev_, (int64_t) T * (int64_t) tap_layers_.size() * N, cs);
@@ -2756,7 +2756,7 @@ void Verifier::refresh_ar() {
     const bool off = lo < 0;
     if (off != ar_off_) {
         ar_off_ = off;
-        std::fprintf(stderr, "strata verify: layers [%lld, %lld) %s\n", (long long) lb_, (long long) (le_ < 0 ? g_->n_layers : le_),
+        std::fprintf(stderr, "nostroma verify: layers [%lld, %lld) %s\n", (long long) lb_, (long long) (le_ < 0 ? g_->n_layers : le_),
                      off ? "have experts out of VRAM (a prompt loan, a shrink or a swap): the doorbell graph runs the windows"
                          : "are 100% VRAM resident again: the zero-doorbell graph");
     }
@@ -2769,7 +2769,7 @@ bool Verifier::capture(int T, std::string& err) {
     {   // said before the capture: a process that exits inside it (#1275: Windows, 313 MiB free) leaves this line as the trace
         size_t free_b = 0, total_b = 0;
         if (cudaMemGetInfo(&free_b, &total_b) == cudaSuccess)
-            std::fprintf(stderr, "strata verify: capturing the %d-token window (%zu MiB of VRAM free)\n", T, free_b >> 20);
+            std::fprintf(stderr, "nostroma verify: capturing the %d-token window (%zu MiB of VRAM free)\n", T, free_b >> 20);
         else
             (void) cudaGetLastError();
     }
@@ -2777,7 +2777,7 @@ bool Verifier::capture(int T, std::string& err) {
         err = "verify: begin capture failed";
         return false;
     }
-#if !defined(STRATA_USE_HIP) && !defined(STRATA_HIP_GFX906) && !defined(STRATA_GPU_METAL)
+#if !defined(NOSTROMA_USE_HIP) && !defined(NOSTROMA_HIP_GFX906) && !defined(NOSTROMA_GPU_METAL)
     prio_forks_.clear();
     prio_tails_.clear();
 #endif
@@ -2794,8 +2794,8 @@ bool Verifier::capture(int T, std::string& err) {
         err = std::string("verify: end capture: ") + cudaGetErrorString(ce);
         return false;
     }
-#if defined(STRATA_USE_HIP)   // 143-amdk: the same listing on HIP (kernel names by hipKernelNameRefByPtr); STRATA_VERIFY_NODES=2 also lists the first nodes in graph order
-    if (strata::env("NOSTROMA_VERIFY_NODES") != nullptr) {
+#if defined(NOSTROMA_USE_HIP)   // 143-amdk: the same listing on HIP (kernel names by hipKernelNameRefByPtr); NOSTROMA_VERIFY_NODES=2 also lists the first nodes in graph order
+    if (nostroma::env("NOSTROMA_VERIFY_NODES") != nullptr) {
         size_t nn = 0;
         hipGraphGetNodes(graph, nullptr, &nn);
         std::vector<hipGraphNode_t> nodes(nn);
@@ -2823,18 +2823,18 @@ bool Verifier::capture(int T, std::string& err) {
             } else if (ty == hipGraphNodeTypeMemcpy) name = "memcpy";
             else if (ty == hipGraphNodeTypeMemset) name = "memset";
             ++kinds[name];
-            if (std::atoi(strata::env("NOSTROMA_VERIFY_NODES")) >= 2 && shown++ < 400) seq += "\n  " + name.substr(0, 110);
+            if (std::atoi(nostroma::env("NOSTROMA_VERIFY_NODES")) >= 2 && shown++ < 400) seq += "\n  " + name.substr(0, 110);
         }
         std::vector<std::pair<int, std::string>> v;
         for (auto& [k2, c] : kinds) v.push_back({c, k2});
         std::sort(v.rbegin(), v.rend());
-        std::fprintf(stderr, "strata verify: the %d-token window graph has %zu nodes:", T, nn);
+        std::fprintf(stderr, "nostroma verify: the %d-token window graph has %zu nodes:", T, nn);
         for (size_t i = 0; i < v.size() && i < 80; ++i) std::fprintf(stderr, "\n %4d x %.110s", v[i].first, v[i].second.c_str());
         std::fprintf(stderr, "\n%s\n", seq.c_str());
     }
 #endif
-#if !defined(STRATA_USE_HIP) && !defined(STRATA_GPU_METAL)   // a CUDA debug listing (node types, kernel names)
-    if (strata::env("NOSTROMA_VERIFY_NODES") != nullptr) {   // what the window graph holds
+#if !defined(NOSTROMA_USE_HIP) && !defined(NOSTROMA_GPU_METAL)   // a CUDA debug listing (node types, kernel names)
+    if (nostroma::env("NOSTROMA_VERIFY_NODES") != nullptr) {   // what the window graph holds
         size_t nn = 0;
         cudaGraphGetNodes(graph, nullptr, &nn);
         std::vector<cudaGraphNode_t> nodes(nn);
@@ -2859,7 +2859,7 @@ bool Verifier::capture(int T, std::string& err) {
         std::vector<std::pair<int, std::string>> v;
         for (auto& [k2, c] : kinds) v.push_back({c, k2});
         std::sort(v.rbegin(), v.rend());
-        std::fprintf(stderr, "strata verify: the %d-token window graph has %zu nodes:", T, nn);
+        std::fprintf(stderr, "nostroma verify: the %d-token window graph has %zu nodes:", T, nn);
         for (size_t i = 0; i < v.size() && i < 40; ++i) std::fprintf(stderr, " %d x %.60s;", v[i].first, v[i].second.c_str());
         std::fprintf(stderr, "\n");
 #if CUDART_VERSION >= 12030   // the programmatic (PDL) edges: CUDA allows them only from a kernel node to a kernel node
@@ -2886,19 +2886,19 @@ bool Verifier::capture(int T, std::string& err) {
                 ++bad;
         }
         if (ge != cudaSuccess) cudaGetLastError();
-        std::fprintf(stderr, "strata verify: %zu edges, %zu programmatic (PDL), %zu of them not kernel to kernel%s\n", ne,
+        std::fprintf(stderr, "nostroma verify: %zu edges, %zu programmatic (PDL), %zu of them not kernel to kernel%s\n", ne,
                      prog, bad, ge != cudaSuccess ? " (the edge query failed)" : "");
 #endif
     }
 #endif
     unsigned long long iflags = 0;
-#if !defined(STRATA_USE_HIP) && !defined(STRATA_HIP_GFX906) && !defined(STRATA_GPU_METAL)
-    if (graph_prio_on()) {   // STRATA_GRAPH_PRIO: the nodes run at their own (captured or repaired) priorities
+#if !defined(NOSTROMA_USE_HIP) && !defined(NOSTROMA_HIP_GFX906) && !defined(NOSTROMA_GPU_METAL)
+    if (graph_prio_on()) {   // NOSTROMA_GRAPH_PRIO: the nodes run at their own (captured or repaired) priorities
         apply_node_priorities(graph, T);
         iflags = cudaGraphInstantiateFlagUseNodePriority;
     }
 #endif
-#if defined(STRATA_USE_HIP)
+#if defined(NOSTROMA_USE_HIP)
     if (env_on("NOSTROMA_LAUNCH_PROBE")) {   // STRIX-TDR: how many nodes (about one AQL packet each) the window graph holds
         size_t nn = 0, nk = 0;
         hipGraphGetNodes(graph, nullptr, &nn);
@@ -2908,7 +2908,7 @@ bool Verifier::capture(int T, std::string& err) {
             hipGraphNodeType ty;
             if (hipGraphNodeGetType(nd, &ty) == hipSuccess && ty == hipGraphNodeTypeKernel) ++nk;
         }
-        std::fprintf(stderr, "strata tdr-probe: the %d-token window graph has %zu nodes, %zu of them kernels\n", T, nn, nk);
+        std::fprintf(stderr, "nostroma tdr-probe: the %d-token window graph has %zu nodes, %zu of them kernels\n", T, nn, nk);
     }
 #endif
     const bool made = instantiate_evicting(exec_t, graph, {}, "verify: instantiate: ", err, T, iflags);
@@ -2916,21 +2916,21 @@ bool Verifier::capture(int T, std::string& err) {
     if (!made) return false;
     const cudaError_t ue = cudaGraphUpload(exec_t, cs_);
     const cudaError_t us = cudaStreamSynchronize(cs_);
-    std::fprintf(stderr, "strata verify: captured the %d-token window (upload %s, sync %s) in %.1f ms\n", T,
+    std::fprintf(stderr, "nostroma verify: captured the %d-token window (upload %s, sync %s) in %.1f ms\n", T,
                  cudaGetErrorString(ue), cudaGetErrorString(us),
                  std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - cap_t0).count());
     // The upload only warms the graph; the first launch does it otherwise. A failed one (out of memory on a full card)
     // must not stay pending: the next kernel wrapper's cudaGetLastError would read it and end the engine (#3702).
     if (ue != cudaSuccess || us != cudaSuccess) {
         (void) cudaGetLastError();
-        std::fprintf(stderr, "strata verify: the %d-token window's upload was skipped (the first launch does it)\n", T);
+        std::fprintf(stderr, "nostroma verify: the %d-token window's upload was skipped (the first launch does it)\n", T);
     }
     return true;
 }
 
 bool Verifier::capture_commit(std::string& err) {
     if (commit_exec_ != nullptr) return true;
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     const ModelGeometry& g = *g_;
     SessionState& ss = *ss_;
     const QsaShapes s = shapes_of(g);
@@ -2948,13 +2948,13 @@ bool Verifier::capture_commit(std::string& err) {
         copy_i32_from_mapped(commit_, m_commit_, 2 + MT, cs_);
         int64_t qsa_index = 0, gdn_index = 0;
         for (int64_t l = 0; l < lb_; ++l) (is_qsa_layer(g, l) ? qsa_index : gdn_index) += 1;
-        // engine-latency (STRATA_COMMIT_BATCH, default on; =0 keeps the per-layer loop): every GDN layer's conv history and
+        // engine-latency (NOSTROMA_COMMIT_BATCH, default on; =0 keeps the per-layer loop): every GDN layer's conv history and
         // state in two launches instead of two per layer (~70 graph nodes fewer; the same arithmetic per layer, bitwise).
         // The commit runs between a window and the draft round, which on HIP waits for it.
-#if defined(STRATA_GPU_METAL)   // no batched commit kernels on Metal: the per-layer loop (the Mac engine's gated path)
+#if defined(NOSTROMA_GPU_METAL)   // no batched commit kernels on Metal: the per-layer loop (the Mac engine's gated path)
         static const bool commit_batch = false;
 #else
-        static const bool commit_batch = [] { const char* e = strata::env("NOSTROMA_COMMIT_BATCH"); return !e || e[0] != '0'; }();
+        static const bool commit_batch = [] { const char* e = nostroma::env("NOSTROMA_COMMIT_BATCH"); return !e || e[0] != '0'; }();
 #endif
         bool gdn_batched = false;
         if (commit_batch) {
@@ -3010,7 +3010,7 @@ bool Verifier::capture_commit(std::string& err) {
             } else if (!is_qsa_layer(g, l)) {
                 if (MT > kVerifyMaxT) {   // gdn_step_norm_multi takes kVerifyMaxT tokens; gdn_commit_layers takes more
                     err = "verify commit: windows past " + std::to_string(kVerifyMaxT) + " tokens (--lookup-max-t) need "
-                          "the batched GDN commit (unset STRATA_COMMIT_BATCH=0, STRATA_GDN_SPLIT, STRATA_GDN_COMMIT_SPLIT=0)";
+                          "the batched GDN commit (unset NOSTROMA_COMMIT_BATCH=0, NOSTROMA_GDN_SPLIT, NOSTROMA_GDN_COMMIT_SPLIT=0)";
                     ok = false;
                     break;
                 }
@@ -3067,7 +3067,7 @@ bool Verifier::capture_commit(std::string& err) {
 }
 
 void Verifier::stage_inputs(int T, const int32_t* tokens, int64_t pos0) {
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     const ModelGeometry& g = *g_;
     const QsaShapes s = shapes_of(g);
     int32_t* const pk = h_pos_ + (size_t) max_t_ * g.n_head;
@@ -3089,7 +3089,7 @@ void Verifier::stage_inputs(int T, const int32_t* tokens, int64_t pos0) {
     if (herr_h_ != nullptr) *(volatile uint32_t*) herr_h_ = 0;
     if (hdrop_h_ != nullptr) *(volatile uint32_t*) hdrop_h_ = (g_test_drop > 0 && windows + 1 == g_test_drop) ? 1u : 0u;
     std::atomic_thread_fence(std::memory_order_seq_cst);
-    strata_store_fence();
+    nostroma_store_fence();
     last_t_ = T;
     if (rs_on_ && T >= 1 && T <= 16) ++rs_win_[T];
     last_pos0_ = pos0;
@@ -3156,7 +3156,7 @@ void Verifier::accumulate_profile_inner(const unsigned long long* stamps) {
     ++prof_windows_;
 }
 
-// 0.1.43 (STRATA_ADAPT_OVERLAP): hold the host until the adaptive tier's copies up to `layer` have landed.  The wait
+// 0.1.43 (NOSTROMA_ADAPT_OVERLAP): hold the host until the adaptive tier's copies up to `layer` have landed.  The wait
 // is a spin on an atomic the copy stream's host functions raise (no driver call here); 20 s is the window's own limit.
 bool Verifier::adapt_gate_wait(int32_t layer, std::string& err) {
     const Clock::time_point t0 = Clock::now();
@@ -3172,23 +3172,23 @@ bool Verifier::adapt_gate_wait(int32_t layer, std::string& err) {
             progress_at("verify window: waiting for the adaptive tier's copies of layer", layer);
             announced = true;
         }
-        strata_cpu_pause();
+        nostroma_cpu_pause();
         if ((++spins & 1023u) != 0) continue;
         if (Clock::now() - t0 > std::chrono::seconds(20)) {
             // the release drains the window's own streams, never the tier's copy stream: say so, and hand out the
-            // gate's words and this window's GPU breadcrumbs (STRATA_VERIFY_TRACE) - the last landed layer is the
+            // gate's words and this window's GPU breadcrumbs (NOSTROMA_VERIFY_TRACE) - the last landed layer is the
             // exact place the stream stopped, which the released window's error line alone never told (#2188's class)
             const int32_t reach = adapt_gate_->reached(), land = adapt_gate_->landed.load();
             const int32_t hl = adapt_gate_->hland != nullptr ? *adapt_gate_->hland : -2;
             if (g_trace) trace_ev("GATE-TIMEOUT", -1, layer, reach);
-            std::fprintf(stderr, "strata verify: the adaptive gate waited %lld ms for layer %d: reached %d "
+            std::fprintf(stderr, "nostroma verify: the adaptive gate waited %lld ms for layer %d: reached %d "
                                  "(atomic %d, copy signal %d) - the tier's copy stream was not drained by the release\n",
                          (long long) ms_since(t0), (int) layer, (int) reach, (int) land, (int) hl);
             if (g_trace) trace_dump(stderr);
             err = "verify: the adaptive tier's copies for layer " + std::to_string(layer) + " never landed" +
                   released_note(release_gpu_waits(5000)) +
                   " (the copy stream itself is not drained: reached " + std::to_string(reach) + " of " +
-                  std::to_string(layer) + ", STRATA_VERIFY_TRACE=1 prints where the stream stopped)";
+                  std::to_string(layer) + ", NOSTROMA_VERIFY_TRACE=1 prints where the stream stopped)";
             std::fflush(stderr);
             return false;
         }
@@ -3200,8 +3200,8 @@ bool Verifier::adapt_gate_wait(int32_t layer, std::string& err) {
 bool Verifier::handoff_failed(std::string& err) const {
     if (herr_h_ == nullptr || *(const volatile uint32_t*) herr_h_ == 0) return false;
     err = "verify: layer split: the hand-off into layer " + std::to_string(lb_) + " did not arrive within " +
-          std::to_string(g_split_wait_ns / 1000000ull) + " ms (STRATA_SPLIT_WAIT_MS); the window was not used. "
-          "STRATA_SPLIT_OVERLAP=0 runs the serial order";
+          std::to_string(g_split_wait_ns / 1000000ull) + " ms (NOSTROMA_SPLIT_WAIT_MS); the window was not used. "
+          "NOSTROMA_SPLIT_OVERLAP=0 runs the serial order";
     trace_ev("HANDOFF-TIMEOUT", -1, lb_, (int64_t) (g_split_wait_ns / 1000000ull));
     return true;
 }
@@ -3230,7 +3230,7 @@ bool Verifier::prelaunch(int T, const int32_t* tokens, int64_t pos0, std::string
     // 0.1.43: the same gate run() applies before it launches (the adaptive tier's copies land first)
     if (adapt_gate_ != nullptr && adapt_gate_->active.load(std::memory_order_acquire) && ar_on() &&
         !adapt_gate_wait((int32_t) g_->n_layers, err)) return false;
-    strata::dispatch::Stats::get().graph_launch(T, ar_on() ? 0 : 1);
+    nostroma::dispatch::Stats::get().graph_launch(T, ar_on() ? 0 : 1);
     const cudaError_t le = cudaGraphLaunch(exec_t, cs_);
     trace_ev("LAUNCHED", -1, -1, (int64_t) le);
     if (le != cudaSuccess) { err = std::string("verify: launch: ") + cudaGetErrorString(le); return false; }
@@ -3248,30 +3248,30 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
         bool active;
         ~ProposalBorrow() { if (active) verifier->set_spec_q(nullptr, 0); }
     } proposal_borrow{this, measure};
-    if (measure && (T < 1 || T > strata::kernels::kVerifyMaxT ||
+    if (measure && (T < 1 || T > nostroma::kernels::kVerifyMaxT ||
                     spec_nq_ < 0 || spec_nq_ > T || (spec_nq_ > 0 && spec_q_ == nullptr))) {
         err = "verify: proposal row count/pointer is invalid"; return false;
     }
     if (measure && (!head_sampling_ || sampling_.greedy || sampling_.temperature <= 0.0f)) {
         err = "verify: proposal requires sampled head"; return false;
     }
-#if defined(STRATA_GPU_METAL)
+#if defined(NOSTROMA_GPU_METAL)
     if (measure) { err = "verify: proposal unsupported on Metal"; return false; }
     (void) pool;
     (void) user;
     {   // a sampled, penalised or biased request: the head rows are sampled on the GPU (metal/kernels/sample.metal), Philox(seed, pos0 + t) as the CUDA head
         const bool sampled_m = !sampling_.greedy && sampling_.temperature > 0.0f;
         if (head_sampling_ && (sampled_m || hist_d_ != nullptr || sampling_.logit_bias != nullptr)) {
-            strata::kernels::SamplerParams sp_m = sampling_;
+            nostroma::kernels::SamplerParams sp_m = sampling_;
             sp_m.counter = (uint64_t) pos0;
-            strata::metal_engine::window_set_sampling(metal_, &sp_m, hist_d_, hist_len_);
+            nostroma::metal_engine::window_set_sampling(metal_, &sp_m, hist_d_, hist_len_);
         } else {
-            strata::metal_engine::window_set_sampling(metal_, nullptr, nullptr, 0);
+            nostroma::metal_engine::window_set_sampling(metal_, nullptr, nullptr, 0);
         }
     }
-    return strata::metal_engine::window_run(metal_, T, tokens, pos0, head_sampling_, out, err);
+    return nostroma::metal_engine::window_run(metal_, T, tokens, pos0, head_sampling_, out, err);
 #endif
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     const OnDevice on_device(device_);
     last_batch_ = false;
     if (T < 1 || T > max_t_) { err = "verify: window size out of range"; return false; }
@@ -3287,7 +3287,7 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
     prelaunched_ = 0;
     if (!pre && pre_launch_ && !pre_launch_(cs_, err)) return false;   // (a prelaunched window's was served with the first stage's)
     if (!pre) refresh_ar();
-    // STRATA_SELECT_LONG: the select kernels this window's context pays off with (the same on every stage)
+    // NOSTROMA_SELECT_LONG: the select kernels this window's context pays off with (the same on every stage)
     sel_long_ = select_long_on() && pos0 + T >= select_long_at() ? 1 : 0;
     if (!capture(T, err) || !capture_commit(err)) return false;
     const bool chain = chain_overlap();
@@ -3312,7 +3312,7 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
             ss.ple.table->prefetch_rows(ple_rows + t * PLE_N_HEADS);
         }
     }
-#if defined(STRATA_VERIFY_HGL)
+#if defined(NOSTROMA_VERIFY_HGL)
     std::optional<HostGraphLaunch> launch_o;   // (not set when the previous stage launched this window already)
 #endif
     const bool test_stall = g_test_stall > 0 && windows + 1 == g_test_stall;   // #267 test hook (off: false)
@@ -3323,7 +3323,7 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
             const Clock::time_point tp = Clock::now();
             if (!ss.ple.table->gather_batch(ple_rows, (size_t) T, h_ple_, err)) return false;
             std::atomic_thread_fence(std::memory_order_seq_cst);
-            strata_store_fence();
+            nostroma_store_fence();
             ms_host += ms_since(tp);
         }
         *(volatile uint32_t*) h_flag_ = 1;
@@ -3345,14 +3345,14 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
         // 0.1.43: with the all-resident graph the host serves no layer, so nothing can hold a layer back: every copy first
         if (adapt_gate_ != nullptr && adapt_gate_->active.load(std::memory_order_acquire) && ar_on() &&
             !adapt_gate_wait((int32_t) g.n_layers, err)) return false;
-#if defined(STRATA_VERIFY_HGL)
+#if defined(NOSTROMA_VERIFY_HGL)
         // A blocking instrumented launch cannot also serve the graph's CPU doorbells.
         static const bool threaded_launch = [] {
-            const char* value = strata::env("NOSTROMA_VERIFY_ASYNC_LAUNCH");
+            const char* value = nostroma::env("NOSTROMA_VERIFY_ASYNC_LAUNCH");
             return value != nullptr && value[0] == '1';
         }();
-        strata::dispatch::Stats::get().graph_launch(T, ar_on() ? 0 : 1);
-        // STRATA_LAUNCH_PROBE=1 (diagnostic, the first 12 windows): how long the launch call takes, whether the GPU has rung a layer
+        nostroma::dispatch::Stats::get().graph_launch(T, ar_on() ? 0 : 1);
+        // NOSTROMA_LAUNCH_PROBE=1 (diagnostic, the first 12 windows): how long the launch call takes, whether the GPU has rung a layer
         // before the call returns, and what a call that has not returned looks like after 50 ms ... 10 s (STRIX-TDR).
         std::atomic<bool> probe_done{false};
         std::thread probe_th;
@@ -3360,7 +3360,7 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
             probe_t0 = Clock::now();
             size_t fm = 0, tm = 0;
             (void) cudaMemGetInfo(&fm, &tm);
-            std::fprintf(stderr, "strata tdr-probe: window %d T=%d pos=%lld: t=%.0f ms since start, %.0f MiB free, launching%s\n", probe_idx, T,
+            std::fprintf(stderr, "nostroma tdr-probe: window %d T=%d pos=%lld: t=%.0f ms since start, %.0f MiB free, launching%s\n", probe_idx, T,
                          (long long) pos0, ms_since(probe_proc_t0()), (double) fm / 1048576.0, threaded_launch ? " (helper thread)" : "");
             probe_th = std::thread([this, &probe_done, probe_t0, probe_idx, T] {
                 static const double marks[] = {50, 250, 500, 1000, 2000, 3000, 5000, 10000, 30000};
@@ -3369,7 +3369,7 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
                     std::this_thread::sleep_for(std::chrono::milliseconds(2));
                     if (ms_since(probe_t0) < marks[mi]) continue;
                     std::fprintf(stderr,
-                                 "strata tdr-probe: window %d T=%d: the launch call has not returned after %.0f ms; GPU rang %u, flags served %u A %u B %u\n",
+                                 "nostroma tdr-probe: window %d T=%d: the launch call has not returned after %.0f ms; GPU rang %u, flags served %u A %u B %u\n",
                                  probe_idx, T, marks[mi], h_seq_ ? *(volatile uint32_t*) h_seq_ : 0u, h_flag_ ? *(volatile uint32_t*) h_flag_ : 0u,
                                  h_flagA_ ? *(volatile uint32_t*) h_flagA_ : 0u, h_flagB_ ? *(volatile uint32_t*) h_flagB_ : 0u);
                     ++mi;
@@ -3382,18 +3382,18 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
         if (probe_this) {
             probe_done.store(true, std::memory_order_release);
             probe_th.join();
-            std::fprintf(stderr, "strata tdr-probe: window %d T=%d: launch call %s in %.2f ms; the GPU had rung %u layer(s) and the host served %u at the return\n",
+            std::fprintf(stderr, "nostroma tdr-probe: window %d T=%d: launch call %s in %.2f ms; the GPU had rung %u layer(s) and the host served %u at the return\n",
                          probe_idx, T, threaded_launch ? "handed to the helper" : "returned", ms_since(probe_t0),
                          h_seq_ ? *(volatile uint32_t*) h_seq_ : 0u, h_flag_ ? *(volatile uint32_t*) h_flag_ : 0u);
         }
 #else
-        strata::dispatch::Stats::get().graph_launch(T, ar_on() ? 0 : 1);
+        nostroma::dispatch::Stats::get().graph_launch(T, ar_on() ? 0 : 1);
         const cudaError_t le = cudaGraphLaunch(ar_off_ ? exec_nr_[sel_long_][T] : exec_[sel_long_][T], cs_);
 #endif
         trace_ev("LAUNCHED", -1, -1, (int64_t) le);
         graph_launched = true;
         if (le != cudaSuccess) { err = std::string("verify: launch: ") + cudaGetErrorString(le); return false; }
-#if defined(STRATA_VERIFY_HGL)
+#if defined(NOSTROMA_VERIFY_HGL)
         (void) launch_o->query();
 #else
         (void) cudaStreamQuery(cs_);
@@ -3436,7 +3436,7 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
             const Clock::time_point tp = Clock::now();
             if (!ss.ple.table->gather_batch(ple_rows, (size_t) T, h_ple_, err)) return false;
             std::atomic_thread_fence(std::memory_order_seq_cst);
-            strata_store_fence();
+            nostroma_store_fence();
             *flag = 1;
             ms_host += ms_since(tp);
         } else {
@@ -3452,12 +3452,12 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
         uint32_t spins = 0;
         progress_at("verify window: waiting for the GPU to reach layer", l);
         while (*seq < want) {
-            strata_cpu_pause();
+            nostroma_cpu_pause();
             if ((++spins & 1023u) != 0) continue;
             const auto now = Clock::now();
             if (now - last_flush > std::chrono::microseconds(2000)) {
                 last_flush = now;
-#if defined(STRATA_VERIFY_HGL)
+#if defined(NOSTROMA_VERIFY_HGL)
                 const cudaError_t q = launch_o ? launch_o->query() : cudaStreamQuery(cs_);
 #else
                 const cudaError_t q = cudaStreamQuery(cs_);
@@ -3472,7 +3472,7 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
             }
             if (now - a > std::chrono::seconds(20)) {
                 // #267: the caller ends the engine; no spin kernel may outlive it
-#if defined(STRATA_VERIFY_HGL)
+#if defined(NOSTROMA_VERIFY_HGL)
                 trace_ev("TIMEOUT", k, l, (int64_t) (launch_o ? launch_o->query() : cudaStreamQuery(cs_)));
 #else
                 trace_ev("TIMEOUT", k, l, (int64_t) cudaStreamQuery(cs_));
@@ -3488,10 +3488,10 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
                 return false;
             }
         }
-        strata_load_fence();   // the layer rang: the GPU's activations are read after it (a no-op on x86)
+        nostroma_load_fence();   // the layer rang: the GPU's activations are read after it (a no-op on x86)
         const Clock::time_point b = Clock::now();
         if (probe_this && k == 0)
-            std::fprintf(stderr, "strata tdr-probe: window %d T=%d: the first doorbell (layer %lld) seen %.2f ms after the launch began\n", probe_idx, T,
+            std::fprintf(stderr, "nostroma tdr-probe: window %d T=%d: the first doorbell (layer %lld) seen %.2f ms after the launch began\n", probe_idx, T,
                          (long long) l, ms_since(probe_t0));
         if (g_trace) trace_ev("RANG", k, l, (int64_t) std::chrono::duration_cast<std::chrono::microseconds>(b - a).count());
         VDBG("layer %lld rang\n", (long long) l);
@@ -3513,7 +3513,7 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
                               (int64_t) ms_since(b));   // aux: ms the CPU experts took
         progress_tick();
         std::atomic_thread_fence(std::memory_order_seq_cst);
-        strata_store_fence();
+        nostroma_store_fence();
         if (h_bal_ != nullptr) {   // set_pcie_balance: the step's plan, its CPU and its PCIe experts
             const size_t bi = (size_t) ((k / G) * 2 + grp);
             bal_ok_[bi] = *(volatile uint32_t*) h_flagA_ == want;
@@ -3539,7 +3539,7 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
             const Clock::time_point tp = Clock::now();
             if (!ss.ple.table->gather_batch(ple_rows, (size_t) T, h_ple_, err)) return false;
             std::atomic_thread_fence(std::memory_order_seq_cst);
-            strata_store_fence();
+            nostroma_store_fence();
             ms_host += ms_since(tp);
         }
         if (!(test_stall && k + 1 == steps)) *flag = want;
@@ -3579,7 +3579,7 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
     // spin kernel outlives the process - the case that left Windows GPUs "lost" until a power cycle.  The wait
     // itself stays a blocking sync: a cudaStreamQuery poll here cost IQ3_S ~3% decode (a core calling the driver
     // beside the expert workers).
-#if defined(STRATA_VERIFY_HGL)
+#if defined(NOSTROMA_VERIFY_HGL)
     const cudaError_t launch_result = launch_o ? launch_o->finish() : cudaSuccess;
     if (launch_result != cudaSuccess) {
         err = std::string("verify: launch: ") + cudaGetErrorString(launch_result);
@@ -3616,11 +3616,11 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
     if (head_sampling_ && (sampled || hist_d_ != nullptr || sampling_.logit_bias != nullptr)) {
         SamplerParams sp = sampling_;
         sp.counter = (uint64_t) pos0;
-        // STRATA_SPEC_PROB: the drafter's q lists for this window, judged by rejection sampling (spec_prob.hpp)
+        // NOSTROMA_SPEC_PROB: the drafter's q lists for this window, judged by rejection sampling (spec_prob.hpp)
         bool judged = false;
         if (sampled && (measure || (spec_q_ != nullptr && spec_nq_ > 0 && T > 1)) && T <= kVerifyMaxT) {
             if (d_spec_ == nullptr &&
-                cudaMalloc((void**) &d_spec_, (size_t) kVerifyMaxT * (1 + strata::core::kSpecQStride) * sizeof(int32_t)) !=
+                cudaMalloc((void**) &d_spec_, (size_t) kVerifyMaxT * (1 + nostroma::core::kSpecQStride) * sizeof(int32_t)) !=
                     cudaSuccess) {
                 (void) cudaGetLastError();
                 d_spec_ = nullptr;
@@ -3630,7 +3630,7 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
                 int32_t* d_q = d_spec_ + kVerifyMaxT;
                 if ((T == 1 || cudaMemcpyAsync(d_spec_, tokens + 1, (size_t) (T - 1) * sizeof(int32_t), cudaMemcpyHostToDevice, cs_) ==
                         cudaSuccess) &&
-                    (nq == 0 || cudaMemcpyAsync(d_q, spec_q_, (size_t) nq * strata::core::kSpecQStride * sizeof(int32_t),
+                    (nq == 0 || cudaMemcpyAsync(d_q, spec_q_, (size_t) nq * nostroma::core::kSpecQStride * sizeof(int32_t),
                                                cudaMemcpyHostToDevice, cs_) == cudaSuccess))
                     judged = measure
                         ? sample_tokens_proposal(head_logits_, T, (int) n_vocab_, hist_d_, hist_len_, sp,
@@ -3655,7 +3655,7 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
     }
     if (measure) {
         for (int t = 0; t < T; ++t)
-            if (((volatile int32_t*) h_out_)[t] == strata::core::proposal::kProposalSamplerErrorToken) {
+            if (((volatile int32_t*) h_out_)[t] == nostroma::core::proposal::kProposalSamplerErrorToken) {
                 err = "verify: invalid proposal candidate or zero NULL residual";
                 return false;
             }
@@ -3663,12 +3663,12 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
     for (int t = 0; t < T; ++t) out[t] = ((volatile int32_t*) h_out_)[t];
     if (tap_file_ != nullptr && !batch_rec_) tap_write(T, tokens, pos0);
     note_nonfinite(T, nullptr);
-    // STRATA_LOGITS_DUMP=<path> (debug tap, off by default): the window's logits as the sampler saw them, written
+    // NOSTROMA_LOGITS_DUMP=<path> (debug tap, off by default): the window's logits as the sampler saw them, written
     // AFTER the window (the stream is synchronised above and the graph capture is over, so a plain copy is legal -
-    // the same place STRATA_DBG_NAN copies from).  One record is
+    // the same place NOSTROMA_DBG_NAN copies from).  One record is
     // {int32 magic, int32 T, int32 n_vocab, int32 record, int64 position}, then T * n_vocab FP32 rows; row 0 is
     // the window's first position (the last prompt token of a prefill), which is what a KL comparison wants.
-    if (const char* logits_path = strata::env("NOSTROMA_LOGITS_DUMP")) {
+    if (const char* logits_path = nostroma::env("NOSTROMA_LOGITS_DUMP")) {
         static std::FILE* lf = std::fopen(logits_path, "wb");
         static int32_t lrec = 0;
         if (lf != nullptr) {
@@ -3685,13 +3685,13 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
                 static bool said = false;
                 if (!said) {
                     said = true;
-                    std::fprintf(stderr, "strata verify: STRATA_LOGITS_DUMP copy failed: %s\n", cudaGetErrorString(le));
+                    std::fprintf(stderr, "nostroma verify: NOSTROMA_LOGITS_DUMP copy failed: %s\n", cudaGetErrorString(le));
                     (void) cudaGetLastError();
                 }
             }
         }
     }
-    if (static const bool dbg = strata::env("NOSTROMA_DBG_NAN") != nullptr; dbg) {   // debug: the first non-finite head
+    if (static const bool dbg = nostroma::env("NOSTROMA_DBG_NAN") != nullptr; dbg) {   // debug: the first non-finite head
         static bool reported = false;
         if (!reported) {
             std::vector<float> h((size_t) T * (size_t) n_vocab_);
@@ -3701,7 +3701,7 @@ bool Verifier::run(int T, const int32_t* tokens, int64_t pos0, PoolMultiFn pool,
                 for (int64_t v = 0; v < n_vocab_; ++v) bad += !std::isfinite(h[(size_t) t * n_vocab_ + v]);
                 if (bad) {
                     reported = true;
-                    std::fprintf(stderr, "strata dbg: verify window at position %lld, row %d: %lld of %lld logits non-finite "
+                    std::fprintf(stderr, "nostroma dbg: verify window at position %lld, row %d: %lld of %lld logits non-finite "
                                          "(token out %d)\n", (long long) pos0, t, (long long) bad, (long long) n_vocab_, out[t]);
                 }
             }
@@ -3743,22 +3743,22 @@ void Verifier::set_plan_slot(int grp) {
     sink_.dst2 = (unsigned long long*) (base + dst2_off_);
     const int G = last_batch_ ? 1 : (groups_[last_t_] > 0 ? groups_[last_t_] : 1);
     const int64_t per = G == 2 ? kStagingBlobs / 2 : kStagingBlobs;
-    sink_.staging = (unsigned long long) (staging_ + (size_t) (grp * per) * strata::kernels::cpu::expert_layout().max_blob);
+    sink_.staging = (unsigned long long) (staging_ + (size_t) (grp * per) * nostroma::kernels::cpu::expert_layout().max_blob);
     sink_.staging_cap = per;
 }
 
 // Flag B only rises: a host function of an earlier layer may run after a later layer already raised it directly.
-void Verifier::raise_flag(uint32_t* flag, uint32_t value) { strata::core::flag_raise_max(flag, value); }
+void Verifier::raise_flag(uint32_t* flag, uint32_t value) { nostroma::core::flag_raise_max(flag, value); }
 
 // Flag B for layer `want - 1`, behind every copy queued on the copy stream (PR #5096, @AlanJager).  The counter only
 // rises and the graph waits for "flag B >= layer + 1", so raising it on the spot for a layer with nothing to copy
 // releases an earlier layer (or the other token group of a split window) whose uploads are still in flight.
 void Verifier::raise_flag_b_ordered(uint32_t want) {
     FlagSet& fs = flag_sets_[(want - 1) % (sizeof flag_sets_ / sizeof flag_sets_[0])];
-    const cudaError_t e = strata::core::raise_flag_b_ordered(copy_used_, copy_, &fs, h_flagB_, want);
+    const cudaError_t e = nostroma::core::raise_flag_b_ordered(copy_used_, copy_, &fs, h_flagB_, want);
     if (e != cudaSuccess) {
         // The flag was not raised: the consumers must not be released to staging that is still being written.
-        std::fprintf(stderr, "strata DMA: ordered flag B completion failed: %s\n", cudaGetErrorString(e));
+        std::fprintf(stderr, "nostroma DMA: ordered flag B completion failed: %s\n", cudaGetErrorString(e));
         std::fflush(stderr);
         release_gpu_waits(5000);
         std::abort();
@@ -3774,17 +3774,17 @@ void Verifier::fetch_dma(void* ctx, const uint8_t* const* src, int n, size_t byt
     if (n <= 0) { v->raise_flag_b_ordered(want); return; }   // an empty plan stays behind the copies already queued
     v->copy_used_ = true;
     uint8_t* stage = (uint8_t*) v->sink_.staging;                  // this group's half in a split window
-    // STRATA_DMA_BATCH (midhatn's #807, F12): the group's independent uploads as one cudaMemcpyBatchAsync.  Mode 0 is
+    // NOSTROMA_DMA_BATCH (midhatn's #807, F12): the group's independent uploads as one cudaMemcpyBatchAsync.  Mode 0 is
     // the loop the engine always ran, errors unchecked (it never stops the engine).  A batch mode whose uploads
     // cannot be submitted stops the engine: flag B must not release the consumers to expert weights that were never
     // copied.
-    const int batch_mode = strata::core::dma_batch_mode();
+    const int batch_mode = nostroma::core::dma_batch_mode();
     if (batch_mode == 0) {
         for (int i = 0; i < n; ++i) cudaMemcpyAsync(stage + (size_t) i * bytes, src[i], bytes, cudaMemcpyHostToDevice, v->copy_);
     } else {
-        const auto copied = strata::core::copy_expert_blobs(stage, src, n, bytes, v->copy_, batch_mode);
+        const auto copied = nostroma::core::copy_expert_blobs(stage, src, n, bytes, v->copy_, batch_mode);
         if (copied != cudaSuccess) {
-            std::fprintf(stderr, "strata DMA: expert upload failed: %s\n", cudaGetErrorString(copied));
+            std::fprintf(stderr, "nostroma DMA: expert upload failed: %s\n", cudaGetErrorString(copied));
             std::fflush(stderr);
             v->release_gpu_waits(5000);
             std::abort();
@@ -3795,7 +3795,7 @@ void Verifier::fetch_dma(void* ctx, const uint8_t* const* src, int n, size_t byt
 
 void Verifier::publish_plan(void* ctx) {
     Verifier* v = (Verifier*) ctx;
-    strata_store_fence();
+    nostroma_store_fence();
     *(volatile uint32_t*) v->h_flagA_ = v->cur_layer_ + 1;
 }
 
@@ -3803,7 +3803,7 @@ bool Verifier::window_logprobs(const int32_t* targets, int T, int64_t pos0, int3
                                std::string& err) {
     if (next_ != nullptr) return next_->window_logprobs(targets, T, pos0, extra_id, out, err);
     const OnDevice on_device(device_);
-#if defined(STRATA_GPU_METAL)
+#if defined(NOSTROMA_GPU_METAL)
     // the head logits are the Metal window's (window_copy_logits, row by row)
     if (n_vocab_ <= 0 || T <= 0 || targets == nullptr || out == nullptr) {
         err = "window_logprobs: no head logits for this window";
@@ -3811,7 +3811,7 @@ bool Verifier::window_logprobs(const int32_t* targets, int T, int64_t pos0, int3
     }
     std::vector<float> h((size_t) T * (size_t) n_vocab_);
     for (int t = 0; t < T; ++t)
-        if (!strata::metal_engine::window_copy_logits(metal_, t, h.data() + (size_t) t * (size_t) n_vocab_)) {
+        if (!nostroma::metal_engine::window_copy_logits(metal_, t, h.data() + (size_t) t * (size_t) n_vocab_)) {
             err = "window_logprobs: the head logits copy failed";
             return false;
         }
@@ -3827,11 +3827,11 @@ bool Verifier::window_logprobs(const int32_t* targets, int T, int64_t pos0, int3
         return false;
     }
 #endif
-    // STRATA_FORCE_FAULT=<m>:<bias> (test only, off by default, no output): adds <bias> to the logit of every token id divisible by <m>
+    // NOSTROMA_FORCE_FAULT=<m>:<bias> (test only, off by default, no output): adds <bias> to the logit of every token id divisible by <m>
     // before the rows are scored, so the token-forcing checker (tools/force_check.py) can be shown to reject a faulty build
     {
         static const std::pair<int64_t, float> fault = [] {
-            const char* v = strata::env("NOSTROMA_FORCE_FAULT");
+            const char* v = nostroma::env("NOSTROMA_FORCE_FAULT");
             long long m = 0;
             float b = 0.0f;
             if (v != nullptr && std::sscanf(v, "%lld:%f", &m, &b) == 2 && m > 0) return std::make_pair((int64_t) m, b);
@@ -3863,10 +3863,10 @@ bool Verifier::window_logprobs(const int32_t* targets, int T, int64_t pos0, int3
         std::fprintf(out, "%lld\t%d\t%.9f\t%lld\t%.9f\t%d\t%.9f\t%.9f", (long long) (pos0 + t), (int) tgt,
                      (double) row[tgt] - lse, (long long) top, maxv - lse, (int) (top == (int64_t) tgt), extra,
                      without);
-        // STRATA_LOGPOS_TOPK=K: the K most likely tokens and their log-probabilities too (`id:logprob`), for a
+        // NOSTROMA_LOGPOS_TOPK=K: the K most likely tokens and their log-probabilities too (`id:logprob`), for a
         // top-k comparison with another engine on the same tokens (docs/UNSLOTH_Q4.md)
         static const int topk = [] {
-            const char* v = strata::env("NOSTROMA_LOGPOS_TOPK");
+            const char* v = nostroma::env("NOSTROMA_LOGPOS_TOPK");
             return v != nullptr ? std::max(0, std::min(256, std::atoi(v))) : 0;
         }();
         if (topk > 0) {
@@ -3884,11 +3884,11 @@ bool Verifier::window_logprobs(const int32_t* targets, int T, int64_t pos0, int3
 }
 
 namespace { bool g_commit_async = false; }
-void Verifier::set_commit_async(bool on) { g_commit_async = on && strata::env("NOSTROMA_COMMIT_SYNC") == nullptr; }
+void Verifier::set_commit_async(bool on) { g_commit_async = on && nostroma::env("NOSTROMA_COMMIT_SYNC") == nullptr; }
 
 bool Verifier::commit(int n_keep, std::string& err) {
-#if defined(STRATA_GPU_METAL)
-    return strata::metal_engine::window_commit(metal_, n_keep, err);
+#if defined(NOSTROMA_GPU_METAL)
+    return nostroma::metal_engine::window_commit(metal_, n_keep, err);
 #endif
     const OnDevice on_device(device_);
     if (n_keep < 1 || n_keep > last_t_) { err = "verify: commit count out of range"; return false; }
@@ -3897,18 +3897,18 @@ bool Verifier::commit(int n_keep, std::string& err) {
     h_commit_[1] = n_keep - 1;
     for (int t = 0; t < max_t_; ++t) h_commit_[2 + t] = t < n_keep ? (int32_t) (last_pos0_ + t) : -1;
     if (last_t_ == 1 && !always_publish_ && one_token_self_commit() && !g_qfuse()) {
-        // a one-token window has advanced the state itself (record_window): no commit graph. (Not with STRATA_QFUSE: its windows
+        // a one-token window has advanced the state itself (record_window): no commit graph. (Not with NOSTROMA_QFUSE: its windows
         // do not self-commit, see `self_commit` there - skipping the commit here left the GDN state and the indexer tail one token behind.)
     } else {
         std::atomic_thread_fence(std::memory_order_seq_cst);
-        // STRATA_COMMIT_TIMING=1 (measurement only): the commit graph's GPU time, from an event pair around it (read at the
+        // NOSTROMA_COMMIT_TIMING=1 (measurement only): the commit graph's GPU time, from an event pair around it (read at the
         // next commit, when the pair has long completed); printed every 300 commits
         static struct CommitTiming {
             bool on = false, pending = false;
             cudaEvent_t b = nullptr, e = nullptr;
             double ms = 0;
             int64_t n = 0;
-            CommitTiming() { const char* v = strata::env("NOSTROMA_COMMIT_TIMING"); on = v != nullptr && v[0] == '1'; }
+            CommitTiming() { const char* v = nostroma::env("NOSTROMA_COMMIT_TIMING"); on = v != nullptr && v[0] == '1'; }
         } ct;
         if (ct.on && ct.b == nullptr &&
             (cudaEventCreate(&ct.b) != cudaSuccess || cudaEventCreate(&ct.e) != cudaSuccess)) { ct.on = false; (void) cudaGetLastError(); }
@@ -3917,7 +3917,7 @@ bool Verifier::commit(int n_keep, std::string& err) {
             if (cudaEventSynchronize(ct.e) == cudaSuccess && cudaEventElapsedTime(&ms, ct.b, ct.e) == cudaSuccess) { ct.ms += ms; ++ct.n; }
             ct.pending = false;
             if (ct.n > 0 && ct.n % 300 == 0)
-                std::fprintf(stderr, "strata verify: commit graph %.3f ms GPU on average over %lld commits\n", ct.ms / (double) ct.n,
+                std::fprintf(stderr, "nostroma verify: commit graph %.3f ms GPU on average over %lld commits\n", ct.ms / (double) ct.n,
                              (long long) ct.n);
         }
         if (ct.on) cudaEventRecord(ct.b, cs_);
@@ -3947,7 +3947,7 @@ bool Verifier::commit(int n_keep, std::string& err) {
 }
 
 bool Verifier::commit_deferred() const {
-#if defined(STRATA_GPU_METAL)
+#if defined(NOSTROMA_GPU_METAL)
     return false;   // the Metal window keeps its own bookkeeping: never dropped
 #else
     if (last_t_ < 1) return false;
@@ -3957,7 +3957,7 @@ bool Verifier::commit_deferred() const {
 }
 
 bool Verifier::wait_commit(std::string& err) {
-#if defined(STRATA_GPU_METAL)
+#if defined(NOSTROMA_GPU_METAL)
     (void) err;
     return true;
 #endif
@@ -3987,20 +3987,20 @@ bool Verifier::init_slots(const std::vector<SessionState*>& slots, std::string& 
             return false;
         }
     }
-#if defined(STRATA_GPU_METAL)
+#if defined(NOSTROMA_GPU_METAL)
     // the Metal window keeps each slot's running state itself (metal/src/engine/window.cpp): none of the CUDA batch buffers
     slots_ = slots;
     slot_sp_.assign(slots.size(), sampling_);
     slot_bias_dev_.assign(slots.size(), nullptr);
     slot_tail_.assign(slots.size(), {});
-    if (metal_ == nullptr || !strata::metal_engine::window_init_slots(metal_, slots, err)) {
+    if (metal_ == nullptr || !nostroma::metal_engine::window_init_slots(metal_, slots, err)) {
         if (err.empty()) err = "verify: the Metal window is not up";
         return false;
     }
-    std::fprintf(stderr, "strata verify: batch windows of up to %d sequences, run slot by slot in the Metal window\n", (int) slots.size());
+    std::fprintf(stderr, "nostroma verify: batch windows of up to %d sequences, run slot by slot in the Metal window\n", (int) slots.size());
     return true;
 #endif
-    const strata::kernels::QsaShapes s = shapes_of(*g_);
+    const nostroma::kernels::QsaShapes s = shapes_of(*g_);
     const int64_t S = (int64_t) slots.size(), CB = 2 + max_t_;
     const int64_t TS = (s.idx_block - 1) * g_->idx_key_dim, nQ = g_->n_qsa_layers();
     void* d = nullptr;
@@ -4020,7 +4020,7 @@ bool Verifier::init_slots(const std::vector<SessionState*>& slots, std::string& 
     slot_sp_.assign(slots.size(), sampling_);   // greedy until set_slot_sampling
     slot_bias_dev_.assign(slots.size(), nullptr);
     slot_tail_.assign(slots.size(), {});
-    std::fprintf(stderr, "strata verify: batch windows of up to %lld sequences (layers [%lld, %lld))%s\n", (long long) S,
+    std::fprintf(stderr, "nostroma verify: batch windows of up to %lld sequences (layers [%lld, %lld))%s\n", (long long) S,
                  (long long) lb_, (long long) le_, g_batch_self_commit ? ", one-row windows keep their rows" : "");
     return true;
 }
@@ -4054,7 +4054,7 @@ bool Verifier::capture_batch(const int* rows, int S, int hbase, std::string& err
         (void) cudaGetLastError();   // only a warm-up: the first launch uploads it (see capture)
     std::string list;
     for (int t = 0; t < S; ++t) list += (t ? "," : "") + std::to_string(rows[t]);
-    std::fprintf(stderr, "strata verify: captured the batch window over slots %s\n", list.c_str());
+    std::fprintf(stderr, "nostroma verify: captured the batch window over slots %s\n", list.c_str());
     return true;
 }
 
@@ -4062,7 +4062,7 @@ bool Verifier::capture_commit_batch(const int* rows, int S, int hbase, std::stri
     if (batch_self_commits(rows, S)) return true;   // the window keeps its rows: no commit graph
     cudaGraphExec_t& cex = commit_bm_[bkey(rows, S, hbase)];
     if (cex != nullptr) return true;
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     const ModelGeometry& g = *g_;
     const QsaShapes s = shapes_of(g);
     const int64_t C = g.ssm_conv_channels, HV = g.ssm_v_heads, ZV = g.ssm_value_dim, ID = g.idx_key_dim, MT = max_t_;
@@ -4087,15 +4087,15 @@ bool Verifier::capture_commit_batch(const int* rows, int S, int hbase, std::stri
             if (!is_qsa_layer(g, l)) {
                 const WeightRef* wnm = need(v, "ssm_norm.weight", err);
                 if (!wnm) { ok = false; break; }
-                // STRATA_BATCH_GDN_GROUPS=1: one-row groups (no --batch-mtp proposals) commit their recurrence
+                // NOSTROMA_BATCH_GDN_GROUPS=1: one-row groups (no --batch-mtp proposals) commit their recurrence
                 // in one launch for all slots; the conv commits stay per slot
                 static const bool gdn_groups_on = [] {
-                    const char* v = strata::env("NOSTROMA_BATCH_GDN_GROUPS");
+                    const char* v = nostroma::env("NOSTROMA_BATCH_GDN_GROUPS");
                     return v != nullptr && std::atoi(v) != 0;
                 }();
                 bool one_row = S <= 8;
                 for (int t = 1; one_row && t < S; ++t) one_row = rows[t] != rows[t - 1];
-                strata::kernels::GdnGroups gg;
+                nostroma::kernels::GdnGroups gg;
                 for (int t = 0; t < S;) {
                     const int first = t;
                     while (t < S && rows[t] == rows[first]) ++t;
@@ -4173,7 +4173,7 @@ bool Verifier::capture_commit_batch(const int* rows, int S, int hbase, std::stri
     return made;
 }
 
-// ---- STRATA_PIPED_MTP: commits after the verdict (see the header)
+// ---- NOSTROMA_PIPED_MTP: commits after the verdict (see the header)
 
 bool Verifier::init_deferred_commit(int rows, std::string& err) {
     const OnDevice on_device(device_);
@@ -4183,7 +4183,7 @@ bool Verifier::init_deferred_commit(int rows, std::string& err) {
     const uint64_t R = (uint64_t) rows, C = (uint64_t) g.ssm_conv_channels, HV = (uint64_t) g.ssm_v_heads;
     const uint64_t ID = (uint64_t) g.idx_key_dim;
     const uint64_t nG = (uint64_t) std::max<int64_t>(g.n_gdn_layers(), 1), nQ = (uint64_t) std::max<int64_t>(g.n_qsa_layers(), 1);
-    const uint64_t HS = (uint64_t) strata::kernels::NG_HIST * strata::kernels::NG_HC_DIM;
+    const uint64_t HS = (uint64_t) nostroma::kernels::NG_HIST * nostroma::kernels::NG_HC_DIM;
     const uint64_t CB = 2 + (uint64_t) max_t_, nS = (uint64_t) slots_.size();
     const uint64_t floats[6] = {nG * R * C, nG * R * C, nG * R * HV, nG * R * HV, nQ * R * ID, R * HS};
     uint64_t bytes = (nS * CB * 4 + 255) & ~255ull;
@@ -4205,13 +4205,13 @@ bool Verifier::init_deferred_commit(int rows, std::string& err) {
         return false;
     }
     dc_rows_ = rows;
-    std::fprintf(stderr, "strata verify: pipelined batch windows commit after the verdict (layers [%lld, %lld), %d rows, "
+    std::fprintf(stderr, "nostroma verify: pipelined batch windows commit after the verdict (layers [%lld, %lld), %d rows, "
                          "%.1f MiB saved rows)\n", (long long) lb_, (long long) le_, rows, (double) bytes / 1048576.0);
     return true;
 }
 
 bool Verifier::capture_deferred(const int* rows, int S, int hbase, std::string& err) {
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     const auto key = bkey(rows, S, hbase);
     cudaGraphExec_t& sex = save_bm_[key];
     cudaGraphExec_t& cex = dcommit_bm_[key];
@@ -4432,10 +4432,10 @@ bool Verifier::evict_batch_graph(const std::vector<int>& keep, bool& evicted, st
 bool Verifier::evict_window_graph(int keep_t, bool& evicted, std::string& err) {
     evicted = false;
     if (no_window_eviction_ || keep_t < 1) return true;
-    bool have[strata::kernels::kWindowMaxT + 1] = {};
-    const int top = std::min<int>(max_t_, strata::kernels::kWindowMaxT);
+    bool have[nostroma::kernels::kWindowMaxT + 1] = {};
+    const int top = std::min<int>(max_t_, nostroma::kernels::kWindowMaxT);
     for (int t = 1; t <= top; ++t) have[t] = (ar_off_ ? exec_nr_[sel_long_][t] : exec_[sel_long_][t]) != nullptr;
-    const int victim = strata::core::pick_window_victim(have, top, keep_t, prelaunched_);
+    const int victim = nostroma::core::pick_window_victim(have, top, keep_t, prelaunched_);
     if (victim == 0) return true;
     if (cudaStreamSynchronize(cs_) != cudaSuccess) {
         err = "verify: synchronizing before window graph eviction failed";
@@ -4449,11 +4449,11 @@ bool Verifier::evict_window_graph(int keep_t, bool& evicted, std::string& err) {
     return true;
 }
 
-// STRATA_GRAPH_PRIO: the capture-time notes.  A fork note keeps cs's current tail (the node the branch's first kernel
+// NOSTROMA_GRAPH_PRIO: the capture-time notes.  A fork note keeps cs's current tail (the node the branch's first kernel
 // will depend on); a tail note keeps a priority stream's current tail and the priority its nodes should run at
 // (1 = the device's highest, -1 = its lowest).  No-ops with the switch off, outside a capture, and on HIP / Metal.
 void Verifier::note_prio_fork(cudaStream_t from) {
-#if !defined(STRATA_USE_HIP) && !defined(STRATA_HIP_GFX906) && !defined(STRATA_GPU_METAL)
+#if !defined(NOSTROMA_USE_HIP) && !defined(NOSTROMA_HIP_GFX906) && !defined(NOSTROMA_GPU_METAL)
     if (!graph_prio_on()) return;
     cudaStreamCaptureStatus st = cudaStreamCaptureStatusNone;
     const cudaGraphNode_t* deps = nullptr;
@@ -4469,7 +4469,7 @@ void Verifier::note_prio_fork(cudaStream_t from) {
 }
 
 void Verifier::note_prio_tail(cudaStream_t on, int prio) {
-#if !defined(STRATA_USE_HIP) && !defined(STRATA_HIP_GFX906) && !defined(STRATA_GPU_METAL)
+#if !defined(NOSTROMA_USE_HIP) && !defined(NOSTROMA_HIP_GFX906) && !defined(NOSTROMA_GPU_METAL)
     if (!graph_prio_on()) return;
     cudaStreamCaptureStatus st = cudaStreamCaptureStatusNone;
     const cudaGraphNode_t* deps = nullptr;
@@ -4484,11 +4484,11 @@ void Verifier::note_prio_tail(cudaStream_t on, int prio) {
 #endif
 }
 
-// STRATA_GRAPH_PRIO: what priorities the captured kernel nodes carry (a histogram, logged once per window graph).  If the
+// NOSTROMA_GRAPH_PRIO: what priorities the captured kernel nodes carry (a histogram, logged once per window graph).  If the
 // capture copied none from the streams (design 1's R1: some drivers read back 0 everywhere), each priority stream's
 // nodes are found by walking its noted tails back to the noted forks and the attribute is set per node.
 void Verifier::apply_node_priorities(cudaGraph_t graph, int T) {
-#if !defined(STRATA_USE_HIP) && !defined(STRATA_HIP_GFX906) && !defined(STRATA_GPU_METAL)
+#if !defined(NOSTROMA_USE_HIP) && !defined(NOSTROMA_HIP_GFX906) && !defined(NOSTROMA_GPU_METAL)
     int lo = 0, hi = 0;
     if (cudaDeviceGetStreamPriorityRange(&lo, &hi) != cudaSuccess) { (void) cudaGetLastError(); return; }
     auto histogram = [&](std::map<int, int>& h) {
@@ -4537,7 +4537,7 @@ void Verifier::apply_node_priorities(cudaGraph_t graph, int T) {
     }
     std::string s;
     for (auto& [p, c] : h) s += " " + std::to_string(c) + " x prio " + (p == 999 ? std::string("?") : std::to_string(p)) + ";";
-    std::fprintf(stderr, "strata verify: the %d-token window's kernel node priorities (range %d..%d):%s %s (%d forks, %d tails noted%s)\n",
+    std::fprintf(stderr, "nostroma verify: the %d-token window's kernel node priorities (range %d..%d):%s %s (%d forks, %d tails noted%s)\n",
                  T, lo, hi, s.c_str(), captured ? "captured from the streams" : "NOT captured from the streams",
                  walked_forks, walked_tails, repaired > 0 ? (", " + std::to_string(repaired) + " nodes set from the notes").c_str() : "");
 #else
@@ -4565,7 +4565,7 @@ bool Verifier::instantiate_evicting(cudaGraphExec_t& ex, cudaGraph_t graph, cons
         }
     }
     if (freed > 0)
-        std::fprintf(stderr, "strata verify: no VRAM for a new window graph: freed the graphs of %d older batch slot "
+        std::fprintf(stderr, "nostroma verify: no VRAM for a new window graph: freed the graphs of %d older batch slot "
                              "layouts, %zu kept (a larger --vram-reserve-mib keeps more)\n", freed, exec_bm_.size());
     // #3702: a single-request window with nothing of a batch left to free: free the graphs of other window sizes
     int freed_sizes = 0;
@@ -4578,7 +4578,7 @@ bool Verifier::instantiate_evicting(cudaGraphExec_t& ex, cudaGraph_t graph, cons
         }
     }
     if (freed_sizes > 0)
-        std::fprintf(stderr, "strata verify: no VRAM for the %d-token window graph: freed the graphs of %d other window "
+        std::fprintf(stderr, "nostroma verify: no VRAM for the %d-token window graph: freed the graphs of %d other window "
                              "sizes (they are captured again when used; a larger --vram-reserve-mib or "
                              "--vram-reserve-later-mib keeps them)\n", keep_t, freed_sizes);
     if (ie != cudaSuccess) {
@@ -4594,7 +4594,7 @@ bool Verifier::instantiate_evicting(cudaGraphExec_t& ex, cudaGraph_t graph, cons
 
 bool Verifier::prepare(int T, bool& no_vram, std::string& err) {
     no_vram = false;
-#if defined(STRATA_GPU_METAL)
+#if defined(NOSTROMA_GPU_METAL)
     (void) T;
     (void) err;
     return true;
@@ -4613,7 +4613,7 @@ bool Verifier::prepare(int T, bool& no_vram, std::string& err) {
 
 bool Verifier::stage_batch(const int* rows, int S, int hbase, const int32_t* tokens, const int64_t* pos,
                            std::string& err) {
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     // the row layout: a slot may own a contiguous group of rows (--batch-mtp), also across the stages of a layer split,
     // whose hand-off buffers hold kVerifyNarrowT rows, or set_handoff_rows' (a stage that hands rows on or takes them); a
     // batch window keeps kVerifyMaxT rows (the row tables below) when max_t is longer (--lookup-max-t)
@@ -4693,18 +4693,18 @@ bool Verifier::stage_batch(const int* rows, int S, int hbase, const int32_t* tok
 
 bool Verifier::run_slots(int S, const int32_t* tokens, const int64_t* pos, PoolMultiFn pool, void* user, int32_t* out,
                          std::string& err) {
-    int rows[strata::kernels::kVerifyMaxT] = {};
-    for (int t = 0; t < S && t < strata::kernels::kVerifyMaxT; ++t) rows[t] = t;
+    int rows[nostroma::kernels::kVerifyMaxT] = {};
+    for (int t = 0; t < S && t < nostroma::kernels::kVerifyMaxT; ++t) rows[t] = t;
     return run_slot_rows(rows, S, tokens, pos, pool, user, out, err);
 }
 
 bool Verifier::run_slot_rows(const int* rows, int S, const int32_t* tokens, const int64_t* pos, PoolMultiFn pool,
                              void* user, int32_t* out, std::string& err) {
-#if defined(STRATA_GPU_METAL)
+#if defined(NOSTROMA_GPU_METAL)
     // each row runs in its slot's state and commits there (a one-token window); nothing is left for commit_slots
-    if (S < 1 || S > (int) strata::kernels::kVerifyMaxT) { err = "verify: batch window size out of range"; return false; }
+    if (S < 1 || S > (int) nostroma::kernels::kVerifyMaxT) { err = "verify: batch window size out of range"; return false; }
     (void) pool; (void) user;
-    if (!strata::metal_engine::window_run_slots(metal_, rows, S, tokens, pos, out, err)) return false;
+    if (!nostroma::metal_engine::window_run_slots(metal_, rows, S, tokens, pos, out, err)) return false;
     last_t_ = S;
     for (int t = 0; t < S; ++t) { last_rows_[t] = rows[t]; last_tokens_[t] = tokens[t]; last_pos_b_[t] = pos[t]; }
     last_batch_ = true;
@@ -4713,18 +4713,18 @@ bool Verifier::run_slot_rows(const int* rows, int S, const int32_t* tokens, cons
     {
         std::vector<int32_t> hrows;
         for (int t = 0; t < S; ++t) {
-            strata::kernels::SamplerParams sp;
+            nostroma::kernels::SamplerParams sp;
             const int32_t* hist = nullptr;
             int hlen = 0;
             const int r = slot_row_draw(S, t, sp, hist, hlen, hrows, err);
             if (r < 0) return false;
             if (r == 0) continue;
-            if (!strata::metal_engine::window_sample_slot_row(metal_, t, sp, hist, hlen, &out[t], err)) return false;
+            if (!nostroma::metal_engine::window_sample_slot_row(metal_, t, sp, hist, hlen, &out[t], err)) return false;
         }
     }
     return true;
 #endif
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     const OnDevice on_device(device_);
     const ModelGeometry& g = *g_;
     if (pre_launch_ && !pre_launch_(cs_, err)) return false;
@@ -4746,7 +4746,7 @@ bool Verifier::run_slot_rows(const int* rows, int S, const int32_t* tokens, cons
     if (ar_on()) {
         if (ss_->ple.ready() && ple_stage()) {
             std::atomic_thread_fence(std::memory_order_seq_cst);
-            strata_store_fence();
+            nostroma_store_fence();
             *flag = 1;
         }
         const cudaError_t se = cudaStreamSynchronize(cs_);
@@ -4770,7 +4770,7 @@ bool Verifier::run_slot_rows(const int* rows, int S, const int32_t* tokens, cons
         uint32_t spins = 0;
         progress_at("verify batch: waiting for the GPU to reach layer", l);
         while (*seq < want) {
-            strata_cpu_pause();
+            nostroma_cpu_pause();
             if ((++spins & 1023u) != 0) continue;
             const auto now = Clock::now();
             if (now - last_flush > std::chrono::microseconds(2000)) {
@@ -4787,7 +4787,7 @@ bool Verifier::run_slot_rows(const int* rows, int S, const int32_t* tokens, cons
                 return false;
             }
         }
-        strata_load_fence();   // as above, for the batch loop's wait
+        nostroma_load_fence();   // as above, for the batch loop's wait
         const Clock::time_point b = Clock::now();
         cur_layer_ = want - 1;
         set_plan_slot(0);
@@ -4799,7 +4799,7 @@ bool Verifier::run_slot_rows(const int* rows, int S, const int32_t* tokens, cons
         if (remote_opt_) remote_opt_->end();
         progress_tick();
         std::atomic_thread_fence(std::memory_order_seq_cst);
-        strata_store_fence();
+        nostroma_store_fence();
         if (*(volatile uint32_t*) h_flagA_ != want) {        // the pool did not publish a plan: an empty one
             sink_.counts[0] = 0;
             sink_.counts[1] = 0;
@@ -4835,7 +4835,7 @@ bool Verifier::commit_slots(std::string& err) {
 }
 
 bool Verifier::commit_slot_prefixes(const int* keep, std::string& err) {
-#if defined(STRATA_GPU_METAL)
+#if defined(NOSTROMA_GPU_METAL)
     (void) keep;   // (greedy one-row windows, committed by window_run_slots)
     if (!last_batch_ || last_t_ < 1) { err = "verify: commit_slots without a batch window"; return false; }
     return true;
@@ -4902,7 +4902,7 @@ bool Verifier::set_slot_logit_bias(int slot, const std::vector<float>& bias, std
 // One batch row's draw inputs: 0 = the row keeps the window's argmax token (a plain greedy slot), 1 = draw it with `sp` (+ `hist` / `hlen`), -1 = error.
 // Row t of the last window feeds last_tokens_[t] into slot last_rows_[t]; the penalty-history row is the slot's reply tail plus its tokens in this window up to t
 // (slot_penalty_rows), staged on the device like a solo window's.
-int Verifier::slot_row_draw(int S, int t, strata::kernels::SamplerParams& sp, const int32_t*& hist, int& hlen, std::vector<int32_t>& hrows,
+int Verifier::slot_row_draw(int S, int t, nostroma::kernels::SamplerParams& sp, const int32_t*& hist, int& hlen, std::vector<int32_t>& hrows,
                             std::string& err) {
     constexpr int kSlotHistMax = 4096;   // serve's kPenaltyWindowCap
     sp = slot_sp_[(size_t) last_rows_[t]];
@@ -4919,7 +4919,7 @@ int Verifier::slot_row_draw(int S, int t, strata::kernels::SamplerParams& sp, co
     hlen = std::min(sp.penalty_last_n, kSlotHistMax);
     const size_t need = (size_t) S * (size_t) hlen;
     hrows.assign(need, -1);
-    strata::kernels::slot_penalty_rows(last_rows_, last_tokens_, S, tails.data(), n_tails.data(), hlen, hrows.data());
+    nostroma::kernels::slot_penalty_rows(last_rows_, last_tokens_, S, tails.data(), n_tails.data(), hlen, hrows.data());
     const OnDevice on_hist(device_);
     if (slot_hist_cap_ < need) {
         if (slot_hist_d_ != nullptr) cudaFree(slot_hist_d_);
@@ -4927,7 +4927,7 @@ int Verifier::slot_row_draw(int S, int t, strata::kernels::SamplerParams& sp, co
         if (cudaMalloc((void**) &slot_hist_d_, need * sizeof(int32_t)) != cudaSuccess) { err = "verify batch: the penalty-history allocation failed"; return -1; }
         slot_hist_cap_ = need;
     }
-#if defined(STRATA_GPU_METAL)
+#if defined(NOSTROMA_GPU_METAL)
     if (cudaMemcpy(slot_hist_d_ + (size_t) t * (size_t) hlen, hrows.data() + (size_t) t * (size_t) hlen, (size_t) hlen * sizeof(int32_t), cudaMemcpyHostToDevice) != cudaSuccess)
 #else
     if (cudaMemcpyAsync(slot_hist_d_ + (size_t) t * (size_t) hlen, hrows.data() + (size_t) t * (size_t) hlen, (size_t) hlen * sizeof(int32_t),
@@ -4939,7 +4939,7 @@ int Verifier::slot_row_draw(int S, int t, strata::kernels::SamplerParams& sp, co
 }
 
 bool Verifier::sample_rows(int S, std::string& err) {
-#if defined(STRATA_GPU_METAL)
+#if defined(NOSTROMA_GPU_METAL)
     (void) S;
     err = "verify batch: sample_rows is the CUDA / HIP path";
     return false;
@@ -4947,13 +4947,13 @@ bool Verifier::sample_rows(int S, std::string& err) {
     bool any = false;
     std::vector<int32_t> hrows;
     for (int t = 0; t < S; ++t) {
-        strata::kernels::SamplerParams sp;
+        nostroma::kernels::SamplerParams sp;
         const int32_t* hist = nullptr;
         int hlen = 0;
         const int r = slot_row_draw(S, t, sp, hist, hlen, hrows, err);
         if (r < 0) return false;
         if (r == 0) continue;
-        strata::kernels::sample_tokens(head_logits_ + (size_t) t * (size_t) n_vocab_, 1, (int) n_vocab_, hist, hlen, sp, m_out_ + t, cs_);
+        nostroma::kernels::sample_tokens(head_logits_ + (size_t) t * (size_t) n_vocab_, 1, (int) n_vocab_, hist, hlen, sp, m_out_ + t, cs_);
         any = true;
     }
     if (any && cudaStreamSynchronize(cs_) != cudaSuccess) { err = "verify batch: the row sampling failed"; return false; }
@@ -4964,8 +4964,8 @@ bool Verifier::sample_rows(int S, std::string& err) {
 bool Verifier::batch_launch(int base, int S, const int32_t* tokens, const int64_t* pos, std::string& err) {
     const OnDevice on_device(device_);
     if (b_running_) { err = "verify: batch_launch while this stage is busy"; return false; }
-    int rows[strata::kernels::kVerifyMaxT] = {};
-    for (int t = 0; t < S && t < strata::kernels::kVerifyMaxT; ++t) rows[t] = base + t;
+    int rows[nostroma::kernels::kVerifyMaxT] = {};
+    for (int t = 0; t < S && t < nostroma::kernels::kVerifyMaxT; ++t) rows[t] = base + t;
     if (pre_launch_ && !pre_launch_(cs_, err)) return false;
     if (!stage_batch(rows, S, base, tokens, pos, err)) return false;
     cudaError_t le = cudaGraphLaunch(exec_bm_[bkey(rows, S, base)], cs_);
@@ -4994,7 +4994,7 @@ int Verifier::batch_serve(PoolMultiFn pool, void* user) {
     // run_slot_rows makes).  Per-window (ar_on): with a loan in flight the doorbell graph needs the per-layer service.
     if (ar_on() && ss_->ple.ready() && ple_stage()) {
         std::atomic_thread_fence(std::memory_order_seq_cst);
-        strata_store_fence();
+        nostroma_store_fence();
         *h_flag_ = 1;
     }
     for (;;) {
@@ -5014,7 +5014,7 @@ int Verifier::batch_serve(PoolMultiFn pool, void* user) {
         if (remote_opt_) remote_opt_->end();
         progress_tick();
         std::atomic_thread_fence(std::memory_order_seq_cst);
-        strata_store_fence();
+        nostroma_store_fence();
         if (*(volatile uint32_t*) h_flagA_ != want) {        // the pool did not publish a plan: an empty one
             sink_.counts[0] = 0;
             sink_.counts[1] = 0;
@@ -5103,21 +5103,21 @@ int Verifier::batch_poll(PoolMultiFn pool, void* user, std::string& err) {
     return 1;
 }
 
-// #879: STRATA_NAN_GUARD=0 turns the guard off (no kernel is recorded; the graphs are captured once, so it is read once)
+// #879: NOSTROMA_NAN_GUARD=0 turns the guard off (no kernel is recorded; the graphs are captured once, so it is read once)
 bool Verifier::nan_guard_on() {
     static const bool on = [] {
-        const char* v = strata::env("NOSTROMA_NAN_GUARD");
+        const char* v = nostroma::env("NOSTROMA_NAN_GUARD");
         return v == nullptr || std::atoi(v) != 0;
     }();
     return on;
 }
 
 namespace {
-// STRATA_NAN_INJECT=<n>[,<n>...] (debug): the windows (counted from 1 over the process) the guard reports as non-finite
+// NOSTROMA_NAN_INJECT=<n>[,<n>...] (debug): the windows (counted from 1 over the process) the guard reports as non-finite
 const std::vector<long long>& nan_inject_list() {
     static const std::vector<long long> list = [] {
         std::vector<long long> v;
-        if (const char* e = strata::env("NOSTROMA_NAN_INJECT"))
+        if (const char* e = nostroma::env("NOSTROMA_NAN_INJECT"))
             for (const char* q = e; *q != 0;) {
                 char* end = nullptr;
                 const long long n = std::strtoll(q, &end, 10);
@@ -5138,15 +5138,15 @@ void Verifier::note_nonfinite(int T, const int64_t* pos_b) {
     nf_mask_ = 0;
     if (!nan_guard_on() || h_nf_ == nullptr || !last_stage()) return;   // (a stage without the head checks nothing)
     const volatile uint32_t* f = h_nf_;
-    for (int t = 0; t < T && t < strata::kernels::kVerifyMaxT; ++t)
-        for (int b = 0; b < strata::kernels::kNonfiniteBlocks; ++b)
-            if (f[t * strata::kernels::kNonfiniteBlocks + b] != 0) { nf_mask_ |= 1u << t; break; }
+    for (int t = 0; t < T && t < nostroma::kernels::kVerifyMaxT; ++t)
+        for (int b = 0; b < nostroma::kernels::kNonfiniteBlocks; ++b)
+            if (f[t * nostroma::kernels::kNonfiniteBlocks + b] != 0) { nf_mask_ |= 1u << t; break; }
     const std::vector<long long>& inject = nan_inject_list();
     if (!inject.empty()) {
         const long long k = g_nf_windows.fetch_add(1) + 1;
         if (nf_mask_ == 0 && std::find(inject.begin(), inject.end(), k) != inject.end()) {
             nf_mask_ = 1u;
-            std::fprintf(stderr, "strata verify: STRATA_NAN_INJECT: window %lld reported as non-finite\n", k);
+            std::fprintf(stderr, "nostroma verify: NOSTROMA_NAN_INJECT: window %lld reported as non-finite\n", k);
         }
     }
     for (int t = 0; t < T && nf_row_ < 0; ++t)
@@ -5155,8 +5155,8 @@ void Verifier::note_nonfinite(int T, const int64_t* pos_b) {
 }
 
 bool Verifier::copy_logits(int t, float* host) const {
-#if defined(STRATA_GPU_METAL)
-    return strata::metal_engine::window_copy_logits(metal_, t, host);
+#if defined(NOSTROMA_GPU_METAL)
+    return nostroma::metal_engine::window_copy_logits(metal_, t, host);
 #endif
     if (next_ != nullptr) return next_->copy_logits(t, host);   // a layer split: the head is on the last stage
     if (head_logits_ == nullptr || host == nullptr || t < 0 || n_vocab_ <= 0) return false;
@@ -5198,7 +5198,7 @@ bool Verifier::capture_all(std::string& err) {
         explicit NoEvict(bool& flag) : f(flag) { f = true; }
         ~NoEvict() { f = false; }
     } no_evict(no_window_eviction_);
-    // STRATA_SELECT_LONG: both select variants (see select_long_at): pl_launch takes the one its window's context
+    // NOSTROMA_SELECT_LONG: both select variants (see select_long_at): pl_launch takes the one its window's context
     // needs, and nothing can be captured once pipelined windows are in flight.  Without it only [0]
     for (int sl = 0; sl < (select_long_on() ? 2 : 1); ++sl) {
         sel_long_ = sl;
@@ -5217,14 +5217,14 @@ bool Verifier::capture_all(std::string& err) {
         prof_pin_ = nullptr;   // the pipelined windows go unprofiled
         cudaGetLastError();
     }
-    pl_ple_rows_.assign((size_t) strata::kernels::kVerifyMaxT * strata::kernels::PLE_N_HEADS, 0u);
+    pl_ple_rows_.assign((size_t) nostroma::kernels::kVerifyMaxT * nostroma::kernels::PLE_N_HEADS, 0u);
     return true;
 }
 
 // The host staging of a pipelined window: run()'s (stage_inputs), and its PLE rows from `ple_prev` with their pages
 // prefetched (they are gathered into the mapped rows when layer 0 is served, as run() does).
 void Verifier::pl_stage(int T, const int32_t* tokens, int64_t pos0, const int32_t ple_prev[2]) {
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     stage_inputs(T, tokens, pos0);
     staged_ = false;   // a later run() stages its own window
     SessionState& ss = *ss_;
@@ -5257,7 +5257,7 @@ bool Verifier::pl_launch(int T, const int32_t* tokens, int64_t pos0, std::string
     const OnDevice on_device(device_);
     if (fl_active_) { err = "verify: a window is already in flight on this verifier"; return false; }
     if (released_.load()) { err = "verify: an earlier window never finished on the GPU (#267); restart the engine"; return false; }
-    if (T < 1 || T > max_t_ || T > strata::kernels::kVerifyMaxT) { err = "verify: window size out of range"; return false; }
+    if (T < 1 || T > max_t_ || T > nostroma::kernels::kVerifyMaxT) { err = "verify: window size out of range"; return false; }
     SessionState& ss = *ss_;
     if (pos0 + T > ss.qsa_states[ss.qsa_primary()].max_cells) { err = "verify: the window runs past the context"; return false; }
     const int sl = select_long_on() && pos0 + T >= select_long_at() ? 1 : 0;   // the variant this window's context pays off with
@@ -5283,7 +5283,7 @@ bool Verifier::pl_launch(int T, const int32_t* tokens, int64_t pos0, std::string
     std::atomic_thread_fence(std::memory_order_seq_cst);
     trace_ev("WINDOW (pipelined)", -1, -1, pos0 * 16 + T);
     ms_host += ms_since(t0);
-    strata::dispatch::Stats::get().graph_launch(T, ar_on() ? 0 : 1);
+    nostroma::dispatch::Stats::get().graph_launch(T, ar_on() ? 0 : 1);
     const cudaError_t le = cudaGraphLaunch(exec_[sl][T], cs_);
     trace_ev("LAUNCHED", -1, -1, (int64_t) le);
     if (le != cudaSuccess) { err = std::string("verify: launch: ") + cudaGetErrorString(le); return false; }
@@ -5317,7 +5317,7 @@ int Verifier::service(PoolMultiFn pool, void* user, std::string& err) {
         const Clock::time_point tp = Clock::now();
         if (!ss.ple.table->gather_batch(pl_ple_rows_.data(), (size_t) T, h_ple_, err)) return false;
         std::atomic_thread_fence(std::memory_order_seq_cst);
-        strata_store_fence();
+        nostroma_store_fence();
         ms_host += ms_since(tp);
         return true;
     };
@@ -5368,7 +5368,7 @@ int Verifier::service(PoolMultiFn pool, void* user, std::string& err) {
                               (int64_t) ms_since(b));
         progress_tick();
         std::atomic_thread_fence(std::memory_order_seq_cst);
-        strata_store_fence();
+        nostroma_store_fence();
         if (*(volatile uint32_t*) h_flagA_ != want) {        // the pool did not publish a plan: an empty one
             sink_.counts[0] = 0;
             sink_.counts[1] = 0;
@@ -5409,7 +5409,7 @@ bool Verifier::done(std::string& err) {
 }
 
 bool Verifier::pl_finish(int32_t* out, std::string& err) {
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     const OnDevice on_device(device_);
     const ModelGeometry& g = *g_;
     fl_active_ = false;
@@ -5442,7 +5442,7 @@ bool Verifier::pl_commit_async(int n_keep, std::string& err) {
     const Clock::time_point t0 = Clock::now();
     if (commit_live_) {   // its graph reads the words below when it starts: the previous one has (a window ago)
         cudaError_t q;
-        while ((q = cudaEventQuery(ev_commit_)) == cudaErrorNotReady) strata_cpu_pause();
+        while ((q = cudaEventQuery(ev_commit_)) == cudaErrorNotReady) nostroma_cpu_pause();
         if (q != cudaSuccess) { err = std::string("verify: commit: ") + cudaGetErrorString(q); return false; }
     }
     h_commit_[0] = n_keep;
@@ -5474,4 +5474,4 @@ void Verifier::absorb_stats(Verifier& o) {
     o.prof_windows_ = 0;
 }
 
-}  // namespace strata::core
+}  // namespace nostroma::core

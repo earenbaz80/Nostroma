@@ -1,4 +1,4 @@
-"""The run average of the speed cards (community patch: keinebenutzer/STRATA-average-patch, MIT, made against v0.1.55 c62d5e3a; ported by hand onto rc1).
+"""The run average of the speed cards (community patch: keinebenutzer/NOSTROMA-average-patch, MIT, made against v0.1.55 c62d5e3a; ported by hand onto rc1).
 
 serve/web/app.js (the Monitor tab's Decode and Prefill cards), serve/web/monitor.js and monitor.html (the API monitor page) and nostroma_cli/overview.py (the Terminal
 Overview) show, when the server is idle, the token-weighted average of the run instead of the last request's speed. Live values stay live. This file runs the

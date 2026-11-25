@@ -19,7 +19,7 @@ reading the prompt again is cheaper than waiting.  What each replica holds is tr
 the prompts and answers it served (the engine itself checks the real prefix, as it always does).
 
 Host RAM.  Every engine keeps its own copy of the experts in RAM (about 47 GiB for Qwen3.8-Flash-Next IQ3_S), so two
-replicas need two copies and four need four.  "replica_shared_arena": true (or STRATA_REPLICA_SHARED_ARENA=1; opt-in)
+replicas need two copies and four need four.  "replica_shared_arena": true (or NOSTROMA_REPLICA_SHARED_ARENA=1; opt-in)
 backs the experts' arena of all replicas with ONE shared memory object (the engine's --shared-expert-arena, MAP_SHARED):
 the experts are in RAM once, whatever the number of replicas.  On Linux the object is a memfd the server creates
 (os.memfd_create): it is not a file on a mount, so the size of /dev/shm does not limit it; the engines open it as
@@ -94,7 +94,7 @@ def _cards(g) -> list[int]:
         raise ReplicaConfigError(f"cards must be numbers, not {g!r}") from None
 
 
-ARENA_PREFIX = "strata-replicas-"
+ARENA_PREFIX = "nostroma-replicas-"
 _MEMFDS: dict = {}                   # the memfds this server created: path (/proc/<pid>/fd/<n>) -> fd
 ARENA_MIN_RAM = 8 << 30              # a memfd arena: at least this much free RAM to try (the engine reserves the real size)
 ARENA_MIN_FREE = 8 << 30             # /dev/shm must have at least this much free to try (the engine reserves the real size)
@@ -161,19 +161,19 @@ def _mem_available() -> int:
 def shared_arena_plan(cfg: dict, n_replicas: int, *, shm: str = "/dev/shm", platform: str | None = None,
                       environ=None, free_bytes=None, use_memfd: bool | None = None) -> tuple[str | None, str]:
     """(the file for --shared-expert-arena or None, a line for the log).  Opt-in: "replica_shared_arena": true (or
-    STRATA_REPLICA_SHARED_ARENA=1).  Only on Linux (the engine's MAP_SHARED backing), for Qwen's arena (not
+    NOSTROMA_REPLICA_SHARED_ARENA=1).  Only on Linux (the engine's MAP_SHARED backing), for Qwen's arena (not
     the mapped or budgeted RAM modes, which have no arena), and with room in /dev/shm.  The engine checks the real
     size and reserves it before it loads (a tmpfs that is too small is an error at start, not a bus error later)."""
     environ = os.environ if environ is None else environ
     platform = sys.platform if platform is None else platform
     want = cfg.get("replica_shared_arena")
     if want is None:
-        want = str(environ.get("STRATA_REPLICA_SHARED_ARENA", "")).strip().lower() in ("1", "true", "on", "yes")
+        want = str(environ.get("NOSTROMA_REPLICA_SHARED_ARENA", "")).strip().lower() in ("1", "true", "on", "yes")
     if not want or n_replicas < 2:
         return None, ""
     if platform.startswith("win"):
         # a named pagefile-backed section the engines open by name (src/core/pinned.cu); it lives while any engine holds it
-        name = f"Local{chr(92)}strata-replicas-{os.getpid()}"
+        name = f"Local{chr(92)}nostroma-replicas-{os.getpid()}"
         return f"win:{name}", (f"one shared expert arena for {n_replicas} replicas (a Windows section, {name}): "
                                "the experts are in RAM once")
     if not platform.startswith("linux"):
@@ -193,7 +193,7 @@ def shared_arena_plan(cfg: dict, n_replicas: int, *, shm: str = "/dev/shm", plat
             return None, (f"shared expert arena: only {avail / 2**30:.1f} GiB of RAM is free; each replica keeps its own "
                           "copy of the experts in RAM")
         try:
-            fd = os.memfd_create("strata-replicas-arena", os.MFD_CLOEXEC)
+            fd = os.memfd_create("nostroma-replicas-arena", os.MFD_CLOEXEC)
         except OSError:
             fd = -1
         if fd >= 0:
@@ -276,7 +276,7 @@ def cpu_sets(n: int, enabled: bool = True):
         from serve.cpu_affinity import partition_cpu_sets
         return partition_cpu_sets(n, set(os.sched_getaffinity(0)))
     except (ValueError, OSError, ImportError) as e:
-        print(f"[strata] replicas: no separate CPU cores ({e})", flush=True)
+        print(f"[nostroma] replicas: no separate CPU cores ({e})", flush=True)
         return None
 
 
@@ -490,7 +490,7 @@ class ReplicaEngine:
         if errors and not self.alive():
             raise next(iter(errors.values()))
         for k, e in errors.items():
-            print(f"[strata] replica {k} did not start ({e}); the others serve", flush=True)
+            print(f"[nostroma] replica {k} did not start ({e}); the others serve", flush=True)
 
     def unload(self):
         for e in self.engines:
@@ -539,12 +539,12 @@ class ReplicaEngine:
 
             def run(k=k):
                 try:
-                    print(f"[strata] replica {k} had stopped; starting it again", flush=True)
+                    print(f"[nostroma] replica {k} had stopped; starting it again", flush=True)
                     self.engines[k].restart()
                     self.router.forget(k)
-                    print(f"[strata] replica {k} is running again", flush=True)
+                    print(f"[nostroma] replica {k} is running again", flush=True)
                 except BaseException as x:       # noqa: BLE001
-                    print(f"[strata] replica {k} did not start again: {x}", flush=True)
+                    print(f"[nostroma] replica {k} did not start again: {x}", flush=True)
                 finally:
                     self.healing[k] = False
             threading.Thread(target=run, daemon=True).start()
@@ -564,7 +564,7 @@ class ReplicaEngine:
         native_before = None
         nonfinite = False
         try:
-            selected = getattr(cancel, "_strata_replica_selected", None)
+            selected = getattr(cancel, "_nostroma_replica_selected", None)
             if selected is not None:
                 selected(k)
             self.router.note(k, ids)

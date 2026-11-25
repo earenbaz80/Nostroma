@@ -19,7 +19,7 @@ re-calibrated, decode roughly 2x) is at the end of this file.
 
 ## Software
 
-- Strata **v0.1.38**, engine built **from source** for sm_70 (`STRATA_EXPERIMENTAL_SM60=1`),
+- Nostroma **v0.1.38**, engine built **from source** for sm_70 (`NOSTROMA_EXPERIMENTAL_SM60=1`),
   CUDA Toolkit 12.4, MSVC 14.44; driver 581.80
 - Build note: linking needed `-DCMAKE_CUDA_RUNTIME_LIBRARY=Shared` on MSVC, see #585
 
@@ -85,7 +85,7 @@ the same 4,340-token document at 629.5 tok/s.
 ## Update (2026-10-04): v0.1.39, the ready-made CUDA 12 engine
 
 v0.1.39 ships an experimental ready-made engine for Pascal/Volta
-(`strata-windows-x64-cuda12.zip`, sm_60/61/70 + sm_75-89 + PTX, CUDA 12.9). Installed over
+(`nostroma-windows-x64-cuda12.zip`, sm_60/61/70 + sm_75-89 + PTX, CUDA 12.9). Installed over
 this setup with `--cuda 12`: the model pack, MTP draft and settings carried over. It runs
 correctly on this real sm_70 card (the release notes check the build only - no Pascal/Volta
 card on the test PC). Driver 581.80.
@@ -152,7 +152,7 @@ nameplates, honest abstention on unreadable fields, and no decode-speed cost.
 
 The best-quality quant ("matches the full model") installed next to the IQ3_XXS one
 (`SETUP.bat --setup --model IQ3_S --gguf-dir ... --vision gpu`; new pack in the data dir,
-MTP draft and expert profile reused, `run-iq3_s.bat` + `strata-iq3_s.json` generated, the
+MTP draft and expert profile reused, `run-iq3_s.bat` + `nostroma-iq3_s.json` generated, the
 XXS install untouched). Calibrated on its own (settings are remembered per model):
 
 - IQ3_S: `--pcie-frac 0.20`, `--spec-min-p 0.70` - 61.6 tok/s in the calibrate bench

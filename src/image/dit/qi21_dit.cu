@@ -1,4 +1,4 @@
-// src/image/dit/qi21_dit.cu - see include/strata/image/qi21_dit.hpp.
+// src/image/dit/qi21_dit.cu - see include/nostroma/image/qi21_dit.hpp.
 //
 // One step, as the native runner (tools/image/sdcpp_native/qwen_image_2_1_native.hpp) with the D1+D2 GEMMs computes it:
 //   prelude  emb = sinusoid([t, 0], 256); te = silu(linear_2(silu(linear_1(emb)))); mod = modulation.1(te) (row 0 for
@@ -10,18 +10,18 @@
 //   block    h = LN(x)(1 + m0); qkv = h W^T (one GEMM over q | k | v); per-head RMSNorm + RoPE; attention;
 //            x += to_out(att) tanh(m1); h = LN(x)(1 + m2); gu = h Wgu^T; a = up silu(gate); x += out(a) tanh(m3)
 //   head     LN(x)(1 + scale) -> proj_out
-#include "strata/image/qi21_dit.hpp"
+#include "nostroma/image/qi21_dit.hpp"
 
 #include "qi21_kernels.hpp"
-#include "strata/image/dit_gemm.hpp"
-#include "strata/image/qi21_rope.hpp"
-#include "strata/image/te_dequant.hpp"
+#include "nostroma/image/dit_gemm.hpp"
+#include "nostroma/image/qi21_rope.hpp"
+#include "nostroma/image/te_dequant.hpp"
 
-#define STRATA_GGUF_MAIN_DISABLED 1
-#include "strata/artifact/gguf_reader.hpp"
+#define NOSTROMA_GGUF_MAIN_DISABLED 1
+#include "nostroma/artifact/gguf_reader.hpp"
 
 #if defined(__HIP__) || defined(__HIPCC__) || defined(__HIP_PLATFORM_AMD__)
-#include "strata/hip_compat/cuda_runtime.h"
+#include "nostroma/hip_compat/cuda_runtime.h"
 #else
 #include <cuda_runtime.h>
 #endif
@@ -37,7 +37,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace strata::image {
+namespace nostroma::image {
 namespace {
 
 constexpr int HD = 128;
@@ -77,7 +77,7 @@ struct Block {
 }  // namespace
 
 struct Qi21Dit {
-    std::unique_ptr<strata::GgufFile> file;
+    std::unique_ptr<nostroma::GgufFile> file;
     int device = 0;
     int C = 0, F = 0, H = 0, in_ch = 0, out_ch = 0, ctx_dim = 0, t_dim = 0, n_layer = 0;
     bool fast_attn = false;
@@ -110,8 +110,8 @@ struct Qi21Dit {
 namespace {
 
 std::string find2(Qi21Dit* d, const std::string& name, int64_t K, int64_t N, W2& w, size_t& off, bool align,
-                  std::vector<std::pair<const strata::TensorInfo*, size_t>>& plan, std::set<std::string>& used) {
-    const strata::TensorInfo* t = d->file->find(PFX + name);
+                  std::vector<std::pair<const nostroma::TensorInfo*, size_t>>& plan, std::set<std::string>& used) {
+    const nostroma::TensorInfo* t = d->file->find(PFX + name);
     if (!t) return "qi21_dit: tensor " + name + " missing";
     if (t->shape.size() != 2 || (int64_t) t->shape[0] != K || (int64_t) t->shape[1] != N)
         return "qi21_dit: tensor " + name + " has an unexpected shape";
@@ -128,7 +128,7 @@ std::string find2(Qi21Dit* d, const std::string& name, int64_t K, int64_t N, W2&
 
 std::string find1(Qi21Dit* d, const std::string& name, int64_t n, size_t& at, std::vector<float>& host,
                   std::set<std::string>& used) {
-    const strata::TensorInfo* t = d->file->find(PFX + name);
+    const nostroma::TensorInfo* t = d->file->find(PFX + name);
     if (!t) return "qi21_dit: tensor " + name + " missing";
     if ((int64_t) t->elements() != n) return "qi21_dit: tensor " + name + " has an unexpected size";
     at = host.size();
@@ -138,7 +138,7 @@ std::string find1(Qi21Dit* d, const std::string& name, int64_t n, size_t& at, st
 }
 
 std::string shape_of(Qi21Dit* d, const std::string& name, int64_t& ne0, int64_t& ne1) {
-    const strata::TensorInfo* t = d->file->find(PFX + name);
+    const nostroma::TensorInfo* t = d->file->find(PFX + name);
     if (!t || t->shape.size() != 2) return "qi21_dit: tensor " + name + " missing or not 2-D";
     ne0 = (int64_t) t->shape[0];
     ne1 = (int64_t) t->shape[1];
@@ -205,7 +205,7 @@ std::string to_f16_resident(Qi21Dit* d) {
 
 std::string open_impl(Qi21Dit* d, const std::string& path, int device) {
     const auto t0 = std::chrono::steady_clock::now();
-    d->file = std::make_unique<strata::GgufFile>(path);
+    d->file = std::make_unique<nostroma::GgufFile>(path);
     std::set<std::string> used;
     int64_t a = 0, b = 0;
     DIT_TRY(shape_of(d, "img_in.weight", a, b));
@@ -225,16 +225,16 @@ std::string open_impl(Qi21Dit* d, const std::string& path, int device) {
     while (d->file->find(PFX + "transformer_blocks." + std::to_string(d->n_layer) + ".attn.to_out.0.weight")) ++d->n_layer;
     if (d->n_layer == 0) return "qi21_dit: no transformer blocks";
 
-    std::vector<std::pair<const strata::TensorInfo*, size_t>> plan;
+    std::vector<std::pair<const nostroma::TensorInfo*, size_t>> plan;
     std::vector<float> norms;
     size_t off = 0;
     d->blocks.resize(d->n_layer);
     for (int i = 0; i < d->n_layer; ++i) {
         Block& B = d->blocks[i];
         const std::string p = "transformer_blocks." + std::to_string(i) + ".";
-        const strata::TensorInfo* tq = d->file->find(PFX + p + "attn.to_q.weight");
-        const strata::TensorInfo* tk = d->file->find(PFX + p + "attn.to_k.weight");
-        const strata::TensorInfo* tv = d->file->find(PFX + p + "attn.to_v.weight");
+        const nostroma::TensorInfo* tq = d->file->find(PFX + p + "attn.to_q.weight");
+        const nostroma::TensorInfo* tk = d->file->find(PFX + p + "attn.to_k.weight");
+        const nostroma::TensorInfo* tv = d->file->find(PFX + p + "attn.to_v.weight");
         B.fused = tq && tk && tv && tq->type == tk->type && tq->type == tv->type;
         DIT_TRY(find2(d, p + "attn.to_q.weight", C, C, B.qkv, off, !B.fused, plan, used));
         DIT_TRY(find2(d, p + "attn.to_k.weight", C, C, B.k, off, !B.fused, plan, used));
@@ -554,4 +554,4 @@ void qi21_dit_close(Qi21Dit* d) {
     delete d;
 }
 
-}  // namespace strata::image
+}  // namespace nostroma::image

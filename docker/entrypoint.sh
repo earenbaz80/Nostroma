@@ -2,9 +2,9 @@
 # Entry point of the Nostroma container: `nostroma launch --no-tui` with the settings the TUI asks for, read from environment
 # variables, then stay up and stop cleanly on SIGTERM (`docker stop`).
 #
-#   docker run ... strata              start the server (default)
-#   docker run ... strata nostroma ... run any nostroma command instead (e.g. `nostroma launch --plan --model q2_0`)
-#   docker run ... strata sh           a shell
+#   docker run ... nostroma              start the server (default)
+#   docker run ... nostroma nostroma ... run any nostroma command instead (e.g. `nostroma launch --plan --model q2_0`)
+#   docker run ... nostroma sh           a shell
 #
 # Settings (all optional; names match the screens of `nostroma launch`):
 #   MODEL         model size, e.g. IQ3_XXS, Q2_0 (empty: Nostroma picks one for this card and says so)
@@ -22,17 +22,17 @@
 #   API_KEY / API_KEY_FILE   the key clients must send. The server listens on every address inside the container, and Nostroma does
 #                 not serve beyond loopback without a key, so one is always on: yours, or one made on the first start and kept in /data.
 #   PRESET        preset name in /data (default "docker"). Settings above are saved into it; with no settings given a saved preset is reused.
-#   STRATA_SET    advanced engine settings, space separated KEY=VALUE (like `nostroma launch --set`)
+#   NOSTROMA_SET    advanced engine settings, space separated KEY=VALUE (like `nostroma launch --set`)
 set -u
 
-APP=/opt/strata
-STRATA="$APP/terminal/bin/strata"
+APP=/opt/nostroma
+NOSTROMA="$APP/terminal/bin/nostroma"
 PYBIN="$APP/terminal/python/bin/python3"; [ -x "$PYBIN" ] || PYBIN=$(command -v python3 || echo python3)
-STATE_DIR="${XDG_STATE_HOME:-/data/state}/strata"
-KEY_FILE="${STRATA_KEY_FILE:-/data/state/api-key}"
+STATE_DIR="${XDG_STATE_HOME:-/data/state}/nostroma"
+KEY_FILE="${NOSTROMA_KEY_FILE:-/data/state/api-key}"
 # The phase this start is in. It lived in /run before the container ran as an unprivileged account; /run belongs to root, so it
 # sits with the rest of the state, which is the volume and is writable by the account the container runs as.
-PHASE_FILE="${STRATA_PHASE_FILE:-${XDG_STATE_HOME:-/data/state}/strata-phase}"
+PHASE_FILE="${NOSTROMA_PHASE_FILE:-${XDG_STATE_HOME:-/data/state}/nostroma-phase}"
 PRESET="${PRESET:-docker}"
 PORT="${PORT:-8080}"
 
@@ -48,22 +48,22 @@ legacy_models_guard() {
   [ -n "$1" ] && return 0
   stuck=$(find "$2" -maxdepth 3 -name '*.gguf' 2>/dev/null | head -1)
   [ -n "$stuck" ] || return 0
-  msg="There are model files in ${stuck%/*} (the older image's place). This image keeps its models in /data/Strata-data/models and does not read them there, so it would download the model again (tens of GB). To use them: mount that folder read-only and set MODEL_PATH to the folder that holds the shards (docs/DOCKER.md, \"Files you already have\"), or put them in /data/Strata-data/models/<model folder>/. To download anyway: set ALLOW_DOWNLOAD=1. Nothing was downloaded."
+  msg="There are model files in ${stuck%/*} (the older image's place). This image keeps its models in /data/Nostroma-data/models and does not read them there, so it would download the model again (tens of GB). To use them: mount that folder read-only and set MODEL_PATH to the folder that holds the shards (docs/DOCKER.md, \"Files you already have\"), or put them in /data/Nostroma-data/models/<model folder>/. To download anyway: set ALLOW_DOWNLOAD=1. Nothing was downloaded."
   if [ "${ALLOW_DOWNLOAD:-0}" = "1" ]; then warn "$msg Going on, because ALLOW_DOWNLOAD=1."; else die "$msg" 2; fi
 }
 
 # ---- other commands: `docker run image nostroma ...`, `docker run image sh`
 if [ "$#" -gt 0 ] && [ "$1" != "run" ] && [ "$1" != "serve" ]; then
-  case "$1" in strata|nostroma) shift; exec "$STRATA" "$@" ;; *) exec "$@" ;; esac
+  case "$1" in nostroma|nostroma) shift; exec "$NOSTROMA" "$@" ;; *) exec "$@" ;; esac
 fi
 
-mkdir -p /data/state /data/home /data/install /data/config /data/Strata-data /run 2>/dev/null || die "/data is not writable by uid $(id -u):$(id -g). Mount a volume there: -v strata-data:/data. A volume made by an image that ran as root belongs to root: give it to this account once with: docker run --rm -u 0 -v strata-data:/data <image> chown -R $(id -u):$(id -g) /data"
+mkdir -p /data/state /data/home /data/install /data/config /data/Nostroma-data /run 2>/dev/null || die "/data is not writable by uid $(id -u):$(id -g). Mount a volume there: -v nostroma-data:/data. A volume made by an image that ran as root belongs to root: give it to this account once with: docker run --rm -u 0 -v nostroma-data:/data <image> chown -R $(id -u):$(id -g) /data"
 if ! grep -q " /data " /proc/self/mountinfo 2>/dev/null; then
-  warn "/data is not a volume, so the model and your settings are lost when this container is removed. Add: -v strata-data:/data"
+  warn "/data is not a volume, so the model and your settings are lost when this container is removed. Add: -v nostroma-data:/data"
 fi
 
 # ---- plain warnings (never refusals)
-cpuinfo="${STRATA_CPUINFO:-/proc/cpuinfo}"
+cpuinfo="${NOSTROMA_CPUINFO:-/proc/cpuinfo}"
 if [ -r "$cpuinfo" ] && grep -q '^flags' "$cpuinfo" && ! grep -m1 '^flags' "$cpuinfo" | grep -qw avx2; then
   warn "This computer's CPU has no AVX2. The engine is built for CPUs with AVX2 and may stop with 'illegal instruction'."
 fi
@@ -81,29 +81,29 @@ for legacy in HOST LOW_RAM REINSTALL RESIDENT_BUDGET_GIB KV_STREAMING LAYER_SPLI
 done
 
 # ---- a volume from the older (0.1.x) image: its models, packs and draft layer are in /data/models, /data/packs and /data/mtp.
-# This image keeps them in /data/Strata-data. Move them over (a rename inside one volume: instant, no copy, no download).
+# This image keeps them in /data/Nostroma-data. Move them over (a rename inside one volume: instant, no copy, no download).
 # A folder that is its own mount (a bind mount of yours) is never touched.
 legacy_moved=""
 for d in models packs mtp; do
   [ -d "/data/$d" ] || continue
   grep -q " /data/$d " /proc/self/mountinfo 2>/dev/null && continue
   [ -n "$(ls -A "/data/$d" 2>/dev/null)" ] || continue
-  mkdir -p "/data/Strata-data/$d" 2>/dev/null || continue
+  mkdir -p "/data/Nostroma-data/$d" 2>/dev/null || continue
   for item in "/data/$d"/* "/data/$d"/.[!.]*; do
     [ -e "$item" ] || continue
     name=${item##*/}
-    [ -e "/data/Strata-data/$d/$name" ] && continue
-    if mv "$item" "/data/Strata-data/$d/$name" 2>/dev/null; then legacy_moved="$legacy_moved $d/$name"
-    else warn "Could not move $item into /data/Strata-data/$d (the model is downloaded again unless you set MODEL_PATH=/data/$d/...)."; fi
+    [ -e "/data/Nostroma-data/$d/$name" ] && continue
+    if mv "$item" "/data/Nostroma-data/$d/$name" 2>/dev/null; then legacy_moved="$legacy_moved $d/$name"
+    else warn "Could not move $item into /data/Nostroma-data/$d (the model is downloaded again unless you set MODEL_PATH=/data/$d/...)."; fi
   done
   rmdir "/data/$d" 2>/dev/null || true
 done
-[ -n "$legacy_moved" ] && say "Found model files from the older image in the volume and moved them into /data/Strata-data (no copy, nothing is downloaded again):$legacy_moved"
+[ -n "$legacy_moved" ] && say "Found model files from the older image in the volume and moved them into /data/Nostroma-data (no copy, nothing is downloaded again):$legacy_moved"
 
 # ---- run settings made by an image for another card or another engine version name that image's engine folder
-# (/opt/strata/components/engine/<package>/...): in this image that folder is not there, so the server would stop at the start. Drop
+# (/opt/nostroma/components/engine/<package>/...): in this image that folder is not there, so the server would stop at the start. Drop
 # them; the next step writes them again from the model files, which are kept.
-for c in /data/install/strata-*.json; do
+for c in /data/install/nostroma-*.json; do
   [ -f "$c" ] || continue
   gone=$("$PYBIN" -c '
 import json, os, sys
@@ -121,7 +121,7 @@ try:
 except (OSError, ValueError):
     sys.exit(0)
 for s in walk(cfg):
-    if s.startswith("/opt/strata/components/") and not os.path.exists(s):
+    if s.startswith("/opt/nostroma/components/") and not os.path.exists(s):
         print(s)
         break
 ' "$c" 2>/dev/null)
@@ -133,10 +133,10 @@ done
 
 # ---- is there an engine for this card?
 phase checking
-engine_json=$("$STRATA" components engine --output json 2>/dev/null || true)
+engine_json=$("$NOSTROMA" components engine --output json 2>/dev/null || true)
 if ! printf '%s' "$engine_json" | grep -q '"usable": *true'; then
   echo "[X] The engine in this image does not match this computer's graphics card, or the card is not visible to the container." >&2
-  "$STRATA" components engine 2>&1 | sed 's/^/    /' >&2 || true
+  "$NOSTROMA" components engine 2>&1 | sed 's/^/    /' >&2 || true
   cat >&2 <<'MSG'
     Check, in this order:
       NVIDIA  docker run --gpus all ... (needs nvidia-container-toolkit on the host; driver 580+ for the cuda13 image, 575+ for cuda12)
@@ -150,7 +150,7 @@ fi
 # the card is found through sysfs even when no device file was passed in: say so now instead of failing when the engine starts
 # (before the model is prepared; /dev/dxg is the GPU of Docker Desktop on WSL2)
 backend=$(printf '%s' "$engine_json" | sed -n 's/.*"backend": *"\([a-z0-9]*\)".*/\1/p' | head -1)
-dev="${STRATA_DEV_DIR:-/dev}"
+dev="${NOSTROMA_DEV_DIR:-/dev}"
 case "$backend" in
   cuda) ls "$dev"/nvidia[0-9]* >/dev/null 2>&1 || [ -e "$dev/dxg" ] || { echo "[X] This computer has an NVIDIA card, but the container cannot use it, so nothing would run (and the model would be prepared for nothing). Start the container with: --gpus all (needs the NVIDIA Container Toolkit on the host; docs/DOCKER.md, Troubleshooting)." >&2; exit 3; } ;;
   hip)  [ -e "$dev/kfd" ] || { echo "[X] This is an AMD card, but /dev/kfd is not in the container. Add: --device /dev/kfd --device /dev/dri --group-add video --group-add <render group number> (docs/DOCKER.md)" >&2; exit 3; } ;;
@@ -165,11 +165,11 @@ if [ -z "$key" ] && [ -n "${API_KEY_FILE:-}" ]; then
 fi
 
 # ---- settings -> `nostroma launch` flags
-set -- launch --no-tui --access lan --port "$PORT" --data-dir /data/Strata-data
+set -- launch --no-tui --access lan --port "$PORT" --data-dir /data/Nostroma-data
 have=""
 
 preset_exists=""
-if "$STRATA" launch --list-presets --output json 2>/dev/null | grep -q "\"name\": *\"$PRESET\""; then preset_exists=1; fi
+if "$NOSTROMA" launch --list-presets --output json 2>/dev/null | grep -q "\"name\": *\"$PRESET\""; then preset_exists=1; fi
 
 model_path="${MODEL_PATH:-${GGUF_DIR:-}}"
 if [ -n "$model_path" ]; then
@@ -184,7 +184,7 @@ if [ -n "$model_path" ]; then
     die "MODEL_PATH=$model_path holds no .gguf files. Mount the folder with the model's shards (the -0000N-of-0000M.gguf files). Nothing was downloaded." 2
   fi
 fi
-legacy_models_guard "$model_path" "${STRATA_LEGACY_MODELS:-/data/models}"
+legacy_models_guard "$model_path" "${NOSTROMA_LEGACY_MODELS:-/data/models}"
 [ -n "${MODEL:-}" ]       && { set -- "$@" --model "$MODEL"; have=1; }
 [ -n "${FAMILY:-}" ]      && { set -- "$@" --family "$FAMILY"; have=1; }
 [ -n "$model_path" ]      && { set -- "$@" --model-path "$model_path"; have=1; }
@@ -204,7 +204,7 @@ case "$gpus" in ""|all|ALL) ;; *)
   # `launch --gpu` is applied when a model is first set up; a model that is already set up keeps its card. So that GPU / GPUS take effect on
   # a volume that already has the model, run settings that name another card are dropped: setup writes them again from the files that are there.
   want=$(printf '%s' "$gpus" | tr -d ' ')
-  for c in /data/install/strata-*.json; do
+  for c in /data/install/nostroma-*.json; do
     [ -f "$c" ] || continue
     cur=$("$PYBIN" -c 'import json, sys; g = json.load(open(sys.argv[1])).get("gpu"); print(",".join(map(str, g)) if isinstance(g, list) else ("" if g is None else g))' "$c" 2>/dev/null)
     if [ "$cur" != "$want" ]; then
@@ -220,14 +220,14 @@ if [ -n "$roles" ]; then
   case "$gpus" in ""|all|ALL) ;; *) die "Set GPU_ROLES or GPU / GPUS, not both." 2 ;; esac
   set -- "$@" --gpu-roles "$roles"; have=1
 fi
-[ -n "${STRATA_SET:-}" ] && { for kv in $STRATA_SET; do set -- "$@" --set "$kv"; done; have=1; }
-[ -n "$key" ] && { set -- "$@" --api-key-env STRATA_LAUNCH_KEY; }
+[ -n "${NOSTROMA_SET:-}" ] && { for kv in $NOSTROMA_SET; do set -- "$@" --set "$kv"; done; have=1; }
+[ -n "$key" ] && { set -- "$@" --api-key-env NOSTROMA_LAUNCH_KEY; }
 
 # tune once: ask only when this preset has not been tuned yet (a restart must not tune again for 20 minutes)
 tune_mode=$(printf '%s' "${TUNE:-}" | tr 'A-Z' 'a-z')
 if [ -n "$tune_mode" ] && [ "$tune_mode" != "skip" ]; then
   tuned=""
-  if [ -n "$preset_exists" ] && "$STRATA" launch --list-presets 2>/dev/null | grep -E "^$PRESET[[:space:]]" | grep -qv "not tuned"; then tuned=1; fi
+  if [ -n "$preset_exists" ] && "$NOSTROMA" launch --list-presets 2>/dev/null | grep -E "^$PRESET[[:space:]]" | grep -qv "not tuned"; then tuned=1; fi
   if [ -n "$tuned" ] && [ "${RETUNE:-0}" != "1" ]; then
     say "This preset is already tuned; keeping the tuned settings (set RETUNE=1 to tune again)."
   else
@@ -260,7 +260,7 @@ on_term() {
     i=0; while kill -0 "$launch_pid" 2>/dev/null && [ "$i" -lt 30 ]; do sleep 1; i=$((i+1)); done
     kill -TERM "$launch_pid" 2>/dev/null || true
   fi
-  "$STRATA" launch --stop --preset "$PRESET" || true
+  "$NOSTROMA" launch --stop --preset "$PRESET" || true
   exit 0
 }
 trap on_term TERM INT
@@ -275,9 +275,9 @@ elif [ -n "$model_path" ]; then what="the model files in $model_path"
 else what="the recommended model"; fi
 say "Starting Nostroma: $what (preset '$PRESET')."
 if [ -n "$key" ]; then
-  STRATA_LAUNCH_KEY="$key" "$PYBIN" -c "$RESET_INT" "$STRATA" "$@" &
+  NOSTROMA_LAUNCH_KEY="$key" "$PYBIN" -c "$RESET_INT" "$NOSTROMA" "$@" &
 else
-  "$PYBIN" -c "$RESET_INT" "$STRATA" "$@" &
+  "$PYBIN" -c "$RESET_INT" "$NOSTROMA" "$@" &
 fi
 launch_pid=$!
 wait "$launch_pid"
@@ -290,7 +290,7 @@ if [ "$rc" -ne 0 ]; then
 fi
 
 # keep the key where `docker exec ... nostroma monitor` and the health check can read it (private file on the volume)
-( umask 077; "$STRATA" launch --show-key --preset "$PRESET" > "$KEY_FILE" 2>/dev/null ) || true
+( umask 077; "$NOSTROMA" launch --show-key --preset "$PRESET" > "$KEY_FILE" 2>/dev/null ) || true
 [ -s "$KEY_FILE" ] || rm -f "$KEY_FILE"
 if [ -z "$key" ]; then
   warn "No API_KEY was set, so Nostroma made one (the server listens on all addresses in the container and will not run without a key)."
@@ -305,7 +305,7 @@ while [ -z "$stopping" ]; do
   sleep 10 &
   wait $!
   [ -n "$stopping" ] && break
-  if "$STRATA" launch --status --output json 2>/dev/null | grep -q '"state": *"ready"'; then bad=0; else bad=$((bad+1)); fi
+  if "$NOSTROMA" launch --status --output json 2>/dev/null | grep -q '"state": *"ready"'; then bad=0; else bad=$((bad+1)); fi
   if [ "$bad" -ge 3 ]; then
     phase failed
     die "The server is no longer running. Last lines of its log are in /data/install and 'docker logs'." 1

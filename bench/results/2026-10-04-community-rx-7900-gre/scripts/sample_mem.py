@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Sample VRAM and host RAM once a second into a CSV until told to stop.
 
-Reports what the machine used while Strata served requests: VRAM from the amdgpu
+Reports what the machine used while Nostroma served requests: VRAM from the amdgpu
 sysfs counters of every card, host RAM as MemTotal - MemAvailable. Both are
 whole-machine numbers, not the engine's own accounting.
 """

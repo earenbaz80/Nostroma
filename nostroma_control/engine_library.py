@@ -73,7 +73,7 @@ def _unfit(item: ec.EngineComponent, *, wanted: str | None, target: str, runtime
     if not ok or (wanted and item.backend != wanted and item.backend not in other_makes):
         return ("It was made for a different kind of graphics card than this computer has.", "gpu_make", [])
     if item.min_runtime and runtime and ec._version_key(runtime) < ec._version_key(item.min_runtime):
-        return (f"It needs Nostroma {item.min_runtime} or newer; this is {runtime}.", "strata", [item.min_runtime, runtime])
+        return (f"It needs Nostroma {item.min_runtime} or newer; this is {runtime}.", "nostroma", [item.min_runtime, runtime])
     if item.cuda_archs and cuda_here and not ec.arch_covers(item.cuda_archs, cuda_here):
         return ("It does not include support for this computer's graphics card.", "gpu_arch", [])
     if item.hip_archs and hip_here and not set(item.hip_archs) & set(hip_here):

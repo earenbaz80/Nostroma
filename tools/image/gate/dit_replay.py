@@ -1,6 +1,6 @@
 """tools/image/gate/dit_replay.py - TEST-ONLY (OWN-5B trace): replay one DiT block of dit_ref.py from OUR stream.
 
-Our test build (STRATA_DIT_TRACE_DIR, STRATA_DIT_TRACE_BLOCK=B) dumps the stream after every block (txt_NN.bin,
+Our test build (NOSTROMA_DIT_TRACE_DIR, NOSTROMA_DIT_TRACE_BLOCK=B) dumps the stream after every block (txt_NN.bin,
 img_NN.bin) and the inside of block B (blk_*.bin).  This tool:
   1. runs dit_ref's block B in f32 and in f16op starting from OUR stream after block B-1, and compares each stage with
      our dump of the same stage: same input, so what is left is the difference in the block's own arithmetic;

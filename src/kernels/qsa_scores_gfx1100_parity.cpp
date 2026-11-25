@@ -1,8 +1,8 @@
 // GPU contract test for the optional gfx1100 port of PR1825. Synthetic, no model or coding score.
-#include "strata/kernels/qsa.hpp"
-#include "strata/env.hpp"
-#include "strata/kernels/qsa_select.hpp"
-#include "strata/kernels/gfx_arch.hpp"
+#include "nostroma/kernels/qsa.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kernels/qsa_select.hpp"
+#include "nostroma/kernels/gfx_arch.hpp"
 #include <cuda_runtime.h>
 #include <algorithm>
 #include <cmath>
@@ -14,12 +14,12 @@
 #include <random>
 #include <vector>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 // Test-only host wrapper copied from the unchanged baseline; both arms receive the SAME active bound.
 void qsa_block_scores_reference(const float*, const float*, const float*, const int32_t*, int64_t,
                                 int64_t, const QsaShapes&, float*, void*, int64_t);
 }
-namespace k = strata::kernels;
+namespace k = nostroma::kernels;
 namespace {
 void ck(cudaError_t e) {
     if (e != cudaSuccess) { std::fprintf(stderr, "HIP: %s\n", cudaGetErrorString(e)); std::exit(2); }
@@ -128,8 +128,8 @@ void check(Case c) {
         for (int64_t j = steps[i*k::kStepCount+k::kStepWidth]; j < cap; ++j)
             require(iav[i*cap+j] == -1, "ID padding overwritten");
     for (auto* v: {&p, &d, &query, &step, &a, &b, &ia, &ib}) v->guard();
-    const bool branch = strata::env("NOSTROMA_SCORES_THREAD") &&
-        std::atoi(strata::env("NOSTROMA_SCORES_THREAD")) == 1 && bound >= 16385 && bound <= nb && nq >= 64;
+    const bool branch = nostroma::env("NOSTROMA_SCORES_THREAD") &&
+        std::atoi(nostroma::env("NOSTROMA_SCORES_THREAD")) == 1 && bound >= 16385 && bound <= nb && nq >= 64;
     std::printf("PASS ctx=%lld nq=%lld capacity=%lld mode=%d bound=%lld expected_thread=%d scores=%llu ids=%lld\n",
                 (long long)c.context, (long long)nq, (long long)c.capacity, c.mode, (long long)bound,
                 (int)branch, (unsigned long long)checked, (long long)(nq*cap));
@@ -163,8 +163,8 @@ int main(int argc, char** argv) {
     if (cudaGetDeviceCount(&devices) != cudaSuccess || devices == 0) { std::puts("SKIP no GPU"); return 77; }
     cudaDeviceProp properties{}; ck(cudaGetDeviceProperties(&properties, 0));
     if (!k::gfx_arch_is(properties.gcnArchName, "gfx1100") && !k::gfx_arch_is_gfx12(properties.gcnArchName)) { std::puts("SKIP requires gfx1100 or gfx12"); return 77; }
-    require(strata::env("NOSTROMA_SCORES_THREAD") && std::strcmp(strata::env("NOSTROMA_SCORES_THREAD"), "1") == 0,
-            "run with STRATA_SCORES_THREAD=1 so the candidate branch is tested");
+    require(nostroma::env("NOSTROMA_SCORES_THREAD") && std::strcmp(nostroma::env("NOSTROMA_SCORES_THREAD"), "1") == 0,
+            "run with NOSTROMA_SCORES_THREAD=1 so the candidate branch is tested");
     const bool full = argc > 1 && std::strcmp(argv[1], "--full") == 0;
     for (int64_t n: {1,6,8,9,63,64,65,127,128,129,256})
         check({131075,n,262144,0,0,false});

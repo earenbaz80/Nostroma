@@ -2,7 +2,7 @@
 // that is not provably read-only asks, as in Manual; it used to run without a card.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { apply, MANUAL_PRESET } from '../server/agent/plugins/strata-gate.mjs';
+import { apply, MANUAL_PRESET } from '../server/agent/plugins/nostroma-gate.mjs';
 
 function gate(current) {
   let handler;
@@ -29,7 +29,7 @@ test('a provably read-only call still goes through, and a shell write asks', asy
 });
 
 test('with a readable preset nothing changes: Bypass runs, Manual asks', async () => {
-  const bypass = gate(() => 'strata-bypass');
+  const bypass = gate(() => 'nostroma-bypass');
   assert.equal((await bypass({ name: 'write', agent: { session }, input: { file_path: 'x' } }, allow)).kind, 'allow');
   const manual = gate(() => MANUAL_PRESET);
   assert.equal((await manual({ name: 'write', agent: { session }, input: { file_path: 'x' } }, allow)).kind, 'ask');

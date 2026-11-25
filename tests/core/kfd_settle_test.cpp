@@ -1,7 +1,7 @@
-// the wait before READY on an integrated AMD GPU under Linux (include/strata/core/kfd_settle.hpp).  No GPU, no sleeping: the
+// the wait before READY on an integrated AMD GPU under Linux (include/nostroma/core/kfd_settle.hpp).  No GPU, no sleeping: the
 // counter reader and the clock are faked; the folder reader is tried on a temporary folder.  Cases: file missing, unreadable, garbage,
 // counter moving, counter quiet, cap reached.  (The device rule is checked in src/core/arch_defaults_test.cpp.)
-#include "strata/core/kfd_settle.hpp"
+#include "nostroma/core/kfd_settle.hpp"
 
 #include <chrono>
 #include <cstdint>
@@ -15,8 +15,8 @@
 #include <unistd.h>
 #endif
 
-using namespace strata::core;
-using namespace strata::core::kfd_settle;
+using namespace nostroma::core;
+using namespace nostroma::core::kfd_settle;
 
 namespace {
 int failed = 0;

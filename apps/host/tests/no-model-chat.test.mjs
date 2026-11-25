@@ -46,9 +46,9 @@ test('sendMessage checks for a model before it adds the message, picks a chat or
 });
 
 test('over HTTP, a chat with no model loaded gets one plain error and no reply', async t => {
-  const home = await mkdtemp(join(tmpdir(), 'strata-nomodel-'));
+  const home = await mkdtemp(join(tmpdir(), 'nostroma-nomodel-'));
   const port = await freePort();
-  const host = spawn(process.execPath, ['server/index.mjs'], { cwd: root, stdio: 'ignore', env: { ...process.env, STRATA_HOME: home, STRATA_MODELS_DIR: join(home, 'models'), STRATA_PORT: String(port), STRATA_SHARE_PORT: String(await freePort()), STRATA_TUNNEL_PORT: String(await freePort()), STRATA_REAL_ENGINE: '0', STRATA_TEST_HARDWARE: ROOMY_HOST } });
+  const host = spawn(process.execPath, ['server/index.mjs'], { cwd: root, stdio: 'ignore', env: { ...process.env, NOSTROMA_HOME: home, NOSTROMA_MODELS_DIR: join(home, 'models'), NOSTROMA_PORT: String(port), NOSTROMA_SHARE_PORT: String(await freePort()), NOSTROMA_TUNNEL_PORT: String(await freePort()), NOSTROMA_REAL_ENGINE: '0', NOSTROMA_TEST_HARDWARE: ROOMY_HOST } });
   t.after(async () => { host.kill(); await new Promise(r => host.once('exit', r)); await rm(home, { recursive: true, force: true }).catch(() => {}); });
   let up = false;
   for (let i = 0; i < 150 && !up; i++) { try { up = (await fetch(`http://127.0.0.1:${port}/api/health`)).ok; } catch { await delay(100); } }

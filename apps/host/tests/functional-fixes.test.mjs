@@ -14,8 +14,8 @@ import { startScriptedWorker } from './helpers/scripted-worker.mjs';
 import { createAgentBridge } from '../server/agent/agent-bridge.mjs';
 import { resolveHarness } from '../server/agent/harness-runtime.mjs';
 
-const HARNESS = process.env.STRATA_HARNESS_DIR;
-const skip = !HARNESS || !resolveHarness({ env: process.env }).ok ? 'STRATA_HARNESS_DIR is not set to a built Harness' : false;
+const HARNESS = process.env.NOSTROMA_HARNESS_DIR;
+const skip = !HARNESS || !resolveHarness({ env: process.env }).ok ? 'NOSTROMA_HARNESS_DIR is not set to a built Harness' : false;
 const cleanup = dir => { try { rmSync(dir, { recursive: true, force: true, maxRetries: 3 }); } catch { /* best effort */ } };
 const ev = (type, data, seq = 1, time = 1000) => ({ type: 'event', event: { type, seq, time, data } });
 const chunk = (c, attemptId = 'a:1') => ({ type: 'assistant-stream', frame: { type: 'chunk', attemptId, chunk: c } });
@@ -122,7 +122,7 @@ test('item 7/10: our prompt has no internal terms and is short', () => {
 
 test('items 3, 7, 10: what the agent sends the model is small, plain, and carries Thinking Off', { skip }, async t => {
   const worker = await startScriptedWorker({});
-  const dir = mkdtempSync(join(tmpdir(), 'strata-fx-'));
+  const dir = mkdtempSync(join(tmpdir(), 'nostroma-fx-'));
   const ws = join(dir, 'ws'); mkdirSync(ws, { recursive: true });
   const local = [{ id: 'i', baseUrl: worker.url, modelId: 'scripted-model', context: 65536 }];
   const bridge = createAgentBridge({ dataDir: dir, localInstances: () => local, connections: () => [], env: process.env, startTimeoutMs: 90_000 });
@@ -139,7 +139,7 @@ test('items 3, 7, 10: what the agent sends the model is small, plain, and carrie
 for (const [level, thinking, effort] of [['Off', 'Off', undefined], ['Low', 'Low', 'low'], ['Medium', 'Medium', 'medium'], ['High', 'High', 'high'], ['unset (Medium)', undefined, 'medium']]) {
   test(`agent Reasoning ${level}: the request carries chat_template_kwargs ${effort ? `enable_thinking true, reasoning_effort ${effort}` : 'enable_thinking false and no effort'}`, { skip }, async t => {
     const worker = await startScriptedWorker({});
-    const dir = mkdtempSync(join(tmpdir(), 'strata-eff-'));
+    const dir = mkdtempSync(join(tmpdir(), 'nostroma-eff-'));
     const ws = join(dir, 'ws'); mkdirSync(ws, { recursive: true });
     const local = [{ id: 'i', baseUrl: worker.url, modelId: 'scripted-model', context: 65536 }];
     const bridge = createAgentBridge({ dataDir: dir, localInstances: () => local, connections: () => [], env: process.env, startTimeoutMs: 90_000 });

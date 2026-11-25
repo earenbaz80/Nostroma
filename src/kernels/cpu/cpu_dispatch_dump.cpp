@@ -6,8 +6,8 @@
 //
 // For every pair: --experts random experts (ggml-quantized random weights, valid scales), nt = 1..nt-max tokens, whole rows and
 // row ranges that start and end off any vector boundary (tails), the Default and the WindowInvariant entry points.
-#include "strata/kernels/cpu/expert_layout.hpp"
-#include "strata/kernels/cpu/native_expert.hpp"
+#include "nostroma/kernels/cpu/expert_layout.hpp"
+#include "nostroma/kernels/cpu/native_expert.hpp"
 
 #include "ggml.h"
 #include "ggml-cpu.h"
@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 
-namespace cpu = strata::kernels::cpu;
+namespace cpu = nostroma::kernels::cpu;
 
 namespace {
 

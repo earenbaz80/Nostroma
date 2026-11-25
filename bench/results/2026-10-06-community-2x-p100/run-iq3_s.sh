@@ -1,3 +1,3 @@
 #!/bin/sh
-cd "/home/lech/Strata"
-exec "/home/lech/Strata/.venv/bin/python" "/home/lech/Strata/serve/server.py" "--engine" "strata" "--config" "/home/lech/Strata/strata-iq3_s.json" "--port" "8080" "--open"
+cd "/home/lech/Nostroma"
+exec "/home/lech/Nostroma/.venv/bin/python" "/home/lech/Nostroma/serve/server.py" "--engine" "nostroma" "--config" "/home/lech/Nostroma/nostroma-iq3_s.json" "--port" "8080" "--open"

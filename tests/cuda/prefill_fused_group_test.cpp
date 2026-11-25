@@ -9,9 +9,9 @@
 // into entries of at most `cap` rows, a group closed at 16 entries or when the next entry would pass `cap` rows.
 // Cases: 55 / 300 / 1,000 tokens over 512 experts (cap = tokens x k), 2,048 tokens over 128 experts with skewed routing and cap 700 (experts
 // split over groups).  --only=NAME.  Exit 77 without a CUDA device the fused kernels run on.
-#include "strata/core/emulate.hpp"
-#include "strata/prefill/moe_fused_iq.hpp"
-#include "strata/prefill/moe_mmq.hpp"
+#include "nostroma/core/emulate.hpp"
+#include "nostroma/prefill/moe_fused_iq.hpp"
+#include "nostroma/prefill/moe_mmq.hpp"
 
 #include "ggml.h"
 
@@ -29,10 +29,10 @@
 #include <vector>
 
 namespace {
-namespace mmq = strata::prefill::mmq;
-namespace fused = strata::prefill::fused;
+namespace mmq = nostroma::prefill::mmq;
+namespace fused = nostroma::prefill::fused;
 
-constexpr int N = fused::kMoeEmbd, FF = fused::kMoeFF, FF2 = fused::kMoeGuRows, K = (int) strata::core::kCompiledGeometry.n_expert_used;
+constexpr int N = fused::kMoeEmbd, FF = fused::kMoeFF, FF2 = fused::kMoeGuRows, K = (int) nostroma::core::kCompiledGeometry.n_expert_used;
 constexpr int GROUP = 16;      // prefill.cpp MMQ_GROUP
 constexpr int TAIL = 4096;     // prefill.cpp MMQ_TAIL (at least)
 
@@ -320,9 +320,9 @@ void run_case(const Pair& p, const Case& c, mmq::Context& ctx, cudaStream_t s, u
 int main(int argc, char** argv) {
     try {
 #ifdef _WIN32
-        _putenv_s("STRATA_PF_FUSED", "1");
+        _putenv_s("NOSTROMA_PF_FUSED", "1");
 #else
-        setenv("STRATA_PF_FUSED", "1", 1);
+        setenv("NOSTROMA_PF_FUSED", "1", 1);
 #endif
         int n = 0;
         if (cudaGetDeviceCount(&n) != cudaSuccess || n == 0) { std::printf("no CUDA device: skipped\n"); return 77; }

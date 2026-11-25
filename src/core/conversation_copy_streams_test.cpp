@@ -9,7 +9,7 @@
 #include <thread>
 #include <vector>
 
-using namespace strata::core::conversation_detail;
+using namespace nostroma::core::conversation_detail;
 
 namespace {
 int checks = 0;

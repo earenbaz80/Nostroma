@@ -47,7 +47,7 @@ hardware drivers. Models and updates need an internet connection to download.
    Metal engine inside.
 4. Choose a model and its storage folder, let it download, then chat.
 
-The `strata-engine-…` and `strata-control-…` archives on the release page are components, not installers. The
+The `nostroma-engine-…` and `nostroma-control-…` archives on the release page are components, not installers. The
 installer is the same file for a first install and for an update. There is no Intel desktop installer yet; Intel Arc
 runs on Linux only, through the [Terminal](INTEL_ARC.md).
 
@@ -74,7 +74,7 @@ irm -TimeoutSec 120 https://github.com/earenbaz80/Nostroma/releases/latest/downl
 ```
 
 On Windows, open a **new terminal** afterwards. On Linux and Mac, if `nostroma` is not found, use the full path printed
-by the installer (normally `~/.local/bin/strata`) or add that folder to your shell's PATH.
+by the installer (normally `~/.local/bin/nostroma`) or add that folder to your shell's PATH.
 
 ```sh
 nostroma launch
@@ -131,9 +131,9 @@ Source checkouts have a [separate update workflow](SOURCE_INSTALL.md#updating).
 
 | Item | Default location |
 | --- | --- |
-| Desktop chats and host state | `~/.nostroma` (or `STRATA_HOME`) |
+| Desktop chats and host state | `~/.nostroma` (or `NOSTROMA_HOME`) |
 | Engine components, Windows | `%LOCALAPPDATA%\Nostroma\components` |
-| Engine components, Linux / Mac | `$XDG_DATA_HOME/nostroma/components`, normally `~/.local/share/strata/components` |
+| Engine components, Linux / Mac | `$XDG_DATA_HOME/nostroma/components`, normally `~/.local/share/nostroma/components` |
 | Terminal files | The `terminal` folder beside `components`; the installer prints the exact path |
 | Models | The folder chosen in the app or launch screens; an existing model library is reused |
 

@@ -24,10 +24,10 @@ import torch
 from safetensors import safe_open
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from _paths import add_gguf_py, converter_dir, gguf_lib  # noqa: E402  (the vendored converter, third_party/strata-gguf-py)
+from _paths import add_gguf_py, converter_dir, gguf_lib  # noqa: E402  (the vendored converter, third_party/nostroma-gguf-py)
 add_gguf_py()                                           # llama.cpp's converter imports gguf-py itself
 sys.path.insert(0, converter_dir())
-_gguf = gguf_lib()                                      # the dequantizer under test: tools/strata_quants.py (STRATA_GGUF_PY: gguf-py's)
+_gguf = gguf_lib()                                      # the dequantizer under test: tools/nostroma_quants.py (NOSTROMA_GGUF_PY: gguf-py's)
 Q, quants = _gguf.GGMLQuantizationType, _gguf.quants
 from conversion.base import ModelBase  # noqa: E402
 

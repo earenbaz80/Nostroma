@@ -32,7 +32,7 @@ CHILD = ("import subprocess, sys, time; g = subprocess.Popen([sys.executable, '-
          "print(g.pid, flush=True); time.sleep(120)")
 # the echo child: one stdin line back in capitals, its cwd, one variable of its env, a line on stderr
 ECHO = ("import os, sys; line = sys.stdin.readline().strip(); print(line.upper()); print(os.getcwd()); "
-        "print(os.environ.get('STRATA_T_ECHO', '-')); print('to stderr', file=sys.stderr)")
+        "print(os.environ.get('NOSTROMA_T_ECHO', '-')); print('to stderr', file=sys.stderr)")
 
 _PROCESS_TERMINATE, _SYNCHRONIZE, _QUERY = 0x0001, 0x00100000, 0x1000
 
@@ -156,7 +156,7 @@ class FlagsPipesAndRefusals(unittest.TestCase):
             seen.update(k)
             return real_popen(args, **k)
         with tempfile.TemporaryDirectory() as tmp:
-            env = {**os.environ, "STRATA_T_ECHO": "through"}
+            env = {**os.environ, "NOSTROMA_T_ECHO": "through"}
             with mock.patch.object(subprocess, "Popen", recording):
                 child = lifeline.popen([sys.executable, "-c", ECHO], role, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE, text=True, cwd=tmp, env=env, **kw)

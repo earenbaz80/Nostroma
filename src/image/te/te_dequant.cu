@@ -1,29 +1,29 @@
-// src/image/te/te_dequant.cu - GGUF block formats -> f16 rows on CUDA / HIP (include/strata/image/te_dequant.hpp).
+// src/image/te/te_dequant.cu - GGUF block formats -> f16 rows on CUDA / HIP (include/nostroma/image/te_dequant.hpp).
 //
 // One thread decodes 8 consecutive values (a quarter of a 32-value group; a K-quant / IQ4_XS super-block has 8 groups,
 // a Q8_0 block is one) and writes them with one 16-byte store, so a warp writes 512 contiguous bytes.  Every multiply and subtract is __fmul_rn / __fsub_rn: the compilers would
 // otherwise fuse "d1 * q - m1" into one FMA, which rounds once instead of twice and gives other f16 bits than ggml's
 // (and dequant.hpp's) f32 values.  The f16 rounding is f16_bits.hpp's (round to nearest even), not __float2half.
-#include "strata/image/te_dequant.hpp"
+#include "nostroma/image/te_dequant.hpp"
 
-#include "strata/kernels/bf16_bits.hpp"
-#include "strata/kernels/f16_bits.hpp"
+#include "nostroma/kernels/bf16_bits.hpp"
+#include "nostroma/kernels/f16_bits.hpp"
 
 #if defined(__HIP__) || defined(__HIPCC__) || defined(__HIP_PLATFORM_AMD__)
-#include "strata/hip_compat/cuda_runtime.h"
+#include "nostroma/hip_compat/cuda_runtime.h"
 #else
 #include <cuda_runtime.h>
 #endif
 
-namespace strata::image {
+namespace nostroma::image {
 namespace {
 
-using strata::kernels::f16_from_f32;
+using nostroma::kernels::f16_from_f32;
 
 __constant__ int8_t kIq4nl[16] = {-127, -104, -83, -65, -49, -35, -22, -10, 1, 13, 25, 38, 53, 69, 89, 113};
 
 __device__ __forceinline__ float h2f_at(const uint8_t* p) {
-    return strata::kernels::f32_from_f16((uint16_t) (p[0] | (p[1] << 8)));
+    return nostroma::kernels::f32_from_f16((uint16_t) (p[0] | (p[1] << 8)));
 }
 
 // get_scale_min_k4 (ggml-quants.c), j = 0..7
@@ -112,7 +112,7 @@ __device__ __forceinline__ void decode8(const uint8_t* row, int g, int l0, float
     } else if constexpr (TYPE == TE_BF16) {
         const uint8_t* p = row + 64 * (size_t) g;
 #pragma unroll
-        for (int i = 0; i < 8; ++i) v[i] = strata::kernels::f32_from_bf16((uint16_t) (p[2 * (l0 + i)] | (p[2 * (l0 + i) + 1] << 8)));
+        for (int i = 0; i < 8; ++i) v[i] = nostroma::kernels::f32_from_bf16((uint16_t) (p[2 * (l0 + i)] | (p[2 * (l0 + i) + 1] << 8)));
     }
 }
 
@@ -196,4 +196,4 @@ std::string te_dequant_f16(uint32_t type, const void* d_src, int64_t ne0, int64_
     }
 }
 
-}  // namespace strata::image
+}  // namespace nostroma::image

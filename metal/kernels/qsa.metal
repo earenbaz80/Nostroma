@@ -1,5 +1,5 @@
 // metal/kernels/qsa.metal - QSA (sparse full attention) decode for a window of tokens, between the projections.
-// Contract of include/strata/kernels/qsa.hpp / qsa_select.hpp / qsa_decode_attn.hpp / kv_q8.hpp (the engine's
+// Contract of include/nostroma/kernels/qsa.hpp / qsa_select.hpp / qsa_decode_attn.hpp / kv_q8.hpp (the engine's
 // native path), in a Metal layout (no paging: unified memory):
 //
 //   qsa_prep    per token t (cell pos0 + t): q heads rms_norm * q_norm, NEOX RoPE on 64 dims -> qcur;
@@ -48,9 +48,9 @@
 #endif
 #define QCH 64
 
-#ifndef STRATA_XH16_DECL
-#define STRATA_XH16_DECL
-// STRATA_METAL_F16 (function constant 25): the window's x also as half planes, after the float planes and S16:
+#ifndef NOSTROMA_XH16_DECL
+#define NOSTROMA_XH16_DECL
+// NOSTROMA_METAL_F16 (function constant 25): the window's x also as half planes, after the float planes and S16:
 // [3][plane] halves - raw (IQ4_XS), x * 4^-(i % 4) (Q2_0), x * 2^-8 at odd i (the K-quants); idx = t * n + d, jj = d % 16
 constant bool XH16 [[function_constant(25)]];
 constant bool xh16 = is_function_constant_defined(XH16) && XH16;
@@ -64,7 +64,7 @@ static inline void put_x16(device float* xp, uint plane, uint idx, uint jj, floa
 #endif
 
 constant int QSA_NTOK [[function_constant(3)]];
-// QSA_MROPE (function constant 24): interleaved M-RoPE (the vision path; strata/kernels/mrope.hpp, ggml IMROPE,
+// QSA_MROPE (function constant 24): interleaved M-RoPE (the vision path; nostroma/kernels/mrope.hpp, ggml IMROPE,
 // sections 11/11/10): buffer 20 of qsa_prep is a table int32 [cells][3] (t, h, w), and rotary pair i (0..31) of the row
 // at (pos_base + cell) rotates by the cos/sin table's row tab[(pos_base + cell) * 3 + i % 3] instead of its own -
 // the pooled indexer keys too (position pos_base + 4 b of a block).  Off: exactly the plain RoPE.

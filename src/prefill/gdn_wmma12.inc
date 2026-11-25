@@ -1,6 +1,6 @@
 // Included by kernels.cu right after the gfx11 chunked-GDN kernels (it uses their constants, types and helpers).
 //
-// STRATA_GDN_CHUNKED=1 on gfx12 (RDNA4: R9700 / 9070 / 9060): the same chunked algorithm as the gfx11 kernels above, on
+// NOSTROMA_GDN_CHUNKED=1 on gfx12 (RDNA4: R9700 / 9070 / 9060): the same chunked algorithm as the gfx11 kernels above, on
 // the gfx12 matrix cores.  The fragment layout differs from gfx11 (wave32, v_wmma_f32_16x16x16_f16; checked on an R9700 by
 // results/gdn/GDN-A/micro/wmma12.cpp): A and B take 8 halves a lane, lane l holding row (A) or column (B) l & 15 and
 // k = 8 * (l >> 4) + 0..7; the accumulator lane l holds column l & 15 and rows 8 * (l >> 4) + 0..7.  So an accumulator IS the
@@ -8,10 +8,10 @@
 // element v is 8 * hi + v (gfx11: 2 * v + hi).  Everything else (chunk of 16, FP16 operands, FP32 accumulate and state, the
 // norm fused, T and P from a prep kernel) is the gfx11 design, so the numerics are the same class (FP16 operands).
 #if defined(__gfx1200__) || defined(__gfx1201__)
-#define STRATA_GDN_WMMA12 1
+#define NOSTROMA_GDN_WMMA12 1
 #endif
 __device__ __forceinline__ gw_f8 gw_mma12(gw_h8 a, gw_h8 b, gw_f8 c) {
-#if defined(STRATA_GDN_WMMA12)
+#if defined(NOSTROMA_GDN_WMMA12)
     return __builtin_amdgcn_wmma_f32_16x16x16_f16_w32_gfx12(a, b, c);
 #else
     (void) a; (void) b; (void) c;
@@ -28,7 +28,7 @@ __device__ __forceinline__ gw_h8 gw_acc_to_b12(gw_f8 x) {
 // next chunk that the scan keeps in flight (the same reason gfx11 has gw_lds_barrier).  gfx12: wait for this wave's LDS accesses
 // (DScnt), then the barrier; the compiler still waits for each load before its first use.
 template<bool LB> __device__ __forceinline__ void gw12_barrier() {
-#if defined(STRATA_GDN_WMMA12)
+#if defined(NOSTROMA_GDN_WMMA12)
     if (LB) {
         __asm__ volatile("s_wait_dscnt 0x0" ::: "memory");
         __builtin_amdgcn_s_barrier();

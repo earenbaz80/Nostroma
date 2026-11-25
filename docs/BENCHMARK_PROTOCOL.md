@@ -1,7 +1,7 @@
 # Nostroma standard benchmark protocol
 
-**Status: draft, implemented in `nostroma bench run`; pilot validation pending.** Protocol ID: `strata-qwen38-thinking-v1-draft.1`.
-Result format: `strata-standard-benchmark`, schema version `1`.
+**Status: draft, implemented in `nostroma bench run`; pilot validation pending.** Protocol ID: `nostroma-qwen38-thinking-v1-draft.1`.
+Result format: `nostroma-standard-benchmark`, schema version `1`.
 
 This document specifies a repeatable community benchmark and the data a future website can consume. The
 required suite took **2 to 4 minutes after model loading** on the two machines it has been run on (RTX 3060 and
@@ -12,7 +12,7 @@ Report their duration separately if measured.
 
 `nostroma bench run` implements this protocol from Nostroma 0.2.1. It sends the frozen fixtures in
 `bench/prompts/standard-v1` (corpus SHA-256 `e75eff8b9feea04f745520b392c4c17d97aefc1ba185e222aa6740efa8f68407`)
-and writes the result format below. `BENCH.bat`, `./bench.sh`, and `tools/strata_bench.py` do not implement it.
+and writes the result format below. `BENCH.bat`, `./bench.sh`, and `tools/nostroma_bench.py` do not implement it.
 They stay the quick speed check described in the [community guide](COMMUNITY_BENCHMARKS.md). Do not rename their
 output or add a protocol ID to make it appear standard. The draft becomes final only after the measured pilot in the
 [activation checklist](#activation-checklist). The approved manifest described here does not exist yet.
@@ -307,11 +307,11 @@ explaining why, including not-applicable values. Empty arrays mean genuinely no 
 
 | Field | Required content |
 | --- | --- |
-| `format`, `schema_version` | `"strata-standard-benchmark"`, `1`; distinct from the current runner's legacy `schema: 1`. |
+| `format`, `schema_version` | `"nostroma-standard-benchmark"`, `1`; distinct from the current runner's legacy `schema: 1`. |
 | `protocol` | `id`, `git_commit`, `profile`, `corpus_sha256`, `model_card_revision`. Git commits are full immutable IDs. |
 | `run` | Unique string `id`, `started_at`, `status`, `required_duration_s`, `optional_duration_s`, boolean `optional_concurrency`, and sanitized command string `command`. Status is `complete`, `partial`, or `nonconforming`; optional duration is null with a reason when not selected. |
 | `hardware` | `gpus` array of `{device_index, name, memory_bytes, memory_kind, power_limit_w}`; string `cpu`, integer `ram_bytes`, `storage` array of `{kind, model, bus}`, and `background_workloads` array of strings. GPU index is an integer, names/storage attributes are strings. Memory kind is `dedicated` or `shared`; do not count shared VRAM again as extra system RAM. |
-| `software` | `os` as `{name, version}`, `drivers` and `runtime` arrays of `{name, version}`, strings `strata_commit`, `engine_version`, `build_kind`, `runner_commit`, and string-array `build_options`. Build kind is `release` or `source`; names/versions are strings. |
+| `software` | `os` as `{name, version}`, `drivers` and `runtime` arrays of `{name, version}`, strings `nostroma_commit`, `engine_version`, `build_kind`, `runner_commit`, and string-array `build_options`. Build kind is `release` or `source`; names/versions are strings. |
 | `model` | `id`, `revision`, `source_revision`, `quantization`, `files` array of `{path, sha256}`, `tokenizer_revision`, and `custom_pack` (description/preparation reference, or null when absent). Model file paths identify pack-relative filenames, not private machine paths. |
 | `configuration` | Strings `track`, `track_notes`; integers `context_tokens`, `server_capacity`; objects `kv_cache`, `expert_cache`, `offloading`, `prefill`, `mtp`, `calibration`, `experimental_options`; `template` as `{path, sha256}` pointing to the attached template; `sampling` and `chat_template_kwargs` objects. Configuration objects preserve effective engine option names and JSON values. `sampling` contains temperature, top_p, top_k, min_p, presence_penalty, repetition_penalty, and reasoning_effort. The two thinking flags belong in `chat_template_kwargs`; seeds/caps are per request. |
 | `request_counts` | Objects for `warmup`, `performance`, `sanity`, `concurrency`, each with `planned`, `attempted`, `completed`, `truncated`, `failed`, `skipped`. |
@@ -323,7 +323,7 @@ explaining why, including not-applicable values. Empty arrays mean genuinely no 
 | `missing` | Map of JSON Pointers to specific reasons for null values. |
 | `extensions` | Optional object for data beyond this contract; never a substitute for required fields. |
 
-Where the software fields come from. `strata_commit` and `runner_commit` are the full commit of the install: `git rev-parse
+Where the software fields come from. `nostroma_commit` and `runner_commit` are the full commit of the install: `git rev-parse
 HEAD` in a source checkout, or the `COMMIT` file a release archive carries (written by `packaging/package_terminal.py`).
 An install with neither has no commit, and the run is `nonconforming`. `engine_version` is the engine's own version
 from `/props` (`build_info`), or `/v1/status` when `/props` has none. `build_kind` is `source` when the
@@ -466,7 +466,7 @@ After activation, use **submission → maintainer review → approved manifest e
 contributor. A maintainer adds an entry only after reviewing the exact artifacts. A merged report alone does not
 mean it is in the approved list. Do not create a populated manifest for this draft.
 
-The proposed manifest has `format: "strata-approved-benchmarks"`, `schema_version: 1`, and an `entries` array.
+The proposed manifest has `format: "nostroma-approved-benchmarks"`, `schema_version: 1`, and an `entries` array.
 Each entry has the following fields; the example has placeholders, no approved result:
 
 ```json
@@ -504,7 +504,7 @@ actual lengths/cache counts, and concurrency; there is no universal combined sco
 
 ## Activation checklist
 
-`tools/strata_bench.py` (behind `BENCH.bat` and `./bench.sh`) hardcodes temperature `0`, turns thinking off by default,
+`tools/nostroma_bench.py` (behind `BENCH.bat` and `./bench.sh`) hardcodes temperature `0`, turns thinking off by default,
 has no twelve-case sanity suite, reads changing repository files into its agent workload, and can fall back from token
 counts to stream-chunk counts. `--think` alone does not fix those differences. `nostroma bench run` does not share
 them: it is the protocol's runner.

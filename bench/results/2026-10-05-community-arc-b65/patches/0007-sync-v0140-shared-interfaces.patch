@@ -32,7 +32,7 @@
 @@ -2630,7 +2630,11 @@
  // `unbuffered` (Windows, experts_unbuffered): each chunk's 4 KiB-aligned window is read with FILE_FLAG_NO_BUFFERING into
  // an aligned buffer and scattered into the blobs - no copy through the file cache when the drive is read anyway.
- LoadStats load_experts_gguf(const std::string& gguf, uint8_t* dst, const strata::kernels::cpu::ExpertLayout& lay,
+ LoadStats load_experts_gguf(const std::string& gguf, uint8_t* dst, const nostroma::kernels::cpu::ExpertLayout& lay,
 -                            int threads, bool unbuffered) {
 +                            int threads, bool unbuffered, const std::atomic<int>* ready) {
 +    auto wait_ready = [ready](int64_t l) {
@@ -70,8 +70,8 @@
      if (ldy <= 0) ldy = N;
 +    if (ldx <= 0) ldx = K;
      const float alpha = 1.0f;
- #if defined(__HIPCC__) && defined(STRATA_HIPBLASLT_AVAILABLE)
-     if (try_hipblaslt(hipblaslt_state_, strata::prefill::hipblaslt::InputType::bf16, X, W, Y, T, N, K, ldy,
+ #if defined(__HIPCC__) && defined(NOSTROMA_HIPBLASLT_AVAILABLE)
+     if (try_hipblaslt(hipblaslt_state_, nostroma::prefill::hipblaslt::InputType::bf16, X, W, Y, T, N, K, ldy,
 @@ -455,7 +456,7 @@
             (dpct::blas::descriptor_ptr)handle_, oneapi::mkl::transpose::trans,
             oneapi::mkl::transpose::nontrans, (int)N, (int)T, (int)K, &alpha, W,
@@ -108,15 +108,15 @@
 @@ -495,12 +511,12 @@
          for (int64_t r0 = 0; r0 < N; r0 += rows) {
              const int64_t n = (N - r0 < rows) ? N - r0 : rows;
-             strata::kernels::dequant_f16(ggml_type, W_blocks, r0, n, K, scratch_, stream_);
+             nostroma::kernels::dequant_f16(ggml_type, W_blocks, r0, n, K, scratch_, stream_);
 -            f16(X, scratch_, Y + r0, T, n, K, ldy, beta);
 +            product(scratch_, Y + r0, n);
          }
          return;
      }
-     strata::kernels::dequant_f16(ggml_type, W_blocks, 0, N, K, scratch_, stream_);
+     nostroma::kernels::dequant_f16(ggml_type, W_blocks, 0, N, K, scratch_, stream_);
 -    f16(X, scratch_, Y, T, N, K, ldy, beta);
 +    product(scratch_, Y, N);
  }
  
- }  // namespace strata::prefill
+ }  // namespace nostroma::prefill

@@ -24,24 +24,24 @@ add(en="Waiting for your answer below",
     ru="Ждёт вашего ответа ниже", pt="Aguardando a sua resposta abaixo", ko="아래에서 답변을 기다리는 중", fr="En attente de votre réponse ci-dessous")
 
 # #4804 why Start tuning is greyed out
-add(en="Strata is still checking this model for saved tunings. Start tuning works as soon as that is done.",
-    zh="Strata 仍在检查此模型是否有已保存的调优。检查完成后即可开始调优。",
-    ja="Strata がこのモデルの保存済みチューニングを確認しています。確認が終わりしだい、チューニングを開始できます。",
-    de="Strata prüft dieses Modell noch auf gespeicherte Abstimmungen. Sobald das fertig ist, kannst du die Abstimmung starten.",
-    es="Strata todavía está comprobando si este modelo tiene ajustes guardados. Podrás empezar el ajuste en cuanto termine.",
-    ru="Strata ещё проверяет, есть ли у этой модели сохранённые настройки. Как только проверка закончится, можно будет запустить настройку.",
-    pt="O Strata ainda está verificando se este modelo tem ajustes salvos. Assim que terminar, você poderá iniciar o ajuste.",
-    ko="Strata가 이 모델의 저장된 최적화를 확인하는 중입니다. 확인이 끝나면 바로 최적화를 시작할 수 있습니다.",
-    fr="Strata vérifie encore si ce modèle a des optimisations enregistrées. Dès que c’est fini, vous pourrez lancer l’optimisation.")
-add(en="Strata could not read the tuning details for this model, so tuning cannot start. Close this window and open it again.",
-    zh="Strata 无法读取此模型的调优信息，因此无法开始调优。请关闭此窗口后重新打开。",
-    ja="Strata がこのモデルのチューニング情報を読み取れなかったため、チューニングを開始できません。このウィンドウを閉じて、もう一度開いてください。",
-    de="Strata konnte die Abstimmungsdaten dieses Modells nicht lesen, deshalb lässt sich die Abstimmung nicht starten. Schließe dieses Fenster und öffne es erneut.",
-    es="Strata no pudo leer los datos de ajuste de este modelo, así que el ajuste no puede empezar. Cierra esta ventana y ábrela de nuevo.",
-    ru="Strata не смогла прочитать данные настройки этой модели, поэтому настройку нельзя запустить. Закройте это окно и откройте его снова.",
-    pt="O Strata não conseguiu ler os dados de ajuste deste modelo, então o ajuste não pode começar. Feche esta janela e abra-a novamente.",
-    ko="Strata가 이 모델의 최적화 정보를 읽지 못해 최적화를 시작할 수 없습니다. 이 창을 닫았다가 다시 여세요.",
-    fr="Strata n’a pas pu lire les données d’optimisation de ce modèle, l’optimisation ne peut donc pas démarrer. Fermez cette fenêtre et rouvrez-la.")
+add(en="Nostroma is still checking this model for saved tunings. Start tuning works as soon as that is done.",
+    zh="Nostroma 仍在检查此模型是否有已保存的调优。检查完成后即可开始调优。",
+    ja="Nostroma がこのモデルの保存済みチューニングを確認しています。確認が終わりしだい、チューニングを開始できます。",
+    de="Nostroma prüft dieses Modell noch auf gespeicherte Abstimmungen. Sobald das fertig ist, kannst du die Abstimmung starten.",
+    es="Nostroma todavía está comprobando si este modelo tiene ajustes guardados. Podrás empezar el ajuste en cuanto termine.",
+    ru="Nostroma ещё проверяет, есть ли у этой модели сохранённые настройки. Как только проверка закончится, можно будет запустить настройку.",
+    pt="O Nostroma ainda está verificando se este modelo tem ajustes salvos. Assim que terminar, você poderá iniciar o ajuste.",
+    ko="Nostroma가 이 모델의 저장된 최적화를 확인하는 중입니다. 확인이 끝나면 바로 최적화를 시작할 수 있습니다.",
+    fr="Nostroma vérifie encore si ce modèle a des optimisations enregistrées. Dès que c’est fini, vous pourrez lancer l’optimisation.")
+add(en="Nostroma could not read the tuning details for this model, so tuning cannot start. Close this window and open it again.",
+    zh="Nostroma 无法读取此模型的调优信息，因此无法开始调优。请关闭此窗口后重新打开。",
+    ja="Nostroma がこのモデルのチューニング情報を読み取れなかったため、チューニングを開始できません。このウィンドウを閉じて、もう一度開いてください。",
+    de="Nostroma konnte die Abstimmungsdaten dieses Modells nicht lesen, deshalb lässt sich die Abstimmung nicht starten. Schließe dieses Fenster und öffne es erneut.",
+    es="Nostroma no pudo leer los datos de ajuste de este modelo, así que el ajuste no puede empezar. Cierra esta ventana y ábrela de nuevo.",
+    ru="Nostroma не смогла прочитать данные настройки этой модели, поэтому настройку нельзя запустить. Закройте это окно и откройте его снова.",
+    pt="O Nostroma não conseguiu ler os dados de ajuste deste modelo, então o ajuste não pode começar. Feche esta janela e abra-a novamente.",
+    ko="Nostroma가 이 모델의 최적화 정보를 읽지 못해 최적화를 시작할 수 없습니다. 이 창을 닫았다가 다시 여세요.",
+    fr="Nostroma n’a pas pu lire les données d’optimisation de ce modèle, l’optimisation ne peut donc pas démarrer. Fermez cette fenêtre et rouvrez-la.")
 add(en="Checking for saved tunings\u2026",
     zh="正在检查已保存的调优\u2026", ja="保存済みチューニングを確認しています\u2026", de="Gespeicherte Abstimmungen werden geprüft\u2026", es="Comprobando los ajustes guardados\u2026",
     ru="Проверяем сохранённые настройки\u2026", pt="Verificando os ajustes salvos\u2026", ko="저장된 최적화를 확인하는 중\u2026", fr="Vérification des optimisations enregistrées\u2026")
@@ -73,15 +73,15 @@ add(en="API base URL on this computer",
 add(en="Address for other devices",
     zh="其他设备使用的地址", ja="他のデバイス用のアドレス", de="Adresse für andere Geräte", es="Dirección para otros dispositivos",
     ru="Адрес для других устройств", pt="Endereço para outros dispositivos", ko="다른 기기용 주소", fr="Adresse pour les autres appareils")
-add(en="Other devices use this address. It has its own port, separate from the one Strata's window uses, because only the model's API is shared on the network, not the app.",
-    zh="其他设备使用此地址。它有自己的端口，与 Strata 窗口使用的端口分开，因为网络上只共享模型的 API，而不是应用本身。",
-    ja="他のデバイスはこのアドレスを使います。ネットワークで共有されるのはモデルの API だけでアプリ本体ではないため、Strata のウィンドウが使うポートとは別のポートを使います。",
-    de="Andere Geräte verwenden diese Adresse. Sie hat einen eigenen Port, getrennt von dem des Strata-Fensters, weil im Netzwerk nur die API des Modells freigegeben wird, nicht die App.",
-    es="Los demás dispositivos usan esta dirección. Tiene su propio puerto, distinto del que usa la ventana de Strata, porque en la red solo se comparte la API del modelo, no la aplicación.",
-    ru="Другие устройства используют этот адрес. У него свой порт, отдельный от порта окна Strata, потому что в сети доступен только API модели, а не само приложение.",
-    pt="Os outros dispositivos usam este endereço. Ele tem a própria porta, separada da que a janela do Strata usa, porque só a API do modelo é compartilhada na rede, não o aplicativo.",
-    ko="다른 기기는 이 주소를 사용합니다. 네트워크에는 앱이 아니라 모델의 API만 공유되므로, Strata 창이 쓰는 포트와는 별도의 포트를 씁니다.",
-    fr="Les autres appareils utilisent cette adresse. Elle a son propre port, distinct de celui de la fenêtre de Strata, car seule l'API du modèle est partagée sur le réseau, pas l'application.")
+add(en="Other devices use this address. It has its own port, separate from the one Nostroma's window uses, because only the model's API is shared on the network, not the app.",
+    zh="其他设备使用此地址。它有自己的端口，与 Nostroma 窗口使用的端口分开，因为网络上只共享模型的 API，而不是应用本身。",
+    ja="他のデバイスはこのアドレスを使います。ネットワークで共有されるのはモデルの API だけでアプリ本体ではないため、Nostroma のウィンドウが使うポートとは別のポートを使います。",
+    de="Andere Geräte verwenden diese Adresse. Sie hat einen eigenen Port, getrennt von dem des Nostroma-Fensters, weil im Netzwerk nur die API des Modells freigegeben wird, nicht die App.",
+    es="Los demás dispositivos usan esta dirección. Tiene su propio puerto, distinto del que usa la ventana de Nostroma, porque en la red solo se comparte la API del modelo, no la aplicación.",
+    ru="Другие устройства используют этот адрес. У него свой порт, отдельный от порта окна Nostroma, потому что в сети доступен только API модели, а не само приложение.",
+    pt="Os outros dispositivos usam este endereço. Ele tem a própria porta, separada da que a janela do Nostroma usa, porque só a API do modelo é compartilhada na rede, não o aplicativo.",
+    ko="다른 기기는 이 주소를 사용합니다. 네트워크에는 앱이 아니라 모델의 API만 공유되므로, Nostroma 창이 쓰는 포트와는 별도의 포트를 씁니다.",
+    fr="Les autres appareils utilisent cette adresse. Elle a son propre port, distinct de celui de la fenêtre de Nostroma, car seule l'API du modèle est partagée sur le réseau, pas l'application.")
 
 # #3723 Context memory and the out-of-graphics-memory reason
 add(en="INT8 is the standard: good quality and a medium amount of memory.",

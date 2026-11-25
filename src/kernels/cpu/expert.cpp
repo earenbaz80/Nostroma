@@ -2,10 +2,10 @@
 //
 // The body is the validated kernel, moved rather than rewritten: it carries the P0.T2 parity result
 // (rel 1.461e-06 against the ggml formula) and the three performance findings recorded in
-// include/strata/kernels/cpu/expert.hpp.  Read that header first; it says why each piece is shaped this way.
-#include "strata/kernels/cpu/expert.hpp"
-#include "strata/env.hpp"
-#include "strata/kernels/cpu/expert_layout.hpp"
+// include/nostroma/kernels/cpu/expert.hpp.  Read that header first; it says why each piece is shaped this way.
+#include "nostroma/kernels/cpu/expert.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kernels/cpu/expert_layout.hpp"
 
 #include <immintrin.h>
 #if defined(_MSC_VER)
@@ -20,7 +20,7 @@
 #include <cstdlib>
 #include <cstring>
 
-namespace strata::kernels::cpu {
+namespace nostroma::kernels::cpu {
 namespace {
 
 /// fp16 -> fp32, written out rather than using `_cvtsh_ss`, because the F16C intrinsic's behaviour on
@@ -150,7 +150,7 @@ inline float hsum_ps(__m256 v) {
 // products built for eight blocks at a time; the weight-independent correction is one FMA per eight blocks.
 // The sum order differs from the 256-bit kernel (last-bit differences); the verify window and plain decode both
 // use this kernel, so speculative decode still reproduces plain decode exactly.
-static const bool kZmm = strata::env("NOSTROMA_CPU_YMM") == nullptr;
+static const bool kZmm = nostroma::env("NOSTROMA_CPU_YMM") == nullptr;
 
 inline __m512i unpack64_q2_0_ms(const uint8_t* codes) {
     const __m128i packed = _mm_loadu_si128((const __m128i*) codes);          // 8 u16 = 64 codes
@@ -196,7 +196,7 @@ inline __m512i unpack64_q2_0(const uint8_t* codes) {
     return vbmi ? unpack64_q2_0_ms(codes) : unpack64_q2_0_sw(codes);
 }
 
-/// STRATA_CPU_YMM=1 keeps the 256-bit rows (whose unpack keeps the multishift): a machine with VNNI but no VBMI
+/// NOSTROMA_CPU_YMM=1 keeps the 256-bit rows (whose unpack keeps the multishift): a machine with VNNI but no VBMI
 /// takes the zmm rows (the substitute unpack above), and anything older takes the AVX-2 kernel (expert_layout.cpp's
 /// dispatch).  So one value answers "can this engine's 512-bit q2 path run at all".
 // For blocks [b0, b0+nb) (nb <= 8): p[2i+h] = d_{b0+i} * xscale[2(b0+i)+h], dd[2i+h] = d_{b0+i}.
@@ -679,4 +679,4 @@ bool q2_rows_512_ok() {
     return kZmm && cpu_vnni_ok();
 }
 
-}  // namespace strata::kernels::cpu
+}  // namespace nostroma::kernels::cpu

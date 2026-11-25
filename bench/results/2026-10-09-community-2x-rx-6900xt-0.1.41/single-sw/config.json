@@ -1,5 +1,5 @@
 {
-  "exe": "/work/stock/build-hip/strata",
+  "exe": "/work/stock/build-hip/nostroma",
   "args": [
     "--pack",
     "/m/packs/iq3_s",
@@ -40,7 +40,7 @@
   "gpu": 1,
   "gpus_asked": true,
   "env": {
-    "STRATA_HIP_PROMPT_F16": "1",
-    "STRATA_SH_STREAM": "1"
+    "NOSTROMA_HIP_PROMPT_F16": "1",
+    "NOSTROMA_SH_STREAM": "1"
   }
 }

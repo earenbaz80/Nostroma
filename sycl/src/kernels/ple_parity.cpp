@@ -12,12 +12,12 @@
 //      in it were checked to be the artifact's real ones before this test was written.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 #include <dpct/dpct.hpp>
-#include "strata/kernels/ple.hpp"
-#include "strata/kernels/ngram.hpp"
-#include "strata/kernels/f16_bits.hpp"
-#include "strata/kernels/native_mmvq.hpp"
+#include "nostroma/kernels/ple.hpp"
+#include "nostroma/kernels/ngram.hpp"
+#include "nostroma/kernels/f16_bits.hpp"
+#include "nostroma/kernels/native_mmvq.hpp"
 #include "ple_oracle_vectors.inc"
 
 #include <algorithm>
@@ -29,8 +29,8 @@
 #include <stdexcept>
 #include <vector>
 
-namespace k = strata::kernels;
-namespace o = strata::kernels::ple_oracle;
+namespace k = nostroma::kernels;
+namespace o = nostroma::kernels::ple_oracle;
 
 namespace {
 
@@ -303,8 +303,8 @@ int main(int argc, char** argv) {
     bool selftest = false;
     bool check_fixtures = false;
     std::string pack = "pack/full";
-    // --gguf, else $STRATA_PLE_GGUF, else the development layout (run from the engine root)
-    std::string gguf = strata::env("NOSTROMA_PLE_GGUF") ? strata::env("NOSTROMA_PLE_GGUF")
+    // --gguf, else $NOSTROMA_PLE_GGUF, else the development layout (run from the engine root)
+    std::string gguf = nostroma::env("NOSTROMA_PLE_GGUF") ? nostroma::env("NOSTROMA_PLE_GGUF")
                                                       : "../../Q2_0/Qwen3.8-Flash-Next-GSQ-RCO-Q2_0-00002-of-00002.gguf";
     std::string in_bin = "bench/micro/ple_in.bin", out_bin = "bench/micro/ple_out.bin";
     for (int i = 1; i < argc; ++i) {

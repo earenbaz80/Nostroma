@@ -67,15 +67,15 @@ def probe(device_binary):
     if (re.findall(r"^device (\d+):", result.stdout, re.M) != ["0"]
             or "gfx1201" not in result.stdout or "R9700" not in result.stdout
             or "cannot run" in result.stdout):
-        raise RuntimeError(f"strata-device rejected the target: {result.stdout}")
+        raise RuntimeError(f"nostroma-device rejected the target: {result.stdout}")
     return {"uuid": UUID, "bdf": BDF, "hip_device_count": count.value,
-            "strata_device": result.stdout,
+            "nostroma_device": result.stdout,
             "numa_node": (Path("/sys/bus/pci/devices") / BDF / "numa_node").read_text().strip()}
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--device-binary", type=Path, default=ROOT / "build-r9700/strata-device")
+    parser.add_argument("--device-binary", type=Path, default=ROOT / "build-r9700/nostroma-device")
     parser.add_argument("--config", type=Path, help="validate this config; for serve it is required")
     parser.add_argument("--record", type=Path, required=True, help="new JSON record, never overwritten")
     parser.add_argument("--cpu-nodes", help="numactl CPU nodes; omit for unbound product baseline")
@@ -92,7 +92,7 @@ def main():
     if args.action == "serve":
         if cfg is None or command:
             parser.error("serve requires --config and takes no command")
-        command = [sys.executable, "-m", "serve.server", "--engine", "strata",
+        command = [sys.executable, "-m", "serve.server", "--engine", "nostroma",
                    "--config", str(args.config.resolve()), "--host", "127.0.0.1", "--port", str(args.port)]
     elif args.action == "run" and not command:
         parser.error("run requires a command after --")
@@ -109,7 +109,7 @@ def main():
     os.environ.clear()
     os.environ.update(env)
     # This lock coordinates our experiments; it does not reserve the GPU against other users.
-    lock = open(f"/tmp/strata-r9700-{os.getuid()}-{UUID}.lock", "a")
+    lock = open(f"/tmp/nostroma-r9700-{os.getuid()}-{UUID}.lock", "a")
     fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     device = probe(args.device_binary.resolve())
     prefix = []
@@ -124,7 +124,7 @@ def main():
               "git_head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
               "git_status": subprocess.check_output(["git", "status", "--short"], cwd=ROOT, text=True),
               "environment": {k: v for k, v in env.items()
-                              if k.startswith(("STRATA_", "HIP_", "ROCR_", "ROCBLAS_", "HIPBLASLT_", "HSA_", "OMP_"))
+                              if k.startswith(("NOSTROMA_", "HIP_", "ROCR_", "ROCBLAS_", "HIPBLASLT_", "HSA_", "OMP_"))
                               or k in {"PATH", "LD_LIBRARY_PATH"}},
               "device_binary_sha256": hashlib.sha256(args.device_binary.read_bytes()).hexdigest()}
     args.record.parent.mkdir(parents=True, exist_ok=True)

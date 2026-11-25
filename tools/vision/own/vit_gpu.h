@@ -4,7 +4,7 @@
 // them; F32 matrices become BF16, Q8_0 becomes F16), the activations are float32, each matrix product is a cuBLAS / hipBLAS GemmEx with a
 // 16-bit input cast from the float32 activations and float32 accumulation (what ggml's CUDA backend does for the same weights), and the
 // attention is a tiled online-softmax kernel in float32 (head size 72 does not fit the vendor flash kernels, and a materialised score
-// matrix would cost 1 GB at 4,096 tokens).  Built only with STRATA_VIT_CUDA or STRATA_VIT_HIP; without either the functions say so.
+// matrix would cost 1 GB at 4,096 tokens).  Built only with NOSTROMA_VIT_CUDA or NOSTROMA_VIT_HIP; without either the functions say so.
 #pragma once
 
 #include "gguf_lite.h"
@@ -16,7 +16,7 @@
 #include <string>
 #include <vector>
 
-namespace strata_vit {
+namespace nostroma_vit {
 
 struct VitGpuImpl;
 
@@ -37,8 +37,8 @@ inline bool vit_gpu_slower_nvidia(int cc_major, int cc_minor, bool /*bf16_matric
 // AMD gfx1151 (Strix Halo, Radeon 8060S) takes our tower under `auto` (owner 11-11: "For Strix - use our reader, even if its a bit slower ... Our priority is to
 // get off ggml and llama.cpp").  The ROCm package's rocBLAS has tuned gfx1151 kernels for 16-bit results only (BF16 / F16 -> F32 is fallback-only), so on
 // gfx1151 the tower asks for F16 results with float32 accumulation (vit_gpu.cu, VitGpu::load): 0.54-0.91 of mtmd-HIP's time on Strix, rule 1 and 2 pass on
-// 18 pictures with both models (RESULTS-OWN-3V.md PART F2/F3; with float32 results it was 1.7 to 3.1).  The fused attention (STRATA_VIT_FA, k_attn_fa_gfx11) is on by
-// default there as well (PART F8); STRATA_VIT_FA=0 turns it off.
+// 18 pictures with both models (RESULTS-OWN-3V.md PART F2/F3; with float32 results it was 1.7 to 3.1).  The fused attention (NOSTROMA_VIT_FA, k_attn_fa_gfx11) is on by
+// default there as well (PART F8); NOSTROMA_VIT_FA=0 turns it off.
 // `gfx` is the device's arch name (hipDeviceProp_t::gcnArchName, possibly with feature suffixes such as ":xnack-").
 inline bool vit_gpu_is_gfx1151(const std::string& gfx) { return gfx.rfind("gfx1151", 0) == 0 && (gfx.size() == 7 || gfx[7] == ':'); }
 // AMD on Windows (coordinator 11-11, with the default flip to our tower): no card but gfx1151 has been measured with the Windows HIP package, so `auto` keeps
@@ -86,4 +86,4 @@ private:
     std::unique_ptr<VitGpuImpl> impl_;
 };
 
-}  // namespace strata_vit
+}  // namespace nostroma_vit

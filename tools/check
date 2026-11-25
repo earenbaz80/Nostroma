@@ -70,7 +70,7 @@ class Scratch:
     def __init__(self, base, keep):
         self.keep = keep
         self.created = base is None
-        self.dir = os.path.abspath(base) if base else tempfile.mkdtemp(prefix="strata-check-")
+        self.dir = os.path.abspath(base) if base else tempfile.mkdtemp(prefix="nostroma-check-")
         os.makedirs(os.path.join(self.dir, "tmp"), exist_ok=True)
 
     def path(self, *p):
@@ -277,7 +277,7 @@ def step_cmake(ctx):
         return finish(r, 1, False, log)
     # the one-line summary the CMakeLists prints at configure time (which kinds of test were registered)
     for line in open(log, "rb").read().decode("utf-8", "replace").splitlines():
-        if "strata tests:" in line:
+        if "nostroma tests:" in line:
             r.reason = line.split("-- ", 1)[-1].strip()
             break
     return finish(r, rc, False, log)
@@ -381,7 +381,7 @@ def step_npm(name, script, args=()):
             # the junit file gives the counts and the skip reasons; spec goes to the log
             cmd += ["--", "--test-reporter=spec", "--test-reporter-destination=stdout", "--test-reporter=junit",
                     "--test-reporter-destination=" + junit]
-        rc, secs = run_cmd(cmd, HOST, ctx.scratch.env({"STRATA_TEST_TIMEOUT_MS": "180000"}), ctx.timeout(name), log)
+        rc, secs = run_cmd(cmd, HOST, ctx.scratch.env({"NOSTROMA_TEST_TIMEOUT_MS": "180000"}), ctx.timeout(name), log)
         r.seconds = secs
         if name == "host-test" and os.path.exists(junit):
             parse_junit(junit, r)
@@ -403,7 +403,7 @@ def step_docs(ctx):
     r.log = log
     for label, script, args in (("links", "check_links.py", ()), ("release manifest", "release_manifest.py", ("--check",)),
                                 ("capability table", "capability_table.py", ("--check",)), ("bench results index", "bench_results_index.py", ("--check",)), ("settings register", "settings_register.py", ("--check",)),
-                                ("vendored ggml and gguf-py (third_party/strata-ggml, strata-gguf-py)", "check_vendored.py", ())):
+                                ("vendored ggml and gguf-py (third_party/nostroma-ggml, nostroma-gguf-py)", "check_vendored.py", ())):
         path = os.path.join(ROOT, "tools", script)
         if not os.path.exists(path):
             r.skipped += 1

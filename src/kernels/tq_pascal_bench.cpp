@@ -7,9 +7,9 @@
 // Random bytes are valid trellis codes (any 15-bit state indexes the codebook); only the fp16 block scales are set,
 // small enough that the grouped path's SwiGLU output keeps a finite fp16 q8_1 scale.  No model, needs the GPU.
 // The checksum lines ("SUM ...") are what two builds are compared by: same lines, same bits.
-#include "strata/kernels/f16_bits.hpp"
-#include "strata/kernels/iq_kernels.hpp"
-#include "strata/kernels/native_mmvq.hpp"
+#include "nostroma/kernels/f16_bits.hpp"
+#include "nostroma/kernels/iq_kernels.hpp"
+#include "nostroma/kernels/native_mmvq.hpp"
 
 #include "ggml-common-tq.h"   // tq_lut_f16: the codebook, as host data
 
@@ -26,7 +26,7 @@
 #include <string>
 #include <vector>
 
-namespace k = strata::kernels;
+namespace k = nostroma::kernels;
 
 namespace {
 

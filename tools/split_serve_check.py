@@ -6,7 +6,7 @@
 
 Run it from the repository root (it imports serve.server and serve.split).  CONFIG.json:
 
-  {"exe": "/path/strata", "cwd": "/path/repo", "args": ["--serve", "--pack", ..., "--max-context", "40960", ...],
+  {"exe": "/path/nostroma", "cwd": "/path/repo", "args": ["--serve", "--pack", ..., "--max-context", "40960", ...],
    "env": {...}, "prompts": "/path/prompts", "dir": "/path/work",
    "prefill_gpu": 0, "decode_gpu": 1, "arena": "/path/arena.bin" (optional), "min_prompt_tokens": 2048}
 
@@ -15,7 +15,7 @@ The prompts folder has pp_<N>.txt files of comma-separated token ids (the bench 
 
 exact: a fresh engine reads a prompt and answers (the reference, twice, to show the engine's own run-to-run noise);
 then the prefill engine reads the same prompt, saves the session, a fresh decode engine restores it and answers.  Compared:
-the state fingerprint (STRATA_STATE_HASH) of the prefill engine and of the decode engine right after the restore, then the
+the state fingerprint (NOSTROMA_STATE_HASH) of the prefill engine and of the decode engine right after the restore, then the
 answer's token ids and the fingerprint after the answer.
 
 bench: one arm per call (run it in its own job so the engines start fresh):
@@ -48,7 +48,7 @@ def session_dir(cfg):
     if not d and os.path.isdir("/dev/shm"):
         import shutil
         if shutil.disk_usage("/dev/shm").free > (6 << 30):
-            d = "/dev/shm/strata-split-check"
+            d = "/dev/shm/nostroma-split-check"
     d = d or cfg["dir"]
     os.makedirs(d, exist_ok=True)
     return d
@@ -72,11 +72,11 @@ def make_engine(cfg, gpus, tag, extra_args=(), arena=None, min_free_gib=8.0, sta
     open(c["log"], "w").close()
     env = srv.child_env(c)
     if state_hash:                  # the fingerprint after every request costs time proportional to the prompt: exact mode only
-        env["STRATA_STATE_HASH"] = "1"
+        env["NOSTROMA_STATE_HASH"] = "1"
     for k, v in (cfg.get("env") or {}).items():
         env[str(k)] = str(v)
     t0 = time.time()
-    e = srv.StrataEngine(c["exe"], srv.engine_args(c), cwd=c.get("cwd"), log=c["log"], env=env)
+    e = srv.NostromaEngine(c["exe"], srv.engine_args(c), cwd=c.get("cwd"), log=c["log"], env=env)
     e.silence_s = 0
     e.tag, e.load_s = tag, time.time() - t0
     return e
@@ -109,7 +109,7 @@ def state_hashes(text):
 
 
 def run_gen(engine, ids, max_new):
-    """One request through engine.generate (a StrataEngine or a SplitEngine).  -> dict of tokens and times."""
+    """One request through engine.generate (a NostromaEngine or a SplitEngine).  -> dict of tokens and times."""
     cancel = threading.Event()
     toks, t_first = [], None
     t0 = time.perf_counter()

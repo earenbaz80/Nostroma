@@ -1,9 +1,9 @@
-#include "strata/core/auto_cache.hpp"
+#include "nostroma/core/auto_cache.hpp"
 
 #include <cstdio>
 #include <cstdlib>
 
-using namespace strata::core;
+using namespace nostroma::core;
 namespace {
 int checks = 0;
 void check(bool ok, const char* label) {

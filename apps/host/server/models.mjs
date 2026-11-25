@@ -14,7 +14,7 @@ import { CONTEXT_TOKENS, VARIANTS, downloadUrl, footprint, localModels, refreshL
  *
  * Nostroma is being iterated on as a product surface, so by default the model
  * library is simulated: downloads animate, loads stage, nothing is fetched and
- * no process is spawned. Set STRATA_REAL_ENGINE=1 to use the real path
+ * no process is spawned. Set NOSTROMA_REAL_ENGINE=1 to use the real path
  * (Hugging Face download + supervised llama.cpp engine).
  */
 export const REAL = envVar('REAL_ENGINE') === '1';

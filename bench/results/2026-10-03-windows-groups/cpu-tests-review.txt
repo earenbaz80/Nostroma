@@ -1,7 +1,7 @@
-Internal ctest changing into directory: C:/Users/<user>/.codex/worktrees/zen2-gfx1030-defaults/Strata/build-default-tests
-UpdateCTestConfiguration  from :C:/Users/<user>/.codex/worktrees/zen2-gfx1030-defaults/Strata/build-default-tests/DartConfiguration.tcl
-UpdateCTestConfiguration  from :C:/Users/<user>/.codex/worktrees/zen2-gfx1030-defaults/Strata/build-default-tests/DartConfiguration.tcl
-Test project C:/Users/<user>/.codex/worktrees/zen2-gfx1030-defaults/Strata/build-default-tests
+Internal ctest changing into directory: C:/Users/<user>/.codex/worktrees/zen2-gfx1030-defaults/Nostroma/build-default-tests
+UpdateCTestConfiguration  from :C:/Users/<user>/.codex/worktrees/zen2-gfx1030-defaults/Nostroma/build-default-tests/DartConfiguration.tcl
+UpdateCTestConfiguration  from :C:/Users/<user>/.codex/worktrees/zen2-gfx1030-defaults/Nostroma/build-default-tests/DartConfiguration.tcl
+Test project C:/Users/<user>/.codex/worktrees/zen2-gfx1030-defaults/Nostroma/build-default-tests
 Constructing a list of tests
 Done constructing a list of tests
 Updating test list for fixtures
@@ -11,8 +11,8 @@ Checking test dependency graph end
 test 9
     Start 9: pool_affinity_test
 
-9: Test command: C:\Users\<user>\.codex\worktrees\zen2-gfx1030-defaults\Strata\build-default-tests\Release\pool_affinity_test.exe
-9: Working Directory: C:/Users/<user>/.codex/worktrees/zen2-gfx1030-defaults/Strata/build-default-tests
+9: Test command: C:\Users\<user>\.codex\worktrees\zen2-gfx1030-defaults\Nostroma\build-default-tests\Release\pool_affinity_test.exe
+9: Working Directory: C:/Users/<user>/.codex/worktrees/zen2-gfx1030-defaults/Nostroma/build-default-tests
 9: Test timeout computed to be: 10000000
 9: Host restore: still executes on group 0 processor 0
 9: Host restore: still executes on group 1 processor 0

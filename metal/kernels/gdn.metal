@@ -6,16 +6,16 @@
 //   kv_j = sum_i S[i][j] k[i];  delta_j = (v_j - gate * kv_j) * beta;  S = gate * S + k[i] delta_j
 //   o_j = (sum_i S[i][j] q[i]) / sqrt(128);  y_j = o_j * rsqrt(mean(o^2) + eps) * gamma_j * sigmoid(z_j)
 //
-// State layout as Strata's: S[(i * h_v + h) * 128 + j].  Value head h reads q/k head h % h_k.
+// State layout as Nostroma's: S[(i * h_v + h) * 128 + j].  Value head h reads q/k head h % h_k.
 // One threadgroup per value head, 512 threads = 16 simdgroups: simdgroup s holds columns j = 32 (s % 4) + lane and
 // rows i = 32 (s / 4) .. + 32 of the head's 128 x 128 state in registers.  GDN_NTOK tokens run in order; with
 // `commit` the state and the conv history are written back after the last one (a verify window runs without commit,
 // the fold of m accepted tokens is the same kernel with GDN_NTOK = m and commit).  The conv history is read from
 // `hist` and the committed one written to `hist_out` (ping-pong: the q/k channels are shared by three threadgroups).
 
-#ifndef STRATA_XH16_DECL
-#define STRATA_XH16_DECL
-// STRATA_METAL_F16 (function constant 25): the window's x also as half planes, after the float planes and S16:
+#ifndef NOSTROMA_XH16_DECL
+#define NOSTROMA_XH16_DECL
+// NOSTROMA_METAL_F16 (function constant 25): the window's x also as half planes, after the float planes and S16:
 // [3][plane] halves - raw (IQ4_XS), x * 4^-(i % 4) (Q2_0), x * 2^-8 at odd i (the K-quants); idx = t * n + d, jj = d % 16
 constant bool XH16 [[function_constant(25)]];
 constant bool xh16 = is_function_constant_defined(XH16) && XH16;

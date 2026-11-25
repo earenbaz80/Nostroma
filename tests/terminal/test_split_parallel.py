@@ -38,12 +38,12 @@ LAYER_ARGS = ["--pack", "/m/packs/x", "--native", "/m/x-00001.gguf", "--spec", "
 def split_cfg(lanes: int = 6, **more) -> dict:
     args = list(SPLIT_ARGS)
     args[args.index("--batch") + 1] = str(lanes)
-    return {"exe": "/e/strata-split-2-sm120", "args": args, "tokenizer": "/m/tokenizer", "model_name": "m", "port": 8080,
+    return {"exe": "/e/nostroma-split-2-sm120", "args": args, "tokenizer": "/m/tokenizer", "model_name": "m", "port": 8080,
             "split_engine_note": "Using the all-cards split engine on 2 cards.", "drafting": "mtp", **more}
 
 
 def layer_cfg(**more) -> dict:
-    return {"exe": "/e/strata", "args": list(LAYER_ARGS), "tokenizer": "/m/tokenizer", "model_name": "m", "port": 8080, **more}
+    return {"exe": "/e/nostroma", "args": list(LAYER_ARGS), "tokenizer": "/m/tokenizer", "model_name": "m", "port": 8080, **more}
 
 
 class Base(unittest.TestCase):
@@ -94,7 +94,7 @@ class TerminalPath(Base):
 
     def test_the_amd_four_card_default_does_not_collide_with_the_split(self):
         """AMD gfx1201 x4 starts the split by itself too; amd_four_card.apply put parallel=8 in the run config and the launcher mirrored it into the profile."""
-        cfg = split_cfg(lanes=8, parallel=8, exe="/e/strata-split-4-amd")
+        cfg = split_cfg(lanes=8, parallel=8, exe="/e/nostroma-split-4-amd")
         ov = self.profile_for(cfg, hw=HW_4XR9700, four_card=8)
         self.assertNotIn("parallel", ov)
         values, origins = cli._effective(cfg, {"overrides": ov}, None)
@@ -310,7 +310,7 @@ class SummaryTellsWhatRuns(Base):
 
     def test_a_fallback_replaces_the_line_and_gives_the_engines_reason(self):
         r, log = self.runner()
-        Path(str(log) + ".split-engine").write_text("[strata] engine started: x\nsfnx: --native and --mtp are required\n", encoding="utf-8")
+        Path(str(log) + ".split-engine").write_text("[nostroma] engine started: x\nsfnx: --native and --mtp are required\n", encoding="utf-8")
         with self.metrics({"split_fallback": True}), contextlib.redirect_stdout(io.StringIO()):
             r.report_drafting()
         self.assertEqual(r.notices, ["The all-cards split engine could not start (sfnx: --native and --mtp are required); running the normal layer split."])
@@ -367,7 +367,7 @@ def app_cfg(tmp: str, **more) -> dict:
     mtp = root / "mtp" / "rt"
     mtp.mkdir(parents=True, exist_ok=True)
     (mtp / "dense.bin").write_bytes(b"x")
-    cfg = {"exe": "/e/strata", "args": ["--pack", "/m/packs/x", "--native", "/m/x-00001.gguf", "--spec", "4", "--mtp", str(mtp), "--max-context", "131072",
+    cfg = {"exe": "/e/nostroma", "args": ["--pack", "/m/packs/x", "--native", "/m/x-00001.gguf", "--spec", "4", "--mtp", str(mtp), "--max-context", "131072",
                                         "--kv", "int8", "--vram-reserve-mib", "1536"],
            "cwd": tmp, "tokenizer": "/m/tokenizer", "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl", "host": "127.0.0.1", "port": 18500, "api_key": "k", "gpu": [0, 1], "layer_split": "auto",
            "open_browser": False, "parallel": 4, "fit_max_tokens": True, "env": {}}
@@ -504,7 +504,7 @@ class AppStartsTheSplit(Base):
         return SE.ModelFacts(routed_types={"Q4_K": 97, "Q5_K": 2, "Q5_1": 43, "Q8_0": 5}, routed_bytes=int(71.7 * (1 << 30)), embd_type="Q8_0", shexp_types={"Q8_0": 144},
                              embd_ram_bytes=int(27.5 * (1 << 30)), layers=48, experts=512)
 
-    def apply(self, cfg, *, probe=None, avail=400.0, exe="/e/strata-split-2-sm120", system="linux"):
+    def apply(self, cfg, *, probe=None, avail=400.0, exe="/e/nostroma-split-2-sm120", system="linux"):
         probe = probe or cards(2)
         return SE.apply_run_config(cfg, exe_for_cards=lambda n, cc=None, arch=None: exe, system=system, probe=lambda idx: probe, ram=lambda: (500.0, avail),
                                    scan=lambda path: self.model())
@@ -515,14 +515,14 @@ class AppStartsTheSplit(Base):
             d, line, warn = self.apply(cfg)
             self.assertTrue(d.use_split, d.reasons)
             self.assertEqual(flag_of(cfg, "--batch"), "4")
-            self.assertEqual(cfg["exe"], "/e/strata-split-2-sm120")
+            self.assertEqual(cfg["exe"], "/e/nostroma-split-2-sm120")
             self.assertEqual(cfg["drafting"], "mtp")
             self.assertIn("all-cards split engine on 2 cards", line)
             self.assertFalse(warn)
             # the app's own keys ride along, and the normal layer split is kept whole for the server's fallback
             for key in ("host", "port", "api_key", "tokenizer", "model_name", "fit_max_tokens", "parallel"):
                 self.assertIn(key, cfg, key)
-            self.assertEqual(cfg["split_fallback"]["exe"], "/e/strata")
+            self.assertEqual(cfg["split_fallback"]["exe"], "/e/nostroma")
             self.assertIn("--vram-reserve-mib", cfg["split_fallback"]["args"])
             self.assertNotIn("--vram-reserve-mib", cfg["args"], "the layer split's own flags are not given to the split engine")
 
@@ -543,7 +543,7 @@ class AppStartsTheSplit(Base):
 
     def test_vision_is_passed_when_the_app_reads_pictures(self):
         with tempdir() as tmp:
-            cfg = app_cfg(tmp, vision={"exe": "/e/strata-vision", "mmproj": "/m/mm.gguf"})
+            cfg = app_cfg(tmp, vision={"exe": "/e/nostroma-vision", "mmproj": "/m/mm.gguf"})
             self.apply(cfg)
             self.assertIn("--vision", cfg["args"])
         with tempdir() as tmp:
@@ -597,7 +597,7 @@ class AppStartsTheSplit(Base):
             before = src.read_text(encoding="utf-8")
             with mock.patch.object(SE, "probe_cards", lambda idx=None: cards(2)), mock.patch.object(SE, "ram_gib", lambda: (500.0, 400.0)), \
                     mock.patch.object(SE, "scan_model", lambda path: self.model()), \
-                    mock.patch.object(SE, "exe_finder", lambda c: (lambda n, cc=None, arch=None: "/e/strata-split-2-sm120")), \
+                    mock.patch.object(SE, "exe_finder", lambda c: (lambda n, cc=None, arch=None: "/e/nostroma-split-2-sm120")), \
                     mock.patch("sys.platform", "linux"):
                 code, text, err = run_cli(["split-engine", "apply", "--config", str(src), "--out", str(out), "--output", "json"])
                 self.assertEqual(code, 0, err)
@@ -627,7 +627,7 @@ class AppStartsTheSplit(Base):
             cfg2 = {k: v for k, v in cfg.items() if k not in SPLIT_KEYS + ("exe", "args", "env", "layer_split", "replicas", "user_args", "drafting")}
             cfg2.update(cfg["split_fallback"])
             self.assertEqual(cfg2["parallel"], 4)
-            self.assertEqual(cfg2["exe"], "/e/strata")
+            self.assertEqual(cfg2["exe"], "/e/nostroma")
             self.assertNotIn("drafting", cfg2)
 
 
@@ -637,7 +637,7 @@ class LaneClamp(Base):
 
     def split_args(self, lanes):
         d = SE.Decision(True, [], 2)
-        cfg = SE.split_config({"tokenizer": "/t", "port": 1}, d, exe="/e/strata-split-2-sm86", native="/m/x-00001.gguf", mtp_dir="/m/mtp/rt", draft_vocab="/e/v.bin",
+        cfg = SE.split_config({"tokenizer": "/t", "port": 1}, d, exe="/e/nostroma-split-2-sm86", native="/m/x-00001.gguf", mtp_dir="/m/mtp/rt", draft_vocab="/e/v.bin",
                               context=131072, lanes=lanes)
         return cfg["args"]
 
@@ -646,7 +646,7 @@ class LaneClamp(Base):
             a = self.split_args(lanes)
             self.assertEqual(a[a.index("--batch") + 1], want, lanes)
 
-    def stubbed(self, cfg, probe, mode_="on", exe="/e/strata-split-2-sm86"):
+    def stubbed(self, cfg, probe, mode_="on", exe="/e/nostroma-split-2-sm86"):
         data = Path(self.home.base) / "vocab"
         data.mkdir(exist_ok=True)
         (data / "draft_vocab_en.bin").write_bytes(b"v")
@@ -665,7 +665,7 @@ class LaneClamp(Base):
         native = Path(self.home.base) / "x-00001.gguf"
         native.write_bytes(b"g")
         cfg = {"gpu": [0, 1, 2, 3], "parallel": 32, "args": ["--pack", "/p", "--native", str(native), "--mtp", "/m/mtp/rt", "--max-context", "131072"]}
-        d = self.stubbed(cfg, cards(4, vendor="amd", arch="gfx1201"), mode_="auto", exe="/e/strata-split-4-amd")
+        d = self.stubbed(cfg, cards(4, vendor="amd", arch="gfx1201"), mode_="auto", exe="/e/nostroma-split-4-amd")
         self.assertTrue(d.use_split, d.reasons)
         self.assertEqual(cfg["args"][cfg["args"].index("--batch") + 1], "8")
 

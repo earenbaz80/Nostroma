@@ -40,7 +40,7 @@ When no ready-made engine fits the PC, setup compiles one. That needs the Visual
 Visual Studio 2019 is too old (the sources are C++20). With a CUDA toolkit, CUDA 13.0 to 13.2 accept Visual Studio 2022 only, and
 Visual Studio 2026 works from CUDA 13.3. The CPU image encoder alone (no CUDA toolkit on the PC) builds with MSVC and takes any
 Visual Studio that has the C++ tools. If setup cannot find an install it could use, name the file before running it, for example
-`set STRATA_VCVARS=C:\Program Files\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat`. Setup uses that file
+`set NOSTROMA_VCVARS=C:\Program Files\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat`. Setup uses that file
 only if it exists; a wrong path is answered as no build tools at all.
 
 ## From source: Linux
@@ -76,7 +76,7 @@ claiming to have tested a code change. A released engine cannot validate changes
 For a direct NVIDIA build, with the required compiler and CUDA toolkit installed:
 
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DSTRATA_ENABLE_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=native
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DNOSTROMA_ENABLE_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=native
 cmake --build build --target nostroma -j8
 ```
 
@@ -91,7 +91,7 @@ For the Terminal monitor from a checkout:
 
 ```bash
 .venv/bin/pip install -r requirements-monitor.txt
-STRATA_PYTHON="$PWD/.venv/bin/python3" bin/strata monitor --url http://127.0.0.1:8080
+NOSTROMA_PYTHON="$PWD/.venv/bin/python3" bin/nostroma monitor --url http://127.0.0.1:8080
 ```
 
 ## From source: Mac
@@ -152,7 +152,7 @@ separately in [INSTALL.md](INSTALL.md#updating).
 
 ## Where things are stored
 
-Source setup writes model run configs (`strata-<model>.json`), launch scripts (`run-<model>.bat` / `.sh`) and
+Source setup writes model run configs (`nostroma-<model>.json`), launch scripts (`run-<model>.bat` / `.sh`) and
 logs in the checkout. Models, packs and draft data normally go in `Nostroma-data` beside it, or the location selected
 with `--data-dir`. Dependencies and build products stay in the source installation.
 

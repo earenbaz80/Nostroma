@@ -14,7 +14,7 @@ import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parents[4]
 sys.path[:0] = [str(ROOT), str(ROOT/'tools')]
-from strata_tokenizer import Tokenizer
+from nostroma_tokenizer import Tokenizer
 from serve.frontend import ChatTemplate, openai_to_messages
 
 
@@ -33,7 +33,7 @@ def main():
     filler='\n'.join(f'def task_{i:05d}(value: int) -> int: return (value * {(i%97)+1} + {i}) % 100003' for i in range(12000))
     ending='\n\nWrite a detailed explanation of the code above. Discuss deterministic integer transforms, modulo arithmetic, testing, naming, complexity, and maintainability. Write at least 600 words.'
     def payload(text):
-        return dict(model='strata',messages=[dict(role='user',content=text)],temperature=0,
+        return dict(model='nostroma',messages=[dict(role='user',content=text)],temperature=0,
                     reasoning_effort='none',max_tokens=256,stream=True,stream_options=dict(include_usage=True))
     requests=[]
     for n in range(2):

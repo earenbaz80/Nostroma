@@ -26,7 +26,7 @@
     "engine_version": "0.2.12"
    },
    "config_file": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "args": [
      "--pack",
      "<ROOT>/data/packs/ud_q4_k_xl",
@@ -56,13 +56,13 @@
     "cwd": "<REPO>",
     "tokenizer": "<ROOT>/data/packs/ud_q4_k_xl/tokenizer",
     "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
-    "log": "<REPO>/strata-unsloth-ud-q4_k_xl.log",
+    "log": "<REPO>/nostroma-unsloth-ud-q4_k_xl.log",
     "lib_dirs": [],
     "port": 8080,
     "backend": "hip"
    },
    "engine": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "argv": [
      "--pack",
      "<ROOT>/data/packs/ud_q4_k_xl",
@@ -120,7 +120,7 @@
     "<ROOT>/data"
    ],
    "config_file": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "args": [
      "--pack",
      "<ROOT>/data/packs/ud_q4_k_xl",
@@ -159,7 +159,7 @@
     "args_written": "=args"
    },
    "engine": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "argv": [
      "--pack",
      "<ROOT>/data/packs/ud_q4_k_xl",
@@ -219,7 +219,7 @@
     }
    ],
    "config_file": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "args": [
      "--pack",
      "<ROOT>/data/packs/ud_q4_k_xl",
@@ -247,7 +247,7 @@
     "cwd": "<REPO>",
     "tokenizer": "<ROOT>/data/packs/ud_q4_k_xl/tokenizer",
     "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
-    "log": "<ROOT>/install/strata-unsloth-ud-q4_k_xl.log",
+    "log": "<ROOT>/install/nostroma-unsloth-ud-q4_k_xl.log",
     "lib_dirs": [],
     "port": 18500,
     "backend": "hip",
@@ -262,7 +262,7 @@
     "engine_ready_s": 946
    },
    "engine": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "argv": [
      "--pack",
      "<ROOT>/data/packs/ud_q4_k_xl",
@@ -322,7 +322,7 @@
     }
    ],
    "config_file": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "args": [
      "--pack",
      "<ROOT>/data/packs/ud_q4_k_xl",
@@ -350,7 +350,7 @@
     "cwd": "<REPO>",
     "tokenizer": "<ROOT>/data/packs/ud_q4_k_xl/tokenizer",
     "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
-    "log": "<ROOT>/install/strata-unsloth-ud-q4_k_xl.log",
+    "log": "<ROOT>/install/nostroma-unsloth-ud-q4_k_xl.log",
     "lib_dirs": [],
     "port": 18500,
     "backend": "hip",
@@ -366,7 +366,7 @@
     "engine_ready_s": 946
    },
    "engine": {
-    "exe": "<ROOT>/engine/strata",
+    "exe": "<ROOT>/engine/nostroma",
     "argv": [
      "--pack",
      "<ROOT>/data/packs/ud_q4_k_xl",

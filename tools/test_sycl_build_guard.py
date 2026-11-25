@@ -39,7 +39,7 @@ class BuildGuard(unittest.TestCase):
         for key in ("AOT", "I8_ESIMD", "ALLOW_BAD_OCLOC"):
             merged.pop(key, None)
         merged.update(env)
-        return subprocess.run([BASH, BUILD_SH.as_posix(), "strata"], env=merged, capture_output=True, text=True, timeout=120)
+        return subprocess.run([BASH, BUILD_SH.as_posix(), "nostroma"], env=merged, capture_output=True, text=True, timeout=120)
 
     def test_known_bad_ocloc_stops_a_battlemage_aot_build(self):
         self.ocloc("26.22.38646.4")
@@ -53,7 +53,7 @@ class BuildGuard(unittest.TestCase):
         self.ocloc("26.31.39395.14")
         r = self.run_build(AOT="bmg-g31")
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertIn("-DSTRATA_SYCL_I8_ESIMD=AUTO", self.log.read_text())
+        self.assertIn("-DNOSTROMA_SYCL_I8_ESIMD=AUTO", self.log.read_text())
         self.log.unlink()
         self.ocloc("26.22.38646.4")
         self.assertEqual(self.run_build(AOT="acm-g10").returncode, 0)              # not a Battlemage build
@@ -62,12 +62,12 @@ class BuildGuard(unittest.TestCase):
         self.log.unlink()
         r = self.run_build(AOT="bmg-g31", I8_ESIMD="OFF")                          # the workaround: stubs, no check needed
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertIn("-DSTRATA_SYCL_I8_ESIMD=OFF", self.log.read_text())
+        self.assertIn("-DNOSTROMA_SYCL_I8_ESIMD=OFF", self.log.read_text())
 
     def test_the_cmake_switch_is_declared(self):
         text = (ROOT / "sycl" / "CMakeLists.txt").read_text(encoding="utf-8")
-        self.assertIn('set(STRATA_SYCL_I8_ESIMD "AUTO" CACHE STRING', text)
-        self.assertIn("add_compile_definitions(STRATA_I8_NO_ESIMD=1)", text)
+        self.assertIn('set(NOSTROMA_SYCL_I8_ESIMD "AUTO" CACHE STRING', text)
+        self.assertIn("add_compile_definitions(NOSTROMA_I8_NO_ESIMD=1)", text)
 
 
 if __name__ == "__main__":

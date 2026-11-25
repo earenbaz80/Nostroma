@@ -16,10 +16,10 @@
  "engine_prompt_tps": 2173.6,
  "engine_decode_tps": 79.4,
  "log_lines": [
-  "strata serve: prompt 130360 tokens = 0 reused + 130360 read in 59974 ms (2173.6 tok/s), 256 generated in 3226 ms (79.4 tok/s), drafts accepted 158 of 225, 6 checkpoints",
-  "strata serve: decode expert cache hit rate: 94.5% (142001 hits / 150326 lookups)"
+  "nostroma serve: prompt 130360 tokens = 0 reused + 130360 read in 59974 ms (2173.6 tok/s), 256 generated in 3226 ms (79.4 tok/s), drafts accepted 158 of 225, 6 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 94.5% (142001 hits / 150326 lookups)"
  ],
- "answer_head": "I'll analyze the last file in the repository listing.\n\n## What `include/strata/kernels/gdn.hpp` does\n\nThis header declares the **non-projection parts of the Gated Delta-Net (GDN) layer** \u2014 the \"mixer\" used in 36 of the model's 48 layers (the other 12 are QSA full-attention layers). It is the C++ cou",
+ "answer_head": "I'll analyze the last file in the repository listing.\n\n## What `include/nostroma/kernels/gdn.hpp` does\n\nThis header declares the **non-projection parts of the Gated Delta-Net (GDN) layer** \u2014 the \"mixer\" used in 36 of the model's 48 layers (the other 12 are QSA full-attention layers). It is the C++ cou",
  "metrics_after": {
   "engine": {
    "model": "qwen3.8-flash-next-iq3_xxs",

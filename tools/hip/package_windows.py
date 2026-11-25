@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Package the Windows HIP engine as the ready-made zip setup.py downloads (strata-windows-x64-hip.zip).
+"""Package the Windows HIP engine as the ready-made zip setup.py downloads (nostroma-windows-x64-hip.zip).
 
     python tools/hip/package_windows.py --build build-hip-win --rocm <rocm-sdk path --root> \\
         --archs "gfx1100;gfx1201" --rocm-version 10.2.0a20260930 --out dist
 
 tools/hip/build_windows.bat runs it after the build.  The zip holds:
 
-    strata.exe, strata-device.exe, BUILD.json      (backend "hip", the archs, the ROCm and hipBLASLt versions)
-    strata-vision.exe, strata-vision-hip.exe       the picture readers when --vision-cpu / --vision-hip are given: the CPU reader
+    nostroma.exe, nostroma-device.exe, BUILD.json      (backend "hip", the archs, the ROCm and hipBLASLt versions)
+    nostroma-vision.exe, nostroma-vision-hip.exe       the picture readers when --vision-cpu / --vision-hip are given: the CPU reader
                                                    (the fallback; starts on any PC) and the GPU reader (tools/vision,
-                                                   STRATA_VISION_HIP; imports the same ROCm DLLs as strata.exe)
+                                                   NOSTROMA_VISION_HIP; imports the same ROCm DLLs as nostroma.exe)
     amdhip64_7.dll, amd_comgr.dll + what they import   the HIP runtime beside the exes too (#468 #461: before System32)
     rocm/bin/*.dll                                 the ROCm DLLs the two programs load (their import tables, followed
                                                    through the ROCm DLLs, + amd_comgr.dll, which the HIP runtime loads
@@ -40,11 +40,11 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from nostroma_control import hipblaslt_tuning as ht  # noqa: E402
 
-ASSET = "strata-windows-x64-hip.zip"
-PROGRAMS = ("strata.exe", "strata-device.exe")
+ASSET = "nostroma-windows-x64-hip.zip"
+PROGRAMS = ("nostroma.exe", "nostroma-device.exe")
 DYNAMIC = ("amd_comgr.dll",)                     # LoadLibrary'd by amdhip64_7.dll: not in any import table
 CRT = ("msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll", "vcruntime140.dll", "vcruntime140_1.dll",
-       "msvcp140_atomic_wait.dll", "msvcp140_codecvt_ids.dll", "vcruntime140_threads.dll", "concrt140.dll")      # strata.exe imports msvcp140_atomic_wait.dll (VS 2022 std::atomic wait)
+       "msvcp140_atomic_wait.dll", "msvcp140_codecvt_ids.dll", "vcruntime140_threads.dll", "concrt140.dll")      # nostroma.exe imports msvcp140_atomic_wait.dll (VS 2022 std::atomic wait)
 KPACKS = ("blas_lib",)       # rocblas.dll's own device code; rocSOLVER's (27 MB per arch) is never launched by Nostroma
 LICENSES = ("rocblas", "rocsolver", "hipblas", "hipblas-common", "hipblaslt", "amd_comgr", "rocm-core")
 NOTICE = """Nostroma's Windows HIP engine ships these AMD ROCm components unmodified, from AMD's TheRock Python wheels
@@ -63,7 +63,7 @@ vcruntime140*.dll) are redistributable under the Visual Studio license (Distribu
 def imports(objdump: Path, dll: Path) -> list[str]:
     text = subprocess.run([str(objdump), "-p", str(dll)], capture_output=True, text=True, check=True).stdout
     names = [m.group(1) for m in re.finditer(r"DLL Name:\s*(\S+)", text)]
-    # 0.2.1.2: strata.exe delay-loads hipblas / libhipblaslt / rocblas, which objdump -p does not list; dll_closure reads the delay-import table too
+    # 0.2.1.2: nostroma.exe delay-loads hipblas / libhipblaslt / rocblas, which objdump -p does not list; dll_closure reads the delay-import table too
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from dll_closure import pe_imports
     seen = {n.lower() for n in names}
@@ -86,13 +86,13 @@ def main() -> int:
     ap.add_argument("--archs", required=True, help="the archs the engine was compiled for, ';'-separated")
     ap.add_argument("--rocm-version", required=True)
     ap.add_argument("--out", required=True, type=Path)
-    ap.add_argument("--vision-cpu", type=Path, help="strata-vision.exe built for the CPU (tools/vision, STRATA_PORTABLE=ON)")
-    ap.add_argument("--vision-hip", type=Path, help="strata-vision-hip.exe built for the same archs (STRATA_VISION_HIP=ON)")
+    ap.add_argument("--vision-cpu", type=Path, help="nostroma-vision.exe built for the CPU (tools/vision, NOSTROMA_PORTABLE=ON)")
+    ap.add_argument("--vision-hip", type=Path, help="nostroma-vision-hip.exe built for the same archs (NOSTROMA_VISION_HIP=ON)")
     a = ap.parse_args()
     archs = [x for x in re.split(r"[;, ]+", a.archs) if x]
     rbin = a.rocm / "bin"
     objdump = a.rocm / "lib" / "llvm" / "bin" / "llvm-objdump.exe"
-    stage = a.out / "strata-windows-x64-hip"
+    stage = a.out / "nostroma-windows-x64-hip"
     shutil.rmtree(stage, ignore_errors=True)
     (stage / "rocm" / "bin").mkdir(parents=True)
 
@@ -169,7 +169,7 @@ def main() -> int:
     (lic / "NOTICE.txt").write_text(NOTICE.format(rocm=a.rocm_version, dlls="\n".join("  " + d for d in shipped)),
                                     encoding="utf-8")
 
-    version = re.search(r"project\(strata VERSION ([\d.]+)", (ROOT / "CMakeLists.txt").read_text(encoding="utf-8")).group(1)
+    version = re.search(r"project\(nostroma VERSION ([\d.]+)", (ROOT / "CMakeLists.txt").read_text(encoding="utf-8")).group(1)
     hl = (a.rocm / "include" / "hipblaslt" / "hipblaslt-version.h").read_text(encoding="utf-8")
     hlv = [int(re.search(rf"#define\s+HIPBLASLT_VERSION_{k}\s+(\d+)", hl).group(1)) for k in ("MAJOR", "MINOR", "PATCH")]
     meta = {"source": "prebuilt", "backend": "hip", "platform": "windows-x64", "version": version, "archs": archs,
@@ -181,7 +181,7 @@ def main() -> int:
         meta.update({"vision": "gpu", "vision_gpu": a.vision_hip.name, "vision_archs": archs})
     (stage / "BUILD.json").write_text(json.dumps(meta, indent=1), encoding="utf-8")
     # the hipBLASLt tuning tables of tools/hip for these archs and exactly this hipBLASLt version, in tuning/ (nostroma_control/hipblaslt_tuning.py):
-    # the engine start points STRATA_HIPBLASLT_TUNING at the one for the card; an arch without a table keeps plain hipBLAS
+    # the engine start points NOSTROMA_HIPBLASLT_TUNING at the one for the card; an arch without a table keeps plain hipBLAS
     tables = ht.stage_tables(stage, archs, meta["hipblaslt_version"], ROOT / "tools" / "hip")
     for arch, have in ht.missing_report(archs, meta["hipblaslt_version"], ROOT / "tools" / "hip").items():
         print(f"no hipBLASLt table for {arch} with hipBLASLt {meta['hipblaslt_version']} (the repo has: {', '.join(map(str, have)) or 'none'}): plain hipBLAS there")

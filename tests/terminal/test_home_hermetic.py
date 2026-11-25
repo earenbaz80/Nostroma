@@ -1,6 +1,6 @@
 r"""The Home() helper of the launch tests must keep every per-user file the code reads or writes inside its temp folder.
 
-A test that read the person's real %APPDATA%\Strata\settings.json (its remembered Nostroma folders) or ~/.config/strata saw the files of whoever ran it: the
+A test that read the person's real %APPDATA%\Nostroma\settings.json (its remembered Nostroma folders) or ~/.config/nostroma saw the files of whoever ran it: the
 DeepSeek plan tests said "tight" / "spills" for UD-Q8_K_XL on a PC that had a Nostroma install, and "fits" everywhere else."""
 import os
 import unittest
@@ -36,11 +36,11 @@ class HomeIsHermetic(unittest.TestCase):
                 self.assertTrue(inside(path, h.base), f"{name} = {path} is outside {h.base}")
 
     def test_a_developers_own_settings_variable_does_not_reach_a_test(self):
-        with mock.patch.dict(os.environ, {"STRATA_SETTINGS_FILE": "X:/mine.json", "STRATA_CONNECTION_DIR": "X:/conn"}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_SETTINGS_FILE": "X:/mine.json", "NOSTROMA_CONNECTION_DIR": "X:/conn"}):
             with Home():
-                self.assertNotIn("STRATA_SETTINGS_FILE", os.environ)
-                self.assertNotIn("STRATA_CONNECTION_DIR", os.environ)
-            self.assertEqual(os.environ["STRATA_SETTINGS_FILE"], "X:/mine.json")
+                self.assertNotIn("NOSTROMA_SETTINGS_FILE", os.environ)
+                self.assertNotIn("NOSTROMA_CONNECTION_DIR", os.environ)
+            self.assertEqual(os.environ["NOSTROMA_SETTINGS_FILE"], "X:/mine.json")
 
 
 if __name__ == "__main__":

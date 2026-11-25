@@ -14,7 +14,7 @@
 #include <vector>
 
 namespace {
-constexpr int N = strata_metal::geo::N, HC = strata_metal::geo::HC, LR = strata_metal::geo::LR, TK = strata_metal::geo::TOPK;
+constexpr int N = nostroma_metal::geo::N, HC = nostroma_metal::geo::HC, LR = nostroma_metal::geo::LR, TK = nostroma_metal::geo::TOPK;
 struct GrArgs { uint32_t n_embd, hc, hc_lr, n_tok, apply; float eps; };
 struct EpiArgs { uint32_t n_tok, n_embd, hc, hc_lr; };
 struct DqArgs { uint32_t n_in, n_out, row_bytes, perm; };
@@ -24,7 +24,7 @@ double sig(double v) { return 1.0 / (1.0 + std::exp(-v)); }
 
 int main() {
     mtl::Context cx;
-    const int lib = cx.compile({"quant.metal", "units.metal", "mma.metal", "dense_mm.metal", "gr.metal", "prompt.metal"}, strata_metal::geo::prelude());
+    const int lib = cx.compile({"quant.metal", "units.metal", "mma.metal", "dense_mm.metal", "gr.metal", "prompt.metal"}, nostroma_metal::geo::prelude());
     std::printf("device %s\n", cx.device_name().c_str());
     int fails = 0;
     // ---- route_topk (512 experts, and the 256-expert Coder's rows)

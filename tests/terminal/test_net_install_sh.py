@@ -1,6 +1,6 @@
 """Lane NET item 3: packaging/install.sh's fetch() under the network rule, against local servers: a TLS server that never answers its handshake
 (given up after the 15 s connect limit and one retry, about 32 s, not 10 minutes), a refused port (at once), a working server, and a slow link that
-keeps sending (never cut; real-time, STRATA_SLOW_NET_TESTS=1). curl and POSIX sh are needed; the Windows script is item 6."""
+keeps sending (never cut; real-time, NOSTROMA_SLOW_NET_TESTS=1). curl and POSIX sh are needed; the Windows script is item 6."""
 
 import os
 import re
@@ -61,7 +61,7 @@ class InstallFetch(unittest.TestCase):
         code, got, _took, err = self.fetch(srv.url("/install-manifest.txt"))
         self.assertEqual((code, got), (0, b"linux-x86_64 0.1 a b 1\n"), err)
 
-    @unittest.skipUnless(os.environ.get("STRATA_SLOW_NET_TESTS") == "1", "real-time: STRATA_SLOW_NET_TESTS=1")
+    @unittest.skipUnless(os.environ.get("NOSTROMA_SLOW_NET_TESTS") == "1", "real-time: NOSTROMA_SLOW_NET_TESTS=1")
     def test_a_slow_link_that_keeps_sending_is_not_cut(self):
         srv = Server(trickle(150, 0.5))                      # 2 bytes a second for 75 s: past the 60 s window, above 1 byte/s
         self.addCleanup(srv.close)

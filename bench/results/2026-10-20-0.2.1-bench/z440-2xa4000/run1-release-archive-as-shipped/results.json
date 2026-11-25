@@ -1,8 +1,8 @@
 {
-  "format": "strata-standard-benchmark",
+  "format": "nostroma-standard-benchmark",
   "schema_version": 1,
   "protocol": {
-    "id": "strata-qwen38-thinking-v1-draft.1",
+    "id": "nostroma-qwen38-thinking-v1-draft.1",
     "git_commit": null,
     "profile": "qwen3.8-flash-next-thinking",
     "corpus_sha256": "e75eff8b9feea04f745520b392c4c17d97aefc1ba185e222aa6740efa8f68407",
@@ -15,7 +15,7 @@
     "required_duration_s": 138.931,
     "optional_duration_s": null,
     "optional_concurrency": false,
-    "command": "strata bench run --profile std --track custom --track-notes release 0.2.1 terminal+engine 0.1.46 cuda12, hand-written run config mirroring setup defaults (IQ3_XXS, int8 KV, MTP spec 4); box: z440 --background none besides sshd"
+    "command": "nostroma bench run --profile std --track custom --track-notes release 0.2.1 terminal+engine 0.1.46 cuda12, hand-written run config mirroring setup defaults (IQ3_XXS, int8 KV, MTP spec 4); box: z440 --background none besides sshd"
   },
   "hardware": {
     "gpus": [
@@ -58,7 +58,7 @@
         "version": "13.0"
       }
     ],
-    "strata_commit": null,
+    "nostroma_commit": null,
     "engine_version": "0.1.46",
     "build_kind": "release",
     "runner_commit": null,
@@ -1483,7 +1483,7 @@
     "/protocol/model_card_revision": "the profile's model-card revision is not pinned yet (protocol draft)",
     "/run/optional_duration_s": "the optional concurrency stage was not selected",
     "/hardware/storage": "the drive holding the model files could not be identified",
-    "/software/strata_commit": "not a git checkout and no COMMIT file in this install; a release must carry its commit",
+    "/software/nostroma_commit": "not a git checkout and no COMMIT file in this install; a release must carry its commit",
     "/software/runner_commit": "not a git checkout and no COMMIT file in this install; a release must carry its commit",
     "/software/build_options": "the server does not report build options; pass --build-options for a source build",
     "/model/revision": "not given: the quantization repository's immutable revision cannot be read from the engine; pass --model-revision",
@@ -1575,7 +1575,7 @@
     "suite": "standard-v1",
     "runner": "nostroma_cli.bench_standard",
     "status_reasons": [
-      "the Strata commit is unknown (not a git checkout and no COMMIT file)"
+      "the Nostroma commit is unknown (not a git checkout and no COMMIT file)"
     ],
     "started_engine": true,
     "server_requests_before_run": 0,

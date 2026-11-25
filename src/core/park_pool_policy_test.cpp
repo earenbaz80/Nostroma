@@ -1,11 +1,11 @@
 // The park pools' sizes from the conversation cache's budget (park_pool_policy.hpp), with the cache sizes small machines get.
-#include "strata/core/conversation_memory.hpp"
-#include "strata/core/park_pool_policy.hpp"
+#include "nostroma/core/conversation_memory.hpp"
+#include "nostroma/core/park_pool_policy.hpp"
 
 #include <cstdio>
 #include <cstdlib>
 
-using namespace strata::core;
+using namespace nostroma::core;
 
 namespace {
 int checks = 0;

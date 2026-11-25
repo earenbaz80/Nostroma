@@ -56,7 +56,7 @@ test('#3256: with no GPU in the file the suggested cards apply, in the order giv
     await f.control.refresh(true);
     const { readFileSync, writeFileSync } = await import('node:fs');
     const { join } = await import('node:path');
-    const path = join(f.repo, 'strata-iq2_xs.json');
+    const path = join(f.repo, 'nostroma-iq2_xs.json');
     const config = JSON.parse(readFileSync(path, 'utf8')); delete config.gpu; writeFileSync(path, JSON.stringify(config));
     await f.control.refresh(true);
     const done = await finishJob(f.control, f.control.operation('load', { model: 'iq2_xs', gpus: [1, 0], gpusFromRecommendation: true }).id);
@@ -70,11 +70,11 @@ test('#3203: one chosen card is sent to the installer as "gpu", never as "gpus" 
   try {
     await f.control.refresh(true);
     await f.control.plan({ family: 'qwen', model: 'IQ2_XS', context: 131072, gpus: '0' });
-    const call = f.rpcCalls.filter(c => c.name === 'strata_install').pop();
+    const call = f.rpcCalls.filter(c => c.name === 'nostroma_install').pop();
     assert.equal(call.arguments.gpu, 0);
     assert.equal('gpus' in call.arguments && call.arguments.gpus !== undefined, false);
     await f.control.plan({ family: 'qwen', model: 'IQ2_XS', context: 131072, gpus: '0,1' });
-    const two = f.rpcCalls.filter(c => c.name === 'strata_install').pop();
+    const two = f.rpcCalls.filter(c => c.name === 'nostroma_install').pop();
     assert.equal(two.arguments.gpus, '0,1');
   } finally { await f.cleanup(); }
 });
@@ -103,7 +103,7 @@ test('a card picked in the screen replaces an old AMD config\'s "hip_ordinal" (i
     await f.control.refresh(true);
     const { readFileSync, writeFileSync } = await import('node:fs');
     const { join } = await import('node:path');
-    const path = join(f.repo, 'strata-iq2_xs.json');
+    const path = join(f.repo, 'nostroma-iq2_xs.json');
     const config = JSON.parse(readFileSync(path, 'utf8')); config.hip_ordinal = 0; writeFileSync(path, JSON.stringify(config));
     await f.control.refresh(true);
     const done = await finishJob(f.control, f.control.operation('load', { model: 'iq2_xs', gpus: [1] }).id);

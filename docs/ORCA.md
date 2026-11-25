@@ -1,7 +1,7 @@
 # OrcaRouter IQ3_XXS compatibility
 
 This page is for people who want to run `orcarouter/Qwen3.8-Flash-Next-Uncensored-GGUF` (**IQ3_XXS**, two shards,
-85.20 GB) with Strata. It is a manual conversion workflow from a [source checkout](SOURCE_INSTALL.md). OrcaRouter is
+85.20 GB) with Nostroma. It is a manual conversion workflow from a [source checkout](SOURCE_INSTALL.md). OrcaRouter is
 not an installer menu entry, and there is no `--family orca` command.
 
 ## Quick start
@@ -23,7 +23,7 @@ split shards must finish downloading before packing. Pass the snapshot filename,
 
 ## Preparation
 
-Python needs numpy, regex and gguf-py from the pinned llama.cpp dependency. `STRATA_GGUF_PY` can point to its
+Python needs numpy, regex and gguf-py from the pinned llama.cpp dependency. `NOSTROMA_GGUF_PY` can point to its
 `gguf-py` directory.
 
 ```sh
@@ -49,14 +49,14 @@ draft acceptance and speed for this fine-tune; the original model's numbers do n
 
 ## Local server
 
-Save the following as `strata-orca-iq3_xxs.json` at the repository root. Replace both `/path/to/` entries with the
+Save the following as `nostroma-orca-iq3_xxs.json` at the repository root. Replace both `/path/to/` entries with the
 **same first shard**, because Orca's PLE table is in shard 1. The config uses a 32K context and 512-token prefill
 chunks. The expert cache sizes itself to the available VRAM. The expert arena alone needs about 49.8 GiB of free system
 RAM, plus draft and runtime buffers and your other applications.
 
 ```json
 {
-  "exe": "build/strata",
+  "exe": "build/nostroma",
   "args": [
     "--pack", "packs/orca-iq3_xxs",
     "--native", "/path/to/Qwen3.8-Flash-Next-Uncensored-IQ3_XXS-00001-of-00002.gguf",
@@ -68,7 +68,7 @@ RAM, plus draft and runtime buffers and your other applications.
   "cwd": ".",
   "tokenizer": "packs/orca-iq3_xxs/tokenizer",
   "model_name": "orcarouter-qwen3.8-flash-next-uncensored-iq3_xxs",
-  "log": "strata-orca-iq3_xxs.log",
+  "log": "nostroma-orca-iq3_xxs.log",
   "host": "127.0.0.1",
   "port": 8080
 }
@@ -77,7 +77,7 @@ RAM, plus draft and runtime buffers and your other applications.
 Run it from the repository root:
 
 ```sh
-.venv/bin/python -m serve.server --engine strata --config strata-orca-iq3_xxs.json --port 8080
+.venv/bin/python -m serve.server --engine nostroma --config nostroma-orca-iq3_xxs.json --port 8080
 ```
 
 The web interface is at `http://127.0.0.1:8080`. API clients use `http://127.0.0.1:8080/v1`. This example is text-only;

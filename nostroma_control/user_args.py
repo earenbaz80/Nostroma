@@ -1,4 +1,4 @@
-"""The engine options a person set by hand in a model's run config (strata-<model>.json).
+"""The engine options a person set by hand in a model's run config (nostroma-<model>.json).
 
 Setup and the app write ``"args"`` from their own choices, and used to write it again on every run, so an option added by
 hand (the control vector options, a --vram-reserve-mib of 0, --spec, ...) was gone after the next Load (#3216 #3215 #3270).

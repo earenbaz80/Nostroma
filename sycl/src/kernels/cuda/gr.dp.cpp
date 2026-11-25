@@ -1,6 +1,6 @@
 // src/kernels/cuda/gr.cu - P2.S2: the gated residual / hyper-connection, `gr_read` and `gr_write`.
 //
-// See include/strata/kernels/gr.hpp for the semantics, for why the weights are bf16, and for the history of
+// See include/nostroma/kernels/gr.hpp for the semantics, for why the weights are bf16, and for the history of
 // this kernel's 134x-off-the-floor first version.  The short form: it was launched `<<<1, 256>>>` so that
 // `xn`/`xq` fit in shared memory, which used ONE of 48 SMs and cost 262 ms/token.
 //
@@ -23,15 +23,15 @@
 // index with no permutation at all.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
-#include "strata/env.hpp"
-#include "strata/kprof.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kprof.hpp"
 #include <dpct/dpct.hpp>
-#include "strata/sycl_queue.hpp"
-#include "strata/kernels/gr.hpp"
-#include "strata/kernels/bf16_bits.hpp"
-#include "strata/kernels/bf16_gemv.hpp"
-#include "strata/kernels/native_gr_norm.hpp"
-#include "strata/kernels/native_gr_postops.hpp"
+#include "nostroma/sycl_queue.hpp"
+#include "nostroma/kernels/gr.hpp"
+#include "nostroma/kernels/bf16_bits.hpp"
+#include "nostroma/kernels/bf16_gemv.hpp"
+#include "nostroma/kernels/native_gr_norm.hpp"
+#include "nostroma/kernels/native_gr_postops.hpp"
 
 #include <cmath>
 #include <cstdio>
@@ -39,7 +39,7 @@
 #include <cstring>
 #include <stdexcept>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 
 constexpr int THREADS = 256;
@@ -47,7 +47,7 @@ constexpr int WARPS = THREADS / 32;
 bool fp32_activations = false;
 bool native_mmvf = false;
 
-/// The bf16 conversions live in `strata/kernels/bf16_bits.hpp`, and this file used to carry its own copies.
+/// The bf16 conversions live in `nostroma/kernels/bf16_bits.hpp`, and this file used to carry its own copies.
 /// Two files with a private copy of a conversion whose failure mode is silent wrong bits is one too many -
 /// and the reason the shared header exists is that `bf16` and `fp16` are NOT two spellings of one idea, so a
 /// routine written for one and reused for the other is wrong in a way that still produces numbers.
@@ -484,7 +484,7 @@ void gr_read(const float *R, const float *w_norm, const uint16_t *w_down,
     }
     const int n_embd = (int) s.n_embd, hc = (int) s.hc, hc_lr = (int) s.hc_lr;
     const int hc_dim = (int) (s.hc * s.n_embd);
-    dpct::queue_ptr st = strata::q_of(stream);
+    dpct::queue_ptr st = nostroma::q_of(stream);
 
     // One setting selects every projection in this call. Captured graphs retain these kernel variants.
     const bool use_native = native_mmvf;
@@ -506,7 +506,7 @@ void gr_read(const float *R, const float *w_norm, const uint16_t *w_down,
             dpct::has_capability_or_fail(st->get_device(),
                                          {sycl::aspect::fp64});
 
-            strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_norm_kernel_588e81,
+            nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_norm_kernel_588e81,
                                               dpct_kernel_scalar<true>>>(
                 sycl::nd_range<3>(sycl::range(1, 1, hc) *
                                       sycl::range(1, 1, THREADS),
@@ -522,7 +522,7 @@ void gr_read(const float *R, const float *w_norm, const uint16_t *w_down,
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
 
-            strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<
+            nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<
                 dpct_kernel_name<class gr_down_kernel_6ff92b, float>>(
                 sycl::nd_range<3>(sycl::range(1, 1, hc_lr) *
                                       sycl::range(1, 1, THREADS),
@@ -538,7 +538,7 @@ void gr_read(const float *R, const float *w_norm, const uint16_t *w_down,
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
 
-            strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<
+            nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<
                 dpct_kernel_name<class gr_gate_kernel_abf73c, float>>(
                 sycl::nd_range<3>(
                     sycl::range(1, 1, (hc_dim + WARPS - 1) / WARPS) *
@@ -558,7 +558,7 @@ void gr_read(const float *R, const float *w_norm, const uint16_t *w_down,
             dpct::has_capability_or_fail(st->get_device(),
                                          {sycl::aspect::fp64});
 
-            strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_norm_kernel_70bea5,
+            nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_norm_kernel_70bea5,
                                               dpct_kernel_scalar<false>>>(
                 sycl::nd_range<3>(sycl::range(1, 1, hc) *
                                       sycl::range(1, 1, THREADS),
@@ -574,7 +574,7 @@ void gr_read(const float *R, const float *w_norm, const uint16_t *w_down,
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
 
-            strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<
+            nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<
                 dpct_kernel_name<class gr_down_kernel_518fbb, uint16_t>>(
                 sycl::nd_range<3>(sycl::range(1, 1, hc_lr) *
                                       sycl::range(1, 1, THREADS),
@@ -590,7 +590,7 @@ void gr_read(const float *R, const float *w_norm, const uint16_t *w_down,
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
 
-            strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<
+            nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<
                 dpct_kernel_name<class gr_gate_kernel_feafeb, uint16_t>>(
                 sycl::nd_range<3>(
                     sycl::range(1, 1, (hc_dim + WARPS - 1) / WARPS) *
@@ -609,7 +609,7 @@ void gr_read(const float *R, const float *w_norm, const uint16_t *w_down,
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_mean_kernel_f4c4e8>>(
+        nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class gr_mean_kernel_f4c4e8>>(
             sycl::nd_range<3>(
                 sycl::range(1, 1, (n_embd + THREADS - 1) / THREADS) *
                     sycl::range(1, 1, THREADS),
@@ -635,7 +635,7 @@ void gr_read(const float *R, const float *w_norm, const uint16_t *w_down,
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
 
-            strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<
+            nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<
                 dpct_kernel_name<class gr_inject_kernel_569ce0, float>>(
                 sycl::nd_range<3>(sycl::range(1, 1, nthreads),
                                   sycl::range(1, 1, nthreads)),
@@ -656,7 +656,7 @@ void gr_read(const float *R, const float *w_norm, const uint16_t *w_down,
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
 
-            strata::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<
+            nostroma::kprof::kp(st, __FILE__, __func__, __LINE__)->template parallel_for<
                 dpct_kernel_name<class gr_inject_kernel_d9aa02, uint16_t>>(
                 sycl::nd_range<3>(sycl::range(1, 1, nthreads),
                                   sycl::range(1, 1, nthreads)),
@@ -689,7 +689,7 @@ catch (sycl::exception const &exc) {
 
 static bool no_multi_gr() {
     static const bool off = [] {
-        const char* v = strata::env("NOSTROMA_NO_MULTI_GR");
+        const char* v = nostroma::env("NOSTROMA_NO_MULTI_GR");
         return v != nullptr && v[0] != '\0' && v[0] != '0';
     }();
     return off;
@@ -749,7 +749,7 @@ void gr_write(const float *R, const float *block_out, const float *inject,
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->submit([&](sycl::handler &cgh) {
                 /*
                 DPCT1083: The size of local memory in the migrated code may
@@ -809,4 +809,4 @@ catch (sycl::exception const &exc) {
   std::exit(1);
 }
 
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels

@@ -34,7 +34,7 @@ struct __half2 {
 typedef __half half;
 typedef __half2 half2;
 
-static inline uint16_t strata_f32_to_f16_bits(float f) {
+static inline uint16_t nostroma_f32_to_f16_bits(float f) {
     uint32_t u;
     std::memcpy(&u, &f, sizeof u);
     const uint32_t sign = (u >> 16) & 0x8000u;
@@ -46,7 +46,7 @@ static inline uint16_t strata_f32_to_f16_bits(float f) {
     return (uint16_t) (sign | r);
 }
 
-static inline float strata_f16_bits_to_f32(uint16_t h) {
+static inline float nostroma_f16_bits_to_f32(uint16_t h) {
     const uint32_t sign = (uint32_t) (h & 0x8000u) << 16;
     const uint32_t e = (h >> 10) & 0x1fu, m = h & 0x3ffu;
     uint32_t bits;
@@ -66,16 +66,16 @@ static inline float strata_f16_bits_to_f32(uint16_t h) {
     return out;
 }
 
-static inline __half __float2half_rn(float f) { __half h; h.x = strata_f32_to_f16_bits(f); return h; }
+static inline __half __float2half_rn(float f) { __half h; h.x = nostroma_f32_to_f16_bits(f); return h; }
 static inline __half __float2half(float f) { return __float2half_rn(f); }
-static inline float __half2float(__half h) { return strata_f16_bits_to_f32(h.x); }
+static inline float __half2float(__half h) { return nostroma_f16_bits_to_f32(h.x); }
 static inline uint16_t __half_as_ushort(__half h) { return h.x; }
 static inline __half __ushort_as_half(uint16_t u) { __half h; h.x = u; return h; }
-static inline float2 __half22float2(__half2 h) { return make_float2(strata_f16_bits_to_f32(h.x), strata_f16_bits_to_f32(h.y)); }
+static inline float2 __half22float2(__half2 h) { return make_float2(nostroma_f16_bits_to_f32(h.x), nostroma_f16_bits_to_f32(h.y)); }
 static inline __half2 __floats2half2_rn(float a, float b) {
     __half2 h;
-    h.x = strata_f32_to_f16_bits(a);
-    h.y = strata_f32_to_f16_bits(b);
+    h.x = nostroma_f32_to_f16_bits(a);
+    h.y = nostroma_f32_to_f16_bits(b);
     return h;
 }
 
@@ -91,8 +91,8 @@ static inline __half2 __halves2half2(__half lo, __half hi) { __half2 h; h.x = lo
 static inline __half2 __half2half2(__half v) { __half2 h; h.x = v.x; h.y = v.x; return h; }
 static inline __half __low2half(__half2 h) { __half o; o.x = h.x; return o; }
 static inline __half __high2half(__half2 h) { __half o; o.x = h.y; return o; }
-static inline float __low2float(__half2 h) { return strata_f16_bits_to_f32(h.x); }
-static inline float __high2float(__half2 h) { return strata_f16_bits_to_f32(h.y); }
+static inline float __low2float(__half2 h) { return nostroma_f16_bits_to_f32(h.x); }
+static inline float __high2float(__half2 h) { return nostroma_f16_bits_to_f32(h.y); }
 static inline __half2 __hadd2(__half2 a, __half2 b) { return __floats2half2_rn(__half2float(__low2half(a)) + __half2float(__low2half(b)), __half2float(__high2half(a)) + __half2float(__high2half(b))); }
 static inline __half2 __hmul2(__half2 a, __half2 b) { return __floats2half2_rn(__half2float(__low2half(a)) * __half2float(__low2half(b)), __half2float(__high2half(a)) * __half2float(__high2half(b))); }
 static inline __half2 __hfma2(__half2 a, __half2 b, __half2 c) { return __floats2half2_rn(__half2float(__low2half(a)) * __half2float(__low2half(b)) + __half2float(__low2half(c)), __half2float(__high2half(a)) * __half2float(__high2half(b)) + __half2float(__high2half(c))); }

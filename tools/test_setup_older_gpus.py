@@ -60,10 +60,10 @@ class Choice(unittest.TestCase):
         with mock.patch.object(setup, "ROOT", Path("/s")):
             self.assertEqual(setup.engine_dir(), Path("/s/engine"))
             self.assertEqual(setup.engine_dir(12), Path("/s/engine-cuda12"))
-        self.assertEqual(setup.config_toolkit({"exe": "/s/engine/strata.exe"}), 13)
-        self.assertEqual(setup.config_toolkit({"exe": "/s/engine-cuda12/strata.exe"}), 12)
+        self.assertEqual(setup.config_toolkit({"exe": "/s/engine/nostroma.exe"}), 13)
+        self.assertEqual(setup.config_toolkit({"exe": "/s/engine-cuda12/nostroma.exe"}), 12)
         self.assertEqual(setup.config_toolkit({"exe": "x", "cuda": 12}), 12)
-        self.assertEqual(setup.engine_defs([86], 12), ["-DSTRATA_EXPERIMENTAL_SM60=ON"])
+        self.assertEqual(setup.engine_defs([86], 12), ["-DNOSTROMA_EXPERIMENTAL_SM60=ON"])
         self.assertEqual(setup.engine_defs([86]), [])
 
 
@@ -71,7 +71,7 @@ class OptIn(unittest.TestCase):
     """Pascal / Volta cards are used only when chosen; a PC with a newer card keeps recommending the newer one."""
 
     def setUp(self):
-        self.env = mock.patch.dict(os.environ, {"STRATA_EXPERIMENTAL_SM60": ""})
+        self.env = mock.patch.dict(os.environ, {"NOSTROMA_EXPERIMENTAL_SM60": ""})
         self.env.start()
 
     def tearDown(self):
@@ -96,22 +96,22 @@ class OptIn(unittest.TestCase):
         self.assertIn("Maxwell only runs from a source build", setup.gpu_problem(m6000))
         self.assertNotIn("experimental: choose it", setup.gpu_problem(m6000))
         self.assertIsNone(setup.old_gpus_opt_in([m6000]))
-        for env in ({"STRATA_EXPERIMENTAL_SM60": "1"}, {"STRATA_EXPERIMENTAL_SM52": "1"}):
+        for env in ({"NOSTROMA_EXPERIMENTAL_SM60": "1"}, {"NOSTROMA_EXPERIMENTAL_SM52": "1"}):
             with mock.patch.dict(os.environ, env):
                 self.assertFalse(setup.sm60_card("52"))
                 self.assertIn("not supported", setup.gpu_problem(m6000))
                 self.assertIsNone(setup.old_gpus_opt_in([m6000]))
         self.assertIsNone(setup.old_gpus_opt_in([m6000], named=[0], cuda="12"))   # naming it does not admit it either
-        with mock.patch.dict(os.environ, {"STRATA_EXPERIMENTAL_SM60": "1"}):
-            self.assertEqual(setup.old_gpus_opt_in([rtx, v100]), "STRATA_EXPERIMENTAL_SM60=1")
+        with mock.patch.dict(os.environ, {"NOSTROMA_EXPERIMENTAL_SM60": "1"}):
+            self.assertEqual(setup.old_gpus_opt_in([rtx, v100]), "NOSTROMA_EXPERIMENTAL_SM60=1")
 
     def test_maxwell_note_is_a_warning_with_the_recipe(self):
         m6000 = card(0, "Quadro M6000", 24.0, "52")
         note = setup.maxwell_note([m6000, {**m6000, "index": 1}])
         self.assertIn("GPU 0 (Quadro M6000), GPU 1 (Quadro M6000)", note)
-        self.assertIn("-DSTRATA_EXPERIMENTAL_SM60=ON -DCMAKE_CUDA_ARCHITECTURES=52", note)
+        self.assertIn("-DNOSTROMA_EXPERIMENTAL_SM60=ON -DCMAKE_CUDA_ARCHITECTURES=52", note)
         self.assertIn("docs/OLDER_GPUS.md", note)
-        self.assertNotIn("STRATA_EXPERIMENTAL_SM52", note)                       # no switch the user has to set
+        self.assertNotIn("NOSTROMA_EXPERIMENTAL_SM52", note)                       # no switch the user has to set
         self.assertEqual(setup.maxwell_note([V100, P40]), "")
         self.assertEqual(setup.maxwell_note([]), "")
 
@@ -153,12 +153,12 @@ class Libraries(unittest.TestCase):
 
     def test_wheels_pinned_to_12(self):
         self.assertTrue(all("-cu12==12." in w for w in setup.CUDA12_WHEELS))
-        self.assertEqual(setup.CUDA12_ASSET, "strata-windows-x64-cuda12.zip" if setup.WIN else
-                         "strata-linux-x64-cuda12.zip")
+        self.assertEqual(setup.CUDA12_ASSET, "nostroma-windows-x64-cuda12.zip" if setup.WIN else
+                         "nostroma-linux-x64-cuda12.zip")
 
 
 class BuildTools(unittest.TestCase):
-    """The compile path: a CUDA 12 engine looks for a 12.x toolkit (STRATA_NVCC picks one), sm_120 needs 12.8+."""
+    """The compile path: a CUDA 12 engine looks for a 12.x toolkit (NOSTROMA_NVCC picks one), sm_120 needs 12.8+."""
 
     def tools(self, gpu, nvcc):
         seen = []
@@ -209,7 +209,7 @@ class Install(unittest.TestCase):
                  mock.patch.object(setup, "pip_cuda_libs", lambda tk=13: libs.append(tk)),
                  mock.patch.object(setup, "OLD_GPUS", None),
                  mock.patch.object(setup, "cuda12_min_driver", lambda feed=False: (575, "575.51", "the published figure")),   # never the real feed
-                 mock.patch.dict(os.environ, {"STRATA_EXPERIMENTAL_SM60": "", "STRATA_CUDA": "", **(env or {})})]
+                 mock.patch.dict(os.environ, {"NOSTROMA_EXPERIMENTAL_SM60": "", "NOSTROMA_CUDA": "", **(env or {})})]
         code, out, cfg, asked = install(ram, found, argv, extra=extra)
         return code, out, cfg, calls, libs
 
@@ -226,7 +226,7 @@ class Install(unittest.TestCase):
         """#3218: no ready-made engine holds sm_52 code, so none is installed; the way forward is printed, with or
         without any switch (a user never has to set one)."""
         m6000 = card(0, "Quadro M6000", 24.0, "52")
-        for env in (None, {"STRATA_EXPERIMENTAL_SM60": "1"}, {"STRATA_EXPERIMENTAL_SM52": "1"}):
+        for env in (None, {"NOSTROMA_EXPERIMENTAL_SM60": "1"}, {"NOSTROMA_EXPERIMENTAL_SM52": "1"}):
             with self.subTest(env=env):
                 code, out, cfg, calls, libs = self.run_setup(95.0, [m6000], argv_for("qwen", "IQ3_XXS"), env)
                 self.assertNotEqual(code, 0, out[-3000:])
@@ -273,7 +273,7 @@ class Install(unittest.TestCase):
 
     def test_cuda12_asked_for_on_a_newer_card(self):
         ram, found = PROFILES["128GB-1x24GB"]
-        for argv, env in ((["--cuda", "12"], None), ([], {"STRATA_CUDA": "12"})):
+        for argv, env in ((["--cuda", "12"], None), ([], {"NOSTROMA_CUDA": "12"})):
             with self.subTest(argv=argv, env=env):
                 code, out, cfg, calls, _ = self.run_setup(ram, found, argv_for("qwen", "IQ3_XXS") + argv, env)
                 self.assertEqual(code, 0, out[-3000:])
@@ -308,7 +308,7 @@ class Start(unittest.TestCase):
     def test_an_old_card_added_moves_the_model(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
-            cfg_path = root / "strata-iq3_xxs.json"
+            cfg_path = root / "nostroma-iq3_xxs.json"
             cfg = {"exe": str(root / "engine" / setup.EXE), "args": [], "lib_dirs": ["<cu13>"]}
             calls = []
             with mock.patch.object(setup, "ROOT", root), \

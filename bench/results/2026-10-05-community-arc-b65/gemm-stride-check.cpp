@@ -1,6 +1,6 @@
 #include <sycl/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "strata/prefill/gemm.hpp"
+#include "nostroma/prefill/gemm.hpp"
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -27,7 +27,7 @@ int main() {
    if(std::fabs(y[t*YSTRIDE+n]-expected)>1e-4f){std::fprintf(stderr,"%s stride=%d beta=%d mismatch\n",name,stride,beta);std::exit(1);}
   }checks++;};
   {
-   strata::prefill::Gemm g;std::string err;if(!g.init_external(&q,scratch,N*K,nullptr,0,err))return 2;
+   nostroma::prefill::Gemm g;std::string err;if(!g.init_external(&q,scratch,N*K,nullptr,0,err))return 2;
    for(int i=0;i<T*YSTRIDE;i++)y[i]=7;
    g.bf16(xb,w,y,T,N,K,YSTRIDE,float(beta),pad?stride:0);check("bf16");
    for(int rows: {1,N}){

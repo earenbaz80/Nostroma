@@ -1,8 +1,8 @@
-// src/core/amd_community_test.cpp - STRATA_AMD_COMMUNITY_TUNING turns each community-made AMD change off (no GPU needed).
+// src/core/amd_community_test.cpp - NOSTROMA_AMD_COMMUNITY_TUNING turns each community-made AMD change off (no GPU needed).
 //
-// Built twice by CMake: once as the default build (EXPECT_DOT_BUILT=1) and once with STRATA_AMD_COMMUNITY_DOT_OFF defined
-// (EXPECT_DOT_BUILT=0), which is what cmake -DSTRATA_AMD_COMMUNITY_TUNING=OFF does.  Run from the source directory.
-#include "strata/core/amd_community.hpp"
+// Built twice by CMake: once as the default build (EXPECT_DOT_BUILT=1) and once with NOSTROMA_AMD_COMMUNITY_DOT_OFF defined
+// (EXPECT_DOT_BUILT=0), which is what cmake -DNOSTROMA_AMD_COMMUNITY_TUNING=OFF does.  Run from the source directory.
+#include "nostroma/core/amd_community.hpp"
 #include "../prefill/rocblas_tuning.hpp"
 
 #include <cstdio>
@@ -30,8 +30,8 @@ static void put(const char* k, const char* v) {
 }
 
 int main() {
-    namespace ac = strata::amd_community;
-    const char* kSwitch = "STRATA_AMD_COMMUNITY_TUNING";
+    namespace ac = nostroma::amd_community;
+    const char* kSwitch = "NOSTROMA_AMD_COMMUNITY_TUNING";
 
     // the switch: on by default, off for 0 / off / false / no, on for anything else
     unset(kSwitch);
@@ -65,10 +65,10 @@ int main() {
         while (!tag.empty() && tag.back() == '.') tag.pop_back();
         const std::string path = std::string("tools/hip/") + t.arch + "-rocblas-" + tag + ".txt";
         std::string err;
-        strata::prefill::rocblas_tuning::Table ok;
+        nostroma::prefill::rocblas_tuning::Table ok;
         CHECK(ok.load(path, t.arch, t.version, err));
         CHECK(ok.rows().size() == 112);
-        strata::prefill::rocblas_tuning::Table other_version, other_arch;
+        nostroma::prefill::rocblas_tuning::Table other_version, other_arch;
         CHECK(!other_version.load(path, t.arch, "5.6.0.8d1ae90e", err));   // a non-matching rocBLAS build just does not load
         CHECK(!other_arch.load(path, "gfx1031", t.version, err));
     }
@@ -76,12 +76,12 @@ int main() {
     // the dot product (device code): the build option decides; the intrinsics header carries the guard
     CHECK(ac::dot4_gfx1010_built() == (EXPECT_DOT_BUILT != 0));
     {
-        std::ifstream in("include/strata/hip_compat/intrinsics.hpp");
+        std::ifstream in("include/nostroma/hip_compat/intrinsics.hpp");
         std::stringstream ss;
         ss << in.rdbuf();
         const std::string text = ss.str();
-        CHECK(text.find("defined(__gfx1010__) && !defined(STRATA_AMD_COMMUNITY_DOT_OFF)") != std::string::npos);
-        CHECK(text.find("!defined(STRATA_GFX1012_PORTABLE_DOT)") != std::string::npos);
+        CHECK(text.find("defined(__gfx1010__) && !defined(NOSTROMA_AMD_COMMUNITY_DOT_OFF)") != std::string::npos);
+        CHECK(text.find("!defined(NOSTROMA_GFX1012_PORTABLE_DOT)") != std::string::npos);
     }
 
     // #3073: the simt2 selector is the default of gfx103x only, and only with the switch on
@@ -103,7 +103,7 @@ int main() {
     CHECK(ac::startup_line("").empty());
     CHECK(ac::startup_line(nullptr).empty());
     CHECK(ac::startup_line("gfx1030:xnack-").find("on:") != std::string::npos);
-    CHECK(ac::startup_line("gfx1010").find("STRATA_AMD_COMMUNITY_TUNING=0") != std::string::npos);
+    CHECK(ac::startup_line("gfx1010").find("NOSTROMA_AMD_COMMUNITY_TUNING=0") != std::string::npos);
     put(kSwitch, "0");
     CHECK(ac::startup_line("gfx1030").find("off:") != std::string::npos);
     CHECK(ac::startup_line("gfx1010").find("rebuild") != std::string::npos || !ac::dot4_gfx1010_built());

@@ -15,7 +15,7 @@ GFNI / SHA instruction, and fails unless the function is one of the kernels mean
 check: internal linkage (anonymous namespace) or a named public kernel entry point below, defined in a wide-ISA
 object file, and not a weak / COMDAT symbol.  MSVC's own auto-vectorizer guard (`cmp [__isa_available], 6`) is accepted.
 
-  Linux : check_isa_guard.py libstrata_kernels_cpu.a  (needs objdump and nm from binutils)
+  Linux : check_isa_guard.py libnostroma_kernels_cpu.a  (needs objdump and nm from binutils)
   Windows: check_isa_guard.py EXE --map EXE.map      (link with /MAP; needs `pip install capstone pefile`)
 
 Exit 0 = clean, 1 = a violation, 77 = cannot run here (tools missing; ctest SKIP_RETURN_CODE).
@@ -78,7 +78,7 @@ def judge(name, obj, wide_text, guarded, weak, is_elf):
 
 # ---------------------------------------------------------------- ELF
 def run_elf(path):
-    """An archive (libstrata_kernels_cpu.a), an object or a linked binary.  Give it the archive: a linked binary also
+    """An archive (libnostroma_kernels_cpu.a), an object or a linked binary.  Give it the archive: a linked binary also
     holds ggml-cpu, which a Linux source build compiles for the build machine (-march=native) on purpose."""
     for tool in ("objdump", "nm"):
         if shutil.which(tool) is None:

@@ -1,8 +1,8 @@
-# EXPDEC: the verify window's routed experts with the group's activations in shared memory (`STRATA_EXPDEC`)
+# EXPDEC: the verify window's routed experts with the group's activations in shared memory (`NOSTROMA_EXPDEC`)
 
 Supported on CUDA and HIP. On RDNA4 HIP (`gfx1200`/`gfx1201`), EXPDEC is enabled by default for gate/up and the `Q2_0`
-down projection (`STRATA_EXPDEC=0` turns EXPDEC off and `STRATA_EXPDEC_DOWN=0` keeps the default down kernel). On CUDA
-and other HIP targets it is opt-in via `STRATA_EXPDEC=1` (unset or `0` launches the default kernels). The output is
+down projection (`NOSTROMA_EXPDEC=0` turns EXPDEC off and `NOSTROMA_EXPDEC_DOWN=0` keeps the default down kernel). On CUDA
+and other HIP targets it is opt-in via `NOSTROMA_EXPDEC=1` (unset or `0` launches the default kernels). The output is
 bitwise the default kernels' (see "Bit for bit" below; `expdec_bench` checks it).
 
 ## What it changes
@@ -16,32 +16,32 @@ at a 131k decode that makes an extra entry cost about 60% of a whole expert (~1.
 layer) although it reads nothing from DRAM.
 
 `expdec_gu_kernel` (gate/up: IQ2_XXS, IQ2_XS, IQ3_XXS, IQ3_S, IQ2_S at n_embd 2560) and `expdec_down_kernel` (down:
-Q2_0 at n_ff 640; IQ4_NL with `STRATA_EXPDEC_D20=1`) instead:
+Q2_0 at n_ff 640; IQ4_NL with `NOSTROMA_EXPDEC_D20=1`) instead:
 
 - stage the group's entries (4 at a time, as the default) in shared memory in a layout where a call's 8 words are two
   16-byte loads with no bank conflicts (the block's two halves in separate planes), the fp16 block scale already a
   float (`__low2float(ds)`, the value `apply` computes); for IQ4_NL the words stay together and a call reads two
   8-byte loads;
-- compute R rows per lane (`STRATA_EXPDEC_R`, 1 or 2 for gate/up, default 1; `STRATA_EXPDEC_DR` 1/2/4 for down,
+- compute R rows per lane (`NOSTROMA_EXPDEC_R`, 1 or 2 for gate/up, default 1; `NOSTROMA_EXPDEC_DR` 1/2/4 for down,
   default 4): the activation words are loaded once per R rows;
-- take `rb` rows per block instead of 16 (`STRATA_EXPDEC_RB` / `_DRB`; 0 = the most that keep `STRATA_EXPDEC_MINBLK`,
+- take `rb` rows per block instead of 16 (`NOSTROMA_EXPDEC_RB` / `_DRB`; 0 = the most that keep `NOSTROMA_EXPDEC_MINBLK`,
   default 800, blocks in the launch), so the staging is amortised over 35-140 KB of weights;
 - stage the IQ3_XXS and IQ3_S codebooks in shared memory too (the IQ2 ones already were);
-- gate/up `__launch_bounds__(256, STRATA_EXPDEC_MINB)`, default 4 (up to 64 registers, 4 blocks per SM like the
+- gate/up `__launch_bounds__(256, NOSTROMA_EXPDEC_MINB)`, default 4 (up to 64 registers, 4 blocks per SM like the
   default kernels; `2` allows 128).
 
-Formats outside the list keep the default kernel for that role; `STRATA_OLD_IQ_MMVQ=1` turns EXPDEC off as it turns
-the multi kernels off. The `Q2_0` down projection is controlled by `STRATA_EXPDEC_DOWN`: on `gfx12` (RDNA4) it defaults
-to `1` (`STRATA_EXPDEC_DOWN=0` disables it); on CUDA and other HIP targets it defaults to `0` (`STRATA_EXPDEC_DOWN=1`
+Formats outside the list keep the default kernel for that role; `NOSTROMA_OLD_IQ_MMVQ=1` turns EXPDEC off as it turns
+the multi kernels off. The `Q2_0` down projection is controlled by `NOSTROMA_EXPDEC_DOWN`: on `gfx12` (RDNA4) it defaults
+to `1` (`NOSTROMA_EXPDEC_DOWN=0` disables it); on CUDA and other HIP targets it defaults to `0` (`NOSTROMA_EXPDEC_DOWN=1`
 enables it, since in an RTX 2080 Ti 131k decode the `Q2_0` down with EXPDEC was about 10% slower than the default
-kernel although the micro-bench alone had it at 0.78x). The `IQ4_NL` down projection remains opt-in (`STRATA_EXPDEC_D20=1`)
+kernel although the micro-bench alone had it at 0.78x). The `IQ4_NL` down projection remains opt-in (`NOSTROMA_EXPDEC_D20=1`)
 on all architectures.
 
-The first time `STRATA_EXPDEC=1` meets a (role, format) the engine writes one line, e.g.
+The first time `NOSTROMA_EXPDEC=1` meets a (role, format) the engine writes one line, e.g.
 `nostroma expdec: CUDA1 gate/up type 21: expdec_gu_kernel R 1 MINB 4, 16 rows per block, grid 80 x 10 (cap 10 groups), captured into a graph`
 (or `... not covered: the default kernel runs`).
 
-API (`include/strata/kernels/iq_kernels.hpp`): `native_expert_set_expdec`, `native_expert_set_expdec_params` /
+API (`include/nostroma/kernels/iq_kernels.hpp`): `native_expert_set_expdec`, `native_expert_set_expdec_params` /
 `native_expert_expdec_params` (`NativeExpertExpdecParams`), `native_expert_expdec_takes`. The knobs are read from the
 environment at startup; captured graphs keep the kernels they captured.
 
@@ -100,7 +100,7 @@ nsys of a 131k decode (layer split: RTX 3060 layers 0-15, RTX 2080 Ti layers 16-
 | RTX 2080 Ti, gate/up kernel | 1.60 / 2.58 / 3.51 / 4.16 ms | 1.42 / 2.07 / 2.75 / 3.20 ms (-11 / -20 / -22 / -23%) |
 | RTX 2080 Ti, gate/up slope per row | +0.86 ms | +0.60 ms |
 | RTX 3060, gate/up kernel | 0.77 / 1.43 / 1.97 / 2.23 ms | 0.80 / 1.21 / 1.83 / 1.84 ms |
-| RTX 2080 Ti, down Q2_0 with `STRATA_EXPDEC_DOWN=1` | - | ~10% slower than the default (hence off by default) |
+| RTX 2080 Ti, down Q2_0 with `NOSTROMA_EXPDEC_DOWN=1` | - | ~10% slower than the default (hence off by default) |
 
 End to end, same machine, a deterministic 131k bench (forced tokens and window sizes, 1024 tokens, B-A-B with the
 lever on / off / on): **+1.1%** decode tokens/s (+0.0 and +2.1 in the two B arms, no B below A), the text identical.

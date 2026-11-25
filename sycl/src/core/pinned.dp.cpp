@@ -1,10 +1,10 @@
 // src/core/pinned.cu - P2.S1: the pinned host arena and the parallel expert load.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 #include <dpct/dpct.hpp>
-#include "strata/core/pinned.hpp"
-#include "strata/platform/memory.hpp"
+#include "nostroma/core/pinned.hpp"
+#include "nostroma/platform/memory.hpp"
 
 #include <atomic>
 #include <climits>
@@ -19,9 +19,9 @@
 // Loader fix: `fseek`/`ftell` are 32-bit on Windows by default (and the pack is 42.9 GB), and the 64-bit
 // spelling is not the same on the two platforms the engine builds for.
 #ifdef _WIN32
-#define STRATA_FSEEK64(f, o) _fseeki64((f), (long long) (o), SEEK_SET)
+#define NOSTROMA_FSEEK64(f, o) _fseeki64((f), (long long) (o), SEEK_SET)
 #else
-#define STRATA_FSEEK64(f, o) fseeko((f), (off_t) (o), SEEK_SET)
+#define NOSTROMA_FSEEK64(f, o) fseeko((f), (off_t) (o), SEEK_SET)
 #endif
 
 #ifdef _WIN32
@@ -37,12 +37,12 @@
 #endif
 #endif
 
-namespace strata::core {
+namespace nostroma::core {
 
 namespace {
 
 constexpr uint64_t kSharedArenaHeaderBytes = 4096;
-constexpr char kSharedArenaMagic[16] = "STRATA-ARENA-V1";
+constexpr char kSharedArenaMagic[16] = "NOSTROMA-ARENA-V1";
 
 struct SharedArenaHeader {
     char magic[16];
@@ -87,8 +87,8 @@ void* reserve(uint64_t bytes, PageBacking& got, std::string& note, const std::st
     // MEM_LARGE_PAGES needs SeLockMemoryPrivilege; a normal account does not have it and VirtualAlloc then
     // fails with ERROR_PRIVILEGE_NOT_HELD.  That is the EXPECTED outcome on a desktop, not an error.
     SIZE_T large = GetLargePageMinimum();
-    // A/B switch: STRATA_NO_LARGEPAGES=1 skips the large-page attempt, same run, same boot.
-    if (large > 0 && strata::env("NOSTROMA_NO_LARGEPAGES") == nullptr) {
+    // A/B switch: NOSTROMA_NO_LARGEPAGES=1 skips the large-page attempt, same run, same boot.
+    if (large > 0 && nostroma::env("NOSTROMA_NO_LARGEPAGES") == nullptr) {
         // MEM_LARGE_PAGES requires the allocation size to be an exact multiple of the large page size -
         // anything else is ERROR_INVALID_PARAMETER (87), which reads like a privilege problem but is not.
         // Round up: the slack is under 2 MB and the tail stays unused.
@@ -105,8 +105,8 @@ void* reserve(uint64_t bytes, PageBacking& got, std::string& note, const std::st
         note = "large pages refused for " + std::to_string((unsigned long long) lbytes) + " B (GetLargePageMinimum=" +
                std::to_string((unsigned long long) large) + ", VirtualAlloc error " +
                std::to_string((unsigned long long) GetLastError()) + "); using 4 KB pages";
-    } else if (strata::env("NOSTROMA_NO_LARGEPAGES") != nullptr) {
-        note = "large pages skipped (STRATA_NO_LARGEPAGES); using 4 KB pages";
+    } else if (nostroma::env("NOSTROMA_NO_LARGEPAGES") != nullptr) {
+        note = "large pages skipped (NOSTROMA_NO_LARGEPAGES); using 4 KB pages";
     } else {
         note = "this system has no large-page minimum; using 4 KB pages";
     }
@@ -202,10 +202,10 @@ void* reserve(uint64_t bytes, PageBacking& got, std::string& note, const std::st
         return (uint8_t*) map + kSharedArenaHeaderBytes;
     }
 
-    // STRATA_NO_LARGEPAGES=1 is the same-run A/B switch the Windows branch documents; honor it
+    // NOSTROMA_NO_LARGEPAGES=1 is the same-run A/B switch the Windows branch documents; honor it
     // here too, so the large-page path can be compared without changing the pool or rebooting.
-    if (strata::env("NOSTROMA_NO_LARGEPAGES") != nullptr) {
-        note = "large pages skipped (STRATA_NO_LARGEPAGES); using 4 KB pages";
+    if (nostroma::env("NOSTROMA_NO_LARGEPAGES") != nullptr) {
+        note = "large pages skipped (NOSTROMA_NO_LARGEPAGES); using 4 KB pages";
     } else {
         void* p = mmap(nullptr, bytes, PROT_READ | PROT_WRITE,
                        MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB | MAP_HUGE_2MB, -1, 0);
@@ -243,8 +243,8 @@ void* reserve(uint64_t bytes, PageBacking& got, std::string& note, const std::st
     void* p = (void*) aligned;
     // #771: with THP "always" the kernel already backs this mapping with huge pages where it can; the extra
     // MADV_HUGEPAGE only adds direct reclaim and compaction on every fault (defrag=madvise), which on a fragmented
-    // machine stretched a 25 s start to 432 s.  So it is not asked for there.  STRATA_NO_ARENA_THP=1 skips it
-    // anywhere (the request alone; STRATA_NO_LARGEPAGES also skips the hugetlb try).
+    // machine stretched a 25 s start to 432 s.  So it is not asked for there.  NOSTROMA_NO_ARENA_THP=1 skips it
+    // anywhere (the request alone; NOSTROMA_NO_LARGEPAGES also skips the hugetlb try).
     std::string thp_mode;
     if (std::FILE* f = std::fopen("/sys/kernel/mm/transparent_hugepage/enabled", "r")) {
         char line[128] = {0};
@@ -255,18 +255,18 @@ void* reserve(uint64_t bytes, PageBacking& got, std::string& note, const std::st
         }
         std::fclose(f);
     }
-    // STRATA_NO_ARENA_THP=0 asks for the huge pages (the same meaning as in src/core/pinned.cu); any other value skips the request
-    const char* no_thp = strata::env("NOSTROMA_NO_ARENA_THP");
+    // NOSTROMA_NO_ARENA_THP=0 asks for the huge pages (the same meaning as in src/core/pinned.cu); any other value skips the request
+    const char* no_thp = nostroma::env("NOSTROMA_NO_ARENA_THP");
     const bool user_no_thp = no_thp != nullptr && no_thp[0] != '0';
     const bool skip_thp_request = user_no_thp || thp_mode == "always";
-    if (strata::env("NOSTROMA_NO_LARGEPAGES") == nullptr && skip_thp_request) {
+    if (nostroma::env("NOSTROMA_NO_LARGEPAGES") == nullptr && skip_thp_request) {
         const std::string four_k = "; using 4 KB pages";
         if (note.size() >= four_k.size() && note.compare(note.size() - four_k.size(), four_k.size(), four_k) == 0)
             note.resize(note.size() - four_k.size());
         note += user_no_thp
-                    ? "; transparent huge pages skipped (STRATA_NO_ARENA_THP)"
+                    ? "; transparent huge pages skipped (NOSTROMA_NO_ARENA_THP)"
                     : "; transparent huge pages are on for every mapping (THP always): MADV_HUGEPAGE not requested";
-    } else if (strata::env("NOSTROMA_NO_LARGEPAGES") == nullptr && madvise(p, bytes, MADV_HUGEPAGE) == 0) {
+    } else if (nostroma::env("NOSTROMA_NO_LARGEPAGES") == nullptr && madvise(p, bytes, MADV_HUGEPAGE) == 0) {
         const std::string four_k = "; using 4 KB pages";
         if (note.size() >= four_k.size() && note.compare(note.size() - four_k.size(), four_k.size(), four_k) == 0)
             note.resize(note.size() - four_k.size());
@@ -307,7 +307,7 @@ bool clear_error() {(void)0; return true; }
 }  // namespace
 
 int arena_pin_cap_gib() {
-    const char* e = strata::env("NOSTROMA_ARENA_PIN_GIB");
+    const char* e = nostroma::env("NOSTROMA_ARENA_PIN_GIB");
     if (e == nullptr || *e == '\0') return -1;
     if (std::string(e) == "auto") return -2;   // #243: the Windows shared-memory budget sets the sliced pin's cap
     const int v = std::atoi(e);
@@ -329,7 +329,7 @@ bool sliced_pin_limit(uint64_t& limit, std::string& why) {
     uint64_t budget = 0, usage = 0;
     std::string err = "no CUDA device properties";
     if (cudaGetDevice(&dev) == cudaSuccess && cudaGetDeviceProperties(&p, dev) == cudaSuccess &&
-        strata::platform::gpu_shared_memory_budget(p.luid, budget, usage, err)) {
+        nostroma::platform::gpu_shared_memory_budget(p.luid, budget, usage, err)) {
         limit = budget > usage + 4 * GiB ? budget - usage - 4 * GiB : 0;
         std::snprintf(buf, sizeof buf, "the GPU's shared-memory budget %.1f GiB - %.1f GiB in use - 4 GiB",
                       (double) budget / GiB, (double) usage / GiB);
@@ -337,7 +337,7 @@ bool sliced_pin_limit(uint64_t& limit, std::string& why) {
         return true;
     }
     (void) cudaGetLastError();
-    const uint64_t ram = strata::platform::total_physical_memory();
+    const uint64_t ram = nostroma::platform::total_physical_memory();
     if (ram == 0) return false;
     limit = ram / 2 > 8 * GiB ? ram / 2 - 8 * GiB : 0;
     std::snprintf(buf, sizeof buf, "%s: RAM/2 - 8 GiB of %.1f GiB", err.c_str(), (double) ram / GiB);
@@ -376,13 +376,13 @@ PinnedArena::PinnedArena(uint64_t bytes, const std::vector<uint64_t> &bounds,
     // Register with CUDA BEFORE any page is touched: cudaHostRegister pins what is resident now, and a region
     // that has already been faulted in page by page is far more expensive to register and may fail outright.
     if (base) {
-        // #243: STRATA_ARENA_PIN_GIB=N caps the registration from the start where the caller set no cap
+        // #243: NOSTROMA_ARENA_PIN_GIB=N caps the registration from the start where the caller set no cap
         const int env_gib = arena_pin_cap_gib();
         uint64_t cap = max_pinned_bytes;
         std::string cap_why = "by the engine (multi-GPU under WDDM, or remote experts)";
         if (cap == 0 && env_gib > 0) {
             cap = (uint64_t) env_gib << 30;
-            cap_why = "by STRATA_ARENA_PIN_GIB";
+            cap_why = "by NOSTROMA_ARENA_PIN_GIB";
         }
         const bool capped = cap > 0 && cap < bytes && bounds.size() >= 2;
         const dpct::err0 e =
@@ -405,7 +405,7 @@ PinnedArena::PinnedArena(uint64_t bytes, const std::vector<uint64_t> &bounds,
             uint64_t limit = cap;
             std::string limit_why;
 #ifdef _WIN32
-            // #243 (opt-in, STRATA_ARENA_PIN_GIB=auto): not up to the driver's refusal but below the shared-memory
+            // #243 (opt-in, NOSTROMA_ARENA_PIN_GIB=auto): not up to the driver's refusal but below the shared-memory
             // budget, for a PC where the full sliced pin leaves WDDM refusing later allocations.  Not the default: a
             // 64 GB PC pins 30 GiB past that budget without trouble, and capping it at 26 cost ~20% prompt speed.
             if (!capped && env_gib == -2) limited = sliced_pin_limit(limit, limit_why);
@@ -449,18 +449,18 @@ PinnedArena::PinnedArena(uint64_t bytes, const std::vector<uint64_t> &bounds,
                          std::string(dpct::get_error_string_dummy(e)) + "); " +
                          (limited ? "slices capped at " + std::string(gib) +
                                         " GiB (" + limit_why +
-                                        "; STRATA_ARENA_PIN_GIB=auto; N sets a "
+                                        "; NOSTROMA_ARENA_PIN_GIB=auto; N sets a "
                                         "cap; #243); "
                                   : std::string())) +
                 std::to_string(registered_slices) + " slices pinned (" +
                 std::to_string(registered_bytes >> 30) + " GiB); " + note;
             if (registered_bytes < bytes) {
-                const char* env = strata::env("NOSTROMA_ARENA_LOCK");
+                const char* env = nostroma::env("NOSTROMA_ARENA_LOCK");
                 if (backing == PageBacking::LargePages) {   // #779: large pages cannot be paged out: nothing to lock
                     note = "large pages are resident without a lock; " + note;
                 } else if (env == nullptr || std::string(env) != "0") {
-                    const strata::platform::LockResult lr =
-                        strata::platform::lock_resident((uint8_t*) base + registered_bytes, bytes - registered_bytes);
+                    const nostroma::platform::LockResult lr =
+                        nostroma::platform::lock_resident((uint8_t*) base + registered_bytes, bytes - registered_bytes);
                     locked_bytes = lr.locked_bytes;
                     note = lr.note + "; " + note;
                 }
@@ -494,16 +494,16 @@ PinnedArena::PinnedArena(uint64_t bytes, const std::vector<uint64_t> &bounds,
             (void)0;
             // Plan v0.3 P0.1: keep it RESIDENT instead. Unpinned, Windows trims the arena under memory pressure
             // and the CPU pool's rate then depends on the OS; locking it through the working set needs no
-            // special privilege. STRATA_ARENA_LOCK=0 is the A/B arm.
-            const char* env = strata::env("NOSTROMA_ARENA_LOCK");
+            // special privilege. NOSTROMA_ARENA_LOCK=0 is the A/B arm.
+            const char* env = nostroma::env("NOSTROMA_ARENA_LOCK");
             if (backing == PageBacking::LargePages) {       // #779: large pages cannot be paged out: nothing to lock
                 note = "large pages are resident without a lock; " + note;
             } else if (env == nullptr || std::string(env) != "0") {
-                const strata::platform::LockResult lr = strata::platform::lock_resident(base, bytes);
+                const nostroma::platform::LockResult lr = nostroma::platform::lock_resident(base, bytes);
                 locked_bytes = lr.locked_bytes;
                 note = lr.note + "; " + note;
             } else {
-                note = "arena lock disabled (STRATA_ARENA_LOCK=0); " + note;
+                note = "arena lock disabled (NOSTROMA_ARENA_LOCK=0); " + note;
             }
         }
     }
@@ -552,12 +552,12 @@ void PinnedArena::register_slices(std::atomic<int> &ready) try {
     note = "cudaHostRegister per layer, pipelined with the load: " + std::to_string(registered_slices) + " of " +
            std::to_string(n) + " slices pinned; " + note;
     if (i < n && base != nullptr) {   // the rest stays resident through the working-set lock, as the sliced fallback does
-        const char* env = strata::env("NOSTROMA_ARENA_LOCK");
+        const char* env = nostroma::env("NOSTROMA_ARENA_LOCK");
         if (backing == PageBacking::LargePages) {           // #779: large pages cannot be paged out: nothing to lock
             note = "large pages are resident without a lock; " + note;
         } else if (env == nullptr || std::string(env) != "0") {
-            const strata::platform::LockResult lr =
-                strata::platform::lock_resident((uint8_t*) base + registered_bytes, capacity - registered_bytes);
+            const nostroma::platform::LockResult lr =
+                nostroma::platform::lock_resident((uint8_t*) base + registered_bytes, capacity - registered_bytes);
             locked_bytes = lr.locked_bytes;
             note = lr.note + "; " + note;
         }
@@ -572,7 +572,7 @@ catch (sycl::exception const &exc) {
 
 PinnedArena::~PinnedArena() {
     if (base) {
-        if (locked_bytes) strata::platform::unlock_resident((uint8_t*) base + (slice_bytes ? registered_bytes : 0), locked_bytes);
+        if (locked_bytes) nostroma::platform::unlock_resident((uint8_t*) base + (slice_bytes ? registered_bytes : 0), locked_bytes);
         if (slice_bytes) {
             /*
             DPCT1027: The call to cudaHostUnregister was replaced with 0
@@ -680,9 +680,9 @@ LoadStats load_experts_direct(const std::string& path, uint8_t* dst, const std::
 
 bool experts_unbuffered(const std::vector<std::string>& files, uint64_t arena_bytes, std::string& why,
                         bool cache_counts, uint64_t read_bytes) {
-    const char* env = strata::env("NOSTROMA_UNBUFFERED_LOAD");
+    const char* env = nostroma::env("NOSTROMA_UNBUFFERED_LOAD");
     if (env != nullptr && env[0] != '\0') {
-        why = std::string("STRATA_UNBUFFERED_LOAD=") + env;
+        why = std::string("NOSTROMA_UNBUFFERED_LOAD=") + env;
         return env[0] != '0';
     }
 #ifdef _WIN32
@@ -728,7 +728,7 @@ bool experts_unbuffered(const std::vector<std::string>& files, uint64_t arena_by
     const uint64_t avail = ms.ullAvailPhys;
     // what the cache could keep beside the arena (~4 GiB for everything else)
     const uint64_t need = read_bytes == kAllFileBytes ? total_bytes : read_bytes;
-    const bool keepable = strata::platform::file_cache_keeps(avail, arena_bytes, need);
+    const bool keepable = nostroma::platform::file_cache_keeps(avail, arena_bytes, need);
     char msg[256];
     if (read_bytes == kAllFileBytes)
         std::snprintf(msg, sizeof msg, "%d of %d probe reads from the file cache; %.1f GiB available, %.1f GiB of files",
@@ -797,7 +797,7 @@ LoadStats load_experts_ranges(const std::string& path, uint8_t* dst, const std::
             uint64_t pos = 0;
             uint64_t h = 1469598103934665603ull;
             // 64-bit seek: the pack is 42.9 GB, so the 32-bit `fseek` would wrap past 4 GiB
-            if (STRATA_FSEEK64(f, off) != 0) {
+            if (NOSTROMA_FSEEK64(f, off) != 0) {
                 std::lock_guard<std::mutex> g(err_mu);
                 err = "seek to " + std::to_string(off) + " B failed in layer " + std::to_string(L);
                 return;
@@ -902,4 +902,4 @@ catch (sycl::exception const &exc) {
   std::exit(1);
 }
 
-}  // namespace strata::core
+}  // namespace nostroma::core

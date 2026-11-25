@@ -7,9 +7,9 @@
 #include <random>
 #include <vector>
 
-#include "strata/prefill/mmq_ids_margin.hpp"
+#include "nostroma/prefill/mmq_ids_margin.hpp"
 
-using namespace strata::prefill::mmq;
+using namespace nostroma::prefill::mmq;
 
 static int failed = 0;
 #define CHECK(x) do { if (!(x)) { std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #x); ++failed; } } while (0)

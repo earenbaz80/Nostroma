@@ -1,12 +1,12 @@
-// STRATA_SELECT_TWO_PASS's request and its line where the two-pass scorer cannot run (qsa_two_pass_status.hpp).
+// NOSTROMA_SELECT_TWO_PASS's request and its line where the two-pass scorer cannot run (qsa_two_pass_status.hpp).
 // GPU-free: the parse, quiet when unset or supported, one line per process where unsupported.
-#include "strata/kernels/qsa_two_pass_status.hpp"
+#include "nostroma/kernels/qsa_two_pass_status.hpp"
 
 #include <cstdio>
 #include <cstdlib>
 #include <string>
 
-namespace tp = strata::kernels::two_pass;
+namespace tp = nostroma::kernels::two_pass;
 
 static void check(bool ok, const char* why) {
     if (!ok) {
@@ -25,7 +25,7 @@ static std::string output(FILE* log) {
 }
 
 static std::string line(const char* where) {
-    return std::string("strata: STRATA_SELECT_TWO_PASS=1 is not used on ") + where +
+    return std::string("nostroma: NOSTROMA_SELECT_TWO_PASS=1 is not used on ") + where +
            ": the two-pass scorer runs only in the CUDA prompt path's tensor-core selection (sm_80+); the selection is "
            "unchanged\n";
 }
@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
     check(output(log).empty(), "supported: no line");
 
     // each unsupported path the engine names: off, one line, never repeated
-    const char* where[] = {"HIP", "Metal", "SYCL", "this CUDA card or with STRATA_QSA_WARP",
+    const char* where[] = {"HIP", "Metal", "SYCL", "this CUDA card or with NOSTROMA_QSA_WARP",
                            "the layer-major prompt path"};
     std::string expected;
     for (const char* w : where) {
@@ -68,9 +68,9 @@ int main(int argc, char** argv) {
     // a layer split can mix cards: a supported query neither uses up the line nor is turned off by an unsupported one
     tp::RequestStatus mixed("1");
     check(mixed.on(nullptr, log), "supported card first");
-    check(!mixed.on("this CUDA card or with STRATA_QSA_WARP", log), "then an unsupported card");
+    check(!mixed.on("this CUDA card or with NOSTROMA_QSA_WARP", log), "then an unsupported card");
     check(mixed.on(nullptr, log), "the supported card stays on");
-    expected += line("this CUDA card or with STRATA_QSA_WARP");
+    expected += line("this CUDA card or with NOSTROMA_QSA_WARP");
     check(output(log) == expected, "the unsupported card's line once");
 
     check(std::fclose(log) == 0, "close the log");

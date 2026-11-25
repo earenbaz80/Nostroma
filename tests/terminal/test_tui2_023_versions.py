@@ -36,13 +36,13 @@ class VersionBump(unittest.TestCase):
         # 0.2.15 (an app + Control fix release): the app and the Terminal are 0.2.15 and Control 0.1.61; every engine package stays 0.1.60 (the v0.2.14 files).
         self.assertEqual(nostroma_cli.PRODUCT_VERSION, "0.2.15")
         self.assertEqual(nostroma_cli.version(), "0.1.61")              # the CMake project version: Control
-        self.assertEqual(first("CMakeLists.txt", r"^project\(strata VERSION ([0-9.]+) "), "0.1.61")
-        self.assertIn('STRATA_VERSION="0.1.60-metal"', (ROOT / "metal" / "CMakeLists.txt").read_text(encoding="utf-8"))
+        self.assertEqual(first("CMakeLists.txt", r"^project\(nostroma VERSION ([0-9.]+) "), "0.1.61")
+        self.assertIn('NOSTROMA_VERSION="0.1.60-metal"', (ROOT / "metal" / "CMakeLists.txt").read_text(encoding="utf-8"))
 
     def test_every_place_the_app_version_lives_says_0_2_3(self):
         self.assertEqual(first("apps/desktop/src-tauri/Cargo.toml", r'^version = "([^"]+)"'), "0.2.15")
         lock = (ROOT / "apps/desktop/src-tauri/Cargo.lock").read_text(encoding="utf-8")
-        self.assertRegex(lock, r'name = "strata-desktop"\r?\nversion = "0.2.15"')
+        self.assertRegex(lock, r'name = "nostroma-desktop"\r?\nversion = "0.2.15"')
         self.assertEqual(json.loads((ROOT / "apps/desktop/package.json").read_text(encoding="utf-8"))["version"], "0.2.15")
         host = json.loads((ROOT / "apps/host/package.json").read_text(encoding="utf-8"))
         self.assertEqual(host["version"], "0.2.15")
@@ -57,8 +57,8 @@ class VersionBump(unittest.TestCase):
             self.assertNotIn("Nostroma-0.2.2-", text, name)
 
     def test_version_prints_the_product_and_the_build(self):
-        done = subprocess.run([sys.executable, str(ROOT / "strata.py"), "--version"], capture_output=True, text=True, cwd=str(ROOT),
-                              env={**os.environ, "STRATA_NO_HANDOVER": "1"})
+        done = subprocess.run([sys.executable, str(ROOT / "nostroma.py"), "--version"], capture_output=True, text=True, cwd=str(ROOT),
+                              env={**os.environ, "NOSTROMA_NO_HANDOVER": "1"})
         self.assertTrue(done.stdout.startswith("nostroma 0.2.15 (build 0.1.61;"), done.stdout)
 
 
@@ -66,7 +66,7 @@ class UpdateFromTheLastRelease(test_updater.UpdaterCase):
     def feed_with_control(self, version):
         bundle = self.root / "control-bundle"
         (bundle / "nostroma_control").mkdir(parents=True)
-        (bundle / "strata.py").write_text(f"print('strata 0.2.3 (build {version})')\n")
+        (bundle / "nostroma.py").write_text(f"print('nostroma 0.2.3 (build {version})')\n")
         (bundle / "nostroma_control" / "__init__.py").write_text("")
         from feed_tool import build_feed, pack_control
         (self.release / "control").mkdir()

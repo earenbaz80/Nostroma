@@ -14,7 +14,7 @@
 //   mm_down   YE[row][d] = h . down_d, fp32
 //   mm_combine y[t][d] = sum_k w(t, k) * YE[pos(t, k)][d], k in order
 //
-// The idea of feeding matmul2d tiles of dequantized weights from threadgroup memory follows yibie/strata-mlx's
+// The idea of feeding matmul2d tiles of dequantized weights from threadgroup memory follows yibie/nostroma-mlx's
 // tile_matmul (MIT); the code is our own.
 #include <MetalPerformancePrimitives/MetalPerformancePrimitives.h>
 using namespace mpp::tensor_ops;
@@ -271,8 +271,8 @@ kernel void mm_gather(device const float* x [[buffer(0)]], device const int* srt
 
 // The SSD-streaming arena (as in moe.metal): with function constant 20, expert e's slot is smap[e] in the chunks W,
 // W1..W3 (buffers 5..8 of mm_gu2 / mm_down2 / mm_gu3 / mm_down3); gate_off / up_off / down_off are offsets in the slot.
-#ifndef STRATA_ARENA_METAL
-#define STRATA_ARENA_METAL
+#ifndef NOSTROMA_ARENA_METAL
+#define NOSTROMA_ARENA_METAL
 constant bool kArenaFc [[function_constant(20)]];
 constant bool kArena = is_function_constant_defined(kArenaFc) && kArenaFc;
 static inline device const uchar* arena_slot(uint v, device const uchar* W, device const uchar* W1, device const uchar* W2,
@@ -391,7 +391,7 @@ kernel void mm_down2(device const uchar* W [[buffer(0)]], device const half* HS 
 MM_GU2_KQ(T_Q4_K) MM_GU2_KQ(T_Q5_K) MM_GU2_KQ(T_Q6_K) MM_GU2_U32(T_Q8_0) MM_DN2_U32(T_Q5_1) MM_DN2_U32(T_Q5_0) MM_DN2_U32(T_Q8_0)
 // K-quant / IQ4_XS / IQ3_S down experts (a UD file's downs at expert widths divisible by 256: Q4-KQ): the staged K chunk
 // follows the same rule as the gate/up's (Q4_K / Q5_K / Q6_K 128, Q3_K and IQ4_XS 32, IQ3_S 16)
-#ifdef STRATA_KQ_DOWN   // (see moe.metal)
+#ifdef NOSTROMA_KQ_DOWN   // (see moe.metal)
 #define MM_DN2_KQ(F) MMDN2(F, 16, 16, 128, 2) MMDN2(F, 16, 32, 128, 2) MMDN2(F, 32, 32, 128, 2) MMDN2(F, 16, 32, 128, 4)
 MM_DN2_KQ(T_Q4_K) MM_DN2_KQ(T_Q5_K) MM_DN2_KQ(T_Q6_K)
 MMDN2(T_IQ4_XS, 16, 64, 32, 2) MMDN2(T_IQ4_XS, 16, 64, 64, 2) MMDN2(T_IQ4_XS, 16, 32, 32, 2)
@@ -411,8 +411,8 @@ MMDN2(T_IQ4_NL, 16, 64, 32, 2) MMDN2(T_IQ4_NL, 16, 64, 64, 2) MMDN2(T_IQ4_NL, 16
 // no threadgroup staging and no barriers in the K loop.  Each simdgroup owns TN output rows; a threadgroup SG * TN.
 // The right input's element layout (tests/coop_layout): runs of 4 consecutive k at one n, so a lane decodes 4 values
 // at a time (W4<F>).  Activations: the gathered fp16 rows from device memory.
-#ifndef STRATA_COOP_K4
-#define STRATA_COOP_K4
+#ifndef NOSTROMA_COOP_K4
+#define NOSTROMA_COOP_K4
 // function constant 7: the right-input cooperative tensor holds runs of 4 consecutive k at one n per lane (the M5's
 // layout; tests/coop_layout).  false (the M4: runs of 2 n at one k): every element decoded on its own.
 constant bool COOP_K4 [[function_constant(7)]];
@@ -1052,7 +1052,7 @@ kernel void mm_down3(device const uchar* W [[buffer(0)]], device const half* HS 
     MMDN3(F, 16, 32, 16, 2) MMDN3(F, 32, 32, 32, 2) MMDN3(F, 16, 64, 32, 1) MMDN3(F, 16, 64, 32, 4)     MMDN3(F, 16, 64, 16, 2) MMDN3(F, 16, 32, 16, 4) MMDN3(F, 16, 64, 32, 5) MMDN3(F, 16, 64, 16, 4)
 MM3_GU(T_Q4_K) MM3_GU(T_Q5_K) MM3_GU(T_Q6_K) MM3_GU(T_Q8_0) MM3_GU(T_IQ4_XS) MM3_GU(T_Q2_0) MM3_GU(T_IQ3_XXS) MM3_GU(T_IQ2_XXS) MM3_GU(T_IQ2_XS) MM3_GU(T_IQ2_S) MM3_GU(T_IQ3_S)
 MM3_DN(T_Q2_0) MM3_DN(T_IQ4_NL) MM3_DN(T_Q5_1) MM3_DN(T_Q5_0) MM3_DN(T_Q8_0)
-#ifdef STRATA_KQ_DOWN
+#ifdef NOSTROMA_KQ_DOWN
 MM3_DN(T_Q4_K) MM3_DN(T_Q5_K) MM3_DN(T_Q6_K) MM3_DN(T_Q3_K) MM3_DN(T_IQ4_XS) MM3_DN(T_IQ3_S)
 #endif
 
@@ -1431,6 +1431,6 @@ MM6_DN(T_Q5_1) MM6_DN(T_Q8_0)
 #define MM6_DN1(F) MMDN6(F, 4, 32, 32, 4)
 MM6_GU1(T_Q6_K) MM6_GU1(T_Q8_0) MM6_GU1(T_IQ3_XXS) MM6_GU1(T_IQ2_S) MM6_GU1(T_IQ4_XS) MM6_GU1(T_IQ3_S) MM6_GU1(T_IQ2_XS) MM6_GU1(T_IQ2_XXS)
 MM6_DN1(T_Q5_0) MM6_DN1(T_IQ4_NL) MM6_DN1(T_Q2_0)
-#ifdef STRATA_KQ_DOWN
+#ifdef NOSTROMA_KQ_DOWN
 MM6_DN1(T_Q4_K) MM6_DN1(T_Q5_K) MM6_DN1(T_Q6_K) MM6_DN1(T_Q3_K) MM6_DN1(T_IQ4_XS) MM6_DN1(T_IQ3_S)
 #endif

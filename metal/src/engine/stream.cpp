@@ -1,6 +1,6 @@
 // metal/src/engine/stream.cpp - see stream.h.
 #include "geo.h"
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 #include "stream.h"
 
 #include "ref_quant.h"
@@ -20,10 +20,10 @@
 #include <cstring>
 #include <map>
 
-namespace strata::metal_engine {
+namespace nostroma::metal_engine {
 
 namespace {
-constexpr int NL = strata_metal::geo::NL, NE = 512;   // layers of the compiled shape (engine/geo.h); NE: the row stride of the per-layer maps (the largest expert count)
+constexpr int NL = nostroma_metal::geo::NL, NE = 512;   // layers of the compiled shape (engine/geo.h); NE: the row stride of the per-layer maps (the largest expert count)
 constexpr uint64_t PAGE = 16384;
 double now_ms() { return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
 int env_int(const char* n, int d) {
@@ -33,7 +33,7 @@ int env_int(const char* n, int d) {
 }  // namespace
 
 bool ExpertStream::wanted(const gguf::File& f, const mtl::Context& cx) {
-    const char* e = strata::env("NOSTROMA_METAL_STREAM");
+    const char* e = nostroma::env("NOSTROMA_METAL_STREAM");
     if (e && std::string(e) == "1") return true;
     if (e && std::string(e) == "0") return false;
     // auto: stream when the mapped weights (experts and dense) and ~12 GiB beside them (the prompt buffers, KV, the
@@ -77,7 +77,7 @@ bool ExpertStream::open(const gguf::File& f, std::string& err) {
     }
     // the expert-contiguous copy beside the GGUF, when it is this GGUF's (sizes in its header) and its first and
     // last experts match the GGUF's bytes
-    if (env_int("STRATA_METAL_CONTIG", 1) != 0) {
+    if (env_int("NOSTROMA_METAL_CONTIG", 1) != 0) {
         const std::string cp = f.path + ".experts";
         const int cfd = ::open(cp.c_str(), O_RDONLY);
         bool ok = cfd >= 0;
@@ -116,19 +116,19 @@ bool ExpertStream::open(const gguf::File& f, std::string& err) {
             fcntl(cfd, F_RDAHEAD, 0);
             cfd_ = cfd;
             coff_ = off;
-            std::fprintf(stderr, "strata metal stream: experts read from %s (one request per expert)\n", cp.c_str());
+            std::fprintf(stderr, "nostroma metal stream: experts read from %s (one request per expert)\n", cp.c_str());
         } else if (cfd >= 0) {
             ::close(cfd);
-            std::fprintf(stderr, "strata metal stream: %s is not this GGUF's (sizes or bytes differ): the GGUF is read\n",
+            std::fprintf(stderr, "nostroma metal stream: %s is not this GGUF's (sizes or bytes differ): the GGUF is read\n",
                          cp.c_str());
         }
     }
     // size classes: one LRU pool per class.  The layers' slot sizes (9 in the IQ3_XXS mix) are merged into a few
-    // classes, each as big as its largest member, so that no member wastes more than STRATA_METAL_CLASS_WASTE (default
+    // classes, each as big as its largest member, so that no member wastes more than NOSTROMA_METAL_CLASS_WASTE (default
     // 0.15) of its slot: every class must hold a whole layer's experts for a prompt chunk, so fewer classes = less
     // memory tied up in those minimums.
     {
-        const char* ew = strata::env("NOSTROMA_METAL_CLASS_WASTE");
+        const char* ew = nostroma::env("NOSTROMA_METAL_CLASS_WASTE");
         const double waste = ew ? std::atof(ew) : 0.15;
         std::vector<uint64_t> pages_of(NL);
         std::vector<uint64_t> sizes;
@@ -150,20 +150,20 @@ bool ExpertStream::open(const gguf::File& f, std::string& err) {
             lay_[(size_t) l].cls = best;
         }
     }
-    nio_ = std::max(1, env_int("STRATA_METAL_IO_THREADS", 6));
-    split_ = std::max(1, std::min(8, env_int("STRATA_METAL_READ_SPLIT", 1)));
+    nio_ = std::max(1, env_int("NOSTROMA_METAL_IO_THREADS", 6));
+    split_ = std::max(1, std::min(8, env_int("NOSTROMA_METAL_READ_SPLIT", 1)));
     // The read-ahead's depth and where its experts wait in the LRU, measured on the M4 (notes-mac-ssd.md, 3 interleaved
     // pairs each): Q2_0 (1.38 MB experts) top 10 at the LRU front 12.2 tok/s vs top 6 at the tail 11.3; the IQ3_XXS
     // mix (1.75 MB, the SSD is the limit) top 6 at the tail 8.06 vs top 10 at the front 7.43.
     uint64_t eb = 0;
     for (const auto& x : lay_) eb += x.gs + x.us + x.ds;
     const bool big = (double) eb / NL > 1.5e6;
-    pre_k_ = env_int("STRATA_METAL_PREFETCH", big ? 6 : 10);
-    pre_k2_ = env_int("STRATA_METAL_PREFETCH2", 0);
+    pre_k_ = env_int("NOSTROMA_METAL_PREFETCH", big ? 6 : 10);
+    pre_k2_ = env_int("NOSTROMA_METAL_PREFETCH2", 0);
     prefetch_ = pre_k_ > 0;
-    pre_mru_ = env_int("STRATA_METAL_PREFETCH_MRU", big ? 0 : 1) != 0;
+    pre_mru_ = env_int("NOSTROMA_METAL_PREFETCH_MRU", big ? 0 : 1) != 0;
     // timing only (WRONG answers): every missing expert is pointed at slot 0, nothing is read
-    fake_ = env_int("STRATA_METAL_STREAM_FAKE", 0) != 0;
+    fake_ = env_int("NOSTROMA_METAL_STREAM_FAKE", 0) != 0;
     return true;
 }
 
@@ -216,7 +216,7 @@ bool ExpertStream::load_dense(gguf::File& f, mtl::Context& cx, const std::vector
     for (auto& x : th) x.join();
     if (!ok) { err = "metal stream: reading the dense tensors failed"; return false; }
     for (size_t i = 0; i < ts.size(); ++i) ts[i]->offset = dst[i];
-    std::fprintf(stderr, "strata metal stream: %zu dense tensors read into memory (%.2f GB, %.1f s; %zu left out)\n", ts.size(),
+    std::fprintf(stderr, "nostroma metal stream: %zu dense tensors read into memory (%.2f GB, %.1f s; %zu left out)\n", ts.size(),
                  tot / 1e9, (now_ms() - t0) / 1e3, skip.size());
     return true;
 }
@@ -287,7 +287,7 @@ void ExpertStream::read_part(int s, int l, int e, int part) {
         while (n > 0) {
             const ssize_t r = ::pread(cfd_, p, (size_t) n, (off_t) o);
             if (r <= 0) {
-                std::fprintf(stderr, "strata metal stream: reading expert %d of layer %d failed\n", e, l);
+                std::fprintf(stderr, "nostroma metal stream: reading expert %d of layer %d failed\n", e, l);
                 std::exit(6);
             }
             p += r; o += (uint64_t) r; n -= (uint64_t) r;
@@ -302,7 +302,7 @@ void ExpertStream::read_part(int s, int l, int e, int part) {
     const uint64_t a = len * (uint64_t) p / (uint64_t) split_ / 4096 * 4096;
     const uint64_t b = p + 1 == split_ ? len : len * (uint64_t) (p + 1) / (uint64_t) split_ / 4096 * 4096;
     if (b > a && !read(host_[(size_t) s] + dst + a, b - a, src + a)) {
-        std::fprintf(stderr, "strata metal stream: reading expert %d of layer %d failed\n", e, l);
+        std::fprintf(stderr, "nostroma metal stream: reading expert %d of layer %d failed\n", e, l);
         std::exit(6);
     }
     bytes_read_ += b - a;
@@ -396,7 +396,7 @@ bool ExpertStream::make_arena(mtl::Context& cx, uint64_t budget, const std::stri
         }
         std::fclose(f);
     } else {
-        std::fprintf(stderr, "strata metal stream: no expert profile at %s: the arena starts layer-interleaved\n", profile.c_str());
+        std::fprintf(stderr, "nostroma metal stream: no expert profile at %s: the arena starts layer-interleaved\n", profile.c_str());
     }
     const size_t from_profile = rank.size();
     for (int e = 0; e < ne_; ++e)
@@ -423,14 +423,14 @@ bool ExpertStream::make_arena(mtl::Context& cx, uint64_t budget, const std::stri
     }
     // the slots placed in chunks of at most maxBufferLength (and 8 GB), up to 4 (the kernels' buffers 0, 7, 8, 9)
     // (8 GB each unless the arena needs bigger ones to fit 4: the M4 refused one 20.6 GB buffer, the M5 Max takes an
-    // 89 GB arena for UD-Q5_K_XL in 4 of ~23 GB; STRATA_METAL_ARENA_CHUNK_GB sets it)
+    // 89 GB arena for UD-Q5_K_XL in 4 of ~23 GB; NOSTROMA_METAL_ARENA_CHUNK_GB sets it)
     uint64_t total = 0, biggest = 0;
     for (const auto& k : cls_) {
         total += (uint64_t) k.n * k.pages * PAGE;
         biggest = std::max<uint64_t>(biggest, k.pages * PAGE);
     }
     uint64_t want = std::max<uint64_t>(8ull << 30, total / 4 + 4 * biggest);
-    if (const char* e = strata::env("NOSTROMA_METAL_ARENA_CHUNK_GB")) want = (uint64_t) (std::atof(e) * (1ull << 30));
+    if (const char* e = nostroma::env("NOSTROMA_METAL_ARENA_CHUNK_GB")) want = (uint64_t) (std::atof(e) * (1ull << 30));
     const uint64_t cmax = std::min<uint64_t>(cx.max_buffer_length(), want) / PAGE * PAGE;
     code_.assign((size_t) base, 0);
     host_.assign((size_t) base, nullptr);
@@ -448,7 +448,7 @@ bool ExpertStream::make_arena(mtl::Context& cx, uint64_t budget, const std::stri
             cur += k.pages * PAGE;
         }
     if (!csize.empty()) csize.back() = cur;
-    if (csize.size() > 4) { err = "metal stream: the arena needs more than 4 buffers (lower STRATA_METAL_ARENA_GB)"; return false; }
+    if (csize.size() > 4) { err = "metal stream: the arena needs more than 4 buffers (lower NOSTROMA_METAL_ARENA_GB)"; return false; }
     if (recheck) {   // the memory macOS can give, asked again just before the arena is committed
         uint64_t total = 0;
         for (uint64_t b : csize) total += b;
@@ -486,7 +486,7 @@ bool ExpertStream::make_arena(mtl::Context& cx, uint64_t budget, const std::stri
     // the fill: the ranked pairs in steps (best first; each step in file order) on the I/O threads; before each step
     // grow() asks whether macOS still has the memory for it (arena_grow); the best-ranked ends at the LRU front
     uint64_t step = 1536ull << 20;
-    if (const char* e = strata::env("NOSTROMA_METAL_ARENA_STEP_GB")) step = std::max<uint64_t>(64ull << 20, (uint64_t) (std::atof(e) * 1e9));
+    if (const char* e = nostroma::env("NOSTROMA_METAL_ARENA_STEP_GB")) step = std::max<uint64_t>(64ull << 20, (uint64_t) (std::atof(e) * 1e9));
     std::vector<int> next_free(cls_.size());
     for (size_t c = 0; c < cls_.size(); ++c) next_free[c] = cls_[c].base;
     size_t done = 0;
@@ -535,14 +535,14 @@ bool ExpertStream::make_arena(mtl::Context& cx, uint64_t budget, const std::stri
         for (size_t i = done; i-- > 0;) lru_front(where_[(size_t) (fill[i].first * NE + fill[i].second)]);
     }
     if (stopped)
-        std::fprintf(stderr, "strata metal stream: the arena's fill stopped after %.2f GB: macOS's free memory reached what it "
+        std::fprintf(stderr, "nostroma metal stream: the arena's fill stopped after %.2f GB: macOS's free memory reached what it "
                              "keeps; %.2f GB of the arena (%zu slots) stay unused\n", filled / 1e9, retired_bytes / 1e9, nretired);
     arena_live_ = arena_bytes_ - retired_bytes;
     fill_s_ = (now_ms() - t0) / 1e3;
     fill_bytes_ = bytes_read_.load();
     uint64_t pairs = 0;
     for (const auto& k : cls_) pairs += (uint64_t) k.n;
-    std::fprintf(stderr, "strata metal stream: expert arena %.2f GB, %llu slots in %zu size classes, %zu experts read from the "
+    std::fprintf(stderr, "nostroma metal stream: expert arena %.2f GB, %llu slots in %zu size classes, %zu experts read from the "
                          "profile's top (%zu ranked) in %.1f s (%.2f GB/s); %d I/O threads, read-ahead top %d; %zu buffers\n",
                  (arena_bytes_ - retired_bytes) / 1e9, (unsigned long long) (pairs - nretired), cls_.size(), done, from_profile, fill_s_,
                  fill_bytes_ / 1e9 / std::max(1e-9, fill_s_), nio_, prefetch_ ? pre_k_ : 0, chunks_.size());
@@ -550,13 +550,13 @@ bool ExpertStream::make_arena(mtl::Context& cx, uint64_t budget, const std::stri
     // (the GPU's own wiring ends a few seconds after the last one; a Metal residency set did not hold it either, measured), and
     // macOS compresses it when anything else wants memory: a 20 GB file written beside the idle engine took tens of GB of the arena
     // into the compressor in seconds and froze the 128 GB M5 Max (watchdog panic, 2026-10-13).  Wired, a file write can only
-    // shrink the file cache.  STRATA_METAL_WIRE_ARENA=0/1; the default is on for a Mac of 64 GB or more (the M4 32 GB was measured
+    // shrink the file cache.  NOSTROMA_METAL_WIRE_ARENA=0/1; the default is on for a Mac of 64 GB or more (the M4 32 GB was measured
     // unwired).  Not when the fill stopped early for lack of memory (the unused slots would be wired too).
     {
         uint64_t phys = 0;
         size_t plen = sizeof phys;
         sysctlbyname("hw.memsize", &phys, &plen, nullptr, 0);
-        const char* we = strata::env("NOSTROMA_METAL_WIRE_ARENA");
+        const char* we = nostroma::env("NOSTROMA_METAL_WIRE_ARENA");
         const bool want = we && *we ? std::atoi(we) != 0 : (double) phys >= kBigMac;
         if (want && !stopped) {
             const double tp = now_ms();
@@ -566,8 +566,8 @@ bool ExpertStream::make_arena(mtl::Context& cx, uint64_t budget, const std::stri
                 if (mlock(c.ptr, c.bytes) == 0) pinned += c.bytes;
                 else ++failed;
             }
-            std::fprintf(stderr, "strata metal stream: %.1f GB of the arena wired (mlock) in %.0f ms%s; macOS cannot compress it while "
-                                 "the engine idles (STRATA_METAL_WIRE_ARENA=0 turns it off)\n", pinned / 1e9, now_ms() - tp,
+            std::fprintf(stderr, "nostroma metal stream: %.1f GB of the arena wired (mlock) in %.0f ms%s; macOS cannot compress it while "
+                                 "the engine idles (NOSTROMA_METAL_WIRE_ARENA=0 turns it off)\n", pinned / 1e9, now_ms() - tp,
                          failed ? "; SOME CHUNKS COULD NOT BE WIRED" : "");
         }
     }
@@ -674,7 +674,7 @@ void ExpertStream::at_layer(int l, int T, int topk, const int32_t* ids, const fl
             }
             ++(prompt ? p_misses_ : misses_);
             s = victim(lay_[(size_t) l].cls);
-            if (s < 0) { std::fprintf(stderr, "strata metal stream: no free slot (layer %d)\n", l); std::exit(6); }
+            if (s < 0) { std::fprintf(stderr, "nostroma metal stream: no free slot (layer %d)\n", l); std::exit(6); }
             submit(s, l, e, true);
             slots_[(size_t) s].pin = stamp_;
             if (!prompt) lru_front(s);
@@ -742,7 +742,7 @@ uint8_t* ExpertStream::region(uint64_t bytes) {
         }
         region_ = lo;
         region_bytes_ = (uint64_t) (end - lo);
-        std::fprintf(stderr, "strata metal stream: %.2f GB of the arena (%zu slots) hold a prompt's buffers while it runs\n",
+        std::fprintf(stderr, "nostroma metal stream: %.2f GB of the arena (%zu slots) hold a prompt's buffers while it runs\n",
                      bytes / 1e9, region_slots_.size());
         return lo;
     }
@@ -760,7 +760,7 @@ uint8_t* ExpertStream::standalone_region(uint64_t bytes) {
     region_slots_.clear();
     region_ = (uint8_t*) m;
     region_bytes_ = 0;   // fresh zero pages; nothing in the arena to empty
-    std::fprintf(stderr, "strata metal stream: the arena is small: the prompt's %.2f GB of buffers are their own "
+    std::fprintf(stderr, "nostroma metal stream: the arena is small: the prompt's %.2f GB of buffers are their own "
                          "allocation, not a region of its slots\n", bytes / 1e9);
     return region_;
 }
@@ -825,4 +825,4 @@ void ExpertStream::report(FILE* f) const {
                  (bytes_read_.load() - 0) / 1e6 / w, (unsigned long long) reads_.load(), host_ms_ / w, wait_ms_ / w);
 }
 
-}  // namespace strata::metal_engine
+}  // namespace nostroma::metal_engine

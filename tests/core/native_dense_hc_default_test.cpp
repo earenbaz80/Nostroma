@@ -2,13 +2,13 @@
 //
 // An Unsloth UD-* file stores the hyper-connection down / up projections (and the final mixer's) as Q8_0, the GSQ-RCO packs as BF16.
 // `NativeDense::gguf_carries_q8_hc` tells the two apart from the tensor directory, and `NativeDense::apply_hc_q8_default` (what
-// generate.cpp calls on CUDA before the first read of the switch) sets STRATA_HC_Q8=1 only when the variable is not set at all and
+// generate.cpp calls on CUDA before the first read of the switch) sets NOSTROMA_HC_Q8=1 only when the variable is not set at all and
 // the file carries them as Q8_0.  A value the user set, also 0, is kept.
 // Synthetic GGUFs only (no model, no device).  The switch is latched by its first read, so the rule's cases run first and the read
 // comes last.
 #include "gguf_fixture.hpp"
 
-#include "strata/core/native_dense.hpp"
+#include "nostroma/core/native_dense.hpp"
 
 #include <chrono>
 #include <cstdio>
@@ -18,7 +18,7 @@
 #include <vector>
 
 namespace fs = std::filesystem;
-using strata::core::NativeDense;
+using nostroma::core::NativeDense;
 
 namespace {
 int g_fail = 0;
@@ -31,7 +31,7 @@ struct TempDir {
     fs::path path;
     TempDir() {
         path = fs::temp_directory_path() /
-               ("strata-hc-default-test-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+               ("nostroma-hc-default-test-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
         fs::create_directories(path);
     }
     ~TempDir() {
@@ -109,16 +109,16 @@ int main() {
     check(!NativeDense::gguf_carries_q8_hc({(tmp.path / "absent.gguf").string()}), "a file that is not there: false, no exception");
 
     std::printf("2. the default rule\n");
-    unset_env("STRATA_HC_Q8");
-    auto cur = [] { const char* v = std::getenv("STRATA_HC_Q8"); return std::string(v ? v : ""); };
+    unset_env("NOSTROMA_HC_Q8");
+    auto cur = [] { const char* v = std::getenv("NOSTROMA_HC_Q8"); return std::string(v ? v : ""); };
     check(!NativeDense::apply_hc_q8_default({gsq}) && cur().empty(),
           "unset, BF16 rows: nothing is set (the GSQ-RCO packs keep the BF16 read)");
-    set_env("STRATA_HC_Q8", "0");
-    check(!NativeDense::apply_hc_q8_default({ud}) && cur() == "0", "STRATA_HC_Q8=0 and a UD file: the user's 0 is kept (the way back)");
-    set_env("STRATA_HC_Q8", "1");
+    set_env("NOSTROMA_HC_Q8", "0");
+    check(!NativeDense::apply_hc_q8_default({ud}) && cur() == "0", "NOSTROMA_HC_Q8=0 and a UD file: the user's 0 is kept (the way back)");
+    set_env("NOSTROMA_HC_Q8", "1");
     check(!NativeDense::apply_hc_q8_default({gsq}) && cur() == "1",
-          "STRATA_HC_Q8=1 and BF16 rows: the user's 1 is kept (a Q8_0 copy quantized at load, as before)");
-    unset_env("STRATA_HC_Q8");
+          "NOSTROMA_HC_Q8=1 and BF16 rows: the user's 1 is kept (a Q8_0 copy quantized at load, as before)");
+    unset_env("NOSTROMA_HC_Q8");
     check(NativeDense::apply_hc_q8_default({ud}) && cur() == "1", "unset and a UD file: set to 1");
     check(!NativeDense::apply_hc_q8_default({ud}), "a second call finds it set and does nothing");
 

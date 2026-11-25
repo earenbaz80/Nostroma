@@ -14,13 +14,13 @@ from nostroma_control import vram_fit
 
 # the log of the 2 x 8 GB start that failed (HYBRID, srv118, 2 x RTX PRO 6000 held to 8 GB free by hogs, 128K): the engine's reason, then the picture reader's line
 SERVE_STOP = [
-    "strata serve: layer split, CUDA1 prompt path: prefill: device buffers for a chunk of 512 tokens do not fit (5 of 97247 MiB free at the failure; 555 MiB taken, the failing buffer wanted 2 MiB)",
-    "strata serve: the GPU has too little free VRAM for the prompt path: turn images off (setup: --vision no), close other programs using the GPU, use a shorter context, or read prompts in smaller chunks (--prefill 512)",
+    "nostroma serve: layer split, CUDA1 prompt path: prefill: device buffers for a chunk of 512 tokens do not fit (5 of 97247 MiB free at the failure; 555 MiB taken, the failing buffer wanted 2 MiB)",
+    "nostroma serve: the GPU has too little free VRAM for the prompt path: turn images off (setup: --vision no), close other programs using the GPU, use a shorter context, or read prompts in smaller chunks (--prefill 512)",
     "ggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected",
 ]
 CACHE_STOP = [
-    "strata generate: layer split, CUDA1: 0.17 GiB free of 94.97, room for experts 0.00 GiB",
-    "strata generate: layer split, CUDA1 expert cache: no room",
+    "nostroma generate: layer split, CUDA1: 0.17 GiB free of 94.97, room for experts 0.00 GiB",
+    "nostroma generate: layer split, CUDA1 expert cache: no room",
     "ggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected",
 ]
 
@@ -33,15 +33,15 @@ class TheEnginesReason(unittest.TestCase):
         self.assertEqual(vram_fit.engine_stop_reason(CACHE_STOP), "layer split, CUDA1 expert cache: no room")
 
     def test_other_stops_and_the_walks_own_lines_are_not_a_memory_stop(self):
-        self.assertIsNone(vram_fit.engine_stop_reason(["strata generate: something else is wrong", "ggml_cuda_init: failed to initialize CUDA"]))
+        self.assertIsNone(vram_fit.engine_stop_reason(["nostroma generate: something else is wrong", "ggml_cuda_init: failed to initialize CUDA"]))
         self.assertIsNone(vram_fit.engine_stop_reason([]))
         self.assertIsNone(vram_fit.engine_stop_reason(None))
-        walk = ["strata generate: short of GPU memory: CUDA1 has 2.53 GiB free and a layer split card needs about 9.1 GiB: each later card loads only the dense weights of its own layers",
-                "strata serve: CUDA1: 293 MiB of VRAM free with everything loaded - LOW: its window graphs are captured on first use"]
+        walk = ["nostroma generate: short of GPU memory: CUDA1 has 2.53 GiB free and a layer split card needs about 9.1 GiB: each later card loads only the dense weights of its own layers",
+                "nostroma serve: CUDA1: 293 MiB of VRAM free with everything loaded - LOW: its window graphs are captured on first use"]
         self.assertIsNone(vram_fit.engine_stop_reason(walk), "what the walk did and a LOW warning say nothing about why a start stopped")
 
     def test_the_last_memory_line_wins(self):
-        lines = ["strata generate: layer split, CUDA1 expert cache: no room", "strata serve: the GPU has too little free VRAM for the prompt path: x"]
+        lines = ["nostroma generate: layer split, CUDA1 expert cache: no room", "nostroma serve: the GPU has too little free VRAM for the prompt path: x"]
         self.assertTrue(vram_fit.engine_stop_reason(lines).startswith("the GPU has too little free VRAM"))
 
 
@@ -69,7 +69,7 @@ class TheLastLine(unittest.TestCase):
         self.assertNotIn("ggml_cuda_init", text)
 
     def test_a_stop_for_another_reason_is_worded_as_before(self):
-        text, nxt = self.explain(["strata generate: cudaMalloc failed", "unsupported quant type 99"])
+        text, nxt = self.explain(["nostroma generate: cudaMalloc failed", "unsupported quant type 99"])
         self.assertIn("unsupported quant type 99", text)
         self.assertNotIn("were not changed", nxt)
 

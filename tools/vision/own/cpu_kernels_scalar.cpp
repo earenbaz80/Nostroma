@@ -6,7 +6,7 @@
 #include <cmath>
 #include <cstring>
 
-namespace strata_vit {
+namespace nostroma_vit {
 namespace {
 namespace kn {
 
@@ -64,14 +64,14 @@ inline void conv16(const void* Wm, int kind, size_t off, int n, float* out) {
 
 }  // namespace kn
 }  // namespace
-}  // namespace strata_vit
+}  // namespace nostroma_vit
 
-#define STRATA_KN_MR 4
+#define NOSTROMA_KN_MR 4
 // this tier is compiled at the baseline: the standard library is safe here (see cpu_kernels_impl.h for why these and not look-alike helpers)
 #define KN_MIN(a, b) std::min(a, b)
 #define KN_MAX(a, b) std::max(a, b)
 #define KN_COPY(d, s, n) std::memcpy((d), (s), (size_t) (n) * sizeof(float))
 #define KN_ZERO(d, n) std::memset((d), 0, (size_t) (n) * sizeof(float))
-#define STRATA_KN_NAME "scalar"
-#define STRATA_KN_GETTER cpu_ops_scalar
+#define NOSTROMA_KN_NAME "scalar"
+#define NOSTROMA_KN_GETTER cpu_ops_scalar
 #include "cpu_kernels_impl.h"

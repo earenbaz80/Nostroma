@@ -1,7 +1,7 @@
 """A start through the owner runtime finds its engine in the component folder, or says clearly that there is none.
 
 The engine here is the fake one the runtime tests use (a script behind a manifest-declared entrypoint), so this proves
-the path the installed app takes: run config "component:strata-engine" -> `nostroma runtime start` -> the server resolves
+the path the installed app takes: run config "component:nostroma-engine" -> `nostroma runtime start` -> the server resolves
 the package -> the engine runs from the component folder -> stop ends it. It also proves the absence is a notice, not a
 fetch: with an empty component folder and the no-acquire switch set, a start fails with the typed message, starts no
 engine, and the state ends up stopped."""
@@ -49,7 +49,7 @@ def install_fake_engine(components_dir: Path) -> Path:
     files = [{"path": name, "sha256": hashlib.sha256((folder / name).read_bytes()).hexdigest(),
               "bytes": (folder / name).stat().st_size} for name in (entry, "engine_main.py")]
     (folder / ec.MANIFEST).write_text(json.dumps({
-        "schema_version": 1, "id": "strata-engine", "version": "0.1.45", "platform": components.host_platform(),
+        "schema_version": 1, "id": "nostroma-engine", "version": "0.1.45", "platform": components.host_platform(),
         "backend": "cuda", "entrypoint": entry, "files": files}), encoding="utf-8")
     return folder
 
@@ -57,19 +57,19 @@ def install_fake_engine(components_dir: Path) -> Path:
 @unittest.skipUnless(os.name in ("posix", "nt"), "no qualified owner transport on this platform")
 class ComponentStart(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="strata-component-start-")
+        self.temp = tempfile.TemporaryDirectory(prefix="nostroma-component-start-")
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.components = self.root / "components"
         self.components.mkdir()
         env = mock.patch.dict(os.environ, {
-            "STRATA_PROFILE_DIR": str(self.root / "profiles"), "STRATA_RUNTIME_DIR": str(self.root / "runtime"),
-            "STRATA_COMPONENTS_DIR": str(self.components), "STRATA_ENGINE_BACKEND": "cuda",
-            "STRATA_NO_ACQUIRE": "1", "FAKE_ENGINE_MARK": str(self.root / "ran.txt")})
+            "NOSTROMA_PROFILE_DIR": str(self.root / "profiles"), "NOSTROMA_RUNTIME_DIR": str(self.root / "runtime"),
+            "NOSTROMA_COMPONENTS_DIR": str(self.components), "NOSTROMA_ENGINE_BACKEND": "cuda",
+            "NOSTROMA_NO_ACQUIRE": "1", "FAKE_ENGINE_MARK": str(self.root / "ran.txt")})
         env.start()
         self.addCleanup(env.stop)
-        os.environ.pop("STRATA_API_KEY", None)
-        from tools.strata_tokenizer import BYTE_TO_UNICODE
+        os.environ.pop("NOSTROMA_API_KEY", None)
+        from tools.nostroma_tokenizer import BYTE_TO_UNICODE
         tokenizer = self.root / "tokenizer"
         tokenizer.mkdir()
         tokens = [BYTE_TO_UNICODE[i] for i in range(256)] + ["ab", "<|im_start|>", "<|im_end|>", "<|endoftext|>"]
@@ -77,7 +77,7 @@ class ComponentStart(unittest.TestCase):
         (tokenizer / "merges.txt").write_text("a b")
         (tokenizer / "token_type.json").write_text(json.dumps([0] * 257 + [3, 3, 3]))
         self.config = self.root / "run.json"
-        self.config.write_text(json.dumps({"exe": "component:strata-engine", "backend": "cuda",
+        self.config.write_text(json.dumps({"exe": "component:nostroma-engine", "backend": "cuda",
                                             "tokenizer": str(tokenizer), "args": [], "cwd": str(self.root),
                                             "model_name": "fake", "host": "127.0.0.1", "port": 0}), encoding="utf-8")
         profiles.create("app", str(self.config))
@@ -122,11 +122,11 @@ class ComponentStart(unittest.TestCase):
         src.mkdir()
         (src / "engine_main.py").write_text(FAKE_ENGINE, encoding="utf-8")
         if WINDOWS:
-            entry = "strata.cmd"
+            entry = "nostroma.cmd"
             (src / entry).write_bytes(f'@echo off\r\n"{sys.executable}" "%~dp0engine_main.py" %*\r\n'.encode())
             library = "cudart64_13.dll"
         else:
-            entry = "strata"
+            entry = "nostroma"
             (src / entry).write_text(f'#!/bin/sh\nexec "{sys.executable}" "$(dirname "$0")/engine_main.py" "$@"\n')
             library = "libcudart.so.13"
         (src / library).write_bytes(b"a runtime library the stub never loads " * 200)
@@ -187,45 +187,45 @@ class ComponentStart(unittest.TestCase):
     def test_the_package_folder_is_first_on_the_library_path(self):
         from serve import server
         folder = install_fake_engine(self.components)
-        cfg = server.with_component_engine({"exe": "component:strata-engine", "backend": "cuda", "lib_dirs": ["/other"]})
+        cfg = server.with_component_engine({"exe": "component:nostroma-engine", "backend": "cuda", "lib_dirs": ["/other"]})
         self.assertEqual(Path(cfg["exe"]).parent.resolve(), folder.resolve())
         self.assertEqual(cfg["lib_dirs"][0], str(folder / ("engine.cmd" if WINDOWS else "engine")).rsplit(os.sep, 1)[0])
         self.assertEqual(cfg["lib_dirs"][1:], ["/other"])
         env = server.child_env(cfg)
         var = "PATH" if WINDOWS else "LD_LIBRARY_PATH"
         self.assertTrue(env[var].startswith(str(folder)))
-        plain = {"exe": "/some/where/strata", "args": []}
+        plain = {"exe": "/some/where/nostroma", "args": []}
         self.assertIs(server.with_component_engine(plain), plain)
         with self.assertRaises(SystemExit) as caught:
             for entry in (folder / "engine.cmd", folder / "engine"):
                 entry.unlink(missing_ok=True)
-            server.with_component_engine({"exe": "component:strata-engine", "backend": "cuda"})
+            server.with_component_engine({"exe": "component:nostroma-engine", "backend": "cuda"})
         self.assertEqual(caught.exception.code, 5)
 
     def test_a_picture_reader_path_from_an_older_engine_folder_follows_the_installed_package(self):
         """After an engine update the folder name changes; the run config's absolute vision exe must not stop the server."""
         from serve import server
         folder = install_fake_engine(self.components)
-        reader = folder / "strata-vision"
+        reader = folder / "nostroma-vision"
         reader.write_text("x", encoding="utf-8")
-        gone = str(self.components / "engine" / "0.0.1-old" / "strata-vision")
-        cfg = server.with_component_engine({"exe": "component:strata-engine", "backend": "cuda",
+        gone = str(self.components / "engine" / "0.0.1-old" / "nostroma-vision")
+        cfg = server.with_component_engine({"exe": "component:nostroma-engine", "backend": "cuda",
                                             "vision": {"exe": gone, "cpu_exe": gone, "mmproj": "/m.gguf"}})
         self.assertEqual(cfg["vision"]["exe"], str(reader))
         self.assertEqual(cfg["vision"]["cpu_exe"], str(reader))
         self.assertEqual(cfg["vision"]["mmproj"], "/m.gguf")
-        ok = {"exe": "component:strata-engine", "backend": "cuda", "vision": {"exe": str(reader)}}
+        ok = {"exe": "component:nostroma-engine", "backend": "cuda", "vision": {"exe": str(reader)}}
         self.assertEqual(server.with_component_engine(ok)["vision"], {"exe": str(reader)})
-        none = server.with_component_engine({"exe": "component:strata-engine", "backend": "cuda", "vision": {"exe": gone.replace("strata-vision", "other")}})
+        none = server.with_component_engine({"exe": "component:nostroma-engine", "backend": "cuda", "vision": {"exe": gone.replace("nostroma-vision", "other")}})
         self.assertTrue(none["vision"]["exe"].endswith("other"))        # no such file in the package: left as it is
 
     def test_the_build_json_lib_dirs_follow_the_package_folder(self):
-        """The Windows HIP package keeps the ROCm DLLs in rocm/bin (BUILD.json lib_dirs): strata.exe does not load without them on PATH."""
+        """The Windows HIP package keeps the ROCm DLLs in rocm/bin (BUILD.json lib_dirs): nostroma.exe does not load without them on PATH."""
         from serve import server
         folder = install_fake_engine(self.components)
         (folder / "rocm" / "bin").mkdir(parents=True)
         (folder / "BUILD.json").write_text(json.dumps({"lib_dirs": ["rocm/bin", "../escape", "missing", "/abs"]}), encoding="utf-8")
-        cfg = server.with_component_engine({"exe": "component:strata-engine", "backend": "cuda", "lib_dirs": ["/other"]})
+        cfg = server.with_component_engine({"exe": "component:nostroma-engine", "backend": "cuda", "lib_dirs": ["/other"]})
         self.assertEqual(cfg["lib_dirs"], [str(folder), str(folder / "rocm" / "bin"), "/other"])
         env = server.child_env(cfg)
         var = "PATH" if WINDOWS else "LD_LIBRARY_PATH"

@@ -36,7 +36,7 @@ def tearDownModule():
 
 class TheRule(unittest.TestCase):
     def setUp(self):
-        env = {k: v for k, v in os.environ.items() if k not in ("STRATA_BATCH_DF2", "STRATA_BATCH_MTP")}
+        env = {k: v for k, v in os.environ.items() if k not in ("NOSTROMA_BATCH_DF2", "NOSTROMA_BATCH_MTP")}
         patch = mock.patch.dict(os.environ, env, clear=True)
         patch.start()
         self.addCleanup(patch.stop)
@@ -76,13 +76,13 @@ class TheRule(unittest.TestCase):
         self.assertFalse(rule(split=True))
         for extra in (["--layer-split", "auto"], ["--batch-mtp"], ["--pipeline-windows", "2"]):
             self.assertFalse(rule(args=["--expert-cache", "auto", *extra]), extra)
-        with mock.patch.dict(os.environ, {"STRATA_BATCH_MTP": "1"}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_BATCH_MTP": "1"}):
             self.assertFalse(rule(), "the person asked for the MTP's slot drafts")
-        with mock.patch.dict(os.environ, {"STRATA_BATCH_MTP": "0"}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_BATCH_MTP": "0"}):
             self.assertTrue(rule())
-        with mock.patch.dict(os.environ, {"STRATA_BATCH_DF2": "0"}):
-            self.assertFalse(rule(), "STRATA_BATCH_DF2=0 is the way back")
-        with mock.patch.dict(os.environ, {"STRATA_BATCH_DF2": "1"}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_BATCH_DF2": "0"}):
+            self.assertFalse(rule(), "NOSTROMA_BATCH_DF2=0 is the way back")
+        with mock.patch.dict(os.environ, {"NOSTROMA_BATCH_DF2": "1"}):
             self.assertTrue(rule())
 
     def test_no_drafter_on_this_computer_changes_nothing(self):
@@ -99,7 +99,7 @@ class TheStart(unittest.TestCase):
     ARGS = ["--pack", "/d/packs/gyro", "--native", "/d/m.gguf", "--mtp", "", "--spec", "4", "--spec-min-p", "0.5", "--expert-cache", "auto"]
 
     def setUp(self):
-        env = {k: v for k, v in os.environ.items() if k not in ("STRATA_BATCH_DF2", "STRATA_BATCH_MTP")}
+        env = {k: v for k, v in os.environ.items() if k not in ("NOSTROMA_BATCH_DF2", "NOSTROMA_BATCH_MTP")}
         patch = mock.patch.dict(os.environ, env, clear=True)
         patch.start()
         self.addCleanup(patch.stop)
@@ -158,7 +158,7 @@ class TheStart(unittest.TestCase):
             self.assertEqual((d.drafter, d.note), want, kw)
             self.assertNotIn("--draft", c["args"], kw)
         c = self.cfg()
-        with mock.patch.dict(os.environ, {"STRATA_BATCH_DF2": "0"}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_BATCH_DF2": "0"}):
             d = self.apply(c, slots=2)
         self.assertEqual((d.drafter, d.note, c["args"]), ("mtp", drafting.NONE_IN_SLOTS, self.args))
 
@@ -179,7 +179,7 @@ class TheStart(unittest.TestCase):
             for parallel in (None, 1):
                 cfg = self.cfg() if parallel is None else self.cfg(parallel=parallel)
                 on = engine_args(cfg)
-                with mock.patch.dict(os.environ, {"STRATA_BATCH_DF2": "0"}):
+                with mock.patch.dict(os.environ, {"NOSTROMA_BATCH_DF2": "0"}):
                     off = engine_args(cfg)
                 self.assertEqual(on, off, parallel)
                 self.assertNotIn("--batch", on)
@@ -190,7 +190,7 @@ class TheStart(unittest.TestCase):
             drafting.take_note()
 
     def lines(self, cfg, **env):
-        """The `[strata]` lines the server prints while it builds the engine arguments for this config (nothing is started)."""
+        """The `[nostroma]` lines the server prints while it builds the engine arguments for this config (nothing is started)."""
         import contextlib
         import io
         from serve.server import engine_args
@@ -203,23 +203,23 @@ class TheStart(unittest.TestCase):
 
     def test_the_server_says_what_each_kind_of_start_drafts(self):
         self.pack()
-        old_slots, old_none = "[strata] Drafting: MTP (DFlash2 isn't available in this mode)", "[strata] drafting: DFlash2 alone"
+        old_slots, old_none = "[nostroma] Drafting: MTP (DFlash2 isn't available in this mode)", "[nostroma] drafting: DFlash2 alone"
         # request slots that draft with DFlash2 (Auto on the measured class: 2 requests; or DFlash2 by name with any number of requests)
-        want = ["[strata] Drafting: DFlash2, one guess window per request slot (spare rows only)"]
+        want = ["[nostroma] Drafting: DFlash2, one guess window per request slot (spare rows only)"]
         self.assertEqual([x for x in self.lines(self.cfg(parallel=2)) if "vocab" not in x], want)
         self.assertEqual([x for x in self.lines(self.cfg(parallel=4, drafting="dflash2")) if "vocab" not in x], want)
-        # request slots with no drafts: Auto with 3 or more requests, and the way back (STRATA_BATCH_DF2=0) with 2
-        none = ["[strata] Drafting: none in parallel slots (one token per request and step); a single request still drafts"]
+        # request slots with no drafts: Auto with 3 or more requests, and the way back (NOSTROMA_BATCH_DF2=0) with 2
+        none = ["[nostroma] Drafting: none in parallel slots (one token per request and step); a single request still drafts"]
         self.assertEqual(self.lines(self.cfg(parallel=3)), none)
-        self.assertEqual(self.lines(self.cfg(parallel=2), STRATA_BATCH_DF2="0"), none)
-        # request slots whose slots carry MTP drafts (--batch-mtp, or STRATA_BATCH_MTP): the line that was always printed there stays, and it is true (the MTP drafts, DFlash2 is not the drafter)
+        self.assertEqual(self.lines(self.cfg(parallel=2), NOSTROMA_BATCH_DF2="0"), none)
+        # request slots whose slots carry MTP drafts (--batch-mtp, or NOSTROMA_BATCH_MTP): the line that was always printed there stays, and it is true (the MTP drafts, DFlash2 is not the drafter)
         self.assertEqual(self.lines(self.cfg(parallel=3, args=[*self.args, "--batch-mtp"])), [old_slots])
-        self.assertEqual(self.lines(self.cfg(parallel=3), STRATA_BATCH_MTP="1"), [old_slots])
+        self.assertEqual(self.lines(self.cfg(parallel=3), NOSTROMA_BATCH_MTP="1"), [old_slots])
         # one request at a time: today's DFlash2 line, word for word (the conf is the card's)
         for cfg in (self.cfg(), self.cfg(parallel=1), self.cfg(drafting="dflash2")):
             got = [x for x in self.lines(cfg) if "vocab" not in x]
             self.assertEqual(len(got), 1, cfg)
-            self.assertRegex(got[0], r"^\[strata\] drafting: DFlash2 alone \(--draft dflash2, --draft-conf [0-9.]+\)$")
+            self.assertRegex(got[0], r"^\[nostroma\] drafting: DFlash2 alone \(--draft dflash2, --draft-conf [0-9.]+\)$")
             self.assertNotIn("slot", got[0])
         self.assertNotIn(old_none, "".join(self.lines(self.cfg(parallel=2))), "slots with drafts no longer say 'DFlash2 alone'")
 
@@ -229,14 +229,14 @@ class TheStart(unittest.TestCase):
         self.assertFalse(drafting.slots_draft_nothing([], 1) or drafting.slots_draft_nothing([], 0), "one request at a time is not slots")
         self.assertFalse(drafting.slots_draft_nothing(flag, 3), "--batch-mtp: the slots carry MTP drafts")
         self.assertFalse(drafting.slots_draft_nothing(["--pipeline-windows", "2"], 3))
-        with mock.patch.dict(os.environ, {"STRATA_BATCH_MTP": "1"}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_BATCH_MTP": "1"}):
             self.assertFalse(drafting.slots_draft_nothing([], 3))
-        with mock.patch.dict(os.environ, {"STRATA_BATCH_MTP": "0"}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_BATCH_MTP": "0"}):
             self.assertTrue(drafting.slots_draft_nothing([], 3))
         self.assertTrue(drafting.slot_drafts_run([], 2) and drafting.slot_drafts_run(["--batch", "8"], 0))
         self.assertFalse(drafting.slot_drafts_run([], 1) or drafting.slot_drafts_run([], 0))
         self.assertFalse(drafting.slot_drafts_run([], 2, split=True) or drafting.slot_drafts_run(["--layer-split", "auto"], 2) or drafting.slot_drafts_run(["--pipeline-windows", "2"], 2))
-        with mock.patch.dict(os.environ, {"STRATA_BATCH_DF2": "0"}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_BATCH_DF2": "0"}):
             self.assertFalse(drafting.slot_drafts_run([], 2))
         self.assertEqual(drafting.line("mtp", drafting.NONE_IN_SLOTS), "Drafting: none in parallel slots (one token per request and step); a single request still drafts")
         self.assertEqual(drafting.line("mtp", drafting.NOT_HERE), "Drafting: MTP (DFlash2 isn't available in this mode)", "the other reasons keep their form")
@@ -283,13 +283,13 @@ class TheStart(unittest.TestCase):
             name = how.__name__
             self.assertEqual(how(2), "Drafting: DFlash2", (name, "2 requests on the measured class: DFlash2 slot drafts"))
             self.assertEqual(how(3), none, (name, "slots with no drafts"))
-            self.assertEqual(how(2, STRATA_BATCH_DF2="0"), none, (name, "the way back from the slot drafts"))
+            self.assertEqual(how(2, NOSTROMA_BATCH_DF2="0"), none, (name, "the way back from the slot drafts"))
             self.assertEqual(how(3, args=[*self.args, "--batch-mtp"]), mtp_slots, (name, "MTP slot drafts keep their line"))
-            self.assertEqual(how(3, STRATA_BATCH_MTP="1"), mtp_slots, (name, "MTP slot drafts through the environment"))
+            self.assertEqual(how(3, NOSTROMA_BATCH_MTP="1"), mtp_slots, (name, "MTP slot drafts through the environment"))
             self.assertEqual(how(1), "Drafting: DFlash2", (name, "one request at a time"))
             self.assertEqual(how(None), "Drafting: DFlash2", (name, "the number of requests is not known: today's line"))
         # the plan and the server print the same words in the same case
-        self.assertEqual("[strata] " + self.plan_by_command(3), self.lines(self.cfg(parallel=3))[0])
+        self.assertEqual("[nostroma] " + self.plan_by_command(3), self.lines(self.cfg(parallel=3))[0])
 
     def test_the_plan_agrees_with_the_start(self):
         from nostroma_cli import drafting_cmd

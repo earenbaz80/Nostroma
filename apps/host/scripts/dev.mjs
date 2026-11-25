@@ -59,9 +59,9 @@ function shutdown(code = 0) {
 process.on('SIGINT', () => shutdown(0));
 process.on('SIGTERM', () => shutdown(0));
 
-console.log(`${palette.dim}strata dev · host :${HOST_PORT} · web :5199${palette.off}`);
+console.log(`${palette.dim}nostroma dev · host :${HOST_PORT} · web :5199${palette.off}`);
 // --watch restarts the host on server edits without taking the web server down.
-run('host', process.execPath, ['--watch', join(ROOT, 'server', 'index.mjs')], { STRATA_PORT: HOST_PORT });
+run('host', process.execPath, ['--watch', join(ROOT, 'server', 'index.mjs')], { NOSTROMA_PORT: HOST_PORT });
 run('web', process.execPath, [join(ROOT, 'node_modules', 'vite', 'bin', 'vite.js')], {
-  STRATA_HOST: `http://127.0.0.1:${HOST_PORT}`,
+  NOSTROMA_HOST: `http://127.0.0.1:${HOST_PORT}`,
 });

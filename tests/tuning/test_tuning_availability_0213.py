@@ -1,4 +1,4 @@
-"""Round 0213 TUICFG, step 6: tuning stays available (#5056 STRATA_API_KEY, #5122 RAM guard, #5078 engine abort shown as a 503).
+"""Round 0213 TUICFG, step 6: tuning stays available (#5056 NOSTROMA_API_KEY, #5122 RAM guard, #5078 engine abort shown as a 503).
 Doubles only: a stub session, a tiny HTTP worker, a recorded spawn."""
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from tests.tuning.test_autotune import BASE, make_ctx, speed_with
 
 
 class WorkerKey(unittest.TestCase):
-    """#5056: the worker must answer to the key the tuner made, whatever STRATA_API_KEY says."""
+    """#5056: the worker must answer to the key the tuner made, whatever NOSTROMA_API_KEY says."""
 
     def spawned(self, env):
         seen = {}
@@ -28,8 +28,8 @@ class WorkerKey(unittest.TestCase):
             raise OSError("not started in this test")
         with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(os.environ, env, clear=False), \
                 mock.patch("serve.lifeline.popen", popen), mock.patch.object(tune_session.tune_machine, "gpu_used_mib", return_value=None):
-            if "STRATA_API_KEY" not in env:
-                os.environ.pop("STRATA_API_KEY", None)
+            if "NOSTROMA_API_KEY" not in env:
+                os.environ.pop("NOSTROMA_API_KEY", None)
             s = WorkerSession(base_config={"args": [], "api_key": "from-the-preset"}, serve_dir=tmp, workdir=tmp)
             with self.assertRaises(StartFailed):
                 with s.engine([], {}):
@@ -38,10 +38,10 @@ class WorkerKey(unittest.TestCase):
         return seen, cfg
 
     def test_the_variable_is_not_passed_to_the_worker_and_the_config_key_is_the_tuners_own(self):
-        for env in ({"STRATA_API_KEY": "client-shared-key"}, {"STRATA_API_KEY": ""}, {}):
+        for env in ({"NOSTROMA_API_KEY": "client-shared-key"}, {"NOSTROMA_API_KEY": ""}, {}):
             with self.subTest(env=env):
                 seen, cfg = self.spawned(env)
-                self.assertNotIn("STRATA_API_KEY", seen["env"])
+                self.assertNotIn("NOSTROMA_API_KEY", seen["env"])
                 self.assertEqual(len(cfg["api_key"]), 32)
                 self.assertNotEqual(cfg["api_key"], "from-the-preset")
                 self.assertNotIn(cfg["api_key"], " ".join(seen["argv"]), "the key is not on the command line")
@@ -89,8 +89,8 @@ class EngineAbort(unittest.TestCase):
         return WorkerEngine(session, FakeProc(), srv.server_address[1], "k", [log], 1.0, None, lambda x: None)
 
     def test_a_cuda_oom_in_prefill_is_reported_as_an_oom_with_the_native_line(self):
-        eng = self.engine("strata serve: 687 MiB of VRAM free with everything loaded\n"
-                          "ggml-cuda (strata mmq): out of memory: cudaMalloc(&p, size)\n  in alloc at ggml_cuda_host.cu:127\n")
+        eng = self.engine("nostroma serve: 687 MiB of VRAM free with everything loaded\n"
+                          "ggml-cuda (nostroma mmq): out of memory: cudaMalloc(&p, size)\n  in alloc at ggml_cuda_host.cu:127\n")
         with self.assertRaises(StartFailed) as cm:
             eng.chat("hello", 8)
         self.assertEqual(cm.exception.status, "OOM")

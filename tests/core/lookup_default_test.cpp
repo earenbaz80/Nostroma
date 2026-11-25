@@ -1,11 +1,11 @@
 // (asserts stay on in a Release build: the test is its own check)
 #undef NDEBUG
-#include "strata/core/lookup_default.hpp"
+#include "nostroma/core/lookup_default.hpp"
 #include <cassert>
 #include <iostream>
 
-using strata::core::LookupDefaultIn;
-using strata::core::default_lookup_max_t;
+using nostroma::core::LookupDefaultIn;
+using nostroma::core::default_lookup_max_t;
 
 int main() {
     LookupDefaultIn cuda;   // the 8-row CUDA serve on one card, the case the owner decided

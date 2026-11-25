@@ -27,7 +27,7 @@ test('switch and delete take a shape family and pass it to Control; anything els
   assert.equal((await changeEngine(control, 'use', { family: 'shape:q4_lite', folder: '0.1.59-windows-x86_64-cuda-cuda13' })).status, 200);
   assert.equal((await changeEngine(control, 'remove', { family: 'shape:q4_lite', folder: '0.1.58-windows-x86_64-cuda-cuda13' })).status, 200);
   assert.deepEqual(calls.map(c => c[1].family), ['shape:q4_lite', 'shape:q4_lite']);
-  for (const family of ['shape:', 'shape:Q4', 'shape:../x', 'shapes:q4_lite', 'q4_lite', 'strata-q4-lite'])
+  for (const family of ['shape:', 'shape:Q4', 'shape:../x', 'shapes:q4_lite', 'q4_lite', 'nostroma-q4-lite'])
     assert.equal((await changeEngine(control, 'use', { family, folder: 'a' })).status, 400, family);
   assert.equal(calls.length, 2);
 });

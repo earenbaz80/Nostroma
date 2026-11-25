@@ -2,8 +2,8 @@
 """sweep.py - run par_run.py over a list of variants (one server start each) and print a one-line summary per variant.
 
 variants file, one per line, '#' comments:   tag | gpus | parallel | groups | env (K=V;K=V) | engine/server extras | work
-  s8g1 | 0,1 | 8 | 1 | STRATA_BATCH_MTP=1 | | w2:4,8@--max-tokens 128
-Empty fields = unset.  Run on the box:  python3 sweep.py --box boston --root ~/par29 --exe ~/par29/main/b86/strata --out RES variants.txt
+  s8g1 | 0,1 | 8 | 1 | NOSTROMA_BATCH_MTP=1 | | w2:4,8@--max-tokens 128
+Empty fields = unset.  Run on the box:  python3 sweep.py --box boston --root ~/par29 --exe ~/par29/main/b86/nostroma --out RES variants.txt
 """
 import argparse, os, subprocess, sys
 

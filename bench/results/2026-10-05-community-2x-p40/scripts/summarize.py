@@ -2,7 +2,7 @@
 """summarize.py <raw-dir-or-files...>  — per-arm table: accuracy / completeness / reliability / speed, + cross-arm agreement.
 
 Reads the *.jsonl records written by bench.py. If an arm has several files or reps, they are pooled (rep count shown).
-Speed uses server-reported timings when present (llama-server/Strata `timings`, Ollama eval_duration), else client-side.
+Speed uses server-reported timings when present (llama-server/Nostroma `timings`, Ollama eval_duration), else client-side.
 """
 import glob, json, os, statistics as st, sys, difflib, collections
 

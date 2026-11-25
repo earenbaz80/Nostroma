@@ -24,7 +24,7 @@ plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 11,
 fig = plt.figure(figsize=(14, 8.4), facecolor="#f7f9fc")
 fig.text(.04, .956, "COMMUNITY MEASUREMENTS / UNMODIFIED RELEASE ENGINES",
          fontsize=10, fontweight="bold", color=colors["v0.1.40"])
-fig.text(.04, .905, "Strata 0.1.39 → 0.1.40", fontsize=29, fontweight="bold")
+fig.text(.04, .905, "Nostroma 0.1.39 → 0.1.40", fontsize=29, fontweight="bold")
 fig.text(.04, .867, "Q4 and Q8 on RTX PRO 6000 Blackwell · 8K input + 512 output · FP16 KV",
          fontsize=13, color=muted)
 fig.text(.04, .809, "Q8 now loads natively", fontsize=20, fontweight="bold")

@@ -1,14 +1,14 @@
 // src/prefill/gdn_harness.cu - production-linked parity and benchmark harness for the prompt GDN path (CUDA).
 //
-// Links the real strata_prefill library and calls the real gdn_gates / gdn_conv / gdn_recurrence: there is not one
+// Links the real nostroma_prefill library and calls the real gdn_gates / gdn_conv / gdn_recurrence: there is not one
 // copy of a kernel in this file.  Which recurrence runs is chosen through the GdnProbe (gdn_probe.hpp): a path can be
 // forced, the path that actually ran and the reason a wanted path did not run are read back after every call, and a
 // forced path that is not eligible launches nothing and is reported INELIGIBLE (it is never timed as a fallback).
 // Fixtures and the FP64 oracle are tests/gdn/gdn_fixture.hpp (shared with the other backends' harnesses).
 // Usage and output format: Desktop\30thOctober\results\gdn\HARNESS.md and docs/GDN_CONTRACT.md.
 #include "gdn_fixture.hpp"
-#include "strata/prefill/gdn_probe.hpp"
-#include "strata/prefill/kernels.hpp"
+#include "nostroma/prefill/gdn_probe.hpp"
+#include "nostroma/prefill/kernels.hpp"
 
 #include <cuda_runtime.h>
 
@@ -27,7 +27,7 @@
 #endif
 
 using namespace gdnfx;
-namespace sp = strata::prefill;
+namespace sp = nostroma::prefill;
 
 namespace {
 
@@ -447,8 +447,8 @@ int main(int argc, char** argv) {
     cudaRuntimeGetVersion(&rt);
     std::printf("gdn_harness sha=%s device=%s sms=%d cc=%d.%d driver=%d runtime=%d smem_optin=%zu\n", GDN_HARNESS_SHA, pr.name,
                 pr.multiProcessorCount, pr.major, pr.minor, drv, rt, (size_t) pr.sharedMemPerBlockOptin);
-    for (const char* e : {"STRATA_GDN_CHUNKED", "STRATA_GDN_TC", "STRATA_GDN_KEYHEAD", "STRATA_GDN_PIPELINE", "STRATA_GDN_REC_WARP",
-                          "STRATA_GDN_CONVL2", "STRATA_GDN_CONV_SERIAL", "STRATA_GDN_REC_HEADS", "STRATA_PF_PAD"})
+    for (const char* e : {"NOSTROMA_GDN_CHUNKED", "NOSTROMA_GDN_TC", "NOSTROMA_GDN_KEYHEAD", "NOSTROMA_GDN_PIPELINE", "NOSTROMA_GDN_REC_WARP",
+                          "NOSTROMA_GDN_CONVL2", "NOSTROMA_GDN_CONV_SERIAL", "NOSTROMA_GDN_REC_HEADS", "NOSTROMA_PF_PAD"})
         if (const char* v = std::getenv(e)) std::printf("env %s=%s\n", e, v);
     int fails = 0;
     for (int64_t T : a.Ts) {

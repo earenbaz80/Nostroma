@@ -11,8 +11,8 @@ one 780M with every cited configuration run interleaved against the base. Everyt
   50 GiB (`mem_info_gtt_total` 50 GiB), Ubuntu kernel 7.0.0-38, amdgpu CWSR disabled (`cwsr_enable=0`).
 - ROCm 10.1 (`rocm/dev-ubuntu-24.04:10.1.0-full`, HIP 7.16.26385, hipBLASLt 1.4.1 = `100401`, clang 24), engine built
   by hand into `build-780m`:
-  `cmake -B build-780m -G Ninja -DCMAKE_BUILD_TYPE=Release -DSTRATA_ENABLE_HIP=ON -DSTRATA_ENABLE_CUDA=OFF
-  -DSTRATA_PREFILL_MMQ=ON -DCMAKE_HIP_ARCHITECTURES=gfx1103`.
+  `cmake -B build-780m -G Ninja -DCMAKE_BUILD_TYPE=Release -DNOSTROMA_ENABLE_HIP=ON -DNOSTROMA_ENABLE_CUDA=OFF
+  -DNOSTROMA_PREFILL_MMQ=ON -DCMAKE_HIP_ARCHITECTURES=gfx1103`.
 - Model: Qwen3.8-Flash-Next GSQ-RCO Q2_0 (ISTA-DASLab, revision `ed59f920`), a native pack with the experts read
   from the GGUF in place (`--mmap-experts`), the PLE table on the SSD (`--ple-io direct`), Int8 KV, 32K context.
   MTP draft layer built by `tools/mtp_fetch.py` + `mtp_pack.py` + `mtp_rt.py`.
@@ -61,7 +61,7 @@ median (+3.2%, every pair).
 
 ## Engine flags (Phase 4c)
 
-Draft-layer flags, `strata` in generate mode, 4K prompt, 256 greedy tokens, restarts per arm, 3 interleaved reps
+Draft-layer flags, `nostroma` in generate mode, 4K prompt, 256 greedy tokens, restarts per arm, 3 interleaved reps
 (2 for `--mtp-window`, which used the 32K prompt):
 
 | arm | decode tok/s (reps) |
@@ -119,11 +119,11 @@ table; the 32K cell is higher than the earlier 272 because the shipping configur
 
 ## Stability (Phase 5)
 
-- `STRATA_NO_ARENA_THP=1` (setup writes it for gfx1103): 6 engine starts with it and 6 without, alternating, all
+- `NOSTROMA_NO_ARENA_THP=1` (setup writes it for gfx1103): 6 engine starts with it and 6 without, alternating, all
   clean (this config reads the experts through `--mmap-experts` and has no resident arena, so the flag is inert
   here). Raw: [phase5a-results.txt](phase5a-results.txt).
 - Memory pressure with the reset-prone combination from 7.10 - a partial expert cache (16,384 of 24,576 slots,
-  so file-tier reads), `STRATA_IO_PREFETCH=1`, 32K prompts, the adaptive tier on, then `--adapt-every 100000`:
+  so file-tier reads), `NOSTROMA_IO_PREFETCH=1`, 32K prompts, the adaptive tier on, then `--adapt-every 100000`:
   4 sessions, all clean, peak GTT 26.7 GiB. The 7.10 resets do not reproduce on ROCm 10.1 with `cwsr_enable=0`
   (the fix reported in #1423). Raw: [phase5b-results.txt](phase5b-results.txt).
 - Zero `amdgpu` resets or KFD evictions in the kernel log (`journalctl -k`) over the whole session.
@@ -147,11 +147,11 @@ lines: [engine-log-excerpt.txt](engine-log-excerpt.txt).
 
 ## The exact switches and the opt-ins
 
-- The 17 exact switches are written by setup into the config's `env` for `STRATA_EXPERIMENTAL_GFX1103=1` installs,
+- The 17 exact switches are written by setup into the config's `env` for `NOSTROMA_EXPERIMENTAL_GFX1103=1` installs,
   the same way the table is (the engine keeps gfx1103 out of its arch defaults: `arch_default_env("gfx1103")` stays
   empty). `SETUP_ENV` carries them, so a re-run refreshes them and turning the opt-in off removes them.
-- Opt-in, bit-changing: `STRATA_HIP_WMMA`, `STRATA_PF_GEMM`, `STRATA_PF_FUSED`, `STRATA_PA_FAST`,
-  `STRATA_SELECT_WMMA`, `STRATA_HC_UPMIX`. The measured wins are above; no KL was measured here.
+- Opt-in, bit-changing: `NOSTROMA_HIP_WMMA`, `NOSTROMA_PF_GEMM`, `NOSTROMA_PF_FUSED`, `NOSTROMA_PA_FAST`,
+  `NOSTROMA_SELECT_WMMA`, `NOSTROMA_HC_UPMIX`. The measured wins are above; no KL was measured here.
 
 ## Not tested
 

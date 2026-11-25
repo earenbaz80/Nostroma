@@ -1,9 +1,9 @@
 // src/core/draft_cap_test.cpp - the per-card window cap of --draft dflash2 (CPU only).
-#include "strata/core/draft_cap.hpp"
+#include "nostroma/core/draft_cap.hpp"
 
 #include <cstdio>
 
-using namespace strata::core;
+using namespace nostroma::core;
 
 static int fails = 0;
 #define CHECK(c) do { if (!(c)) { std::fprintf(stderr, "FAIL %s:%d %s\n", __FILE__, __LINE__, #c); ++fails; } } while (0)

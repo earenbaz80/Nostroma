@@ -49,7 +49,7 @@ def owner_only_wrong(path: str | os.PathLike, details: os.stat_result) -> bool:
     folder = str(path if stat.S_ISDIR(details.st_mode) else Path(path).parent)
     if folder not in _NOTED:
         _NOTED.add(folder)
-        print(f"strata: {folder} is on a drive that cannot keep files private to your account (a Windows drive seen from Linux, "
+        print(f"nostroma: {folder} is on a drive that cannot keep files private to your account (a Windows drive seen from Linux, "
               "a USB stick or a network share). Nostroma goes on; keep your data on the Linux disk to make it private.", file=sys.stderr)
     return False
 

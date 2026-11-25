@@ -1,4 +1,4 @@
-"""Interleaved A/B of per-request strata_tune settings (no restart), with rotated arm order.
+"""Interleaved A/B of per-request nostroma_tune settings (no restart), with rotated arm order.
 usage: python3 ab.py MODE ROUNDS 'A_json' 'B_json' ['C_json' ...]
   MODE: solo  = one 300-token decode per round and arm (tok/s from the stream)
         c2    = 2 concurrent 300-token decodes (aggregate tok/s)
@@ -32,7 +32,7 @@ def run(prompt, mt, tune, out, key):
     body = {"model": MODEL, "messages": [{"role": "user", "content": prompt}], "max_tokens": mt, "temperature": 0.0, "stream": True,
             "stream_options": {"include_usage": True}, "chat_template_kwargs": {"enable_thinking": False}}
     if tune:
-        body["strata_tune"] = tune
+        body["nostroma_tune"] = tune
     r = urllib.request.Request(BASE + "/v1/chat/completions", json.dumps(body).encode(), H)
     t0 = time.time(); first = last = None; ct = pt = 0
     with urllib.request.urlopen(r, timeout=1800) as f:

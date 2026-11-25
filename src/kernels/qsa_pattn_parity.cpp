@@ -1,4 +1,4 @@
-// src/kernels/qsa_pattn_parity.cpp - STRATA_PATTN_SM60's score and value kernels (qsa_pattn.cu, PR #3943) against the
+// src/kernels/qsa_pattn_parity.cpp - NOSTROMA_PATTN_SM60's score and value kernels (qsa_pattn.cu, PR #3943) against the
 // decode kernels' output, bitwise (GPU, synthetic data, no model).
 //
 // The reference is what the prompt path reads on sm_6x today: the chunk pass of attn_chunk_kernel_pre75 (the Daily's
@@ -17,9 +17,9 @@
 // junk before each call, so a read of a block that was not written shows up as a difference.
 //
 //   qsa_pattn_parity [--device N]     exit 0: every case is bit-identical; 77: no GPU or a build without the kernels
-#include "strata/kernels/qsa.hpp"
-#include "strata/kernels/qsa_decode_attn.hpp"
-#include "strata/kernels/qsa_pattn.hpp"
+#include "nostroma/kernels/qsa.hpp"
+#include "nostroma/kernels/qsa_decode_attn.hpp"
+#include "nostroma/kernels/qsa_pattn.hpp"
 
 #include <cuda_runtime.h>
 
@@ -32,7 +32,7 @@
 #include <random>
 #include <vector>
 
-namespace k = strata::kernels;
+namespace k = nostroma::kernels;
 
 namespace {
 void ck(cudaError_t e, const char* what) {
@@ -244,7 +244,7 @@ int main(int argc, char** argv) {
                     long long nz = 0;
                     const int r = hx.run(cap, n_q, scr_q, widths, rng, on_pascal, nz);
                     if (r < 0) {
-                        std::puts("SKIP: this build has no sm_6x kernels (CUDA with STRATA_EXPERIMENTAL_SM60)");
+                        std::puts("SKIP: this build has no sm_6x kernels (CUDA with NOSTROMA_EXPERIMENTAL_SM60)");
                         return 77;
                     }
                     nonzero_total += nz;

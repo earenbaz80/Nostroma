@@ -1,9 +1,9 @@
 // tests/quant/quant_parity.cpp - the layer against its ORACLE: ggml-cpu's own dot products and activation quantizers, bit for bit.
 //
 // ggml-cpu is linked into this program only.  The flavour of the linked ggml-cpu decides which contract is checked (isa.hpp):
-//   a default / STRATA_PORTABLE build  -> Arith::Avx2      (ggml's __AVX2__ branches)
-//   -DSTRATA_ISA_FLOOR=avx             -> Arith::Avx       (its __AVX__ branches)
-//   -DSTRATA_ISA_FLOOR=none            -> Arith::Generic   (its _generic C code)
+//   a default / NOSTROMA_PORTABLE build  -> Arith::Avx2      (ggml's __AVX2__ branches)
+//   -DNOSTROMA_ISA_FLOOR=avx             -> Arith::Avx       (its __AVX__ branches)
+//   -DNOSTROMA_ISA_FLOOR=none            -> Arith::Generic   (its _generic C code)
 // Every kernel of that contract the CPU can run is compared with ggml's, on rows made by ggml's own quantizers from random floats
 // (so scales, mins and sign patterns are those of real models), at 1..8 blocks, and the activation quantizers on random rows and on rows
 // built to be exact ties (where half-to-even and half-away-from-zero differ).
@@ -40,18 +40,18 @@
 
 #include "ggml-cpu.h"
 #include "ggml.h"
-#include "strata/quant/act.hpp"
-#include "strata/quant/dequant.hpp"
-#include "strata/quant/dot.hpp"
-#include "strata/quant/isa.hpp"
-#include "strata/quant/types.hpp"
+#include "nostroma/quant/act.hpp"
+#include "nostroma/quant/dequant.hpp"
+#include "nostroma/quant/dot.hpp"
+#include "nostroma/quant/isa.hpp"
+#include "nostroma/quant/types.hpp"
 #include "internal.hpp"   // src/quant: the fp16 helpers (test only)
 
-#ifndef STRATA_QUANT_GOLDEN_FILE
-#define STRATA_QUANT_GOLDEN_FILE ""
+#ifndef NOSTROMA_QUANT_GOLDEN_FILE
+#define NOSTROMA_QUANT_GOLDEN_FILE ""
 #endif
 
-namespace sq = strata::quant;
+namespace sq = nostroma::quant;
 
 namespace {
 
@@ -299,7 +299,7 @@ void test_dot(sq::Type st, int rows) {
     const ggml_type_traits_cpu* tr = ggml_get_type_traits_cpu(gt);
     if (ti == nullptr || tr == nullptr || tr->vec_dot == nullptr) return;
     const sq::Arith ar = oracle_arith();
-    // ggml's SSE4.2-only flavour (STRATA_ISA_FLOOR=none) has an SSSE3 branch for Q4_0 that is neither the generic C code nor AVX: not a contract of the layer
+    // ggml's SSE4.2-only flavour (NOSTROMA_ISA_FLOOR=none) has an SSSE3 branch for Q4_0 that is neither the generic C code nor AVX: not a contract of the layer
     if (ar == sq::Arith::Generic && st == sq::Type::Q4_0) {
         std::printf("  dot q4_0      skipped: ggml's SSSE3 branch is not the Generic contract\n");
         return;
@@ -637,7 +637,7 @@ std::string golden_lines_of_this_run() {
 int main(int argc, char** argv) {
     int rows = kGoldenRows;
     const char* only = nullptr;
-    std::string golden_path = STRATA_QUANT_GOLDEN_FILE, write_golden;
+    std::string golden_path = NOSTROMA_QUANT_GOLDEN_FILE, write_golden;
     bool regen_check = false;
     for (int i = 1; i < argc; ++i) {
         if (!std::strcmp(argv[i], "--rows") && i + 1 < argc) rows = std::atoi(argv[++i]);
@@ -668,7 +668,7 @@ int main(int argc, char** argv) {
                 sq::arith_name(ar), ggml_cpu_has_avx(), ggml_cpu_has_avx2(), ggml_cpu_has_fma(), ggml_cpu_has_f16c(), ggml_cpu_has_avx512(),
                 sq::isa_name(sq::best_isa()), sq::arith_name(sq::default_arith()), compiler_name().c_str());
 #if defined(__aarch64__)
-    // The Neon contract is ggml-cpu's arm64 flavour with the dot product extension (the shipped STRATA_PORTABLE build and the Mac's native build).  A ggml-cpu without it
+    // The Neon contract is ggml-cpu's arm64 flavour with the dot product extension (the shipped NOSTROMA_PORTABLE build and the Mac's native build).  A ggml-cpu without it
     // (GCC's -mcpu=native on the Spark's mixed X925 + A725 cores resolves to plain armv8-a) runs other code, and one with SVE other branches of the Q4_0 / Q8_0 /
     // K-quant dots: those flavours are not the contract.  The first is skipped, the second is run for information and its differences do not fail the test.
     if (!ggml_cpu_has_dotprod()) {

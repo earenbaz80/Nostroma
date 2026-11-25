@@ -25,7 +25,7 @@ LINUX, WIN = "linux-x86_64", "windows-x86_64"
 def entry(platform, backend, variant, archs, version="0.1.47"):
     return {"version": version, "platform": platform, "backend": backend, "variant": variant, "archs": list(archs), "min_driver": {},
             "min_runtime": None, "build_id": f"rel-{platform}-{backend}-{variant}", "format": "tar.gz",
-            "url": f"strata-engine-{platform}-{backend}-{variant}.tar.gz", "size": 1000, "sha256": "a" * 64, "manifest_sha256": "b" * 64,
+            "url": f"nostroma-engine-{platform}-{backend}-{variant}.tar.gz", "size": 1000, "sha256": "a" * 64, "manifest_sha256": "b" * 64,
             "installed_bytes": 2000, "notes": ""}
 
 

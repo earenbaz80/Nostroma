@@ -1,13 +1,13 @@
 """A Qwen4 model of its own shape runs on its own engine component (nostroma_control/shape_engine.py), picked by the model, beside the Nostroma engine.
 
 What these tests pin:
-  * the names: shape q4_lite, component strata-q4-lite, feed model family qwen4exp_q4_lite, run config reference component:strata-q4-lite;
+  * the names: shape q4_lite, component nostroma-q4-lite, feed model family qwen4exp_q4_lite, run config reference component:nostroma-q4-lite;
   * packaging: package_engine --shape makes a package whose manifest id is the shape's component; read as the Nostroma engine it is refused, so an older Control (which reads only
-    strata-engine) ignores one put into its engine folder by hand; a normal package never claims a shape;
+    nostroma-engine) ignores one put into its engine folder by hand; a normal package never claims a shape;
   * the feed: member shape_engines, parsed, never mixed into ``engine``; feed_tool packs and lists it and refuses a model of a shape that has no engine;
   * the install (a local signed feed over loopback, a stub engine, a throwaway key): the package is fetched, checked (signature, hashes, shape), placed in
     <components>/shapes/<shape>/engine/, started once, and the Nostroma engine's files are byte for byte what they were; a bad package or a failed start changes nothing;
-  * use: component:strata-q4-lite resolves to that engine, component:strata-engine still to the Nostroma engine; a missing shape engine is a plain refusal, not a fetch;
+  * use: component:nostroma-q4-lite resolves to that engine, component:nostroma-engine still to the Nostroma engine; a missing shape engine is a plain refusal, not a fetch;
   * update: `nostroma update` brings an installed shape engine up to date beside the older one and prunes beyond two; a PC with none has no such step;
   * older Controls: the feed.py of the Control before this (git) reads the same feed as one without the new member and does not offer the model.
 """
@@ -38,11 +38,11 @@ from tests.terminal import update_fixture as fx  # noqa: E402
 
 REV = "0123456789abcdef0123456789abcdef01234567"
 SHAPE = "q4_lite"
-COMP = "strata-q4-lite"
+COMP = "nostroma-q4-lite"
 EXE = shape_engine.exe_name()
 
 
-def stub_source(parent: Path, version: str, *, text: str = "stub strata", padding: int = 0) -> Path:
+def stub_source(parent: Path, version: str, *, text: str = "stub nostroma", padding: int = 0) -> Path:
     src = parent / f"src-{version}"
     src.mkdir(parents=True)
     (src / EXE).write_bytes(f"{text} {version} ".encode() + (os.urandom(padding) if padding else b"x" * 100))
@@ -80,14 +80,14 @@ def model_entry(**kw) -> dict:
 
 class Base(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory(prefix="strata-shape-")
+        self.tmp = tempfile.TemporaryDirectory(prefix="nostroma-shape-")
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         self.key = fx.make_key()
         trust = self.root / "trust.json"
         trust.write_text(json.dumps({"keys": [signing.public_part(self.key)]}))
         self.comp = self.root / "c"
-        for p in (mock.patch.dict(os.environ, {"STRATA_UPDATE_TRUSTED_KEYS": str(trust), "STRATA_COMPONENTS_DIR": str(self.comp)}),
+        for p in (mock.patch.dict(os.environ, {"NOSTROMA_UPDATE_TRUSTED_KEYS": str(trust), "NOSTROMA_COMPONENTS_DIR": str(self.comp)}),
                   mock.patch.object(signing, "BUILTIN_KEYS", self.root / "none.json"),
                   mock.patch.object(ec, "cuda_archs_present", return_value=["sm_86"]),
                   mock.patch.object(ec, "nvidia_driver_version", return_value="610.47"),
@@ -101,12 +101,12 @@ class Base(unittest.TestCase):
         self.server = fx.FeedServer(self.release)
         self.server.__enter__()
         self.addCleanup(self.server.__exit__)
-        self.url = self.server.url + "/strata-feed.json"
+        self.url = self.server.url + "/nostroma-feed.json"
         # the Nostroma engine of this PC: a signed stub package in <components>/engine, whose bytes must never change
         plain = build(self.root / "plain", "0.1.58", self.key, shape="")
         (self.comp / "engine").mkdir(parents=True)
         shutil.copytree(plain, self.comp / "engine" / plain.name)
-        self.strata_before = tree(self.comp / "engine")
+        self.nostroma_before = tree(self.comp / "engine")
 
     def publish(self, *versions, shape: str = SHAPE, models=None, sequence=1, key=None, extra_members=None):
         shutil.rmtree(self.release, ignore_errors=True)
@@ -132,17 +132,17 @@ class Base(unittest.TestCase):
 
 class Names(unittest.TestCase):
     def test_a_shape_has_one_component_one_family_one_reference(self):
-        self.assertEqual(shape_engine.component_id("q4_lite"), "strata-q4-lite")
-        self.assertEqual(shape_engine.shape_of_component("strata-q4-lite"), "q4_lite")
+        self.assertEqual(shape_engine.component_id("q4_lite"), "nostroma-q4-lite")
+        self.assertEqual(shape_engine.shape_of_component("nostroma-q4-lite"), "q4_lite")
         self.assertEqual(shape_engine.family_of("q4_lite"), "qwen4exp_q4_lite")
         self.assertEqual(shape_engine.shape_of_family("qwen4exp_q4_lite"), "q4_lite")
-        self.assertEqual(shape_engine.reference("q4_lite"), "component:strata-q4-lite")
+        self.assertEqual(shape_engine.reference("q4_lite"), "component:nostroma-q4-lite")
         self.assertEqual(ec.REFERENCE_PREFIX + COMP, shape_engine.reference(SHAPE))
 
     def test_what_is_not_a_shape_is_none(self):
         for family in ("qwen4exp", "qwen35moe", "qwen4exp_", "qwen4exp_Q4", "qwen4exp_q4-lite", "qwen4exp_" + "x" * 30, None, 7):
             self.assertIsNone(shape_engine.shape_of_family(family), family)
-        for comp in ("strata-engine", "strata-dsv41", "strata-control", "engine", "strata-", "strata-q4_lite", "strata-Q4-lite", None):
+        for comp in ("nostroma-engine", "nostroma-dsv41", "nostroma-control", "engine", "nostroma-", "nostroma-q4_lite", "nostroma-Q4-lite", None):
             self.assertIsNone(shape_engine.shape_of_component(comp), comp)
 
     def test_a_shape_never_becomes_a_component_that_means_something_else(self):
@@ -165,7 +165,7 @@ class Packaging(Base):
         self.assertEqual(ec.read_manifest_any(folder).shape, SHAPE)
         self.assertEqual(comp.to_dict()["shape"], SHAPE)
 
-    def test_it_is_not_read_as_the_strata_engine_so_an_older_control_ignores_it(self):
+    def test_it_is_not_read_as_the_nostroma_engine_so_an_older_control_ignores_it(self):
         folder = build(self.root / "p", "0.1.59", self.key)
         with self.assertRaises(ec.ComponentProblem) as ctx:
             ec.read_manifest(folder)                                   # what a Control from before this reads, and what the Nostroma engine's scan reads
@@ -180,10 +180,10 @@ class Packaging(Base):
         self.assertEqual(len(problems), 1)
         self.assertEqual(ec.resolve(self.comp, backend="cuda").version, "0.1.58")
 
-    def test_a_strata_engine_never_claims_a_shape(self):
+    def test_a_nostroma_engine_never_claims_a_shape(self):
         plain = build(self.root / "p2", "0.1.60", self.key, shape="")
         raw = json.loads((plain / ec.MANIFEST).read_text())
-        self.assertEqual(raw["id"], "strata-engine")
+        self.assertEqual(raw["id"], "nostroma-engine")
         self.assertNotIn("shape", raw)
         raw["shape"] = SHAPE
         (plain / ec.MANIFEST).write_text(json.dumps(raw))
@@ -215,7 +215,7 @@ class Feed(Base):
         loaded = feedmod.fetch(self.url, signing.load_trusted_keys())
         self.assertEqual([(p.shape, p.version) for p in loaded.shape_engines], [(SHAPE, "0.1.59")])
         self.assertEqual(loaded.engine, ())
-        self.assertTrue(loaded.shape_engines[0].url.startswith("shapes/strata-q4-lite-0.1.59-"))
+        self.assertTrue(loaded.shape_engines[0].url.startswith("shapes/nostroma-q4-lite-0.1.59-"))
         self.assertEqual(loaded.shape_engines[0].to_dict()["shape"], SHAPE)
 
     def test_a_feed_without_the_member_is_what_it_was(self):
@@ -267,10 +267,10 @@ class Feed(Base):
         out.mkdir()
         entry = feed_tool.pack_engine(folder, out, url_prefix="")
         self.assertEqual(entry["shape"], SHAPE)
-        self.assertTrue(entry["url"].startswith("strata-q4-lite-0.1.59-"), entry["url"])
+        self.assertTrue(entry["url"].startswith("nostroma-q4-lite-0.1.59-"), entry["url"])
         plain = build(self.root / "pk2", "0.1.60", self.key, shape="")
         self.assertNotIn("shape", feed_tool.pack_engine(plain, out, url_prefix=""))
-        self.assertTrue(next(p for p in out.glob("*.entry.json") if "strata-engine" in p.name))
+        self.assertTrue(next(p for p in out.glob("*.entry.json") if "nostroma-engine" in p.name))
 
     def test_verify_feed_lists_the_shape_engines(self):
         self.publish("0.1.59", models=[model_entry()])
@@ -282,40 +282,40 @@ class Feed(Base):
 
 
 class Install(Base):
-    def test_the_engine_of_the_shape_is_fetched_beside_the_strata_engine(self):
+    def test_the_engine_of_the_shape_is_fetched_beside_the_nostroma_engine(self):
         self.publish("0.1.59")
         lines = []
-        with mock.patch.object(shape_engine, "_test_start", return_value=(True, "strata 0.1.59")):
+        with mock.patch.object(shape_engine, "_test_start", return_value=(True, "nostroma 0.1.59")):
             exe = self.ensure(lines)
         self.assertIsNotNone(exe, lines)
         self.assertEqual(exe.parent.parent.parent, self.comp / "shapes" / SHAPE)
         self.assertTrue(exe.is_file())
-        self.assertEqual(self.strata_before, tree(self.comp / "engine"), "the Nostroma engine's files must not change")
+        self.assertEqual(self.nostroma_before, tree(self.comp / "engine"), "the Nostroma engine's files must not change")
         self.assertEqual(ec.resolve(self.comp, backend="cuda").version, "0.1.58")
         self.assertIn("0.1.59", " ".join(lines))
         self.assertEqual(shape_engine.newest_version(SHAPE, self.comp), "0.1.59")
         self.assertEqual(shape_engine.installed_shapes(self.comp), [SHAPE])
         self.assertEqual(json.loads((exe.parent / ec.MANIFEST).read_text())["shape"], SHAPE)
 
-    def test_the_reference_resolves_to_the_shape_engine_and_the_other_to_the_strata_engine(self):
+    def test_the_reference_resolves_to_the_shape_engine_and_the_other_to_the_nostroma_engine(self):
         self.publish("0.1.59")
         with mock.patch.object(shape_engine, "_test_start", return_value=(True, "x")):
             exe = self.ensure()
-        self.assertEqual(Path(ec.expand("component:strata-q4-lite", {"backend": "cuda"})), exe)
-        strata = Path(ec.expand("component:strata-engine", {"backend": "cuda"}))
-        self.assertEqual(strata.parent.parent.name, "engine")
-        self.assertNotEqual(strata, exe)
-        self.assertEqual(ec.expand("/some/path/strata"), "/some/path/strata")
+        self.assertEqual(Path(ec.expand("component:nostroma-q4-lite", {"backend": "cuda"})), exe)
+        nostroma = Path(ec.expand("component:nostroma-engine", {"backend": "cuda"}))
+        self.assertEqual(nostroma.parent.parent.name, "engine")
+        self.assertNotEqual(nostroma, exe)
+        self.assertEqual(ec.expand("/some/path/nostroma"), "/some/path/nostroma")
 
     def test_a_shape_with_no_engine_installed_is_a_plain_refusal_and_never_a_fetch(self):
         with self.assertRaises(shape_engine.ShapeEngineMissing) as ctx:
-            ec.expand("component:strata-q4-lite", {"backend": "cuda"})
+            ec.expand("component:nostroma-q4-lite", {"backend": "cuda"})
         self.assertIsInstance(ctx.exception, ec.EngineMissing)
         self.assertEqual(ctx.exception.exit_code, 5)
         self.assertIn("q4_lite", str(ctx.exception))
         self.assertIn("never downloads", str(ctx.exception))
         with self.assertRaises(ec.EngineMissing):
-            ec.expand("component:strata-nonsense", {})
+            ec.expand("component:nostroma-nonsense", {})
         self.assertFalse((self.comp / "shapes").exists())
 
     def test_a_changed_file_stops_the_start_of_that_engine_only(self):
@@ -324,8 +324,8 @@ class Install(Base):
             exe = self.ensure()
         exe.write_bytes(exe.read_bytes() + b"changed")
         with self.assertRaises(ec.EngineMissing):
-            ec.expand("component:strata-q4-lite", {"backend": "cuda"})
-        self.assertTrue(Path(ec.expand("component:strata-engine", {"backend": "cuda"})).is_file())
+            ec.expand("component:nostroma-q4-lite", {"backend": "cuda"})
+        self.assertTrue(Path(ec.expand("component:nostroma-engine", {"backend": "cuda"})).is_file())
 
     def test_an_installed_engine_that_is_current_is_not_fetched_again_and_says_nothing(self):
         self.publish("0.1.59")
@@ -350,7 +350,7 @@ class Install(Base):
             self.assertIsNotNone(self.ensure(lines), lines)           # cut part-way: the same run continues from the byte it reached
         ranges = [r[2] for r in self.server.requests if r[1].endswith(".tar.gz")]
         self.assertEqual(ranges, [None, "bytes=800000-"], "exactly one more request, from the byte the cut reached: no byte twice")
-        self.assertEqual(self.strata_before, tree(self.comp / "engine"))
+        self.assertEqual(self.nostroma_before, tree(self.comp / "engine"))
 
     def test_the_feed_has_no_engine_for_the_shape(self):
         self.publish("0.1.59", shape="q4_mid")
@@ -358,7 +358,7 @@ class Install(Base):
         self.assertIsNone(self.ensure(lines))
         self.assertIn("The update feed has no engine for q4_lite for this computer.", " ".join(lines))
         self.assertFalse((self.comp / "shapes" / SHAPE).exists())
-        self.assertEqual(self.strata_before, tree(self.comp / "engine"))
+        self.assertEqual(self.nostroma_before, tree(self.comp / "engine"))
 
     def test_no_engine_for_this_pc_is_a_plain_line(self):
         self.publish("0.1.59")
@@ -375,7 +375,7 @@ class Install(Base):
         self.assertIsNone(self.ensure(lines))
         self.assertTrue(lines)
         self.assertFalse((self.comp / "shapes" / SHAPE / "engine").exists() and list((self.comp / "shapes" / SHAPE / "engine").iterdir()))
-        self.assertEqual(self.strata_before, tree(self.comp / "engine"))
+        self.assertEqual(self.nostroma_before, tree(self.comp / "engine"))
 
     def test_a_feed_that_names_another_shape_than_the_package_says_is_refused(self):
         doc = self.publish("0.1.59")
@@ -399,17 +399,17 @@ class Install(Base):
         self.assertFalse([l for l in lines if "could not be downloaded" in l], "the approved line is said as it is, not inside another one")
         self.assertIn("The Nostroma engine is unchanged", " ".join(lines))
         self.assertEqual(shape_engine.installed(SHAPE, self.comp), [])
-        self.assertEqual(self.strata_before, tree(self.comp / "engine"))
+        self.assertEqual(self.nostroma_before, tree(self.comp / "engine"))
 
     def test_the_real_start_test_runs_the_program_and_wants_its_name(self):
         src = self.root / "prog"
         src.mkdir()
-        script = src / "strata"
-        script.write_text(f'#!{sys.executable}\nimport sys\nprint("strata 0.1.59" if "--version" in sys.argv else "no")\n')
+        script = src / "nostroma"
+        script.write_text(f'#!{sys.executable}\nimport sys\nprint("nostroma 0.1.59" if "--version" in sys.argv else "no")\n')
         script.chmod(0o755)
         if os.name == "nt":
             self.skipTest("a script is not a Windows program")
-        self.assertEqual(shape_engine._test_start(script), (True, "strata 0.1.59"))
+        self.assertEqual(shape_engine._test_start(script), (True, "nostroma 0.1.59"))
         script.write_text(f'#!{sys.executable}\nprint("hello")\n')
         self.assertFalse(shape_engine._test_start(script)[0])
 
@@ -417,28 +417,28 @@ class Install(Base):
         """A stand-in engine program: `--version` names it, `--geometry` prints `geometry` (None: an engine from before the flag, which exits 2)."""
         src = self.root / f"prog-{geometry}"
         src.mkdir(exist_ok=True)
-        script = src / "strata"
+        script = src / "nostroma"
         answer = f'print({geometry!r})' if geometry else 'sys.exit(2)'
-        script.write_text(f'#!{sys.executable}\nimport sys\nif "--version" in sys.argv:\n    print("strata 0.2.13")\nelif "--geometry" in sys.argv:\n    {answer}\nelse:\n    sys.exit(3)\n')
+        script.write_text(f'#!{sys.executable}\nimport sys\nif "--version" in sys.argv:\n    print("nostroma 0.2.13")\nelif "--geometry" in sys.argv:\n    {answer}\nelse:\n    sys.exit(3)\n')
         script.chmod(0o755)
         return script
 
     def test_the_engine_must_be_built_for_the_shape_the_signed_manifest_names(self):
         if os.name == "nt":
             self.skipTest("a script is not a Windows program")
-        self.assertEqual(shape_engine._test_start(self._program("q4_lite"), shape="q4_lite"), (True, "strata 0.2.13"))
+        self.assertEqual(shape_engine._test_start(self._program("q4_lite"), shape="q4_lite"), (True, "nostroma 0.2.13"))
         self.assertEqual(shape_engine._test_start(self._program(None), shape="q4_lite"), (False, "it does not say which model shape it was built for"),
                          "a shape engine that cannot answer --geometry is refused (owner, 11-09)")
         ok, why = shape_engine._test_start(self._program("flash_next"), shape="q4_lite")
         self.assertEqual((ok, why), (False, "it was built for a different model shape (flash_next)"))
-        self.assertEqual(shape_engine._test_start(self._program("flash_next")), (True, "strata 0.2.13"), "no shape asked for: the flag is not read")
+        self.assertEqual(shape_engine._test_start(self._program("flash_next")), (True, "nostroma 0.2.13"), "no shape asked for: the flag is not read")
 
-    def test_the_plain_strata_engine_is_never_asked_for_its_shape(self):
+    def test_the_plain_nostroma_engine_is_never_asked_for_its_shape(self):
         if os.name == "nt":
             self.skipTest("a script is not a Windows program")
-        self.assertEqual(shape_engine._test_start(self._program(None)), (True, "strata 0.2.13"), "an engine with no --geometry still installs as the Nostroma engine")
+        self.assertEqual(shape_engine._test_start(self._program(None)), (True, "nostroma 0.2.13"), "an engine with no --geometry still installs as the Nostroma engine")
         with mock.patch.object(shape_engine, "check_geometry", side_effect=AssertionError("asked")):
-            self.assertEqual(shape_engine._test_start(self._program("flash_next")), (True, "strata 0.2.13"))
+            self.assertEqual(shape_engine._test_start(self._program("flash_next")), (True, "nostroma 0.2.13"))
 
     def test_a_shape_engine_with_no_answer_is_refused_at_install_with_the_owners_reason(self):
         if os.name == "nt":
@@ -450,7 +450,7 @@ class Install(Base):
         self.assertIn("The engine for Q4 Lite Shape 0.1.59 was not installed because it did not start correctly (it does not say which model shape it was built for). "
                       "The Nostroma engine is unchanged.", " ".join(lines))
         self.assertEqual(shape_engine.installed(SHAPE, self.comp), [])
-        self.assertEqual(self.strata_before, tree(self.comp / "engine"))
+        self.assertEqual(self.nostroma_before, tree(self.comp / "engine"))
 
     def test_the_owners_reason_for_no_answer(self):
         self.assertEqual(shape_engine.NO_SHAPE_ANSWER, "it does not say which model shape it was built for")      # owner, 11-09
@@ -465,7 +465,7 @@ class Install(Base):
         self.assertIn("The engine for Q4 Lite Shape 0.1.59 was not installed because it did not start correctly (it was built for a different model shape (flash_next)). "
                       "The Nostroma engine is unchanged.", " ".join(lines))
         self.assertEqual(shape_engine.installed(SHAPE, self.comp), [])
-        self.assertEqual(self.strata_before, tree(self.comp / "engine"))
+        self.assertEqual(self.nostroma_before, tree(self.comp / "engine"))
 
     def test_min_runtime_newer_than_this_control_keeps_it_from_starting(self):
         shutil.rmtree(self.release, ignore_errors=True)
@@ -499,12 +499,12 @@ class Update(Base):
             exe = self.ensure(lines)
         self.assertEqual(self.folders(), ["0.1.59", "0.1.60"], "the older engine stays")
         self.assertIn("updated from 0.1.59 to 0.1.60", " ".join(lines))
-        self.assertEqual(Path(ec.expand("component:strata-q4-lite", {"backend": "cuda"})), exe)
+        self.assertEqual(Path(ec.expand("component:nostroma-q4-lite", {"backend": "cuda"})), exe)
         self.publish("0.1.59", "0.1.60", "0.1.61", sequence=3)
         with mock.patch.object(shape_engine, "_test_start", return_value=(True, "x")), mock.patch("nostroma_control.folder_use.in_use", return_value=False):
             self.ensure()
         self.assertEqual(self.folders(), ["0.1.60", "0.1.61"])
-        self.assertEqual(self.strata_before, tree(self.comp / "engine"))
+        self.assertEqual(self.nostroma_before, tree(self.comp / "engine"))
 
     def test_an_older_package_in_the_feed_changes_nothing(self):
         self.installed("0.1.60")
@@ -555,7 +555,7 @@ class Update(Base):
         self.installed("0.1.59")
         # the product's own windows (5 s with an engine installed), not net_dead's scaled 0.3 s: Windows reports a refusal only after about 2 s,
         # so a scaled window would see a timeout there, not a refusal
-        dead = f"http://127.0.0.1:{refused_port()}/strata-feed.json"
+        dead = f"http://127.0.0.1:{refused_port()}/nostroma-feed.json"
         note = netpolicy.RefusalNote(path=self.root / "state" / "net" / netpolicy.REFUSED_NOTE_NAME)
         calls = []
         real = transfer._open_small
@@ -599,7 +599,7 @@ class Update(Base):
             self.assertEqual(updater._shape_steps(ctx, feed, False), [])
             result = steps[0][1]()
         self.assertEqual((result["status"], result["installed_before"], result["installed_after"], result["shape"]), ("updated", "0.1.59", "0.1.60", SHAPE))
-        self.assertEqual(self.strata_before, tree(self.comp / "engine"))
+        self.assertEqual(self.nostroma_before, tree(self.comp / "engine"))
 
     def test_run_update_runs_that_step_and_reports_it(self):
         self.publish("0.1.59")
@@ -614,7 +614,7 @@ class Update(Base):
         self.assertEqual((row["status"], row["installed_after"]), ("updated", "0.1.60"))
         self.assertEqual(out["exit_code"], 0)
         from nostroma_cli import update_cmd
-        self.assertEqual(update_cmd._line("Strata-q4-lite", row), "Model engine  Engine for q4_lite updated from 0.1.59 to 0.1.60.")
+        self.assertEqual(update_cmd._line("Nostroma-q4-lite", row), "Model engine  Engine for q4_lite updated from 0.1.59 to 0.1.60.")
 
     def test_the_components_report_lists_a_shape_engine_only_when_there_is_one(self):
         self.assertNotIn("shapes", ec.status(self.comp))
@@ -656,12 +656,12 @@ class TitleInLines(Base):
 
     def test_a_start_without_the_engine_names_the_title_from_the_run_config(self):
         with self.assertRaises(shape_engine.ShapeEngineMissing) as ctx:
-            ec.expand("component:strata-q4-lite", {"backend": "cuda", "shape_title": self.TITLE})
+            ec.expand("component:nostroma-q4-lite", {"backend": "cuda", "shape_title": self.TITLE})
         self.assertTrue(str(ctx.exception).startswith(f"{self.TITLE} needs its own engine"), str(ctx.exception))
         self.assertNotIn("q4_lite", str(ctx.exception))
         self.assertEqual(ctx.exception.shape, "q4_lite")
         with self.assertRaises(shape_engine.ShapeEngineMissing) as ctx:            # a config without a title (an older one): the shape's name
-            ec.expand("component:strata-q4-lite", {"backend": "cuda"})
+            ec.expand("component:nostroma-q4-lite", {"backend": "cuda"})
         self.assertTrue(str(ctx.exception).startswith("q4_lite needs its own engine"), str(ctx.exception))
 
     def test_the_explicit_update_finds_the_title_in_the_feeds_model(self):
@@ -730,7 +730,7 @@ class ApprovedWords(unittest.TestCase):
         row = shape_engine.update_one(ctx, feed, "q4_lite", title="Q4 Lite Shape")
         self.assertEqual(row["note"], "The update feed has no engine for Q4 Lite Shape for this computer.")
         self.assertTrue(row["reasons"], "the reasons are in the row")
-        self.assertEqual((row["shape"], row["component"]), ("q4_lite", "strata-q4-lite"))
+        self.assertEqual((row["shape"], row["component"]), ("q4_lite", "nostroma-q4-lite"))
 
 
 class NoAcquisitionOnStart(unittest.TestCase):
@@ -745,7 +745,7 @@ class NoAcquisitionOnStart(unittest.TestCase):
                 text = p.read_text(encoding="utf-8")
                 if "shape_engine.ensure(" in text or "shape_engine.update_one(" in text or "update_one(ctx" in text:
                     found.add(p.relative_to(ROOT).as_posix())
-        for p in (ROOT / "strata.py", ROOT / "setup.py"):
+        for p in (ROOT / "nostroma.py", ROOT / "setup.py"):
             if "shape_engine.ensure(" in p.read_text(encoding="utf-8"):
                 found.add(p.relative_to(ROOT).as_posix())
         self.assertEqual(sorted(found - allowed), [])
@@ -753,9 +753,9 @@ class NoAcquisitionOnStart(unittest.TestCase):
 
     def test_resolving_a_shape_engine_for_a_start_reaches_no_network_code(self):
         code = ("import sys\nsys.path.insert(0, %r)\nfrom nostroma_control import engine_component as ec\n"
-                "try:\n    ec.expand('component:strata-q4-lite', {})\nexcept ec.EngineMissing:\n    pass\n"
+                "try:\n    ec.expand('component:nostroma-q4-lite', {})\nexcept ec.EngineMissing:\n    pass\n"
                 "bad = [m for m in ('nostroma_control.updater', 'nostroma_control.transfer', 'urllib.request') if m in sys.modules]\nprint(bad)\n" % str(ROOT))
-        out = subprocess.run([sys.executable, "-I", "-c", code], capture_output=True, text=True, env={**os.environ, "STRATA_COMPONENTS_DIR": tempfile.mkdtemp()})
+        out = subprocess.run([sys.executable, "-I", "-c", code], capture_output=True, text=True, env={**os.environ, "NOSTROMA_COMPONENTS_DIR": tempfile.mkdtemp()})
         self.assertEqual(out.stdout.strip(), "[]", out.stdout + out.stderr)
 
 
@@ -805,7 +805,7 @@ class OlderControls(Base):
         self.publish("0.1.59")
         with mock.patch.object(shape_engine, "_test_start", return_value=(True, "x")):
             self.assertIsNotNone(self.ensure())
-        # an older Control scans <components>/engine only, and reads strata-engine manifests only
+        # an older Control scans <components>/engine only, and reads nostroma-engine manifests only
         found, problems = ec.scan(self.comp)
         self.assertEqual([c.version for c in found], ["0.1.58"])
         self.assertEqual(problems, [])
@@ -815,7 +815,7 @@ class OlderControls(Base):
 
 
 class EveryEngineProgramAnswersTheShapeFlags(unittest.TestCase):
-    """`strata --geometry` and `strata --families` are answered by every engine program before any device is touched: the CUDA/HIP/Metal
+    """`nostroma --geometry` and `nostroma --families` are answered by every engine program before any device is touched: the CUDA/HIP/Metal
     program (src/program/generate.cpp) and the Intel one (sycl/src/program/generate.cpp, its own program). Without them a SYCL shape engine
     was installed with no geometry check (an engine that does not know the flag is accepted as one from before it)."""
 
@@ -832,7 +832,7 @@ class EveryEngineProgramAnswersTheShapeFlags(unittest.TestCase):
             with self.subTest(program=rel):
                 block = self._early_block(rel)
                 self.assertIn('std::strcmp(argv[i], "--geometry") == 0', block)
-                self.assertIn('std::printf("%s\\n", strata::core::kGeometryName);', block)
+                self.assertIn('std::printf("%s\\n", nostroma::core::kGeometryName);', block)
                 self.assertIn('std::strcmp(argv[i], "--families") == 0', block)
                 self.assertIn('std::printf("qwen4exp\\n");', block)
 

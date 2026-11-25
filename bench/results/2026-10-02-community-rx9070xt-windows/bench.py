@@ -3,7 +3,7 @@
 
 Standard library only. Every request starts with a fresh nonce so no server can answer from a prompt cache.
 
-  python3 bench/bench.py --url http://127.0.0.1:8080/v1 --label strata-iq3s --out bench/results/<dir>
+  python3 bench/bench.py --url http://127.0.0.1:8080/v1 --label nostroma-iq3s --out bench/results/<dir>
   python3 bench/bench.py --url http://127.0.0.1:8811/v1 --label mimo-stock --extra '{"chat_template_kwargs":{"enable_thinking":false}}'
 
 Tests:

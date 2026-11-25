@@ -234,8 +234,8 @@ class DeepSeekFolder(UpdaterCase):
         self.dest = self.components.parent / "engine-dsv41"
         folder = self.dest / f"0.1.56-{PLATFORM}-cuda-cuda13"
         folder.mkdir(parents=True)
-        self.exe = folder / "strata-dsv41"
-        self.exe.write_text("#!/bin/sh\necho 'strata-dsv41 0.1.56'\n")
+        self.exe = folder / "nostroma-dsv41"
+        self.exe.write_text("#!/bin/sh\necho 'nostroma-dsv41 0.1.56'\n")
         (self.dest / ".chosen").write_text(folder.name + "\n")
         patch = mock.patch.object(lib, "_process_uses", return_value=False)
         patch.start()

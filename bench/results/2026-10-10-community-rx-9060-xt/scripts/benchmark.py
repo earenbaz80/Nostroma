@@ -49,7 +49,7 @@ def request(base, model, label, prompt, run, tools=None, *, response_format=None
         "repeat_penalty": 1.0, "repetition_penalty": 1.0,
         "presence_penalty": 0.0, "frequency_penalty": 0.0,
         "reasoning_effort": reasoning_effort, "seed": 42, "max_tokens": max_tokens,
-        "cache_prompt": False, "strata_checkpoint": False,
+        "cache_prompt": False, "nostroma_checkpoint": False,
         "experimental_speed_projection": False,
         "stream": True, "stream_options": {"include_usage": True},
     }
@@ -145,7 +145,7 @@ def validate(row, strict=False):
             isinstance(answer[k], (int, float)) and abs(answer[k] - v) < 0.005 for k, v in expected.items())
     if row["case"] == "validation_logic":
         return answer == {"accepted": [0, 1.5, 3], "rejected": [None, "4", -2]}
-    return answer == {"start": "CLENEX-4181", "middle": "STRATA-8081", "end": "LONDON-9060"}
+    return answer == {"start": "CLENEX-4181", "middle": "NOSTROMA-8081", "end": "LONDON-9060"}
 
 
 def main():
@@ -186,7 +186,7 @@ def main():
     ]
     filler = "This is irrelevant background about routine office cleaning schedules. Ignore it when extracting marked keys.\n"
     for label, repeats in [("recall_short", 25), ("recall_long", 300)]:
-        document = "START_KEY=CLENEX-4181\n" + filler * repeats + "MIDDLE_KEY=STRATA-8081\n" + filler * repeats + "END_KEY=LONDON-9060\n"
+        document = "START_KEY=CLENEX-4181\n" + filler * repeats + "MIDDLE_KEY=NOSTROMA-8081\n" + filler * repeats + "END_KEY=LONDON-9060\n"
         cases.append((label, document + 'Return only JSON with start, middle and end holding the three marked key values.', None))
     results = {"started_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "base": args.base,
                "model": args.model, "runs": args.runs, "results": [],

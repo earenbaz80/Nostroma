@@ -1,6 +1,6 @@
 """The per-card DFlash2 window and confidence of 0.2.13 (owner 11-08, RESULTS-CONF.md): Strix Halo window 8 (conf 0.35), Blackwell cc 12.0 with >= 48 GB window 8 and conf 0.55.
 
-Every other card keeps conf and --spec 6, so its EFFECTIVE window (--spec lowered to the engine's cap, include/strata/core/draft_cap.hpp) is what it was.
+Every other card keeps conf and --spec 6, so its EFFECTIVE window (--spec lowered to the engine's cap, include/nostroma/core/draft_cap.hpp) is what it was.
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ GIB = 1 << 30
 TUNED = b"tuned-pack-" * 200_000
 
 
-def old_cap(uma, major):       # include/strata/core/draft_cap.hpp before 11-08
+def old_cap(uma, major):       # include/nostroma/core/draft_cap.hpp before 11-08
     return 5 if uma else 6 if major == 12 else 0
 
 
@@ -45,7 +45,7 @@ class CardWindow(unittest.TestCase):
         (self.data / "dflash2").mkdir()
         (self.data / "dflash2" / drafting.PACK_NAME).write_bytes(b"s" * (2 << 20))
         (self.data / "dflash2" / drafting.VOCAB_NAME).write_bytes(b"v" * 100)
-        self.exe = self.data / "strata"
+        self.exe = self.data / "nostroma"
         self.exe.write_bytes(b"--mtp-draft-vocab FILE (or --mtp DIR ... --draft-fallback ... selector codebooks: Q4_0 rows")
         for patcher in (mock.patch.object(drafting, "ENGINE_SERVES_DFLASH2", True),
                         mock.patch.multiple(drafting, TUNED_BYTES=len(TUNED), TUNED_SHA256=hashlib.sha256(TUNED).hexdigest())):

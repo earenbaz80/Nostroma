@@ -1,13 +1,13 @@
 // metal/tests/msl_dump.cpp - compile every kernel library the engine compiles (engine/msl_libs.h), without starting an engine.
 //
-//   msl_dump [--kq] [--f16] [--engine-msl DIR]        STRATA_METAL_MSL_DUMP=<dir> msl_dump   writes the text of each library
+//   msl_dump [--kq] [--f16] [--engine-msl DIR]        NOSTROMA_METAL_MSL_DUMP=<dir> msl_dump   writes the text of each library
 //
 // The engine builds its libraries from the same lists (msl_libs.h), so this is "the MSL text the engine compiles": with the dump
 // directory set, mtl_rt.mm writes each library's full string (prelude, <metal_stdlib>, ggml-common, the kernel files) and an index;
 // tools/msl_text_check.py compares two dumps.  It also proves that the libraries compile at the geometry this binary was built for
-// (-DSTRATA_GEOMETRY / -DSTRATA_GEOMETRY_FILE): a compile error ends the run with the compiler's message.
+// (-DNOSTROMA_GEOMETRY / -DNOSTROMA_GEOMETRY_FILE): a compile error ends the run with the compiler's message.
 //   --kq    the prelude of a model with K-quant / IQ down experts (kq_down_prelude)
-//   --f16   STRATA_METAL_F16
+//   --f16   NOSTROMA_METAL_F16
 //   --wrap F  map and wrap the model file F as the engine does before it compiles (a process holding a model of that size)
 //   --touch   read every page of the wrapped file (the process holds the model resident)
 //   --map F   map a second file too (the PLE file of the engine)
@@ -36,8 +36,8 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(argv[i], "--touch")) touch = true;
         else if (!std::strcmp(argv[i], "--engine-msl") && i + 1 < argc) edir = argv[++i];
     }
-    using namespace strata_metal;
-    const std::string kqp = kq ? "#define STRATA_KQ_DOWN 1\n" : "";
+    using namespace nostroma_metal;
+    const std::string kqp = kq ? "#define NOSTROMA_KQ_DOWN 1\n" : "";
     const std::pair<const char*, MslLib> libs[] = {
         {"core", lib_core(f16, kqp)},          {"gdn", lib_gdn()},
         {"qsa", lib_qsa()},                    {"sample", lib_sample()},

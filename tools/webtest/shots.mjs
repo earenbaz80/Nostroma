@@ -23,7 +23,7 @@ async function seedChats(page) {
     const mk = (id, title, days, text) => ({ id, title, time: Date.now() - days * d, messages: [{ role: "user", text, time: 1 }, { role: "assistant", text: "Sure.", time: 2 }] });
     for (const c of [mk("s1", "", 0.1, "Plan my week"), mk("s2", "Garden plan", 0.2, "Which tomatoes grow in shade?"), mk("s3", "", 1.5, "Translate this letter"),
                      mk("s4", "Branch of Recipe ideas", 3, "Recipe ideas"), mk("s5", "", 12, "Explain compound interest"), mk("s6", "", 50, "Old question about the printer")]) {
-      chatStore.put(StrataHistory.cleanChat(c));
+      chatStore.put(NostromaHistory.cleanChat(c));
     }
   }, null, day);
   await sleep(300);

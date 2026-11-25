@@ -1,4 +1,4 @@
-// src/image/vae/qi21_pixels.cpp - see include/strata/image/qi21_pixels.hpp.  Contraction off for the file: v * 255 + 0.5
+// src/image/vae/qi21_pixels.cpp - see include/nostroma/image/qi21_pixels.hpp.  Contraction off for the file: v * 255 + 0.5
 // must round twice, as sd.cpp's x86 build computes it, on every compiler and CPU.
 #if defined(__clang__)
 #pragma clang fp contract(off)
@@ -6,11 +6,11 @@
 #pragma GCC optimize("fp-contract=off")
 #endif
 
-#include "strata/image/qi21_pixels.hpp"
+#include "nostroma/image/qi21_pixels.hpp"
 
 #include <cstddef>
 
-namespace strata::image {
+namespace nostroma::image {
 
 uint8_t qi21_float_to_u8(float v) {
     if (v <= 0.0f) return 0;
@@ -25,4 +25,4 @@ void qi21_picture_to_u8(const float* planar, int w, int h, int c, uint8_t* out) 
         for (int k = 0; k < c; ++k) out[i * c + k] = qi21_float_to_u8(planar[(size_t) k * px + i]);
 }
 
-}  // namespace strata::image
+}  // namespace nostroma::image

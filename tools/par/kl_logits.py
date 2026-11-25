@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""kl_logits.py DIR PREFIX REF ARM... - first-window logits dumps (STRATA_DUMP_FIRST_LOGITS=DIR/PREFIX-<arm>, files .0 .1 ...):
+"""kl_logits.py DIR PREFIX REF ARM... - first-window logits dumps (NOSTROMA_DUMP_FIRST_LOGITS=DIR/PREFIX-<arm>, files .0 .1 ...):
 KL(REF || ARM) per request, mean/median/max, and top-1 agreement (the klcmp.py of phaseA-tests/026q, for dumps of one arm per label)."""
 import sys
 from pathlib import Path

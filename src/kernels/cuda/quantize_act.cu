@@ -21,12 +21,12 @@
 //      `rintf` differs from the reference wherever the f32 quotient rounds across a .5 boundary.
 //   3. The DEQUANTIZED value is `q * d16`, the fp16 scale, not `q * d32`.  The block stores fp16 and that is
 //      what a reader multiplies by.
-#include "strata/kernels/quantize_act.hpp"
-#include "strata/env.hpp"
-#include "strata/kernels/quantize_act_dev.cuh"
-#include "strata/kernels/swiglu.cuh"
-#include "strata/kernels/bf16_bits.hpp"
-#include "strata/kernels/f16_bits.hpp"
+#include "nostroma/kernels/quantize_act.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kernels/quantize_act_dev.cuh"
+#include "nostroma/kernels/swiglu.cuh"
+#include "nostroma/kernels/bf16_bits.hpp"
+#include "nostroma/kernels/f16_bits.hpp"
 
 #include <cuda_runtime.h>
 
@@ -34,12 +34,12 @@
 #include <cstdio>
 #include <cstdlib>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 
 constexpr int QK8_0 = 32;
 
-// THE fp16 CONVERSION LIVES IN `strata/kernels/f16_bits.hpp`, and this file used to carry its own copy.
+// THE fp16 CONVERSION LIVES IN `nostroma/kernels/f16_bits.hpp`, and this file used to carry its own copy.
 //
 // Round 198 found the private copy wrong in a way no fixture here could see: it tested `if (exp >= 31)` to
 // detect an out-of-range exponent, which conflates an f32 INF/NAN (raw exponent 255) with a FINITE value too
@@ -352,7 +352,7 @@ void quantize_q8_0_scaled(const float* x, uint8_t* blocks, float* scales, int64_
     const long long nb = n / QK8_0;
     const int threads = 128;
     static const bool old_q80 = [] {
-        const char* e = strata::env("NOSTROMA_OLD_Q80_SCALED");
+        const char* e = nostroma::env("NOSTROMA_OLD_Q80_SCALED");
         return e != nullptr && e[0] == '1';
     }();
     if (old_q80) {
@@ -437,4 +437,4 @@ void quantize_act_images(const float* x, int64_t n, uint8_t* q8_0_blocks, uint8_
     if (stream == nullptr) cudaDeviceSynchronize();
 }
 
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels

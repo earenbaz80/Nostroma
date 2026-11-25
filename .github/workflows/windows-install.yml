@@ -1,7 +1,7 @@
 name: Windows installer
 
 # install.ps1 run for real: it installs both names of the command from a local, test-signed feed, and each one prints its
-# own name in its usage line. Windows only, and Windows is the point: the launcher, `strata.py` and the CLI need nothing
+# own name in its usage line. Windows only, and Windows is the point: the launcher, `nostroma.py` and the CLI need nothing
 # but the standard library (the bundled interpreter is replaced by the runner's Python), so no package is installed.
 # The feed is served over loopback by the test itself and nothing leaves the runner.
 
@@ -13,9 +13,9 @@ on:
       - packaging/install.ps1
       - packaging/make_local_feed.py
       - packaging/feed_tool.py
-      - bin/strata.cmd
-      - bin/strata.ps1
-      - strata.py
+      - bin/nostroma.cmd
+      - bin/nostroma.ps1
+      - nostroma.py
       - nostroma_cli/**
       - nostroma_control/**
       - serve/**
@@ -26,9 +26,9 @@ on:
       - packaging/install.ps1
       - packaging/make_local_feed.py
       - packaging/feed_tool.py
-      - bin/strata.cmd
-      - bin/strata.ps1
-      - strata.py
+      - bin/nostroma.cmd
+      - bin/nostroma.ps1
+      - nostroma.py
       - nostroma_cli/**
       - nostroma_control/**
       - serve/**

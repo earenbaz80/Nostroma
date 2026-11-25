@@ -47,7 +47,7 @@ def main():
     a = ap.parse_args()
     here = os.path.dirname(os.path.abspath(__file__))
     pin = "unknown"
-    up = os.path.join(here, "..", "..", "third_party", "strata-ggml", "UPSTREAM.md")
+    up = os.path.join(here, "..", "..", "third_party", "nostroma-ggml", "UPSTREAM.md")
     if os.path.exists(up):
         m = re.search(r"^pin: ([0-9a-f]{40})", open(up, encoding="utf-8").read(), re.M)
         pin = m.group(1) if m else pin
@@ -70,7 +70,7 @@ def main():
         "# Line: <family> <flavour> <section> <type> <n> <rows> <input digest> <reference digest>; digests: golden_fnv1a64 (FNV-1a, 64 bit) in quant_parity.cpp.",
         "# family gcc: ggml-cpu built by %s, every group; every toolchain is held to these lines unless it has its own." % ", ".join(sorted(made["gcc"])),
         "# family msvc: ggml-cpu built by %s, only the groups where its reference differs from the gcc line (%%note says why)." % ", ".join(sorted(made["msvc"])),
-        "# ggml: third_party/strata-ggml, llama.cpp pin %s (UPSTREAM.md)." % pin,
+        "# ggml: third_party/nostroma-ggml, llama.cpp pin %s (UPSTREAM.md)." % pin,
         "# made by: tests/quant/make_golden.sh (GCC side, quant_parity --write-golden per flavour) + quant_parity --write-golden under MSVC + tests/quant/golden_merge.py",
         "# date: %s" % a.date,
     ]

@@ -14,7 +14,7 @@ class OwnHome(unittest.TestCase):
     def test_a_system_folder_is_still_refused(self):
         root = folders._system_roots()[0]
         with mock.patch.dict(os.environ, {"HOME": tempfile.gettempdir(), "USERPROFILE": tempfile.gettempdir()}):
-            p = folders.problem(str(Path(root) / "strata-models"))
+            p = folders.problem(str(Path(root) / "nostroma-models"))
         self.assertIsNotNone(p)
         self.assertIn("system folder", p[0])
 

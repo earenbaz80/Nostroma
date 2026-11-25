@@ -6,7 +6,7 @@
 //!   { "port": 0 | 1024..65535, "tray": false, "language": "en" }
 //!
 //! * `port`: the port the window's origin uses. 0 is the default, 47831. When the port is busy the shell takes a free one and tells the
-//!   host (`STRATA_PORT_NOTICE=busy:<wanted>:<used>`), which shows the person a warning: the chats and settings of the page are kept per
+//!   host (`NOSTROMA_PORT_NOTICE=busy:<wanted>:<used>`), which shows the person a warning: the chats and settings of the page are kept per
 //!   port, so a different port starts empty.
 //! * `tray`: closing the window hides it and keeps Nostroma running in the tray (Windows, macOS). The tray menu follows `language`.
 //! * `/shell/notify` on the loopback bridge shows a desktop notification (an approval is waiting) whether the window is open or hidden.
@@ -116,7 +116,7 @@ mod native {
     use tauri::{AppHandle, Manager};
     use tauri_plugin_notification::NotificationExt;
 
-    const TRAY_ID: &str = "strata-tray";
+    const TRAY_ID: &str = "nostroma-tray";
 
     fn show_main(app: &AppHandle) {
         if let Some(window) = app.get_webview_window("main") {

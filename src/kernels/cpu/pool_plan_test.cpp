@@ -1,11 +1,11 @@
-// pool_plan_test: the default CPU expert worker count on mock CPUs (include/strata/kernels/cpu/pool_plan.hpp).
+// pool_plan_test: the default CPU expert worker count on mock CPUs (include/nostroma/kernels/cpu/pool_plan.hpp).
 // Pure arithmetic, no threads and no OS calls: it runs on any machine.
-#include "strata/kernels/cpu/pool_plan.hpp"
+#include "nostroma/kernels/cpu/pool_plan.hpp"
 
 #include <cstdio>
 #include <string>
 
-namespace cpu = strata::kernels::cpu;
+namespace cpu = nostroma::kernels::cpu;
 
 static int g_fail = 0;
 
@@ -150,7 +150,7 @@ int main() {
     expect(cpu::pool_workers_warning(8, q, cpu::plan_pool_workers(q)).find("container") != std::string::npos,
            "8 workers under a 4-CPU quota: names the container limit");
 
-    // STRATA_NUMA_SPLIT (span_packages): the default spans every socket, the other bounds stay; off = the plan above
+    // NOSTROMA_NUMA_SPLIT (span_packages): the default spans every socket, the other bounds stay; off = the plan above
     {
         auto x = xeon;   // 2 x 20 cores: 39 but the host's, one kept free -> 38, then the cap
         x.span_packages = true;

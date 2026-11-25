@@ -1,5 +1,5 @@
 // src/core/uma_cache_test.cpp - the RAM reserve of an integrated GPU's auto expert cache (no GPU needed).
-#include "strata/core/uma_cache.hpp"
+#include "nostroma/core/uma_cache.hpp"
 
 #include <cstdio>
 
@@ -7,7 +7,7 @@ static int fails = 0;
 #define CHECK(c) do { if (!(c)) { std::printf("FAIL line %d: %s\n", __LINE__, #c); ++fails; } } while (0)
 
 int main() {
-    using namespace strata::core;
+    using namespace nostroma::core;
     constexpr uint64_t GiB = 1ull << 30;
     // the larger of 8 GiB and 8% of the RAM
     CHECK(uma_desktop_reserve_bytes(32 * GiB, nullptr) == 8 * GiB);

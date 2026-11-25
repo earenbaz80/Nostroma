@@ -1,11 +1,11 @@
-// The prompt path's K/V append under KV streaming (strata/core/kv_host_dma.hpp): CUDA copies the chunk's new cells to
-// the host copy by DMA by default, HIP keeps the kernel's own stores unless asked, STRATA_KV_HOST_DMA=1 / 0 forces
+// The prompt path's K/V append under KV streaming (nostroma/core/kv_host_dma.hpp): CUDA copies the chunk's new cells to
+// the host copy by DMA by default, HIP keeps the kernel's own stores unless asked, NOSTROMA_KV_HOST_DMA=1 / 0 forces
 // either way, and a layer without a staging pool always keeps the kernel's stores.
-#include "strata/core/kv_host_dma.hpp"
+#include "nostroma/core/kv_host_dma.hpp"
 
 #include <cstdio>
 
-using namespace strata::core;
+using namespace nostroma::core;
 
 namespace {
 int failed = 0;

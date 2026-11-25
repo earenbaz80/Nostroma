@@ -11,13 +11,13 @@ DATA=$REPORT/data
 S=$REPORT/scripts
 PY=$ROOT/.venv/bin/python
 MODEL=qwen3.8-flash-next-coder-iq1_m
-LOG=$ROOT/strata-coder-iq1_m.log
+LOG=$ROOT/nostroma-coder-iq1_m.log
 
 step() { echo; echo "[$(date -Is)] === $* ==="; echo; }
 
 kill_server() {
   pkill -f "serve/server.py" 2>/dev/null
-  pkill -f "engine/strata --serve" 2>/dev/null
+  pkill -f "engine/nostroma --serve" 2>/dev/null
   sleep 5
 }
 

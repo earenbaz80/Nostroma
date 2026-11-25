@@ -12,11 +12,11 @@
 #if FNX_KPART == 4 && !FNX_HIP && FNX_ARCH >= 80
 #define FNX_GDN_TC_ON 1
 #if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 800
-#define STRATA_GDN_TC_SM80 1
-#define STRATA_GDN_CP_ASYNC 1
+#define NOSTROMA_GDN_TC_SM80 1
+#define NOSTROMA_GDN_CP_ASYNC 1
 #else
-#define STRATA_GDN_TC_SM80 0   // device code for older cards: the wrappers trap (the scan never launches there)
-#define STRATA_GDN_CP_ASYNC 0
+#define NOSTROMA_GDN_TC_SM80 0   // device code for older cards: the wrappers trap (the scan never launches there)
+#define NOSTROMA_GDN_CP_ASYNC 0
 #endif
 
 constexpr int GTS = HS;            // head size
@@ -25,26 +25,26 @@ constexpr int GTC_GSB = 2048;      // tokens a super-block: the prep's scratch i
 static_assert(GCH == 32, "gdn_tc_prompt.cuh: a lane per token of the chunk");
 
 __device__ __forceinline__ void gdn_cp4(float* smem, const float* gmem) {
-#if STRATA_GDN_CP_ASYNC
+#if NOSTROMA_GDN_CP_ASYNC
     asm volatile("cp.async.ca.shared.global [%0], [%1], 4;\n" ::"r"((unsigned) __cvta_generic_to_shared(smem)), "l"(gmem));
 #else
     *smem = *gmem;
 #endif
 }
 __device__ __forceinline__ void gdn_cp16(float* smem, const float* gmem) {
-#if STRATA_GDN_CP_ASYNC
+#if NOSTROMA_GDN_CP_ASYNC
     asm volatile("cp.async.cg.shared.global [%0], [%1], 16;\n" ::"r"((unsigned) __cvta_generic_to_shared(smem)), "l"(gmem));
 #else
     *reinterpret_cast<float4*>(smem) = *reinterpret_cast<const float4*>(gmem);
 #endif
 }
 __device__ __forceinline__ void gdn_cp_commit() {
-#if STRATA_GDN_CP_ASYNC
+#if NOSTROMA_GDN_CP_ASYNC
     asm volatile("cp.async.commit_group;\n" ::);
 #endif
 }
 __device__ __forceinline__ void gdn_cp_wait_all() {
-#if STRATA_GDN_CP_ASYNC
+#if NOSTROMA_GDN_CP_ASYNC
     asm volatile("cp.async.wait_all;\n" ::);
 #endif
 }
@@ -118,7 +118,7 @@ inline GtcScratch gtc_scratch(int nk, int nv) {
 // happened to close that branch (BSYNC) before the REDUX.MAX; the engine's build is a separate compile that nothing
 // checks.  The kernel has no early return, so the full mask costs no reconvergence code.
 __device__ __forceinline__ float gtc_warp_max(float v) {
-#if STRATA_GDN_TC_SM80
+#if NOSTROMA_GDN_TC_SM80
     return __uint_as_float(__reduce_max_sync(0xffffffffu, __float_as_uint(v)));
 #else
 #pragma unroll
@@ -142,7 +142,7 @@ __device__ __forceinline__ int gtc_scale_exp(float m) {
 //   ldmatrix m8n8.x4.b16: lanes 8m..8m+7 give the row addresses of matrix m; a lane gets (row gid, cols 2tig, 2tig+1)
 //                 of each matrix (the lower column in the low half), or with .trans (rows 2tig, 2tig+1; col gid)
 __device__ __forceinline__ void gtc_ldsm_x4(uint32_t (&r)[4], const void* smem) {
-#if STRATA_GDN_TC_SM80
+#if NOSTROMA_GDN_TC_SM80
     asm volatile("ldmatrix.sync.aligned.m8n8.x4.shared.b16 {%0,%1,%2,%3}, [%4];"
                  : "=r"(r[0]), "=r"(r[1]), "=r"(r[2]), "=r"(r[3])
                  : "r"((unsigned) __cvta_generic_to_shared(smem)));
@@ -151,7 +151,7 @@ __device__ __forceinline__ void gtc_ldsm_x4(uint32_t (&r)[4], const void* smem) 
 #endif
 }
 __device__ __forceinline__ void gtc_ldsm_x4_trans(uint32_t (&r)[4], const void* smem) {
-#if STRATA_GDN_TC_SM80
+#if NOSTROMA_GDN_TC_SM80
     asm volatile("ldmatrix.sync.aligned.m8n8.x4.trans.shared.b16 {%0,%1,%2,%3}, [%4];"
                  : "=r"(r[0]), "=r"(r[1]), "=r"(r[2]), "=r"(r[3])
                  : "r"((unsigned) __cvta_generic_to_shared(smem)));
@@ -160,7 +160,7 @@ __device__ __forceinline__ void gtc_ldsm_x4_trans(uint32_t (&r)[4], const void* 
 #endif
 }
 __device__ __forceinline__ void gtc_mma_f16(float (&c)[4], const uint32_t (&a)[4], uint32_t b0, uint32_t b1) {
-#if STRATA_GDN_TC_SM80
+#if NOSTROMA_GDN_TC_SM80
     asm("mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32 {%0,%1,%2,%3}, {%4,%5,%6,%7}, {%8,%9}, {%0,%1,%2,%3};"
         : "+f"(c[0]), "+f"(c[1]), "+f"(c[2]), "+f"(c[3])
         : "r"(a[0]), "r"(a[1]), "r"(a[2]), "r"(a[3]), "r"(b0), "r"(b1));
@@ -175,7 +175,7 @@ __device__ __forceinline__ void gtc_mma3_f16(float (&c)[4], const uint32_t (&ah)
     gtc_mma_f16(c, ah, bl0, bl1);
     gtc_mma_f16(c, ah, bh0, bh1);
 }
-// NP (experiment, STRATA_GDN_TC split kernels only): 3 = every product on the three passes above (the default); 2 = only the products
+// NP (experiment, NOSTROMA_GDN_TC split kernels only): 3 = every product on the three passes above (the default); 2 = only the products
 // that reach the OUTPUT alone (q.GTS and D.P) on one pass, the state's products (k.GTS, Y.T, the update) on three; 1 = every product on one pass
 // (hi.hi, plain f16 operands as the gfx11 WMMA path).  A single-pass product does not read its B operand's lo image.
 template <int NP>
@@ -210,7 +210,7 @@ __device__ __forceinline__ void gtc_split_store4(uint16_t* hi, uint16_t* lo, flo
 // a component each, and kept across them they cost 24 registers a thread
 __device__ __forceinline__ float4 gtc_lds128(const float4* p) {
     float4 v;
-#if STRATA_GDN_TC_SM80
+#if NOSTROMA_GDN_TC_SM80
     asm volatile("ld.shared.v4.f32 {%0,%1,%2,%3}, [%4];"
                  : "=f"(v.x), "=f"(v.y), "=f"(v.z), "=f"(v.w)
                  : "r"((unsigned) __cvta_generic_to_shared(p)));

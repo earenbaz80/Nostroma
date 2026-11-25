@@ -50,14 +50,14 @@ function edit(value, event = "input") {{
     def test_input_is_used_and_saved_without_blur(self):
         got = self.run_js('''
 edit("  test-key  ");
-console.log(JSON.stringify({headers: headers(true), saved: data.get("strata.apikey")}));
+console.log(JSON.stringify({headers: headers(true), saved: data.get("nostroma.apikey")}));
 ''')
         self.assertEqual(got, {"headers": {"Authorization": "Bearer test-key", "Content-Type": "application/json"},
                                "saved": '"test-key"'})
 
     def test_saved_key_is_restored_on_reload(self):
         got = self.run_js('console.log(JSON.stringify({value: field.value, headers: headers()}));',
-                          stored={"strata.apikey": '"saved-key"'})
+                          stored={"nostroma.apikey": '"saved-key"'})
         self.assertEqual(got, {"value": "saved-key", "headers": {"Authorization": "Bearer saved-key"}})
 
     def test_blocked_storage_still_uses_key_in_memory(self):
@@ -66,14 +66,14 @@ console.log(JSON.stringify({headers: headers(true), saved: data.get("strata.apik
 
     def test_failed_write_does_not_reuse_old_key(self):
         got = self.run_js('edit("new-key", "change"); console.log(JSON.stringify(headers()));',
-                          stored={"strata.apikey": '"old-key"'}, quota=True)
+                          stored={"nostroma.apikey": '"old-key"'}, quota=True)
         self.assertEqual(got, {"Authorization": "Bearer new-key"})
 
     def test_clearing_key_removes_authorization(self):
         for quota in (False, True):
             with self.subTest(quota=quota):
                 got = self.run_js('edit("  "); console.log(JSON.stringify(headers()));',
-                                  stored={"strata.apikey": '"old-key"'}, quota=quota)
+                                  stored={"nostroma.apikey": '"old-key"'}, quota=quota)
                 self.assertEqual(got, {})
 
     def test_successful_save_notifies_only_on_change(self):

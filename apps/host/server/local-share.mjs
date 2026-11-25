@@ -27,7 +27,7 @@ export function createLocalShare({ handle, hasKey, changed = () => {}, host = '0
         res.setHeader('access-control-allow-origin', '*');
         res.setHeader('access-control-allow-methods', 'GET, POST, OPTIONS');
         // the headers the preflight asks for (SDKs add their own; Anthropic browser clients send anthropic-version)
-        res.setHeader('access-control-allow-headers', String(req.headers['access-control-request-headers'] ?? '') || 'authorization, content-type, x-api-key, x-strata-client, anthropic-version, anthropic-beta');
+        res.setHeader('access-control-allow-headers', String(req.headers['access-control-request-headers'] ?? '') || 'authorization, content-type, x-api-key, x-nostroma-client, anthropic-version, anthropic-beta');
         res.setHeader('access-control-max-age', '600');
         if (method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
       }

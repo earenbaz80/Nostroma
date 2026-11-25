@@ -8,10 +8,10 @@ Only the Terminal's Control changed (version 0.1.48.1). The app stays 0.2.3 and 
 
 ## Updating
 
-- **From 0.2.3:** run `nostroma update` in the Terminal. It fetches Control 0.1.48.1, and the next `strata` command already runs it (`strata --version` says 0.2.3.1). The app is not touched.
+- **From 0.2.3:** run `nostroma update` in the Terminal. It fetches Control 0.1.48.1, and the next `nostroma` command already runs it (`nostroma --version` says 0.2.3.1). The app is not touched.
 - **From an older version:** follow the steps in the 0.2.3 notes. The install command (`install.ps1` on Windows, `install.sh` on Linux) now installs this fix.
 - **Mac:** the Mac Terminal stays on Control 0.1.48. This fix does not touch the Mac.
 
 ## Downloads
 
-Everything from 0.2.3 is attached again, so the release page still holds every file. The files that changed are `strata-control-0.1.48.1-windows-x86_64.zip`, `strata-control-0.1.48.1-linux-x86_64.tar.gz`, the feed (`strata-feed.json` with its `.sig`), `install-manifest.txt`, `latest.json` and `SHA256SUMS.txt`. The installers, AppImages, dmg and engine packages are the 0.2.3 files.
+Everything from 0.2.3 is attached again, so the release page still holds every file. The files that changed are `nostroma-control-0.1.48.1-windows-x86_64.zip`, `nostroma-control-0.1.48.1-linux-x86_64.tar.gz`, the feed (`nostroma-feed.json` with its `.sig`), `install-manifest.txt`, `latest.json` and `SHA256SUMS.txt`. The installers, AppImages, dmg and engine packages are the 0.2.3 files.

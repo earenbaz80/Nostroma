@@ -32,8 +32,8 @@ def imports_of(path: Path) -> set[str]:
 class BundleImports(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.temp = tempfile.TemporaryDirectory(prefix="strata-bundle-")
-        cls.root = Path(cls.temp.name) / "strata-terminal"
+        cls.temp = tempfile.TemporaryDirectory(prefix="nostroma-bundle-")
+        cls.root = Path(cls.temp.name) / "nostroma-terminal"
         cls.root.mkdir()
         ignore = shutil.ignore_patterns("__pycache__", "*.pyc")
         for item in pt.PAYLOAD:
@@ -53,15 +53,15 @@ class BundleImports(unittest.TestCase):
         cls.temp.cleanup()
 
     def test_gguf_py_and_the_converter_are_in_the_bundle(self):
-        """OWN-1B: the Terminal and Control packages carry third_party/strata-gguf-py (the preparation tools' gguf-py and llama.cpp's converter), so
+        """OWN-1B: the Terminal and Control packages carry third_party/nostroma-gguf-py (the preparation tools' gguf-py and llama.cpp's converter), so
         preparing a model downloads no llama.cpp; the bundled copy is byte-identical to the source tree's."""
-        here = self.root / "third_party" / "strata-gguf-py"
+        here = self.root / "third_party" / "nostroma-gguf-py"
         for rel in ("gguf/__init__.py", "gguf/quants.py", "converter/convert_hf_to_gguf.py", "converter/conversion/qwen4exp.py", "LICENSE", "UPSTREAM.md"):
             self.assertTrue((here / rel).is_file(), rel)
-            self.assertEqual((here / rel).read_bytes(), (ROOT / "third_party" / "strata-gguf-py" / rel).read_bytes(), rel)
-        self.assertIn("third_party/strata-gguf-py/", self.installer["files"])
+            self.assertEqual((here / rel).read_bytes(), (ROOT / "third_party" / "nostroma-gguf-py" / rel).read_bytes(), rel)
+        self.assertIn("third_party/nostroma-gguf-py/", self.installer["files"])
         probe = subprocess.run([sys.executable, "-I", "-c", f"import sys; sys.path.insert(0, {str(self.root / 'tools')!r}); import _paths; print(_paths.gguf_py())"],
-                               capture_output=True, text=True, timeout=60, env={k: v for k, v in os.environ.items() if k != "STRATA_GGUF_PY"})
+                               capture_output=True, text=True, timeout=60, env={k: v for k, v in os.environ.items() if k != "NOSTROMA_GGUF_PY"})
         self.assertEqual(probe.returncode, 0, probe.stderr[-500:])
         self.assertEqual(Path(probe.stdout.strip()).resolve(), here.resolve(), "a bundled tool finds the bundled copy")
 
@@ -87,9 +87,9 @@ class BundleImports(unittest.TestCase):
     def test_setup_py_and_each_of_its_tools_import_with_tools_limited_to_the_bundle(self):
         modules = sorted(set(pt.setup_tool_imports(self.root)) | set(pt.INSTALLER_TOOLS))
         probe = subprocess.run([sys.executable, "-I", "-c", f"import sys; sys.path.insert(0, {str(self.root / 'tools')!r}); import _paths; _paths.gguf_py()"],
-                               capture_output=True, text=True, timeout=60, env={**os.environ, "STRATA_CONTROL_INSTALL": "1"})
+                               capture_output=True, text=True, timeout=60, env={**os.environ, "NOSTROMA_CONTROL_INSTALL": "1"})
         if probe.returncode != 0:      # a tool reads llama.cpp's gguf-py when it is imported: a test box without any llama.cpp checkout cannot import it
-            self.skipTest("no llama.cpp gguf-py on this box (set STRATA_GGUF_PY to run this check)")
+            self.skipTest("no llama.cpp gguf-py on this box (set NOSTROMA_GGUF_PY to run this check)")
         code = ("import sys, os, importlib\n"
                 f"sys.path[:0] = [{str(self.root)!r}, {str(self.root / 'tools')!r}]\n"
                 "import setup\n"
@@ -97,7 +97,7 @@ class BundleImports(unittest.TestCase):
                 "    module = importlib.import_module(name)\n"
                 f"    assert os.path.samefile(os.path.dirname(module.__file__), {str(self.root / 'tools')!r}), (name, module.__file__)\n"
                 "print('imports ok')\n")
-        env = {**os.environ, "STRATA_CONTROL_INSTALL": "1", "PYTHONNOUSERSITE": "1"}
+        env = {**os.environ, "NOSTROMA_CONTROL_INSTALL": "1", "PYTHONNOUSERSITE": "1"}
         for key in ("PYTHONPATH", "PYTHONHOME"):
             env.pop(key, None)
         done = subprocess.run([sys.executable, "-I", "-c", code], cwd=str(self.root.parent), env=env,
@@ -118,7 +118,7 @@ class ProbeLeavesNoBytecode(unittest.TestCase):
     """The import probe of package_terminal.py must not write compiled files into the bundle, whoever runs the build."""
 
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="strata-probe-")
+        self.temp = tempfile.TemporaryDirectory(prefix="nostroma-probe-")
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name) / "bundle"
         self.root.mkdir()

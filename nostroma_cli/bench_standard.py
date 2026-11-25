@@ -1,7 +1,7 @@
 """`nostroma bench run` for the standard benchmark protocol (docs/BENCHMARK_PROTOCOL.md).
 
 The runner sends the frozen requests of bench/prompts/standard-v1 to a Nostroma server through streaming chat completions, in the
-protocol's order, and writes a `strata-standard-benchmark` result that other people's results can be compared with:
+protocol's order, and writes a `nostroma-standard-benchmark` result that other people's results can be compared with:
 
     warm-up (1, excluded)  ->  performance (short, prompt-4k, prompt-16k, three times)  ->  sanity (I1-I4, R1-R4, T1-T4)
     ->  optional concurrency (four short requests released together, three rounds)
@@ -36,9 +36,9 @@ from nostroma_cli import bench_facts as facts
 from nostroma_cli.bench import _private_mkdir, _write_new
 from nostroma_control.profiles import ProfileError
 
-FORMAT = "strata-standard-benchmark"
+FORMAT = "nostroma-standard-benchmark"
 SCHEMA_VERSION = 1
-PROTOCOL_ID = "strata-qwen38-thinking-v1-draft.1"
+PROTOCOL_ID = "nostroma-qwen38-thinking-v1-draft.1"
 PROFILE = "qwen3.8-flash-next-thinking"
 SUITE = "standard-v1"
 #: The model-card revision the profile was defined from. The owner has not pinned one yet, so every result says so.
@@ -147,7 +147,7 @@ class Target:
         return cls(self.host, self.port, timeout=timeout)
 
     def headers(self, extra: dict | None = None) -> dict:
-        out = {"User-Agent": "Strata-Bench/1", "Accept": "application/json", "Connection": "close", **(extra or {})}
+        out = {"User-Agent": "Nostroma-Bench/1", "Accept": "application/json", "Connection": "close", **(extra or {})}
         if self.key:
             out["Authorization"] = "Bearer " + self.key
         return out
@@ -170,7 +170,7 @@ class Target:
 
 def payload_of(spec: dict, model: str | None) -> dict:
     """The request body: the protocol's sampling and thinking settings, every one explicit, plus the fixture's messages and tools."""
-    body = {"model": model or "strata", "messages": spec["messages"], "stream": True,
+    body = {"model": model or "nostroma", "messages": spec["messages"], "stream": True,
             "stream_options": {"include_usage": True}, "max_tokens": spec["max_output_tokens"], "seed": spec["seed"],
             **SAMPLING, "reasoning_budget_tokens": 0, "chat_template_kwargs": dict(TEMPLATE_KWARGS)}
     if spec.get("tools"):
@@ -506,7 +506,7 @@ class Collector:
 
     def alive(self) -> bool:
         health = self.target.get("/health", timeout=5)
-        return bool(health and health.get("service") == "strata")
+        return bool(health and health.get("service") == "nostroma")
 
     def one(self, spec: dict) -> None:
         if self.abort:
@@ -662,7 +662,7 @@ def _start_wait(target: Target, proc, timeout_s: float, log, log_path: Path | No
         if proc is not None and proc.poll() is not None:
             return False
         health = target.get("/health", timeout=5)
-        if health and health.get("service") == "strata" and health.get("loaded"):
+        if health and health.get("service") == "nostroma" and health.get("loaded"):
             return True
         if time.monotonic() - announced > 30:
             log(f"waiting for the model to load ({int(time.monotonic() - began)} s) ...")
@@ -674,7 +674,7 @@ def _start_wait(target: Target, proc, timeout_s: float, log, log_path: Path | No
 def start_engine(ref: str, target: Target, log_path: Path, log, timeout_s: float):
     """Start `nostroma serve --profile REF` as a child of this run. -> the process."""
     root = Path(__file__).resolve().parents[1]
-    command = [sys.executable, str(root / "strata.py"), "serve", "--profile", ref, "--quiet"]
+    command = [sys.executable, str(root / "nostroma.py"), "serve", "--profile", ref, "--quiet"]
     handle = open(log_path, "wb")
     kwargs = {}
     if os.name == "nt":
@@ -682,12 +682,12 @@ def start_engine(ref: str, target: Target, log_path: Path, log, timeout_s: float
     else:
         kwargs["start_new_session"] = True
     proc = subprocess.Popen(command, cwd=str(root), stdout=handle, stderr=subprocess.STDOUT, **kwargs)
-    proc._strata_log = handle                              # closed by stop_engine
+    proc._nostroma_log = handle                              # closed by stop_engine
     if os.name == "nt":
         # Windows has no process group to signal: the engine tree is put in a job object this run owns, which ends every process in it in one call
         # and cannot be refused for a single member (a per-process taskkill was "Access is denied" on a tree this very user started, #4260)
         from serve import winjob
-        proc._strata_job = winjob.contain(proc)
+        proc._nostroma_job = winjob.contain(proc)
     log("starting the engine (the model load is not part of the benchmark time) ...")
     try:
         ready = _start_wait(target, proc, timeout_s, log, log_path)
@@ -768,7 +768,7 @@ def stop_engine(proc) -> str | None:
             if os.name == "nt":
                 # 1. the job this run put the engine in (ends the whole tree at once); 2. taskkill of the tree; 3. the process itself.
                 # The next step runs only when the one before left the process running, and a refusal is reported only if all of them fail.
-                if getattr(proc, "_strata_job", False):
+                if getattr(proc, "_nostroma_job", False):
                     from serve import winjob
                     winjob.terminate()
                     try:
@@ -812,7 +812,7 @@ def stop_engine(proc) -> str | None:
             else:
                 problem = None                               # it is gone: an earlier refusal that a later step got around is not news
     finally:
-        handle = getattr(proc, "_strata_log", None)
+        handle = getattr(proc, "_nostroma_log", None)
         if handle is not None:
             handle.close()
     return problem
@@ -839,14 +839,14 @@ def run(target: Target, out: Path | None, *, out_root: Path | None = None, optio
     if out is None and out_root is None:
         raise ProfileError("benchmark needs an output directory", 2)
     health = target.get("/health", timeout=10)
-    if not health or health.get("service") != "strata":
+    if not health or health.get("service") != "nostroma":
         raise ProfileError("no Nostroma server answers at that address", 5)
     if health.get("loaded") is not True:
         raise ProfileError("the server has no model loaded; the benchmark needs a loaded model", 5)
     props = target.get("/props", timeout=15)
     status = target.get("/v1/status", timeout=15) or {}
     if props is None:
-        raise ProfileError("the server did not answer /props (an API key may be needed: STRATA_API_KEY)", 5)
+        raise ProfileError("the server did not answer /props (an API key may be needed: NOSTROMA_API_KEY)", 5)
     redact = facts.redactor(target.key or "")
     why = facts.Why()
     reasons_nonconforming: list[str] = []
@@ -882,7 +882,7 @@ def run(target: Target, out: Path | None, *, out_root: Path | None = None, optio
         props=props, declared=declared,
         sampling={"sampling": SAMPLING, "chat_template_kwargs": TEMPLATE_KWARGS}, template_ref=template_ref)
 
-    if software_block["strata_commit"] is None:
+    if software_block["nostroma_commit"] is None:
         reasons_nonconforming.append("the Nostroma commit is unknown (not a git checkout and no COMMIT file)")
     if not model_block["files"]:
         reasons_nonconforming.append("no model file could be hashed")
@@ -1054,7 +1054,7 @@ def validate(doc: dict) -> list[str]:
     for gpu in doc["hardware"].get("gpus") or []:
         need(gpu.get("memory_kind") in ("dedicated", "shared"), "gpu memory_kind")
         need(isinstance(gpu.get("device_index"), int), "gpu device_index")
-    for field in ("os", "drivers", "runtime", "strata_commit", "engine_version", "build_kind", "runner_commit", "build_options"):
+    for field in ("os", "drivers", "runtime", "nostroma_commit", "engine_version", "build_kind", "runner_commit", "build_options"):
         need(field in doc["software"], f"software.{field} missing")
     need(doc["software"].get("build_kind") in ("release", "source"), "software.build_kind")
     for field in ("id", "revision", "source_revision", "quantization", "files", "tokenizer_revision", "custom_pack"):
@@ -1244,7 +1244,7 @@ def report_markdown(doc: dict, redact=lambda text: text) -> str:
         "- CPU: %s; RAM: %s" % (hw["cpu"] or nm, ram),
         "- Storage of the model files: " + storage,
         "- OS: %s %s; drivers: %s; runtime: %s" % (sw["os"]["name"], sw["os"]["version"], drivers, runtime),
-        "- Nostroma commit: `%s`; engine %s; %s build" % (sw["strata_commit"] or nm, sw["engine_version"] or nm, sw["build_kind"]),
+        "- Nostroma commit: `%s`; engine %s; %s build" % (sw["nostroma_commit"] or nm, sw["engine_version"] or nm, sw["build_kind"]),
         "- Background work: " + ("; ".join(hw["background_workloads"]) if hw["background_workloads"] else nm), "",
         "## Model and configuration", "",
         f"- Model: {model['id'] or nm}; quantization {model['quantization'] or nm}; revision {model['revision'] or nm}; "

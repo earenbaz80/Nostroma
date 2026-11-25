@@ -1,13 +1,13 @@
-// Few-row experts on the FP16 prompt path (fewrows.hpp): the research switch STRATA_PF_FEWROWS and the rule that picks the
+// Few-row experts on the FP16 prompt path (fewrows.hpp): the research switch NOSTROMA_PF_FEWROWS and the rule that picks the
 // experts.  Header-only, no GPU.
 #include <cstdio>
 
-#include "strata/prefill/fewrows.hpp"
+#include "nostroma/prefill/fewrows.hpp"
 
-using strata::prefill::fewrows_switch;
-using strata::prefill::fewrows_takes;
-using strata::prefill::kFewRows;
-using strata::prefill::kFewRowsRecBytes;
+using nostroma::prefill::fewrows_switch;
+using nostroma::prefill::fewrows_takes;
+using nostroma::prefill::kFewRows;
+using nostroma::prefill::kFewRowsRecBytes;
 
 static int failed = 0;
 #define CHECK(x) do { if (!(x)) { std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #x); ++failed; } } while (0)
@@ -37,7 +37,7 @@ int main() {
     CHECK(!fewrows_takes(true, true, true, false, 600));
     CHECK(!fewrows_takes(false, true, true, false, 6));             // switch off
     CHECK(!fewrows_takes(true, false, true, false, 6));             // MMQ or the fused kernels take the layer
-    CHECK(!fewrows_takes(true, true, false, false, 6));             // a Strata pack's blob
+    CHECK(!fewrows_takes(true, true, false, false, 6));             // a Nostroma pack's blob
     CHECK(!fewrows_takes(true, true, true, true, 6));               // APR: the FP16 path rotates itself
     CHECK(!fewrows_takes(true, true, true, false, -1));
 

@@ -96,14 +96,14 @@ def args_to_argv(args: dict[str, Any]) -> list[str]:
 
 
 def find_config_files(root: Path, *, limit: int = 200) -> list[Path]:
-    """Every `strata-*.json` run configuration under `root`.
+    """Every `nostroma-*.json` run configuration under `root`.
 
     The project keeps one configuration per installed model, and the naming is the project's own
-    (`strata-<model>.json`, as `setup.py` writes them). Anything that does not parse as a JSON object
+    (`nostroma-<model>.json`, as `setup.py` writes them). Anything that does not parse as a JSON object
     with an `args` list is not a run configuration and is ignored rather than guessed at.
     """
     out: list[Path] = []
-    for path in sorted(Path(root).rglob("strata-*.json")):
+    for path in sorted(Path(root).rglob("nostroma-*.json")):
         if len(out) >= limit:
             break
         try:
@@ -353,7 +353,7 @@ def apply_recommendation(*, job: dict[str, Any], config_path: Path,
 
     record = {
         "schema_version": SCHEMA_VERSION,
-        "kind": "strata.tuning.application",
+        "kind": "nostroma.tuning.application",
         "application_id": application_id,
         "job_id": plan.job_id,
         "applied_at": time.time(),

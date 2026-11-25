@@ -1,7 +1,7 @@
-"""Shared helpers for the scripts in this folder: talk to a running Strata server, wait until it is idle,
+"""Shared helpers for the scripts in this folder: talk to a running Nostroma server, wait until it is idle,
 follow its logs, parse the engine's per-request timing lines and strip private details from what is saved.
 
-The API key is read at run time from the STRATA_API_KEY environment variable or from the server's config
+The API key is read at run time from the NOSTROMA_API_KEY environment variable or from the server's config
 file (--key-config, its "api_key"); it is never written to any output."""
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ import time
 import urllib.request
 from pathlib import Path
 
-PROMPT_RE = re.compile(r"strata serve: prompt (\d+) tokens = (\d+) reused \+ (\d+) read in (\d+) ms \(([\d.]+) tok/s\), "
+PROMPT_RE = re.compile(r"nostroma serve: prompt (\d+) tokens = (\d+) reused \+ (\d+) read in (\d+) ms \(([\d.]+) tok/s\), "
                        r"(\d+) generated in (\d+) ms \(([\d.]+) tok/s\), drafts accepted (\d+) of (\d+), (\d+) checkpoints")
 HIT_RE = re.compile(r"decode expert cache hit rate: ([\d.]+)% \((\d+) hits / (\d+) lookups\)")
 KV_RE = re.compile(r"KV streaming: ([\d.]+)% of (\d+) block reads hit VRAM, ([\d.]+) MiB read from RAM")
@@ -21,7 +21,7 @@ SUFFIX_RE = re.compile(r"suffix drafts: (\d+) windows, (\d+) of (\d+) drafts acc
 
 
 def api_key(key_config: str | None) -> str:
-    key = os.environ.get("STRATA_API_KEY", "")
+    key = os.environ.get("NOSTROMA_API_KEY", "")
     if not key and key_config:
         key = json.loads(Path(key_config).read_text()).get("api_key") or ""
     return key
@@ -85,7 +85,7 @@ class LogTail:
 
 
 def parse_engine(lines: list[str]) -> list[dict]:
-    """One dict per 'strata serve: prompt ...' line, with the hit-rate / KV-streaming / suffix lines after it."""
+    """One dict per 'nostroma serve: prompt ...' line, with the hit-rate / KV-streaming / suffix lines after it."""
     out = []
     for line in lines:
         m = PROMPT_RE.search(line)
@@ -116,9 +116,9 @@ _HOME = str(Path.home())
 
 
 def scrub(text: str) -> str:
-    """Remove the install directory (STRATA_SCRUB_PREFIX, shown as <workspace>), the home directory, user name,
+    """Remove the install directory (NOSTROMA_SCRUB_PREFIX, shown as <workspace>), the home directory, user name,
     a host name and LAN addresses from a log excerpt."""
-    prefix = os.environ.get("STRATA_SCRUB_PREFIX")    # the directory that holds Strata and Strata-data
+    prefix = os.environ.get("NOSTROMA_SCRUB_PREFIX")    # the directory that holds Nostroma and Nostroma-data
     if prefix:
         text = text.replace(prefix.rstrip("/") + "/", "<workspace>/")
     text = text.replace(_HOME, "<home>")

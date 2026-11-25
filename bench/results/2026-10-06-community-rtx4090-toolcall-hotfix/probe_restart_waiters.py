@@ -19,11 +19,11 @@ import time
 import urllib.error
 import urllib.request
 
-REPO = "/home/dgbox/Strata"
-CFG = REPO + "/strata-200k.json"
+REPO = "/home/dgbox/Nostroma"
+CFG = REPO + "/nostroma-200k.json"
 BASE = "http://127.0.0.1:8080"
 cfg = json.load(open(CFG, encoding="utf-8"))
-KEY, MODEL = cfg["api_key"], cfg.get("model_name", "strata")
+KEY, MODEL = cfg["api_key"], cfg.get("model_name", "nostroma")
 
 FILLER = ("Разбирается модуль разбора конфигурации: он читает список секций, проверяет обязательные поля и "
           "собирает структуру настроек, которую дальше использует планировщик. Сбой на одной секции не должен "
@@ -88,13 +88,13 @@ def main():
     ap.add_argument("--out", default=str(pathlib.Path(__file__).parent / "results_restart.json"))
     a = ap.parse_args()
 
-    before = subprocess.run(["pgrep", "-f", REPO + "/engine/strata"], capture_output=True, text=True).stdout.split()
+    before = subprocess.run(["pgrep", "-f", REPO + "/engine/nostroma"], capture_output=True, text=True).stdout.split()
     recs = []
     threads = [threading.Thread(target=send, args=(recs, f"waiter-{i}", 60000)) for i in range(1, 4)]
     for t in threads:
         t.start()
     time.sleep(a.kill_after)
-    killed = subprocess.run(["pkill", "-f", REPO + "/engine/strata"], capture_output=True, text=True)
+    killed = subprocess.run(["pkill", "-f", REPO + "/engine/nostroma"], capture_output=True, text=True)
     kill_at = round(time.time(), 3)
     print(f"движок убит через {a.kill_after} с: pkill rc={killed.returncode} (pid до: {before})")
     for t in threads:
@@ -115,7 +115,7 @@ def main():
     out = {"kill_after_s": a.kill_after, "engine_pids_before": before, "killed_at": kill_at,
            "requests": recs, "server_recovered": health,
            "log_tail": subprocess.run(["bash", "-c",
-                                      f"tail -n 200 {REPO}/strata-200k.log | grep -iE 'engine|restart|503|died|wait' | tail -15"],
+                                      f"tail -n 200 {REPO}/nostroma-200k.log | grep -iE 'engine|restart|503|died|wait' | tail -15"],
                                      capture_output=True, text=True).stdout}
     pathlib.Path(a.out).write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
     print("записано:", a.out)

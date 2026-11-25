@@ -60,7 +60,7 @@
     "classification": {
       "iq_parity": "CTest treats --selftest as a fixture directory. Subsequent actual IQ fixtures and native GGUF expert oracles across eight layers passed.",
       "ple_parity": "Q2_0 PLE fixture missing; unqualified. Actual profile uses original IQ2_XS PLE.",
-      "gr_parity": "Only unsupported opt-in QFUSE / multi-QFUSE checks fail. Port explicitly returns false and ordinary/native GR subchecks pass; STRATA_QFUSE remains absent.",
+      "gr_parity": "Only unsupported opt-in QFUSE / multi-QFUSE checks fail. Port explicitly returns false and ordinary/native GR subchecks pass; NOSTROMA_QFUSE remains absent.",
       "s2_expert_grouped_parity": "Old/new grouped S2 results differ bitwise in four cases. All numerical CPU oracle checks show0outside tolerance, worst<=1.03e-7 normalized. S2 grouped path used by drafter; require exact target-only vs speculative model streams before throughput."
     },
     "native_source_patches": [],

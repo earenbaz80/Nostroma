@@ -529,8 +529,8 @@ class TheInstalledEngineDecidesTheFlags(unittest.TestCase):
     """GUI-FB3 item 2. Gyro-S with Auto sent `--mtp-draft-vocab FILE` and no `--mtp` to the engine 0.1.55.2 (f-0291-r5070-df2), which only takes `--mtp DIR` for the
     vocabulary and ended with exit code 2. The app reads what the engine program takes (it is never started for this) and sends only that."""
 
-    OLD = b"MZ\x00\x00 strata generate: --draft dflash2 drafts without the MTP layer (--draft-fallback mtp loads it too) and needs --draft-model PACK, --spec 2 or more and --mtp DIR (for DIR/draft_vocab.bin) \x00--draft-fallback\x00"
-    NEW = b"MZ\x00\x00 strata generate: --draft dflash2 drafts without the MTP layer and needs --draft-model PACK, --spec 2 or more and --mtp-draft-vocab FILE (or --mtp DIR, for DIR/draft_vocab.bin) \x00--draft-fallback\x00"
+    OLD = b"MZ\x00\x00 nostroma generate: --draft dflash2 drafts without the MTP layer (--draft-fallback mtp loads it too) and needs --draft-model PACK, --spec 2 or more and --mtp DIR (for DIR/draft_vocab.bin) \x00--draft-fallback\x00"
+    NEW = b"MZ\x00\x00 nostroma generate: --draft dflash2 drafts without the MTP layer and needs --draft-model PACK, --spec 2 or more and --mtp-draft-vocab FILE (or --mtp DIR, for DIR/draft_vocab.bin) \x00--draft-fallback\x00"
     UNKNOWN = b"MZ\x00\x00 a program that has the flag and a message nobody knows \x00--draft-fallback\x00"
     NONE = b"MZ\x00\x00 an engine from before DFlash2 ran alone: --draft dflash2 --draft-model \x00"
 
@@ -707,17 +707,17 @@ class WhatTheEngineSaid(unittest.TestCase):
     ARGS = ["--mtp", "/m", "--draft", "dflash2", "--draft-model", "/p"]
 
     def test_no_room_in_graphics_memory(self):
-        log = ("strata generate: --draft dflash2: could not allocate the drafter's buffers. DFlash2 needs about 1.2 GiB of VRAM (the pack 0.76 GiB, "
+        log = ("nostroma generate: --draft dflash2: could not allocate the drafter's buffers. DFlash2 needs about 1.2 GiB of VRAM (the pack 0.76 GiB, "
                "its buffers and K/V ring 0.25 GiB, a draft head 0.2 GiB); start with --vram-reserve-mib 1900 to keep it. The MTP drafts instead.\n")
         info = drafting.engine_info(self.ARGS, log)
         self.assertEqual(info, {"drafting": "mtp", "drafting_note": "Drafting: MTP (DFlash2 didn't fit)"})
 
     def test_a_mode_this_build_does_not_run(self):
-        log = "strata generate: --draft dflash2 is off: it is for one card and the CLI run (not --serve, --batch or a layer split) in this build; the MTP drafts instead\n"
+        log = "nostroma generate: --draft dflash2 is off: it is for one card and the CLI run (not --serve, --batch or a layer split) in this build; the MTP drafts instead\n"
         self.assertEqual(drafting.engine_info(self.ARGS, log)["drafting_note"], "Drafting: MTP (DFlash2 isn't available in this mode)")
 
     def test_it_ran(self):
-        log = "strata generate: DFlash2 drafter on (/p, graphs captured in 3 ms), the MTP layer stays as the fallback\n"
+        log = "nostroma generate: DFlash2 drafter on (/p, graphs captured in 3 ms), the MTP layer stays as the fallback\n"
         self.assertEqual(drafting.engine_info(self.ARGS, log), {"drafting": "dflash2", "drafting_note": ""})
         self.assertEqual(drafting.fallback_note(log), "")
 
@@ -754,7 +754,7 @@ class WordsMatchTheApp(unittest.TestCase):
 
 
 class TerminalFlag(unittest.TestCase):
-    BASE = {"exe": "component:strata-engine", "args": ["--pack", "/d/packs/x", "--mtp", "/d/mtp/rt"], "port": 8080, "model_name": GYRO}
+    BASE = {"exe": "component:nostroma-engine", "args": ["--pack", "/d/packs/x", "--mtp", "/d/mtp/rt"], "port": 8080, "model_name": GYRO}
 
     def test_the_flag_is_listed_planned_copyable_and_saved_in_the_launch_config(self):
         code, out, _ = run_cli(["launch", "--help"])
@@ -829,7 +829,7 @@ class FetchAndPack(unittest.TestCase):
         self.addCleanup(patcher.stop)
 
     def fetch(self, **kw):
-        with mock.patch.dict("os.environ", {"STRATA_UPDATE_ALLOW_HTTP": "1"}):
+        with mock.patch.dict("os.environ", {"NOSTROMA_UPDATE_ALLOW_HTTP": "1"}):
             return drafting_fetch.ensure(self.data, progress=lambda *a: self.steps.append(a), base_url=self.base, files=self.files, **kw)
 
     def test_the_pinned_files_are_the_repositorys_own(self):
@@ -909,7 +909,7 @@ class FetchAndPack(unittest.TestCase):
 
     def test_a_file_that_does_not_match_its_hash_is_deleted_and_the_words_are_plain(self):
         bad = tuple((n, size, "0" * 64) for n, size, _h in self.files)
-        with mock.patch.dict("os.environ", {"STRATA_UPDATE_ALLOW_HTTP": "1"}):
+        with mock.patch.dict("os.environ", {"NOSTROMA_UPDATE_ALLOW_HTTP": "1"}):
             with self.assertRaises(drafting_fetch.DraftingError) as ctx:
                 drafting_fetch.ensure(self.data, base_url=self.base, files=bad)
         self.assertIn("did not pass the safety check", str(ctx.exception))
@@ -959,7 +959,7 @@ class TheAppAsksControl(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.data = Path(self.tmp.name) / "data"
-        self.cfg = Path(self.tmp.name) / "strata-gyro.json"
+        self.cfg = Path(self.tmp.name) / "nostroma-gyro.json"
         self.cfg.write_text(json.dumps({"model_name": GYRO, "args": ["--pack", str(self.data / "packs" / "gyro"), "--mtp", str(self.data / "mtp" / "rt")]}))
 
     def plan(self, *extra):

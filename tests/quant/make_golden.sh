@@ -6,9 +6,9 @@
 # Run on x86 Linux with GCC 13.x as gcc / g++ (or CC / CXX): it builds the three flavours (tests/quant/run_oracle.sh, so the same flags) and writes
 # each flavour's lines with `quant_parity --write-golden`, then merges them with the MSVC fragments (tests/quant/golden_merge.py).
 # The MSVC fragments come from a Windows build of each flavour with MSVC 19.4x (the release toolchain): configure as the Windows oracle does
-# (cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DSTRATA_BUILD_TESTS=ON -DSTRATA_ENABLE_CUDA=OFF -DSTRATA_ENABLE_HIP=OFF -DSTRATA_NATIVE_EXPERTS=ON
-# plus -DSTRATA_PORTABLE=ON / -DSTRATA_ISA_FLOOR=avx / -DSTRATA_ISA_FLOOR=none), build quant_parity, run `quant_parity --write-golden msvc-<flavour>.txt`.
-# Regenerate when the test's cases or the vendored ggml (third_party/strata-ggml) change; ctest quant_golden_regen checks the file under both toolchains.
+# (cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DNOSTROMA_BUILD_TESTS=ON -DNOSTROMA_ENABLE_CUDA=OFF -DNOSTROMA_ENABLE_HIP=OFF -DNOSTROMA_NATIVE_EXPERTS=ON
+# plus -DNOSTROMA_PORTABLE=ON / -DNOSTROMA_ISA_FLOOR=avx / -DNOSTROMA_ISA_FLOOR=none), build quant_parity, run `quant_parity --write-golden msvc-<flavour>.txt`.
+# Regenerate when the test's cases or the vendored ggml (third_party/nostroma-ggml) change; ctest quant_golden_regen checks the file under both toolchains.
 set -u
 cd "$(dirname "$0")/../.."
 MSVC_DIR=${1:?usage: make_golden.sh <folder with msvc-avx2.txt msvc-avx.txt msvc-none.txt>}

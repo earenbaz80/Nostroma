@@ -1,5 +1,5 @@
-// The DFlash2 drafter for the all-cards split engine. strata::core::Dflash2Drafter (src/core/dflash2.cpp) is compiled in the strata world
-// (src/split/CMakeLists.txt, library strata_split_df2) and this header is all the fnx world sees of it: raw pointers, plain C++, no strata header.
+// The DFlash2 drafter for the all-cards split engine. nostroma::core::Dflash2Drafter (src/core/dflash2.cpp) is compiled in the nostroma world
+// (src/split/CMakeLists.txt, library nostroma_split_df2) and this header is all the fnx world sees of it: raw pointers, plain C++, no nostroma header.
 //
 // One drafter per lane, all on ONE card (the pack and the draft head live there once; a lane owns a K/V ring of about 100 MiB). The taps it
 // reads (the mean of the 4 hyper-connection streams after layers 5, 15, 25, 35, 45) are made by tap() inside the engine's window graphs.

@@ -18,11 +18,11 @@ const result = await build({ entryPoints: [here('../src/lib/native.ts')], bundle
 const { installedListPending } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString('base64')}`);
 
 function slowControl({ failFirst }) {
-  const root = mkdtempSync(join(tmpdir(), 'strata-chk-'));
+  const root = mkdtempSync(join(tmpdir(), 'nostroma-chk-'));
   const install = join(root, 'install'), data = join(root, 'data');
   mkdirSync(install, { recursive: true }); mkdirSync(data, { recursive: true });
-  const configPath = join(install, 'strata-iq3_s.json');
-  writeFileSync(configPath, JSON.stringify({ exe: 'component:strata-engine', args: [], model_name: 'm', port: 8080 }));
+  const configPath = join(install, 'nostroma-iq3_s.json');
+  writeFileSync(configPath, JSON.stringify({ exe: 'component:nostroma-engine', args: [], model_name: 'm', port: 8080 }));
   let asked = 0;
   const control = {
     control: { dir: join(root, 'control'), python: join(root, 'control', 'python', 'python') }, version: '0.2.10',
@@ -31,7 +31,7 @@ function slowControl({ failFirst }) {
       if (asked <= failFirst) throw new Error('Nostroma Control is still starting');
       return { install_dir: install, models: [{ id: 'iq3_s', name: 'm', source_config: configPath, context_tokens: 8192, backend: 'cuda', component_status: 'present', missing: [], issue_codes: [] }] };
     },
-    async engine() { return { usable: true, backend: 'cuda', components_dir: join(root, 'c'), engine: { version: '0.1.56', platform: 'linux-x86_64', backend: 'cuda', exe: join(root, 'e', 'strata'), root: join(root, 'e') } }; },
+    async engine() { return { usable: true, backend: 'cuda', components_dir: join(root, 'c'), engine: { version: '0.1.56', platform: 'linux-x86_64', backend: 'cuda', exe: join(root, 'e', 'nostroma'), root: join(root, 'e') } }; },
   };
   const catalog = { families: [{ family: 'qwen', title: 'Q', about: 'x', images: false, experimental: false, sizes: [{ id: 'iq3_s', model: 'IQ3_S', download_gb: 1, ram_needed_gb: 1, about: 'x', on_this_pc: 'fits', installed: true }] }], contexts: [8192], recommendation: { family: 'qwen', model: 'IQ3_S' }, context_note: '' };
   const spawnProcess = () => {
@@ -40,8 +40,8 @@ function slowControl({ failFirst }) {
     child.stdin = { write(line) {
       const m = JSON.parse(line); if (!m.id) return;
       const result = m.method === 'initialize' ? { protocolVersion: '2024-11-05' }
-        : m.method === 'tools/list' ? { tools: ['strata_models', 'strata_status'].map(name => ({ name })) }
-        : m.params.name === 'strata_models' ? { structuredContent: catalog } : { structuredContent: { hardware: { ram_gb: 16, gpus: [] }, install: null, running: [], summary: 'x' } };
+        : m.method === 'tools/list' ? { tools: ['nostroma_models', 'nostroma_status'].map(name => ({ name })) }
+        : m.params.name === 'nostroma_models' ? { structuredContent: catalog } : { structuredContent: { hardware: { ram_gb: 16, gpus: [] }, install: null, running: [], summary: 'x' } };
       queueMicrotask(() => child.stdout.emit('data', Buffer.from(JSON.stringify({ jsonrpc: '2.0', id: m.id, result }) + '\n')));
     } };
     return child;

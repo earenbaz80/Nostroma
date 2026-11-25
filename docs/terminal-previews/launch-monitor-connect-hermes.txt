@@ -4,7 +4,7 @@
  NOSTROMA  Connect   http://127.0.0.1:8080                                                                       [LIVE]
  1 Overview  2 Serving  3 Requests  4 Engine  5 Hardware  6 Logs  [7 Connect]
  ────────────────────────────────────────────────────────────────────────────────────────────────────
- Connect an app     URL http://127.0.0.1:8080/v1    model qwen3.8-flash-next-iq3_xxs    key sk-strata-••••  (k show)
+ Connect an app     URL http://127.0.0.1:8080/v1    model qwen3.8-flash-next-iq3_xxs    key sk-nostroma-••••  (k show)
       Claude Code and other Anthropic apps use http://127.0.0.1:8080 (no /v1)
       also reachable at http://192.168.88.21:8080/v1
 

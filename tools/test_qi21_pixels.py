@@ -37,7 +37,7 @@ def edge_fixture(path: Path) -> None:
 class PixelsMatchSdcpp(unittest.TestCase):
     def build_and_check(self, flags):
         with tempfile.TemporaryDirectory() as td:
-            exe = Path(td) / "strata-pixels-check"
+            exe = Path(td) / "nostroma-pixels-check"
             r = subprocess.run([CXX, "-std=c++17", *flags, "-I", str(ROOT / "include"),
                                 str(ROOT / "src" / "image" / "vae" / "qi21_pixels.cpp"),
                                 str(ROOT / "src" / "image" / "vae" / "qi21_pixels_check_main.cpp"), "-o", str(exe)],

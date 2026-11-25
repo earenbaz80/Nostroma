@@ -1,5 +1,5 @@
 {
-  "strata_commit": "fb58e0dbc8399662c0e47c76578c6e878b14f6cf",
+  "nostroma_commit": "fb58e0dbc8399662c0e47c76578c6e878b14f6cf",
   "ggml_revision": "3cf03257f219afbe7334045ff7c6a06ac68c627d",
   "files": [
     {
@@ -855,447 +855,447 @@
       "sha256": "5e5f2266d652971a0d0cb294b4731a8b198e6949c9c0781f89d95b0d51970672"
     },
     {
-      "path": "include/strata/artifact/dequant.hpp",
+      "path": "include/nostroma/artifact/dequant.hpp",
       "sha256": "084ee6d3cb5056cca5dce6a6c40b9047d01f2560b033afb35eb56c64985a69f1"
     },
     {
-      "path": "include/strata/artifact/gguf_reader.hpp",
+      "path": "include/nostroma/artifact/gguf_reader.hpp",
       "sha256": "fc8453a95677e797c8fb1198bfb47d715b73a53446d39a29920c372180ca5ee0"
     },
     {
-      "path": "include/strata/artifact/gguf_split.hpp",
+      "path": "include/nostroma/artifact/gguf_split.hpp",
       "sha256": "6280aabf7e4b77447caa5d046d7b7389c82af08b2d02c004897d0d4826a09760"
     },
     {
-      "path": "include/strata/core/arch_defaults.hpp",
+      "path": "include/nostroma/core/arch_defaults.hpp",
       "sha256": "a867fca72e9d1d839c6f6bb48bac4340d13a59ea8818d5e6857149cad3c7faf9"
     },
     {
-      "path": "include/strata/core/conversation_buffer.hpp",
+      "path": "include/nostroma/core/conversation_buffer.hpp",
       "sha256": "12f1abac2ec75cc71e8cf308a5a691923d8b617317560e009a41f713809f49d4"
     },
     {
-      "path": "include/strata/core/conversation_cache.hpp",
+      "path": "include/nostroma/core/conversation_cache.hpp",
       "sha256": "4b1c39308844c371c463d3f04388b7d088938ad97facb3b13ae4c2d393cdf52f"
     },
     {
-      "path": "include/strata/core/conversation_file.hpp",
+      "path": "include/nostroma/core/conversation_file.hpp",
       "sha256": "2c6ddbb2bb1f44331297a2cf970504da67ce501180fe1513aeb59f71cef8f942"
     },
     {
-      "path": "include/strata/core/conversation_memory.hpp",
+      "path": "include/nostroma/core/conversation_memory.hpp",
       "sha256": "b4c784080bfda39adb7a2fd4c64bac27a77bb7a6f4557b609e08c2afcb7f9954"
     },
     {
-      "path": "include/strata/core/conversation_snapshot.hpp",
+      "path": "include/nostroma/core/conversation_snapshot.hpp",
       "sha256": "c403e99ab515566e1314a3c485f8974d25bb0194a181f1e8ab804fc76ce8f665"
     },
     {
-      "path": "include/strata/core/coupled_draft.hpp",
+      "path": "include/nostroma/core/coupled_draft.hpp",
       "sha256": "0a79e0e114e3436af1d44548fab777bdea0f00641606a854910264bf3f98aa3d"
     },
     {
-      "path": "include/strata/core/device.hpp",
+      "path": "include/nostroma/core/device.hpp",
       "sha256": "382f04df3a95349bf03dfce47402753aa2ed7e958dc6b12d0830ff1bab40d059"
     },
     {
-      "path": "include/strata/core/dma_batch.hpp",
+      "path": "include/nostroma/core/dma_batch.hpp",
       "sha256": "9b485734a866bee6ef0c927b838905ab7770cfdc1f7a7b19b97c4dea4fbbb07a"
     },
     {
-      "path": "include/strata/core/emulate.hpp",
+      "path": "include/nostroma/core/emulate.hpp",
       "sha256": "eb3df4efe89642f069420e0f68ec526b33d4cc66f9a6b26de0583492b5758a77"
     },
     {
-      "path": "include/strata/core/exchange_storage.hpp",
+      "path": "include/nostroma/core/exchange_storage.hpp",
       "sha256": "30e4c42ac268fc30af4501ee2036d040173a5fbb67de3429caddd8285f2eeaed"
     },
     {
-      "path": "include/strata/core/expert_cache.hpp",
+      "path": "include/nostroma/core/expert_cache.hpp",
       "sha256": "ff3cd4357e397ff944bc8c814e769975ecd243b3445b050234cbb62d9260bd54"
     },
     {
-      "path": "include/strata/core/expert_source.hpp",
+      "path": "include/nostroma/core/expert_source.hpp",
       "sha256": "a5c1f39bcaf91eb90f76e96b3924922ad9237b51a94b711b2d2ae9820b7310a6"
     },
     {
-      "path": "include/strata/core/foresight_swap.hpp",
+      "path": "include/nostroma/core/foresight_swap.hpp",
       "sha256": "46105c077acc2a93e4b50b8e8894832761121e14df59d434e705f457b96fc0db"
     },
     {
-      "path": "include/strata/core/graph.hpp",
+      "path": "include/nostroma/core/graph.hpp",
       "sha256": "21fb807b9c3cbd8665b14145ca19d4d9a93fa897d378042254f4e4cb1f9060a4"
     },
     {
-      "path": "include/strata/core/hit_hook.hpp",
+      "path": "include/nostroma/core/hit_hook.hpp",
       "sha256": "4c006f473d71a79cf03d9ce07cb246dc8b5ec10269fd335960a27733d51bc033"
     },
     {
-      "path": "include/strata/core/layer.hpp",
+      "path": "include/nostroma/core/layer.hpp",
       "sha256": "b273603e633e63f93c877b278dd7f21dd4bb2909b4e94d8f174d84b2a975bfa2"
     },
     {
-      "path": "include/strata/core/layout.hpp",
+      "path": "include/nostroma/core/layout.hpp",
       "sha256": "20afe27849aa28de7ec2f19fbf4be212240504008c643331eadbc10934821c0b"
     },
     {
-      "path": "include/strata/core/mtp.hpp",
+      "path": "include/nostroma/core/mtp.hpp",
       "sha256": "3a98110ad416b1b5c386b8b9fbb1973cc2fe34f68a127ee677d9ce961dc947e0"
     },
     {
-      "path": "include/strata/core/native_dense.hpp",
+      "path": "include/nostroma/core/native_dense.hpp",
       "sha256": "2cf3eea0b6f394052996c53780428b8a1bcd00658e1c25186f9b69f5063a905f"
     },
     {
-      "path": "include/strata/core/native_head.hpp",
+      "path": "include/nostroma/core/native_head.hpp",
       "sha256": "d80052035aeba3dbbc90cf84549d8424a10335d28fb04140e2265ba7819d27dc"
     },
     {
-      "path": "include/strata/core/on_device.hpp",
+      "path": "include/nostroma/core/on_device.hpp",
       "sha256": "f9317a4c19eb32924462b8aa9829a97528064f6a8fcdb64a746bb13a60c773a2"
     },
     {
-      "path": "include/strata/core/peer_experts.hpp",
+      "path": "include/nostroma/core/peer_experts.hpp",
       "sha256": "02ef10cd0b6a9c0ee8b6de3a4489e5fdabb108f0182539fd4ab49705428e7f59"
     },
     {
-      "path": "include/strata/core/pinned.hpp",
+      "path": "include/nostroma/core/pinned.hpp",
       "sha256": "a6a90004da834203e2e27180cda3d55f1b0a8245cc552c161a90371c06b36e1f"
     },
     {
-      "path": "include/strata/core/progress.hpp",
+      "path": "include/nostroma/core/progress.hpp",
       "sha256": "cf0376eb23e2fd43a062c1fb40d3ac7885ef8283975051af51034f3f7182d622"
     },
     {
-      "path": "include/strata/core/remote_expert_opt.hpp",
+      "path": "include/nostroma/core/remote_expert_opt.hpp",
       "sha256": "76e7d8de1ab76f1130609bc84edeefcf9ca77952d4448dbd625d8a5c3b36c4df"
     },
     {
-      "path": "include/strata/core/remote_experts.hpp",
+      "path": "include/nostroma/core/remote_experts.hpp",
       "sha256": "5760445905fdfdc0adb652be9817ea317e5b69ad7b9d5c91a3077d9efe5ba2e1"
     },
     {
-      "path": "include/strata/core/session.hpp",
+      "path": "include/nostroma/core/session.hpp",
       "sha256": "ffe954333948aee170399252afaad2e8b2b1e81fb31ed9c4358597eba4ca2e3b"
     },
     {
-      "path": "include/strata/core/spec_prob.hpp",
+      "path": "include/nostroma/core/spec_prob.hpp",
       "sha256": "29b4c20d0132403177043d27b15d7368c879184871f5689e5bf77bcc2d67274f"
     },
     {
-      "path": "include/strata/core/verify.hpp",
+      "path": "include/nostroma/core/verify.hpp",
       "sha256": "81e7b9c5eb7686f1c16d3a89ffd1b497443401d12cbc7a685b0f378e35be70d2"
     },
     {
-      "path": "include/strata/core/vmm.hpp",
+      "path": "include/nostroma/core/vmm.hpp",
       "sha256": "d361386fc8d86716dea83045eb9b85d9ae7fa7decc7469d7facbbe3254bd47cd"
     },
     {
-      "path": "include/strata/core/weights.hpp",
+      "path": "include/nostroma/core/weights.hpp",
       "sha256": "071d07c9f15d122265d7b1b90ff96125559a7d6ebbd8ec3f3a2b6e94dc17aef1"
     },
     {
-      "path": "include/strata/hip_compat/intrinsics.hpp",
+      "path": "include/nostroma/hip_compat/intrinsics.hpp",
       "sha256": "6f01de4466473d8323abff56fe7d33b7cc7fdd00d1bb7dc2fb1c80521db67c99"
     },
     {
-      "path": "include/strata/kernels/bf16_bits.hpp",
+      "path": "include/nostroma/kernels/bf16_bits.hpp",
       "sha256": "813b51f17c5c264d642f4d77b3d6e5f35e7ea7310ba87b18b3a2a5bc9185198f"
     },
     {
-      "path": "include/strata/kernels/bf16_gemv.hpp",
+      "path": "include/nostroma/kernels/bf16_gemv.hpp",
       "sha256": "97e5fac5c5b8dbd86b4e104bf4b69155424bc6d28d0a991240bd9912349f6e6f"
     },
     {
-      "path": "include/strata/kernels/cpu/expert.hpp",
+      "path": "include/nostroma/kernels/cpu/expert.hpp",
       "sha256": "d46e04f4b7a2d34746d31cffa561e2415afd79b5a0eef25df792be98cee0021a"
     },
     {
-      "path": "include/strata/kernels/cpu/expert_layout.hpp",
+      "path": "include/nostroma/kernels/cpu/expert_layout.hpp",
       "sha256": "dbc6cf5b91367e571ad9cb3be4e4cd851159544186c859a7cd374632a8a63fcd"
     },
     {
-      "path": "include/strata/kernels/cpu/iq_avx2.hpp",
+      "path": "include/nostroma/kernels/cpu/iq_avx2.hpp",
       "sha256": "4278b917a3634435f4388ce26128d27502d4467c81460c4081fd8de1dbc8a848"
     },
     {
-      "path": "include/strata/kernels/cpu/iq_avx512.hpp",
+      "path": "include/nostroma/kernels/cpu/iq_avx512.hpp",
       "sha256": "ede01ee7e474f5d816d9bc6ad6b0804cabd924c69b2b3d536d40f2432410841b"
     },
     {
-      "path": "include/strata/kernels/cpu/kq_avx1.hpp",
+      "path": "include/nostroma/kernels/cpu/kq_avx1.hpp",
       "sha256": "af289c2fec6ec8e4946352dbbbcc25df41bb57468953589e4b5b7cfe1d0ddbda"
     },
     {
-      "path": "include/strata/kernels/cpu/kq_avx2.hpp",
+      "path": "include/nostroma/kernels/cpu/kq_avx2.hpp",
       "sha256": "c4cd342ba0f2ffd34f6b5ac9c254c59d0a521370de0d7650f0c28e7a390b55dd"
     },
     {
-      "path": "include/strata/kernels/cpu/native_expert.hpp",
+      "path": "include/nostroma/kernels/cpu/native_expert.hpp",
       "sha256": "711dcaf43608b7d607f05e17f81993356b6fe36f18bcfa64b1ca111e9eeab0bc"
     },
     {
-      "path": "include/strata/kernels/cpu/pool.hpp",
+      "path": "include/nostroma/kernels/cpu/pool.hpp",
       "sha256": "5f7e7ee3f48ce6505ad25975c320310e647551df3304a87052ce3c7e2b414936"
     },
     {
-      "path": "include/strata/kernels/cvec.hpp",
+      "path": "include/nostroma/kernels/cvec.hpp",
       "sha256": "9f8effb3704845cb294983af4a9737f3066f730adcf15a2894a7597b52d2b3de"
     },
     {
-      "path": "include/strata/kernels/dequant_bf16.hpp",
+      "path": "include/nostroma/kernels/dequant_bf16.hpp",
       "sha256": "87597018553357e3df3310b262447420ba7e81f8123fe3fe18a0fec7087c9bbb"
     },
     {
-      "path": "include/strata/kernels/dequant_s2.hpp",
+      "path": "include/nostroma/kernels/dequant_s2.hpp",
       "sha256": "d8f3aa8d610887451f177f05ada1135d52daf21b95a8c2c58686c07403c8013d"
     },
     {
-      "path": "include/strata/kernels/dp4a.hpp",
+      "path": "include/nostroma/kernels/dp4a.hpp",
       "sha256": "b4ca42cf7b4d99dcaf69ff7d8153112f1e1ce6dc32e486fd8b152ddf915366ab"
     },
     {
-      "path": "include/strata/kernels/elementwise.hpp",
+      "path": "include/nostroma/kernels/elementwise.hpp",
       "sha256": "374e7d13d2c7b76544ff9a1367a7300343389372fa90f4b7f3a6a9216a5cdd8e"
     },
     {
-      "path": "include/strata/kernels/f16_bits.hpp",
+      "path": "include/nostroma/kernels/f16_bits.hpp",
       "sha256": "0f74e6dd832da427b681c9971265a0af1a91198694fdef3654d860b98863fc8c"
     },
     {
-      "path": "include/strata/kernels/fused_gdn.hpp",
+      "path": "include/nostroma/kernels/fused_gdn.hpp",
       "sha256": "595205dcf531d8fb758bcd7b2d3ac4e4158bd06f20160199e592824d530e2078"
     },
     {
-      "path": "include/strata/kernels/fused_gr.hpp",
+      "path": "include/nostroma/kernels/fused_gr.hpp",
       "sha256": "e8055ea3311bfc0c49ef464141713842da5fdad1e5cddf6a2f573fbf5353ab3a"
     },
     {
-      "path": "include/strata/kernels/gdn.hpp",
+      "path": "include/nostroma/kernels/gdn.hpp",
       "sha256": "f44626e3f52813b9be289aee72f708e9ad61aa9b3a0e43037ba5ff8b358fc638"
     },
     {
-      "path": "include/strata/kernels/gfx_arch.hpp",
+      "path": "include/nostroma/kernels/gfx_arch.hpp",
       "sha256": "ef3e926c0b0e6efa8d17e87e2ccec573e85c63feba30acd3db137b108ef9609d"
     },
     {
-      "path": "include/strata/kernels/gr.hpp",
+      "path": "include/nostroma/kernels/gr.hpp",
       "sha256": "00710717cbe8640aff0f9b69f8f8dfe60a3f2cf6486339dfe8fa7fb8ae2f4bcf"
     },
     {
-      "path": "include/strata/kernels/iq_kernels.hpp",
+      "path": "include/nostroma/kernels/iq_kernels.hpp",
       "sha256": "e3750f39de3957ff8bbd0ecc9d77d0e394f34984935f528c908d107aa62a62b3"
     },
     {
-      "path": "include/strata/kernels/kv_q4.hpp",
+      "path": "include/nostroma/kernels/kv_q4.hpp",
       "sha256": "f6e35e2764934c0c4949f2651513dc9a90c5b4cf764c92916de4b0ea9a80a22d"
     },
     {
-      "path": "include/strata/kernels/kv_q8.hpp",
+      "path": "include/nostroma/kernels/kv_q8.hpp",
       "sha256": "7c70db0cbc1726e244b7085a319e1f0be5c8a3a415a6b0de7db7d0cdbe70e26e"
     },
     {
-      "path": "include/strata/kernels/kv_stream.hpp",
+      "path": "include/nostroma/kernels/kv_stream.hpp",
       "sha256": "24a47cb5eca790fa35b13bbeb12cf3407389c41219899789880d965cf86d8abe"
     },
     {
-      "path": "include/strata/kernels/mrope.hpp",
+      "path": "include/nostroma/kernels/mrope.hpp",
       "sha256": "f7add5611f54af2434daa1ad711fe441e214693bd33524a12c56058807fd381c"
     },
     {
-      "path": "include/strata/kernels/native_flash_attn.hpp",
+      "path": "include/nostroma/kernels/native_flash_attn.hpp",
       "sha256": "6cc7bb288fc263ee800f5b5329bcc8d139ddde7e31a022364850cf80b1e5f7ff"
     },
     {
-      "path": "include/strata/kernels/native_gdn.hpp",
+      "path": "include/nostroma/kernels/native_gdn.hpp",
       "sha256": "2b65e1b5b689c06d099bc061d746d606dcc5b974a7bffe0820ce01e7295d1971"
     },
     {
-      "path": "include/strata/kernels/native_gdn_preprocess.hpp",
+      "path": "include/nostroma/kernels/native_gdn_preprocess.hpp",
       "sha256": "7533d8464b6ae8e2800e43ee3036d23f21181c2472c069d19bacf115beeafc69"
     },
     {
-      "path": "include/strata/kernels/native_gr_norm.hpp",
+      "path": "include/nostroma/kernels/native_gr_norm.hpp",
       "sha256": "12c20abec1952f23f825eefc9e2f676e812417d46922005ce42416212caab535"
     },
     {
-      "path": "include/strata/kernels/native_gr_postops.hpp",
+      "path": "include/nostroma/kernels/native_gr_postops.hpp",
       "sha256": "c773be294343919d0d13ea2408b2072c0ed8e54b8cb447f897f8630cb1a96e7e"
     },
     {
-      "path": "include/strata/kernels/native_mmvq.hpp",
+      "path": "include/nostroma/kernels/native_mmvq.hpp",
       "sha256": "95c3ea0cb9802b93dc8eb23857349182d1bc1b6988ab875fc289812549042fb0"
     },
     {
-      "path": "include/strata/kernels/native_moe.hpp",
+      "path": "include/nostroma/kernels/native_moe.hpp",
       "sha256": "170dbcaf0d71c1cb1edfdc6fb8407636160218fee1db28c9aa9a74ed17207e93"
     },
     {
-      "path": "include/strata/kernels/native_ple_postops.hpp",
+      "path": "include/nostroma/kernels/native_ple_postops.hpp",
       "sha256": "7f80b056a71995c3dddd881dca1da009696b74b9a9a86c9e5e2c3ef816429496"
     },
     {
-      "path": "include/strata/kernels/native_qsa.hpp",
+      "path": "include/nostroma/kernels/native_qsa.hpp",
       "sha256": "119fd52ad31c7151c1061af997e41e0db43c7312fc644c5d156a732b8f441ea9"
     },
     {
-      "path": "include/strata/kernels/native_qsa_indexer.hpp",
+      "path": "include/nostroma/kernels/native_qsa_indexer.hpp",
       "sha256": "5f29b2ebbf392bdc0419c651b515b447d57b935fce4af300bf621a72e039e2d6"
     },
     {
-      "path": "include/strata/kernels/native_qsa_score.hpp",
+      "path": "include/nostroma/kernels/native_qsa_score.hpp",
       "sha256": "d57ba2509e97093ed2bfa3cbe73886407211a5d476a0b629ed925dd992369354"
     },
     {
-      "path": "include/strata/kernels/native_rope.hpp",
+      "path": "include/nostroma/kernels/native_rope.hpp",
       "sha256": "06e3fbbc046fe4a3dda4788943285e586d08fe0885cd97cc9c21d132d750c413"
     },
     {
-      "path": "include/strata/kernels/native_router.hpp",
+      "path": "include/nostroma/kernels/native_router.hpp",
       "sha256": "3316231b856fe7f2193f1228e213a4d9cf6c12fb7e37fd2e7219d79ed799cdde"
     },
     {
-      "path": "include/strata/kernels/ngram.hpp",
+      "path": "include/nostroma/kernels/ngram.hpp",
       "sha256": "edc6d36eaf6062e8c377577de787ed9e5576ede19e04c5964dc7e6b83b8d01ac"
     },
     {
-      "path": "include/strata/kernels/pdl.hpp",
+      "path": "include/nostroma/kernels/pdl.hpp",
       "sha256": "fd3e1d2122aa3c8dbd2abd45089139e8f22852664c75b694acf7f96903d07c08"
     },
     {
-      "path": "include/strata/kernels/ple.hpp",
+      "path": "include/nostroma/kernels/ple.hpp",
       "sha256": "d044c70b3cc5044ee379d1d817c41c6fce7b0c0db18a1ce6274af3e62629255f"
     },
     {
-      "path": "include/strata/kernels/q8_1_finite.hpp",
+      "path": "include/nostroma/kernels/q8_1_finite.hpp",
       "sha256": "6789c75d692ef1cf21a07d8d602e5cf35ad40657b715f8d510cf7ddad1162598"
     },
     {
-      "path": "include/strata/kernels/qsa.hpp",
+      "path": "include/nostroma/kernels/qsa.hpp",
       "sha256": "87c02222284f842fcecb46a422b119af769c72c3914edc8da5b2ee782456dc74"
     },
     {
-      "path": "include/strata/kernels/qsa_decode_attn.hpp",
+      "path": "include/nostroma/kernels/qsa_decode_attn.hpp",
       "sha256": "6fa4b817f835c43783774d5946d14938f2867d7af16abb4db0f4b75d4622a915"
     },
     {
-      "path": "include/strata/kernels/qsa_prompt_attn.hpp",
+      "path": "include/nostroma/kernels/qsa_prompt_attn.hpp",
       "sha256": "a535cf4bf4fd5770e8726327f5dd64145e22478b2d711441d066ad3082f79d55"
     },
     {
-      "path": "include/strata/kernels/qsa_select.hpp",
+      "path": "include/nostroma/kernels/qsa_select.hpp",
       "sha256": "152dfce28a1f517169542590b32b7bb0b72442cf833446d1beb91cb104922250"
     },
     {
-      "path": "include/strata/kernels/quantize_act.hpp",
+      "path": "include/nostroma/kernels/quantize_act.hpp",
       "sha256": "baad6fe6c691f8f5aee2d6dbbb3513eead12c754b485ee41af4618d5035772f7"
     },
     {
-      "path": "include/strata/kernels/rope.hpp",
+      "path": "include/nostroma/kernels/rope.hpp",
       "sha256": "bd9094c0f0f761971a6760fde2b84a5660c934ce9a654dc287c686acd284a65a"
     },
     {
-      "path": "include/strata/kernels/rope_scaling.hpp",
+      "path": "include/nostroma/kernels/rope_scaling.hpp",
       "sha256": "05a8dcf57c9b12a23128f22e4bef01445c3a37991df5e1ffacd01d077c46595d"
     },
     {
-      "path": "include/strata/kernels/router_top10.hpp",
+      "path": "include/nostroma/kernels/router_top10.hpp",
       "sha256": "cd0d8e91e702bfa2cfd681d4ccf4f6c4c62af2cd612d2d109e5369845ddf362d"
     },
     {
-      "path": "include/strata/kernels/s2_expert_grouped.hpp",
+      "path": "include/nostroma/kernels/s2_expert_grouped.hpp",
       "sha256": "74802f312c20daa90b7fbacba4a3357c8e94c7ecdab75f402be507dd303a8193"
     },
     {
-      "path": "include/strata/kernels/s2_gemv.hpp",
+      "path": "include/nostroma/kernels/s2_gemv.hpp",
       "sha256": "cc146b9c652f1ee0c89be65ce179ea4cb31d4b4d32366c07f06b45644bbb8eb0"
     },
     {
-      "path": "include/strata/kernels/s2_gemv_q8.hpp",
+      "path": "include/nostroma/kernels/s2_gemv_q8.hpp",
       "sha256": "5c2ccbdc5b3f3a66b9afef5bc799ae2a83bcb2103b258bb84e8d82aad06b4eb1"
     },
     {
-      "path": "include/strata/kernels/s_gemv.hpp",
+      "path": "include/nostroma/kernels/s_gemv.hpp",
       "sha256": "369ab6cc010b49ac1d82bb680246e93b4c10f4f7081f56a325f6c7138ab1c3fb"
     },
     {
-      "path": "include/strata/kernels/sampler.hpp",
+      "path": "include/nostroma/kernels/sampler.hpp",
       "sha256": "4a8694749cc101cec563e70a05db02eb3895f1a274ee0fd12216e8eec5c5ec9b"
     },
     {
-      "path": "include/strata/kernels/shared_expert.hpp",
+      "path": "include/nostroma/kernels/shared_expert.hpp",
       "sha256": "1aab416f17dd889456f43286d1d4ed40b9a5af2df68543fb3e3026306fab8cad"
     },
     {
-      "path": "include/strata/kernels/verify_kernels.hpp",
+      "path": "include/nostroma/kernels/verify_kernels.hpp",
       "sha256": "499bd7e4ae2ec194fa1377adaed74e6e383200fec400e229d7b0baa690940553"
     },
     {
-      "path": "include/strata/ngram/ple_reader.hpp",
+      "path": "include/nostroma/ngram/ple_reader.hpp",
       "sha256": "d19b99a681a533f47144293bb170913c1496b5e0c344aed097ad1418375f7498"
     },
     {
-      "path": "include/strata/plan/plan.hpp",
+      "path": "include/nostroma/plan/plan.hpp",
       "sha256": "d6eca56c9d00ba3ad13e8a39ef4cb78f8a2c23fd3037e2e951167155a5b3dda5"
     },
     {
-      "path": "include/strata/platform/direct_file.hpp",
+      "path": "include/nostroma/platform/direct_file.hpp",
       "sha256": "ae9a8999aef1769d729e5d6e4058888a14b758cbce3804b291809b1a521a4253"
     },
     {
-      "path": "include/strata/platform/memory.hpp",
+      "path": "include/nostroma/platform/memory.hpp",
       "sha256": "b3b5e14877d04c3a8833cb4bf228f7e2e1a17516c53e39802e337f1176468b07"
     },
     {
-      "path": "include/strata/prefill/gemm.hpp",
+      "path": "include/nostroma/prefill/gemm.hpp",
       "sha256": "f0c30f5f73df10506be20c83aa538b06b5e10692ea82e5063249e6fe89e69bf7"
     },
     {
-      "path": "include/strata/prefill/kernels.hpp",
+      "path": "include/nostroma/prefill/kernels.hpp",
       "sha256": "51182b3c71119cd64b56e2d5de110a3b2f0e9832927c240ef14a307e1be2ae81"
     },
     {
-      "path": "include/strata/prefill/moe_fused.hpp",
+      "path": "include/nostroma/prefill/moe_fused.hpp",
       "sha256": "2809428405209d177a5ded160f62707f21eb344e85c84de8837b2b86ea938f65"
     },
     {
-      "path": "include/strata/prefill/moe_fused_iq.hpp",
+      "path": "include/nostroma/prefill/moe_fused_iq.hpp",
       "sha256": "84d0c99ace277a53deb5d091b2a0a5137fdc390f834815b43e8a5a910f42b4c8"
     },
     {
-      "path": "include/strata/prefill/moe_mmq.hpp",
+      "path": "include/nostroma/prefill/moe_mmq.hpp",
       "sha256": "26910a9726f6200e41bcb0e80c2066b8b81063691ada8a566060ed614d1fe95b"
     },
     {
-      "path": "include/strata/prefill/prefill.hpp",
+      "path": "include/nostroma/prefill/prefill.hpp",
       "sha256": "d8454abafdba372270897c799229baf4c5798fc03d9be60ec5f1a3f753f4d0dc"
     },
     {
-      "path": "include/strata/program/conv_cache.hpp",
+      "path": "include/nostroma/program/conv_cache.hpp",
       "sha256": "83717540db5efafd7d84e809e5f19638a4548aa07671400bdecb483d3279810a"
     },
     {
-      "path": "include/strata/program/logits_selection.hpp",
+      "path": "include/nostroma/program/logits_selection.hpp",
       "sha256": "f023d183fecb0c236dd0941988c672f6096fa92963393d4d879767838313e006"
     },
     {
-      "path": "include/strata/program/message_boundary.hpp",
+      "path": "include/nostroma/program/message_boundary.hpp",
       "sha256": "0d4a3a535adda8bc91ece894c8edafa1b20ff35f9cf30e546a5474d9fbde18d7"
     },
     {
-      "path": "include/strata/spec/controller.hpp",
+      "path": "include/nostroma/spec/controller.hpp",
       "sha256": "e1c8400792ec87882646c96b22d768e2f62a5cfebf4b415798ef177ea6e60cce"
     },
     {
-      "path": "include/strata/spec/draft_policy.hpp",
+      "path": "include/nostroma/spec/draft_policy.hpp",
       "sha256": "f6f1c972a9b80bc6c82c1b24c87335d40852bfd7555b10d8288030b24477ccb9"
     },
     {
-      "path": "include/strata/spec/draft_source.hpp",
+      "path": "include/nostroma/spec/draft_source.hpp",
       "sha256": "6955d5301aeda3a769f919a6b80d95d141f8c3656e821756bdbaf5eaebe80629"
     },
     {
-      "path": "include/strata/spec/suffix_drafter.hpp",
+      "path": "include/nostroma/spec/suffix_drafter.hpp",
       "sha256": "ab154719dd72b23b9e4e540bc2f923be2bbbbad343b21fcf40116966720f963f"
     },
     {
@@ -1611,19 +1611,19 @@
       "sha256": "fa3e8c0bade988cd9154af9537b1c19876acdbae30f8a444ec9ab2a8b03bd082"
     },
     {
-      "path": "tools/strata_inspect.py",
+      "path": "tools/nostroma_inspect.py",
       "sha256": "6f637a9d5a5e0f47ea74adf4128ee98026a0bcc9e324000620e6ca4db0b65cc0"
     },
     {
-      "path": "tools/strata_mcp.py",
+      "path": "tools/nostroma_mcp.py",
       "sha256": "99e39483823128042ce1355056165669e07637b893b64e0f21dd20194141ad98"
     },
     {
-      "path": "tools/strata_pack.py",
+      "path": "tools/nostroma_pack.py",
       "sha256": "4fe5f3696401e5d9dc4071c45ee9eac9ebbd0a5bc4f9865bd9d6add11832e14a"
     },
     {
-      "path": "tools/strata_tokenizer.py",
+      "path": "tools/nostroma_tokenizer.py",
       "sha256": "9b0327e25aa62754406a924db6cc137e6edb1d93c7af76a4f3d14a8920ea72c8"
     },
     {
@@ -1811,15 +1811,15 @@
       "sha256": "792f1596905f456e4e293cec647b3e7a1d5947cdc67581bc98c1484f4f981c00"
     },
     {
-      "path": "tools/test_strata_inspect.py",
+      "path": "tools/test_nostroma_inspect.py",
       "sha256": "c05eaa98048daea912b01ebe2b5576593986a045744e1d92d74efcaf7f471dba"
     },
     {
-      "path": "tools/test_strata_mcp.py",
+      "path": "tools/test_nostroma_mcp.py",
       "sha256": "5cafe996e09b104a91c25a29d060a7ebf171a526711389e53f212760d189d29d"
     },
     {
-      "path": "tools/test_strata_tokenizer.py",
+      "path": "tools/test_nostroma_tokenizer.py",
       "sha256": "67ee343376ad2f3f3ab963a6bb05d0e298d8278284fbb773fecd8dedf07a51a9"
     },
     {

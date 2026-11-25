@@ -1,7 +1,7 @@
 import './helpers/isolate-profile.mjs';   // a test run never writes the owner's real Nostroma profile
 /**
- * The packaged app (STRATA_PACKAGED=1, STRATA_REAL_ENGINE=1, as the app shell starts the host) never starts a llama.cpp `llama-server`.
- * 0.2.14 did: a GGUF imported through /api/local-models was loaded through a llama-server named by STRATA_LLAMA_SERVER (POST /load), and at
+ * The packaged app (NOSTROMA_PACKAGED=1, NOSTROMA_REAL_ENGINE=1, as the app shell starts the host) never starts a llama.cpp `llama-server`.
+ * 0.2.14 did: a GGUF imported through /api/local-models was loaded through a llama-server named by NOSTROMA_LLAMA_SERVER (POST /load), and at
  * the next start the host loaded it again by itself, also from a llama-server found on PATH, with nothing clicked. A fake llama-server that
  * writes a marker line stands in both places; neither the load route nor the start-up path may ever run it.
  */
@@ -36,7 +36,7 @@ setTimeout(()=>process.exit(0),20000);
 }
 
 async function scenario(t, where) {
-  const home = mkdtempSync(join(tmpdir(), `strata-no-llama-${where}-`));
+  const home = mkdtempSync(join(tmpdir(), `nostroma-no-llama-${where}-`));
   t.after(() => rmSync(home, { recursive: true, force: true }));
   const bin = join(home, 'bin'), marker = join(home, 'marker.jsonl');
   for (const d of ['bin', 'src', 'ws', 'components']) mkdirSync(join(home, d), { recursive: true });
@@ -44,11 +44,11 @@ async function scenario(t, where) {
   const gguf = join(home, 'src', 'Small-Q4_K_M.gguf');
   ggufFixture(gguf, { arch: 'qwen3', name: 'no-llama fixture' });
   const port = await freePort();
-  const env = { ...process.env, STRATA_PACKAGED: '1', STRATA_REAL_ENGINE: '1', NODE_ENV: 'production', STRATA_HOME: join(home, 'strata'),
-    STRATA_MODELS_DIR: join(home, 'strata', 'models'), STRATA_WORKSPACE: join(home, 'ws'), STRATA_COMPONENTS_DIR: join(home, 'components'),
-    STRATA_PORT: String(port), STRATA_SHARE_PORT: String(await freePort()), STRATA_TUNNEL_PORT: String(await freePort()) };
-  delete env.STRATA_LLAMA_SERVER; delete env.STRATA_API_KEY;
-  if (where === 'env') env.STRATA_LLAMA_SERVER = fake;
+  const env = { ...process.env, NOSTROMA_PACKAGED: '1', NOSTROMA_REAL_ENGINE: '1', NODE_ENV: 'production', NOSTROMA_HOME: join(home, 'nostroma'),
+    NOSTROMA_MODELS_DIR: join(home, 'nostroma', 'models'), NOSTROMA_WORKSPACE: join(home, 'ws'), NOSTROMA_COMPONENTS_DIR: join(home, 'components'),
+    NOSTROMA_PORT: String(port), NOSTROMA_SHARE_PORT: String(await freePort()), NOSTROMA_TUNNEL_PORT: String(await freePort()) };
+  delete env.NOSTROMA_LLAMA_SERVER; delete env.NOSTROMA_API_KEY;
+  if (where === 'env') env.NOSTROMA_LLAMA_SERVER = fake;
   else { const key = Object.keys(env).find(k => k.toUpperCase() === 'PATH') ?? 'PATH'; env[key] = bin + delimiter + (env[key] ?? ''); }
   const base = `http://127.0.0.1:${port}`;
   const call = async (path, method = 'GET', body) => {
@@ -87,5 +87,5 @@ async function scenario(t, where) {
   assert.equal((await call('/api/engine/status')).body?.running, false);
 }
 
-test('the packaged host never starts a llama-server named by STRATA_LLAMA_SERVER (load route and host start)', { timeout: 90000 }, t => scenario(t, 'env'));
+test('the packaged host never starts a llama-server named by NOSTROMA_LLAMA_SERVER (load route and host start)', { timeout: 90000 }, t => scenario(t, 'env'));
 test('the packaged host never starts a llama-server found on PATH (load route and host start)', { timeout: 90000 }, t => scenario(t, 'path'));

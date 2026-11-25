@@ -10,10 +10,10 @@ import pytest
 
 # The tests draw the full look (Windows Terminal, Linux, macOS). A Windows run with no modern-terminal marker (a CI runner, a classic console)
 # would get the classic console's ASCII / solid look and its "use Windows Terminal" tip line instead; the tests of that look patch
-# consoleinfo or set STRATA_GLYPHS themselves.
-if os.name == "nt" and not any(os.environ.get(k) for k in ("STRATA_GLYPHS", "WT_SESSION", "TERM_PROGRAM", "ConEmuANSI", "ANSICON")) \
+# consoleinfo or set NOSTROMA_GLYPHS themselves.
+if os.name == "nt" and not any(os.environ.get(k) for k in ("NOSTROMA_GLYPHS", "WT_SESSION", "TERM_PROGRAM", "ConEmuANSI", "ANSICON")) \
         and not os.environ.get("TERM", "").startswith(("xterm", "screen", "tmux", "vt")):
-    os.environ["STRATA_GLYPHS"] = "unicode"
+    os.environ["NOSTROMA_GLYPHS"] = "unicode"
 
 
 @pytest.fixture(autouse=True)

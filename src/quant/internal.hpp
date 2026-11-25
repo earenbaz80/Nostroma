@@ -1,31 +1,31 @@
 // src/quant/internal.hpp - block layouts and helpers shared by the layer's own sources (never included by a public header).
 //
-// Block structs and codebooks come from third_party/strata-ggml/strata-quant-common.h (ours since 1B; llama.cpp's ggml-common.h at the pin).
+// Block structs and codebooks come from third_party/nostroma-ggml/nostroma-quant-common.h (ours since 1B; llama.cpp's ggml-common.h at the pin).
 // It is included here in its C declaration flavour: the anonymous unions of the K-quant blocks (`d`/`dmin`/`dm`) are then plain members in C++ too
-// (GCC, Clang and MSVC accept them).  A source that needs the codebook tables (the i-quant grids, kvalues_iq4nl, ...) defines STRATA_QUANT_TABLES
+// (GCC, Clang and MSVC accept them).  A source that needs the codebook tables (the i-quant grids, kvalues_iq4nl, ...) defines NOSTROMA_QUANT_TABLES
 // before this header; they are `static const` tables per translation unit.
 #pragma once
 
 #define GGML_COMMON_DECL_C
-#ifdef STRATA_QUANT_TABLES
+#ifdef NOSTROMA_QUANT_TABLES
 #define GGML_COMMON_IMPL_C
 #endif
-#include "strata-quant-common.h"
+#include "nostroma-quant-common.h"
 
 #include <cmath>
 #include <cstdint>
 #include <cstring>
 
-#include "strata/quant/fp16.hpp"
-#include "strata/quant/types.hpp"
+#include "nostroma/quant/fp16.hpp"
+#include "nostroma/quant/types.hpp"
 
 #if defined(_MSC_VER)
-#define STRATA_RESTRICT __restrict
+#define NOSTROMA_RESTRICT __restrict
 #else
-#define STRATA_RESTRICT __restrict__
+#define NOSTROMA_RESTRICT __restrict__
 #endif
 
-namespace strata::quant {
+namespace nostroma::quant {
 
 
 /// ggml's ue4m3 (NVFP4 sub-block scales) decoder, halved as ggml does: a 256-entry table (the NVFP4 dots decode four scales a block, and the ldexp form made them
@@ -59,4 +59,4 @@ inline int nearest_int(float v) {
     return (i & 0x007fffff) - 0x00400000;
 }
 
-}  // namespace strata::quant
+}  // namespace nostroma::quant

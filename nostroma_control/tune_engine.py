@@ -229,7 +229,7 @@ class LineReader:
         self._stream = stream
         self.name = name
         self._thread = threading.Thread(target=self._pump, daemon=True,
-                                        name=f"strata-{name}-reader")
+                                        name=f"nostroma-{name}-reader")
         self._thread.start()
 
     def _pump(self) -> None:

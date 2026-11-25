@@ -26,7 +26,7 @@
   "pool_workers": 15,
   "gpu_power_cap": "not recorded; not changed by these experiments",
   "ram_speed": "not recorded",
-  "other_workloads": "Shared multi-GPU host; no other Strata benchmark on the selected card. One current-speed snapshot reported selected card 100% gfx activity and all other GPUs 0%. Host CPU interference is not excluded.",
+  "other_workloads": "Shared multi-GPU host; no other Nostroma benchmark on the selected card. One current-speed snapshot reported selected card 100% gfx activity and all other GPUs 0%. Host CPU interference is not excluded.",
   "current_speed_process_vram_max_observed_kib_per_bdf": {
     "0000:63:00.0": 32339516,
     "0000:43:00.0": 32,

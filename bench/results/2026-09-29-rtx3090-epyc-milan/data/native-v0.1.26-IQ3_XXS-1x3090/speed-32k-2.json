@@ -16,10 +16,10 @@
  "engine_prompt_tps": 2160.4,
  "engine_decode_tps": 78.3,
  "log_lines": [
-  "strata serve: prompt 31582 tokens = 0 reused + 31582 read in 14619 ms (2160.4 tok/s), 256 generated in 3271 ms (78.3 tok/s), drafts accepted 161 of 240, 2 checkpoints",
-  "strata serve: decode expert cache hit rate: 96.0% (151459 hits / 157708 lookups)"
+  "nostroma serve: prompt 31582 tokens = 0 reused + 31582 read in 14619 ms (2160.4 tok/s), 256 generated in 3271 ms (78.3 tok/s), drafts accepted 161 of 240, 2 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 96.0% (151459 hits / 157708 lookups)"
  ],
- "answer_head": "The last file in the provided list is `docs/DETAILS.md`.\n\n### What it does\nThis file serves as the **comprehensive technical manual and reference guide** for the Strata engine. While the `README.md` focuses on quick installation and high-level marketing, `DETAILS.md` provides the deep technical spec",
+ "answer_head": "The last file in the provided list is `docs/DETAILS.md`.\n\n### What it does\nThis file serves as the **comprehensive technical manual and reference guide** for the Nostroma engine. While the `README.md` focuses on quick installation and high-level marketing, `DETAILS.md` provides the deep technical spec",
  "metrics_after": {
   "engine": {
    "model": "qwen3.8-flash-next-iq3_xxs",

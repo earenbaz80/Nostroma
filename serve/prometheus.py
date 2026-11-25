@@ -2,8 +2,8 @@
 vLLM server read a Nostroma server unchanged.  Everything comes from the server's own record (Service.metrics(), the
 same dict the JSON /metrics returns) plus three latency histograms observed when a request finishes.
 
-What vLLM has no name for is the JSON's own facts under `strata:`, named after the JSON's keys (live.tok_s ->
-strata:live_tok_s, totals.decode_ms -> strata:totals_decode_seconds_total, hardware.gpu_util -> strata:gpu_util), so
+What vLLM has no name for is the JSON's own facts under `nostroma:`, named after the JSON's keys (live.tok_s ->
+nostroma:live_tok_s, totals.decode_ms -> nostroma:totals_decode_seconds_total, hardware.gpu_util -> nostroma:gpu_util), so
 the two formats say the same thing and a panel can be moved from the Monitor tab to Grafana by its key."""
 import threading
 
@@ -62,7 +62,7 @@ def _num(v, default=0):
 
 def render(m: dict, lat: dict) -> str:
     """The text for one scrape.  `m` is Service.metrics(), `lat` Latencies.snapshot()."""
-    model = str((m.get("engine") or {}).get("model") or "strata").replace("\\", "\\\\").replace('"', '\\"')
+    model = str((m.get("engine") or {}).get("model") or "nostroma").replace("\\", "\\\\").replace('"', '\\"')
     lab = f'model_name="{model}"'
     live, totals = m.get("live") or {}, m.get("totals") or {}
     out = []
@@ -102,12 +102,12 @@ def render(m: dict, lat: dict) -> str:
             out.append(f'{name}_bucket{{{lab},le="{b}"}} {c}')
         out.append(f'{name}_bucket{{{lab},le="+Inf"}} {n}')
         out.append(f"{name}_sum{{{lab}}} {round(total, 6)}\n{name}_count{{{lab}}} {n}")
-    strata(m, out, lab)
+    nostroma(m, out, lab)
     return "\n".join(out) + "\n"
 
 
-def strata(m: dict, out: list, lab: str):
-    """The JSON's facts vLLM has no name for, under `strata:` and the JSON's key."""
+def nostroma(m: dict, out: list, lab: str):
+    """The JSON's facts vLLM has no name for, under `nostroma:` and the JSON's key."""
     live, totals = m.get("live") or {}, m.get("totals") or {}
     hw, eng = m.get("hardware") or {}, m.get("engine") or {}
     reqs = m.get("requests") or []
@@ -119,8 +119,8 @@ def strata(m: dict, out: list, lab: str):
             return                                       # unknown here (no GPU telemetry, an older engine): no sample
         if name not in typed:                            # one HELP / TYPE per family, before its first sample
             typed.add(name)
-            out.append(f"# HELP strata:{name} {help_}\n# TYPE strata:{name} {kind}")
-        out.append(f"strata:{name}{{{lab}{labels}}} {value}")
+            out.append(f"# HELP nostroma:{name} {help_}\n# TYPE nostroma:{name} {kind}")
+        out.append(f"nostroma:{name}{{{lab}{labels}}} {value}")
 
     for state in ("unloaded", "idle", "reading", "generating"):
         metric("live_state", "gauge", "1 for what the engine is doing (live.state).", int(live.get("state") == state),

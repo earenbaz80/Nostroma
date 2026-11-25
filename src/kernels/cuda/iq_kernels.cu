@@ -1,20 +1,20 @@
-// src/kernels/cuda/iq_kernels.cu - see include/strata/kernels/iq_kernels.hpp.
+// src/kernels/cuda/iq_kernels.cu - see include/nostroma/kernels/iq_kernels.hpp.
 //
 // The dot products (vec_dot_*_q8_1), the dequantizers and the q8_1 quantizer are transcribed from llama.cpp
 // (ggml/src/ggml-cuda/vecdotq.cuh, dequantize.cuh, quantize.cu at the commit in third_party/ggml/VERSION.txt;
 // MIT license, third_party/ggml/LICENSE).  The block structs and codebook grids come from its ggml-common.h,
 // included unchanged.
-#include "strata/kernels/iq_kernels.hpp"
-#include "strata/env.hpp"
-#include "strata/core/defaults_026.hpp"
-#include "strata/core/expert_nibble.hpp"
-#include "strata/core/sm75_series.hpp"
-#include "strata/core/sm120_series.hpp"
-#include "strata/core/dispatch_stats.hpp"
-#include "strata/kernels/gfx_arch.hpp"
-#include "strata/kernels/i8_expert_rule.hpp"
-#include "strata/kernels/dp4a.hpp"
-#include "strata/kernels/q8_1_finite.hpp"
+#include "nostroma/kernels/iq_kernels.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/core/defaults_026.hpp"
+#include "nostroma/core/expert_nibble.hpp"
+#include "nostroma/core/sm75_series.hpp"
+#include "nostroma/core/sm120_series.hpp"
+#include "nostroma/core/dispatch_stats.hpp"
+#include "nostroma/kernels/gfx_arch.hpp"
+#include "nostroma/kernels/i8_expert_rule.hpp"
+#include "nostroma/kernels/dp4a.hpp"
+#include "nostroma/kernels/q8_1_finite.hpp"
 #include "s26_tsum.cuh"
 
 #include <cuda_fp16.h>
@@ -37,7 +37,7 @@
 #include <tuple>
 #include <type_traits>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 
 void check(const char* what) {
@@ -59,7 +59,7 @@ __device__ __forceinline__ uint32_t unpack_ksigns(const uint8_t v) {
     return s * 0x01010101;
 }
 __device__ __forceinline__ int2 get_int_from_table_16(const int& q4, const int8_t* table) {
-#if defined(STRATA_HIP_GFX906)
+#if defined(NOSTROMA_HIP_GFX906)
     // AMD: llama.cpp's HIP lookup (vecdotq.cuh) - v_perm_b32 takes 3-bit byte indices, so the low and high halves
     // of the table are looked up and the index MSB picks between them: 4 perms per 8 values.
     const uint32_t* v32 = reinterpret_cast<const uint32_t*>(table);
@@ -84,7 +84,7 @@ __device__ __forceinline__ int2 get_int_from_table_16(const int& q4, const int8_
     return make_int2(__byte_perm(tmp[0], tmp[1], 0x6420), __byte_perm(tmp[0], tmp[1], 0x7531));
 #endif
 }
-#define ggml_cuda_dp4a(a, b, c) STRATA_DP4A((a), (b), (c))
+#define ggml_cuda_dp4a(a, b, c) NOSTROMA_DP4A((a), (b), (c))
 
 // ---------------------------------------------------------------- the dot products (vecdotq.cuh)
 __device__ __forceinline__ float vec_dot_q2_0_q8_1(const void* __restrict__ vbq, const block_q8_1* __restrict__ bq8_1,
@@ -326,7 +326,7 @@ __device__ __forceinline__ float vec_dot_iq4_xs_q8_1(const void* __restrict__ vb
 
 // ---------------------------------------------------------------- Unsloth's UD-Q4_K_XL experts
 // Q4_K / Q5_K gate/up and Q5_1 / Q8_0 down: llama.cpp's vec_dot_*_q8_1 (vecdotq.cuh, VDR 2 each), transcribed; the
-// Q5_1 min term is the one departure (below).  Via eddoursul/Strata 8029fa9 (iq_dot.cuh) and #255 (Q8_0,
+// Q5_1 min term is the one departure (below).  Via eddoursul/Nostroma 8029fa9 (iq_dot.cuh) and #255 (Q8_0,
 // gopinath87607), which agree with llama.cpp and with each other.
 constexpr int VDR_Q4_K = 2, VDR_Q5_K = 2, VDR_Q5_1 = 2, VDR_Q5_0 = 2, VDR_Q4_1 = 2, VDR_Q4_0 = 2, VDR_Q8_0 = 2, VDR_Q6_K = 1;
 
@@ -436,7 +436,7 @@ __device__ __forceinline__ float vec_dot_q5_K_q8_1(const void* __restrict__ vbq,
 // Q5_1: llama.cpp's integer chain, but the min term multiplies the sum of the QUANTIZED activations (dp4a with
 // 0x01010101, times d8) instead of the q8_1 block's `ds.y`, which our quantizer (like llama.cpp's) fills with the sum
 // of the ORIGINAL activations.  That is ggml-cpu's convention (its q8_1 `s` is d * sum(q)) and the one the K-quant
-// mins above use; the scaled and the min term then see the same activation (eddoursul/Strata measured 1.1-1.2%
+// mins above use; the scaled and the min term then see the same activation (eddoursul/Nostroma measured 1.1-1.2%
 // against 1.9% relative error per expert).  Result: sumi * (d5 * d8) + sumu * (m5 * d8).
 // Q5_0: llama.cpp's integer chain (vecdotq.cuh vec_dot_q5_0_q8_1_impl), but the constant -16 per-weight offset multiplies
 // the sum of the QUANTIZED activations (dp4a with 0x01010101, times d8), like the Q5_1 and Q4_0 paths and ggml-cpu's q8_0
@@ -479,7 +479,7 @@ __device__ __forceinline__ float vec_dot_q5_0_q8_1(const void* __restrict__ vbq,
 // centring is the same idea as the Q5_1 min term above: the offset is applied to the activations' own int8 codes.
 __device__ __forceinline__ int q4_0_centred(const int v) {
     // Unsigned: (b & 0x08080808) * 0x1E reaches 0xF0F0F0F0, which overflows a signed int - undefined behaviour the
-    // sm_60 build (no __dp4a, strata_dp4a fallback) optimised into a wrong value (native_expert_parity gpu rel 1.7e4).
+    // sm_60 build (no __dp4a, nostroma_dp4a fallback) optimised into a wrong value (native_expert_parity gpu rel 1.7e4).
     const uint32_t b = (uint32_t) v ^ 0x08080808u;   // per byte: 0..15 -> (q - 8) as a 4-bit two's complement value
     return (int) (b | ((b & 0x08080808u) * 0x1Eu));  // sign-extend each nibble into its byte (0x08 * 0x1E = 0xF0)
 }
@@ -553,7 +553,7 @@ __device__ __forceinline__ float vec_dot_q6_K_q8_1_impl_mmvq(const int vl, const
         const int vil = (vl >> (4 * i)) & 0x0F0F0F0F;
         const int vih = ((vh >> (4 * i)) << 4) & 0x30303030;
         const int vi = __vsubss4(vil | vih, 0x20202020);   // vi = (vil | vih) - 32
-        sumf += d8[i] * (STRATA_DP4A(vi, u[i], 0) * sc);
+        sumf += d8[i] * (NOSTROMA_DP4A(vi, u[i], 0) * sc);
     }
     return d * sumf;
 }
@@ -643,15 +643,15 @@ __device__ __forceinline__ void tq_step(uint32_t s, float2& a, float2& b) {
 // pointer made these LD.E), and TQK6's lane window needs only three words (34 bits from a bit offset of 0 or 8), TQK7's
 // four.  The same bits either way.
 #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 610
-#define STRATA_TQ_LD16(p) ((uint32_t) __ldg((const unsigned short*) (p)))
+#define NOSTROMA_TQ_LD16(p) ((uint32_t) __ldg((const unsigned short*) (p)))
 #else
-#define STRATA_TQ_LD16(p) ((uint32_t) *(p))
+#define NOSTROMA_TQ_LD16(p) ((uint32_t) *(p))
 #endif
 template<int TY>
 __device__ __forceinline__ void tq_states4(const uint8_t* qs, int l, uint32_t s[4]) {
     const uint16_t* qs16 = (const uint16_t*) qs;
     if constexpr (TY == 144) {   // s_t = qs[(t + 31) % 32] << 8 | qs[t]
-        const uint32_t w01 = STRATA_TQ_LD16(qs16 + 2 * l + 0), w23 = STRATA_TQ_LD16(qs16 + 2 * l + 1);
+        const uint32_t w01 = NOSTROMA_TQ_LD16(qs16 + 2 * l + 0), w23 = NOSTROMA_TQ_LD16(qs16 + 2 * l + 1);
         const uint32_t prev = qs[(4 * l + 31) & 31];
         const uint32_t b0 = w01 & 0xFF, b1 = w01 >> 8, b2 = w23 & 0xFF, b3 = w23 >> 8;
         s[0] = (prev << 8) | b0;
@@ -666,13 +666,13 @@ __device__ __forceinline__ void tq_states4(const uint8_t* qs, int l, uint32_t s[
         const int wi1 = wb + 1 >= nwords ? wb + 1 - nwords : wb + 1;
         const int wi2 = wb + 2 >= nwords ? wb + 2 - nwords : wb + 2;
         const int wi3 = wb + 3 >= nwords ? wb + 3 - nwords : wb + 3;
-        uint64_t v = (uint64_t) STRATA_TQ_LD16(qs16 + wb) | ((uint64_t) STRATA_TQ_LD16(qs16 + wi1) << 16) |
-                     ((uint64_t) STRATA_TQ_LD16(qs16 + wi2) << 32);
+        uint64_t v = (uint64_t) NOSTROMA_TQ_LD16(qs16 + wb) | ((uint64_t) NOSTROMA_TQ_LD16(qs16 + wi1) << 16) |
+                     ((uint64_t) NOSTROMA_TQ_LD16(qs16 + wi2) << 32);
 #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 610
         if constexpr (K == 6) {   // r is 0 or 8 here: bits r .. r + 33 < 48, the fourth word is never read
         } else
 #endif
-        v |= (uint64_t) STRATA_TQ_LD16(qs16 + wi3) << 48;
+        v |= (uint64_t) NOSTROMA_TQ_LD16(qs16 + wi3) << 48;
 #pragma unroll
         for (int i = 0; i < 4; ++i) s[i] = (uint32_t) (v >> (r + (3 - i) * K)) & 0xFFFFu;
     }
@@ -711,7 +711,7 @@ __device__ __forceinline__ TqLane tq_load(const void* __restrict__ vbq, int kbx,
         const uint32_t x = (s[i] & TQ_STATE_MASK) * 0x9e3779b1u;
         r.q[i] = (int) ((uint32_t) lut[x >> 21] | ((uint32_t) lut[(x >> 10) & 2047u] << 16));
     }
-    r.d = tq_h2f(STRATA_TQ_LD16(&b->d));
+    r.d = tq_h2f(NOSTROMA_TQ_LD16(&b->d));
     return r;
 }
 __device__ __forceinline__ float tq_apply(const TqLane& r, const block_q8_1* __restrict__ bq8_1, int iqs) {
@@ -839,27 +839,27 @@ template<> struct Fmt<145> { static constexpr int qk = 128, ipb = 8, step = 4;
 template<> struct Fmt<146> { static constexpr int qk = 128, ipb = 8, step = 4;
     __device__ static float dot(const void* v, const block_q8_1* y, int kbx, int iqs) { return vec_dot_tq_q8_1<146>(v, y, kbx, iqs); } };
 // Gyro-L pair trellis: 8 lanes of 8 steps (16 values) per 128-value block
-#define STRATA_TQP_FMT(T) template<> struct Fmt<T> { static constexpr int qk = 128, ipb = 8, step = 4; \
+#define NOSTROMA_TQP_FMT(T) template<> struct Fmt<T> { static constexpr int qk = 128, ipb = 8, step = 4; \
     __device__ static float dot(const void* v, const block_q8_1* y, int kbx, int iqs) { return vec_dot_tqp_q8_1<T>(v, y, kbx, iqs); } };
-STRATA_TQP_FMT(147)
-STRATA_TQP_FMT(148)
-STRATA_TQP_FMT(149)
-#undef STRATA_TQP_FMT
+NOSTROMA_TQP_FMT(147)
+NOSTROMA_TQP_FMT(148)
+NOSTROMA_TQP_FMT(149)
+#undef NOSTROMA_TQP_FMT
 
 // The formats of each role, one list each so a type cannot be in one switch and missing from another.  Every
 // entry is a kernel template for each CUDA architecture of the build, hence two lists rather than one.
-#ifdef STRATA_Q6K_EXPERTS   // opt-in build (-DSTRATA_Q6K_EXPERTS=ON): one more instance per kernel, loaded at start
-#define STRATA_GU_FMTS(X) X(16) X(17) X(18) X(21) X(22) X(23) X(29) X(42) X(12) X(13) X(14) X(6) X(2) X(3) X(8) X(40) X(144) X(145) X(147) X(148) X(149)
+#ifdef NOSTROMA_Q6K_EXPERTS   // opt-in build (-DNOSTROMA_Q6K_EXPERTS=ON): one more instance per kernel, loaded at start
+#define NOSTROMA_GU_FMTS(X) X(16) X(17) X(18) X(21) X(22) X(23) X(29) X(42) X(12) X(13) X(14) X(6) X(2) X(3) X(8) X(40) X(144) X(145) X(147) X(148) X(149)
 #else
-#define STRATA_GU_FMTS(X) X(16) X(17) X(18) X(21) X(22) X(23) X(29) X(42) X(12) X(13) X(6) X(2) X(3) X(8) X(40) X(144) X(145) X(147) X(148) X(149)
+#define NOSTROMA_GU_FMTS(X) X(16) X(17) X(18) X(21) X(22) X(23) X(29) X(42) X(12) X(13) X(6) X(2) X(3) X(8) X(40) X(144) X(145) X(147) X(148) X(149)
 #endif
 // Q5_K / Q6_K downs: Qwen3.6-35B-A3B (FF 512, whole 256-blocks per row); Flash-Next's FF 640 never selects them
-#ifdef STRATA_Q6K_EXPERTS
-#define STRATA_D_FMTS(X) X(20) X(23) X(42) X(7) X(6) X(2) X(3) X(8) X(13) X(14) X(40) X(144) X(146) X(147) X(148) X(149)
+#ifdef NOSTROMA_Q6K_EXPERTS
+#define NOSTROMA_D_FMTS(X) X(20) X(23) X(42) X(7) X(6) X(2) X(3) X(8) X(13) X(14) X(40) X(144) X(146) X(147) X(148) X(149)
 #else
-#define STRATA_D_FMTS(X) X(20) X(23) X(42) X(7) X(6) X(2) X(3) X(8) X(13) X(40) X(144) X(146) X(147) X(148) X(149)
+#define NOSTROMA_D_FMTS(X) X(20) X(23) X(42) X(7) X(6) X(2) X(3) X(8) X(13) X(40) X(144) X(146) X(147) X(148) X(149)
 #endif
-#define STRATA_MMVQ_FMTS(X) X(16) X(17) X(18) X(20) X(21) X(22) X(23) X(29) X(42) X(12) X(13) X(7) X(6) X(2) X(3) X(8) X(40) X(144) X(145) X(146) X(147) X(148) X(149)
+#define NOSTROMA_MMVQ_FMTS(X) X(16) X(17) X(18) X(20) X(21) X(22) X(23) X(29) X(42) X(12) X(13) X(7) X(6) X(2) X(3) X(8) X(40) X(144) X(145) X(146) X(147) X(148) X(149)
 template<> struct Fmt<40> { static constexpr int qk = 64, ipb = 2, step = 4;     // NVFP4: 2 calls of 32 values
     __device__ static float dot(const void* v, const block_q8_1* y, int kbx, int iqs) { return vec_dot_nvfp4_q8_1(v, y, kbx, iqs); } };
 
@@ -903,16 +903,16 @@ __global__ void __launch_bounds__(128) mmvq_kernel(const uint8_t* __restrict__ w
 // scale as a float) and `apply` (the activation loads, the dp4a chain in the same order, the same integer scale
 // step and the same float expression).  `apply(load(...))` does the dot's integer and float operations in the same
 // order on the same values, so a column of the kernels below is BITWISE equal to the same column of mmvq_kernel /
-// native_gu_kernel / native_down_kernel (iq_multi_parity checks it; STRATA_OLD_IQ_MMVQ=1 keeps the old kernels).
+// native_gu_kernel / native_down_kernel (iq_multi_parity checks it; NOSTROMA_OLD_IQ_MMVQ=1 keeps the old kernels).
 template<int TY> struct Split;
 // Formats with a Split below take the decode-once kernels; the others (Q4_K, Q5_K, Q5_1, Q8_0: UD-Q4_K_XL) the
 // per-entry ones, which call Fmt<TY>::dot per column exactly as before #242 (the launchers test kSplit at compile
 // time, so the multi kernels are never instantiated for a type without a Split).
 template<int TY> inline constexpr bool kSplit = false;
 // The K-quant / Q8_0 / Q5_1 formats (UD-Q4_K_XL) have Split traits (SplitK below), but their decode-once multi kernels
-// run only with STRATA_KQ_SPLIT=1 until the A/B on the measured cards decides (bitwise the old kernels either way).
+// run only with NOSTROMA_KQ_SPLIT=1 until the A/B on the measured cards decides (bitwise the old kernels either way).
 template<int TY> inline constexpr bool kq_type = (TY == 12 || TY == 13 || TY == 8);   // not Q5_1: its Split apply is not bitwise the old dot (FMA contraction), see notes-151-amd
-inline bool g_kq_split = [] { const char* v = strata::env("NOSTROMA_KQ_SPLIT"); return v != nullptr && v[0] == '1'; }();
+inline bool g_kq_split = [] { const char* v = nostroma::env("NOSTROMA_KQ_SPLIT"); return v != nullptr && v[0] == '1'; }();
 template<int TY> inline bool split_off() { return kq_type<TY> && !g_kq_split; }
 template<int TY> inline constexpr bool kTqType = (TY == 144 || TY == 145 || TY == 146);
 // the trellis types stage their int8 codebook (4 KB) too, but only where it pays: tq_stage_on() below (compute capability 6.0)
@@ -1425,7 +1425,7 @@ template<> struct S27<8> {   // Q8_0
 // K-quants and Q5_1 / Q8_0 (UD-Q4_K_XL): the S27 load / apply (below the same file used them first for the V2K
 // grouped kernels) as Split traits, so the generic multi-column kernels decode a weight once per call for these
 // formats too.  Bitwise the old per-column Fmt<TY>::dot (the S27 apply is that dot's own expression; iq_multi_parity).
-// STRATA_OLD_IQ_MMVQ=1 keeps the old kernels; STRATA_KQ_SPLIT=0 keeps them for these four formats only.
+// NOSTROMA_OLD_IQ_MMVQ=1 keeps the old kernels; NOSTROMA_KQ_SPLIT=0 keeps them for these four formats only.
 template<int TY> struct SplitK : S27<TY> {
     template<bool STAGE_GRID = false>
     __device__ static typename S27<TY>::W load(const void* __restrict__ vbq, int kbx, int iqs, const uint32_t* __restrict__ = nullptr) {
@@ -1792,7 +1792,7 @@ __device__ __forceinline__ void row_dot2_80_sub16(const uint8_t* ra, const uint8
 // The sign-mask tables that follow the codebook words in a staged IQ3_XXS / IQ3_S table (see stage_iq_grid): the byte
 // masks of every 7-bit sign field (IQ3_XXS, 2 x 128 words at +256) and of a sign byte's bits 0-3 and 4-7 (IQ3_S, 2 x 256
 // words at +512).  Split<18>::load<true> and Split<21>::load<true> read them, so every kernel that stages these two
-// codebooks (the default kernels through stage_iq_grid, the STRATA_EXPDEC window kernels through EdGrid) fills them too.
+// codebooks (the default kernels through stage_iq_grid, the NOSTROMA_EXPDEC window kernels through EdGrid) fills them too.
 __device__ __forceinline__ void stage_iq3xxs_masks(uint32_t* s_buf, int tid, int nthreads) {
     for (int u = tid; u < 128; u += nthreads) {
         const uint32_t s = (uint32_t) u | ((__popc((uint32_t) u) & 1u) << 7);   // 8th sign = parity of the 7
@@ -1887,15 +1887,15 @@ struct IqGridWords {
 // #778: `__shared__ alignas(16)` does not compile for gfx1030 (HIP); the attribute after the declarator does, but nvcc
 // with MSVC as host does not take it.  Same layout either way.
 #if defined(__HIPCC__)
-#define STRATA_SHARED_ALIGN16_U32(name, ...) __shared__ uint32_t name[__VA_ARGS__] __attribute__((aligned(16)))
+#define NOSTROMA_SHARED_ALIGN16_U32(name, ...) __shared__ uint32_t name[__VA_ARGS__] __attribute__((aligned(16)))
 #else
-#define STRATA_SHARED_ALIGN16_U32(name, ...) __shared__ alignas(16) uint32_t name[__VA_ARGS__]
+#define NOSTROMA_SHARED_ALIGN16_U32(name, ...) __shared__ alignas(16) uint32_t name[__VA_ARGS__]
 #endif
 template<int TY, int NC, bool STAGE_GRID = kStageIqGrid<TY>, bool EXACT_N = false>
 __global__ void __launch_bounds__(128) mmvq_multi_kernel(const uint8_t* __restrict__ w, size_t row_bytes,
                                                          const block_q8_1* __restrict__ x, float* __restrict__ y,
                                                          int n_in, int n_out, int ncols) {
-    STRATA_SHARED_ALIGN16_U32(s_grid_buf, IqGridWords<TY, STAGE_GRID>::value);
+    NOSTROMA_SHARED_ALIGN16_U32(s_grid_buf, IqGridWords<TY, STAGE_GRID>::value);
     const uint32_t* s_grid = stage_iq_grid<TY, STAGE_GRID>(s_grid_buf, threadIdx.y * 32 + threadIdx.x, 128);
     const int row = blockIdx.x * 4 + threadIdx.y;
     if (row >= n_out) return;
@@ -1982,7 +1982,7 @@ __global__ void __launch_bounds__(256) native_gu_multi_kernel(const unsigned lon
                                                               float* __restrict__ gate, float* __restrict__ up) {
     const int ng = *n_groups;
     if (blockIdx.y >= ng) return;
-    STRATA_SHARED_ALIGN16_U32(s_grid_buf, IqGridWords<TG, STAGE_GRID>::value);
+    NOSTROMA_SHARED_ALIGN16_U32(s_grid_buf, IqGridWords<TG, STAGE_GRID>::value);
     const uint32_t* s_grid = stage_iq_grid<TG, STAGE_GRID>(s_grid_buf, threadIdx.x, 256);
     const int nb = (int) (L.n_embd / Fmt<TG>::qk), xb = (int) (L.n_embd / 32);
     if constexpr (SUB16 && (TG == 144 || TG == 145)) {
@@ -2247,7 +2247,7 @@ __global__ void __launch_bounds__(256) native_down_multi_kernel(const unsigned l
                                                                 float* __restrict__ out) {
     const int ng = *n_groups;
     if (blockIdx.y >= ng) return;
-    STRATA_SHARED_ALIGN16_U32(s_grid_buf, IqGridWords<TD, STAGE_TQ>::value);   // the trellis codebook on a cc 6.0 card, else 4 unused words
+    NOSTROMA_SHARED_ALIGN16_U32(s_grid_buf, IqGridWords<TD, STAGE_TQ>::value);   // the trellis codebook on a cc 6.0 card, else 4 unused words
     const uint32_t* s_grid = stage_iq_grid<TD, STAGE_TQ>(s_grid_buf, threadIdx.x, 256);
     __shared__ uint32_t s_hq_buf[GRP_NC * 20 * 9];
     const int nb = (int) (L.n_ff / Fmt<TD>::qk), hb = (int) (L.n_ff / 32);
@@ -2447,7 +2447,7 @@ __global__ void __launch_bounds__(256) native_down_multi_kernel(const unsigned l
     }
 }
 
-// ---------------------------------------------------------------- EXPDEC (STRATA_EXPDEC=1): the group's activations
+// ---------------------------------------------------------------- EXPDEC (NOSTROMA_EXPDEC=1): the group's activations
 // in shared memory, R rows per lane
 //
 // native_gu_multi_kernel / native_down_multi_kernel decode each weight part once and apply it to every entry of the
@@ -2458,12 +2458,12 @@ __global__ void __launch_bounds__(256) native_down_multi_kernel(const unsigned l
 // words are two 16-byte loads (gate/up, Q2_0 down: the block's two halves in separate planes, conflict-free) or two
 // 8-byte loads (IQ4_NL down), the fp16 block scale already a float; every lane computes R rows at once, so the
 // activation words are loaded once per R rows; the IQ3_XXS / IQ3_S codebooks are staged too (IQ2_* already were),
-// and a block takes `rb` rows (auto: the most that keep ~STRATA_EXPDEC_MINBLK blocks in flight) instead of 16.
+// and a block takes `rb` rows (auto: the most that keep ~NOSTROMA_EXPDEC_MINBLK blocks in flight) instead of 16.
 // Each (row, entry) sum is the default kernel's sum tree (row_dot_80_sub16 / row_dot_40_sub8 / row_dot_20_sub16: the
 // same lane does the same calls in the same order with the same operations, `apply_u` = `apply` on the block's
 // words), so the output is bitwise the same (expdec_bench checks it; docs/EXPERTDEC.md).
-#ifndef STRATA_EXPDEC_MINB
-#define STRATA_EXPDEC_MINB 4   // gate/up __launch_bounds__ min blocks per SM by default (STRATA_EXPDEC_MINB at runtime): 4 = up to 64
+#ifndef NOSTROMA_EXPDEC_MINB
+#define NOSTROMA_EXPDEC_MINB 4   // gate/up __launch_bounds__ min blocks per SM by default (NOSTROMA_EXPDEC_MINB at runtime): 4 = up to 64
                                // registers, as the default kernels (bench: equal on the 2080 Ti, 0.87-0.95 on the 3060); 2 = up to 128
 #endif
 constexpr int ED_NC = GRP_NC;   // entries staged at once
@@ -2593,7 +2593,7 @@ __global__ void __launch_bounds__(256, MINB) expdec_gu_kernel(
     if (blockIdx.y >= ng) return;
     __shared__ alignas(16) int4 s_u[ED_NC * 2 * ED_XB];
     __shared__ float s_ds[ED_NC * ED_XB];
-    STRATA_SHARED_ALIGN16_U32(s_grid_buf, EdGrid<TG>::words);
+    NOSTROMA_SHARED_ALIGN16_U32(s_grid_buf, EdGrid<TG>::words);
     const int tid = threadIdx.x;
     EdGrid<TG>::copy(s_grid_buf, tid);   // visible after the staging's iq_sync_lds
     const int sw = tid >> 4, t = tid & 15;
@@ -2768,7 +2768,7 @@ __device__ __forceinline__ void ed_d42_rows(const uint8_t* const* wr, const int4
 // down (IQ4_NL: 32 sub-warps of 8 lanes; Q2_0: 16 of 16), R rows per lane, `rb` rows per block (a multiple of the
 // rows per pass; n_embd too).  The entries' h rows are contiguous in hq (entry e at e * ED_HB).
 template<int TD, int R>
-__global__ void __launch_bounds__(256, STRATA_EXPDEC_MINB) expdec_down_kernel(const unsigned long long* __restrict__ grp_ptr,
+__global__ void __launch_bounds__(256, NOSTROMA_EXPDEC_MINB) expdec_down_kernel(const unsigned long long* __restrict__ grp_ptr,
                                                                               const int32_t* __restrict__ grp_start,
                                                                               const int32_t* __restrict__ n_groups,
                                                                               const int32_t* __restrict__ ent_dst,
@@ -2872,7 +2872,7 @@ __global__ void __launch_bounds__(256) swiglu_q8_1_entries_kernel(const float* _
     }
 }
 
-// 147-verify (STRATA_GU_SWIGLU=1): native_gu_multi_kernel's 16-lane gate and up rows, SwiGLU and the q8_1 blocks in ONE
+// 147-verify (NOSTROMA_GU_SWIGLU=1): native_gu_multi_kernel's 16-lane gate and up rows, SwiGLU and the q8_1 blocks in ONE
 // launch.  A block owns 32 consecutive hidden columns r of a group: its 32 sub-warps each compute gate row r and up row
 // r (the same row_dot_80_sub16 calls, entries GRP_NC at a time, the same NVFP4 tail scale), so the product
 // h = silu(gate) * up is formed in the block and warp k quantizes entry k's 32 values with q8_1_store - the q8_1 block
@@ -2891,7 +2891,7 @@ __global__ void __launch_bounds__(512) native_gu_swiglu_kernel(const unsigned lo
 #endif
     const int ng = *n_groups;
     if ((int) blockIdx.y >= ng) return;
-    STRATA_SHARED_ALIGN16_U32(s_grid_buf, IqGridWords<TG, STAGE_GRID>::value);
+    NOSTROMA_SHARED_ALIGN16_U32(s_grid_buf, IqGridWords<TG, STAGE_GRID>::value);
     const uint32_t* s_grid = stage_iq_grid<TG, STAGE_GRID>(s_grid_buf, threadIdx.x, 512);
     __shared__ float sh[GRP_NC][32];
     const int sw = threadIdx.x >> 4, t = threadIdx.x & 15, warp = threadIdx.x >> 5, lane = threadIdx.x & 31;
@@ -3383,7 +3383,7 @@ __global__ void dequant_gu_kernel(int ty, const void* __restrict__ gate, const v
 // the types dq_dispatch dequantizes
 bool is_iq(int t) {
     return t == 16 || t == 17 || t == 18 || t == 20 || t == 21 || t == 22 || t == 23 || t == 29 || t == 42 || t == 11 ||
-#ifdef STRATA_Q6K_EXPERTS
+#ifdef NOSTROMA_Q6K_EXPERTS
            t == 12 || t == 13 || t == 14 || t == 7 || t == 6 || t == 2 || t == 3 || t == 8 || t == 40 || t == 144 || t == 145 || t == 146 || t == 147 || t == 148 || t == 149;
 #else
            t == 12 || t == 13 || t == 7 || t == 6 || t == 2 || t == 3 || t == 8 || t == 40 || t == 144 || t == 145 || t == 146 || t == 147 || t == 148 || t == 149;
@@ -3392,25 +3392,25 @@ bool is_iq(int t) {
 // values per block of the types the grouped expert kernels take (0 = none)
 int gu_qk(int t) {
     switch (t) {
-#define STRATA_QK(T) case T: return Fmt<T>::qk;
-        STRATA_GU_FMTS(STRATA_QK)
-#undef STRATA_QK
+#define NOSTROMA_QK(T) case T: return Fmt<T>::qk;
+        NOSTROMA_GU_FMTS(NOSTROMA_QK)
+#undef NOSTROMA_QK
         default: return 0;
     }
 }
 int d_qk(int t) {
     switch (t) {
-#define STRATA_QK(T) case T: return Fmt<T>::qk;
-        STRATA_D_FMTS(STRATA_QK)
-#undef STRATA_QK
+#define NOSTROMA_QK(T) case T: return Fmt<T>::qk;
+        NOSTROMA_D_FMTS(NOSTROMA_QK)
+#undef NOSTROMA_QK
         default: return 0;
     }
 }
 bool gu_split(int t) {
     switch (t) {
-#define STRATA_SP(T) case T: return kSplit<T> && !split_off<T>();
-        STRATA_GU_FMTS(STRATA_SP)
-#undef STRATA_SP
+#define NOSTROMA_SP(T) case T: return kSplit<T> && !split_off<T>();
+        NOSTROMA_GU_FMTS(NOSTROMA_SP)
+#undef NOSTROMA_SP
         default: return false;
     }
 }
@@ -3419,30 +3419,30 @@ bool env_on(const char* name) {
     const char* v = std::getenv(name);
     return v != nullptr && v[0] != '\0' && v[0] != '0';
 }
-// STRATA_OLD_IQ_MMVQ=1 keeps the per-column kernels (bitwise equal to the new ones; kept for A/B timing)
+// NOSTROMA_OLD_IQ_MMVQ=1 keeps the per-column kernels (bitwise equal to the new ones; kept for A/B timing)
 bool g_old_kernels = env_on("NOSTROMA_OLD_IQ_MMVQ");
 bool g_no_sub16_gu = env_on("NOSTROMA_NO_SUB16_GU");
-// STRATA_IQ_STAGE_GRID=0 disables staging 64-bit i-quant codebook tables into shared memory
+// NOSTROMA_IQ_STAGE_GRID=0 disables staging 64-bit i-quant codebook tables into shared memory
 bool g_stage_grid = [] {
-    const char* v = strata::env("NOSTROMA_IQ_STAGE_GRID");
+    const char* v = nostroma::env("NOSTROMA_IQ_STAGE_GRID");
     return v == nullptr || v[0] == '\0' || v[0] != '0';
 }();
 // The single-matrix mmvq (128-thread blocks, one per 4 rows) pays the 2-8 KB staging per block: on the RTX 5070 its
 // IQ2_XS / IQ2_S / IQ1_M calls were 10-20% slower staged at 3-8 columns (iq_multi_parity --bench), while the grouped
-// expert kernels gain.  So mmvq stages only with STRATA_IQ_STAGE_GRID_MMVQ=1 (bitwise the same either way).
+// expert kernels gain.  So mmvq stages only with NOSTROMA_IQ_STAGE_GRID_MMVQ=1 (bitwise the same either way).
 bool g_stage_grid_mmvq = g_stage_grid && [] {
-    const char* v = strata::env("NOSTROMA_IQ_STAGE_GRID_MMVQ");
+    const char* v = nostroma::env("NOSTROMA_IQ_STAGE_GRID_MMVQ");
     return v != nullptr && v[0] == '1';
 }();
 // IQ3_XXS's and IQ3_S's codebooks and sign-mask tables staged in shared memory by the grouped expert kernels (the
-// single-matrix mmvq does not): bitwise the same either way.  OPT-IN: STRATA_IQ_STAGE_TABLES=1.  The PR (#1424) made it
+// single-matrix mmvq does not): bitwise the same either way.  OPT-IN: NOSTROMA_IQ_STAGE_TABLES=1.  The PR (#1424) made it
 // the default on compute capability 6.0 (GP100: no __dp4a, these kernels decode-bound at 70-140 GB/s); on a Tesla P100
 // (IQ3_XXS and IQ3_S packs, 5-6 interleaved pairs each) the decode was 0.97-1.03x of the unstaged kernels, noise, so
 // it is not on by default.  On an RTX 3090 Ti, forced on, the IQ3_S layers took 3-13% longer.
 bool stage_tables_on() {
     if (!g_stage_grid) return false;
     static const bool on = [] {
-        const char* v = strata::env("NOSTROMA_IQ_STAGE_TABLES");
+        const char* v = nostroma::env("NOSTROMA_IQ_STAGE_TABLES");
         return v && v[0] && v[0] != '0';
     }();
     return on;
@@ -3451,9 +3451,9 @@ bool stage_tables_on() {
 // The trellis types (Gyro: TQ2_T / TQK6 / TQK7) read a 4 KB int8 codebook with 8 random lookups per 16 weights.  The
 // grouped expert kernels stage it in shared memory on compute capability 6.0 (Tesla P100: no dp4a, ~28 ALU ops per
 // weight in the decode, the global lookups are replayed per distinct line) and leave it in global memory elsewhere
-// (the newer cards' L1 absorbs it).  STRATA_TQ_STAGE=1 / 0 forces it either way; bitwise the same result both ways.
+// (the newer cards' L1 absorbs it).  NOSTROMA_TQ_STAGE=1 / 0 forces it either way; bitwise the same result both ways.
 bool tq_stage_on() {
-    static const int env = [] { const char* v = strata::env("NOSTROMA_TQ_STAGE"); return v != nullptr && v[0] != '\0' ? (v[0] != '0' ? 1 : 0) : -1; }();
+    static const int env = [] { const char* v = nostroma::env("NOSTROMA_TQ_STAGE"); return v != nullptr && v[0] != '\0' ? (v[0] != '0' ? 1 : 0) : -1; }();
     if (env >= 0) return env == 1 && g_stage_grid;
 #if defined(__HIPCC__)
     return false;
@@ -3474,25 +3474,25 @@ bool tq_stage_on() {
 }
 // Everywhere but cc 6.0 (tq_stage_on) the trellis kernels stage the codebook too, and the 160-dot gate/up rows are 8-lane rows (4 per
 // warp, 32 per block, row_dot_160_sub8) while the down rows are the staged 8-lane rows above: on an RTX 3060 (Gyro-M, 24 groups of one
-// token) gate/up 221 -> 140 us and down 182 -> 86 us.  Bitwise the same sums as before.  STRATA_TQ_STAGE=0 or STRATA_TQ_SUB8=0 turn it off
-// (CUDA only: the AMD builds keep the old kernels), STRATA_IQ_STAGE_GRID=0 as for every staged table.
+// token) gate/up 221 -> 140 us and down 182 -> 86 us.  Bitwise the same sums as before.  NOSTROMA_TQ_STAGE=0 or NOSTROMA_TQ_SUB8=0 turn it off
+// (CUDA only: the AMD builds keep the old kernels), NOSTROMA_IQ_STAGE_GRID=0 as for every staged table.
 bool tq_sub8_on() {
 #if defined(__HIPCC__)
     return false;
 #else
     static const bool on = [] {
-        const char* v = strata::env("NOSTROMA_TQ_STAGE");
+        const char* v = nostroma::env("NOSTROMA_TQ_STAGE");
         if (v != nullptr && v[0] == '0') return false;
-        v = strata::env("NOSTROMA_TQ_SUB8");
+        v = nostroma::env("NOSTROMA_TQ_SUB8");
         return !(v != nullptr && v[0] == '0');
     }();
     return on && g_stage_grid && !g_no_sub16_gu && !tq_stage_on();
 #endif
 }
-// row chunks per block of the staged trellis gate/up and down kernels (STRATA_TQ_ROWCH, default 4)
+// row chunks per block of the staged trellis gate/up and down kernels (NOSTROMA_TQ_ROWCH, default 4)
 int tq_row_chunks() {
     static const int n = [] {
-        const char* v = strata::env("NOSTROMA_TQ_ROWCH");
+        const char* v = nostroma::env("NOSTROMA_TQ_ROWCH");
         const int k = v != nullptr ? std::atoi(v) : 4;
         return k < 1 ? 1 : k > 32 ? 32 : k;
     }();
@@ -3534,17 +3534,17 @@ void launch_mmvq(const uint8_t* W, size_t rb, const block_q8_1* X, float* y, int
 }
 
 
-// ---------------------------------------------------------------- S26 STRATA_EXPERT_V2=1 (opt-in): IQ3_S gate/up + IQ4_NL down
+// ---------------------------------------------------------------- S26 NOSTROMA_EXPERT_V2=1 (opt-in): IQ3_S gate/up + IQ4_NL down
 // Bitwise equal to native_gu_multi_kernel / native_down_multi_kernel (S26 harness, real UD-IQ4_XS expert blobs, T 1-3,
 // memcmp of every output): each row's lane sums and warp_sum are the same; a warp interleaves RPW rows (more loads in
 // flight) and reads the chunk's activation rows from LDS and, for IQ3_S, the grid table from LDS (the same values).
 #if defined(__HIPCC__)
-#define STRATA_NT_LOAD(p) __builtin_nontemporal_load(p)
+#define NOSTROMA_NT_LOAD(p) __builtin_nontemporal_load(p)
 #else   // (opt-in S26 kernels, AMD-tuned: a CUDA build compiles them with plain loads)
-#define STRATA_NT_LOAD(p) (*(p))
+#define NOSTROMA_NT_LOAD(p) (*(p))
 #endif
 template<bool NT> __device__ __forceinline__ int ld16i(const uint16_t* p) {
-    if constexpr (NT) return (int) STRATA_NT_LOAD(p); else return (int) *p;
+    if constexpr (NT) return (int) NOSTROMA_NT_LOAD(p); else return (int) *p;
 }
 template<bool NT> __device__ __forceinline__ int ldb2(const void* x, int i32) {
     const uint16_t* x16 = (const uint16_t*) x;
@@ -3553,7 +3553,7 @@ template<bool NT> __device__ __forceinline__ int ldb2(const void* x, int i32) {
     return x32;
 }
 template<bool NT> __device__ __forceinline__ int ld8i(const uint8_t* p) {
-    if constexpr (NT) return (int) STRATA_NT_LOAD(p); else return (int) *p;
+    if constexpr (NT) return (int) NOSTROMA_NT_LOAD(p); else return (int) *p;
 }
 template<bool NT> __device__ __forceinline__ float ldhalf(const half* p) {
     return __half2float(__ushort_as_half((unsigned short) ld16i<NT>(reinterpret_cast<const uint16_t*>(p))));
@@ -3877,8 +3877,8 @@ void s26_launch_l(const NativeExpertLayout& L, int64_t cap_groups, cudaStream_t 
     s26_down_l_kernel<LX, RD, SL, TS, BD><<<gd, 256, 0, s>>>(grp_ptr, grp_start, n_groups, ent_dst, hq, L, out);
 }
 // ---------------------------------------------------------------- stream B: UD-Q4_K_XL grouped decode experts
-// STRATA_EXPERT_V2K=1: s26_gu_l_kernel / s26_down_l_kernel's structure (4 interleaved rows per warp, the chunk's q8_1
-// activation rows in LDS, SwiGLU + q8_1 fused, optionally STRATA_TSUM's transposed butterfly) for Q4_K / Q5_K gate/up
+// NOSTROMA_EXPERT_V2K=1: s26_gu_l_kernel / s26_down_l_kernel's structure (4 interleaved rows per warp, the chunk's q8_1
+// activation rows in LDS, SwiGLU + q8_1 fused, optionally NOSTROMA_TSUM's transposed butterfly) for Q4_K / Q5_K gate/up
 // and Q5_1 / Q8_0 down, which otherwise run native_gu_kernel / native_down_kernel (one entry at a time, the weight
 // words re-read per column).  Each Fmt<TY>::dot is split into S27<TY>::load (everything that depends on the weight) and
 // apply (the activation words and the same integer / float expression), the same impl functions, so a row's lane-strided
@@ -4083,18 +4083,18 @@ int env_int_or(const char* name, int dflt) {
 // read at first use (not at load), so a per-architecture default set at start (nv_defaults.hpp) is seen; native_expert_set_expdec overrides
 int g_expdec = -1;
 int expdec_mode() { if (g_expdec < 0) g_expdec = env_on("NOSTROMA_EXPDEC") ? 1 : 0; return g_expdec; }
-int g_expdec_r = env_int_or("STRATA_EXPDEC_R", 1);          // gate/up rows per lane: 1, 2 (bench: R=1 wins on the 2080 Ti)
-int g_expdec_dr = env_int_or("STRATA_EXPDEC_DR", 4);        // down rows per lane: 1, 2, 4 (Q2_0: R=4 wins on both cards)
-int g_expdec_minb = env_int_or("STRATA_EXPDEC_MINB", STRATA_EXPDEC_MINB);   // gate/up __launch_bounds__ min blocks: 2 (<= 128 regs) or 4 (<= 64)
-int g_expdec_d20 = env_int_or("STRATA_EXPDEC_D20", 0);      // 1: EXPDEC also for the IQ4_NL down (bench: no gain, default kernel)
+int g_expdec_r = env_int_or("NOSTROMA_EXPDEC_R", 1);          // gate/up rows per lane: 1, 2 (bench: R=1 wins on the 2080 Ti)
+int g_expdec_dr = env_int_or("NOSTROMA_EXPDEC_DR", 4);        // down rows per lane: 1, 2, 4 (Q2_0: R=4 wins on both cards)
+int g_expdec_minb = env_int_or("NOSTROMA_EXPDEC_MINB", NOSTROMA_EXPDEC_MINB);   // gate/up __launch_bounds__ min blocks: 2 (<= 128 regs) or 4 (<= 64)
+int g_expdec_d20 = env_int_or("NOSTROMA_EXPDEC_D20", 0);      // 1: EXPDEC also for the IQ4_NL down (bench: no gain, default kernel)
 // 1: EXPDEC for the down too (Q2_0; IQ4_NL with _D20).  Default 0: in the engine (nsys of a 131k decode on a 2080 Ti) the Q2_0 down
 // with EXPDEC was ~10% slower than the default kernel although the bench alone had it at 0.78.  Read at first use, so a per-architecture
 // default set at start (arch_defaults.cpp: gfx12) is seen; native_expert_set_expdec_params overrides.
 int g_expdec_down = -1;
-int expdec_down_on() { if (g_expdec_down < 0) g_expdec_down = env_int_or("STRATA_EXPDEC_DOWN", 0) != 0 ? 1 : 0; return g_expdec_down; }
-int g_expdec_rb = env_int_or("STRATA_EXPDEC_RB", 0);        // gate/up rows per block (0 = auto)
-int g_expdec_drb = env_int_or("STRATA_EXPDEC_DRB", 0);      // down rows per block (0 = auto)
-int g_expdec_minblk = env_int_or("STRATA_EXPDEC_MINBLK", 800);   // auto: the most rows per block that keep this many blocks
+int expdec_down_on() { if (g_expdec_down < 0) g_expdec_down = env_int_or("NOSTROMA_EXPDEC_DOWN", 0) != 0 ? 1 : 0; return g_expdec_down; }
+int g_expdec_rb = env_int_or("NOSTROMA_EXPDEC_RB", 0);        // gate/up rows per block (0 = auto)
+int g_expdec_drb = env_int_or("NOSTROMA_EXPDEC_DRB", 0);      // down rows per block (0 = auto)
+int g_expdec_minblk = env_int_or("NOSTROMA_EXPDEC_MINBLK", 800);   // auto: the most rows per block that keep this many blocks
 int expdec_r() { return g_expdec_r == 2 ? 2 : 1; }
 int expdec_dr() { return g_expdec_dr == 1 || g_expdec_dr == 2 ? g_expdec_dr : 4; }
 
@@ -4141,7 +4141,7 @@ void expdec_gu_t(int64_t gy, int64_t cap_groups, cudaStream_t s, const unsigned 
         else expdec_gu_r<TG, 1, 2>(gy, cap_groups, s, grp_ptr, grp_start, n_groups, ent_tok, X, L, gate, up);
     }
 }
-// One line on stderr per (role, format, taken or not), the first time STRATA_EXPDEC=1 meets it: the proof in the
+// One line on stderr per (role, format, taken or not), the first time NOSTROMA_EXPDEC=1 meets it: the proof in the
 // engine's log that the EXPDEC kernels are the ones launched (or captured into the window's graph), with the
 // choices in force.
 void expdec_note(const NativeExpertLayout& L, bool gu, bool taken, cudaStream_t s, int64_t gy, int64_t cap_groups) {
@@ -4154,19 +4154,19 @@ void expdec_note(const NativeExpertLayout& L, bool gu, bool taken, cudaStream_t 
     int dev = -1;
     (void) cudaGetDevice(&dev);
     if (!taken) {
-        std::fprintf(stderr, "strata expdec: CUDA%d %s type %d (n_embd %lld, n_ff %lld) not covered: the default kernel runs\n", dev,
+        std::fprintf(stderr, "nostroma expdec: CUDA%d %s type %d (n_embd %lld, n_ff %lld) not covered: the default kernel runs\n", dev,
                      gu ? "gate/up" : "down", ty, (long long) L.n_embd, (long long) L.n_ff);
         return;
     }
     if (gu) {
         const int R = expdec_r(), rb = expdec_rows_per_block(2 * (int) L.n_ff, 16 * R, cap_groups, g_expdec_rb);
-        std::fprintf(stderr, "strata expdec: CUDA%d gate/up type %d: expdec_gu_kernel R %d MINB %d, %d rows per block, grid %d x %lld "
+        std::fprintf(stderr, "nostroma expdec: CUDA%d gate/up type %d: expdec_gu_kernel R %d MINB %d, %d rows per block, grid %d x %lld "
                              "(cap %lld groups)%s\n", dev, ty, R, g_expdec_minb >= 4 ? 4 : 2, rb, (2 * (int) L.n_ff + rb - 1) / rb,
                      (long long) gy, (long long) cap_groups, cs != cudaStreamCaptureStatusNone ? ", captured into a graph" : "");
     } else {
         const int R = expdec_dr(), lanes = ty == 20 ? 8 : 16;
         const int rb = expdec_rows_per_block((int) L.n_embd, (256 / lanes) * R, cap_groups, g_expdec_drb);
-        std::fprintf(stderr, "strata expdec: CUDA%d down type %d: expdec_down_kernel R %d, %d rows per block, grid %d x %lld "
+        std::fprintf(stderr, "nostroma expdec: CUDA%d down type %d: expdec_down_kernel R %d, %d rows per block, grid %d x %lld "
                              "(cap %lld groups)%s\n", dev, ty, R, rb, ((int) L.n_embd + rb - 1) / rb, (long long) gy,
                      (long long) cap_groups, cs != cudaStreamCaptureStatusNone ? ", captured into a graph" : "");
     }
@@ -4222,7 +4222,7 @@ void launch_gu(dim3 grid, cudaStream_t s, const unsigned long long* grp_ptr, con
                float* gate, float* up) {
     // the sub-16 rows (row_dot_80_sub16) assume 80 dots per row: (n_embd / qk) * ipb == 80. The APR trellis types
     // (qk 128, ipb 8: 160 dots at n_embd 2560) take the full-warp multi kernel, as before the sub-16 kernels.
-    const bool g_no_sub16_gu = ::strata::kernels::g_no_sub16_gu || (L.n_embd / Fmt<TG>::qk) * Fmt<TG>::ipb != 80;
+    const bool g_no_sub16_gu = ::nostroma::kernels::g_no_sub16_gu || (L.n_embd / Fmt<TG>::qk) * Fmt<TG>::ipb != 80;
     if constexpr (!kSplit<TG>) native_gu_kernel<TG><<<grid, 256, 0, s>>>(grp_ptr, grp_start, n_groups, ent_tok, X, L, gate, up);
     else if (g_old_kernels || split_off<TG>()) native_gu_kernel<TG><<<grid, 256, 0, s>>>(grp_ptr, grp_start, n_groups, ent_tok, X, L, gate, up);
     else if constexpr (kStageIqGrid<TG>) {
@@ -4249,12 +4249,12 @@ void launch_gu(dim3 grid, cudaStream_t s, const unsigned long long* grp_ptr, con
     }
 }
 
-// 147-verify: STRATA_GU_SWIGLU=1 runs gate/up, SwiGLU and the q8_1 blocks as native_gu_swiglu_kernel, where launch_gu would
+// 147-verify: NOSTROMA_GU_SWIGLU=1 runs gate/up, SwiGLU and the q8_1 blocks as native_gu_swiglu_kernel, where launch_gu would
 // run native_gu_multi_kernel's 16-lane path (n_embd 2560, the split formats); bitwise the same hq.  Unset: on for a compute
 // capability 12.0 card (sm120_series.hpp; RTX PRO 5000, 6 pairs: decode +0.6% story, +0.9% code, +0.5% 8K, 6/6 each, the
-// same tokens), off elsewhere; STRATA_GU_SWIGLU=0 turns it off.
+// same tokens), off elsewhere; NOSTROMA_GU_SWIGLU=0 turns it off.
 bool gu_swiglu_on() {
-    static const int env = [] { const char* v = strata::env("NOSTROMA_GU_SWIGLU"); return v != nullptr ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
+    static const int env = [] { const char* v = nostroma::env("NOSTROMA_GU_SWIGLU"); return v != nullptr ? (std::atoi(v) != 0 ? 1 : 0) : -1; }();
     if (env >= 0) return env != 0;
 #if defined(__HIPCC__)
     return false;
@@ -4267,7 +4267,7 @@ bool gu_swiglu_on() {
         const bool ok = cudaDeviceGetAttribute(&maj, cudaDevAttrComputeCapabilityMajor, dev) == cudaSuccess &&
                         cudaDeviceGetAttribute(&mnr, cudaDevAttrComputeCapabilityMinor, dev) == cudaSuccess;
         if (!ok) cudaGetLastError();
-        per_dev[dev] = ok && strata::sm120_default(maj, mnr) ? 2 : 1;
+        per_dev[dev] = ok && nostroma::sm120_default(maj, mnr) ? 2 : 1;
     }
     return per_dev[dev] == 2;
 #endif
@@ -4313,7 +4313,7 @@ void launch_down(dim3 grid, cudaStream_t s, const unsigned long long* grp_ptr, c
     else if (g_no_sub16_gu) native_down_multi_kernel<TD, false><<<grid, 256, 0, s>>>(grp_ptr, grp_start, n_groups, ent_dst, hq, L, out);
     else native_down_multi_kernel<TD, true><<<grid, 256, 0, s>>>(grp_ptr, grp_start, n_groups, ent_dst, hq, L, out);
 }
-// ---------------------------------------------------------------- STRATA_DOWN_WS: the decode down projection, staged
+// ---------------------------------------------------------------- NOSTROMA_DOWN_WS: the decode down projection, staged
 // (opt-in, default off; cc 6.0 only).  native_down_multi_kernel's IQ4_NL (K 40, n_ff 640) and Q2_0 (K 20) rows read each
 // weight as 2-byte loads, an item at a time, straight from global memory, and a block (32 / 16 rows) waits on that.
 // Here a block copies its rows (IQ4_NL 32, Q2_0 64: 11,520 bytes) into shared memory with 16-byte loads - one round
@@ -4326,14 +4326,14 @@ void launch_down(dim3 grid, cudaStream_t s, const unsigned long long* grp_ptr, c
 // 0x7777 masks).  An item's int32 sum is the sum of the same int8 x int8 products, so every output is bit for bit
 // native_down_multi_kernel's (memcmp equal on all 48 layers of the Swift 1.5 IQ3_S pack, all 512 experts, 1-6
 // entries a group and T = 1..4 plans; native_expert_bench checks it against mode 0 and mode 8 by output hash).
-#if defined(STRATA_EXPERIMENTAL_SM60) && !defined(__HIPCC__) && !defined(STRATA_USE_HIP) && !defined(STRATA_HIP_GFX906) && \
-    !defined(STRATA_GPU_METAL)
-#define STRATA_DOWN_WS_BUILT 1   // the CUDA build with STRATA_EXPERIMENTAL_SM60 only
+#if defined(NOSTROMA_EXPERIMENTAL_SM60) && !defined(__HIPCC__) && !defined(NOSTROMA_USE_HIP) && !defined(NOSTROMA_HIP_GFX906) && \
+    !defined(NOSTROMA_GPU_METAL)
+#define NOSTROMA_DOWN_WS_BUILT 1   // the CUDA build with NOSTROMA_EXPERIMENTAL_SM60 only
 #else
-#define STRATA_DOWN_WS_BUILT 0
+#define NOSTROMA_DOWN_WS_BUILT 0
 #endif
-#if STRATA_DOWN_WS_BUILT
-#define STRATA_DWS_VMAD(r, a, sa, b, sb) asm("vmad.s32.s32.s32 %0, %1.b" #sa ", %2.b" #sb ", %0;" : "+r"(r) : "r"(a), "r"(b))
+#if NOSTROMA_DOWN_WS_BUILT
+#define NOSTROMA_DWS_VMAD(r, a, sa, b, sb) asm("vmad.s32.s32.s32 %0, %1.b" #sa ", %2.b" #sb ", %0;" : "+r"(r) : "r"(a), "r"(b))
 
 __device__ __forceinline__ uint32_t dws_prmt(uint32_t a, uint32_t b, uint32_t c) {
     uint32_t d;
@@ -4371,14 +4371,14 @@ __device__ __forceinline__ float dws_iq4_apply(const DwsIq4W& r, const block_q8_
 #pragma unroll
     for (int l = 0; l < 2; ++l) {
         const int A = q8[l + 0], B = q8[l + 4];
-        STRATA_DWS_VMAD(sumi, r.t0[l], 0, A, 0);
-        STRATA_DWS_VMAD(sumi, r.t0[l], 2, A, 1);
-        STRATA_DWS_VMAD(sumi, r.t1[l], 0, A, 2);
-        STRATA_DWS_VMAD(sumi, r.t1[l], 2, A, 3);
-        STRATA_DWS_VMAD(sumi, r.t0[l], 1, B, 0);
-        STRATA_DWS_VMAD(sumi, r.t0[l], 3, B, 1);
-        STRATA_DWS_VMAD(sumi, r.t1[l], 1, B, 2);
-        STRATA_DWS_VMAD(sumi, r.t1[l], 3, B, 3);
+        NOSTROMA_DWS_VMAD(sumi, r.t0[l], 0, A, 0);
+        NOSTROMA_DWS_VMAD(sumi, r.t0[l], 2, A, 1);
+        NOSTROMA_DWS_VMAD(sumi, r.t1[l], 0, A, 2);
+        NOSTROMA_DWS_VMAD(sumi, r.t1[l], 2, A, 3);
+        NOSTROMA_DWS_VMAD(sumi, r.t0[l], 1, B, 0);
+        NOSTROMA_DWS_VMAD(sumi, r.t0[l], 3, B, 1);
+        NOSTROMA_DWS_VMAD(sumi, r.t1[l], 1, B, 2);
+        NOSTROMA_DWS_VMAD(sumi, r.t1[l], 3, B, 3);
     }
     const float d = r.dw * __low2float(bq8_1->ds);
     return d * sumi;
@@ -4445,14 +4445,14 @@ __device__ __forceinline__ float dws_q2_apply(const DwsQ2W& r, const block_q8_1*
         const int u = get_int_b4(bq8_1_chunk->qs, j * 2 + 0);
         const int v = get_int_b4(bq8_1_chunk->qs, j * 2 + 1);
         int& x = a[j & 1];
-        STRATA_DWS_VMAD(x, u, 0, r.qe[j], 0);
-        STRATA_DWS_VMAD(x, u, 1, r.qo[j], 0);
-        STRATA_DWS_VMAD(x, u, 2, r.qe[j], 1);
-        STRATA_DWS_VMAD(x, u, 3, r.qo[j], 1);
-        STRATA_DWS_VMAD(x, v, 0, r.qe[j], 2);
-        STRATA_DWS_VMAD(x, v, 1, r.qo[j], 2);
-        STRATA_DWS_VMAD(x, v, 2, r.qe[j], 3);
-        STRATA_DWS_VMAD(x, v, 3, r.qo[j], 3);
+        NOSTROMA_DWS_VMAD(x, u, 0, r.qe[j], 0);
+        NOSTROMA_DWS_VMAD(x, u, 1, r.qo[j], 0);
+        NOSTROMA_DWS_VMAD(x, u, 2, r.qe[j], 1);
+        NOSTROMA_DWS_VMAD(x, u, 3, r.qo[j], 1);
+        NOSTROMA_DWS_VMAD(x, v, 0, r.qe[j], 2);
+        NOSTROMA_DWS_VMAD(x, v, 1, r.qo[j], 2);
+        NOSTROMA_DWS_VMAD(x, v, 2, r.qe[j], 3);
+        NOSTROMA_DWS_VMAD(x, v, 3, r.qo[j], 3);
     }
     const int sumi = a[0] + a[1];
     const float d8 = __low2float(bq8_1_chunk->ds);
@@ -4509,8 +4509,8 @@ __global__ void __launch_bounds__(256, 4) native_down_ws_kernel(const unsigned l
     constexpr int LPR = TD == 20 ? 8 : 16, RPP = 256 / LPR, P = TD == 20 ? 1 : 4, RB = RPP * P;
     constexpr int DROW = TD == 20 ? 360 : 180, WB = RB * DROW, NV = (WB / 16 + 255) / 256;
     static_assert(WB % 16 == 0, "16-byte copies");
-    STRATA_SHARED_ALIGN16_U32(s_w, WB / 4);
-    STRATA_SHARED_ALIGN16_U32(s_hq_buf, NCMAX * 20 * 9);
+    NOSTROMA_SHARED_ALIGN16_U32(s_w, WB / 4);
+    NOSTROMA_SHARED_ALIGN16_U32(s_hq_buf, NCMAX * 20 * 9);
     const int tid = threadIdx.x, t = tid % LPR, sub = tid / LPR;
     const int r0 = blockIdx.x * RB;
     const int nrow = min(RB, (int) L.n_embd - r0);
@@ -4587,9 +4587,9 @@ __global__ void __launch_bounds__(256, 4) native_down_ws_kernel(const unsigned l
         }
     }
 }
-#undef STRATA_DWS_VMAD
+#undef NOSTROMA_DWS_VMAD
 
-// STRATA_DOWN_WS=1 on a compute capability 6.0 device: the IQ4_NL / Q2_0 down rows at n_ff 640 take
+// NOSTROMA_DOWN_WS=1 on a compute capability 6.0 device: the IQ4_NL / Q2_0 down rows at n_ff 640 take
 // native_down_ws_kernel (whatever the expert mode: it is bitwise mode 0's, and mode 8's matches mode 0)
 bool down_ws_on(const NativeExpertLayout& L) {
     static const bool env = env_on("NOSTROMA_DOWN_WS");
@@ -4619,11 +4619,11 @@ void launch_down_ws(const NativeExpertLayout& L, int64_t gy, int64_t cap_groups,
         else native_down_ws_kernel<42, 4><<<grid, 256, 0, s>>>(grp_ptr, grp_start, n_groups, ent_dst, hq, L, out);
     }
 }
-#endif  // STRATA_DOWN_WS_BUILT
+#endif  // NOSTROMA_DOWN_WS_BUILT
 
 
-// ---------------------------------------------------------------- STRATA_EXPERT_NIBBLE: gate/up on 4-bit slots
-// (opt-in, default off; strata/core/expert_nibble.hpp has the slot layout and the item code).  A converted layer's
+// ---------------------------------------------------------------- NOSTROMA_EXPERT_NIBBLE: gate/up on 4-bit slots
+// (opt-in, default off; nostroma/core/expert_nibble.hpp has the slot layout and the item code).  A converted layer's
 // VRAM slot holds each 32-weight item of a gate/up row as 16 bytes of 4-bit codes (one 16-byte load), its integer
 // scale byte and the superblock's fp16 d bit for bit; the kernels below decode an item into the production
 // Split<TG>::W (or IQ3_S's offset form) with 1-4 instructions per four weights instead of the codebook lookups, then
@@ -4637,10 +4637,10 @@ void launch_down_ws(const NativeExpertLayout& L, int64_t gy, int64_t cap_groups,
 //      words staged as 16-byte rows and ds as a float, the production chain written out on the registers (IQ3_S:
 //      sumi = 2 dot(u, x) - 15 sum(x) with sum(x) from the staged words: the same int32)
 // Then the load-time transcoder, the GGUF rebuild (the start-up check and the prompt path's gather) and the slot hash.
-// Built only with STRATA_EXPERT_NIBBLE_BUILT (a CUDA build with STRATA_EXPERIMENTAL_SM60); elsewhere a gu_nib layout
+// Built only with NOSTROMA_EXPERT_NIBBLE_BUILT (a CUDA build with NOSTROMA_EXPERIMENTAL_SM60); elsewhere a gu_nib layout
 // stops in native_expert_grouped, and the switch is refused at start.
-#if STRATA_EXPERT_NIBBLE_BUILT
-namespace nibk = strata::core::nibble;
+#if NOSTROMA_EXPERT_NIBBLE_BUILT
+namespace nibk = nostroma::core::nibble;
 
 __device__ __forceinline__ uint32_t nib_prmt(uint32_t a, uint32_t b, uint32_t sel) {
     uint32_t r;
@@ -4911,7 +4911,7 @@ __global__ void __launch_bounds__(256) nib_gu_kernel(const unsigned long long* _
                                                      float* __restrict__ up) {
     const int ng = *n_groups;
     if (blockIdx.y >= (unsigned) ng) return;
-    STRATA_SHARED_ALIGN16_U32(s_buf, kNibSmemWords<TG, SKEL>);
+    NOSTROMA_SHARED_ALIGN16_U32(s_buf, kNibSmemWords<TG, SKEL>);
     const int subwarp = threadIdx.x >> 4, t = threadIdx.x & 15;
     const int row = blockIdx.x * 16 + subwarp;   // 0 .. 2 n_ff
     const bool is_up = row >= nibk::kNFf;
@@ -4933,19 +4933,19 @@ __global__ void __launch_bounds__(256) nib_gu_kernel(const unsigned long long* _
     }
 }
 
-#include "nib_gu_proto.cuh"   // STRATA_NIB_GU_PROTO: the staged-once 4-bit gate/up kernel (id 31)
+#include "nib_gu_proto.cuh"   // NOSTROMA_NIB_GU_PROTO: the staged-once 4-bit gate/up kernel (id 31)
 
 int g_nib_variant = -1;   // native_expert_nib_set_variant (the bench / parity); -1 = expert_nibble.hpp's gu_skeleton
 
-// STRATA_NIB_GU_PROTO: unset / 0 = off (the S / P skeleton per format); 1 (or 31) = gu-proto 31 (the activations staged
+// NOSTROMA_NIB_GU_PROTO: unset / 0 = off (the S / P skeleton per format); 1 (or 31) = gu-proto 31 (the activations staged
 // once per two row blocks with 16-byte loads, the production row dot).  Read once.
 int nib_gu_proto_env() {
     static const int v = [] {
-        const char* e = strata::env("NOSTROMA_NIB_GU_PROTO");
+        const char* e = nostroma::env("NOSTROMA_NIB_GU_PROTO");
         int id = e != nullptr ? std::atoi(e) : 0;
         if (id == 1) id = 31;
         if (id != 31) id = 0;
-        if (id != 0) std::fprintf(stderr, "native_expert_grouped: STRATA_NIB_GU_PROTO: 4-bit gate/up kernel gu-proto %d\n", id);
+        if (id != 0) std::fprintf(stderr, "native_expert_grouped: NOSTROMA_NIB_GU_PROTO: 4-bit gate/up kernel gu-proto %d\n", id);
         return id;
     }();
     return v;
@@ -4964,7 +4964,7 @@ void launch_gu_nib(const NativeExpertLayout& L, dim3 grid, cudaStream_t s, const
         }
         return;
     }
-    // STRATA_NIB_GU_PROTO (opt-in, default off): the gu-proto kernel in place of the S / P skeleton - bitwise the
+    // NOSTROMA_NIB_GU_PROTO (opt-in, default off): the gu-proto kernel in place of the S / P skeleton - bitwise the
     // same gate / up (iq_nibble_parity (7), native_expert_bench --nibble --vs).  The 16-byte staging needs x 16-aligned
     // (verify's nat_xq_ rows are: a 256-aligned buffer, 2,880 B a token); otherwise the production kernel runs.
     if (g_nib_variant < 0) {
@@ -4974,18 +4974,18 @@ void launch_gu_nib(const NativeExpertLayout& L, dim3 grid, cudaStream_t s, const
             return;
     }
     const int skel = g_nib_variant >= 0 ? (g_nib_variant == 1 ? nibk::kSkelP : nibk::kSkelS) : nibk::gu_skeleton(L.gu_type);
-#define STRATA_NIB_GU(TG, S) \
+#define NOSTROMA_NIB_GU(TG, S) \
     case TG * 2 + S: nib_gu_kernel<TG, S><<<grid, 256, 0, s>>>(grp_ptr, grp_start, n_groups, ent_tok, X, gate, up); break;
     switch (L.gu_type * 2 + skel) {
-        STRATA_NIB_GU(22, 0) STRATA_NIB_GU(22, 1)
-        STRATA_NIB_GU(18, 0) STRATA_NIB_GU(18, 1)
-        STRATA_NIB_GU(21, 0) STRATA_NIB_GU(21, 1)
+        NOSTROMA_NIB_GU(22, 0) NOSTROMA_NIB_GU(22, 1)
+        NOSTROMA_NIB_GU(18, 0) NOSTROMA_NIB_GU(18, 1)
+        NOSTROMA_NIB_GU(21, 0) NOSTROMA_NIB_GU(21, 1)
         default:
             std::fprintf(stderr, "native_expert_grouped: 4-bit gate/up type %d at %lld x %lld is not built\n", L.gu_type,
                          (long long) L.n_embd, (long long) L.n_ff);
             std::exit(1);
     }
-#undef STRATA_NIB_GU
+#undef NOSTROMA_NIB_GU
 }
 
 // ---- the load-time transcoder (expert_nibble.hpp's transcode)
@@ -5307,12 +5307,12 @@ __global__ void __launch_bounds__(256) nib_hash_kernel(const unsigned long long*
         atomicAdd(out + blockIdx.y, (unsigned long long) t);
     }
 }
-#endif  // STRATA_EXPERT_NIBBLE_BUILT
+#endif  // NOSTROMA_EXPERT_NIBBLE_BUILT
 
-// STRATA_EXPERT_NIBBLE: whether a layout's gate/up is a converted slot's 4-bit codes (constant false in a build
+// NOSTROMA_EXPERT_NIBBLE: whether a layout's gate/up is a converted slot's 4-bit codes (constant false in a build
 // without the kernels, so its dispatch below is today's code)
 constexpr bool nib_layout(const NativeExpertLayout& L) {
-#if STRATA_EXPERT_NIBBLE_BUILT
+#if NOSTROMA_EXPERT_NIBBLE_BUILT
     return L.gu_nib;
 #else
     static_cast<void>(L);
@@ -5374,9 +5374,9 @@ void iq_mmvq(int t, const void* w, const void* x_q8_1, float* y, int n_in, int n
     const auto* W = (const uint8_t*) w;
     const auto* X = (const block_q8_1*) x_q8_1;
     switch (t) {
-#define STRATA_MMVQ(T) case T: launch_mmvq<T>(W, rb, X, y, n_in, n_out, ncols, s); break;
-        STRATA_MMVQ_FMTS(STRATA_MMVQ)
-#undef STRATA_MMVQ
+#define NOSTROMA_MMVQ(T) case T: launch_mmvq<T>(W, rb, X, y, n_in, n_out, ncols, s); break;
+        NOSTROMA_MMVQ_FMTS(NOSTROMA_MMVQ)
+#undef NOSTROMA_MMVQ
         default: std::fprintf(stderr, "iq_mmvq: type %d is not supported\n", t); std::exit(1);
     }
     check("iq_mmvq");
@@ -5508,7 +5508,7 @@ NativeExpertLayout native_expert_layout(int gu_type, int d_type, int64_t n_embd,
 }
 
 NativeExpertLayout native_expert_layout_nib(int gu_type, int d_type, int64_t n_embd, int64_t n_ff) {
-    namespace nb = strata::core::nibble;
+    namespace nb = nostroma::core::nibble;
     NativeExpertLayout L = native_expert_layout(gu_type, d_type, n_embd, n_ff);
     L.gu_nib = true;
     L.gu_row = (size_t) (nb::kItems * nb::kItemBytes);   // a row's codes (the scales and d follow all the codes)
@@ -5519,8 +5519,8 @@ NativeExpertLayout native_expert_layout_nib(int gu_type, int d_type, int64_t n_e
 }
 
 bool native_expert_nib_supported(int gu_type, int d_type, int64_t n_embd, int64_t n_ff) noexcept {
-#if STRATA_EXPERT_NIBBLE_BUILT
-    namespace nb = strata::core::nibble;
+#if NOSTROMA_EXPERT_NIBBLE_BUILT
+    namespace nb = nostroma::core::nibble;
     return nb::fmt_built(gu_type) && n_embd == nb::kNEmbd && n_ff == nb::kNFf && d_type != 40 &&
            native_expert_supported(gu_type, d_type, n_embd, n_ff);
 #else
@@ -5530,7 +5530,7 @@ bool native_expert_nib_supported(int gu_type, int d_type, int64_t n_embd, int64_
 }
 
 void native_expert_nib_set_variant(int v) {
-#if STRATA_EXPERT_NIBBLE_BUILT
+#if NOSTROMA_EXPERT_NIBBLE_BUILT
     g_nib_variant = v;
 #else
     (void) v;
@@ -5538,7 +5538,7 @@ void native_expert_nib_set_variant(int v) {
 }
 
 bool native_expert_nib_variant_attr(int v, int gu_type, int* regs, int* local_bytes, int* blocks_per_sm) {
-#if STRATA_EXPERT_NIBBLE_BUILT
+#if NOSTROMA_EXPERT_NIBBLE_BUILT
     cudaFuncAttributes a{};
     if (!nibx_launch(gu_type, v, dim3(80, 1), nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, &a)) return false;
     *regs = a.numRegs;
@@ -5557,14 +5557,14 @@ size_t native_expert_scratch_bytes(int64_t cap, int64_t n_ff) {
 }
 
 
-// The AMD layouts below (STRATA_EXP_MODE) also build for CUDA: Volta takes mode 8 by default (exp_mode), every
+// The AMD layouts below (NOSTROMA_EXP_MODE) also build for CUDA: Volta takes mode 8 by default (exp_mode), every
 // other CUDA card keeps mode 0, the CUDA layout above.
-#if 1  // dflash2-kern: the layouts build for every HIP arch too (default mode stays 0 off gfx906; STRATA_EXP_MODE picks one)
-#define STRATA_EXP_LAYOUTS 1
+#if 1  // dflash2-kern: the layouts build for every HIP arch too (default mode stays 0 off gfx906; NOSTROMA_EXP_MODE picks one)
+#define NOSTROMA_EXP_LAYOUTS 1
 #else
-#define STRATA_EXP_LAYOUTS 0
+#define NOSTROMA_EXP_LAYOUTS 0
 #endif
-#if defined(STRATA_HIP_GFX906)
+#if defined(NOSTROMA_HIP_GFX906)
 constexpr int kExpModeDefault = 7;
 constexpr int kExpFallback = 2;   // modes 5-8 on a format without an LDS kernel: R2
 constexpr bool kExpLds16 = false; // IQ2_XXS gate/up: R2 as measured on gfx906
@@ -5573,8 +5573,8 @@ constexpr int kExpModeDefault = 0;
 constexpr int kExpFallback = 0;   // ... the CUDA layout (V100, IQ2_XXS gate/up: R2 183 us vs 113)
 constexpr bool kExpLds16 = true;  // IQ2_XXS gate/up in LDS too
 #endif
-#if STRATA_EXP_LAYOUTS
-// ---- AMD layouts for the grouped native experts (STRATA_EXP_MODE; 0 = the CUDA one above).
+#if NOSTROMA_EXP_LAYOUTS
+// ---- AMD layouts for the grouped native experts (NOSTROMA_EXP_MODE; 0 = the CUDA one above).
 // 1 (W64): a row per 64-lane wavefront - 4x the wavefronts, ~1-2 calls per lane, a 64-lane butterfly.
 // 2 (R2):  a 32-lane logical warp computes TWO rows in one loop - two independent load chains in flight.
 // Either way a (row, entry) sum does not depend on the window size.
@@ -5749,7 +5749,7 @@ template<> struct GridOf<18> { using T = uint32_t; static constexpr int N = 256;
 template<> struct GridOf<21> { using T = uint32_t; static constexpr int N = 512; __device__ static const T* src() { return iq3s_grid; } };
 template<> struct GridOf<23> { using T = uint32_t; static constexpr int N = 1; __device__ static const T* src() { return iq3s_grid; } };   // IQ4_XS: no grid
 
-// SG = 1 (mode 6): the signs without byte-SIMD ops, which gfx906 lacks (strata_vcmpne4 / strata_vsub4 unpack to
+// SG = 1 (mode 6): the signs without byte-SIMD ops, which gfx906 lacks (nostroma_vcmpne4 / nostroma_vsub4 unpack to
 // ~12 word ops each).  m = the sign nibble as 0x00/0xff bytes; (g ^ m) is g or -g-1 per byte, so
 // dp4a(g ^ m, u) - dp4a(m, u) = sum(s g u) exactly - the same integers, the same floats.
 __device__ __forceinline__ int nib_mask(uint32_t n) {
@@ -6149,16 +6149,16 @@ __global__ void __launch_bounds__(256) native_gu_fused_kernel(const unsigned lon
 
 // dflash2-kern: Strix Halo (gfx1151) takes mode 8 (gate/up + SwiGLU + q8_1 in one launch, the group's activations in LDS) for the
 // IQ packs' gate/up: native_expert_bench on the IQ3_S pack's real rows, 45 groups of one entry (a 8-token verify window's call),
-// gate/up -25% (IQ2_S), -8% (IQ3_XXS), -6% (IQ3_S), bitwise equal to mode 0.  STRATA_GFX1151_EXP8=0 keeps the old layout.
+// gate/up -25% (IQ2_S), -8% (IQ3_XXS), -6% (IQ3_S), bitwise equal to mode 0.  NOSTROMA_GFX1151_EXP8=0 keeps the old layout.
 bool gfx1151_exp8(int dev) {
-#if defined(__HIPCC__) && !defined(STRATA_HIP_GFX906)
+#if defined(__HIPCC__) && !defined(NOSTROMA_HIP_GFX906)
     static int per_dev[64];   // 0 unknown, 1 no, 2 yes
     if (dev < 0 || dev >= 64) return false;
     if (!per_dev[dev]) {
-        const char* v = strata::env("NOSTROMA_GFX1151_EXP8");
+        const char* v = nostroma::env("NOSTROMA_GFX1151_EXP8");
         cudaDeviceProp p;
         per_dev[dev] = !(v != nullptr && v[0] == '0') && cudaGetDeviceProperties(&p, dev) == cudaSuccess &&
-                               strata::kernels::gfx_arch_is_gfx1151(p.gcnArchName) ? 2 : 1;
+                               nostroma::kernels::gfx_arch_is_gfx1151(p.gcnArchName) ? 2 : 1;
         (void) cudaGetLastError();
     }
     return per_dev[dev] == 2;
@@ -6167,12 +6167,12 @@ bool gfx1151_exp8(int dev) {
     return false;
 #endif
 }
-int g_exp_mode = -1;   // native_expert_set_mode (the bench); -1 = STRATA_EXP_MODE, else the card's default
+int g_exp_mode = -1;   // native_expert_set_mode (the bench); -1 = NOSTROMA_EXP_MODE, else the card's default
 int exp_mode() {
-    static const int m = [] { const char* v = strata::env("NOSTROMA_EXP_MODE"); return v ? std::atoi(v) : -1; }();
+    static const int m = [] { const char* v = nostroma::env("NOSTROMA_EXP_MODE"); return v ? std::atoi(v) : -1; }();
     if (g_exp_mode >= 0) return g_exp_mode;
     if (m >= 0) return m;
-#if defined(STRATA_HIP_GFX906)
+#if defined(NOSTROMA_HIP_GFX906)
     return kExpModeDefault;
 #else
     // Mode 8 keeps the grid and the group's activations in shared memory with SwiGLU + q8_1 fused.  Volta can opt in;
@@ -6186,24 +6186,24 @@ int exp_mode() {
         int major = 0, minor = 0;
         cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, dev);
         cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, dev);
-        const char* sm70 = strata::env("NOSTROMA_SM70_TABLE");   // PR 1401: Volta's mode 8 is opt-in until confirmed on a V100
+        const char* sm70 = nostroma::env("NOSTROMA_SM70_TABLE");   // PR 1401: Volta's mode 8 is opt-in until confirmed on a V100
         // Pascal GP100 (sm_60): mode 8 too, on by default (Tesla P100: bitwise equal on the model's layers, the down
-        // projection 116 -> 94 us and IQ3_S gate/up 360 -> 229 us in a 28-group VRAM call); STRATA_SM60_TABLE=0 keeps the CUDA layout
-        const char* sm60 = strata::env("NOSTROMA_SM60_TABLE");
+        // projection 116 -> 94 us and IQ3_S gate/up 360 -> 229 us in a 28-group VRAM call); NOSTROMA_SM60_TABLE=0 keeps the CUDA layout
+        const char* sm60 = nostroma::env("NOSTROMA_SM60_TABLE");
         const bool p100 = major == 6 && minor == 0 && (sm60 == nullptr || std::atoi(sm60) != 0);
         // Pascal with dp4a (sm_61): mode 8 as well, on by default (Tesla P40, native_expert_bench on the IQ3_S pack's
         // layers, an 18-group call at 2 tokens: IQ3_S 390 -> 255 us, IQ3_XXS 345 -> 252 us, IQ2_S 290 -> 238 us,
-        // IQ4_XS 328 -> 261 us, bitwise equal); STRATA_SM61_TABLE=0 keeps the CUDA layout
-        const char* sm61 = strata::env("NOSTROMA_SM61_TABLE");
+        // IQ4_XS 328 -> 261 us, bitwise equal); NOSTROMA_SM61_TABLE=0 keeps the CUDA layout
+        const char* sm61 = nostroma::env("NOSTROMA_SM61_TABLE");
         const bool p40 = major == 6 && minor == 1 && (sm61 == nullptr || std::atoi(sm61) != 0);
-        const char* sm121 = strata::env("NOSTROMA_SM121_PERF");
-        const bool gb10 = major == 12 && minor == 1 && !strata::qwen_defaults_026() &&
+        const char* sm121 = nostroma::env("NOSTROMA_SM121_PERF");
+        const bool gb10 = major == 12 && minor == 1 && !nostroma::qwen_defaults_026() &&
                           (sm121 == nullptr || std::atoi(sm121) != 0);
         // Turing (sm_75): mode 4 (native_expert_bench, real Q2_0 rows of Flash-Next, bitwise equal to mode 0 on an RTX
         // 2080 Ti: 10 experts x 1 entry 47.3 -> 41.4 us, 30 x 1 120.2 -> 100.2 us); the down projection keeps the CUDA
-        // layout in windows of 4+ tokens (sm75_down_em below).  STRATA_SM75_EXP=0 keeps the CUDA layout.
-        // (off unless STRATA_SM75_PERF=1; STRATA_SM75_EXP=0 / 1 forces it off / on)
-        const bool turing = strata::sm75_switch("STRATA_SM75_EXP", major, minor);
+        // layout in windows of 4+ tokens (sm75_down_em below).  NOSTROMA_SM75_EXP=0 keeps the CUDA layout.
+        // (off unless NOSTROMA_SM75_PERF=1; NOSTROMA_SM75_EXP=0 / 1 forces it off / on)
+        const bool turing = nostroma::sm75_switch("NOSTROMA_SM75_EXP", major, minor);
         per_dev[dev] = 1 + ((major == 7 && minor == 0 && sm70 != nullptr && std::atoi(sm70) != 0) || p100 || p40 || gb10 ? 8 : turing ? 4 : kExpModeDefault);
     }
     return per_dev[dev] - 1;
@@ -6211,23 +6211,23 @@ int exp_mode() {
 }
 #endif
 int g_exp_phase = 0;   // the bench: 0 all, 1 gate/up + swiglu + quantize only, 2 down only, 3 gate/up only
-#if STRATA_EXP_LAYOUTS && !defined(__HIPCC__)
+#if NOSTROMA_EXP_LAYOUTS && !defined(__HIPCC__)
 // The down projection's mode on Turing's default: mode 4 is slower than the CUDA layout once groups have 3+ entries
 // (12 x 3: 36.5 -> 40.8 us, 16 x 4: 56.9 -> 68.9) - windows of 4+ tokens (cap_groups > 30) keep mode 0 there.
 int sm75_down_em(int em0, int64_t cap_groups) {
-    if (em0 != 4 || g_exp_mode >= 0 || strata::env("NOSTROMA_EXP_MODE") != nullptr || cap_groups <= 30) return em0;
+    if (em0 != 4 || g_exp_mode >= 0 || nostroma::env("NOSTROMA_EXP_MODE") != nullptr || cap_groups <= 30) return em0;
     int dev = 0, major = 0, minor = 0;
     if (cudaGetDevice(&dev) != cudaSuccess) return em0;
     cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, dev);
     cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, dev);
-    return strata::is_sm75(major, minor) ? 0 : em0;
+    return nostroma::is_sm75(major, minor) ? 0 : em0;
 }
 #else
 int sm75_down_em(int em0, int64_t) { return em0; }
 #endif
 
 void native_expert_set_mode(int mode, int phase) {
-#if STRATA_EXP_LAYOUTS
+#if NOSTROMA_EXP_LAYOUTS
     g_exp_mode = mode;
 #else
     (void) mode;
@@ -6238,13 +6238,13 @@ void native_expert_set_mode(int mode, int phase) {
 namespace {
 bool g_grouped_v1 = env_on("NOSTROMA_GROUPED_V1");
 #include "i8_expert.cuh"   // OWN-I8: our own int8 dot-product kernels (native_expert_i8 below)
-// OWN-I8: STRATA_EXPERT_I8, read once: 1 = on, 0 = off, -1 = not set (then the card class decides: i8_expert_rule.hpp)
+// OWN-I8: NOSTROMA_EXPERT_I8, read once: 1 = on, 0 = off, -1 = not set (then the card class decides: i8_expert_rule.hpp)
 std::atomic<bool> g_i8_mmq_free{false};   // set before main by a build without MMQ (native_expert_i8_set_mmq_free)
 int i8_switch_raw() {
-    static const int s = strata::kernels::i8_switch_parse(strata::env("NOSTROMA_EXPERT_I8"));
+    static const int s = nostroma::kernels::i8_switch_parse(nostroma::env("NOSTROMA_EXPERT_I8"));
     return s;
 }
-int i8_switch_state() { return strata::kernels::i8_switch_effective(i8_switch_raw(), g_i8_mmq_free.load(std::memory_order_relaxed)); }
+int i8_switch_state() { return nostroma::kernels::i8_switch_effective(i8_switch_raw(), g_i8_mmq_free.load(std::memory_order_relaxed)); }
 // the current device's gcnArchName, read once per device (a HIP card; "" on a CUDA card)
 const char* i8_device_gcn() {
 #if defined(__HIPCC__)
@@ -6292,7 +6292,7 @@ bool native_expert_i8_prompt(const NativeExpertLayout& L, int64_t group_entries)
 bool native_expert_i8_by_default() noexcept { return i8_expert_class_default(i8_switch_raw(), i8_device_gcn(), g_i8_mmq_free.load(std::memory_order_relaxed)); }
 void native_expert_i8_set_mmq_free() noexcept { g_i8_mmq_free.store(true, std::memory_order_relaxed); }
 // The P100 class rule (i8_expert_rule.hpp, i8_chunk_default_allows; declared in prefill.cpp, the one caller): is the int8 DEFAULT of this process the one that gives way to the FP16
-// path from the stream floor up?  True only on a Tesla P100 (compute capability 6.0) in a build without MMQ with STRATA_EXPERT_I8 not set; a set value, a build with MMQ, any other
+// path from the stream floor up?  True only on a Tesla P100 (compute capability 6.0) in a build without MMQ with NOSTROMA_EXPERT_I8 not set; a set value, a build with MMQ, any other
 // card and a HIP card: false (no size limit).
 bool native_expert_i8_floor_gated() noexcept {
     if (i8_switch_raw() != -1 || !g_i8_mmq_free.load(std::memory_order_relaxed)) return false;   // before any device query
@@ -6307,10 +6307,10 @@ bool native_expert_i8_floor_gated() noexcept {
 #endif
 }
 
-// OWN-I8 few-rows route: STRATA_I8_FEWROWS read once (not set = the card's class default, 0 = off, N = a limit of N rows per expert); the class default asks the
+// OWN-I8 few-rows route: NOSTROMA_I8_FEWROWS read once (not set = the card's class default, 0 = off, N = a limit of N rows per expert); the class default asks the
 // current device's compute capability (a HIP card has none that matters: the CUDA rule's 10)
 int native_expert_i8_few_rows_limit() noexcept {
-    static const char* const text = strata::env("NOSTROMA_I8_FEWROWS");
+    static const char* const text = nostroma::env("NOSTROMA_I8_FEWROWS");
     if (i8_switch_state() == 0) return 0;
     int major = 0, minor = 0;
 #if !defined(__HIPCC__)
@@ -6361,7 +6361,7 @@ void native_expert_i8(const NativeExpertLayout& L, const unsigned long long* grp
     block_q8_1* hq = (block_q8_1*) scratch;
     const size_t hqb = ((size_t) cap_entries * (size_t) (L.n_ff / 32) * sizeof(block_q8_1) + 255) & ~(size_t) 255;
     int32_t* tile_off = (int32_t*) ((uint8_t*) scratch + hqb);
-    int tm = i8_env_int("STRATA_I8_TM", 0);   // research: the tile code (2, 3 or 4 rows of 16 entries per thread -> 32, 48 or 64 entries; 8 = variant B, 128 entries)
+    int tm = i8_env_int("NOSTROMA_I8_TM", 0);   // research: the tile code (2, 3 or 4 rows of 16 entries per thread -> 32, 48 or 64 entries; 8 = variant B, 128 entries)
     const int64_t avg = cap_entries / cap_groups;
     const bool b_ok = L.n_embd % 128 == 0 && L.n_ff % 64 == 0;
     if (tm <= 0) tm = (avg >= 96 && b_ok) ? 8 : (int) std::max<int64_t>(2, std::min<int64_t>(4, (avg + 8) / 16));
@@ -6371,7 +6371,7 @@ void native_expert_i8(const NativeExpertLayout& L, const unsigned long long* grp
     const int bm = tm == 8 ? 128 : 16 * tm;
     i8_tiles_kernel<<<1, 256, 0, s>>>(grp_start, n_groups, bm, tile_off);
     I8Args a{grp_ptr, grp_start, n_groups, tile_off, ent_tok, ent_dst, (const block_q8_1*) x_q8_1, hq, out, L,
-             cap_entries / bm + cap_groups, i8_env_int("STRATA_I8_BISECT", 0), i8_n8_takes(i8_switch_parse(strata::env("NOSTROMA_I8_N8")), tm)};   // 8-entry slices: tile 2 by default, 2-4 with STRATA_I8_N8=1, none with 0
+             cap_entries / bm + cap_groups, i8_env_int("NOSTROMA_I8_BISECT", 0), i8_n8_takes(i8_switch_parse(nostroma::env("NOSTROMA_I8_N8")), tm)};   // 8-entry slices: tile 2 by default, 2-4 with NOSTROMA_I8_N8=1, none with 0
     switch (L.gu_type) {
         case 16: i8_launch<16, true>(tm, a, s); break;
         case 17: i8_launch<17, true>(tm, a, s); break;
@@ -6432,7 +6432,7 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
                            int64_t cap_entries, const void* x_q8_1, void* scratch, float* out, void* stream,
                            int64_t grid_groups) {
     if (cap_groups <= 0 || cap_entries <= 0) return;
-    strata::dispatch::kernel(strata::dispatch::kExpert, 0, L.gu_type, (int) L.n_embd, (int) L.n_ff, L.d_type);   // BW-MEASURE: one grouped expert call
+    nostroma::dispatch::kernel(nostroma::dispatch::kExpert, 0, L.gu_type, (int) L.n_embd, (int) L.n_ff, L.d_type);   // BW-MEASURE: one grouped expert call
     if (L.n_ff % 32 != 0) { std::fprintf(stderr, "native_expert_grouped: n_ff %lld\n", (long long) L.n_ff); std::exit(1); }
     // (OWN-I8: this fallback no longer hands its calls to native_expert_i8: that kernel reads its own activation image, native_expert_i8_quantize's, and this call's rows are q8_1
     //  blocks.  The prompt path's MMQ groups, where the kernel was measured, quantize the image themselves.)
@@ -6443,18 +6443,18 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
     float* h = (float*) ((uint8_t*) scratch + 2 * fa);
     block_q8_1* hq = (block_q8_1*) ((uint8_t*) scratch + 3 * fa);
     const auto* X = (const block_q8_1*) x_q8_1;
-#if !STRATA_EXPERT_NIBBLE_BUILT
-    if (L.gu_nib) {   // STRATA_EXPERT_NIBBLE's slots: the switch is refused at start in a build without the kernels
+#if !NOSTROMA_EXPERT_NIBBLE_BUILT
+    if (L.gu_nib) {   // NOSTROMA_EXPERT_NIBBLE's slots: the switch is refused at start in a build without the kernels
         std::fprintf(stderr, "native_expert_grouped: 4-bit gate/up slots are not built into this engine\n");
         std::exit(1);
     }
 #endif
-    // STRATA_EXPERT_NIBBLE (nib_layout): only the gate/up step below takes another kernel (launch_gu_nib, in place of
+    // NOSTROMA_EXPERT_NIBBLE (nib_layout): only the gate/up step below takes another kernel (launch_gu_nib, in place of
     // launch_gu); SwiGLU, the q8_1 quantization and the down rows (GGUF, at L.down_off) are the layout's own
-    static const bool v2 = [] { const char* v = strata::env("NOSTROMA_EXPERT_V2"); return v && v[0] == '1'; }();
+    static const bool v2 = [] { const char* v = nostroma::env("NOSTROMA_EXPERT_V2"); return v && v[0] == '1'; }();
     if (v2 && !nib_layout(L) && L.gu_type == 21 && L.d_type == 20 && L.n_embd == 2560 && L.n_ff == 640) {   // S26: see s26_gu_l_kernel
-        // S26 STRATA_TSUM=1: the sums as one transposed butterfly per warp (s26_tsum.cuh; bitwise the same values)
-        static const bool ts = [] { const char* v = strata::env("NOSTROMA_TSUM"); return v && v[0] == '1'; }();
+        // S26 NOSTROMA_TSUM=1: the sums as one transposed butterfly per warp (s26_tsum.cuh; bitwise the same values)
+        static const bool ts = [] { const char* v = nostroma::env("NOSTROMA_TSUM"); return v && v[0] == '1'; }();
         // (+ down rows' items spread evenly over the lanes, one load group: bitwise, harness 1.09-1.12x vs 1.03-1.06x;
         // the same for gate / up was 0.6-0.8x)
         if (ts) s26_launch_l<true, true, 4, 4, true, true, true, 1>(L, cap_groups, s, grp_ptr, grp_start, n_groups, ent_dst, ent_tok, X, gate, up, h,
@@ -6467,19 +6467,19 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
     // stream B: UD-Q4_K_XL's Q4_K / Q5_K gate/up and Q5_1 / Q8_0 down (see S27 above)
     // MODEL-UPDATE: on by default on gfx12 (every output the old kernels' bits; R9700, UD-Q4_K_XL decode, 5 interleaved
     // pairs: story +1.2% 5/5, code +0.8% 5/5, after 6K +0.2% 4/5) and, since round 0215, on Windows gfx1151 (below);
-    // STRATA_EXPERT_V2K=0 turns it off, =1 turns it on elsewhere (not measured on other cards)
+    // NOSTROMA_EXPERT_V2K=0 turns it off, =1 turns it on elsewhere (not measured on other cards)
     static const bool v2k = [] {
-        const char* v = strata::env("NOSTROMA_EXPERT_V2K");
+        const char* v = nostroma::env("NOSTROMA_EXPERT_V2K");
         if (v != nullptr && v[0] != '\0') return v[0] == '1';
-#if defined(__HIPCC__) && !defined(STRATA_HIP_GFX906)
+#if defined(__HIPCC__) && !defined(NOSTROMA_HIP_GFX906)
         int dev = 0;
         cudaDeviceProp p;
         const bool ok = cudaGetDevice(&dev) == cudaSuccess && cudaGetDeviceProperties(&p, dev) == cudaSuccess;
-        const bool g12 = ok && strata::kernels::gfx_arch_is_gfx12(p.gcnArchName);
+        const bool g12 = ok && nostroma::kernels::gfx_arch_is_gfx12(p.gcnArchName);
 #if defined(_WIN32)
         // round 0215 (Strix Halo, Windows gfx1151, UD-Q4_K_XL, DFlash2 serve, 16 request pairs): window time -4.0 % (16 of 16 pairs faster,
-        // mean x1.040, range x1.020-1.056, the same window and token count in every pair); STRATA_EXPERT_V2K=0 turns it off
-        const bool strix = ok && strata::kernels::gfx_arch_is_gfx1151(p.gcnArchName);
+        // mean x1.040, range x1.020-1.056, the same window and token count in every pair); NOSTROMA_EXPERT_V2K=0 turns it off
+        const bool strix = ok && nostroma::kernels::gfx_arch_is_gfx1151(p.gcnArchName);
 #else
         const bool strix = false;
 #endif
@@ -6493,9 +6493,9 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
     const bool q36geo = L.n_embd == 2048 && L.n_ff == 512 && L.d_type == 13;
     if (v2k && (L.gu_type == 12 || L.gu_type == 13) &&
         (((L.d_type == 7 || L.d_type == 8) && L.n_embd == 2560 && L.n_ff == 640) || q36geo)) {
-        static const bool ts = [] { const char* v = strata::env("NOSTROMA_TSUM"); return v && v[0] == '1'; }();
+        static const bool ts = [] { const char* v = nostroma::env("NOSTROMA_TSUM"); return v && v[0] == '1'; }();
         const long long nh = (long long) cap_entries * L.n_ff;
-#define STRATA_V2K(G, D) s27_launch_ts<G, D>(ts, L, cap_groups, s, grp_ptr, grp_start, n_groups, ent_dst, ent_tok, X, gate, up, h, hq, out, nh)
+#define NOSTROMA_V2K(G, D) s27_launch_ts<G, D>(ts, L, cap_groups, s, grp_ptr, grp_start, n_groups, ent_dst, ent_tok, X, gate, up, h, hq, out, nh)
         if (q36geo) {
             // the gate/up of the V2K path (4 rows per warp, the chunk's activations in LDS) + SwiGLU/q8_1, and the old down kernel:
             // for n_ff 512 the new down kernel measured slower (15.1 vs 13.4 us per layer on gfx1201, R9700)
@@ -6506,11 +6506,11 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
             const dim3 gd((unsigned) ((L.n_embd + 7) / 8), (unsigned) cap_groups);
             launch_down<13>(gd, s, grp_ptr, grp_start, n_groups, ent_dst, hq, L, out);
         }
-        else if (L.gu_type == 12 && L.d_type == 7) STRATA_V2K(12, 7);
-        else if (L.gu_type == 12) STRATA_V2K(12, 8);
-        else if (L.d_type == 7) STRATA_V2K(13, 7);
-        else STRATA_V2K(13, 8);
-#undef STRATA_V2K
+        else if (L.gu_type == 12 && L.d_type == 7) NOSTROMA_V2K(12, 7);
+        else if (L.gu_type == 12) NOSTROMA_V2K(12, 8);
+        else if (L.d_type == 7) NOSTROMA_V2K(13, 7);
+        else NOSTROMA_V2K(13, 8);
+#undef NOSTROMA_V2K
         check("native_expert_grouped (v2k)");
         return;
     }
@@ -6519,8 +6519,8 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
     const int gu_rows = (!g_old_kernels && !g_no_sub16_gu && L.n_embd == 2560 && gu_split(L.gu_type) &&
                          gu_qk(L.gu_type) != 128 && L.gu_type != 12 && L.gu_type != 13) ? 16 : GU_ROWS;   // qk 128 (APR trellis): no sub-16 rows, see launch_gu
     const dim3 ggu((unsigned) ((2 * L.n_ff + gu_rows - 1) / gu_rows), (unsigned) gy);
-#if STRATA_EXP_LAYOUTS
-#if defined(STRATA_HIP_GFX906)
+#if NOSTROMA_EXP_LAYOUTS
+#if defined(NOSTROMA_HIP_GFX906)
     const int em0 = exp_mode();
 #else
     // CUDA: the AMD layouts launch a block row per possible group, so a call that strides (a verify window's PCIe
@@ -6528,7 +6528,7 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
     const int em0 = (grid_groups > 0 && grid_groups < cap_groups) ? 0 : exp_mode();
 #endif
 #endif
-#if STRATA_EXP_LAYOUTS
+#if NOSTROMA_EXP_LAYOUTS
     const bool fused_gu = !nib_layout(L) && em0 == 8 && ((kExpLds16 && L.gu_type == 16) || L.gu_type == 18 || L.gu_type == 21 || L.gu_type == 22 || L.gu_type == 23) &&
                           L.n_ff % 32 == 0;
     if (fused_gu && g_exp_phase != 2) {
@@ -6544,36 +6544,36 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
         check("native_expert_grouped/gu fused");
     }
 #endif
-    // 147-verify STRATA_GU_SWIGLU=1: gate/up + SwiGLU + q8_1 in one launch where the CUDA layout's 16-lane kernel would run
+    // 147-verify NOSTROMA_GU_SWIGLU=1: gate/up + SwiGLU + q8_1 in one launch where the CUDA layout's 16-lane kernel would run
     bool gs_done = false;
-#if STRATA_EXP_LAYOUTS
+#if NOSTROMA_EXP_LAYOUTS
     const bool gs_layout = !fused_gu && em0 == 0;
 #else
     const bool gs_layout = true;
 #endif
     if (gs_layout && !nib_layout(L) && g_exp_phase == 0 && !v1 && gu_swiglu_on() && !(expdec_mode() && !g_old_kernels && expdec_gu_ok(L))) {
         switch (L.gu_type) {
-#define STRATA_GS(T) case T: gs_done = launch_gu_swiglu<T>(L, gy, s, grp_ptr, grp_start, n_groups, ent_tok, X, hq); break;
-            STRATA_GU_FMTS(STRATA_GS)
-#undef STRATA_GS
+#define NOSTROMA_GS(T) case T: gs_done = launch_gu_swiglu<T>(L, gy, s, grp_ptr, grp_start, n_groups, ent_tok, X, hq); break;
+            NOSTROMA_GU_FMTS(NOSTROMA_GS)
+#undef NOSTROMA_GS
             default: break;
         }
         if (gs_done) check("native_expert_grouped/gu+swiglu");
     }
     {   // BW-MEASURE: which gate/up form ran: 1 = fused gate/up/SwiGLU/q8_1 (em 8), 2 = GU_SWIGLU one launch, 3 = separate gate/up + SwiGLU launches
-#if STRATA_EXP_LAYOUTS
+#if NOSTROMA_EXP_LAYOUTS
         const int gu_form = fused_gu ? 1 : (gs_done ? 2 : 3);
 #else
         const int gu_form = gs_done ? 2 : 3;
 #endif
-        strata::dispatch::kernel(strata::dispatch::kExpert, gu_form, L.gu_type, (int) L.n_embd, (int) L.n_ff, L.d_type);
+        nostroma::dispatch::kernel(nostroma::dispatch::kExpert, gu_form, L.gu_type, (int) L.n_embd, (int) L.n_ff, L.d_type);
     }
-#if STRATA_EXP_LAYOUTS
+#if NOSTROMA_EXP_LAYOUTS
     if (g_exp_phase != 2 && !fused_gu && !gs_done) {
 #else
     if (g_exp_phase != 2 && !gs_done) {
 #endif
-#if STRATA_EXP_LAYOUTS
+#if NOSTROMA_EXP_LAYOUTS
     const bool lds_gu = !nib_layout(L) && (em0 == 5 || em0 == 6 || em0 == 7 || em0 == 8) && ((kExpLds16 && L.gu_type == 16) || L.gu_type == 18 || L.gu_type == 21 || L.gu_type == 22 || L.gu_type == 23);
     if (lds_gu) {
         const dim3 gl((unsigned) ((2 * L.n_ff + LDS_RB - 1) / LDS_RB), (unsigned) cap_groups);
@@ -6588,7 +6588,7 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
     } else {
     const int em = em0 >= 5 ? kExpFallback : em0;
     const dim3 ggu_amd((unsigned) ((2 * L.n_ff + (em == 1 ? 3 : em == 4 ? 31 : 15)) / (em == 1 ? 4 : em == 4 ? 32 : 16)), (unsigned) cap_groups);
-#define STRATA_GU_AMD(T) \
+#define NOSTROMA_GU_AMD(T) \
     case T: if (em == 1) native_gu_amd_kernel<T, 1><<<ggu_amd, 256, 0, s>>>(grp_ptr, grp_start, n_groups, ent_tok, X, L, gate, up); \
             else if (em == 4) native_gu_amd_kernel<T, 4><<<ggu_amd, 256, 0, s>>>(grp_ptr, grp_start, n_groups, ent_tok, X, L, gate, up); \
             else native_gu_amd_kernel<T, 2><<<ggu_amd, 256, 0, s>>>(grp_ptr, grp_start, n_groups, ent_tok, X, L, gate, up); break;
@@ -6597,34 +6597,34 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
                         L.gu_type == 23 || L.gu_type == 29 || L.gu_type == 42;
     if ((em == 1 || em == 2 || em == 4) && amd_gu && !nib_layout(L)) {
         switch (L.gu_type) {
-            STRATA_GU_AMD(16) STRATA_GU_AMD(17) STRATA_GU_AMD(18) STRATA_GU_AMD(21) STRATA_GU_AMD(22) STRATA_GU_AMD(23)
-            STRATA_GU_AMD(29) STRATA_GU_AMD(42)
+            NOSTROMA_GU_AMD(16) NOSTROMA_GU_AMD(17) NOSTROMA_GU_AMD(18) NOSTROMA_GU_AMD(21) NOSTROMA_GU_AMD(22) NOSTROMA_GU_AMD(23)
+            NOSTROMA_GU_AMD(29) NOSTROMA_GU_AMD(42)
         }
     } else
-#undef STRATA_GU_AMD
+#undef NOSTROMA_GU_AMD
 #endif
-#if STRATA_EXPERT_NIBBLE_BUILT
-    if (nib_layout(L))   // STRATA_EXPERT_NIBBLE: a converted layer's VRAM slots, native_gu_multi_kernel's grid and bits
-        launch_gu_nib(L, dim3((unsigned) (strata::core::nibble::kRows / 16), (unsigned) gy), s, grp_ptr, grp_start,
+#if NOSTROMA_EXPERT_NIBBLE_BUILT
+    if (nib_layout(L))   // NOSTROMA_EXPERT_NIBBLE: a converted layer's VRAM slots, native_gu_multi_kernel's grid and bits
+        launch_gu_nib(L, dim3((unsigned) (nostroma::core::nibble::kRows / 16), (unsigned) gy), s, grp_ptr, grp_start,
                       n_groups, ent_tok, X, gate, up);
     else
 #endif
-    if (!expdec_gu(L, gy, cap_groups, s, grp_ptr, grp_start, n_groups, ent_tok, X, gate, up))   // STRATA_EXPDEC=1
+    if (!expdec_gu(L, gy, cap_groups, s, grp_ptr, grp_start, n_groups, ent_tok, X, gate, up))   // NOSTROMA_EXPDEC=1
     switch (L.gu_type) {
-#define STRATA_GU(T) case T: launch_gu<T>(ggu, s, grp_ptr, grp_start, n_groups, ent_tok, X, L, gate, up); break;
-        STRATA_GU_FMTS(STRATA_GU)
-#undef STRATA_GU
+#define NOSTROMA_GU(T) case T: launch_gu<T>(ggu, s, grp_ptr, grp_start, n_groups, ent_tok, X, L, gate, up); break;
+        NOSTROMA_GU_FMTS(NOSTROMA_GU)
+#undef NOSTROMA_GU
         default: std::fprintf(stderr, "native_expert_grouped: gate/up type %d\n", L.gu_type); std::exit(1);
     }
-#if STRATA_EXP_LAYOUTS
+#if NOSTROMA_EXP_LAYOUTS
     }
 #endif
     check("native_expert_grouped/gu");
     if (g_exp_phase == 3) return;   // the bench: gate/up only
     const long long nh = (long long) cap_entries * L.n_ff;
-#if defined(STRATA_HIP_GFX906)
+#if defined(NOSTROMA_HIP_GFX906)
     // gfx906: the separate SwiGLU and q8_1 passes stay the default (the A/B baseline); the RDNA one-pass
-    // kernel (bitwise the same) with STRATA_HIP_SWIGLU_FUSED=1
+    // kernel (bitwise the same) with NOSTROMA_HIP_SWIGLU_FUSED=1
     static const bool sw_fused = env_on("NOSTROMA_HIP_SWIGLU_FUSED");
     const bool sw_v1 = v1 || !sw_fused;
 #else
@@ -6647,14 +6647,14 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
     const int d_rows = (!g_old_kernels && !g_no_sub16_gu && L.n_ff == 640) ? (L.d_type == 20 || L.d_type == 40 || tq_sub8 ? 32 : (L.d_type == 42 ? 16 : 8)) : 8;
     const int tq_ch = tq_sub8 ? tq_row_chunks() : 1;   // the staged trellis down kernel takes this many 32-row chunks a block
     const dim3 gd((unsigned) (((L.n_embd + d_rows - 1) / d_rows + tq_ch - 1) / tq_ch), (unsigned) gy);
-#if STRATA_DOWN_WS_BUILT
-    if (down_ws_on(L)) {   // STRATA_DOWN_WS=1 (cc 6.0): the staged down rows, bitwise native_down_multi_kernel's
+#if NOSTROMA_DOWN_WS_BUILT
+    if (down_ws_on(L)) {   // NOSTROMA_DOWN_WS=1 (cc 6.0): the staged down rows, bitwise native_down_multi_kernel's
         launch_down_ws(L, gy, cap_groups, s, grp_ptr, grp_start, n_groups, ent_dst, hq, out);
         check("native_expert_grouped/down ws");
         return;
     }
 #endif
-#if STRATA_EXP_LAYOUTS
+#if NOSTROMA_EXP_LAYOUTS
     const int em0d = sm75_down_em(em0, cap_groups);
     int dev_d = 0;
     cudaGetDevice(&dev_d);
@@ -6670,7 +6670,7 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
     }
     const int em = em0d >= 5 ? kExpFallback : em0d;
     const dim3 gd_amd((unsigned) ((L.n_embd + (em == 1 ? 3 : em == 4 ? 31 : 15)) / (em == 1 ? 4 : em == 4 ? 32 : 16)), (unsigned) cap_groups);
-#define STRATA_D_AMD(T) \
+#define NOSTROMA_D_AMD(T) \
     case T: if (em == 1) native_down_amd_kernel<T, 1><<<gd_amd, 256, 0, s>>>(grp_ptr, grp_start, n_groups, ent_dst, hq, L, out); \
             else if (em == 4) native_down_amd_kernel<T, 4><<<gd_amd, 256, 0, s>>>(grp_ptr, grp_start, n_groups, ent_dst, hq, L, out); \
             else native_down_amd_kernel<T, 2><<<gd_amd, 256, 0, s>>>(grp_ptr, grp_start, n_groups, ent_dst, hq, L, out); break;
@@ -6678,27 +6678,27 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
     // CUDA layout below
     if ((em == 1 || em == 2 || em == 4) && (L.d_type == 20 || L.d_type == 23 || L.d_type == 42)) {
         switch (L.d_type) {
-            STRATA_D_AMD(20) STRATA_D_AMD(23) STRATA_D_AMD(42)
+            NOSTROMA_D_AMD(20) NOSTROMA_D_AMD(23) NOSTROMA_D_AMD(42)
         }
     } else
-#undef STRATA_D_AMD
+#undef NOSTROMA_D_AMD
 #endif
-    if (!expdec_down(L, gy, cap_groups, s, grp_ptr, grp_start, n_groups, ent_dst, hq, out))   // STRATA_EXPDEC=1
+    if (!expdec_down(L, gy, cap_groups, s, grp_ptr, grp_start, n_groups, ent_dst, hq, out))   // NOSTROMA_EXPDEC=1
     switch (L.d_type) {
-#define STRATA_DOWN(T) case T: launch_down<T>(gd, s, grp_ptr, grp_start, n_groups, ent_dst, hq, L, out); break;
-        STRATA_D_FMTS(STRATA_DOWN)
-#undef STRATA_DOWN
+#define NOSTROMA_DOWN(T) case T: launch_down<T>(gd, s, grp_ptr, grp_start, n_groups, ent_dst, hq, L, out); break;
+        NOSTROMA_D_FMTS(NOSTROMA_DOWN)
+#undef NOSTROMA_DOWN
         default: std::fprintf(stderr, "native_expert_grouped: down type %d\n", L.d_type); std::exit(1);
     }
     check("native_expert_grouped/down");
 }
 
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels
 
-// ---------------------------------------------------------------- STRATA_EXPERT_NIBBLE: expert_nibble.hpp's functions
-namespace strata::core::nibble {
+// ---------------------------------------------------------------- NOSTROMA_EXPERT_NIBBLE: expert_nibble.hpp's functions
+namespace nostroma::core::nibble {
 
-#if STRATA_EXPERT_NIBBLE_BUILT
+#if NOSTROMA_EXPERT_NIBBLE_BUILT
 namespace {
 int g_rev_ready[64];   // per device: 0 not built, 1 built, 2 a grid entry not unique (refused)
 
@@ -6710,18 +6710,18 @@ bool rev_ready() {
 #endif
 
 int prepare(void* stream) {
-#if STRATA_EXPERT_NIBBLE_BUILT
+#if NOSTROMA_EXPERT_NIBBLE_BUILT
     int dev = 0;
     if (cudaGetDevice(&dev) != cudaSuccess || dev < 0 || dev >= 64) return (int) cudaErrorInvalidDevice;
     if (g_rev_ready[dev] == 1) return 0;
     if (g_rev_ready[dev] == 2) return (int) cudaErrorInvalidValue;
     cudaStream_t s = (cudaStream_t) stream;
-    strata::kernels::nib_rev_clear_kernel<<<(strata::kernels::kNibRev22 + 255) / 256, 256, 0, s>>>();
-    strata::kernels::nib_rev_fill_kernel<<<(1024 + 256 + 512 + 255) / 256, 256, 0, s>>>();
+    nostroma::kernels::nib_rev_clear_kernel<<<(nostroma::kernels::kNibRev22 + 255) / 256, 256, 0, s>>>();
+    nostroma::kernels::nib_rev_fill_kernel<<<(1024 + 256 + 512 + 255) / 256, 256, 0, s>>>();
     cudaError_t e = cudaGetLastError();
     unsigned long long bad = 0;
     if (e == cudaSuccess) e = cudaStreamSynchronize(s);
-    if (e == cudaSuccess) e = cudaMemcpyFromSymbol(&bad, strata::kernels::g_nib_rev_bad, sizeof bad);
+    if (e == cudaSuccess) e = cudaMemcpyFromSymbol(&bad, nostroma::kernels::g_nib_rev_bad, sizeof bad);
     if (e != cudaSuccess) return (int) e;
     g_rev_ready[dev] = bad == 0 ? 1 : 2;
     return bad == 0 ? 0 : (int) cudaErrorInvalidValue;
@@ -6733,7 +6733,7 @@ int prepare(void* stream) {
 
 int transcode(const LayerVram& L, const void* staging, int64_t n, const unsigned long long* slot_ptrs,
               unsigned long long* bad, void* stream) {
-#if STRATA_EXPERT_NIBBLE_BUILT
+#if NOSTROMA_EXPERT_NIBBLE_BUILT
     if (n <= 0) return 0;
     if (!L.on || !fmt_built(L.gu_type) || L.raw_gu_row != raw_gu_row(L.gu_type) ||
         L.raw_up_off != (uint64_t) kNFf * L.raw_gu_row || L.raw_bytes < 2 * L.raw_up_off)
@@ -6742,15 +6742,15 @@ int transcode(const LayerVram& L, const void* staging, int64_t n, const unsigned
     const dim3 grid((unsigned) ((nthr + 255) / 256));
     cudaStream_t s = (cudaStream_t) stream;
     const uint8_t* src = (const uint8_t*) staging;
-#define STRATA_NIB_TC(TG) \
-    strata::kernels::nib_transcode_kernel<TG><<<grid, 256, 0, s>>>(src, L.raw_bytes, L.raw_gu_row, L.raw_up_off, slot_ptrs, n, bad)
+#define NOSTROMA_NIB_TC(TG) \
+    nostroma::kernels::nib_transcode_kernel<TG><<<grid, 256, 0, s>>>(src, L.raw_bytes, L.raw_gu_row, L.raw_up_off, slot_ptrs, n, bad)
     switch (L.gu_type) {
-        case kIQ2_S: STRATA_NIB_TC(22); break;
-        case kIQ3_XXS: STRATA_NIB_TC(18); break;
-        case kIQ3_S: STRATA_NIB_TC(21); break;
+        case kIQ2_S: NOSTROMA_NIB_TC(22); break;
+        case kIQ3_XXS: NOSTROMA_NIB_TC(18); break;
+        case kIQ3_S: NOSTROMA_NIB_TC(21); break;
         default: return (int) cudaErrorInvalidValue;
     }
-#undef STRATA_NIB_TC
+#undef NOSTROMA_NIB_TC
     return (int) cudaGetLastError();
 #else
     (void) L; (void) staging; (void) n; (void) slot_ptrs; (void) bad; (void) stream;
@@ -6758,10 +6758,10 @@ int transcode(const LayerVram& L, const void* staging, int64_t n, const unsigned
 #endif
 }
 
-#if STRATA_EXPERT_NIBBLE_BUILT
+#if NOSTROMA_EXPERT_NIBBLE_BUILT
 namespace {
-int launch_gguf(const LayerVram& L, strata::kernels::NibGgufArgs& a, bool check, cudaStream_t s) {
-    namespace K = strata::kernels;
+int launch_gguf(const LayerVram& L, nostroma::kernels::NibGgufArgs& a, bool check, cudaStream_t s) {
+    namespace K = nostroma::kernels;
     if (!L.on || !fmt_built(L.gu_type) || L.raw_gu_row != raw_gu_row(L.gu_type) || L.down_bytes % 16 != 0 ||
         L.raw_up_off != (uint64_t) kNFf * L.raw_gu_row || L.raw_down_off != 2 * L.raw_up_off)
         return (int) cudaErrorInvalidValue;
@@ -6771,16 +6771,16 @@ int launch_gguf(const LayerVram& L, strata::kernels::NibGgufArgs& a, bool check,
     const int64_t tail = (int64_t) (a.down16 + 2 * a.zero16);
     const int64_t per = (int64_t) K::kNibGgufThreads * K::kNibGgufWords;
     const dim3 grid((unsigned) (kRows / K::kNibGgufRows + (tail + per - 1) / per), (unsigned) (a.n - a.first));
-#define STRATA_NIB_GG(TG) \
+#define NOSTROMA_NIB_GG(TG) \
     (check ? K::nib_gguf_kernel<TG, true><<<grid, K::kNibGgufThreads, 0, s>>>(a) \
            : K::nib_gguf_kernel<TG, false><<<grid, K::kNibGgufThreads, 0, s>>>(a))
     switch (L.gu_type) {
-        case kIQ2_S: STRATA_NIB_GG(22); break;
-        case kIQ3_XXS: STRATA_NIB_GG(18); break;
-        case kIQ3_S: STRATA_NIB_GG(21); break;
+        case kIQ2_S: NOSTROMA_NIB_GG(22); break;
+        case kIQ3_XXS: NOSTROMA_NIB_GG(18); break;
+        case kIQ3_S: NOSTROMA_NIB_GG(21); break;
         default: return (int) cudaErrorInvalidValue;
     }
-#undef STRATA_NIB_GG
+#undef NOSTROMA_NIB_GG
     return (int) cudaGetLastError();
 }
 }  // namespace
@@ -6788,10 +6788,10 @@ int launch_gguf(const LayerVram& L, strata::kernels::NibGgufArgs& a, bool check,
 
 int check_gguf(const LayerVram& L, const void* staging, int64_t n, const unsigned long long* slot_ptrs,
                unsigned long long* bad, void* stream) {
-#if STRATA_EXPERT_NIBBLE_BUILT
+#if NOSTROMA_EXPERT_NIBBLE_BUILT
     if (n <= 0) return 0;
     if (n > 65535) return (int) cudaErrorInvalidValue;
-    strata::kernels::NibGgufArgs a{};
+    nostroma::kernels::NibGgufArgs a{};
     a.dev = slot_ptrs;
     a.first = 0;
     a.n = (int) n;
@@ -6811,12 +6811,12 @@ int check_gguf(const LayerVram& L, const void* staging, int64_t n, const unsigne
 
 int gather_gguf(const LayerVram& L, const uint8_t* const* slots, int first, int n, void* gu_dst, uint64_t gu_stride,
                 void* d_dst, uint64_t d_stride, uint64_t zero_bytes, void* stream) {
-#if STRATA_EXPERT_NIBBLE_BUILT
+#if NOSTROMA_EXPERT_NIBBLE_BUILT
     if (first < 0 || n <= first || n > 16) return (int) cudaErrorInvalidValue;
     uintptr_t al = (uintptr_t) gu_dst | (uintptr_t) d_dst | gu_stride | d_stride | zero_bytes;
     for (int q = first; q < n; ++q) al |= (uintptr_t) slots[q];
     if (al % 16 != 0 || gu_stride < (uint64_t) kRows * L.raw_gu_row || d_stride < L.down_bytes) return (int) cudaErrorInvalidValue;
-    strata::kernels::NibGgufArgs a{};
+    nostroma::kernels::NibGgufArgs a{};
     a.dev = nullptr;
     for (int q = first; q < n; ++q) a.p[q] = slots[q];
     a.first = first;
@@ -6836,14 +6836,14 @@ int gather_gguf(const LayerVram& L, const uint8_t* const* slots, int first, int 
 }
 
 int hash_slots(const LayerVram& L, const unsigned long long* slot_ptrs, int64_t n, unsigned long long* out, void* stream) {
-#if STRATA_EXPERT_NIBBLE_BUILT
+#if NOSTROMA_EXPERT_NIBBLE_BUILT
     if (n <= 0) return 0;
     if (L.hashed == 0) return (int) cudaErrorInvalidValue;
     cudaStream_t s = (cudaStream_t) stream;
     const cudaError_t e = cudaMemsetAsync(out, 0, (size_t) n * sizeof(unsigned long long), s);
     if (e != cudaSuccess) return (int) e;
     // ~2.7 MB a slot: 32 blocks of 256 threads each, ~21 16-byte loads a thread
-    strata::kernels::nib_hash_kernel<<<dim3(32, (unsigned) n), 256, 0, s>>>(slot_ptrs, L.hashed, out);
+    nostroma::kernels::nib_hash_kernel<<<dim3(32, (unsigned) n), 256, 0, s>>>(slot_ptrs, L.hashed, out);
     return (int) cudaGetLastError();
 #else
     (void) L; (void) slot_ptrs; (void) n; (void) out; (void) stream;
@@ -6851,14 +6851,14 @@ int hash_slots(const LayerVram& L, const unsigned long long* slot_ptrs, int64_t 
 #endif
 }
 
-}  // namespace strata::core::nibble
+}  // namespace nostroma::core::nibble
 
-// ---- Volta prompt experts (STRATA_PF_WMMA): a group's experts as one launch of FP16 tensor-core tiles, the weights
+// ---- Volta prompt experts (NOSTROMA_PF_WMMA): a group's experts as one launch of FP16 tensor-core tiles, the weights
 // dequantized into shared memory by dq_dispatch (the FP16 path's own formulas), the activations FP16, FP32 sums.
 // Replaces MMQ's dp4a products on sm_70, and the FP16 path's dequantize-to-global + one cuBLAS call per expert.
 #if !defined(__HIPCC__)
 #include <mma.h>
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 constexpr int WG_BM = 64, WG_BN = 128, WG_THREADS = 256, WG_XK = 128, WG_MT = 4;
 // A block: BN = 128 weight rows of one expert x up to WG_MT * BM = 256 of its token rows (blockIdx.y walks an expert's
@@ -6997,7 +6997,7 @@ __global__ void __launch_bounds__(WG_THREADS) gemm_iq_f16_grouped_kernel(int ty,
 #endif
 }
 
-// ---- STRATA_PF_WMMA2=1 (opt-in): IQ2_S gate/up and IQ4_NL down, tiled like a Volta MoE kernel in the
+// ---- NOSTROMA_PF_WMMA2=1 (opt-in): IQ2_S gate/up and IQ4_NL down, tiled like a Volta MoE kernel in the
 // PR author's own unpublished llama.cpp patches.
 // A block: W2_RB = 128 weight rows of one expert x W2_CB = 64 of its sorted rows, K stages of W2_KT = 64. Thread t dequantizes
 // row t % 128, 32-value sub-block t / 128 of each K stage from the raw stage in shared memory (one IQ2_S super-block or four IQ4_NL
@@ -7197,7 +7197,7 @@ __global__ void __launch_bounds__(W2_NT, 2) gemm_iq_f16_w2_kernel(const uint8_t*
 }
 
 bool w2_on() {
-    static const bool v = [] { const char* e = strata::env("NOSTROMA_PF_WMMA2"); return e && e[0] == '1'; }();
+    static const bool v = [] { const char* e = nostroma::env("NOSTROMA_PF_WMMA2"); return e && e[0] == '1'; }();
     return v;
 }
 }  // namespace
@@ -7211,7 +7211,7 @@ bool gemm_iq_f16_grouped(int ty, const void* W, size_t expert_bytes, int n_out, 
             major < 7)
             return false;
     }
-    // STRATA_PF_WMMA2=1 (opt-in): IQ2_S gate/up and IQ4_NL down through gemm_iq_f16_w2_kernel (above)
+    // NOSTROMA_PF_WMMA2=1 (opt-in): IQ2_S gate/up and IQ4_NL down through gemm_iq_f16_w2_kernel (above)
     if (w2_on() && n_out % W2_RB == 0 && ldx % 8 == 0 && ldy % 8 == 0 && (uintptr_t) X % 16 == 0 && (uintptr_t) Y % 32 == 0 &&
         (uintptr_t) W % 4 == 0 && expert_bytes % 4 == 0 && ((ty == 22 && K % 512 == 0) || (ty == 20 && K % 128 == 0))) {
         const size_t rb = iq_row_bytes(ty, K);
@@ -7256,11 +7256,11 @@ bool gemm_iq_f16_grouped(int ty, const void* W, size_t expert_bytes, int n_out, 
                                                                                   (const __half*) X, ldx, bounds, mt, Y, ldy);
     return cudaGetLastError() == cudaSuccess;
 }
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels
 #else
-namespace strata::kernels {
+namespace nostroma::kernels {
 bool gemm_iq_f16_grouped(int, const void*, size_t, int, int, const void*, int, const int32_t*, int, int, float*, int, void*) {
     return false;
 }
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels
 #endif

@@ -17,8 +17,8 @@
   "engine_prompt_tps": 2229.2,
   "engine_decode_tps": 52.7,
   "log_lines": [
-   "strata serve: prompt 28317 tokens = 0 reused + 28317 read in 12703 ms (2229.2 tok/s), 48 generated in 911 ms (52.7 tok/s), drafts accepted 31 of 38, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 96.3% (25001 hits / 25956 lookups)"
+   "nostroma serve: prompt 28317 tokens = 0 reused + 28317 read in 12703 ms (2229.2 tok/s), 48 generated in 911 ms (52.7 tok/s), drafts accepted 31 of 38, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 96.3% (25001 hits / 25956 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand what's there and identify the last file."
  },
@@ -40,8 +40,8 @@
   "engine_prompt_tps": 2506.6,
   "engine_decode_tps": 66.8,
   "log_lines": [
-   "strata serve: prompt 31630 tokens = 0 reused + 31630 read in 12619 ms (2506.6 tok/s), 26 generated in 389 ms (66.8 tok/s), drafts accepted 12 of 21, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 99.1% (16646 hits / 16791 lookups)"
+   "nostroma serve: prompt 31630 tokens = 0 reused + 31630 read in 12619 ms (2506.6 tok/s), 26 generated in 389 ms (66.8 tok/s), drafts accepted 12 of 21, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 99.1% (16646 hits / 16791 lookups)"
   ],
   "answer_head": "I don't see any file content in the conversation above. Could you please share the file you'd like me to analyze?"
  },
@@ -63,8 +63,8 @@
   "engine_prompt_tps": 2502.4,
   "engine_decode_tps": 97.4,
   "log_lines": [
-   "strata serve: prompt 31601 tokens = 0 reused + 31601 read in 12628 ms (2502.4 tok/s), 45 generated in 462 ms (97.4 tok/s), drafts accepted 33 of 37, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 98.6% (23985 hits / 24333 lookups)"
+   "nostroma serve: prompt 31601 tokens = 0 reused + 31601 read in 12628 ms (2502.4 tok/s), 45 generated in 462 ms (97.4 tok/s), drafts accepted 33 of 37, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 98.6% (23985 hits / 24333 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand what we're working with."
  },
@@ -86,8 +86,8 @@
   "engine_prompt_tps": 2324.6,
   "engine_decode_tps": 83.1,
   "log_lines": [
-   "strata serve: prompt 28313 tokens = 0 reused + 28313 read in 12180 ms (2324.6 tok/s), 57 generated in 686 ms (83.1 tok/s), drafts accepted 39 of 41, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 99.7% (28717 hits / 28800 lookups)"
+   "nostroma serve: prompt 28313 tokens = 0 reused + 28313 read in 12180 ms (2324.6 tok/s), 57 generated in 686 ms (83.1 tok/s), drafts accepted 39 of 41, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 99.7% (28717 hits / 28800 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand what's there and identify the last file."
  },
@@ -109,8 +109,8 @@
   "engine_prompt_tps": 2718.9,
   "engine_decode_tps": 79.8,
   "log_lines": [
-   "strata serve: prompt 28316 tokens = 0 reused + 28316 read in 10414 ms (2718.9 tok/s), 57 generated in 715 ms (79.8 tok/s), drafts accepted 37 of 48, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 100.0% (34080 hits / 34080 lookups)"
+   "nostroma serve: prompt 28316 tokens = 0 reused + 28316 read in 10414 ms (2718.9 tok/s), 57 generated in 715 ms (79.8 tok/s), drafts accepted 37 of 48, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 100.0% (34080 hits / 34080 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand what's there and identify the last file."
  },
@@ -132,8 +132,8 @@
   "engine_prompt_tps": 2962.7,
   "engine_decode_tps": 103.3,
   "log_lines": [
-   "strata serve: prompt 31633 tokens = 0 reused + 31633 read in 10677 ms (2962.7 tok/s), 45 generated in 436 ms (103.3 tok/s), drafts accepted 32 of 37, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 100.0% (24960 hits / 24960 lookups)"
+   "nostroma serve: prompt 31633 tokens = 0 reused + 31633 read in 10677 ms (2962.7 tok/s), 45 generated in 436 ms (103.3 tok/s), drafts accepted 32 of 37, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 100.0% (24960 hits / 24960 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand what the last file does."
  },
@@ -155,8 +155,8 @@
   "engine_prompt_tps": 2951.6,
   "engine_decode_tps": 105.7,
   "log_lines": [
-   "strata serve: prompt 31601 tokens = 0 reused + 31601 read in 10706 ms (2951.6 tok/s), 60 generated in 568 ms (105.7 tok/s), drafts accepted 41 of 46, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 100.0% (31680 hits / 31680 lookups)"
+   "nostroma serve: prompt 31601 tokens = 0 reused + 31601 read in 10706 ms (2951.6 tok/s), 60 generated in 568 ms (105.7 tok/s), drafts accepted 41 of 46, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 100.0% (31680 hits / 31680 lookups)"
   ],
   "answer_head": "I'll start by examining the repository structure to understand what the last file does."
  },
@@ -178,8 +178,8 @@
   "engine_prompt_tps": 2871.1,
   "engine_decode_tps": 85.9,
   "log_lines": [
-   "strata serve: prompt 28314 tokens = 0 reused + 28314 read in 9862 ms (2871.1 tok/s), 256 generated in 2981 ms (85.9 tok/s), drafts accepted 143 of 193, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 100.0% (147360 hits / 147360 lookups)"
+   "nostroma serve: prompt 28314 tokens = 0 reused + 28314 read in 9862 ms (2871.1 tok/s), 256 generated in 2981 ms (85.9 tok/s), drafts accepted 143 of 193, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 100.0% (147360 hits / 147360 lookups)"
   ],
   "answer_head": "Looking at the last file above, `docs/AMD_HIP_PERFORMANCE.md`, it documents the performance evidence and correctness limits for the experimental AMD HIP backend targeting gfx1100 (RX 7900 XTX). It records:\n\n- The exact build/runtime configuration used for the benchmark (env vars, CLI flags, model pa"
  },
@@ -201,8 +201,8 @@
   "engine_prompt_tps": 3130.4,
   "engine_decode_tps": 104.2,
   "log_lines": [
-   "strata serve: prompt 31635 tokens = 0 reused + 31635 read in 10106 ms (3130.4 tok/s), 45 generated in 432 ms (104.2 tok/s), drafts accepted 33 of 37, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 100.0% (24480 hits / 24480 lookups)"
+   "nostroma serve: prompt 31635 tokens = 0 reused + 31635 read in 10106 ms (3130.4 tok/s), 45 generated in 432 ms (104.2 tok/s), drafts accepted 33 of 37, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 100.0% (24480 hits / 24480 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand what we're working with."
  },
@@ -224,8 +224,8 @@
   "engine_prompt_tps": 3123.2,
   "engine_decode_tps": 100.2,
   "log_lines": [
-   "strata serve: prompt 31602 tokens = 0 reused + 31602 read in 10118 ms (3123.2 tok/s), 60 generated in 599 ms (100.2 tok/s), drafts accepted 40 of 52, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 100.0% (34560 hits / 34560 lookups)"
+   "nostroma serve: prompt 31602 tokens = 0 reused + 31602 read in 10118 ms (3123.2 tok/s), 60 generated in 599 ms (100.2 tok/s), drafts accepted 40 of 52, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 100.0% (34560 hits / 34560 lookups)"
   ],
   "answer_head": "I'll start by examining the repository structure to understand what the last file does."
  },
@@ -247,8 +247,8 @@
   "engine_prompt_tps": 2940.2,
   "engine_decode_tps": 88.8,
   "log_lines": [
-   "strata serve: prompt 28314 tokens = 0 reused + 28314 read in 9630 ms (2940.2 tok/s), 48 generated in 540 ms (88.8 tok/s), drafts accepted 33 of 37, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 100.0% (25920 hits / 25920 lookups)"
+   "nostroma serve: prompt 28314 tokens = 0 reused + 28314 read in 9630 ms (2940.2 tok/s), 48 generated in 540 ms (88.8 tok/s), drafts accepted 33 of 37, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 100.0% (25920 hits / 25920 lookups)"
   ],
   "answer_head": "I'll first look at the repository structure to understand what files exist and identify the last file."
  },
@@ -270,8 +270,8 @@
   "engine_prompt_tps": 3205.2,
   "engine_decode_tps": 93.5,
   "log_lines": [
-   "strata serve: prompt 31635 tokens = 0 reused + 31635 read in 9870 ms (3205.2 tok/s), 45 generated in 481 ms (93.5 tok/s), drafts accepted 31 of 36, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 100.0% (25440 hits / 25440 lookups)"
+   "nostroma serve: prompt 31635 tokens = 0 reused + 31635 read in 9870 ms (3205.2 tok/s), 45 generated in 481 ms (93.5 tok/s), drafts accepted 31 of 36, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 100.0% (25440 hits / 25440 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand what the last file does."
  },
@@ -293,8 +293,8 @@
   "engine_prompt_tps": 3208.3,
   "engine_decode_tps": 100.2,
   "log_lines": [
-   "strata serve: prompt 31601 tokens = 0 reused + 31601 read in 9850 ms (3208.3 tok/s), 60 generated in 599 ms (100.2 tok/s), drafts accepted 40 of 50, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 100.0% (34080 hits / 34080 lookups)"
+   "nostroma serve: prompt 31601 tokens = 0 reused + 31601 read in 9850 ms (3208.3 tok/s), 60 generated in 599 ms (100.2 tok/s), drafts accepted 40 of 50, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 100.0% (34080 hits / 34080 lookups)"
   ],
   "answer_head": "I'll start by examining the repository structure to understand what the last file is."
  },
@@ -316,8 +316,8 @@
   "engine_prompt_tps": 2798.5,
   "engine_decode_tps": 93.7,
   "log_lines": [
-   "strata serve: prompt 28316 tokens = 0 reused + 28316 read in 10118 ms (2798.5 tok/s), 57 generated in 608 ms (93.7 tok/s), drafts accepted 40 of 42, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 100.0% (28800 hits / 28800 lookups)"
+   "nostroma serve: prompt 28316 tokens = 0 reused + 28316 read in 10118 ms (2798.5 tok/s), 57 generated in 608 ms (93.7 tok/s), drafts accepted 40 of 42, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 100.0% (28800 hits / 28800 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand what's there and identify the last file."
  },
@@ -339,8 +339,8 @@
   "engine_prompt_tps": 3034.9,
   "engine_decode_tps": 110.6,
   "log_lines": [
-   "strata serve: prompt 31631 tokens = 0 reused + 31631 read in 10423 ms (3034.9 tok/s), 45 generated in 407 ms (110.6 tok/s), drafts accepted 33 of 34, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 100.0% (23040 hits / 23040 lookups)"
+   "nostroma serve: prompt 31631 tokens = 0 reused + 31631 read in 10423 ms (3034.9 tok/s), 45 generated in 407 ms (110.6 tok/s), drafts accepted 33 of 34, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 100.0% (23040 hits / 23040 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand what we're working with."
  },
@@ -362,8 +362,8 @@
   "engine_prompt_tps": 3037.5,
   "engine_decode_tps": 96.6,
   "log_lines": [
-   "strata serve: prompt 31602 tokens = 0 reused + 31602 read in 10404 ms (3037.5 tok/s), 59 generated in 611 ms (96.6 tok/s), drafts accepted 41 of 52, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 100.0% (35040 hits / 35040 lookups)"
+   "nostroma serve: prompt 31602 tokens = 0 reused + 31602 read in 10404 ms (3037.5 tok/s), 59 generated in 611 ms (96.6 tok/s), drafts accepted 41 of 52, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 100.0% (35040 hits / 35040 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand what's there."
  },
@@ -385,8 +385,8 @@
   "engine_prompt_tps": 2892.0,
   "engine_decode_tps": 94.1,
   "log_lines": [
-   "strata serve: prompt 28316 tokens = 0 reused + 28316 read in 9791 ms (2892.0 tok/s), 45 generated in 478 ms (94.1 tok/s), drafts accepted 31 of 37, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 100.0% (25440 hits / 25440 lookups)"
+   "nostroma serve: prompt 28316 tokens = 0 reused + 28316 read in 9791 ms (2892.0 tok/s), 45 generated in 478 ms (94.1 tok/s), drafts accepted 31 of 37, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 100.0% (25440 hits / 25440 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand what's there."
  },
@@ -408,8 +408,8 @@
   "engine_prompt_tps": 2926.4,
   "engine_decode_tps": 96.1,
   "log_lines": [
-   "strata serve: prompt 31632 tokens = 0 reused + 31632 read in 10809 ms (2926.4 tok/s), 48 generated in 499 ms (96.1 tok/s), drafts accepted 32 of 38, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 100.0% (27360 hits / 27360 lookups)"
+   "nostroma serve: prompt 31632 tokens = 0 reused + 31632 read in 10809 ms (2926.4 tok/s), 48 generated in 499 ms (96.1 tok/s), drafts accepted 32 of 38, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 100.0% (27360 hits / 27360 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand what's there and identify the last file."
  },
@@ -431,8 +431,8 @@
   "engine_prompt_tps": 2920.6,
   "engine_decode_tps": 108.0,
   "log_lines": [
-   "strata serve: prompt 31602 tokens = 0 reused + 31602 read in 10820 ms (2920.6 tok/s), 45 generated in 417 ms (108.0 tok/s), drafts accepted 33 of 37, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 100.0% (24480 hits / 24480 lookups)"
+   "nostroma serve: prompt 31602 tokens = 0 reused + 31602 read in 10820 ms (2920.6 tok/s), 45 generated in 417 ms (108.0 tok/s), drafts accepted 33 of 37, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 100.0% (24480 hits / 24480 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand what we're working with."
  },
@@ -454,8 +454,8 @@
   "engine_prompt_tps": 2524.7,
   "engine_decode_tps": 88.5,
   "log_lines": [
-   "strata serve: prompt 28314 tokens = 0 reused + 28314 read in 11215 ms (2524.7 tok/s), 48 generated in 542 ms (88.5 tok/s), drafts accepted 34 of 36, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 100.0% (24958 hits / 24960 lookups)"
+   "nostroma serve: prompt 28314 tokens = 0 reused + 28314 read in 11215 ms (2524.7 tok/s), 48 generated in 542 ms (88.5 tok/s), drafts accepted 34 of 36, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 100.0% (24958 hits / 24960 lookups)"
   ],
   "answer_head": "I'll first look at the repository structure to understand what files exist and identify the last file."
  },
@@ -477,8 +477,8 @@
   "engine_prompt_tps": 2704.3,
   "engine_decode_tps": 98.6,
   "log_lines": [
-   "strata serve: prompt 31634 tokens = 0 reused + 31634 read in 11698 ms (2704.3 tok/s), 55 generated in 558 ms (98.6 tok/s), drafts accepted 38 of 44, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 100.0% (29759 hits / 29760 lookups)"
+   "nostroma serve: prompt 31634 tokens = 0 reused + 31634 read in 11698 ms (2704.3 tok/s), 55 generated in 558 ms (98.6 tok/s), drafts accepted 38 of 44, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 100.0% (29759 hits / 29760 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand what we're working with."
  },
@@ -500,8 +500,8 @@
   "engine_prompt_tps": 2704.5,
   "engine_decode_tps": 108.1,
   "log_lines": [
-   "strata serve: prompt 31601 tokens = 0 reused + 31601 read in 11684 ms (2704.5 tok/s), 45 generated in 416 ms (108.1 tok/s), drafts accepted 33 of 36, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 100.0% (24000 hits / 24000 lookups)"
+   "nostroma serve: prompt 31601 tokens = 0 reused + 31601 read in 11684 ms (2704.5 tok/s), 45 generated in 416 ms (108.1 tok/s), drafts accepted 33 of 36, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 100.0% (24000 hits / 24000 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand what we're working with."
  },
@@ -523,8 +523,8 @@
   "engine_prompt_tps": 720.7,
   "engine_decode_tps": 83.1,
   "log_lines": [
-   "strata serve: prompt 28315 tokens = 0 reused + 28315 read in 39287 ms (720.7 tok/s), 84 generated in 1011 ms (83.1 tok/s), drafts accepted 56 of 67, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 94.9% (43073 hits / 45377 lookups)"
+   "nostroma serve: prompt 28315 tokens = 0 reused + 28315 read in 39287 ms (720.7 tok/s), 84 generated in 1011 ms (83.1 tok/s), drafts accepted 56 of 67, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 94.9% (43073 hits / 45377 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand the context and find the relevant files."
  },
@@ -546,8 +546,8 @@
   "engine_prompt_tps": 749.3,
   "engine_decode_tps": 113.3,
   "log_lines": [
-   "strata serve: prompt 31633 tokens = 0 reused + 31633 read in 42217 ms (749.3 tok/s), 88 generated in 777 ms (113.3 tok/s), drafts accepted 61 of 69, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 97.8% (45031 hits / 46048 lookups)"
+   "nostroma serve: prompt 31633 tokens = 0 reused + 31633 read in 42217 ms (749.3 tok/s), 88 generated in 777 ms (113.3 tok/s), drafts accepted 61 of 69, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 97.8% (45031 hits / 46048 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand what's there and identify the \"last file\" being referenced."
  },
@@ -569,8 +569,8 @@
   "engine_prompt_tps": 750.5,
   "engine_decode_tps": 106.3,
   "log_lines": [
-   "strata serve: prompt 31604 tokens = 0 reused + 31604 read in 42111 ms (750.5 tok/s), 49 generated in 461 ms (106.3 tok/s), drafts accepted 33 of 37, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 99.1% (26163 hits / 26396 lookups)"
+   "nostroma serve: prompt 31604 tokens = 0 reused + 31604 read in 42111 ms (750.5 tok/s), 49 generated in 461 ms (106.3 tok/s), drafts accepted 33 of 37, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 99.1% (26163 hits / 26396 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand what's there and identify the \"last file\" being referenced."
  },
@@ -592,8 +592,8 @@
   "engine_prompt_tps": 744.7,
   "engine_decode_tps": 101.7,
   "log_lines": [
-   "strata serve: prompt 17345 tokens = 0 reused + 17345 read in 23292 ms (744.7 tok/s), 8 generated in 79 ms (101.7 tok/s), drafts accepted 6 of 6, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 96.3% (4159 hits / 4317 lookups)"
+   "nostroma serve: prompt 17345 tokens = 0 reused + 17345 read in 23292 ms (744.7 tok/s), 8 generated in 79 ms (101.7 tok/s), drafts accepted 6 of 6, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 96.3% (4159 hits / 4317 lookups)"
   ],
   "answer_head": "A466BDE8",
   "needle_found": true
@@ -616,8 +616,8 @@
   "engine_prompt_tps": 749.2,
   "engine_decode_tps": 85.9,
   "log_lines": [
-   "strata serve: prompt 29827 tokens = 0 reused + 29827 read in 39812 ms (749.2 tok/s), 8 generated in 93 ms (85.9 tok/s), drafts accepted 6 of 6, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 96.2% (4154 hits / 4318 lookups)"
+   "nostroma serve: prompt 29827 tokens = 0 reused + 29827 read in 39812 ms (749.2 tok/s), 8 generated in 93 ms (85.9 tok/s), drafts accepted 6 of 6, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 96.2% (4154 hits / 4318 lookups)"
   ],
   "answer_head": "7BDBA3C1",
   "needle_found": true
@@ -640,8 +640,8 @@
   "engine_prompt_tps": 705.0,
   "engine_decode_tps": 73.1,
   "log_lines": [
-   "strata serve: prompt 7491 tokens = 0 reused + 7491 read in 10625 ms (705.0 tok/s), 8 generated in 109 ms (73.1 tok/s), drafts accepted 6 of 6, 1 checkpoints",
-   "strata serve: decode expert cache hit rate: 90.2% (3891 hits / 4313 lookups)"
+   "nostroma serve: prompt 7491 tokens = 0 reused + 7491 read in 10625 ms (705.0 tok/s), 8 generated in 109 ms (73.1 tok/s), drafts accepted 6 of 6, 1 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 90.2% (3891 hits / 4313 lookups)"
   ],
   "answer_head": "C43C98BD",
   "needle_found": true
@@ -664,15 +664,15 @@
   "engine_prompt_tps": 739.4,
   "engine_decode_tps": 98.3,
   "log_lines": [
-   "strata serve: prompt 15639 tokens = 0 reused + 15639 read in 21151 ms (739.4 tok/s), 83 generated in 844 ms (98.3 tok/s), drafts accepted 53 of 73, 1 checkpoints",
-   "strata serve: decode expert cache hit rate: 98.5% (48689 hits / 49415 lookups)"
+   "nostroma serve: prompt 15639 tokens = 0 reused + 15639 read in 21151 ms (739.4 tok/s), 83 generated in 844 ms (98.3 tok/s), drafts accepted 53 of 73, 1 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 98.5% (48689 hits / 49415 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand what's there.",
   "turn2_ttft_s": 0.627,
   "turn2_prompt_tokens": 15676,
   "turn2_log_lines": [
-   "strata serve: prompt 15676 tokens = 15632 reused + 44 read in 521 ms (84.4 tok/s), 64 generated in 739 ms (86.6 tok/s), drafts accepted 37 of 52, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 97.1% (36768 hits / 37868 lookups)"
+   "nostroma serve: prompt 15676 tokens = 15632 reused + 44 read in 521 ms (84.4 tok/s), 64 generated in 739 ms (86.6 tok/s), drafts accepted 37 of 52, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 97.1% (36768 hits / 37868 lookups)"
   ]
  },
  {
@@ -693,10 +693,10 @@
   "engine_prompt_tps": 2185.1,
   "engine_decode_tps": 79.3,
   "log_lines": [
-   "strata serve: prompt 119256 tokens = 0 reused + 119256 read in 54577 ms (2185.1 tok/s), 256 generated in 3230 ms (79.3 tok/s), drafts accepted 151 of 208, 6 checkpoints",
-   "strata serve: decode expert cache hit rate: 95.5% (140181 hits / 146787 lookups)"
+   "nostroma serve: prompt 119256 tokens = 0 reused + 119256 read in 54577 ms (2185.1 tok/s), 256 generated in 3230 ms (79.3 tok/s), drafts accepted 151 of 208, 6 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 95.5% (140181 hits / 146787 lookups)"
   ],
-  "answer_head": "The last file shown is `include/strata/kernels/cpu/pool.hpp`. It declares the CPU expert pool (`ExpertPool`), which is the engine's mechanism for computing the routed MoE experts that do not fit in VRAM.\n\n**What it does:**\n\n1.  **Thread Management:** It creates a pool of worker threads pinned to phy"
+  "answer_head": "The last file shown is `include/nostroma/kernels/cpu/pool.hpp`. It declares the CPU expert pool (`ExpertPool`), which is the engine's mechanism for computing the routed MoE experts that do not fit in VRAM.\n\n**What it does:**\n\n1.  **Thread Management:** It creates a pool of worker threads pinned to phy"
  },
  {
   "label": "native-v0.1.26-IQ3_XXS-1x3090",
@@ -716,10 +716,10 @@
   "engine_prompt_tps": 2173.6,
   "engine_decode_tps": 79.4,
   "log_lines": [
-   "strata serve: prompt 130360 tokens = 0 reused + 130360 read in 59974 ms (2173.6 tok/s), 256 generated in 3226 ms (79.4 tok/s), drafts accepted 158 of 225, 6 checkpoints",
-   "strata serve: decode expert cache hit rate: 94.5% (142001 hits / 150326 lookups)"
+   "nostroma serve: prompt 130360 tokens = 0 reused + 130360 read in 59974 ms (2173.6 tok/s), 256 generated in 3226 ms (79.4 tok/s), drafts accepted 158 of 225, 6 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 94.5% (142001 hits / 150326 lookups)"
   ],
-  "answer_head": "I'll analyze the last file in the repository listing.\n\n## What `include/strata/kernels/gdn.hpp` does\n\nThis header declares the **non-projection parts of the Gated Delta-Net (GDN) layer** \u2014 the \"mixer\" used in 36 of the model's 48 layers (the other 12 are QSA full-attention layers). It is the C++ cou"
+  "answer_head": "I'll analyze the last file in the repository listing.\n\n## What `include/nostroma/kernels/gdn.hpp` does\n\nThis header declares the **non-projection parts of the Gated Delta-Net (GDN) layer** \u2014 the \"mixer\" used in 36 of the model's 48 layers (the other 12 are QSA full-attention layers). It is the C++ cou"
  },
  {
   "label": "native-v0.1.26-IQ3_XXS-1x3090",
@@ -739,10 +739,10 @@
   "engine_prompt_tps": 2168.8,
   "engine_decode_tps": 72.0,
   "log_lines": [
-   "strata serve: prompt 129913 tokens = 0 reused + 129913 read in 59901 ms (2168.8 tok/s), 256 generated in 3556 ms (72.0 tok/s), drafts accepted 148 of 200, 6 checkpoints",
-   "strata serve: decode expert cache hit rate: 95.6% (138618 hits / 145073 lookups)"
+   "nostroma serve: prompt 129913 tokens = 0 reused + 129913 read in 59901 ms (2168.8 tok/s), 256 generated in 3556 ms (72.0 tok/s), drafts accepted 148 of 200, 6 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 95.6% (138618 hits / 145073 lookups)"
   ],
-  "answer_head": "The last file is `include/strata/kernels/gdn.hpp`. It declares the non-projection parts of the gated delta-net (GDN) layer used by 36 of the model's 48 layers. It defines `GdnShapes` (S=128, h_k=16, h_v=48) and declares `gdn_step`, which performs one in-place step of the delta-rule recurrence: it de"
+  "answer_head": "The last file is `include/nostroma/kernels/gdn.hpp`. It declares the non-projection parts of the gated delta-net (GDN) layer used by 36 of the model's 48 layers. It defines `GdnShapes` (S=128, h_k=16, h_v=48) and declares `gdn_step`, which performs one in-place step of the delta-rule recurrence: it de"
  },
  {
   "label": "native-v0.1.26-IQ3_XXS-1x3090",
@@ -762,10 +762,10 @@
   "engine_prompt_tps": 808.1,
   "engine_decode_tps": 93.0,
   "log_lines": [
-   "strata serve: prompt 1092 tokens = 0 reused + 1092 read in 1351 ms (808.1 tok/s), 256 generated in 2753 ms (93.0 tok/s), drafts accepted 159 of 210, 1 checkpoints",
-   "strata serve: decode expert cache hit rate: 95.4% (137036 hits / 143638 lookups)"
+   "nostroma serve: prompt 1092 tokens = 0 reused + 1092 read in 1351 ms (808.1 tok/s), 256 generated in 2753 ms (93.0 tok/s), drafts accepted 159 of 210, 1 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 95.4% (137036 hits / 143638 lookups)"
   ],
-  "answer_head": "Based on the content of `CMakeLists.txt`, here is an explanation of its function and a proposed improvement.\n\n### Explanation of `CMakeLists.txt`\n\nThis file serves as the top-level build configuration for the **Strata Engine** (version 0.1.26). Its primary responsibilities are:\n\n1.  **Project Defini"
+  "answer_head": "Based on the content of `CMakeLists.txt`, here is an explanation of its function and a proposed improvement.\n\n### Explanation of `CMakeLists.txt`\n\nThis file serves as the top-level build configuration for the **Nostroma Engine** (version 0.1.26). Its primary responsibilities are:\n\n1.  **Project Defini"
  },
  {
   "label": "native-v0.1.26-IQ3_XXS-1x3090",
@@ -785,10 +785,10 @@
   "engine_prompt_tps": 885.5,
   "engine_decode_tps": 89.9,
   "log_lines": [
-   "strata serve: prompt 1149 tokens = 0 reused + 1149 read in 1298 ms (885.5 tok/s), 256 generated in 2847 ms (89.9 tok/s), drafts accepted 156 of 215, 1 checkpoints",
-   "strata serve: decode expert cache hit rate: 97.1% (144603 hits / 148933 lookups)"
+   "nostroma serve: prompt 1149 tokens = 0 reused + 1149 read in 1298 ms (885.5 tok/s), 256 generated in 2847 ms (89.9 tok/s), drafts accepted 156 of 215, 1 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 97.1% (144603 hits / 148933 lookups)"
   ],
-  "answer_head": "Based on the content provided, here is an explanation of the `CMakeLists.txt` file and a proposed improvement.\n\n### Explanation of `CMakeLists.txt`\n\nThis file is the top-level build configuration for the **Strata Engine** (specifically Phase 1, Step 1). Its primary responsibilities are:\n\n1.  **Proje"
+  "answer_head": "Based on the content provided, here is an explanation of the `CMakeLists.txt` file and a proposed improvement.\n\n### Explanation of `CMakeLists.txt`\n\nThis file is the top-level build configuration for the **Nostroma Engine** (specifically Phase 1, Step 1). Its primary responsibilities are:\n\n1.  **Proje"
  },
  {
   "label": "native-v0.1.26-IQ3_XXS-1x3090",
@@ -808,10 +808,10 @@
   "engine_prompt_tps": 869.7,
   "engine_decode_tps": 95.1,
   "log_lines": [
-   "strata serve: prompt 1135 tokens = 0 reused + 1135 read in 1305 ms (869.7 tok/s), 256 generated in 2691 ms (95.1 tok/s), drafts accepted 159 of 217, 1 checkpoints",
-   "strata serve: decode expert cache hit rate: 97.2% (145229 hits / 149472 lookups)"
+   "nostroma serve: prompt 1135 tokens = 0 reused + 1135 read in 1305 ms (869.7 tok/s), 256 generated in 2691 ms (95.1 tok/s), drafts accepted 159 of 217, 1 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 97.2% (145229 hits / 149472 lookups)"
   ],
-  "answer_head": "The `CMakeLists.txt` file defines the top-level build configuration for the **Strata Engine** project. Its primary responsibilities include:\n\n1.  **Project Definition**: Sets the project name (`strata`), version (`0.1.26`), and language standard (C++20).\n2.  **Target Management**: Conditionally adds"
+  "answer_head": "The `CMakeLists.txt` file defines the top-level build configuration for the **Nostroma Engine** project. Its primary responsibilities include:\n\n1.  **Project Definition**: Sets the project name (`nostroma`), version (`0.1.26`), and language standard (C++20).\n2.  **Target Management**: Conditionally adds"
  },
  {
   "label": "native-v0.1.26-IQ3_XXS-1x3090",
@@ -831,10 +831,10 @@
   "engine_prompt_tps": 1784.6,
   "engine_decode_tps": 63.0,
   "log_lines": [
-   "strata serve: prompt 232183 tokens = 0 reused + 232183 read in 130101 ms (1784.6 tok/s), 256 generated in 4061 ms (63.0 tok/s), drafts accepted 150 of 240, 6 checkpoints",
-   "strata serve: decode expert cache hit rate: 93.7% (149829 hits / 159942 lookups)"
+   "nostroma serve: prompt 232183 tokens = 0 reused + 232183 read in 130101 ms (1784.6 tok/s), 256 generated in 4061 ms (63.0 tok/s), drafts accepted 150 of 240, 6 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 93.7% (149829 hits / 159942 lookups)"
   ],
-  "answer_head": "The last file is `serve/server.py` (the listing is truncated at the very end, in the `main()` function where it assigns `svc.gpu_index`).\n\n## What it does\n\nIt is the HTTP API layer of Strata: a pure-Python bridge between OpenAI/Anthropic-style clients and the C++ engine. Concretely:\n\n- **Engine adap"
+  "answer_head": "The last file is `serve/server.py` (the listing is truncated at the very end, in the `main()` function where it assigns `svc.gpu_index`).\n\n## What it does\n\nIt is the HTTP API layer of Nostroma: a pure-Python bridge between OpenAI/Anthropic-style clients and the C++ engine. Concretely:\n\n- **Engine adap"
  },
  {
   "label": "native-v0.1.26-IQ3_XXS-1x3090",
@@ -854,8 +854,8 @@
   "engine_prompt_tps": 1721.6,
   "engine_decode_tps": 67.3,
   "log_lines": [
-   "strata serve: prompt 259589 tokens = 0 reused + 259589 read in 150784 ms (1721.6 tok/s), 92 generated in 1367 ms (67.3 tok/s), drafts accepted 61 of 75, 6 checkpoints",
-   "strata serve: decode expert cache hit rate: 90.0% (43983 hits / 48863 lookups)"
+   "nostroma serve: prompt 259589 tokens = 0 reused + 259589 read in 150784 ms (1721.6 tok/s), 92 generated in 1367 ms (67.3 tok/s), drafts accepted 61 of 75, 6 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 90.0% (43983 hits / 48863 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand the codebase and the last file in detail."
  },
@@ -877,10 +877,10 @@
   "engine_prompt_tps": 1725.6,
   "engine_decode_tps": 69.3,
   "log_lines": [
-   "strata serve: prompt 261068 tokens = 0 reused + 261068 read in 151288 ms (1725.6 tok/s), 256 generated in 3693 ms (69.3 tok/s), drafts accepted 151 of 231, 6 checkpoints",
-   "strata serve: decode expert cache hit rate: 96.3% (153481 hits / 159304 lookups)"
+   "nostroma serve: prompt 261068 tokens = 0 reused + 261068 read in 151288 ms (1725.6 tok/s), 256 generated in 3693 ms (69.3 tok/s), drafts accepted 151 of 231, 6 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 96.3% (153481 hits / 159304 lookups)"
   ],
-  "answer_head": "I'll analyze the last file in the repository listing and then propose a concrete improvement.\n\n## What `serve/web/app.js` does\n\nThis file is the **entire client-side logic of the Strata web application** \u2014 a framework-free, single-file JavaScript app that talks only to the local Strata server. It po"
+  "answer_head": "I'll analyze the last file in the repository listing and then propose a concrete improvement.\n\n## What `serve/web/app.js` does\n\nThis file is the **entire client-side logic of the Nostroma web application** \u2014 a framework-free, single-file JavaScript app that talks only to the local Nostroma server. It po"
  },
  {
   "label": "native-v0.1.26-IQ3_XXS-1x3090",
@@ -900,10 +900,10 @@
   "engine_prompt_tps": 2110.2,
   "engine_decode_tps": 90.6,
   "log_lines": [
-   "strata serve: prompt 34932 tokens = 0 reused + 34932 read in 16554 ms (2110.2 tok/s), 256 generated in 2827 ms (90.6 tok/s), drafts accepted 167 of 216, 3 checkpoints",
-   "strata serve: decode expert cache hit rate: 94.1% (133137 hits / 141416 lookups)"
+   "nostroma serve: prompt 34932 tokens = 0 reused + 34932 read in 16554 ms (2110.2 tok/s), 256 generated in 2827 ms (90.6 tok/s), drafts accepted 167 of 216, 3 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 94.1% (133137 hits / 141416 lookups)"
   ],
-  "answer_head": "I'll analyze the last file in the repository listing and propose an improvement.\n\n## What `docs/DETAILS.md` does\n\nThis is the comprehensive technical documentation file for the Strata project. It serves as the single source of truth for:\n\n1. **Performance benchmarks** \u2014 Detailed tables of prompt-pro"
+  "answer_head": "I'll analyze the last file in the repository listing and propose an improvement.\n\n## What `docs/DETAILS.md` does\n\nThis is the comprehensive technical documentation file for the Nostroma project. It serves as the single source of truth for:\n\n1. **Performance benchmarks** \u2014 Detailed tables of prompt-pro"
  },
  {
   "label": "native-v0.1.26-IQ3_XXS-1x3090",
@@ -923,10 +923,10 @@
   "engine_prompt_tps": 2160.4,
   "engine_decode_tps": 78.3,
   "log_lines": [
-   "strata serve: prompt 31582 tokens = 0 reused + 31582 read in 14619 ms (2160.4 tok/s), 256 generated in 3271 ms (78.3 tok/s), drafts accepted 161 of 240, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 96.0% (151459 hits / 157708 lookups)"
+   "nostroma serve: prompt 31582 tokens = 0 reused + 31582 read in 14619 ms (2160.4 tok/s), 256 generated in 3271 ms (78.3 tok/s), drafts accepted 161 of 240, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 96.0% (151459 hits / 157708 lookups)"
   ],
-  "answer_head": "The last file in the provided list is `docs/DETAILS.md`.\n\n### What it does\nThis file serves as the **comprehensive technical manual and reference guide** for the Strata engine. While the `README.md` focuses on quick installation and high-level marketing, `DETAILS.md` provides the deep technical spec"
+  "answer_head": "The last file in the provided list is `docs/DETAILS.md`.\n\n### What it does\nThis file serves as the **comprehensive technical manual and reference guide** for the Nostroma engine. While the `README.md` focuses on quick installation and high-level marketing, `DETAILS.md` provides the deep technical spec"
  },
  {
   "label": "native-v0.1.26-IQ3_XXS-1x3090",
@@ -946,10 +946,10 @@
   "engine_prompt_tps": 2161.9,
   "engine_decode_tps": 91.9,
   "log_lines": [
-   "strata serve: prompt 31602 tokens = 0 reused + 31602 read in 14618 ms (2161.9 tok/s), 256 generated in 2785 ms (91.9 tok/s), drafts accepted 160 of 207, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 96.5% (137828 hits / 142765 lookups)"
+   "nostroma serve: prompt 31602 tokens = 0 reused + 31602 read in 14618 ms (2161.9 tok/s), 256 generated in 2785 ms (91.9 tok/s), drafts accepted 160 of 207, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 96.5% (137828 hits / 142765 lookups)"
   ],
-  "answer_head": "The last file in the provided list is `docs/DETAILS.md`.\n\n### What it does\nThis file serves as the comprehensive technical documentation and user manual for the \"Strata\" engine. It bridges the gap between the high-level marketing pitch in `README.md` and the raw source code. Specifically, it:\n\n1.  *"
+  "answer_head": "The last file in the provided list is `docs/DETAILS.md`.\n\n### What it does\nThis file serves as the comprehensive technical documentation and user manual for the \"Nostroma\" engine. It bridges the gap between the high-level marketing pitch in `README.md` and the raw source code. Specifically, it:\n\n1.  *"
  },
  {
   "label": "native-v0.1.26-IQ3_XXS-1x3090",
@@ -969,10 +969,10 @@
   "engine_prompt_tps": 1745.2,
   "engine_decode_tps": 91.7,
   "log_lines": [
-   "strata serve: prompt 3881 tokens = 0 reused + 3881 read in 2224 ms (1745.2 tok/s), 256 generated in 2791 ms (91.7 tok/s), drafts accepted 155 of 215, 1 checkpoints",
-   "strata serve: decode expert cache hit rate: 97.3% (146401 hits / 150495 lookups)"
+   "nostroma serve: prompt 3881 tokens = 0 reused + 3881 read in 2224 ms (1745.2 tok/s), 256 generated in 2791 ms (91.7 tok/s), drafts accepted 155 of 215, 1 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 97.3% (146401 hits / 150495 lookups)"
   ],
-  "answer_head": "The `CMakeLists.txt` file is the top-level build configuration for the **Strata Engine**. It orchestrates the compilation of the project, handling complex dependencies between CPU-only components, GPU kernels (CUDA/HIP), and testing infrastructure.\n\n### What the file does:\n\n1.  **Project Configurati"
+  "answer_head": "The `CMakeLists.txt` file is the top-level build configuration for the **Nostroma Engine**. It orchestrates the compilation of the project, handling complex dependencies between CPU-only components, GPU kernels (CUDA/HIP), and testing infrastructure.\n\n### What the file does:\n\n1.  **Project Configurati"
  },
  {
   "label": "native-v0.1.26-IQ3_XXS-1x3090",
@@ -992,8 +992,8 @@
   "engine_prompt_tps": 1772.2,
   "engine_decode_tps": 85.5,
   "log_lines": [
-   "strata serve: prompt 4200 tokens = 0 reused + 4200 read in 2370 ms (1772.2 tok/s), 142 generated in 1660 ms (85.5 tok/s), drafts accepted 96 of 114, 1 checkpoints",
-   "strata serve: decode expert cache hit rate: 89.6% (64163 hits / 71608 lookups)"
+   "nostroma serve: prompt 4200 tokens = 0 reused + 4200 read in 2370 ms (1772.2 tok/s), 142 generated in 1660 ms (85.5 tok/s), drafts accepted 96 of 114, 1 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 89.6% (64163 hits / 71608 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand the context better."
  },
@@ -1015,10 +1015,10 @@
   "engine_prompt_tps": 1775.8,
   "engine_decode_tps": 89.2,
   "log_lines": [
-   "strata serve: prompt 4201 tokens = 0 reused + 4201 read in 2366 ms (1775.8 tok/s), 256 generated in 2868 ms (89.2 tok/s), drafts accepted 161 of 222, 1 checkpoints",
-   "strata serve: decode expert cache hit rate: 96.0% (144002 hits / 149996 lookups)"
+   "nostroma serve: prompt 4201 tokens = 0 reused + 4201 read in 2366 ms (1775.8 tok/s), 256 generated in 2868 ms (89.2 tok/s), drafts accepted 161 of 222, 1 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 96.0% (144002 hits / 149996 lookups)"
   ],
-  "answer_head": "The `CMakeLists.txt` file is the top-level build configuration for the **Strata Engine**. Its primary responsibilities are:\n\n1.  **Project Definition**: Sets up the project name (`strata`), version (`0.1.26`), and C++20 standard.\n2.  **Backend Selection**: Manages mutually exclusive GPU backends (CU"
+  "answer_head": "The `CMakeLists.txt` file is the top-level build configuration for the **Nostroma Engine**. Its primary responsibilities are:\n\n1.  **Project Definition**: Sets up the project name (`nostroma`), version (`0.1.26`), and C++20 standard.\n2.  **Backend Selection**: Manages mutually exclusive GPU backends (CU"
  },
  {
   "label": "native-v0.1.26-IQ3_XXS-1x3090-needle",
@@ -1038,8 +1038,8 @@
   "engine_prompt_tps": 1933.6,
   "engine_decode_tps": 67.4,
   "log_lines": [
-   "strata serve: prompt 17346 tokens = 0 reused + 17346 read in 8971 ms (1933.6 tok/s), 8 generated in 119 ms (67.4 tok/s), drafts accepted 6 of 6, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 80.6% (3014 hits / 3740 lookups)"
+   "nostroma serve: prompt 17346 tokens = 0 reused + 17346 read in 8971 ms (1933.6 tok/s), 8 generated in 119 ms (67.4 tok/s), drafts accepted 6 of 6, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 80.6% (3014 hits / 3740 lookups)"
   ],
   "answer_head": "37E3DB14",
   "needle_found": true
@@ -1062,8 +1062,8 @@
   "engine_prompt_tps": 2134.7,
   "engine_decode_tps": 66.5,
   "log_lines": [
-   "strata serve: prompt 29820 tokens = 0 reused + 29820 read in 13969 ms (2134.7 tok/s), 8 generated in 120 ms (66.5 tok/s), drafts accepted 6 of 6, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 80.6% (3033 hits / 3764 lookups)"
+   "nostroma serve: prompt 29820 tokens = 0 reused + 29820 read in 13969 ms (2134.7 tok/s), 8 generated in 120 ms (66.5 tok/s), drafts accepted 6 of 6, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 80.6% (3033 hits / 3764 lookups)"
   ],
   "answer_head": "64EC0999",
   "needle_found": true
@@ -1086,8 +1086,8 @@
   "engine_prompt_tps": 1816.6,
   "engine_decode_tps": 64.9,
   "log_lines": [
-   "strata serve: prompt 7493 tokens = 0 reused + 7493 read in 4125 ms (1816.6 tok/s), 8 generated in 123 ms (64.9 tok/s), drafts accepted 6 of 6, 1 checkpoints",
-   "strata serve: decode expert cache hit rate: 74.8% (2704 hits / 3615 lookups)"
+   "nostroma serve: prompt 7493 tokens = 0 reused + 7493 read in 4125 ms (1816.6 tok/s), 8 generated in 123 ms (64.9 tok/s), drafts accepted 6 of 6, 1 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 74.8% (2704 hits / 3615 lookups)"
   ],
   "answer_head": "0E6415FF",
   "needle_found": true
@@ -1110,15 +1110,15 @@
   "engine_prompt_tps": 2114.8,
   "engine_decode_tps": 75.1,
   "log_lines": [
-   "strata serve: prompt 15636 tokens = 0 reused + 15636 read in 7394 ms (2114.8 tok/s), 256 generated in 3410 ms (75.1 tok/s), drafts accepted 152 of 215, 1 checkpoints",
-   "strata serve: decode expert cache hit rate: 93.0% (136865 hits / 147168 lookups)"
+   "nostroma serve: prompt 15636 tokens = 0 reused + 15636 read in 7394 ms (2114.8 tok/s), 256 generated in 3410 ms (75.1 tok/s), drafts accepted 152 of 215, 1 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 93.0% (136865 hits / 147168 lookups)"
   ],
   "answer_head": "## What `README.md` does\n\n`README.md` is the project's landing page and primary user-facing documentation. It serves several purposes:\n\n1. **Marketing/overview** \u2014 Opens with a headline claim (\"Run a 125-billion-parameter AI model on a normal gaming PC\") and a visual demo (the pagoda video) to immed",
   "turn2_ttft_s": 0.438,
   "turn2_prompt_tokens": 15915,
   "turn2_log_lines": [
-   "strata serve: prompt 15915 tokens = 15892 reused + 23 read in 332 ms (69.3 tok/s), 46 generated in 661 ms (69.6 tok/s), drafts accepted 27 of 44, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 96.4% (29047 hits / 30124 lookups)"
+   "nostroma serve: prompt 15915 tokens = 15892 reused + 23 read in 332 ms (69.3 tok/s), 46 generated in 661 ms (69.6 tok/s), drafts accepted 27 of 44, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 96.4% (29047 hits / 30124 lookups)"
   ]
  },
  {
@@ -1139,10 +1139,10 @@
   "engine_prompt_tps": 1071.8,
   "engine_decode_tps": 83.7,
   "log_lines": [
-   "strata serve: prompt 28314 tokens = 0 reused + 28314 read in 26417 ms (1071.8 tok/s), 256 generated in 3058 ms (83.7 tok/s), drafts accepted 147 of 251, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 98.9% (171443 hits / 173268 lookups)"
+   "nostroma serve: prompt 28314 tokens = 0 reused + 28314 read in 26417 ms (1071.8 tok/s), 256 generated in 3058 ms (83.7 tok/s), drafts accepted 147 of 251, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 98.9% (171443 hits / 173268 lookups)"
   ],
-  "answer_head": "The last file in the repository listing is `docs/DETAILS.md`.\n\n### What `docs/DETAILS.md` does\n\nIt is the comprehensive technical documentation and reference manual for the Strata engine. While the `README.md` focuses on quick installation and high-level usage, `DETAILS.md` provides the deep technic"
+  "answer_head": "The last file in the repository listing is `docs/DETAILS.md`.\n\n### What `docs/DETAILS.md` does\n\nIt is the comprehensive technical documentation and reference manual for the Nostroma engine. While the `README.md` focuses on quick installation and high-level usage, `DETAILS.md` provides the deep technic"
  },
  {
   "label": "native-v0.1.26-IQ3_XXS-2x3090-auto",
@@ -1162,8 +1162,8 @@
   "engine_prompt_tps": 1185.2,
   "engine_decode_tps": 96.7,
   "log_lines": [
-   "strata serve: prompt 31633 tokens = 0 reused + 31633 read in 26691 ms (1185.2 tok/s), 256 generated in 2648 ms (96.7 tok/s), drafts accepted 160 of 214, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 99.1% (147426 hits / 148799 lookups)"
+   "nostroma serve: prompt 31633 tokens = 0 reused + 31633 read in 26691 ms (1185.2 tok/s), 256 generated in 2648 ms (96.7 tok/s), drafts accepted 160 of 214, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 99.1% (147426 hits / 148799 lookups)"
   ],
   "answer_head": "I cannot analyze the last file because the provided repository content is truncated. The `docs/DETAILS.md` file cuts off mid-sentence in the \"Using it\" section (`...if y`), and no subsequent files are shown.\n\nHowever, I can analyze the **`chat.py`** file, which is the last *complete* file provided i"
  },
@@ -1185,10 +1185,10 @@
   "engine_prompt_tps": 1158.9,
   "engine_decode_tps": 96.9,
   "log_lines": [
-   "strata serve: prompt 31603 tokens = 0 reused + 31603 read in 27271 ms (1158.9 tok/s), 256 generated in 2641 ms (96.9 tok/s), drafts accepted 154 of 209, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 99.6% (148622 hits / 149275 lookups)"
+   "nostroma serve: prompt 31603 tokens = 0 reused + 31603 read in 27271 ms (1158.9 tok/s), 256 generated in 2641 ms (96.9 tok/s), drafts accepted 154 of 209, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 99.6% (148622 hits / 149275 lookups)"
   ],
-  "answer_head": "An analysis of the last file (`docs/DETAILS.md`) and a proposed improvement follows.\n\n### What the file does\n\n`docs/DETAILS.md` serves as the comprehensive technical manual for the Strata engine. It bridges the gap between the high-level marketing in the `README.md` and the raw source code. Specific"
+  "answer_head": "An analysis of the last file (`docs/DETAILS.md`) and a proposed improvement follows.\n\n### What the file does\n\n`docs/DETAILS.md` serves as the comprehensive technical manual for the Nostroma engine. It bridges the gap between the high-level marketing in the `README.md` and the raw source code. Specific"
  },
  {
   "label": "native-v0.1.26-IQ3_XXS-2x3090-auto-needle",
@@ -1208,8 +1208,8 @@
   "engine_prompt_tps": 1119.9,
   "engine_decode_tps": 83.8,
   "log_lines": [
-   "strata serve: prompt 17344 tokens = 0 reused + 17344 read in 15487 ms (1119.9 tok/s), 8 generated in 96 ms (83.8 tok/s), drafts accepted 6 of 6, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 97.3% (4205 hits / 4320 lookups)"
+   "nostroma serve: prompt 17344 tokens = 0 reused + 17344 read in 15487 ms (1119.9 tok/s), 8 generated in 96 ms (83.8 tok/s), drafts accepted 6 of 6, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 97.3% (4205 hits / 4320 lookups)"
   ],
   "answer_head": "05449BFC",
   "needle_found": true
@@ -1232,8 +1232,8 @@
   "engine_prompt_tps": 1146.7,
   "engine_decode_tps": 103.9,
   "log_lines": [
-   "strata serve: prompt 29825 tokens = 0 reused + 29825 read in 26009 ms (1146.7 tok/s), 9 generated in 87 ms (103.9 tok/s), drafts accepted 6 of 6, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 98.2% (4241 hits / 4320 lookups)"
+   "nostroma serve: prompt 29825 tokens = 0 reused + 29825 read in 26009 ms (1146.7 tok/s), 9 generated in 87 ms (103.9 tok/s), drafts accepted 6 of 6, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 98.2% (4241 hits / 4320 lookups)"
   ],
   "answer_head": "98C00B03",
   "needle_found": true
@@ -1256,8 +1256,8 @@
   "engine_prompt_tps": 953.1,
   "engine_decode_tps": 58.6,
   "log_lines": [
-   "strata serve: prompt 7493 tokens = 0 reused + 7493 read in 7861 ms (953.1 tok/s), 9 generated in 154 ms (58.6 tok/s), drafts accepted 6 of 6, 1 checkpoints",
-   "strata serve: decode expert cache hit rate: 94.0% (4062 hits / 4320 lookups)"
+   "nostroma serve: prompt 7493 tokens = 0 reused + 7493 read in 7861 ms (953.1 tok/s), 9 generated in 154 ms (58.6 tok/s), drafts accepted 6 of 6, 1 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 94.0% (4062 hits / 4320 lookups)"
   ],
   "answer_head": "69231569",
   "needle_found": true
@@ -1280,15 +1280,15 @@
   "engine_prompt_tps": 1154.6,
   "engine_decode_tps": 85.6,
   "log_lines": [
-   "strata serve: prompt 15635 tokens = 0 reused + 15635 read in 13541 ms (1154.6 tok/s), 44 generated in 514 ms (85.6 tok/s), drafts accepted 30 of 36, 1 checkpoints",
-   "strata serve: decode expert cache hit rate: 97.9% (24433 hits / 24957 lookups)"
+   "nostroma serve: prompt 15635 tokens = 0 reused + 15635 read in 13541 ms (1154.6 tok/s), 44 generated in 514 ms (85.6 tok/s), drafts accepted 30 of 36, 1 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 97.9% (24433 hits / 24957 lookups)"
   ],
   "answer_head": "I'll start by exploring the repository structure to understand the context better.",
   "turn2_ttft_s": 0.577,
   "turn2_prompt_tokens": 15672,
   "turn2_log_lines": [
-   "strata serve: prompt 15672 tokens = 15628 reused + 44 read in 490 ms (89.8 tok/s), 48 generated in 567 ms (84.6 tok/s), drafts accepted 28 of 43, 2 checkpoints",
-   "strata serve: decode expert cache hit rate: 98.6% (31236 hits / 31679 lookups)"
+   "nostroma serve: prompt 15672 tokens = 15628 reused + 44 read in 490 ms (89.8 tok/s), 48 generated in 567 ms (84.6 tok/s), drafts accepted 28 of 43, 2 checkpoints",
+   "nostroma serve: decode expert cache hit rate: 98.6% (31236 hits / 31679 lookups)"
   ]
  }
 ]

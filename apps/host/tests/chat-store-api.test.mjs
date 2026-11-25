@@ -15,9 +15,9 @@ async function freePort() { const s = net.createServer(); await new Promise(r =>
 async function startHost(home) {
   const port = await freePort();
   const env = {
-    ...process.env, STRATA_HOME: home, STRATA_MODELS_DIR: join(home, 'models'), STRATA_PORT: String(port),
-    STRATA_SHARE_PORT: String(await freePort()), STRATA_TUNNEL_PORT: String(await freePort()), STRATA_REAL_ENGINE: '1',
-    STRATA_SETTINGS_FILE: join(home, 'app-settings.json'), STRATA_COMPONENTS_DIR: join(home, 'components'),
+    ...process.env, NOSTROMA_HOME: home, NOSTROMA_MODELS_DIR: join(home, 'models'), NOSTROMA_PORT: String(port),
+    NOSTROMA_SHARE_PORT: String(await freePort()), NOSTROMA_TUNNEL_PORT: String(await freePort()), NOSTROMA_REAL_ENGINE: '1',
+    NOSTROMA_SETTINGS_FILE: join(home, 'app-settings.json'), NOSTROMA_COMPONENTS_DIR: join(home, 'components'),
     LOCALAPPDATA: join(home, 'Local'), APPDATA: join(home, 'Roaming'), XDG_DATA_HOME: join(home, 'xdg-data'),
     XDG_STATE_HOME: join(home, 'xdg-state'), XDG_CONFIG_HOME: join(home, 'xdg-config'),
   };
@@ -29,16 +29,16 @@ async function startHost(home) {
   const base = `http://127.0.0.1:${port}`;
   return { base, stop: async () => { host.kill('SIGKILL'); await exit; } };
 }
-const named = (window, extra = {}) => ({ 'x-strata-client': 'ui', 'x-strata-window': window, ...extra });
+const named = (window, extra = {}) => ({ 'x-nostroma-client': 'ui', 'x-nostroma-window': window, ...extra });
 const chat = (id, n, len) => ({ id, title: `Chat ${id}`, createdAt: '2026-11-04T10:00:00.000Z', updatedAt: '2026-11-04T10:00:01.000Z', messages: Array.from({ length: n }, (_, i) => ({ id: `${id}-${i}`, role: i % 2 ? 'assistant' : 'user', content: String.fromCharCode(97 + (i % 26)).repeat(len) })) });
 
 test('the chat routes: named page only, other sites refused, save / read / list / delete, a 12 MB chat, and two hosts one after the other see the same files', async () => {
-  const home = await mkdtemp(join(tmpdir(), 'strata-chats-api-'));
+  const home = await mkdtemp(join(tmpdir(), 'nostroma-chats-api-'));
   let h = await startHost(home);
   try {
     // The page must name itself; a bare request (what another site's page can send without asking first) is refused.
     assert.equal((await fetch(`${h.base}/api/chats`)).status, 403);
-    assert.equal((await fetch(`${h.base}/api/chats`, { headers: { 'x-strata-client': 'ui', origin: 'https://example.com' } })).status, 403, 'a page from another site is refused');
+    assert.equal((await fetch(`${h.base}/api/chats`, { headers: { 'x-nostroma-client': 'ui', origin: 'https://example.com' } })).status, 403, 'a page from another site is refused');
     const empty = await (await fetch(`${h.base}/api/chats`, { headers: named('w1') })).json();
     assert.deepEqual([empty.v, empty.chats], [1, []]);
 
@@ -80,7 +80,7 @@ test('the chat routes: named page only, other sites refused, save / read / list 
 });
 
 test('a save in one window is announced to the others on the event stream, with the name of the window that made it', async () => {
-  const home = await mkdtemp(join(tmpdir(), 'strata-chats-events-'));
+  const home = await mkdtemp(join(tmpdir(), 'nostroma-chats-events-'));
   const h = await startHost(home);
   try {
     const controller = new AbortController();
@@ -99,7 +99,7 @@ test('a save in one window is announced to the others on the event stream, with 
 });
 
 test('a page that comes back asks which chats have a turn running; with none, the answer is an empty list and "nothing to take over"', async () => {
-  const home = await mkdtemp(join(tmpdir(), 'strata-chats-active-'));
+  const home = await mkdtemp(join(tmpdir(), 'nostroma-chats-active-'));
   const h = await startHost(home);
   try {
     assert.deepEqual(await (await fetch(`${h.base}/api/chat/active`)).json(), { turns: [] });

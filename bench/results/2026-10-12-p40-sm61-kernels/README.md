@@ -5,14 +5,14 @@ and four things were changed where it pointed. Each gives exactly the bits of wh
 
 | What | Was on sm_61 | Now on sm_61 | Switch |
 | --- | --- | --- | --- |
-| Dequantization of the dense weights for the prompt GEMMs (Q4_K / Q5_K / Q6_K / IQ4_XS) | a thread per 32 values, byte loads, 2-byte stores 64 bytes apart | a thread per 8 values, 16-bit loads, one 16-byte store | on by default, `STRATA_DEQUANT_WIDE=0` |
-| The large dense prompt GEMMs (qkv, query, gate and output projections) | `cublasGemmEx` on FP16 operands | `cublasSgemm` on FP32 copies | **opt-in**, `STRATA_DENSE_F32=1` |
-| Routed experts in VRAM (`native_expert_grouped`) | the CUDA layout (mode 0) | mode 8 | on by default, `STRATA_SM61_TABLE=0` |
-| Dense 1-4 column GEMVs and the head (`native_mmvq_il`) | `native_mmvq` | the interleaved kernel with a table read off the P40 (`kIlRows_61`, `kIl1Rows_61`) | on by default, `STRATA_SM61_TABLE=0` |
+| Dequantization of the dense weights for the prompt GEMMs (Q4_K / Q5_K / Q6_K / IQ4_XS) | a thread per 32 values, byte loads, 2-byte stores 64 bytes apart | a thread per 8 values, 16-bit loads, one 16-byte store | on by default, `NOSTROMA_DEQUANT_WIDE=0` |
+| The large dense prompt GEMMs (qkv, query, gate and output projections) | `cublasGemmEx` on FP16 operands | `cublasSgemm` on FP32 copies | **opt-in**, `NOSTROMA_DENSE_F32=1` |
+| Routed experts in VRAM (`native_expert_grouped`) | the CUDA layout (mode 0) | mode 8 | on by default, `NOSTROMA_SM61_TABLE=0` |
+| Dense 1-4 column GEMVs and the head (`native_mmvq_il`) | `native_mmvq` | the interleaved kernel with a table read off the P40 (`kIlRows_61`, `kIl1Rows_61`) | on by default, `NOSTROMA_SM61_TABLE=0` |
 
 Through the server, medians of 3 requests, two runs per build alternated, every run started with the card at 65 C:
 
-| | `a0116b2` | this change (defaults) | this change + `STRATA_DENSE_F32=1` |
+| | `a0116b2` | this change (defaults) | this change + `NOSTROMA_DENSE_F32=1` |
 | --- | ---: | ---: | ---: |
 | 565-token prompt, tok/s | 203 / 205 and 205 / 210 | 256 / 255 | 254 / 252 |
 | 7,047-token prompt, tok/s | 360-365 or 430-432, by the token count (below) | 369-374 or 437-443, by the token count | 464-474 at every count |
@@ -28,7 +28,7 @@ size in the GPU stage profile (49.1 -> 45.6 ms per window), which is the steadie
   20 vCPUs of a Xeon E5-2695 v4 (AVX2, no AVX-512), 98 GB RAM, Debian 13, kernel 6.12. The model is on a virtual
   disk that reads as rotational; every run had the files in the page cache. Nothing else used the card.
 - CUDA 12.4.131 (Debian's toolkit; **cuBLAS 12.4.5.8**), GCC 14.2.
-- Engine: `main` at `a0116b2` (0.1.43.1), `-DCMAKE_CUDA_ARCHITECTURES=61 -DSTRATA_EXPERIMENTAL_SM60=ON`, built
+- Engine: `main` at `a0116b2` (0.1.43.1), `-DCMAKE_CUDA_ARCHITECTURES=61 -DNOSTROMA_EXPERIMENTAL_SM60=ON`, built
   unchanged ("base") and with this change. The server and everything else unchanged.
 - Model: setup's IQ3_S (`ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF`, both shards, the native pack, the shipped
   expert profile and MTP head). Setup's config after `setup.sh --calibrate`: `--expert-cache auto --prefill auto
@@ -41,7 +41,7 @@ size in the GPU stage profile (49.1 -> 45.6 ms per window), which is the steadie
 
 ## Where the time goes on a P40 (base build)
 
-`STRATA_PREFILL_TIMING=1 STRATA_DECODE_TIMING=1 STRATA_VERIFY_PROFILE=1` ([profile-base.txt](profile-base.txt)), and
+`NOSTROMA_PREFILL_TIMING=1 NOSTROMA_DECODE_TIMING=1 NOSTROMA_VERIFY_PROFILE=1` ([profile-base.txt](profile-base.txt)), and
 one run under `nvprof` for the kernels' names.
 
 - The prompt's GPU timeline equals its wall time (7,038 tokens: 16,005 of 16,070 ms). Waiting for expert copies is
@@ -126,11 +126,11 @@ cells of run 1:
 
 [engine-runs.txt](engine-runs.txt) has every request. Each run is one server start; before it the card cooled to
 65 C (it ends a run at 82-84 C). Two builds of the change were run: without the GEMM route (what this change does by
-default) and with it (`STRATA_DENSE_F32=1`).
+default) and with it (`NOSTROMA_DENSE_F32=1`).
 
 Prompt read time by the prompt's token count, engine ms (a chunk has 7 tokens fewer):
 
-| prompt tokens | base | defaults | + `STRATA_DENSE_F32=1` |
+| prompt tokens | base | defaults | + `NOSTROMA_DENSE_F32=1` |
 | ---: | --- | --- | --- |
 | 7,043 | 16,374 / 16,370 | 15,905 | 14,845 |
 | 7,046 | 16,352 / 16,334 | 15,963 | 15,065 |
@@ -138,23 +138,23 @@ Prompt read time by the prompt's token count, engine ms (a chunk has 7 tokens fe
 | 7,048 | 19,540 / 19,384 / 19,600 / 19,489 / 19,334 | 19,081 / 18,902 / 18,856 | (no request of this size) |
 | 7,049 | 19,533 | (no request of this size) | 14,861 / 14,914 |
 
-GPU stages per verify window (`STRATA_VERIFY_PROFILE=1`; three requests after the short prompt 49.2 / 48.3 / 49.1 ->
+GPU stages per verify window (`NOSTROMA_VERIFY_PROFILE=1`; three requests after the short prompt 49.2 / 48.3 / 49.1 ->
 46.8 / 45.6 / 45.0 ms, after the long one 48.2 / 49.5 / 49.0 -> 45.2 / 45.2 / 44.9 ms). VRAM hits 9.6 +
 3.1 -> 7.5 + 2.5 ms, the GDN qkv / gate GEMVs 4.2 + 2.5 -> 3.9 + 2.2 ms, the QSA query GEMV 1.83 -> 1.60 ms, the
 head 2.87 -> 2.45 ms; the other stages unchanged ([profile-base.txt](profile-base.txt),
 [profile-new.txt](profile-new.txt)).
 
-With `STRATA_DEQUANT_WIDE=0 STRATA_SM61_TABLE=0 STRATA_DENSE_F32=0` the changed build measures as the base one:
+With `NOSTROMA_DEQUANT_WIDE=0 NOSTROMA_SM61_TABLE=0 NOSTROMA_DENSE_F32=0` the changed build measures as the base one:
 210 tok/s short, 360 / 431 / 365 tok/s long (7,048 / 7,047 / 7,048 tokens), decode 33.3 tok/s.
 
 ## Answers
 
 Seven fixed prompts (`equal_check.py`: code, prose, arithmetic, JSON, Italian, a 2.6K-token summary, a needle in 3K
 tokens), greedy, first requests after a start. With `--prompt-cache 0 --adapt-swaps 0 --pcie-frac 0
-STRATA_PREFILL_CPU_SHARE=0 STRATA_ROUTE_TAIL_SKIP=0 STRATA_IQ_MT_MIN=1`, two runs of the base build and two of the
+NOSTROMA_PREFILL_CPU_SHARE=0 NOSTROMA_ROUTE_TAIL_SKIP=0 NOSTROMA_IQ_MT_MIN=1`, two runs of the base build and two of the
 changed one (GEMM route on) give **byte-identical answers, 4 of 4 runs on 7 of 7 prompts** (2,900 characters each).
 
-Without `STRATA_IQ_MT_MIN=1` that comparison cannot be made on this CPU: the same build gave two different answers
+Without `NOSTROMA_IQ_MT_MIN=1` that comparison cannot be made on this CPU: the same build gave two different answers
 to the Italian prompt in two runs (drafts accepted 34 of 65 against 33 of 69). 60% of that prompt's experts run on
 the CPU, where a lone token's rows round differently from a group's (`native_gu_mt_min`), and how many drafts a
 window holds depends on timing.
@@ -171,14 +171,14 @@ window holds depends on timing.
 
 - Any other sm_61 card (Tesla P4, GTX 10 series), Windows, two cards or a layer split, `--batch`.
 - cuBLAS other than 12.4.5.8 (see above), the CUDA 13 build, HIP and SYCL: only the sm_61 CUDA 12.4 build (and a
-  compile of the two libraries without `STRATA_EXPERIMENTAL_SM60`) was built here.
+  compile of the two libraries without `NOSTROMA_EXPERIMENTAL_SM60`) was built here.
 - Prompts above 7K tokens, the 32K / 128K sweep, long-context needles, a quality suite: one needle at 3K tokens and
   the byte comparison above are all there is.
 - The engine A/B above was made with two builds of this code that differ from the commits here only in the GEMM
-  route's default (absent in the first, on by default in the second, where it is `STRATA_DENSE_F32=1` here). On the
+  route's default (absent in the first, on by default in the second, where it is `NOSTROMA_DENSE_F32=1` here). On the
   commits as they are: the three parity tools on the P40 (`gemm_f32_parity --quick`, 134 sizes) and one engine pass
   each way, the last lines of `engine-runs.txt`: by default 261 tok/s short, 439-446 tok/s long (7,045-7,047 tokens,
-  the fast side of the line), decode 38.1 / 36.0 tok/s; with `STRATA_DENSE_F32=1` 250 tok/s short, 465-473 long,
+  the fast side of the line), decode 38.1 / 36.0 tok/s; with `NOSTROMA_DENSE_F32=1` 250 tok/s short, 465-473 long,
   decode 37.6 / 34.3.
 
 ## Files

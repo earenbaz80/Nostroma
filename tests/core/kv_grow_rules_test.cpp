@@ -1,10 +1,10 @@
-// The elastic K/V once the expert cache is known (strata/core/kv_grow_rules.hpp): pools made elastic always grow, from
+// The elastic K/V once the expert cache is known (nostroma/core/kv_grow_rules.hpp): pools made elastic always grow, from
 // the cache's slots only when the cache can give them, else from new VRAM; a grow covers the request, never past the context.
-#include "strata/core/kv_grow_rules.hpp"
+#include "nostroma/core/kv_grow_rules.hpp"
 
 #include <cstdio>
 
-using namespace strata::core;
+using namespace nostroma::core;
 
 namespace {
 int failed = 0;

@@ -2,7 +2,7 @@
 //
 // A line-for-line counterpart of vit_gpu.cu (CUDA / HIP): the same host flow, weights as stored (BF16 / F16; F32 matrices become BF16, Q8_0 becomes F16), the same
 // row chunking, the same 16-bit types (F16 q, k, v with 1/sqrt(head size) in q, F16 scores turned into F16 probabilities in place, float32 residual stream,
-// 16-bit product inputs with float32 results) and the same diagnostics (STRATA_VIT_REF_ROUND, STRATA_VIT_ROWS, STRATA_VIT_SCORES, STRATA_VIT_PROF).
+// 16-bit product inputs with float32 results) and the same diagnostics (NOSTROMA_VIT_REF_ROUND, NOSTROMA_VIT_ROWS, NOSTROMA_VIT_SCORES, NOSTROMA_VIT_PROF).
 // Two differences, both forced by oneMKL on the Arc (RESULTS-OWN-3V.md 11):
 //   - the P*V product writes the attention context head by head, ctx[h][token][j] (oneMKL refuses batched outputs that interleave), and the o-projection's
 //     cast reads it back into the token-major 16-bit input (the same numbers);
@@ -23,7 +23,7 @@
 #include <cstdlib>
 #include <cstring>
 
-namespace strata_vit {
+namespace nostroma_vit {
 
 namespace {
 
@@ -200,7 +200,7 @@ void k_softmax_rows_long(sycl::queue& q, uint16_t* S, int n, int ld, int rows) {
 
 size_t grid_for(size_t n) { return std::min<size_t>((n + 255) / 256, 65535) * 256; }
 
-// y[i] rounded to the 16-bit kind and back (STRATA_VIT_REF_ROUND)
+// y[i] rounded to the 16-bit kind and back (NOSTROMA_VIT_REF_ROUND)
 void k_round(sycl::queue& q, float* y, size_t n, int kind) {
     const size_t g = grid_for(n);
     q.parallel_for(sycl::nd_range<1>(g, 256), [=](sycl::nd_item<1> it) {
@@ -291,10 +291,10 @@ struct VitGpuImpl {
     size_t sp_elems = 0;
     int kRows = 512;
     // scores per attention chunk: 32M elements = 64 MB of F16 (CUDA: 8M).  oneMKL's batched products with an inner size of 72 need wide chunks to be fast
-    // on the Arc (RESULTS-OWN-3V.md 11.1); 64 MB keeps the reader at or below mtmd-SYCL's memory at 1,024 tokens.  STRATA_VIT_SCORES (M elements) overrides.
+    // on the Arc (RESULTS-OWN-3V.md 11.1); 64 MB keeps the reader at or below mtmd-SYCL's memory at 1,024 tokens.  NOSTROMA_VIT_SCORES (M elements) overrides.
     size_t kScoreElems = (size_t) 32 << 20;
     size_t kScoreElemsLarge = (size_t) 256 << 20;   // above 16,384 patches: 256M scores (512 MB); A750, 16,384 tokens: 147.9 s at the 64-query floor, 118.3 s with 256M, 117.0 s with 512M
-    bool scores_env = false;                        // STRATA_VIT_SCORES given: one size for every picture
+    bool scores_env = false;                        // NOSTROMA_VIT_SCORES given: one size for every picture
     bool round_out = false;
 
     ~VitGpuImpl() {
@@ -472,10 +472,10 @@ bool VitGpu::load(const Gguf& gg, const VitGeometry& g, int device, int max_patc
                 return false;
         }
         m.n_weight_allocs = m.allocs.size();
-        if (const char* e = std::getenv("STRATA_VIT_REF_ROUND")) m.round_out = std::atoi(e) != 0;
-        if (const char* e = std::getenv("STRATA_VIT_ROWS")) { const int v = std::atoi(e); if (v >= 16) m.kRows = v; }
-        if (const char* e = std::getenv("STRATA_VIT_SCORES")) { const int v = std::atoi(e); if (v >= 1) { m.kScoreElems = (size_t) v << 20; m.scores_env = true; } }
-        if (const char* e = std::getenv("STRATA_VIT_SCORES_LARGE")) { const long v = std::atol(e); if (v >= 1) m.kScoreElemsLarge = (size_t) v << 20; }   // a diagnostic, as in vit_gpu.cu
+        if (const char* e = std::getenv("NOSTROMA_VIT_REF_ROUND")) m.round_out = std::atoi(e) != 0;
+        if (const char* e = std::getenv("NOSTROMA_VIT_ROWS")) { const int v = std::atoi(e); if (v >= 16) m.kRows = v; }
+        if (const char* e = std::getenv("NOSTROMA_VIT_SCORES")) { const int v = std::atoi(e); if (v >= 1) { m.kScoreElems = (size_t) v << 20; m.scores_env = true; } }
+        if (const char* e = std::getenv("NOSTROMA_VIT_SCORES_LARGE")) { const long v = std::atol(e); if (v >= 1) m.kScoreElemsLarge = (size_t) v << 20; }   // a diagnostic, as in vit_gpu.cu
         return m.size_buffers(std::max(max_patches, 16), err);
     } catch (const std::exception& e) {
         err = std::string("the GPU failed while loading the vision encoder: ") + e.what();
@@ -496,7 +496,7 @@ bool VitGpu::encode(const PreparedImage& img, std::vector<float>& rows, int& nx,
     sycl::queue& q = m.q;
     try {
         if (!m.size_buffers(N, err)) return false;
-        static const bool prof = std::getenv("STRATA_VIT_PROF") != nullptr;
+        static const bool prof = std::getenv("NOSTROMA_VIT_PROF") != nullptr;
         double pt[11] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
         auto pclock = [] { return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now().time_since_epoch()).count(); };
         double pmark = prof ? pclock() : 0.0;
@@ -603,4 +603,4 @@ bool VitGpu::encode(const PreparedImage& img, std::vector<float>& rows, int& nx,
     }
 }
 
-}  // namespace strata_vit
+}  // namespace nostroma_vit

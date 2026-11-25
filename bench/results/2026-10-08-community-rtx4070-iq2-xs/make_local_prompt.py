@@ -2,7 +2,7 @@
 """Create a private, pretokenized input for comparable IQ2_XS benchmarking.
 
 This script does NOT upload, distribute or print the input text. It uses the
-tokenizer of the published Strata source checkout and makes exactly 28,912
+tokenizer of the published Nostroma source checkout and makes exactly 28,912
 tokens. A different text is a comparable test workload, not an exact replay
 of the historical medical prompt.
 """
@@ -30,7 +30,7 @@ def main() -> int:
         ap.error("--tokens must be >= 2")
     source = args.source_root.resolve()
     sys.path.insert(0, str(source / "tools"))
-    from strata_tokenizer import Tokenizer
+    from nostroma_tokenizer import Tokenizer
 
     text = args.text.read_text(encoding="utf-8").strip()
     if not text:

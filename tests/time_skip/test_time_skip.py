@@ -40,7 +40,7 @@ def _has(word: str) -> str:
 
 class TimeSkipCase(unittest.TestCase):
     def setUp(self) -> None:
-        self.tmp = Path(tempfile.mkdtemp(prefix="strata-timeskip-"))
+        self.tmp = Path(tempfile.mkdtemp(prefix="nostroma-timeskip-"))
         self.ws = self.tmp / "workspace"
         self.ws.mkdir()
         (self.ws / "doc.txt").write_text("one\ntwo\n", encoding="utf-8")
@@ -336,7 +336,7 @@ class TestDeclaredChecks(TimeSkipCase):
     """Checks are declared per workspace, and a malformed declaration is refused."""
 
     def test_reads_checks_file(self):
-        d = self.ws / ".strata"
+        d = self.ws / ".nostroma"
         d.mkdir()
         (d / "checks.json").write_text(json.dumps({"checks": [
             {"id": "a", "command": TRUE},

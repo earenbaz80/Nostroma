@@ -1,5 +1,5 @@
 // src/image/te/qwen2_tok.cpp - stable-diffusion.cpp 2988060's Qwen2 tokenizer and prompt template for Qwen-Image-2.1
-// (include/strata/image/qwen2_tok.hpp), in our own code: no regex library, no sd.cpp at run time.
+// (include/nostroma/image/qwen2_tok.hpp), in our own code: no regex library, no sd.cpp at run time.
 //
 // What it reproduces, read from the pinned tree:
 //  * BPETokenizer::encode: split_with_special_tokens over sd.cpp's 31 special literals (qwen2_special_tokens(); ids
@@ -18,7 +18,7 @@
 //    regex_valid_utf8 refuses it.
 //  * parse_prompt_attention as its code runs, LLMEmbedder::tokenize (the template's pieces encoded one by one) and
 //    prompt_template_encode_start_idx = the system prefix's own token count.
-#include "strata/image/qwen2_tok.hpp"
+#include "nostroma/image/qwen2_tok.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -30,7 +30,7 @@
 #include <set>
 #include <unordered_map>
 
-namespace strata::image {
+namespace nostroma::image {
 namespace {
 
 #include "qwen2_tok_unicode.inc"   // kUniL, kUniN, kUniS, kFold[8] (s t r e v m l d): Oniguruma's, from sd.cpp's build
@@ -477,4 +477,4 @@ std::string qwen_image_tokens(const Qwen2Tok& tok, const std::string& prompt_in,
     return std::string();
 }
 
-}  // namespace strata::image
+}  // namespace nostroma::image

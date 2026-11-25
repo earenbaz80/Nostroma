@@ -1,14 +1,14 @@
-// src/image/te/qwen3vl_te_encode_main.cpp - test program strata-te-encode (not shipped): Nostroma's text encoder on token
+// src/image/te/qwen3vl_te_encode_main.cpp - test program nostroma-te-encode (not shipped): Nostroma's text encoder on token
 // ids that stable-diffusion.cpp built (tools/image/gate/stage_hooks.py dumps tokens.bin + tokens.start).
 //
-//   strata-te-encode <te.gguf> <src dir> <dst dir> [--repeat N] [--mode auto|resident|streamed]
+//   nostroma-te-encode <te.gguf> <src dir> <dst dir> [--repeat N] [--mode auto|resident|streamed]
 //
 // For every <src dir>/dump_*/ with tokens.bin: the condition sd.cpp's LLMEmbedder would return for those ids (our
 // encoder's rows from tokens.start on; the gate prompts carry no token weights) -> <dst dir>/dump_*/cond.bin (float32,
 // [n][hidden]) and cond.shape ("hidden n", as the stage hooks write it).  With --repeat N each prompt is encoded N times
 // and every repeat must give the same bytes.  Prints the open time, per prompt the encode time and the peak device
 // memory, and TE-ENCODE PASS / FAIL.
-#include "strata/image/qwen3vl_te.hpp"
+#include "nostroma/image/qwen3vl_te.hpp"
 
 #include <algorithm>
 #include <cstdio>
@@ -19,11 +19,11 @@
 #include <vector>
 
 namespace fs = std::filesystem;
-using namespace strata::image;
+using namespace nostroma::image;
 
 int main(int argc, char** argv) {
     if (argc < 4) {
-        std::fprintf(stderr, "usage: strata-te-encode <te.gguf> <src dir> <dst dir> [--repeat N]\n");
+        std::fprintf(stderr, "usage: nostroma-te-encode <te.gguf> <src dir> <dst dir> [--repeat N]\n");
         return 2;
     }
     int repeat = 1, mode = 0;

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Sample Strata's own /metrics once per second into JSONL.
+"""Sample Nostroma's own /metrics once per second into JSONL.
 
 Runs inside the container next to the benchmark. Every sample keeps the engine's
 own view of memory (bytes), which is the only view available for VRAM inside the

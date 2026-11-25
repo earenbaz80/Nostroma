@@ -35,14 +35,14 @@ class Base(unittest.TestCase):
     def setUp(self):
         home = Home().__enter__()
         self.addCleanup(home.__exit__, None, None, None)
-        t = tempfile.TemporaryDirectory(prefix="strata-altreader-")
+        t = tempfile.TemporaryDirectory(prefix="nostroma-altreader-")
         self.addCleanup(t.cleanup)
         self.base = Path(t.name)
         self.cat = catalog(HW_12)
-        self.mod = self.cat.strata.setup_module()               # the module the plan asks too
+        self.mod = self.cat.nostroma.setup_module()               # the module the plan asks too
         self.pinned = self.mod.MMPROJ
         for p in (mock.patch.dict(self.mod.ALT_READERS, {self.pinned: (ALT, len(GOOD), hashlib.sha256(GOOD).hexdigest())}),
-                  mock.patch.object(self.mod, "ROOT", self.base / "strata-root")):
+                  mock.patch.object(self.mod, "ROOT", self.base / "nostroma-root")):
             p.start()
             self.addCleanup(p.stop)
         self.own = self.base / "mine" / "IQ3_XXS"               # a person's own folder of shards

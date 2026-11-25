@@ -68,7 +68,7 @@ def address_for(runtime_dir: Path, name: str) -> str:
     candidate = runtime_dir / f"{digest}.sock"
     if len(str(candidate).encode()) <= 90:
         return str(candidate)
-    return f"/tmp/strata-{os.getuid()}-{digest}.sock"
+    return f"/tmp/nostroma-{os.getuid()}-{digest}.sock"
 
 
 class Listener:

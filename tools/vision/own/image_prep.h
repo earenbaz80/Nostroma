@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-namespace strata_vit {
+namespace nostroma_vit {
 
 struct ImageU8 {
     int w = 0, h = 0;
@@ -55,4 +55,4 @@ bool prepare_image(const ImageU8& src, const VitGeometry& g, int min_tokens, int
 // the size prepare_image would give (no pixels touched)
 Size2 prepared_size(int w, int h, const VitGeometry& g, int min_tokens, int max_tokens);
 
-}  // namespace strata_vit
+}  // namespace nostroma_vit

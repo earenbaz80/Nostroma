@@ -1,7 +1,7 @@
 {
- "engine": "strata",
- "exe": "<data root>/strata-native.sh",
- "cwd": "<strata checkout>",
+ "engine": "nostroma",
+ "exe": "<data root>/nostroma-native.sh",
+ "cwd": "<nostroma checkout>",
  "tokenizer": "<data root>/packs/coder-iq1_m/tokenizer",
  "model_name": "coder-iq1_m",
  "backend": "sycl",
@@ -39,9 +39,9 @@
  "env": {
   "ONEAPI_DEVICE_SELECTOR": "level_zero:0,1",
   "SYCL_CACHE_PERSISTENT": "0",
-  "STRATA_MIRROR_MIB": "6144",
-  "STRATA_VERIFY_DEVICE_PLAN": "1",
-  "STRATA_STAGE_TRIM": "1",
-  "STRATA_VERIFY_NO_HOST": "1"
+  "NOSTROMA_MIRROR_MIB": "6144",
+  "NOSTROMA_VERIFY_DEVICE_PLAN": "1",
+  "NOSTROMA_STAGE_TRIM": "1",
+  "NOSTROMA_VERIFY_NO_HOST": "1"
  }
 }

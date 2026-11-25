@@ -39,7 +39,7 @@ class DraftLayer(unittest.TestCase):
 
     def test_the_web_settings_page_lists_it(self):
         cfg = {"args": []}
-        self.assertTrue(any(k["key"] == "mtp" for k in runconfig.view(cfg, "strata-x.json")["keys"]))
+        self.assertTrue(any(k["key"] == "mtp" for k in runconfig.view(cfg, "nostroma-x.json")["keys"]))
         new, changed = runconfig.apply(cfg, {"mtp": False})
         self.assertIs(new["mtp"], False)
         self.assertEqual(changed, ["mtp"])

@@ -1,16 +1,16 @@
 // Flag B behind queued copies (PR #5096): an empty plan must not release a layer whose uploads are still in flight.
 // A delayed host function stands in for a slow DMA on the copy stream (it writes the "staging" word a while after it was
 // queued); a kernel plays the graph (waits for flag B >= value, then reads staging).  Run on every device found.
-#include "strata/core/flag_order.hpp"
+#include "nostroma/core/flag_order.hpp"
 
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <thread>
 
-using strata::core::FlagRaise;
-using strata::core::flag_raise_max;
-using strata::core::raise_flag_b_ordered;
+using nostroma::core::FlagRaise;
+using nostroma::core::flag_raise_max;
+using nostroma::core::raise_flag_b_ordered;
 
 static int failed = 0;
 #define CHECK(x) do { if (!(x)) { std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #x); ++failed; } } while (0)

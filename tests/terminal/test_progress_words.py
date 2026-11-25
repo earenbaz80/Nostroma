@@ -1,5 +1,5 @@
 """0.2.2: the words for a model download and its preparation are plain and true (nostroma_control/progress_words.py), and the app's
-and the Terminal's progress read the same lines the same way (tools/strata_mcp.py install_progress / combined_progress).
+and the Terminal's progress read the same lines the same way (tools/nostroma_mcp.py install_progress / combined_progress).
 
 The excerpts are from real setup logs (Gyro-S on the RTX 5070 PC, 2026-10-19) and from the steps a Q2_0 install adds."""
 
@@ -13,21 +13,21 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 
-import strata_mcp  # noqa: E402
+import nostroma_mcp  # noqa: E402
 from nostroma_control import progress_words as W  # noqa: E402
 
 HEAD = ["Nostroma - Qwen3.8-Flash-Next on a normal PC", "=== Step 1: checking your PC ===", "  [ok] GPU: NVIDIA GeForce RTX 5070",
         "=== Step 2: your choices ===", "  [ok] size: Gyro-S", "=== Step 3: Python packages ===", "  [ok] numpy ...",
         "=== Step 4: the Nostroma engine ==="]
 STEP5 = ["=== Step 5: downloading Qwen3.8-Flash-Next (Gyro) Gyro-S ===",
-         "  The model files go in C:\\Users\\x\\Documents\\Strata\\models\\gyro-Gyro-S"]
+         "  The model files go in C:\\Users\\x\\Documents\\Nostroma\\models\\gyro-Gyro-S"]
 MODEL_PROGRESS = "  Qwen3.8-Flash-Next-Gyro-S-TQ1_0.gguf:  30.53 / 58.49 GB (52%)   "
 CHECK = "  checking Qwen3.8-Flash-Next-Gyro-S-TQ1_0.gguf (SHA-256, 58.5 GB) ..."
-STEP6 = ["=== Step 6: preparing the model for Strata ==="]
+STEP6 = ["=== Step 6: preparing the model for Nostroma ==="]
 
 
 def prog(lines):
-    p = strata_mcp.install_progress(lines)
+    p = nostroma_mcp.install_progress(lines)
     return p, p.get("label"), p.get("phase")
 
 
@@ -82,10 +82,10 @@ class StepWords(unittest.TestCase):
 
     def test_step_six_packing_the_experts(self):
         lines = HEAD + STEP5 + STEP6 + ["  Converting the Q2_0 experts for the AVX-512 kernel (one time, ~40 GB written, 2-5 min) ...",
-                                        "  > python tools/strata_pack.py build --gguf x --out y --skip-hash --force"]
+                                        "  > python tools/nostroma_pack.py build --gguf x --out y --skip-hash --force"]
         self.assertEqual(prog(lines)[1:], ("Packing the model's experts for your processor (one time, a few minutes)", "pack"))
         self.assertEqual(prog(lines + ["  > python tools/pack_index.py --pack y"])[1], "Indexing the packed experts")
-        self.assertEqual(prog(lines + ["  > python tools/strata_tokenizer.py --gguf x --out y"])[1], "Preparing the tokenizer")
+        self.assertEqual(prog(lines + ["  > python tools/nostroma_tokenizer.py --gguf x --out y"])[1], "Preparing the tokenizer")
 
     def test_step_six_the_draft_layer_download_then_its_preparation(self):
         fetch = ["  [ok] model prepared: y", "  The MTP draft layer (speculative decoding, ~2x faster output) comes from the original Qwen checkpoint:",
@@ -113,7 +113,7 @@ class StepWords(unittest.TestCase):
         self.assertEqual(prog(HEAD + STEP5 + STEP6)[1:], ("The model files are on this computer; checking them", "verify"))
         self.assertEqual(prog(HEAD + STEP5 + STEP6 + ["  > python tools/iq_pack.py --gguf x --out y"])[1:],
                          ("Preparing the model data for the engine (one time)", "pack"))
-        self.assertEqual(prog(HEAD + STEP5 + STEP6 + ["  > python tools/strata_pack.py --gguf x --out y"])[2], "pack")
+        self.assertEqual(prog(HEAD + STEP5 + STEP6 + ["  > python tools/nostroma_pack.py --gguf x --out y"])[2], "pack")
 
     def test_step_six_with_everything_already_there(self):
         lines = HEAD + STEP5 + STEP6 + ["  [ok] model prepared: y", "  [ok] MTP draft layer: z"]
@@ -156,14 +156,14 @@ class CombinedFigure(unittest.TestCase):
             import os
             with open(part, "r+b") as f:
                 f.truncate(1_000_000_000)
-            out = strata_mcp.files_progress(prog_, {"total_gb": 1.0}, files)
+            out = nostroma_mcp.files_progress(prog_, {"total_gb": 1.0}, files)
             self.assertAlmostEqual(out["download"]["done_gb"], 0.5, places=2)
             self.assertEqual(out["download"]["percent"], 50)
 
     def test_the_hash_check_has_its_own_figure(self):
         lines = HEAD + STEP5 + [CHECK, "  checking Qwen3.8-Flash-Next-Gyro-S-TQ1_0.gguf:  12.00 / 58.49 GB (20%)   "]
-        p = strata_mcp.install_progress(lines)
-        out = strata_mcp.combined_progress(p, {"folder": None, "total_gb": 58.5})
+        p = nostroma_mcp.install_progress(lines)
+        out = nostroma_mcp.combined_progress(p, {"folder": None, "total_gb": 58.5})
         self.assertEqual(out["download"]["file"], "checking files")
         self.assertEqual(out["download"]["percent"], 20)
 
@@ -187,7 +187,7 @@ class CombinedFigure(unittest.TestCase):
             files = self._qwen36_files(Path(tmp), reader_done=False)
             prog_ = {"step": "5/7: downloading Qwen3.6-35B-A3B UD-Q4_K_XL",
                      "download": {"file": "vision encoder", "done_gb": 0.43, "total_gb": 0.9, "percent": 48}}
-            out = strata_mcp.files_progress(prog_, {"total_gb": 22.9}, files)
+            out = nostroma_mcp.files_progress(prog_, {"total_gb": 22.9}, files)
             reader = next(p for p in out["parts"] if p["kind"] == "vision")
             self.assertAlmostEqual(reader["done_gb"], 0.43, places=2)
             self.assertEqual(reader["state"], "downloading")
@@ -201,19 +201,19 @@ class CombinedFigure(unittest.TestCase):
             files = self._qwen36_files(Path(tmp), reader_done=True)
             job = {"folder": tmp, "total_gb": 22.9, "files": files}
             for lines in (HEAD + STEP5 + STEP6, HEAD + STEP5 + STEP6 + ["=== Step 7: writing the start script ==="]):
-                out = strata_mcp.combined_progress(strata_mcp.install_progress(lines), job)
+                out = nostroma_mcp.combined_progress(nostroma_mcp.install_progress(lines), job)
                 self.assertEqual([(p["kind"], p["state"]) for p in out.get("parts", [])], [("model", "done"), ("vision", "done")])
                 self.assertAlmostEqual(sum(p["done_gb"] for p in out["parts"]), 23.753, places=2)
                 self.assertNotIn("download", out)
             # the download step itself, every file in: 100
-            out = strata_mcp.combined_progress(strata_mcp.install_progress(HEAD + STEP5 + ["  [ok] vision encoder downloaded"]), job)
+            out = nostroma_mcp.combined_progress(nostroma_mcp.install_progress(HEAD + STEP5 + ["  [ok] vision encoder downloaded"]), job)
             self.assertEqual(out["download"]["percent"], 100)
             # while a file is still missing the figure stays below 100
             Path(files[1]["path"]).rename(files[1]["path"] + ".part")
-            out = strata_mcp.combined_progress(strata_mcp.install_progress(HEAD + STEP5 + [MODEL_PROGRESS]), job)
+            out = nostroma_mcp.combined_progress(nostroma_mcp.install_progress(HEAD + STEP5 + [MODEL_PROGRESS]), job)
             self.assertLessEqual(out["download"]["percent"], 99)
             # before the download step nothing is counted
-            self.assertNotIn("parts", strata_mcp.combined_progress(strata_mcp.install_progress(HEAD), job))
+            self.assertNotIn("parts", nostroma_mcp.combined_progress(nostroma_mcp.install_progress(HEAD), job))
 
 
 if __name__ == "__main__":

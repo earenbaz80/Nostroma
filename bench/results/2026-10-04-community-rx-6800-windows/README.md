@@ -12,12 +12,12 @@ OS       Windows 11 Pro for Workstations 26H2 (build 26300), system-managed page
 Driver   AMD 32.0.21043.10005
 ROCm     10.2.0a20260930, hipBLASLt 1.5.0 (no tuning table for gfx1030)
 Load     no other workloads, no power limits
-0.1.38   release strata-windows-x64-hip.zip (99f3dbd); the same commit built here gave the same numbers
-0.1.39   tag v0.1.39 (6f32ec0) built here, tools\hip\build_windows.bat, STRATA_HIP_ARCHS=gfx1030
+0.1.38   release nostroma-windows-x64-hip.zip (99f3dbd); the same commit built here gave the same numbers
+0.1.39   tag v0.1.39 (6f32ec0) built here, tools\hip\build_windows.bat, NOSTROMA_HIP_ARCHS=gfx1030
 Model    ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF @ ed59f92: IQ2_XS, IQ3_XXS, Q2_0
 ```
 
-tok/s. A cell with several values lists separate runs, median in brackets. "0.1.39s" = 0.1.39 with `STRATA_SH_STREAM=0`.
+tok/s. A cell with several values lists separate runs, median in brackets. "0.1.39s" = 0.1.39 with `NOSTROMA_SH_STREAM=0`.
 
 **Versions, IQ2_XS**
 
@@ -26,7 +26,7 @@ tok/s. A cell with several values lists separate runs, median in brackets. "0.1.
 | 0.1.38, release zip | 2 | 50.5 / 55.2 (52.9) | 40.8 / 42.3 (41.6) | 57.2 / 55.8 (56.5) | 319 / 326 | 309 / 310 |
 | 0.1.38, built here | 1 | 54.2 | 41.7 | 56.6 | 319 | 310 |
 | 0.1.39 | 2 | 42.6 / 42.5 (42.6) | 32.9 / 32.5 (32.7) | 49.2 / 50.2 (49.7) | 326 / 326 | 310 / 311 |
-| 0.1.39 + `STRATA_SH_STREAM=0` | 4 | 56.4 / 57.0 / 55.5 / 54.2 (56.0) | 43.5 / 44.3 / 43.2 / 43.0 (43.4) | 62.7 / 62.9 / 60.5 / 61.5 (62.1) | 326 | 311 |
+| 0.1.39 + `NOSTROMA_SH_STREAM=0` | 4 | 56.4 / 57.0 / 55.5 / 54.2 (56.0) | 43.5 / 44.3 / 43.2 / 43.0 (43.4) | 62.7 / 62.9 / 60.5 / 61.5 (62.1) | 326 | 311 |
 
 Expert cache 5,361-5,486 slots (7.2-7.4 GiB), 1,729-1,761 MiB of VRAM free with everything loaded.
 
@@ -41,7 +41,7 @@ Limitations:
 <summary>Configuration and method</summary>
 
 ```text
-strata.exe --pack <data>\packs\iq2_xs
+nostroma.exe --pack <data>\packs\iq2_xs
   --native <data>\models\IQ2_XS\Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00001-of-00002.gguf
   --ple-gguf <data>\models\IQ2_XS\Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00002-of-00002.gguf
   --expert-profile data\expert-profile.bin --expert-cache auto --prefill auto --spec 4 --spec-min-p 0.5
@@ -69,7 +69,7 @@ strata.exe --pack <data>\packs\iq2_xs
 | Engine | English | Ukrainian | Code | Expert cache slots |
 | --- | ---: | ---: | ---: | ---: |
 | 0.1.38, release zip | 42.2 | 45.7 | 42.8 | 3,895 |
-| 0.1.39 + `STRATA_SH_STREAM=0` | 49.2 | 55.2 | 52.0 | 4,219 |
+| 0.1.39 + `NOSTROMA_SH_STREAM=0` | 49.2 | 55.2 | 52.0 | 4,219 |
 
 </details>
 
@@ -79,11 +79,11 @@ strata.exe --pack <data>\packs\iq2_xs
 | Changed | English | Ukrainian | Code |
 | --- | ---: | ---: | ---: |
 | nothing | 42.5 | 32.5 | 50.2 |
-| `STRATA_SH_STREAM=0` | 56.4 | 43.5 | 62.7 |
-| `STRATA_IQ_STAGE_GRID=0` | 43.5 | 34.6 | 51.8 |
-| `STRATA_PLE_BATCH=0` | 41.6 | 33.0 | 49.0 |
-| `STRATA_OLD_IQ_MMVQ=1` | 43.3 | 32.5 | 47.9 |
-| `STRATA_DEC_BATCH=0` | 40.0 | 31.8 | 45.4 |
+| `NOSTROMA_SH_STREAM=0` | 56.4 | 43.5 | 62.7 |
+| `NOSTROMA_IQ_STAGE_GRID=0` | 43.5 | 34.6 | 51.8 |
+| `NOSTROMA_PLE_BATCH=0` | 41.6 | 33.0 | 49.0 |
+| `NOSTROMA_OLD_IQ_MMVQ=1` | 43.3 | 32.5 | 47.9 |
+| `NOSTROMA_DEC_BATCH=0` | 40.0 | 31.8 | 45.4 |
 
 </details>
 
@@ -101,13 +101,13 @@ strata.exe --pack <data>\packs\iq2_xs
 | 0.1.39s, IQ2_XS | `--spec 6` | 51.4 | 40.6 | 59.3 | 55% |
 | 0.1.39s, IQ2_XS | `--spec-min-p 0.7` | 56.0 | 45.3 | 63.1 | 70% |
 | 0.1.39s, IQ2_XS | `--pcie-frac 0` | 54.7 | 42.4 | 58.3 | 67% |
-| 0.1.39s, IQ2_XS | `STRATA_ADAPT_NOWAIT=1` | 55.8 | 43.5 | 62.1 | 64% |
-| 0.1.39s, IQ2_XS | `STRATA_RING_BYTES=0` | 58.2 | 43.3 | 61.6 | 63% |
+| 0.1.39s, IQ2_XS | `NOSTROMA_ADAPT_NOWAIT=1` | 55.8 | 43.5 | 62.1 | 64% |
+| 0.1.39s, IQ2_XS | `NOSTROMA_RING_BYTES=0` | 58.2 | 43.3 | 61.6 | 63% |
 | 0.1.39s, IQ3_XXS | — | 46.7 | 38.5 | 52.5 | 60% |
 | 0.1.39s, IQ3_XXS | `--draft-vocab cyrillic` | 49.2 | 55.2 | 52.0 | 68% |
-| 0.1.39s, IQ3_XXS | `STRATA_IQ256_GATHER=1` | 46.5 | 38.5 | 50.9 | 60% |
+| 0.1.39s, IQ3_XXS | `NOSTROMA_IQ256_GATHER=1` | 46.5 | 38.5 | 50.9 | 60% |
 
-With the Cyrillic vocabulary 160-180 MiB more VRAM stayed free. `STRATA_RING_BYTES=0`: the 30.3K prompt read at
+With the Cyrillic vocabulary 160-180 MiB more VRAM stayed free. `NOSTROMA_RING_BYTES=0`: the 30.3K prompt read at
 304 tok/s against 311.
 
 </details>
@@ -165,7 +165,7 @@ No request failed or was cancelled.
 </details>
 
 <details>
-<summary>Correctness tasks (0.1.39s, reasoning off, 1 run, `strata_eval2.py hard js sql regex`)</summary>
+<summary>Correctness tasks (0.1.39s, reasoning off, 1 run, `nostroma_eval2.py hard js sql regex`)</summary>
 
 | Set | Task | Q2_0 | IQ2_XS | IQ3_XXS |
 | --- | --- | --- | --- | --- |
@@ -206,7 +206,7 @@ No request failed or was cancelled.
 - `run_all.json`, `run_all-part1.json`, `run_all.log`: the context-size data
 - [par.py](par.py): requests at once
 - [par.jsonl](par.jsonl): per request `first_s`, `done_s`, `tok_s`, `out_n`
-- [strata_eval.py](strata_eval.py), [strata_eval2.py](strata_eval2.py): the correctness tasks
+- [nostroma_eval.py](nostroma_eval.py), [nostroma_eval2.py](nostroma_eval2.py): the correctness tasks
 - [correctness.json](correctness.json): the task results per size
 
 </details>

@@ -22,7 +22,7 @@ def main():
     ap.add_argument("--out", default="coding-check.json")
     ap.add_argument("--effort", default="low")
     a = ap.parse_args()
-    body = {"model": "strata", "messages": [{"role": "user", "content": TASK}], "temperature": 0,
+    body = {"model": "nostroma", "messages": [{"role": "user", "content": TASK}], "temperature": 0,
             "reasoning_effort": a.effort, "max_tokens": 4096}
     t0 = time.perf_counter()
     req = urllib.request.Request(a.url + "/v1/chat/completions", data=json.dumps(body).encode(),

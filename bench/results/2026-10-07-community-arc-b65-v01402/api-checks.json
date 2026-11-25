@@ -6,8 +6,8 @@
     "authentication_checked": true,
     "loopback_port": 18110,
     "profile": {
-      "engine": "strata",
-      "exe": "$BENCH_ROOT/build-sycl/strata",
+      "engine": "nostroma",
+      "exe": "$BENCH_ROOT/build-sycl/nostroma",
       "args": [
         "--pack",
         "$PACK_DIR",
@@ -55,9 +55,9 @@
         "--spec-min-p",
         "0.5"
       ],
-      "cwd": "$STRATA_ROOT",
+      "cwd": "$NOSTROMA_ROOT",
       "tokenizer": "$PACK_DIR/tokenizer",
-      "model_name": "qwen3.8-flash-next-strata-iq2-xs-8k",
+      "model_name": "qwen3.8-flash-next-nostroma-iq2-xs-8k",
       "backend": "sycl",
       "host": "127.0.0.1",
       "parallel": 1,
@@ -73,7 +73,7 @@
         "127.0.0.1",
         "localhost"
       ],
-      "log": "/run/strata-arc/v01402-api-512-1/content/engine.log"
+      "log": "/run/nostroma-arc/v01402-api-512-1/content/engine.log"
     },
     "content_persisted": false
   },
@@ -84,8 +84,8 @@
     "authentication_checked": true,
     "loopback_port": 18110,
     "profile": {
-      "engine": "strata",
-      "exe": "$BENCH_ROOT/build-sycl/strata",
+      "engine": "nostroma",
+      "exe": "$BENCH_ROOT/build-sycl/nostroma",
       "args": [
         "--pack",
         "$PACK_DIR",
@@ -133,9 +133,9 @@
         "--spec-min-p",
         "0.5"
       ],
-      "cwd": "$STRATA_ROOT",
+      "cwd": "$NOSTROMA_ROOT",
       "tokenizer": "$PACK_DIR/tokenizer",
-      "model_name": "qwen3.8-flash-next-strata-iq2-xs-8k",
+      "model_name": "qwen3.8-flash-next-nostroma-iq2-xs-8k",
       "backend": "sycl",
       "host": "127.0.0.1",
       "parallel": 1,
@@ -151,7 +151,7 @@
         "127.0.0.1",
         "localhost"
       ],
-      "log": "/run/strata-arc/v01402-api-4096-1/content/engine.log"
+      "log": "/run/nostroma-arc/v01402-api-4096-1/content/engine.log"
     },
     "content_persisted": false
   },

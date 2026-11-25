@@ -12,7 +12,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "tools"))
 sys.path.insert(0, str(REPO))
-import strata_tokenizer as ST  # noqa: E402
+import nostroma_tokenizer as ST  # noqa: E402
 
 
 def main():

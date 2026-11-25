@@ -1,7 +1,7 @@
-// src/core/copy_queue.cpp - see include/strata/copy_queue.hpp.
-#include "strata/copy_queue.hpp"
-#include "strata/env.hpp"
-#include "strata/sycl_queue.hpp"
+// src/core/copy_queue.cpp - see include/nostroma/copy_queue.hpp.
+#include "nostroma/copy_queue.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/sycl_queue.hpp"
 
 #include <dpct/dpct.hpp>
 #include <sycl/ext/oneapi/backend/level_zero.hpp>
@@ -9,7 +9,7 @@
 #if defined(__has_include)
 #if __has_include(<level_zero/ze_api.h>)
 #include <level_zero/ze_api.h>
-#define STRATA_HAVE_ZE_API 1
+#define NOSTROMA_HAVE_ZE_API 1
 #endif
 #endif
 
@@ -20,7 +20,7 @@
 #include <cstring>
 #include <vector>
 
-#ifdef STRATA_HAVE_ZE_API
+#ifdef NOSTROMA_HAVE_ZE_API
 #if defined(_WIN32)
 #include <windows.h>
 #else
@@ -28,11 +28,11 @@
 #endif
 #endif
 
-namespace strata {
+namespace nostroma {
 namespace {
 std::atomic<bool> g_active{false};
 
-#ifdef STRATA_HAVE_ZE_API
+#ifdef NOSTROMA_HAVE_ZE_API
 struct ZeFns {
     decltype(&zeDeviceGetCommandQueueGroupProperties) get_groups = nullptr;
     decltype(&zeCommandListCreateImmediate) create_imm = nullptr;
@@ -72,9 +72,9 @@ bool is_copy_engine_queue(const sycl::queue* q) {
 
 
 sycl::queue* make_copy_engine_queue(const char* what) {
-    static const bool off = [] { const char* v = strata::env("NOSTROMA_COPY_ENGINE"); return v && v[0] == '0'; }();
+    static const bool off = [] { const char* v = nostroma::env("NOSTROMA_COPY_ENGINE"); return v && v[0] == '0'; }();
     if (off) return nullptr;
-#ifndef STRATA_HAVE_ZE_API
+#ifndef NOSTROMA_HAVE_ZE_API
     (void) what;
     return nullptr;
 #else
@@ -86,12 +86,12 @@ sycl::queue* make_copy_engine_queue(const char* what) {
     try {
 
         if (dev.get_backend() != sycl::backend::ext_oneapi_level_zero) return nullptr;
-        // Battlemage only unless STRATA_COPY_ENGINE=1: on an Arc A750 (i915, JIT) the prompt path hung with it once the stager's
+        // Battlemage only unless NOSTROMA_COPY_ENGINE=1: on an Arc A750 (i915, JIT) the prompt path hung with it once the stager's
         // completion flag became a copy-engine memcpy (4K and 600-token prompts, 10+ minutes, GPU not hung), and the measured gain
         // there was 1.4% (a prompt there is compute bound).
         {
-            const char* force = strata::env("NOSTROMA_COPY_ENGINE");
-            if (!(force && force[0] == '1') && strata::intel_gpu_gen(dev) != strata::IntelGpuGen::Battlemage) return nullptr;
+            const char* force = nostroma::env("NOSTROMA_COPY_ENGINE");
+            if (!(force && force[0] == '1') && nostroma::intel_gpu_gen(dev) != nostroma::IntelGpuGen::Battlemage) return nullptr;
         }
         // The legacy Level Zero adapter already puts memcpy on the copy engine (and its kernel launches are slower); only
         // the v2 adapter needs this.  SYCL_UR_USE_LEVEL_ZERO_V2=0 selects the legacy one.
@@ -130,14 +130,14 @@ sycl::queue* make_copy_engine_queue(const char* what) {
         g_active.store(true);
         static std::atomic<bool> said{false};
         if (!said.exchange(true))
-            std::fprintf(stderr, "strata: copy engine: %s copies run on the GPU's copy engine (queue group %d), not the "
-                                 "compute engine (STRATA_COPY_ENGINE=0 turns it off)\n", what, ord);
+            std::fprintf(stderr, "nostroma: copy engine: %s copies run on the GPU's copy engine (queue group %d), not the "
+                                 "compute engine (NOSTROMA_COPY_ENGINE=0 turns it off)\n", what, ord);
         return q;
     } catch (const std::exception& e) {
-        std::fprintf(stderr, "strata: copy engine queue not available (%s): ordinary queue\n", e.what());
+        std::fprintf(stderr, "nostroma: copy engine queue not available (%s): ordinary queue\n", e.what());
         return nullptr;
     }
 #endif
 }
 
-}  // namespace strata
+}  // namespace nostroma

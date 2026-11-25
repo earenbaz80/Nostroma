@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Serial fresh-prompt benchmark, adapted from the community MI50/RTX 5090 harness.
 
-Start a dedicated Strata server separately. This script never starts or stops it.
+Start a dedicated Nostroma server separately. This script never starts or stops it.
 Expert adaptation and the OS file cache stay warm between requests; prefix reuse
 is rejected. Engine file-tier counters describe decode, not physical disk reads.
 """
@@ -74,7 +74,7 @@ def engine_provenance_record(path, executable):
     # Release BUILD.json records CUDA and target architectures at the top level.
     toolchain.update({key: source[key] for key in ("cuda", "archs", "ptx", "portable") if key in source})
     return {"path": str(path), "sha256": hashlib.sha256(raw).hexdigest(),
-            "version": source.get("strata_version", source.get("version")), "commit": source.get("commit"),
+            "version": source.get("nostroma_version", source.get("version")), "commit": source.get("commit"),
             "fingerprint": source.get("engine_source_fingerprint", source.get("source_fingerprint")),
             "toolchain": toolchain, "repository": source.get("fork_repository"),
             "llama_cpp_commit": source.get("llama_cpp_pinned_commit"),
@@ -246,7 +246,7 @@ def main():
     parser.add_argument("--engine-provenance", type=Path,
                         help="Build provenance JSON or release BUILD.json; requires --config")
     parser.add_argument("--url", default="http://127.0.0.1:18080")
-    parser.add_argument("--model", default="strata")
+    parser.add_argument("--model", default="nostroma")
     parser.add_argument("--label", required=True, help="Configuration label, such as iq2-xs-3090-resident")
     parser.add_argument("--out", type=Path, required=True, help="A separate directory for each configuration")
     parser.add_argument("--targets", default="1024,4096,16384")
@@ -266,7 +266,7 @@ def main():
     args.root, args.pack, args.out = args.root.resolve(), args.pack.resolve(), args.out.resolve()
     url = args.url.rstrip("/")
     sys.path[:0] = [str(args.root), str(args.root / "tools")]
-    from strata_tokenizer import Tokenizer
+    from nostroma_tokenizer import Tokenizer
     from serve.frontend import ChatTemplate, openai_to_messages
 
     directory = args.pack / "tokenizer"
@@ -298,11 +298,11 @@ def main():
         keys = ("exe", "cwd", "args", "gpu", "layer_split", "split_skip_if_fits", "backend", "tokenizer", "log",
                 "model_name", "parallel", "expert_profile_save", "expert_profile_save_every")
         config = {key: source[key] for key in keys if key in source}
-        compute_variables = {"CUDA_VISIBLE_DEVICES", "CUDA_DEVICE_ORDER", "STRATA_STAGE_TRIM", "STRATA_SPLIT_OWN",
-                             "STRATA_ARENA_PIN_GIB", "STRATA_RESIDENT_PIN", "STRATA_RESIDENT_HEADROOM_GIB",
-                             "STRATA_ARENA_MMAP", "STRATA_PREFILL_HELP", "STRATA_FETCH_THREADS", "STRATA_LOOKAHEAD",
-                             "STRATA_DECODE_TIMING", "STRATA_SPLIT_TIMING", "STRATA_VERIFY_PROFILE",
-                             "STRATA_SPLIT_MISS_MS", "STRATA_PF_FUSED", "STRATA_FILE_RELEASE"}
+        compute_variables = {"CUDA_VISIBLE_DEVICES", "CUDA_DEVICE_ORDER", "NOSTROMA_STAGE_TRIM", "NOSTROMA_SPLIT_OWN",
+                             "NOSTROMA_ARENA_PIN_GIB", "NOSTROMA_RESIDENT_PIN", "NOSTROMA_RESIDENT_HEADROOM_GIB",
+                             "NOSTROMA_ARENA_MMAP", "NOSTROMA_PREFILL_HELP", "NOSTROMA_FETCH_THREADS", "NOSTROMA_LOOKAHEAD",
+                             "NOSTROMA_DECODE_TIMING", "NOSTROMA_SPLIT_TIMING", "NOSTROMA_VERIFY_PROFILE",
+                             "NOSTROMA_SPLIT_MISS_MS", "NOSTROMA_PF_FUSED", "NOSTROMA_FILE_RELEASE"}
         config["env"] = {key: value for key, value in source.get("env", {}).items()
                          if key in compute_variables}
     revision = subprocess.run(["git", "-c", f"safe.directory={args.root.as_posix()}", "rev-parse", "HEAD"],

@@ -1,14 +1,14 @@
 {
   "prepared_at_utc": "2026-10-09T08:46:29.351654+00:00",
   "signature": {
-    "profile": "qwen3.8-flash-next-swift-1.5-strata-iq3-xxs-yarn-1m",
+    "profile": "qwen3.8-flash-next-swift-1.5-nostroma-iq3-xxs-yarn-1m",
     "common_runtime_extras": {
       "slot_save_path": "<MEASUREMENT_ROOT>/checkpoints/screen-1m-r3"
     },
     "catalog_sha256": "316dc6098112372c102d27110b63618eb8c9daebf02211ffb3ea98f5b9d68315",
     "overlay_sha256": "e22c7a5ca62ecf643866c813f28389ac293cb6a61963536f3c4239f5c6a39362",
     "base": {
-      "exe": "<STRATA_ROOT>/engine/strata",
+      "exe": "<NOSTROMA_ROOT>/engine/nostroma",
       "args": [
         "--pack",
         "<MODEL_DATA>/packs/swift-iq3_xxs",
@@ -17,7 +17,7 @@
         "--ple-gguf",
         "<MODEL_DATA>/models/swift-IQ3_XXS/Swift-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf",
         "--expert-profile",
-        "<STRATA_ROOT>/data/expert-profile.bin",
+        "<NOSTROMA_ROOT>/data/expert-profile.bin",
         "--mtp",
         "<MODEL_DATA>/mtp/rt",
         "--max-context",
@@ -44,7 +44,7 @@
         "262144",
         "--vision"
       ],
-      "cwd": "<STRATA_ROOT>",
+      "cwd": "<NOSTROMA_ROOT>",
       "tokenizer": "<MODEL_DATA>/packs/swift-iq3_xxs/tokenizer",
       "model_name": "hermes-brain",
       "gpu": 0,
@@ -63,7 +63,7 @@
         "top_k": 20
       },
       "vision": {
-        "exe": "<STRATA_ROOT>/engine/strata-vision",
+        "exe": "<NOSTROMA_ROOT>/engine/nostroma-vision",
         "mmproj": "<MODEL_DATA>/models/mmproj-Swift-Qwen3.8-Flash-Next-BF16.gguf",
         "model": "<MODEL_DATA>/models/swift-IQ3_XXS/Swift-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf",
         "gpu": true,
@@ -84,7 +84,7 @@
       },
       "gdn": {
         "env": {
-          "STRATA_GDN_CHUNKED": "1"
+          "NOSTROMA_GDN_CHUNKED": "1"
         }
       },
       "gdn16": {
@@ -92,7 +92,7 @@
           "--prefill": "auto:16384"
         },
         "env": {
-          "STRATA_GDN_CHUNKED": "1"
+          "NOSTROMA_GDN_CHUNKED": "1"
         }
       },
       "gdn32": {
@@ -100,7 +100,7 @@
           "--prefill": "auto:32768"
         },
         "env": {
-          "STRATA_GDN_CHUNKED": "1"
+          "NOSTROMA_GDN_CHUNKED": "1"
         }
       }
     },
@@ -136,7 +136,7 @@
       "construction_s": 0.14643081000031088,
       "synthetic_functions": 2261,
       "padding_tokens": 15,
-      "nonce": "STRATA_TUNING_269acafc4594ee699a1dfad4",
+      "nonce": "NOSTROMA_TUNING_269acafc4594ee699a1dfad4",
       "expected_needles": {},
       "needle_positions": {},
       "positions_are": "content character fractions, not token depths",
@@ -155,7 +155,7 @@
       "construction_s": 0.029247182000290195,
       "synthetic_functions": 578,
       "padding_tokens": 1,
-      "nonce": "STRATA_TUNING_067afca5e2333bdaf4fbb61f",
+      "nonce": "NOSTROMA_TUNING_067afca5e2333bdaf4fbb61f",
       "expected_needles": {},
       "needle_positions": {},
       "positions_are": "content character fractions, not token depths",
@@ -174,7 +174,7 @@
       "construction_s": 0.14222523500029638,
       "synthetic_functions": 2261,
       "padding_tokens": 14,
-      "nonce": "STRATA_TUNING_566acb2424a3962fec580bb3",
+      "nonce": "NOSTROMA_TUNING_566acb2424a3962fec580bb3",
       "expected_needles": {},
       "needle_positions": {},
       "positions_are": "content character fractions, not token depths",

@@ -24,9 +24,9 @@ The config's "images" section (written by setup --images, tools/image/install.py
    "lib_dirs": [...], "uma": false, "need_mib": null, "out_dir": null, "keep_files": 64,
    "native": false, "noise": "sdcpp"}
    (native: Nostroma's own DiT runner, tools/image/sdcpp_native; CUDA / HIP builds.  noise: "sdcpp" (default) is
-   stable-diffusion.cpp's own noise; "strata" is Nostroma's generator, tools/image/sdcpp_noise: the same stream on every
+   stable-diffusion.cpp's own noise; "nostroma" is Nostroma's generator, tools/image/sdcpp_noise: the same stream on every
    operating system and CPU, built into sd-cli by setup --image-noise on.  "vae_decoder": "sdcpp" (default) is
-   stable-diffusion.cpp's VAE decoder; "strata" is Nostroma's own, src/image/vae via tools/image/sdcpp_vae, CUDA / HIP
+   stable-diffusion.cpp's VAE decoder; "nostroma" is Nostroma's own, src/image/vae via tools/image/sdcpp_vae, CUDA / HIP
    builds only, built into sd-cli by setup --image-vae on)
 """
 from __future__ import annotations
@@ -52,18 +52,18 @@ TURBO_SIGMAS = "1.0,0.978453,0.95418,0.926626,0.89508,0.845148,0.704534,0.414568
 TURBO_STEPS = 8
 MODEL_NAME = "qwen-image-2.1-turbo"
 POLICIES = ("auto", "keep", "shrink", "unload")
-NOISES = ("sdcpp", "strata")
+NOISES = ("sdcpp", "nostroma")
 # shown (log line at start, and as the failure of an image request) when the config asks for Nostroma's noise but the
 # built sd-cli does not have it: ONE next step, in plain words
-NOISE_MISSING = ("Image generation is set to use Nostroma's own noise (\"noise\": \"strata\" in the images settings), but "
+NOISE_MISSING = ("Image generation is set to use Nostroma's own noise (\"noise\": \"nostroma\" in the images settings), but "
                  "the image program here was built without it. Run nostroma install with: --images qwen-image --image-noise on")
-VAE_DECODERS = ("sdcpp", "strata")
+VAE_DECODERS = ("sdcpp", "nostroma")
 VAE_DECODER_BACKENDS = ("cuda", "hip")
 # the same two cases for Nostroma's own VAE decoder (the owner's wording, 11-11)
-VAE_MISSING = ("Image generation is set to use Nostroma's own picture decoder (\"vae_decoder\": \"strata\" in the images "
+VAE_MISSING = ("Image generation is set to use Nostroma's own picture decoder (\"vae_decoder\": \"nostroma\" in the images "
                "settings), but the image program here was built without it. Run nostroma install with: --images qwen-image "
                "--image-vae on")
-VAE_BACKEND = ("Image generation is set to use Nostroma's own picture decoder (\"vae_decoder\": \"strata\" in the images "
+VAE_BACKEND = ("Image generation is set to use Nostroma's own picture decoder (\"vae_decoder\": \"nostroma\" in the images "
                "settings), which needs the CUDA (NVIDIA) or ROCm (AMD) build of the image program; this one was built "
                "for {backend}. Set \"vae_decoder\" to \"sdcpp\" in the images settings.")   # {backend}: as setup prints it
 SIZE_STEP = 32                     # sd.cpp's Qwen-Image-2.1 docs: dimensions divisible by 32
@@ -165,10 +165,10 @@ def sd_cli_args(cfg: dict, job: dict, out_pattern: str, prompt_file: str) -> lis
     model_args = []
     if cfg.get("native") is True:                   # Nostroma's DiT runner inside sd-cli (CUDA / HIP builds)
         model_args.append("qwen_image_2_1_native=1")
-    if cfg.get("noise") == "strata":                # Nostroma's noise generator inside sd-cli (tools/image/sdcpp_noise)
-        model_args.append("strata_noise=1")
-    if cfg.get("vae_decoder") == "strata":          # Nostroma's VAE decoder inside sd-cli (tools/image/sdcpp_vae)
-        model_args.append("strata_vae=1")
+    if cfg.get("noise") == "nostroma":                # Nostroma's noise generator inside sd-cli (tools/image/sdcpp_noise)
+        model_args.append("nostroma_noise=1")
+    if cfg.get("vae_decoder") == "nostroma":          # Nostroma's VAE decoder inside sd-cli (tools/image/sdcpp_vae)
+        model_args.append("nostroma_vae=1")
     if model_args:
         cmd += ["--model-args", ",".join(model_args)]
     return cmd
@@ -378,7 +378,7 @@ class ImageGen:
         self.model = self.cfg.get("model_name") or MODEL_NAME
         self.log = log
         out = self.cfg.get("out_dir")
-        self.dir = Path(out) if out else Path(tempfile.mkdtemp(prefix="strata-images-"))
+        self.dir = Path(out) if out else Path(tempfile.mkdtemp(prefix="nostroma-images-"))
         self.dir.mkdir(parents=True, exist_ok=True)
         self.keep_files = int(self.cfg.get("keep_files") or 64)
         self.lock = threading.Lock()              # one sd-cli at a time even when the service's turn is not taken
@@ -390,10 +390,10 @@ class ImageGen:
         return [self.cfg[k] for k in ("exe", "diffusion_model", "vae", "llm") if not Path(self.cfg[k]).exists()]
 
     def noise_problem(self) -> str | None:
-        """NOISE_MISSING when the config says "noise": "strata" and the sd-cli it runs was not built with Nostroma's noise
+        """NOISE_MISSING when the config says "noise": "nostroma" and the sd-cli it runs was not built with Nostroma's noise
         generator (its BUILD.json, written by setup, has no "noise" stamp); else None.  Without this the arg would be
         ignored and the picture would quietly get stable-diffusion.cpp's noise."""
-        if self.cfg.get("noise") != "strata":
+        if self.cfg.get("noise") != "nostroma":
             return None
         try:
             meta = json.loads(Path(self.cfg["exe"]).with_name("BUILD.json").read_text(encoding="utf-8"))
@@ -402,10 +402,10 @@ class ImageGen:
         return None if isinstance(meta, dict) and meta.get("noise") else NOISE_MISSING
 
     def vae_problem(self) -> str | None:
-        """VAE_BACKEND when the config says "vae_decoder": "strata" for a backend that has no such decoder (Vulkan,
+        """VAE_BACKEND when the config says "vae_decoder": "nostroma" for a backend that has no such decoder (Vulkan,
         CPU), VAE_MISSING when the sd-cli it runs was not built with it (no "vae_decoder" stamp in its BUILD.json);
         else None.  Without this sd-cli would ignore the arg and decode with stable-diffusion.cpp's decoder."""
-        if self.cfg.get("vae_decoder") != "strata":
+        if self.cfg.get("vae_decoder") != "nostroma":
             return None
         if self.cfg.get("backend") not in VAE_DECODER_BACKENDS:
             return VAE_BACKEND.format(backend=self.cfg.get("backend") or "another backend")
@@ -416,7 +416,7 @@ class ImageGen:
         return None if isinstance(meta, dict) and meta.get("vae_decoder") else VAE_MISSING
 
     def _say(self, text: str) -> None:
-        print(f"[strata] {text}", flush=True)
+        print(f"[nostroma] {text}", flush=True)
         if self.log is not None:
             try:
                 self.log.write(f"[images] {text}\n")
@@ -553,7 +553,7 @@ class ImageGen:
                 item["b64_json"] = base64.b64encode(png).decode("ascii")
             data.append(item)
         return {"created": int(time.time()), "data": data, "model": self.model,
-                "output_format": "png", "size": f"{job['width']}x{job['height']}", "strata": figures,
+                "output_format": "png", "size": f"{job['width']}x{job['height']}", "nostroma": figures,
                 "background": "transparent" if job.get("background") == "transparent" or job.get("alpha_kept")
                 else "opaque"}
 
@@ -704,9 +704,9 @@ def restore_session(svc) -> None:
     svc.restore_after_load = None
     try:
         r = svc.engine.session_file("restore", path)
-        print(f"[strata] the conversation from before the image job is back ({r.get('tokens')} tokens)", flush=True)
+        print(f"[nostroma] the conversation from before the image job is back ({r.get('tokens')} tokens)", flush=True)
     except Exception as e:                           # noqa: BLE001 - the engine runs, without the old cache
-        print(f"[strata] the conversation from before the image job was not restored ({e}); the next request "
+        print(f"[nostroma] the conversation from before the image job was not restored ({e}); the next request "
               "reads its prompt again", flush=True)
     finally:
         with contextlib.suppress(OSError):

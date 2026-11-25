@@ -11,21 +11,21 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from serve.server import StrataEngine
+from serve.server import NostromaEngine
 from serve.test_stream_ownership import FakeEngines, canary_script, collect, expected_reply, prompt_ids
 
 
 class ConvCachePoll(unittest.TestCase):
     """ConvCacheLog.poll ran outside any lock: a second poll that moved `pos` between the first one's size check and
     its read left a negative read length (ValueError).  Found by HWSTALL while triaging #3443."""
-    PARK = ("strata serve: conversation cache: parked 5000 tokens in 12.0 ms; parked=1 bytes=104857600 evictions=0 "
+    PARK = ("nostroma serve: conversation cache: parked 5000 tokens in 12.0 ms; parked=1 bytes=104857600 evictions=0 "
             "snapshot_bytes=104857600 reused_kv_bytes=0\n")
 
     def test_a_poll_that_overlaps_another_one_does_not_raise(self):
         import os
         from serve.server import ConvCacheLog
         with tempfile.TemporaryDirectory() as d:
-            log = Path(d) / "strata.log"
+            log = Path(d) / "nostroma.log"
             log.write_text(self.PARK, encoding="utf-8")
             c = ConvCacheLog()
             c.poll(str(log), 0)
@@ -95,13 +95,13 @@ class FailedStart(unittest.TestCase):
             def kill(self):
                 pass
 
-        engine = StrataEngine.__new__(StrataEngine)
+        engine = NostromaEngine.__new__(NostromaEngine)
         holder["engine"] = engine
         with mock.patch.object(server, "popen", lambda *a, **k: Proc()), \
                 mock.patch.object(server, "end_leftover_engines", lambda exe: None), \
                 mock.patch.object(server, "transient_start_failure", lambda *a, **k: False):
             with self.assertRaises(server.EngineDied):
-                engine.__init__("strata", [], retry_args=None)
+                engine.__init__("nostroma", [], retry_args=None)
 
 
 class ControlNotify(unittest.TestCase):
@@ -130,7 +130,7 @@ class ControlNotify(unittest.TestCase):
             return super().notify_all()
 
     def engine(self):
-        e = StrataEngine.__new__(StrataEngine)
+        e = NostromaEngine.__new__(NostromaEngine)
         e.slot_cv, e.waiting, e.admitting = self.Cond(), 1, 0        # one other request is waiting
         e.wait_lens, e.arrivals, e.ctl_epoch, e.ctl = [], __import__("collections").deque(maxlen=64), 0, threading.Lock()
         e.proc, e.ended, e.starting = mock.Mock(**{"poll.return_value": None}), False, False
@@ -252,7 +252,7 @@ class BlockedConsole(unittest.TestCase):
 
         def spam():
             for i in range(20000):
-                w.write(f"[strata] progress line {i} " + "x" * 40 + "\n")
+                w.write(f"[nostroma] progress line {i} " + "x" * 40 + "\n")
                 w.flush()
             done.set()
         threading.Thread(target=spam, daemon=True).start()
@@ -267,7 +267,7 @@ class BlockedConsole(unittest.TestCase):
 
         def spam():
             for i in range(20000):
-                print(f"[strata] progress line {i} " + "x" * 40, file=out, flush=True)
+                print(f"[nostroma] progress line {i} " + "x" * 40, file=out, flush=True)
             done.set()
         threading.Thread(target=spam, daemon=True).start()
         self.assertTrue(done.wait(5.0), "printing into a console nobody reads must not block")
@@ -280,7 +280,7 @@ class BlockedConsole(unittest.TestCase):
             data += os.read(r, 65536)
         text = data.decode()
         self.assertIn("progress line 19999 ", text)
-        seen = [int(l.split()[3]) for l in text.splitlines() if l.startswith("[strata] progress line")]
+        seen = [int(l.split()[3]) for l in text.splitlines() if l.startswith("[nostroma] progress line")]
         self.assertEqual(seen, sorted(seen), "order is kept")
         out.close(1.0)
 
@@ -310,13 +310,13 @@ class EngineOutputDecoding(FakeEngines, unittest.TestCase):
         bad = 'sys.stdout.buffer.write(b"INFO note=\\x8e\\n"); sys.stdout.flush()\nprint("READY 4096 stop", flush=True)'
         self.assertIn('print("READY 4096 stop", flush=True)', text)
         text = text.replace('print("READY 4096 stop", flush=True)', bad, 1)
-        script = Path(self.tmp.name) / "fake_strata.py"
+        script = Path(self.tmp.name) / "fake_nostroma.py"
         script.write_text(text, encoding="utf-8")
         real = server.subprocess.Popen
         self.popen_patch = mock.patch.object(server.subprocess, "Popen",
                                              lambda cmd, **kw: real([sys.executable, str(script), *cmd[1:]], **kw))
         self.popen_patch.start()
-        engine = StrataEngine("strata", [])
+        engine = NostromaEngine("nostroma", [])
         self.engines = [engine]
         self.assertTrue(engine.alive())
         got = []

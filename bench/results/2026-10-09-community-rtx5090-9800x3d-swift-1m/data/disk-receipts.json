@@ -119,7 +119,7 @@
           {
             "pid": 344117,
             "ppid": 344115,
-            "name": "strata-vision",
+            "name": "nostroma-vision",
             "rss_KiB": 733068,
             "swap_KiB": 0,
             "cpu_ticks": 78,
@@ -130,7 +130,7 @@
           {
             "pid": 344133,
             "ppid": 344115,
-            "name": "strata",
+            "name": "nostroma",
             "rss_KiB": 59230456,
             "swap_KiB": 0,
             "cpu_ticks": 4350,
@@ -170,7 +170,7 @@
           {
             "pid": 344117,
             "ppid": 344115,
-            "name": "strata-vision",
+            "name": "nostroma-vision",
             "rss_KiB": 733068,
             "swap_KiB": 0,
             "cpu_ticks": 78,
@@ -181,7 +181,7 @@
           {
             "pid": 344133,
             "ppid": 344115,
-            "name": "strata",
+            "name": "nostroma",
             "rss_KiB": 59248076,
             "swap_KiB": 0,
             "cpu_ticks": 4368,
@@ -473,7 +473,7 @@
           {
             "pid": 344853,
             "ppid": 344850,
-            "name": "strata-vision",
+            "name": "nostroma-vision",
             "rss_KiB": 732704,
             "swap_KiB": 0,
             "cpu_ticks": 74,
@@ -484,7 +484,7 @@
           {
             "pid": 344884,
             "ppid": 344850,
-            "name": "strata",
+            "name": "nostroma",
             "rss_KiB": 58595060,
             "swap_KiB": 0,
             "cpu_ticks": 2905,
@@ -524,7 +524,7 @@
           {
             "pid": 344853,
             "ppid": 344850,
-            "name": "strata-vision",
+            "name": "nostroma-vision",
             "rss_KiB": 732704,
             "swap_KiB": 0,
             "cpu_ticks": 74,
@@ -535,7 +535,7 @@
           {
             "pid": 344884,
             "ppid": 344850,
-            "name": "strata",
+            "name": "nostroma",
             "rss_KiB": 58709232,
             "swap_KiB": 0,
             "cpu_ticks": 2919,
@@ -842,7 +842,7 @@
           {
             "pid": 345420,
             "ppid": 345417,
-            "name": "strata-vision",
+            "name": "nostroma-vision",
             "rss_KiB": 734896,
             "swap_KiB": 0,
             "cpu_ticks": 85,
@@ -853,7 +853,7 @@
           {
             "pid": 345432,
             "ppid": 345417,
-            "name": "strata",
+            "name": "nostroma",
             "rss_KiB": 59768084,
             "swap_KiB": 0,
             "cpu_ticks": 6228,
@@ -893,7 +893,7 @@
           {
             "pid": 345420,
             "ppid": 345417,
-            "name": "strata-vision",
+            "name": "nostroma-vision",
             "rss_KiB": 734896,
             "swap_KiB": 0,
             "cpu_ticks": 85,
@@ -904,7 +904,7 @@
           {
             "pid": 345432,
             "ppid": 345417,
-            "name": "strata",
+            "name": "nostroma",
             "rss_KiB": 59785704,
             "swap_KiB": 0,
             "cpu_ticks": 6266,
@@ -1266,7 +1266,7 @@
           {
             "pid": 346738,
             "ppid": 346735,
-            "name": "strata-vision",
+            "name": "nostroma-vision",
             "rss_KiB": 736640,
             "swap_KiB": 0,
             "cpu_ticks": 76,
@@ -1277,7 +1277,7 @@
           {
             "pid": 346770,
             "ppid": 346735,
-            "name": "strata",
+            "name": "nostroma",
             "rss_KiB": 58591340,
             "swap_KiB": 0,
             "cpu_ticks": 3155,
@@ -1317,7 +1317,7 @@
           {
             "pid": 346738,
             "ppid": 346735,
-            "name": "strata-vision",
+            "name": "nostroma-vision",
             "rss_KiB": 736640,
             "swap_KiB": 0,
             "cpu_ticks": 77,
@@ -1328,7 +1328,7 @@
           {
             "pid": 346770,
             "ppid": 346735,
-            "name": "strata",
+            "name": "nostroma",
             "rss_KiB": 60192144,
             "swap_KiB": 0,
             "cpu_ticks": 3205,
@@ -1705,7 +1705,7 @@
           {
             "pid": 347332,
             "ppid": 347330,
-            "name": "strata-vision",
+            "name": "nostroma-vision",
             "rss_KiB": 738620,
             "swap_KiB": 0,
             "cpu_ticks": 111,
@@ -1716,7 +1716,7 @@
           {
             "pid": 347365,
             "ppid": 347330,
-            "name": "strata",
+            "name": "nostroma",
             "rss_KiB": 59815864,
             "swap_KiB": 0,
             "cpu_ticks": 28043,
@@ -1756,7 +1756,7 @@
           {
             "pid": 347332,
             "ppid": 347330,
-            "name": "strata-vision",
+            "name": "nostroma-vision",
             "rss_KiB": 738620,
             "swap_KiB": 0,
             "cpu_ticks": 111,
@@ -1767,7 +1767,7 @@
           {
             "pid": 347365,
             "ppid": 347330,
-            "name": "strata",
+            "name": "nostroma",
             "rss_KiB": 59836600,
             "swap_KiB": 0,
             "cpu_ticks": 28353,
@@ -2969,7 +2969,7 @@
           {
             "pid": 355293,
             "ppid": 355291,
-            "name": "strata-vision",
+            "name": "nostroma-vision",
             "rss_KiB": 734644,
             "swap_KiB": 0,
             "cpu_ticks": 73,
@@ -2980,7 +2980,7 @@
           {
             "pid": 355326,
             "ppid": 355291,
-            "name": "strata",
+            "name": "nostroma",
             "rss_KiB": 58594636,
             "swap_KiB": 0,
             "cpu_ticks": 2245,
@@ -3020,7 +3020,7 @@
           {
             "pid": 355293,
             "ppid": 355291,
-            "name": "strata-vision",
+            "name": "nostroma-vision",
             "rss_KiB": 734644,
             "swap_KiB": 0,
             "cpu_ticks": 73,
@@ -3031,7 +3031,7 @@
           {
             "pid": 355326,
             "ppid": 355291,
-            "name": "strata",
+            "name": "nostroma",
             "rss_KiB": 73079196,
             "swap_KiB": 0,
             "cpu_ticks": 2644,

@@ -1,5 +1,5 @@
-// --adapt-decay validation (include/strata/program/adapt_decay.hpp), CPU only, no model (#1284).
-#include "strata/program/adapt_decay.hpp"
+// --adapt-decay validation (include/nostroma/program/adapt_decay.hpp), CPU only, no model (#1284).
+#include "nostroma/program/adapt_decay.hpp"
 
 #include <cmath>
 #include <cstdio>
@@ -7,8 +7,8 @@
 #include <initializer_list>
 #include <limits>
 
-using strata::program::adapt_decay_checked;
-using strata::program::kAdaptDecayDefault;
+using nostroma::program::adapt_decay_checked;
+using nostroma::program::kAdaptDecayDefault;
 
 namespace {
 int checks = 0;

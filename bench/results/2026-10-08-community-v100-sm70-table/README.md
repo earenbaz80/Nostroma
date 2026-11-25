@@ -1,7 +1,7 @@
 # Community benchmark on Tesla V100-SXM2-32GB (sm_70): the opt-in Volta decode kernels
 
 Measured on 2026-10-08/09 by **Mitsuasa513**. This report answers the question
-`docs/NVIDIA_V100.md` leaves open: whether `STRATA_SM70_TABLE=1` — the interleaved `native_mmvq_il`
+`docs/NVIDIA_V100.md` leaves open: whether `NOSTROMA_SM70_TABLE=1` — the interleaved `native_mmvq_il`
 with a Volta rows table, expert mode 8 and the latency-hidden norm/up — should become the default on
 sm_70 with the 0.1.41 code. On this machine it should: **decode +10% to +15%, with output that is
 bit-for-bit identical** to the default path.
@@ -16,20 +16,20 @@ The main limitation: one machine, one model, greedy decoding, and four back-to-b
 - **CPU:** AMD Threadripper 2990WX (32 cores, AVX2, **no AVX-512**); **RAM:** 96 GB;
   **storage:** NVMe SSD.
 - **OS:** Windows 11 (build 26200). **CUDA 12.6** (nvidia-smi reports CUDA 12.6 runtime). MSVC 19.44.
-- **Strata:** `earenbaz80/Nostroma` at **`fb58e0d`** (v0.1.41), source build:
+- **Nostroma:** `earenbaz80/Nostroma` at **`fb58e0d`** (v0.1.41), source build:
 
   ```text
   cmake -S . -B build -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release \
-        -DSTRATA_ENABLE_CUDA=ON -DSTRATA_ENABLE_HIP=OFF \
-        -DSTRATA_EXPERIMENTAL_SM60=ON -DCMAKE_CUDA_ARCHITECTURES=70 \
-        -DSTRATA_GGML_DIR=<llama.cpp 3cf03257f219afbe7334045ff7c6a06ac68c627d>
+        -DNOSTROMA_ENABLE_CUDA=ON -DNOSTROMA_ENABLE_HIP=OFF \
+        -DNOSTROMA_EXPERIMENTAL_SM60=ON -DCMAKE_CUDA_ARCHITECTURES=70 \
+        -DNOSTROMA_GGML_DIR=<llama.cpp 3cf03257f219afbe7334045ff7c6a06ac68c627d>
   ```
 
-  `strata.exe` SHA-256 `5bfb80e584053443904b19e7723faa41b7c97390487a5bb8c9e902d8901fc501`.
+  `nostroma.exe` SHA-256 `5bfb80e584053443904b19e7723faa41b7c97390487a5bb8c9e902d8901fc501`.
   The ggml source is the commit `third_party/ggml/VERSION.txt` pins (unchanged since 0.1.39).
   `NMake Makefiles` rather than Ninja: on the Windows host used for this run, ninja could not start
   any child process (its job-object use was refused by the tooling sandbox), while nmake and the
-  MSVC toolchain worked normally. That is a property of this host, not of Strata.
+  MSVC toolchain worked normally. That is a property of this host, not of Nostroma.
 
 ## Model and configuration
 
@@ -39,10 +39,10 @@ The main limitation: one machine, one model, greedy decoding, and four back-to-b
 - Context **262144**, **`--kv int8`**, `--expert-cache auto`, **`--prefill auto`**,
   `--vram-reserve-mib 1024`, `--spec 3`, greedy.
 - The two arms differ in **one** environment variable:
-  `STRATA_SM70_TABLE=0` (A: exactly what 0.1.40.3 ran) versus `STRATA_SM70_TABLE=1` (B).
+  `NOSTROMA_SM70_TABLE=0` (A: exactly what 0.1.40.3 ran) versus `NOSTROMA_SM70_TABLE=1` (B).
 
 ```text
-strata.exe --pack <E:\V100-strata-0.1.41\packs\iq4xs> \
+nostroma.exe --pack <E:\V100-nostroma-0.1.41\packs\iq4xs> \
   --native <Qwen3.8-Flash-Next-UD-IQ4_XS-merged.gguf> \
   --ple-gguf <same file> --expert-profile <data\expert-profile.bin> \
   --expert-cache auto --prefill auto --spec 3 --mtp <mtp\rt> \
@@ -72,10 +72,10 @@ at different speed.
 
 | Pair | Order | Arm | Decode tok/s | Prefill tok/s | TTFT s | Draft accept | Tokens/round | pool ms/round | host ms/round |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1 | A→B | A `STRATA_SM70_TABLE=0` | 28.16 | 1626.8 | 5.91 | 0.612 | 2.23 | 46.5 | 19.1 |
+| 1 | A→B | A `NOSTROMA_SM70_TABLE=0` | 28.16 | 1626.8 | 5.91 | 0.612 | 2.23 | 46.5 | 19.1 |
 | 1 | A→B | **B `=1`** | **30.92** | 1633.1 | 5.87 | 0.612 | 2.23 | 39.9 | 12.6 |
 | 2 | B→A | **B `=1`** | **32.94** | 1619.0 | 5.81 | 0.612 | 2.23 | 37.3 | 18.2 |
-| 2 | B→A | A `STRATA_SM70_TABLE=0` | 28.64 | 1629.3 | 5.99 | 0.612 | 2.23 | 45.8 | 18.6 |
+| 2 | B→A | A `NOSTROMA_SM70_TABLE=0` | 28.64 | 1629.3 | 5.99 | 0.612 | 2.23 | 45.8 | 18.6 |
 
 **Decode: +9.8% (pair 1) and +15.0% (pair 2); the two A runs agree within 1.7%** (28.16 / 28.64),
 so the difference is larger than the run-to-run spread. Prompt throughput is unchanged
@@ -86,7 +86,7 @@ For context on the version upgrade itself, the same arm on the **0.1.39** engine
 28.2–28.6, i.e. the same within this machine's spread — **the 0.1.41 gain on a V100 is in the
 opt-in kernels**, which is exactly what this report is about.
 
-Q2_0 (official GSQ-RCO Q2_0, fp16 KV, `--prefill 8192`) with `STRATA_SM70_TABLE=1` measured
+Q2_0 (official GSQ-RCO Q2_0, fp16 KV, `--prefill 8192`) with `NOSTROMA_SM70_TABLE=1` measured
 **69.70 tok/s decode / 1561.5 prompt tok/s**, against **65.16 / 1571.8** for the same arm on 0.1.39
 (single runs, one each).
 

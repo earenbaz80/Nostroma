@@ -1,5 +1,5 @@
 """#3570: `nostroma launch --show-key` printed a key only for a launch (a running one or a preset). A model set up by setup.py keeps its key in
-strata-<model>.json, so there the command said "no key" and people read the JSON by hand. It now reads that file when no launch has one."""
+nostroma-<model>.json, so there the command said "no key" and people read the JSON by hand. It now reads that file when no launch has one."""
 from __future__ import annotations
 
 import contextlib
@@ -21,7 +21,7 @@ class ShowKeyOfSetupConfigs(unittest.TestCase):
         self.root = Path(tmp.name)
 
     def config(self, model_id, key="__none__", **extra):
-        path = self.root / f"strata-{model_id}.json"
+        path = self.root / f"nostroma-{model_id}.json"
         body = {"exe": "x", "args": [], **extra}
         if key != "__none__":
             body["api_key"] = key

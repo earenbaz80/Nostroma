@@ -1,6 +1,6 @@
 """One fresh prompt and one cached continuation; restart the server between invocations.
 
-Use the same engine/config with STRATA_SCORES_THREAD=0 or 1 at server startup.
+Use the same engine/config with NOSTROMA_SCORES_THREAD=0 or 1 at server startup.
 Model loading is excluded. This measures request latency, not streaming TTFT or coding quality.
 """
 import argparse
@@ -23,7 +23,7 @@ def digest(data):
 
 
 def load_tokenizer(folder):
-    spec = importlib.util.spec_from_file_location('qsa_bench_tokenizer', REPO / 'tools/strata_tokenizer.py')
+    spec = importlib.util.spec_from_file_location('qsa_bench_tokenizer', REPO / 'tools/nostroma_tokenizer.py')
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     vocab = json.loads((folder / 'vocab.json').read_text())
@@ -54,7 +54,7 @@ def make_requests(tokenizer, source, length, model, follow_tokens):
 
 def fetch(url, body=None):
     headers = {'Content-Type': 'application/json'}
-    key = os.environ.get('STRATA_API_KEY')
+    key = os.environ.get('NOSTROMA_API_KEY')
     if key:
         headers['Authorization'] = 'Bearer ' + key
     req = urllib.request.Request(url, data=json.dumps(body).encode() if body is not None else None,
@@ -67,7 +67,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--url', default='http://127.0.0.1:8080')
     parser.add_argument('--tokenizer', type=Path, required=True)
-    parser.add_argument('--model', default='strata-qwen38-iq3s-uncensored')
+    parser.add_argument('--model', default='nostroma-qwen38-iq3s-uncensored')
     parser.add_argument('--length', type=int, choices=[131072, 240000], required=True)
     parser.add_argument('--follow-tokens', type=int, default=2048)
     parser.add_argument('--source', type=Path, default=HERE / 'prompt-source.txt.gz')

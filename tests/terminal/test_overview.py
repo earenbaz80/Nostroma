@@ -90,7 +90,7 @@ class Build(unittest.TestCase):
         self.assertEqual(m["progress"], (None, None))
 
     def test_the_run_average_is_token_weighted_and_never_invented(self):
-        """Community patch (keinebenutzer/STRATA-average-patch, MIT): the idle tile is every token over the run's decode time, from the server's totals."""
+        """Community patch (keinebenutzer/NOSTROMA-average-patch, MIT): the idle tile is every token over the run's decode time, from the server's totals."""
         self.assertEqual(overview.run_average_speed({"totals": {"output_tokens": 40000, "decode_ms": 1000000.0}}), 40.0)
         # a long request and a short one: the long one counts for what it is (a plain mean of the two would be 30.3)
         self.assertEqual(overview.run_average_speed({"totals": {"output_tokens": 19522, "decode_ms": 386410.0}}), 50.5)

@@ -48,8 +48,8 @@ Model: `ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF` (file names and sizes in
 - `IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00002-of-00002.gguf`
 
 Vision encoder: none (`images: false`). Custom pack
-(`Strata-data/packs/iq3_xxs`); the MTP draft head is the released one
-(`Strata-data/mtp/rt`).
+(`Nostroma-data/packs/iq3_xxs`); the MTP draft head is the released one
+(`Nostroma-data/mtp/rt`).
 
 - Context limit 262,144; KV int8 with a 32,768-token resident window.
 - Expert cache auto (`expert_slots` 14,547; 23,893 MiB, of which 12,593 MiB on
@@ -64,17 +64,17 @@ Vision encoder: none (`images: false`). Custom pack
 - Sampling: temperature 0.
 
 ```text
-<strata-dir>/.venv/bin/python <strata-dir>/serve/server.py \
-  --engine strata --config <strata-dir>/strata-iq3_xxs.json \
+<nostroma-dir>/.venv/bin/python <nostroma-dir>/serve/server.py \
+  --engine nostroma --config <nostroma-dir>/nostroma-iq3_xxs.json \
   --port 31000 --host 0.0.0.0
-# config strata-iq3_xxs.json passes to the engine:
+# config nostroma-iq3_xxs.json passes to the engine:
 #   --pack .../packs/iq3_xxs --native <shard 1> --ple-gguf <shard 2>
 #   --expert-profile expert-profile-learned.bin --expert-cache auto --prefill auto
 #   --spec 4 --mtp .../mtp/rt --max-context 262144 --kv int8 --kv-resident 32768
 #   --remote-expert-opt --pcie-frac 0.19 --spec-min-p 0.70
 #   --conversation-cache-mib 8192 --trim-stage-weights --layer-split 25
 #   --expert-profile-save expert-profile-learned.bin
-# (the full JSON, with local paths, is in strata-iq3_xxs.json)
+# (the full JSON, with local paths, is in nostroma-iq3_xxs.json)
 ```
 
 ## Method

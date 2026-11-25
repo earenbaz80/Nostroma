@@ -90,7 +90,7 @@ function summarise(run) {
 }
 
 const TERMINAL = new Set(['completed', 'cancelled', 'failed', 'interrupted']);
-const SKIP_DIRS = new Set(['.git', '.strata', '__pycache__', 'node_modules']);
+const SKIP_DIRS = new Set(['.git', '.nostroma', '__pycache__', 'node_modules']);
 const MAX_TEXT_BYTES = 200_000;
 const MAX_LISTED = 60;
 const MAX_WITH_TEXT = 12;
@@ -288,7 +288,7 @@ export function diffRun(record) {
  * timeout rather than as success.
  */
 export function createTimeSkip({ repoRoot, python, pythonArgs = [], timeoutMs = 30 * 60 * 1000, env = process.env } = {}) {
-  const cli = join(repoRoot, 'strata.py');
+  const cli = join(repoRoot, 'nostroma.py');
 
   /** Runs this host started and is still driving. A run that is not terminal and not in here died with its host. */
   const live = new Map();
@@ -304,7 +304,7 @@ export function createTimeSkip({ repoRoot, python, pythonArgs = [], timeoutMs = 
       const child = spawn(python, [...pythonArgs, cli, ...args, '--output', 'json'], {
         cwd: repoRoot,
         windowsHide: true,
-        env: childEnv({ ...env, PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8', STRATA_TIMESKIP_DIR: root }),
+        env: childEnv({ ...env, PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8', NOSTROMA_TIMESKIP_DIR: root }),
         stdio: ['ignore', 'pipe', 'pipe'],
       });
       let stdout = '';
@@ -451,7 +451,7 @@ export function createTimeSkip({ repoRoot, python, pythonArgs = [], timeoutMs = 
         '--attempts', String(Math.max(0, Math.min(10, Number(attempts) || 0))), '--output', 'json'];
       if (reviseCommand) args.push('--revise-command', reviseCommand);
       const child = spawn(python, [...pythonArgs, cli, ...args], {
-        cwd: repoRoot, windowsHide: true, detached: ownGroup(), env: childEnv({ ...env, PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8', ...extraEnv, STRATA_TIMESKIP_DIR: root }), stdio: ['ignore', 'pipe', 'pipe'],
+        cwd: repoRoot, windowsHide: true, detached: ownGroup(), env: childEnv({ ...env, PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8', ...extraEnv, NOSTROMA_TIMESKIP_DIR: root }), stdio: ['ignore', 'pipe', 'pipe'],
       });
       let out = '', err = '', closed = null;
       child.stdout.on('data', b => { out += b.toString(); });

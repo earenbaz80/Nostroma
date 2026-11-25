@@ -4,7 +4,7 @@
 Many interleaved streaming clients, each with its own random canary in its prompt and the model asked to repeat it.
 Some clients disconnect at random points (before the first byte, during the prompt read, after a few chunks).  Every
 text a client receives (content and reasoning) is searched for canaries: any canary that is not the client's own is a
-cross-delivery.  Run against any OpenAI-compatible Strata server; the server must be one you started (check the
+cross-delivery.  Run against any OpenAI-compatible Nostroma server; the server must be one you started (check the
 listener first on a shared box).
 
     python research/tools/live-probes-2026-10/stream_ownership_probe.py --url http://127.0.0.1:8080 --clients 6 --rounds 20 --seed 1 --out result.json

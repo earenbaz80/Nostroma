@@ -1,7 +1,7 @@
 // src/kernels/mmvf_unr_hash.cpp - FNV-1a of the router-shaped bf16 reads (2560 inputs, 512 outputs; single-column and 1..8-column multi),
-// for comparing STRATA_SMALL_UNR=0 against =1 (run twice, compare the printed hashes: they must be equal).
-#include "strata/kernels/bf16_gemv.hpp"
-#include "strata/kernels/verify_kernels.hpp"
+// for comparing NOSTROMA_SMALL_UNR=0 against =1 (run twice, compare the printed hashes: they must be equal).
+#include "nostroma/kernels/bf16_gemv.hpp"
+#include "nostroma/kernels/verify_kernels.hpp"
 
 #include <cuda_runtime.h>
 
@@ -40,13 +40,13 @@ int main() {
         return h;
     };
     cudaMemset(dy, 0xff, (size_t) TM * n_out * 4);
-    strata::kernels::bf16_gemv_fp32_mmvf(dx, dw, dy, n_in, n_out, nullptr);
+    nostroma::kernels::bf16_gemv_fp32_mmvf(dx, dw, dy, n_in, n_out, nullptr);
     cudaDeviceSynchronize();
     cudaMemcpy(y.data(), dy, (size_t) n_out * 4, cudaMemcpyDeviceToHost);
     std::printf("single   %016llx\n", fnv(1));
     for (int T = 1; T <= TM; ++T) {
         cudaMemset(dy, 0xff, (size_t) TM * n_out * 4);
-        strata::kernels::bf16_gemv_fp32_mmvf_multi(dx, n_in, dw, dy, n_out, n_in, n_out, T, nullptr);
+        nostroma::kernels::bf16_gemv_fp32_mmvf_multi(dx, n_in, dw, dy, n_out, n_in, n_out, T, nullptr);
         cudaDeviceSynchronize();
         cudaMemcpy(y.data(), dy, (size_t) T * n_out * 4, cudaMemcpyDeviceToHost);
         std::printf("multi T%d %016llx\n", T, fnv(T));
@@ -70,7 +70,7 @@ int main() {
         cudaMemcpy(dsa, sa.data(), h_v * 4, cudaMemcpyHostToDevice);
         for (int T = 1; T <= TM; ++T) {
             cudaMemset(dg, 0xff, (size_t) TM * h_v * 4); cudaMemset(db, 0xff, (size_t) TM * h_v * 4);
-            strata::kernels::gdn_ab_multi(dx, dwa, dwb, ddt, dsa, dg, db, n_in, h_v, T, nullptr);
+            nostroma::kernels::gdn_ab_multi(dx, dwa, dwb, ddt, dsa, dg, db, n_in, h_v, T, nullptr);
             cudaDeviceSynchronize();
             std::vector<float> g((size_t) T * h_v), b((size_t) T * h_v);
             cudaMemcpy(g.data(), dg, g.size() * 4, cudaMemcpyDeviceToHost);

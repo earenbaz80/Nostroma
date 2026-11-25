@@ -19,23 +19,23 @@ split over two GPUs. Numbers are not directly comparable to single-GPU entries.
 
 - Ubuntu 26.04.1 LTS, kernel 7.0.0-31-generic
 - NVIDIA driver 595.84, CUDA 13.3 toolkit libraries (`/usr/local/cuda-13.3`)
-- Strata engine 0.1.30 (release download, not a git checkout; no commit hash)
+- Nostroma engine 0.1.30 (release download, not a git checkout; no commit hash)
 - Served through `serve/server.py` on port 8080
 
 ## Model
 
 - Repo: `ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF`
 - Files: `Swift-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf` (39.8 GB) (2-GPU split) and `...-00002-of-00002.gguf` (36.2 GB)
-- Pack built by setup as `swift-iq3_xxs`, shipped expert profile, MTP runtime from `Strata-data/mtp/rt`
+- Pack built by setup as `swift-iq3_xxs`, shipped expert profile, MTP runtime from `Nostroma-data/mtp/rt`
 - Vision is loaded (`--vision`) but no images are sent
 
 ## Launch command (engine, as started by `serve/server.py`)
 
 ```
-engine/strata --serve --pack Strata-data/packs/swift-iq3_xxs \
+engine/nostroma --serve --pack Nostroma-data/packs/swift-iq3_xxs \
   --native Swift-...-IQ3_XXS-00001-of-00002.gguf --ple-gguf Swift-...-IQ3_XXS-00001-of-00002.gguf \
   --expert-profile data/expert-profile.bin --expert-cache auto --prefill auto \
-  --spec 5 --spec-min-p 0.5 --mtp Strata-data/mtp/rt \
+  --spec 5 --spec-min-p 0.5 --mtp Nostroma-data/mtp/rt \
   --max-context 262144 --kv k8v4 --vision --vram-reserve-mib 700 --layer-split 25
 ```
 
@@ -50,7 +50,7 @@ The full serve settings file is `settings.json` in this folder (paths are ours, 
 
 - chat completions, `temperature 0`, `max_tokens 256`, thinking left at the server default (the reasoning text counts
   toward the 256 tokens)
-- prompt = Strata's own source (2-GPU split) and docs, cut to the target length, plus a "explain and propose three refactorings" task
+- prompt = Nostroma's own source (2-GPU split) and docs, cut to the target length, plus a "explain and propose three refactorings" task
 - a random nonce at the start of every prompt, so no prompt is reused from the cache (`reused` is 0 in `runs.json`)
 - one warm-up run per length, then 3 measured runs
 - speeds are read from the server log line (`prompt ... read in ... ms`, `... generated in ... ms`)

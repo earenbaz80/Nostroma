@@ -9,8 +9,8 @@
 // bench: tests/cuda/prefill_expert_paths_bench.cpp).  Per call: every output row of an active entry is finite and written, rows no entry
 // maps to are untouched (the NaN pattern is still there), and three runs of the same call give the same bits (the tile order never changes a sum).
 // Every gate/up format of the kernel with both down formats; groups of 0, 1, 31..33, 47..49, 63..65 and 130 entries (zero-entry groups too),
-// the three tile sizes (STRATA_I8_TM = 2, 3, 4), scattered destinations, random tokens, stale scratch.
-#include "strata/kernels/iq_kernels.hpp"
+// the three tile sizes (NOSTROMA_I8_TM = 2, 3, 4), scattered destinations, random tokens, stale scratch.
+#include "nostroma/kernels/iq_kernels.hpp"
 
 #include <cuda_runtime.h>
 
@@ -24,7 +24,7 @@
 #include <random>
 #include <vector>
 
-namespace k = strata::kernels;
+namespace k = nostroma::kernels;
 
 namespace {
 
@@ -198,7 +198,7 @@ uint64_t hash_bits(const std::vector<float>& v) {
     return h;
 }
 
-// The prompt path's call for a layer the CPU share took experts of (include/strata/prefill/share_own_rule.hpp): the GPU's experts sit in the first `rows_local` rows of the layer's
+// The prompt path's call for a layer the CPU share took experts of (include/nostroma/prefill/share_own_rule.hpp): the GPU's experts sit in the first `rows_local` rows of the layer's
 // rows in groups of 16, the CPU's experts' rows are the LAST block [rows_local, cap) of the layer's output and nobody on the GPU writes them.  Each group is one launch exactly as
 // i8grp::run makes it: bounds relative to the group's first row r0, the entry-to-place table the identity from there, the rows' tokens src + r0, the scratch at r0 * (2 * FF) floats,
 // the output at out + r0 * H.  Checked against native_expert_grouped on the same layout: the GPU rows are finite and agree (relative RMS under 5e-3), the CPU block is untouched
@@ -291,9 +291,9 @@ void check(int gu, int dt, int64_t H, int64_t FF, cudaStream_t s, std::mt19937& 
     // A pair the device does not cover (its smallest tile does not fit the shared memory per block, or the layout is out of range) is skipped, not an error;
     // the earlier pass of another pair may have left a pretended limit in the environment, so ask with the device's own.
 #ifdef _WIN32
-    _putenv_s("STRATA_I8_SMEM_LIMIT", "0");
+    _putenv_s("NOSTROMA_I8_SMEM_LIMIT", "0");
 #else
-    setenv("STRATA_I8_SMEM_LIMIT", "0", 1);
+    setenv("NOSTROMA_I8_SMEM_LIMIT", "0", 1);
 #endif
     if (!k::native_expert_i8_supported(k::native_expert_layout(gu, dt, H, FF))) {
         std::printf("%-8s/%-7s %5lld x %4lld  skipped: not covered on this device\n", name_of(gu), name_of(dt), (long long) H, (long long) FF);
@@ -318,11 +318,11 @@ void check(int gu, int dt, int64_t H, int64_t FF, cudaStream_t s, std::mt19937& 
     for (const auto& tl : std::vector<std::pair<int, int>>{{2, 0}, {3, 0}, {4, 0}, {8, 0}, {8, 49152}, {4, 49152}}) {
         const int tm = tl.first;
 #ifdef _WIN32
-        _putenv_s("STRATA_I8_TM", std::to_string(tm).c_str());
-        _putenv_s("STRATA_I8_SMEM_LIMIT", std::to_string(tl.second).c_str());
+        _putenv_s("NOSTROMA_I8_TM", std::to_string(tm).c_str());
+        _putenv_s("NOSTROMA_I8_SMEM_LIMIT", std::to_string(tl.second).c_str());
 #else
-        setenv("STRATA_I8_TM", std::to_string(tm).c_str(), 1);
-        setenv("STRATA_I8_SMEM_LIMIT", std::to_string(tl.second).c_str(), 1);
+        setenv("NOSTROMA_I8_TM", std::to_string(tm).c_str(), 1);
+        setenv("NOSTROMA_I8_SMEM_LIMIT", std::to_string(tl.second).c_str(), 1);
 #endif
         if (tl.second && !k::native_expert_i8_supported(S.L)) continue;
         for (const int base : {0, 9}) {
@@ -331,7 +331,7 @@ void check(int gu, int dt, int64_t H, int64_t FF, cudaStream_t s, std::mt19937& 
                 for (int m : sizes) total += m;
                 if (base + total > S.cap) continue;
                 S.plan_sizes(sizes, base, rng);
-                set_env("STRATA_I8_N8", "0");   // the 16-entry slices: the reference of the bit check below, whatever the class default is
+                set_env("NOSTROMA_I8_N8", "0");   // the 16-entry slices: the reference of the bit check below, whatever the class default is
                 const auto ref = S.result(false, 0x00, s);
                 const auto a = S.result(true, 0x00, s);
                 const auto b = S.result(true, 0x7F, s);
@@ -339,10 +339,10 @@ void check(int gu, int dt, int64_t H, int64_t FF, cudaStream_t s, std::mt19937& 
                 ++calls;
                 bool fail = false;
                 if (hash_bits(a) != hash_bits(b) || hash_bits(a) != hash_bits(c)) { std::printf("  tm %d base %d: the bits changed between runs  FAIL\n", tm, base); fail = true; }
-                if (tm <= 4) {   // tile codes 2-4 also run as 8-entry slices (STRATA_I8_N8=1): the same terms in the same order, so the same bits
-                    set_env("STRATA_I8_N8", "1");
+                if (tm <= 4) {   // tile codes 2-4 also run as 8-entry slices (NOSTROMA_I8_N8=1): the same terms in the same order, so the same bits
+                    set_env("NOSTROMA_I8_N8", "1");
                     const auto d8 = S.result(true, 0x7F, s);
-                    set_env("STRATA_I8_N8", "0");
+                    set_env("NOSTROMA_I8_N8", "0");
                     if (hash_bits(a) != hash_bits(d8)) { std::printf("  tm %d base %d: 8-entry slices (N8) changed the bits  FAIL\n", tm, base); fail = true; }
                 }
                 std::vector<char> active((size_t) S.cap, 0);
@@ -382,9 +382,9 @@ void check(int gu, int dt, int64_t H, int64_t FF, cudaStream_t s, std::mt19937& 
             }
         }
     }
-    set_env("STRATA_I8_SMEM_LIMIT", "0");
+    set_env("NOSTROMA_I8_SMEM_LIMIT", "0");
     for (const int tm : {2, 3, 4, 8}) {   // the carved layer of a CPU share (check_carved), the device's own limit
-        set_env("STRATA_I8_TM", std::to_string(tm).c_str());
+        set_env("NOSTROMA_I8_TM", std::to_string(tm).c_str());
         check_carved(S, H, FF, s, rng, tm, bad, worst, calls);
     }
     std::printf("%-8s/%-7s %5lld x %4lld  %d calls: %s (worst relative RMS against grouped %.3e)\n", name_of(gu), name_of(dt), (long long) H,

@@ -35,7 +35,7 @@ def main():
     cfg["log"] = "/tmp/long-context.log"
     tmp = Path("/tmp/long-context.json")
     tmp.write_text(json.dumps(cfg, indent=1))
-    proc = subprocess.Popen([sys.executable, str(ROOT / "serve" / "server.py"), "--engine", "strata", "--config",
+    proc = subprocess.Popen([sys.executable, str(ROOT / "serve" / "server.py"), "--engine", "nostroma", "--config",
                              str(tmp), "--port", str(port)], cwd=str(ROOT),
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:

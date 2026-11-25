@@ -23,9 +23,9 @@ def load(name, path):
     return m
 
 
-V = load("strata_sdcpp_vae_apply_test", ROOT / "tools" / "image" / "sdcpp_vae" / "apply.py")
-N = load("strata_sdcpp_native_apply_for_vae_test", ROOT / "tools" / "image" / "sdcpp_native" / "apply.py")
-Z = load("strata_sdcpp_noise_apply_for_vae_test", ROOT / "tools" / "image" / "sdcpp_noise" / "apply.py")
+V = load("nostroma_sdcpp_vae_apply_test", ROOT / "tools" / "image" / "sdcpp_vae" / "apply.py")
+N = load("nostroma_sdcpp_native_apply_for_vae_test", ROOT / "tools" / "image" / "sdcpp_native" / "apply.py")
+Z = load("nostroma_sdcpp_noise_apply_for_vae_test", ROOT / "tools" / "image" / "sdcpp_noise" / "apply.py")
 
 ENGINE = """#include "core/rng.hpp"
 #include "core/rng_mt19937.hpp"
@@ -69,28 +69,28 @@ class Apply(unittest.TestCase):
             sd = fake_tree(Path(t))
             V.apply(sd)
             for src, rel in V.FILES:
-                self.assertEqual((sd / "src" / "strata_vae" / rel).read_bytes(), (ROOT / src).read_bytes(), rel)
-            self.assertTrue((sd / "src" / "strata_vae" / "include" / "strata" / "hip_compat" / "cublas_v2.h").is_file())
+                self.assertEqual((sd / "src" / "nostroma_vae" / rel).read_bytes(), (ROOT / src).read_bytes(), rel)
+            self.assertTrue((sd / "src" / "nostroma_vae" / "include" / "nostroma" / "hip_compat" / "cublas_v2.h").is_file())
             eng = (sd / "src" / "pipeline" / "diffusion_engine.cpp").read_text()
             cm = (sd / "CMakeLists.txt").read_text()
-            self.assertIn('std::strstr(config_->params.model_args, "strata_vae=1")', eng)
+            self.assertIn('std::strstr(config_->params.model_args, "nostroma_vae=1")', eng)
             self.assertIn("version == VERSION_QWEN_IMAGE_2_1", eng)
-            self.assertIn("#ifdef SD_STRATA_VAE", eng)
+            self.assertIn("#ifdef SD_NOSTROMA_VAE", eng)
             # the fallback: the reason goes into the warning, then stable-diffusion.cpp's decoder runs (no return)
-            self.assertEqual(eng.count('LOG_WARN("strata VAE decoder: %s; using stable-diffusion.cpp\'s decoder", '
-                                       'strata_err.c_str());'), 2)
+            self.assertEqual(eng.count('LOG_WARN("nostroma VAE decoder: %s; using stable-diffusion.cpp\'s decoder", '
+                                       'nostroma_err.c_str());'), 2)
             # a non-finite picture: the warning says that sd.cpp's decoder (the same f16 operands) may fail the same way
-            self.assertIn('if (strata_err.find("not finite") != std::string::npos)', eng)
+            self.assertIn('if (nostroma_err.find("not finite") != std::string::npos)', eng)
             self.assertIn("using stable-diffusion.cpp's decoder, which may fail the same way", eng)
             cu = (ROOT / "src" / "image" / "vae" / "wan_vae.cu").read_text(encoding="utf-8")
             self.assertIn('"wan_vae: the picture has values that are not finite', cu)      # the reason the hook looks for
             self.assertLess(eng.index("return decoded;"), eng.rindex("LOG_WARN"))
             self.assertLess(eng.rindex("LOG_WARN"), eng.index("auto tiling_params"))
-            self.assertIn("add_library(strata_vae STATIC", cm)
-            self.assertIn("target_compile_definitions(${SD_LIB} PRIVATE SD_STRATA_VAE)", cm)
+            self.assertIn("add_library(nostroma_vae STATIC", cm)
+            self.assertIn("target_compile_definitions(${SD_LIB} PRIVATE SD_NOSTROMA_VAE)", cm)
             self.assertNotIn("use_fast_math", cm)
             # HIP: the library defined before enable_language(HIP) needs the architectures too (p620, 11-10)
-            self.assertIn('set_target_properties(strata_vae ${SD_LIB} PROPERTIES HIP_ARCHITECTURES '
+            self.assertIn('set_target_properties(nostroma_vae ${SD_LIB} PROPERTIES HIP_ARCHITECTURES '
                           '"${CMAKE_HIP_ARCHITECTURES}")', cm)
             self.assertLess(cm.index("if (SD_CUDA OR SD_HIPBLAS)"), cm.index(V.CMAKE_OLD))
             before = (eng, cm)
@@ -117,7 +117,7 @@ class Apply(unittest.TestCase):
                 self.assertIn(V.MARK, eng)
                 self.assertIn(Z.MARK, eng)
                 self.assertIn("SD_QI_NATIVE", cm)
-                self.assertIn("SD_STRATA_VAE", cm)
+                self.assertIn("SD_NOSTROMA_VAE", cm)
                 results.append(eng.count(V.MARK))
         self.assertEqual(results[0], results[1])
 

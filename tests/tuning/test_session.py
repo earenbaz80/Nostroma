@@ -32,7 +32,7 @@ class Handler(BaseHTTPRequestHandler):
         Handler.seen.append({"auth": self.headers.get("authorization"), **req})
         n = req["max_tokens"]
         prompt_tokens = len(req["messages"][0]["content"]) // 4
-        tune = req.get("strata_tune") or {}
+        tune = req.get("nostroma_tune") or {}
         rate = 80.0 * (1.1 if tune.get("spec_min_p") == 0.7 else 1.0)
         body = json.dumps({"choices": [{"message": {"content": "x"}}], "usage": {"prompt_tokens": prompt_tokens, "completion_tokens": n},
                            "timings": {"cache_n": 0, "prompt_n": prompt_tokens, "prompt_ms": prompt_tokens / 2.0,
@@ -61,7 +61,7 @@ class SessionTest(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         s = WorkerSession(base_config={"args": []}, serve_dir=".", workdir=self.tmp.name)
         log = Path(self.tmp.name) / "e.log"
-        log.write_text("strata generate: expert cache 3160 slots, 4.26 GiB of VRAM\nstrata generate: 5 pool workers on logical processors 2,4\n")
+        log.write_text("nostroma generate: expert cache 3160 slots, 4.26 GiB of VRAM\nnostroma generate: 5 pool workers on logical processors 2,4\n")
         self.eng = WorkerEngine(s, FakeProc(), self.srv.server_address[1], "k", [log], 12.0, None, lambda x: None)
 
     def test_measure_reads_the_engines_own_clock(self):
@@ -79,13 +79,13 @@ class SessionTest(unittest.TestCase):
         self.eng.prompt_once(4096)
         a, b = [h["messages"][0]["content"] for h in Handler.seen[-2:]]
         self.assertNotEqual(a[:40], b[:40])
-        self.assertTrue(all(h.get("strata_checkpoint") is False for h in Handler.seen))
+        self.assertTrue(all(h.get("nostroma_checkpoint") is False for h in Handler.seen))
 
     def test_per_request_settings_are_sent_and_change_the_rate(self):
         base = self.eng.decode_once(None, 200)
         fast = self.eng.decode_once({"spec_min_p": 0.7}, 200)
         self.assertAlmostEqual(fast / base, 1.1, places=3)
-        self.assertEqual(Handler.seen[-1]["strata_tune"], {"spec_min_p": 0.7})
+        self.assertEqual(Handler.seen[-1]["nostroma_tune"], {"spec_min_p": 0.7})
 
     def test_prompt_length_calibrates_once(self):
         s = self.eng.s
@@ -107,14 +107,14 @@ class ParsingTest(unittest.TestCase):
     def test_cuda_init_failure_with_the_memory_guard_line_is_not_oom(self):
         # #3502: the informational memory guard line was present in every failed run
         text = ("ggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\n"
-                "strata generate: memory guard: limit 63.8 GiB (source: meminfo), current 12.6 GiB, reclaimable cache "
+                "nostroma generate: memory guard: limit 63.8 GiB (source: meminfo), current 12.6 GiB, reclaimable cache "
                 "credited 0.0 GiB; available 51.2 GiB (MemAvailable 51.2 GiB), floor 2560 MiB\n"
-                "strata generate: expert arena: cudaHostRegister of the whole arena FAILED (out of memory)\n")
+                "nostroma generate: expert arena: cudaHostRegister of the whole arena FAILED (out of memory)\n")
         status, why = failure_kind(text, 1)
         self.assertEqual(status, "FAIL_BOOT")
         self.assertIn("Unload the model", why)
         self.assertNotIn("memory guard", why)
-        info = "strata generate: memory guard: limit 63.8 GiB, available 51.2 GiB\nsomething else broke"
+        info = "nostroma generate: memory guard: limit 63.8 GiB, available 51.2 GiB\nsomething else broke"
         self.assertEqual(failure_kind(info, 1)[0], "FAIL_BOOT")
 
     def test_gpu_cache_wording_is_not_the_low_ram_mode(self):
@@ -122,7 +122,7 @@ class ParsingTest(unittest.TestCase):
         self.assertTrue(parse_facts("WARNING: the whole resident RAM mode does not fit (FileExpertSource: resident complement 34.47 GiB")["resident_ram"])
 
     def test_facts(self):
-        f = parse_facts("strata generate: 6 CPU threads\nhybrid experts: 37% on the GPU\n")
+        f = parse_facts("nostroma generate: 6 CPU threads\nhybrid experts: 37% on the GPU\n")
         self.assertEqual(f["workers"], 6)
         self.assertTrue(f["hybrid_experts"])
         self.assertTrue(parse_facts("resident RAM mode on")["resident_ram"])

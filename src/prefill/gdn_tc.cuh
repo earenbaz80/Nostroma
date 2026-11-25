@@ -1,10 +1,10 @@
-// src/prefill/gdn_tc.cuh - the chunked DeltaNet recurrence's scan on the tensor cores (STRATA_GDN_TC=1), sm_80+.
+// src/prefill/gdn_tc.cuh - the chunked DeltaNet recurrence's scan on the tensor cores (NOSTROMA_GDN_TC=1), sm_80+.
 //
 // Included inside the anonymous namespace of src/prefill/kernels.cu and of src/prefill/gdn_rec_parity.cu, after
 // gdn_chunk_scan_kernel (the harness runs the engine's kernels verbatim: one text, included twice).  It uses S, HK, HV,
 // C, VPK, GCH, GSB, GTP, gdn_cp16 / gdn_cp_commit / gdn_cp_wait_all from there and reads no environment.
 //
-// gdn_chunk_scan_kernel's chunk algebra (kernels.cu, "STRATA_GDN_CHUNKED=1"), every product transposed so that a
+// gdn_chunk_scan_kernel's chunk algebra (kernels.cu, "NOSTROMA_GDN_CHUNKED=1"), every product transposed so that a
 // warp's slice of the state is the mma A operand and never leaves its registers: a block per value head, warp w owns
 // value columns 16w..16w+15 of S^T (16 columns x 128 rows = 16 m16n8 f32 accumulator tiles, 64 registers a lane) and
 // all 32 tokens of a chunk, so not one product couples two warps:
@@ -30,9 +30,9 @@
 // and 48 tf32 conversions a warp a chunk against 18 mma now; measured in the commit that changed it.)
 #if !defined(__HIPCC__)
 #if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 800
-#define STRATA_GDN_TC_SM80 1
+#define NOSTROMA_GDN_TC_SM80 1
 #else
-#define STRATA_GDN_TC_SM80 0   // device code for older cards: the wrappers trap (gdn_rec_tc never launches there)
+#define NOSTROMA_GDN_TC_SM80 0   // device code for older cards: the wrappers trap (gdn_rec_tc never launches there)
 #endif
 
 constexpr int GTC_KP = S + 8;     // f16 k / q rows: a 272-B stride puts the 8 rows of a ldmatrix 8x8 on 8 distinct 16-B lanes
@@ -98,7 +98,7 @@ GtcScratch gdn_tc_scratch() {
 // happened to close that branch (BSYNC) before the REDUX.MAX; the engine's build is a separate compile that nothing
 // checks.  The kernel has no early return, so the full mask costs no reconvergence code.
 __device__ __forceinline__ float gtc_warp_max(float v) {
-#if STRATA_GDN_TC_SM80
+#if NOSTROMA_GDN_TC_SM80
     return __uint_as_float(__reduce_max_sync(0xffffffffu, __float_as_uint(v)));
 #else
 #pragma unroll
@@ -122,7 +122,7 @@ __device__ __forceinline__ int gtc_scale_exp(float m) {
 //   ldmatrix m8n8.x4.b16: lanes 8m..8m+7 give the row addresses of matrix m; a lane gets (row gid, cols 2tig, 2tig+1)
 //                 of each matrix (the lower column in the low half), or with .trans (rows 2tig, 2tig+1; col gid)
 __device__ __forceinline__ void gtc_ldsm_x4(uint32_t (&r)[4], const void* smem) {
-#if STRATA_GDN_TC_SM80
+#if NOSTROMA_GDN_TC_SM80
     asm volatile("ldmatrix.sync.aligned.m8n8.x4.shared.b16 {%0,%1,%2,%3}, [%4];"
                  : "=r"(r[0]), "=r"(r[1]), "=r"(r[2]), "=r"(r[3])
                  : "r"((unsigned) __cvta_generic_to_shared(smem)));
@@ -131,7 +131,7 @@ __device__ __forceinline__ void gtc_ldsm_x4(uint32_t (&r)[4], const void* smem) 
 #endif
 }
 __device__ __forceinline__ void gtc_ldsm_x4_trans(uint32_t (&r)[4], const void* smem) {
-#if STRATA_GDN_TC_SM80
+#if NOSTROMA_GDN_TC_SM80
     asm volatile("ldmatrix.sync.aligned.m8n8.x4.trans.shared.b16 {%0,%1,%2,%3}, [%4];"
                  : "=r"(r[0]), "=r"(r[1]), "=r"(r[2]), "=r"(r[3])
                  : "r"((unsigned) __cvta_generic_to_shared(smem)));
@@ -140,7 +140,7 @@ __device__ __forceinline__ void gtc_ldsm_x4_trans(uint32_t (&r)[4], const void* 
 #endif
 }
 __device__ __forceinline__ void gtc_mma_f16(float (&c)[4], const uint32_t (&a)[4], uint32_t b0, uint32_t b1) {
-#if STRATA_GDN_TC_SM80
+#if NOSTROMA_GDN_TC_SM80
     asm("mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32 {%0,%1,%2,%3}, {%4,%5,%6,%7}, {%8,%9}, {%0,%1,%2,%3};"
         : "+f"(c[0]), "+f"(c[1]), "+f"(c[2]), "+f"(c[3])
         : "r"(a[0]), "r"(a[1]), "r"(a[2]), "r"(a[3]), "r"(b0), "r"(b1));
@@ -155,7 +155,7 @@ __device__ __forceinline__ void gtc_mma3_f16(float (&c)[4], const uint32_t (&ah)
     gtc_mma_f16(c, ah, bl0, bl1);
     gtc_mma_f16(c, ah, bh0, bh1);
 }
-// NP (experiment, STRATA_GDN_TC split kernels only): 3 = every product on the three passes above (the default); 2 = only the products
+// NP (experiment, NOSTROMA_GDN_TC split kernels only): 3 = every product on the three passes above (the default); 2 = only the products
 // that reach the OUTPUT alone (q.S and D.P) on one pass, the state's products (k.S, Y.T, the update) on three; 1 = every product on one pass
 // (hi.hi, plain f16 operands as the gfx11 WMMA path).  A single-pass product does not read its B operand's lo image.
 template <int NP>
@@ -190,7 +190,7 @@ __device__ __forceinline__ void gtc_split_store4(uint16_t* hi, uint16_t* lo, flo
 // a component each, and kept across them they cost 24 registers a thread
 __device__ __forceinline__ float4 gtc_lds128(const float4* p) {
     float4 v;
-#if STRATA_GDN_TC_SM80
+#if NOSTROMA_GDN_TC_SM80
     asm volatile("ld.shared.v4.f32 {%0,%1,%2,%3}, [%4];"
                  : "=f"(v.x), "=f"(v.y), "=f"(v.z), "=f"(v.w)
                  : "r"((unsigned) __cvta_generic_to_shared(p)));

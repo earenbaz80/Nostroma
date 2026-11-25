@@ -3,7 +3,7 @@
 The headers are recorded from Hugging Face by HTTP range reads (tools/qwen4_intake_fixtures/*.json.gz: metadata without the big
 arrays, the tensor directory, the special tokens).  Each test writes them back as header-only GGUF files with
 tools/gguf_writer.py's key/value encoder and runs the real reader over them, so the whole path (file -> reader -> report) is the
-one a real run takes.  No weights exist anywhere in this test; no network is used unless STRATA_LIVE_HF=1.
+one a real run takes.  No weights exist anywhere in this test; no network is used unless NOSTROMA_LIVE_HF=1.
 
 The last class reads the C++ and kernel sources and fails when a table in qwen4_intake.py no longer matches them.
 """
@@ -30,7 +30,7 @@ sys.path.insert(0, str(ROOT))
 import gguf_reader as G  # noqa: E402
 import gguf_writer as W  # noqa: E402
 import qwen4_intake as Q  # noqa: E402
-import strata_tokenizer as ST  # noqa: E402
+import nostroma_tokenizer as ST  # noqa: E402
 
 FIX = HERE / "qwen4_intake_fixtures"
 
@@ -187,7 +187,7 @@ class RealSets(unittest.TestCase):
         self.assertEqual(v["case"], "C")
         text = "\n".join(v["blockers"])
         self.assertIn("deepseek41", text)
-        self.assertIn("strata-dsv41", text)
+        self.assertIn("nostroma-dsv41", text)
         self.assertIn("joyai-llm", text)           # the pre-tokenizer
         self.assertIn("MXFP4", text)               # a quant type with no kernel in any Qwen path list
         self.assertEqual(v["backends"], [])
@@ -423,10 +423,10 @@ class Output(unittest.TestCase):
         self.assertLess(time.time() - t0, 60)
 
 
-@unittest.skipUnless(os.environ.get("STRATA_LIVE_HF") == "1", "set STRATA_LIVE_HF=1 to read real headers from Hugging Face")
+@unittest.skipUnless(os.environ.get("NOSTROMA_LIVE_HF") == "1", "set NOSTROMA_LIVE_HF=1 to read real headers from Hugging Face")
 class LiveHuggingFace(unittest.TestCase):
     def setUp(self):
-        p = mock.patch.dict(os.environ, {"STRATA_TEST_ALLOW_NETWORK": "1"})      # a live test: the tests' network guard (conftest.py) lets it through
+        p = mock.patch.dict(os.environ, {"NOSTROMA_TEST_ALLOW_NETWORK": "1"})      # a live test: the tests' network guard (conftest.py) lets it through
         p.start()
         self.addCleanup(p.stop)
 
@@ -466,7 +466,7 @@ def _func(text: str, head: str) -> str:
 
 
 def _define(text: str, name: str) -> set[int]:
-    """The first (STRATA_Q6K_EXPERTS=ON) definition of a STRATA_*_FMTS list."""
+    """The first (NOSTROMA_Q6K_EXPERTS=ON) definition of a NOSTROMA_*_FMTS list."""
     m = re.search(r"#define %s\(X\)([^\n]*)" % name, text)
     return _ints(m.group(1), r"X\((\d+)\)")
 
@@ -478,7 +478,7 @@ def _is_iq_ints(text: str) -> set[int]:
 
 class TablesMatchTheSources(unittest.TestCase):
     def test_geometry_defaults(self):
-        text = _read("include/strata/core/geometry.hpp")
+        text = _read("include/nostroma/core/geometry.hpp")
         cpp = {m.group(1): int(m.group(2)) for m in re.finditer(r"int64_t (\w+) = (\d+);", text)}
         py = Q.COMPILED
         for name, val in cpp.items():
@@ -488,7 +488,7 @@ class TablesMatchTheSources(unittest.TestCase):
         self.assertEqual(py.family, "qwen4exp")
 
     def test_layout_tables_name_the_same_tensors(self):
-        text = _read("include/strata/core/family_layout.hpp")
+        text = _read("include/nostroma/core/family_layout.hpp")
         cpp = set(re.findall(r'add\("([^"]+)"', text)) | set(re.findall(r'push_back\(\{"([^"]+)"', text))
         py = set()
         g4, g35 = Q.Geometry(), Q.Geometry(family="qwen35moe", hc=0, hc_lr=0, idx_q_heads=0, idx_key_dim=0, n_mtp_layers=1, n_layers=40)
@@ -500,7 +500,7 @@ class TablesMatchTheSources(unittest.TestCase):
         self.assertEqual(py, cpp)
 
     def test_family_names_and_runs(self):
-        text = _read("include/strata/artifact/model_family.hpp")
+        text = _read("include/nostroma/artifact/model_family.hpp")
         self.assertIn('arch == "qwen4exp"', text)
         self.assertIn('arch == "qwen35moe"', text)
         self.assertIn("model_family_runs(ModelFamily f) { return f == ModelFamily::Qwen4Exp; }", text)
@@ -508,12 +508,12 @@ class TablesMatchTheSources(unittest.TestCase):
     def test_qwen35_limits_and_required_keys(self):
         text = _read("src/qwen35/q36_engine.cu")
         self.assertIn("g.head_dim != 256 || g.ssm_state_size != 128 || g.ssm_d_conv != 4 || g.n_expert > 512 || m.top_k > 15", text)
-        hpp = _read("include/strata/artifact/gguf_reader.hpp")
+        hpp = _read("include/nostroma/artifact/gguf_reader.hpp")
         body = _func(hpp, "inline std::string check_architecture_qwen35moe")
         self.assertEqual(set(re.findall(r'"qwen35moe\.([a-z_.]+)"', body)), set(Q.QWEN35_REQUIRED))
 
     def test_qwen4_geometry_keys(self):
-        hpp = _read("include/strata/artifact/gguf_reader.hpp")
+        hpp = _read("include/nostroma/artifact/gguf_reader.hpp")
         body = _func(hpp, "inline std::string read_geometry")
         cpp = {m.group(1): m.group(3) == "true" for m in re.finditer(r'\{"([^"]+)", &core::ModelGeometry::(\w+), (true|false)\}', body)}
         self.assertEqual(cpp, {k: r for k, f, r in Q.QWEN4_KEYS})
@@ -524,15 +524,15 @@ class TablesMatchTheSources(unittest.TestCase):
     def test_cuda_and_hip_lists(self):
         iq = _read("src/kernels/cuda/iq_kernels.cu")
         L = Q.BACKEND_LISTS["cuda"]
-        self.assertEqual(_define(iq, "STRATA_GU_FMTS"), L["gu"])
-        self.assertEqual(_define(iq, "STRATA_D_FMTS"), L["down"])
+        self.assertEqual(_define(iq, "NOSTROMA_GU_FMTS"), L["gu"])
+        self.assertEqual(_define(iq, "NOSTROMA_D_FMTS"), L["down"])
         self.assertEqual(_is_iq_ints(iq), L["is_iq"])
         self.assertEqual(_ints(_func(iq, "bool embed_type_supported"), r"t == (\d+)"), L["embed_extra"])
         self.assertIs(Q.BACKEND_LISTS["hip"], L)
         # HIP compiles the same file: nothing in it narrows the lists to one vendor
-        self.assertNotIn("__HIPCC__", "\n".join(re.findall(r"#define STRATA_(?:GU|D)_FMTS[^\n]*", iq)))
-        self.assertIn("option(STRATA_Q6K_EXPERTS", _read("CMakeLists.txt"))
-        self.assertRegex(_read("CMakeLists.txt"), r'option\(STRATA_Q6K_EXPERTS "[^"]*" ON\)')
+        self.assertNotIn("__HIPCC__", "\n".join(re.findall(r"#define NOSTROMA_(?:GU|D)_FMTS[^\n]*", iq)))
+        self.assertIn("option(NOSTROMA_Q6K_EXPERTS", _read("CMakeLists.txt"))
+        self.assertRegex(_read("CMakeLists.txt"), r'option\(NOSTROMA_Q6K_EXPERTS "[^"]*" ON\)')
 
     def test_mmvq_lists(self):
         for rel in ("src/kernels/cuda/native_mmvq.cu", "sycl/src/kernels/cuda/native_mmvq.dp.cpp", "metal/src/engine/mmvq_host.cpp"):
@@ -542,8 +542,8 @@ class TablesMatchTheSources(unittest.TestCase):
     def test_sycl_lists(self):
         text = _read("sycl/src/kernels/cuda/iq_kernels.dp.cpp")
         L = Q.BACKEND_LISTS["sycl"]
-        self.assertEqual(_define(text, "STRATA_GU_FMTS"), L["gu"])
-        self.assertEqual(_define(text, "STRATA_D_FMTS"), L["down"])
+        self.assertEqual(_define(text, "NOSTROMA_GU_FMTS"), L["gu"])
+        self.assertEqual(_define(text, "NOSTROMA_D_FMTS"), L["down"])
         self.assertEqual(_is_iq_ints(text), L["is_iq"])
         self.assertEqual(_ints(_func(text, "bool embed_type_supported"), r"t == (\d+)"), L["embed_extra"])
 

@@ -3,15 +3,15 @@
 //
 //     build/native_expert_bench <shard1.gguf> <layer[,layer...]> <groups> <tokens per group> <ref mode> <mode> [iters]
 //
-// Modes are STRATA_EXP_MODE values.  A group is one expert (distinct blobs, ~2 MB each, so G >= 8 does not fit
+// Modes are NOSTROMA_EXP_MODE values.  A group is one expert (distinct blobs, ~2 MB each, so G >= 8 does not fit
 // in L2); its entries read distinct tokens of an 8-token window.  The output must be bitwise equal to the
 // reference mode's: the verify window's text depends on it.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "strata/artifact/gguf_reader.hpp"
-#include "strata/kernels/cpu/native_expert.hpp"
-#include "strata/kernels/iq_kernels.hpp"
+#include "nostroma/artifact/gguf_reader.hpp"
+#include "nostroma/kernels/cpu/native_expert.hpp"
+#include "nostroma/kernels/iq_kernels.hpp"
 
 #include "ggml.h"
 
@@ -26,8 +26,8 @@
 #include <string>
 #include <vector>
 
-namespace cpu = strata::kernels::cpu;
-namespace K = strata::kernels;
+namespace cpu = nostroma::kernels::cpu;
+namespace K = nostroma::kernels;
 
 uint64_t fnv1a(const void* data, size_t bytes) {
     const auto* p = static_cast<const uint8_t*>(data);
@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "usage: native_expert_bench <shard1.gguf> <layer[,layer]> <groups> <tokens> <ref mode> <mode> [iters]\n");
         return 2;
     }
-    strata::GgufFile gguf(argv[1]);
+    nostroma::GgufFile gguf(argv[1]);
     std::vector<int> layers;
     {
         std::stringstream ss(argv[2]);
@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
         }
     };
     for (int l : layers) {
-        const strata::TensorInfo* t[3] = {};
+        const nostroma::TensorInfo* t[3] = {};
         const char* roles[3] = {"gate", "up", "down"};
         for (const auto& ti : gguf.tensors())
             for (int r = 0; r < 3; ++r)

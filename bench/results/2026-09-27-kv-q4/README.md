@@ -54,7 +54,7 @@ Without streaming (contexts up to 64K, or too little RAM for it) q4_0 halves the
 
 `--kv q4_0` is a user option:
 - `START-HERE.bat --kv q4_0`, or the question setup asks above 8K context;
-- or `--kv q4_0` in a `strata-*.json`.
+- or `--kv q4_0` in a `nostroma-*.json`.
 
 int8 stays the default: every published quality number was measured with it, and q4_0's precision cost is real,
 though it passes the needles.

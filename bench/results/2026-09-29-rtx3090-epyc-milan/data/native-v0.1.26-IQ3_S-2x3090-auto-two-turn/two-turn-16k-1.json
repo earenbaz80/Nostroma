@@ -16,15 +16,15 @@
  "engine_prompt_tps": 739.4,
  "engine_decode_tps": 98.3,
  "log_lines": [
-  "strata serve: prompt 15639 tokens = 0 reused + 15639 read in 21151 ms (739.4 tok/s), 83 generated in 844 ms (98.3 tok/s), drafts accepted 53 of 73, 1 checkpoints",
-  "strata serve: decode expert cache hit rate: 98.5% (48689 hits / 49415 lookups)"
+  "nostroma serve: prompt 15639 tokens = 0 reused + 15639 read in 21151 ms (739.4 tok/s), 83 generated in 844 ms (98.3 tok/s), drafts accepted 53 of 73, 1 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 98.5% (48689 hits / 49415 lookups)"
  ],
  "answer_head": "I'll start by exploring the repository structure to understand what's there.",
  "turn2_ttft_s": 0.627,
  "turn2_prompt_tokens": 15676,
  "turn2_log_lines": [
-  "strata serve: prompt 15676 tokens = 15632 reused + 44 read in 521 ms (84.4 tok/s), 64 generated in 739 ms (86.6 tok/s), drafts accepted 37 of 52, 2 checkpoints",
-  "strata serve: decode expert cache hit rate: 97.1% (36768 hits / 37868 lookups)"
+  "nostroma serve: prompt 15676 tokens = 15632 reused + 44 read in 521 ms (84.4 tok/s), 64 generated in 739 ms (86.6 tok/s), drafts accepted 37 of 52, 2 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 97.1% (36768 hits / 37868 lookups)"
  ],
  "metrics_after": {
   "engine": {

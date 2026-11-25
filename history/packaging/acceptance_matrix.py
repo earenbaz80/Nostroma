@@ -6,7 +6,7 @@ that fixed table; it runs no check. The date and revision of the checkout it is 
 they are not a qualification of any later release. The checklist it reads lives outside this repository, so it only runs on
 the machine that had it.
 
-`strata-acceptance-checklist.md` has 67 requirement rows, and Phase A is only complete when **every
+`nostroma-acceptance-checklist.md` has 67 requirement rows, and Phase A is only complete when **every
 one of them has an explicit result** — passed, failed, pending hardware, pending signing/release
 evidence, or genuinely unsupported with a reason. This script holds that mapping as data so it can
 be regenerated as the results change, and so a missing row is a build error rather than an oversight.
@@ -46,7 +46,7 @@ ROWS: dict[str, tuple[str, str, str]] = {
             "The macOS .app builds, launches, serves the supplied UI from the host's origin and "
             "passes its own 8-step self-test from inside the mounted DMG. No global Node, Python, "
             "npm, pip or compiler is required: the bundle carries a pinned Node runtime. Real "
-            "generation through it is NOT proven -- no Strata pack fits this Mac (16 GiB RAM, "
+            "generation through it is NOT proven -- no Nostroma pack fits this Mac (16 GiB RAM, "
             "~21 GiB free); that leg is pending hardware.",
             "history/docs/work/evidence/tauri-selftest-from-dmg.json, tauri-artifact.txt"),
     "P02": ("pending-hardware",
@@ -74,9 +74,9 @@ ROWS: dict[str, tuple[str, str, str]] = {
             ,
             "nostroma_control/components.py, tests/tuning/test_components.py"),
     "P07": ("passed",
-            "Components are acquired by kind: the manifest declares `application`, `runtime`, `agent-runtime`, `tuning`, `engine` or `prepared-data`, each with its own platform and backend gates, and `strata components plan` reports whether a package may be used here without fetching anything. The backend families are held to the packet's own matrix, so a Windows SYCL or Intel-Mac Metal package is refused as unsupported rather than attempted."
+            "Components are acquired by kind: the manifest declares `application`, `runtime`, `agent-runtime`, `tuning`, `engine` or `prepared-data`, each with its own platform and backend gates, and `nostroma components plan` reports whether a package may be used here without fetching anything. The backend families are held to the packet's own matrix, so a Windows SYCL or Intel-Mac Metal package is refused as unsupported rather than attempted."
             ,
-            "nostroma_control/components.py, `strata components backends`"),
+            "nostroma_control/components.py, `nostroma components backends`"),
     "P08": ("passed",
             "Desktop and Terminal read the same owner state and the same model directory; the "
             "terminal's `models list` reads the setup-written configs that Desktop's model surfaces "
@@ -184,7 +184,7 @@ ROWS: dict[str, tuple[str, str, str]] = {
 
     # ---------------------------------------------------------------- agent, session, permissions
     "A01": ("passed",
-            "The supplied UI drives a turn through the pinned Harness against the local Strata API "
+            "The supplied UI drives a turn through the pinned Harness against the local Nostroma API "
             "worker on loopback, with no cloud route declared in the profile and therefore no "
             "DeepSeek account required. The model is the built-in mock: this proves the route, not "
             "inference quality.",
@@ -242,7 +242,7 @@ ROWS: dict[str, tuple[str, str, str]] = {
             "running agent, which needs a real model.",
             "history/docs/work/QUALIFICATION-KIT.md 7"),
     "A14": ("passed",
-            "The Strata profile declares exactly one route, on loopback, and no cloud route at all, "
+            "The Nostroma profile declares exactly one route, on loopback, and no cloud route at all, "
             "so a local failure cannot fall back to a hosted model -- there is nothing to fall back "
             "to. The host additionally refuses to simulate in a packaged build.",
             "integrations/harness/profile/cordis.patch.yml, history/docs/work/IMPLEMENTATION_STATUS.md 1.7"),
@@ -253,7 +253,7 @@ ROWS: dict[str, tuple[str, str, str]] = {
             "history/docs/work/evidence/serve-suite.txt"),
 
     "A03": ("passed",
-            "Verified end to end, and only after four defects were cleared. A scripted Strata worker "
+            "Verified end to end, and only after four defects were cleared. A scripted Nostroma worker "
             "emits a bash tool call; the test's own peer opens the gateway's `$events` stream on "
             "`/api/remote.mux` and grants the escalation with `allowed-once`. Asserted: the turn "
             "completes, the tool ran exactly once (`marker_lines == 1`, so a replayed effect would "
@@ -345,10 +345,10 @@ ROWS: dict[str, tuple[str, str, str]] = {
             "element of the key separately.",
             "tests/tuning/test_tune_history.py, nostroma_control/tune_history.py"),
     "T07": ("passed",
-            "`strata tune apply` revalidates the report hash, re-checks the sweep's artifact identity "
+            "`nostroma tune apply` revalidates the report hash, re-checks the sweep's artifact identity "
             "against what is installed, refuses an incomplete sweep, a no-change result, material "
             "drift or a report edited after review, snapshots the previous bytes, and writes "
-            "atomically; `strata tune rollback` restores those exact bytes and refuses if the "
+            "atomically; `nostroma tune rollback` restores those exact bytes and refuses if the "
             "configuration was edited since. Nothing applies automatically. The one gap is stated by "
             "the command itself: the candidate start is not verified against a running model because "
             "no supported model fits this Mac, so `--verify` is wired and tested but the CLI passes "
@@ -417,7 +417,7 @@ ROWS: dict[str, tuple[str, str, str]] = {
             "packaging/README.md, history/docs/work/evidence/tauri-artifact.txt"),
     "U12": ("passed",
             "A packaged build has no success path that uses demo responses or demo metrics: the "
-            "host refuses to simulate when STRATA_PACKAGED is set and returns a typed error "
+            "host refuses to simulate when NOSTROMA_PACKAGED is set and returns a typed error "
             "instead, the monitor reports `none` rather than invented readings, and this matrix "
             "records every failure, skip and remaining item.",
             "history/docs/work/IMPLEMENTATION_STATUS.md 1.7, this file"),
@@ -454,7 +454,7 @@ def main() -> int:
         f"`history/packaging/acceptance_matrix.py` formatted them on {datetime.now(timezone.utc).strftime('%Y-%m-%d')} "
         f"in a checkout at `{revision}`; that date and revision are not when, or on what code, the checks ran.",
         "",
-        "Every row of `strata-acceptance-checklist.md` appears exactly once, with an explicit "
+        "Every row of `nostroma-acceptance-checklist.md` appears exactly once, with an explicit "
         "result. `--check` fails if a row is missing, so a gap is a build error rather than an "
         "oversight.",
         "",
@@ -502,15 +502,15 @@ def main() -> int:
 def _checklist_ids() -> set[str]:
     """The requirement IDs the handoff's checklist actually contains."""
     checklist = Path("/Users/nikoveit/Documents/deepseek-harness/ENDING PLAN/"
-                     "strata-acceptance-checklist.md")
+                     "nostroma-acceptance-checklist.md")
     if not checklist.exists():
         # Resolve the containing directory of the handoff if it has moved, per the packet's own rule.
         for candidate in Path("/Users/nikoveit/Documents/deepseek-harness").rglob(
-                "strata-acceptance-checklist.md"):
+                "nostroma-acceptance-checklist.md"):
             checklist = candidate
             break
     if not checklist.exists():
-        raise SystemExit("cannot find strata-acceptance-checklist.md")
+        raise SystemExit("cannot find nostroma-acceptance-checklist.md")
     import re
     return set(re.findall(r"^\|\s*([A-Z][0-9]{2})\s*\|", checklist.read_text(encoding="utf-8"),
                           re.MULTILINE))

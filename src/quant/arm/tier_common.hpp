@@ -1,10 +1,10 @@
 // src/quant/arm/tier_common.hpp - what the Arm tier files of the layer need before they include ggml's ported NEON code (arm_dots.inc, arm_act.inc).
 //
 // dot_neon.cpp and act_neon.cpp are compiled with the flavour ggml-cpu ships on arm64 (cmake/backends/quant.cmake): armv8.2-a + dotprod + fp16 + i8mm, no SVE
-// (the DGX Spark's STRATA_PORTABLE build; the Mac's native build has the same features and no SVE).  Never include this header from a file compiled without them.
+// (the DGX Spark's NOSTROMA_PORTABLE build; the Mac's native build has the same features and no SVE).  Never include this header from a file compiled without them.
 #pragma once
 
-#define STRATA_QUANT_TABLES
+#define NOSTROMA_QUANT_TABLES
 #include "../internal.hpp"
 
 #include <arm_neon.h>
@@ -22,7 +22,7 @@
 #define UNUSED(x) (void) (x)
 
 // ggml's own choice on arm64: the hardware conversions through __fp16 (the same values as the software ones for every finite input).
-namespace strata::quant {
+namespace nostroma::quant {
 inline float h2f(uint16_t h) {
     __fp16 t;
     std::memcpy(&t, &h, sizeof t);
@@ -34,4 +34,4 @@ inline uint16_t f2h(float f) {
     std::memcpy(&r, &t, sizeof r);
     return r;
 }
-}  // namespace strata::quant
+}  // namespace nostroma::quant

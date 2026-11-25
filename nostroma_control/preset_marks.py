@@ -11,7 +11,7 @@ calls `clear(mark_id)`. The file is created only when an engine identity actuall
 engine, or an update to a build with the same identity, writes nothing.
 
     {"schema_version": 1,
-     "pending": [{"id": "...", "reason": "engine_changed", "component": "strata-engine",
+     "pending": [{"id": "...", "reason": "engine_changed", "component": "nostroma-engine",
                   "from": {"version", "build_id", "manifest_sha256", "backend", "platform", "variant"},
                   "to":   {... same ...}, "marked_at": "<iso>"}]}
 """
@@ -80,7 +80,7 @@ def mark_engine_changed(before: dict | None, after: dict, *, base: Path | None =
     path = marks_path(base)
     data = _read(path)
     when = (now or dt.datetime.now(dt.timezone.utc)).isoformat()
-    mark = {"id": uuid.uuid4().hex, "reason": "engine_changed", "component": "strata-engine",
+    mark = {"id": uuid.uuid4().hex, "reason": "engine_changed", "component": "nostroma-engine",
             "from": {k: before.get(k) for k in IDENTITY_KEYS}, "to": {k: after.get(k) for k in IDENTITY_KEYS},
             "marked_at": when}
     # a second change before the check supersedes the first: one pending re-check from the identity the presets were measured on

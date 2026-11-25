@@ -246,7 +246,7 @@ class GpuLists(unittest.TestCase):
 
 class WindowsDetection(unittest.TestCase):
     """Windows: the AMD cards from the display adapters (mocked Win32_VideoController rows and display-class registry
-    values), the HIP runtime's numbering from `strata-device --list-devices`, and the card setup chose matched to its
+    values), the HIP runtime's numbering from `nostroma-device --list-devices`, and the card setup chose matched to its
     HIP ordinal (#325: an integrated Radeon is HIP's device 0)."""
     ADAPTERS = [  # Win32_VideoController: name, PNPDeviceID, AdapterRAM (32-bit: at most 4 GB)
         {"name": "NVIDIA GeForce RTX 5070", "pnp": r"PCI\VEN_10DE&DEV_2F04&SUBSYS_1234&REV_A1\4&1", "ram": 4293918720},
@@ -365,7 +365,7 @@ class WindowsDetection(unittest.TestCase):
         """#3418: the app keeps the engine in the component folder, not in control/engine; the cards must be numbered by the
         HIP runtime there too (an iGPU on ordinal 0 made the display-order "GPU 0" the wrong card)."""
         from nostroma_control import engine_component as EC
-        name = "strata-device.exe" if setup.WIN else "strata-device"
+        name = "nostroma-device.exe" if setup.WIN else "nostroma-device"
         with tempfile.TemporaryDirectory() as d:
             root, comp = Path(d) / "control", Path(d) / "components" / "0.2-hip"
             root.mkdir()
@@ -393,9 +393,9 @@ class WindowsDetection(unittest.TestCase):
     def test_no_hip_engine_no_probe(self):
         with tempfile.TemporaryDirectory() as d:
             eng = Path(d)
-            (eng / "strata-device.exe").write_text("x")
+            (eng / "nostroma-device.exe").write_text("x")
             (eng / "BUILD.json").write_text('{"backend": "cuda"}')     # an NVIDIA engine is never asked
-            self.assertIsNone(setup.hip_devices(eng / "strata-device.exe"))
+            self.assertIsNone(setup.hip_devices(eng / "nostroma-device.exe"))
 
     def test_prebuilt_hip_zip(self):
         """get_prebuilt_hip: a published zip (here a local folder) is unpacked into engine/; one without code for the
@@ -409,8 +409,8 @@ class WindowsDetection(unittest.TestCase):
 
             def publish(meta):
                 with zipfile.ZipFile(pub / setup.WIN_HIP_ASSET, "w") as z:
-                    z.writestr(setup.EXE, "engine")       # #975: "strata" on Linux
-                    z.writestr("strata-device.exe", "probe")
+                    z.writestr(setup.EXE, "engine")       # #975: "nostroma" on Linux
+                    z.writestr("nostroma-device.exe", "probe")
                     z.writestr("rocm/bin/amdhip64_7.dll", "dll")
                     z.writestr("BUILD.json", json.dumps(meta))
             ver = ".".join(map(str, setup.WIN_HIP_MIN_ENGINE))
@@ -444,7 +444,7 @@ class WindowsDetection(unittest.TestCase):
                 meta = {"source": "prebuilt", "backend": "hip", "version": ver, "archs": archs, "lib_dirs": ["rocm/bin"]}
                 with zipfile.ZipFile(pub / setup.WIN_HIP_ASSET, "w") as z:
                     z.writestr(setup.EXE, "engine")
-                    z.writestr("strata-device.exe", "probe")
+                    z.writestr("nostroma-device.exe", "probe")
                     z.writestr("rocm/bin/amdhip64_7.dll", "dll")
                     z.writestr("BUILD.json", json.dumps(meta))
                 with mock.patch.object(setup, "ROOT", root), mock.patch.object(setup, "say", lambda *a, **k: None),                         mock.patch.object(setup, "ok", lambda *a: None), mock.patch.object(setup, "warn", lambda *a: None):
@@ -578,23 +578,23 @@ class HipVisionWish(unittest.TestCase):
         for win, suffix in ((False, ""), (True, ".exe")):
             with tempfile.TemporaryDirectory() as d, mock.patch.object(setup, "WIN", win),                     mock.patch.object(setup, "warn", lambda *a: None):
                 eng = Path(d)
-                (eng / ("strata-vision" + suffix)).write_bytes(b"x")
+                (eng / ("nostroma-vision" + suffix)).write_bytes(b"x")
                 self.assertEqual(setup.hip_reader(eng, "gpu", {"arch": "gfx1201"})[0], "cpu")        # no HIP reader: the CPU one
-                (eng / ("strata-vision-hip" + suffix)).write_bytes(b"x")
+                (eng / ("nostroma-vision-hip" + suffix)).write_bytes(b"x")
                 mode, r = setup.hip_reader(eng, "gpu", {"arch": "gfx1201"})
                 self.assertEqual((mode, r.exe.name, r.cpu_exe.name),
-                                 ("gpu", "strata-vision-hip" + suffix, "strata-vision" + suffix))
+                                 ("gpu", "nostroma-vision-hip" + suffix, "nostroma-vision" + suffix))
                 (eng / "BUILD.json").write_text('{"vision_archs": ["gfx1100"]}')
                 self.assertEqual(setup.hip_reader(eng, "gpu", {"arch": "gfx1201"})[0], "cpu")        # the card is not in its build
                 self.assertEqual(setup.hip_reader(eng, "gpu", {"arch": "gfx1100"})[0], "gpu")
                 self.assertEqual(setup.hip_reader(eng, "cpu", {"arch": "gfx1100"})[0], "cpu")
-                (eng / ("strata-vision" + suffix)).unlink()
-                (eng / ("strata-vision-hip" + suffix)).unlink()
+                (eng / ("nostroma-vision" + suffix)).unlink()
+                (eng / ("nostroma-vision-hip" + suffix)).unlink()
                 self.assertEqual(setup.hip_reader(eng, "gpu", {"arch": "gfx1100"})[0], "none")
 
 
 class HipRuntimeBesideExe(unittest.TestCase):
-    """#468 #461: the bundled HIP runtime (and amd_comgr) goes next to strata.exe, so an AMD driver's System32 copy is
+    """#468 #461: the bundled HIP runtime (and amd_comgr) goes next to nostroma.exe, so an AMD driver's System32 copy is
     not found first; rocBLAS and the rest stay in rocm/bin."""
 
     def test_copies_only_the_runtime(self):
@@ -660,13 +660,13 @@ class DeviceAccess(unittest.TestCase):
         guard = src[src.rindex("#if", 0, i):i]
         self.assertIn("cudaGetDeviceCount", guard)
         self.assertIn('access("/dev/kfd", R_OK | W_OK)', guard)
-        self.assertIn("STRATA_USE_HIP", guard)               # CUDA builds keep the "another program" text
+        self.assertIn("NOSTROMA_USE_HIP", guard)               # CUDA builds keep the "another program" text
         self.assertIn("another program (or an engine that is still exiting)", src)
 
 
 class EngineLaunchEnv(unittest.TestCase):
     """#2372: every engine program setup runs gets the ready-made HIP engine's rocm/bin on PATH, or Windows shows a
-    "hipblas.dll not found" dialog per DLL and `strata --families` prints nothing (setup then said the engine does
+    "hipblas.dll not found" dialog per DLL and `nostroma --families` prints nothing (setup then said the engine does
     not run Qwen3.6)."""
 
     def engine(self, tmp: Path) -> Path:
@@ -722,7 +722,7 @@ class EngineLaunchEnv(unittest.TestCase):
             return mock.Mock(returncode=0, stdout="device 0: AMD Radeon RX 7900 XT\n  arch gfx1100, 20.0 GiB, wave32\n")
         with tempfile.TemporaryDirectory() as t:
             eng = self.engine(Path(t))
-            probe = eng / ("strata-device.exe" if setup.WIN else "strata-device")
+            probe = eng / ("nostroma-device.exe" if setup.WIN else "nostroma-device")
             probe.write_text("x")
             with mock.patch.object(setup.subprocess, "run", fake_run),                     mock.patch.object(setup, "hip_runtime_beside_exe", lambda d: None), mock.patch.object(setup.os, "name", "nt"):
                 found = setup.hip_devices(probe)
@@ -736,7 +736,7 @@ class TdrPointer(unittest.TestCase):
         self.assertIn('WIN and str(gpu.get("arch") or "").startswith("gfx12")', src)
         doc = (Path(setup.__file__).resolve().parent / "docs/TROUBLESHOOTING.md").read_text(encoding="utf-8")
         self.assertIn("Windows AMD: the driver resets", doc)
-        for env in ("STRATA_PF_STEP_SYNC", "STRATA_KV_HOST_DMA"):
+        for env in ("NOSTROMA_PF_STEP_SYNC", "NOSTROMA_KV_HOST_DMA"):
             self.assertIn(env, doc)
             self.assertIn(env, (Path(setup.__file__).resolve().parent / "src/prefill/prefill.cpp").read_text(encoding="utf-8"))
 

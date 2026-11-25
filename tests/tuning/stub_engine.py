@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""A stub engine for exercising `strata tune run` end to end, on every OS.
+"""A stub engine for exercising `nostroma tune run` end to end, on every OS.
 
 Run it as ``[sys.executable, "stub_engine.py", "--serve", ...]`` (``nostroma_control.tuning.engine_command``
 does that for any ``.py`` engine). It speaks the real serve protocol (READY / PP / T / DONE) and

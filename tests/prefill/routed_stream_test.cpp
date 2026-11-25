@@ -1,8 +1,8 @@
-// routed_stream_test: STRATA_PREFILL_ROUTED_STREAM's issuer walk and route gate (include/strata/prefill/routed_stream.hpp).
+// routed_stream_test: NOSTROMA_PREFILL_ROUTED_STREAM's issuer walk and route gate (include/nostroma/prefill/routed_stream.hpp).
 // CPU only.  A simulated chunk: an in-order link that lands one copy every few ticks, a consumer that walks the layers as
 // prefill.cpp's streamed walk does (publish a layer's routing, give back unrouted entries, read a routed entry's slot
 // once its copy has landed), and the issuer walk itself, each idle() of which advances the simulation by one tick.
-#include "strata/prefill/routed_stream.hpp"
+#include "nostroma/prefill/routed_stream.hpp"
 
 #include <atomic>
 #include <cstdio>
@@ -13,7 +13,7 @@
 #include <thread>
 #include <vector>
 
-namespace rs = strata::prefill::routed_stream;
+namespace rs = nostroma::prefill::routed_stream;
 
 static int g_fail = 0;
 static void expect(bool ok, const char* what) {
@@ -291,8 +291,8 @@ int main() {
     expect(rs::depth_from("0") == 1 && rs::depth_from("-4") == 1, "depth clamps to 1");
     expect(rs::depth_from("100000") == rs::kMaxDepth, "depth clamps to the maximum");
 
-    // Which chunks take the routed walk: the copy policies of STRATA_PREFILL_COPY_EVENT_EVERY > 1 and
-    // STRATA_PREFILL_COPY_WAIT_DEDUPE=1 keep the default issuer.  Otherwise a sparse consumer's wait_copied would spin
+    // Which chunks take the routed walk: the copy policies of NOSTROMA_PREFILL_COPY_EVENT_EVERY > 1 and
+    // NOSTROMA_PREFILL_COPY_WAIT_DEDUPE=1 keep the default issuer.  Otherwise a sparse consumer's wait_copied would spin
     // on an a_rec the routed walk never publishes, and the requested release-wait deduplication would be bypassed.
     expect(rs::eligible(true, true, false, 1, false), "streamed threaded single GPU: routed walk eligible");
     expect(!rs::eligible(false, true, false, 1, false), "short prompt: default walk");
@@ -313,10 +313,10 @@ int main() {
                     expect((why == nullptr) == rs::eligible(true, iss, peer, every, dedupe), "a reason exactly when held off");
                 }
     auto names = [](const char* why, const char* what) { return why != nullptr && std::strstr(why, what) != nullptr; };
-    expect(names(rs::held_off(false, false, 1, false), "STRATA_PREFILL_ISSUER=0"), "inline issuer named");
+    expect(names(rs::held_off(false, false, 1, false), "NOSTROMA_PREFILL_ISSUER=0"), "inline issuer named");
     expect(names(rs::held_off(true, true, 1, false), "--peer-device"), "peer ring named");
-    expect(names(rs::held_off(true, false, 4, false), "STRATA_PREFILL_COPY_EVENT_EVERY") &&
-               names(rs::held_off(true, false, 1, true), "STRATA_PREFILL_COPY_WAIT_DEDUPE"),
+    expect(names(rs::held_off(true, false, 4, false), "NOSTROMA_PREFILL_COPY_EVENT_EVERY") &&
+               names(rs::held_off(true, false, 1, true), "NOSTROMA_PREFILL_COPY_WAIT_DEDUPE"),
            "copy policies named");
 
     // the gate

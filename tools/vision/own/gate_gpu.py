@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """The GPU gate of the own vision tower (rule 6 of RESULTS-OWN-3V.md): our GPU tower against the float32 reference, and no noisier than mtmd's GPU path.
 
-    python3 gate_gpu.py --helper <strata-vision> --compare <strata-vision-own-compare> --mmproj <mmproj.gguf> --model <text model .gguf> --out <dir>
+    python3 gate_gpu.py --helper <nostroma-vision> --compare <nostroma-vision-own-compare> --mmproj <mmproj.gguf> --model <text model .gguf> --out <dir>
                         [--max-tokens 1024] [--repeat 4] [--ref-dir <dir of our float32 reference's <picture>.sve>] [--cpu-dir <dir of stored mtmd-CPU <picture>.sve>]
                         <image> [<image> ...]
 
-The reference is our float32 tower (VitRef: the own tower on the CPU with STRATA_VIT_CPU=ref), from --ref-dir where it holds the picture's file, else made
+The reference is our float32 tower (VitRef: the own tower on the CPU with NOSTROMA_VIT_CPU=ref), from --ref-dir where it holds the picture's file, else made
 here.  Until 11-14 the reference was mtmd's CPU path; mtmd itself sits up to 0.0168 below float32 (16 pictures: global cosine min 0.983 on its GPU, 0.998
-on its CPU), so it stays only as an information column.  One strata-vision per reader (VitRef on the CPU, mtmd on the CPU unless --cpu-dir gives its
+on its CPU), so it stays only as an information column.  One nostroma-vision per reader (VitRef on the CPU, mtmd on the CPU unless --cpu-dir gives its
 files, mtmd on the GPU, own on the GPU), every picture through each.  Per picture:
   main      cosine(own GPU, float32)               must be >= --min-cos (0.999)
   floor     cosine(mtmd GPU, float32)              what llama.cpp's reader gives
@@ -171,7 +171,7 @@ def main():
     mk = lambda tower, gpu, label, env=None: Reader(a.helper, tower, a.mmproj, a.model, gpu, a.max_tokens, a.threads, a.out, label, env)  # noqa: E731
     ref_of = lambda name: os.path.join(a.ref_dir, name + ".sve") if a.ref_dir and os.path.isfile(os.path.join(a.ref_dir, name + ".sve")) else None  # noqa: E731
     need_ref = not a.skip_cpu and any(ref_of(os.path.basename(i)) is None for i in a.images)
-    r_ref = mk("own", False, "ref-cpu", {"STRATA_VIT_CPU": "ref"}) if need_ref else None     # the float32 reference, made here where --ref-dir lacks it
+    r_ref = mk("own", False, "ref-cpu", {"NOSTROMA_VIT_CPU": "ref"}) if need_ref else None     # the float32 reference, made here where --ref-dir lacks it
     r_cpu = None if (a.cpu_dir or a.skip_cpu) else mk("mtmd", False, "mtmd-cpu")
     r_mg = mk("mtmd", True, "mtmd-gpu")
     r_og = mk("own", True, "own-gpu")

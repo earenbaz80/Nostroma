@@ -11,13 +11,13 @@ Short answer: **0.1.40.3 is not measurable here either.** Prompt throughput move
 - RAM: 46464 MiB installed.
 - Storage: models, packs and the expert profile are on a 1.9 TB NVMe drive (ADATA LEGEND 960, ext4, mounted at `/`). No network storage is in the measured path.
 - Ubuntu 26.04.1 LTS, kernel 7.0.0-38-generic; NVIDIA driver 610.57.04; nvcc release 13.4, V13.4.92.
-- Strata commit `d5ea7133741e67743c0e886bb426c0ce8d69cf6c` (tag `v0.1.40.3`), branch `main`; engine 0.1.40.3 **compiled from source on this machine** (`engine/BUILD.json` records `"source": "local"`, `archs: [89]`, nvcc from `/usr/local/cuda`). The release publishes Windows archives only, so a source build is the only path on Linux; the version it is compared against was built the same way.
-- Background workloads: a dsh/Authentik/Caddy web stack and stock Ubuntu services; the GPU was dedicated to Strata but the operating system was not isolated. This server also serves an interactive agent session; no request from it was issued while the measured runs were running (see *Correctness and limitations*).
+- Nostroma commit `d5ea7133741e67743c0e886bb426c0ce8d69cf6c` (tag `v0.1.40.3`), branch `main`; engine 0.1.40.3 **compiled from source on this machine** (`engine/BUILD.json` records `"source": "local"`, `archs: [89]`, nvcc from `/usr/local/cuda`). The release publishes Windows archives only, so a source build is the only path on Linux; the version it is compared against was built the same way.
+- Background workloads: a dsh/Authentik/Caddy web stack and stock Ubuntu services; the GPU was dedicated to Nostroma but the operating system was not isolated. This server also serves an interactive agent session; no request from it was issued while the measured runs were running (see *Correctness and limitations*).
 - PCIe link speed and width: not measured - `nvidia-smi -q -d BUS` answers "Failed to parse --display/-d flags" on this driver, and `lspci` link status was not collected.
 
 ## Model and configuration
 
-- Model: qwen3.8-flash-next-iq3_xxs (the Strata server's model name); GGUF filenames, sizes, and modification times are in env.json (no hashes).
+- Model: qwen3.8-flash-next-iq3_xxs (the Nostroma server's model name); GGUF filenames, sizes, and modification times are in env.json (no hashes).
 - Context 204800; INT8 KV; `--mmap-experts` with the expert cache in `auto` mode; GPU vision - see the config copy below.
 - Expert profile: a profile learned online on this model, reused between restarts (`--expert-profile-save … --expert-profile-save-every 10`). It is a persistent artifact of this machine, and the same file was in use for the 0.1.40 / 0.1.40.1 / 0.1.40.2 reports.
 - Experimental speed projection is enabled: `--control-vector-scaled …/Qwen3.8-Flash-Next-experimental-speed-projection.gguf:1.0 --control-vector-layer-range 4 44 --cvec-mode project --cvec-dir per-layer`. It was enabled in every earlier report from this PC.
@@ -27,10 +27,10 @@ Short answer: **0.1.40.3 is not measurable here either.** Prompt throughput move
 - The launch command is byte-identical to the one in the 0.1.40.2 report; the server config files were unchanged by the update.
 
 ```text
-/home/dgbox/Strata/engine/strata --serve --pack /home/dgbox/Strata-data/packs/iq3_xxs --native /home/dgbox/Strata-data/models/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf --ple-gguf /home/dgbox/Strata-data/models/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00002-of-00002.gguf --expert-profile /home/dgbox/Strata/data/expert-profile-learned.bin --expert-cache auto --prefill auto --spec 4 --mtp /home/dgbox/Strata-data/mtp/rt --max-context 204800 --kv int8 --mmap-experts --vision --vram-reserve-mib 989 --control-vector-scaled /home/dgbox/Strata/data/experimental-speed-projection/Qwen3.8-Flash-Next-experimental-speed-projection.gguf:1.0 --control-vector-layer-range 4 44 --cvec-mode project --cvec-dir per-layer --pcie-frac 0.00 --spec-min-p 0.50 --pool-workers 10 --expert-profile-save /home/dgbox/Strata/data/expert-profile-learned.bin --expert-profile-save-every 10
+/home/dgbox/Nostroma/engine/nostroma --serve --pack /home/dgbox/Nostroma-data/packs/iq3_xxs --native /home/dgbox/Nostroma-data/models/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf --ple-gguf /home/dgbox/Nostroma-data/models/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00002-of-00002.gguf --expert-profile /home/dgbox/Nostroma/data/expert-profile-learned.bin --expert-cache auto --prefill auto --spec 4 --mtp /home/dgbox/Nostroma-data/mtp/rt --max-context 204800 --kv int8 --mmap-experts --vision --vram-reserve-mib 989 --control-vector-scaled /home/dgbox/Nostroma/data/experimental-speed-projection/Qwen3.8-Flash-Next-experimental-speed-projection.gguf:1.0 --control-vector-layer-range 4 44 --cvec-mode project --cvec-dir per-layer --pcie-frac 0.00 --spec-min-p 0.50 --pool-workers 10 --expert-profile-save /home/dgbox/Nostroma/data/expert-profile-learned.bin --expert-profile-save-every 10
 ```
 
-Full server config: [config.json](config.json) (was at /home/dgbox/Strata/strata-200k.json; the bearer token in its `mcp_servers` block is replaced with `removed`), environment details: [env.json](env.json).
+Full server config: [config.json](config.json) (was at /home/dgbox/Nostroma/nostroma-200k.json; the bearer token in its `mcp_servers` block is replaced with `removed`), environment details: [env.json](env.json).
 
 ## Method
 
@@ -58,13 +58,13 @@ Full server config: [config.json](config.json) (was at /home/dgbox/Strata/strata
 
 ## Comparison with engine 0.1.40.2 on the same PC
 
-Same PC, same model, same server config, same launch command, same `expert-profile-learned.bin`, same prompt chunk (8192). Only the Strata version changed: 0.1.40.2 (commit `e8ca9af`) -> 0.1.40.3 (commit `d5ea713`), both compiled from source with CUDA 13.4 for `sm_89`.
+Same PC, same model, same server config, same launch command, same `expert-profile-learned.bin`, same prompt chunk (8192). Only the Nostroma version changed: 0.1.40.2 (commit `e8ca9af`) -> 0.1.40.3 (commit `d5ea713`), both compiled from source with CUDA 13.4 for `sm_89`.
 
 Three reference runs are included so the comparison is self-contained:
 
 - [runs-0.1.40.2-previous.json](runs-0.1.40.2-previous.json) - the previous version, measured 2026-10-07 with this same method;
 - [runs-0.1.40-baseline.json](runs-0.1.40-baseline.json) - the 0.1.40 baseline, measured 2026-10-06;
-- [runs-0.1.40.1-control.json](runs-0.1.40.1-control.json) - a full repeat of the sweep on **the identical engine binary** (0.1.40.1 changed only the Python server; `engine/strata` was not rebuilt). This is the noise band of the method on this machine.
+- [runs-0.1.40.1-control.json](runs-0.1.40.1-control.json) - a full repeat of the sweep on **the identical engine binary** (0.1.40.1 changed only the Python server; `engine/nostroma` was not rebuilt). This is the noise band of the method on this machine.
 
 | Configuration | Prompt tok/s 0.1.40.2 -> 0.1.40.3 | Decode tok/s 0.1.40.2 -> 0.1.40.3 | TTFT s 0.1.40.2 -> 0.1.40.3 | Noise band (same binary): prompt / decode | Answer tokens 0.1.40.2 -> 0.1.40.3 |
 | --- | --- | --- | --- | --- | --- |
@@ -96,4 +96,4 @@ Published as a second folder on purpose: it separates what depends on the engine
 - Prompts are synthetic (repeated Russian prose with a random marker); real workloads will show different prefix reuse, early-stop behaviour and draft acceptance.
 - This server also serves an interactive agent session. No request from it was issued during the measured runs; the measured sweeps ran as one detached process from start to finish.
 - The engine is compiled from source with CUDA 13.4, while the release binaries are built with CUDA 13.0. Comparisons inside this report are unaffected (every version here was built the same way on this machine), but they are not a comparison against published Linux binaries - there are none for this tag.
-- Opt-ins from this release were **not** tested here and are not part of these numbers: `STRATA_PREFILL_CPU_SHARE`, `STRATA_IO_PREFETCH` / `STRATA_IO_PF_STAGE`, `pin=N` (docs/RESEARCH_RUNS.md), `STRATA_SPEC_GUMBEL`, `STRATA_MMVQ_IL=0`, `STRATA_STAGER_SLEEP=0`.
+- Opt-ins from this release were **not** tested here and are not part of these numbers: `NOSTROMA_PREFILL_CPU_SHARE`, `NOSTROMA_IO_PREFETCH` / `NOSTROMA_IO_PF_STAGE`, `pin=N` (docs/RESEARCH_RUNS.md), `NOSTROMA_SPEC_GUMBEL`, `NOSTROMA_MMVQ_IL=0`, `NOSTROMA_STAGER_SLEEP=0`.

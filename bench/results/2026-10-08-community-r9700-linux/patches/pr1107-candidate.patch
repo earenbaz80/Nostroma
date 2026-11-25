@@ -30,9 +30,9 @@ index 23eaf1d..9491683 100644
 -    return bytes_needed(g, ss, chunk) - (uint64_t) ring_slots((size_t) chunk) * (uint64_t) MAXBLOB();
 +    return bytes_needed(g, ss, chunk) - (uint64_t) stage_slots((size_t) chunk) * (uint64_t) MAXBLOB();
 @@ -3127,0 +3135,15 @@ bool Prefill::run_impl(const int64_t* tokens, int64_t n, int64_t pos0, std::stri
-+                        // STRATA_PREFILL_GROUP_GATHER=0: one gather, one wait and one record per expert.
++                        // NOSTROMA_PREFILL_GROUP_GATHER=0: one gather, one wait and one record per expert.
 +                        static const bool group_env = [] {
-+                            const char* v = std::getenv("STRATA_PREFILL_GROUP_GATHER");
++                            const char* v = std::getenv("NOSTROMA_PREFILL_GROUP_GATHER");
 +                            return v == nullptr || std::atoi(v) != 0;
 +                        }();
 +                        const bool group_gather = group_env && stream_all && use_mmq && lay.native &&
@@ -50,7 +50,7 @@ index 23eaf1d..9491683 100644
 +                            stage_next = (stage_next + 1) % stage_n;
 @@ -3187,6 +3208,0 @@ bool Prefill::run_impl(const int64_t* tokens, int64_t n, int64_t pos0, std::stri
 -                        static const bool group_env = [] {
--                            const char* v = std::getenv("STRATA_PREFILL_GROUP_GATHER");
+-                            const char* v = std::getenv("NOSTROMA_PREFILL_GROUP_GATHER");
 -                            return v == nullptr || std::atoi(v) != 0;
 -                        }();
 -                        const bool group_gather = group_env && stream_all && use_mmq && lay.native &&

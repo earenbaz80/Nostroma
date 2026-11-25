@@ -1,9 +1,9 @@
 // src/spec/spec_start_test.cpp - the speculative loop's start position: 0 is a real position (a 1-token prompt on a native pack).
-#include "strata/spec/spec_start.hpp"
+#include "nostroma/spec/spec_start.hpp"
 
 #include <cstdio>
 
-using namespace strata::spec;
+using namespace nostroma::spec;
 
 int main() {
     int fail = 0;

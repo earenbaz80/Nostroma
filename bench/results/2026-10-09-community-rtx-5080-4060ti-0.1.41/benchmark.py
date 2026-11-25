@@ -21,18 +21,18 @@ ap.add_argument("--prompts", default="prompts.json")
 ap.add_argument("--label", required=True)
 ap.add_argument("--out", required=True)
 ap.add_argument("--max-tokens", type=int, default=256)
-ap.add_argument("--engine-pattern", default="strata --serve --pack")
+ap.add_argument("--engine-pattern", default="nostroma --serve --pack")
 ap.add_argument("--sizes", default="", help="only these sizes (warmup,4096,32768,128000); default all")
 ap.add_argument("--reps", default="", help="only these reps, e.g. 0,1")
 a = ap.parse_args()
 
 
 def engine_pid():
-    """the engine process: matches the pattern and its executable is named strata"""
+    """the engine process: matches the pattern and its executable is named nostroma"""
     import os
     for pid in subprocess.run(["pgrep", "-f", a.engine_pattern], capture_output=True, text=True).stdout.split():
         try:
-            if os.path.basename(os.readlink(f"/proc/{pid}/exe")) == "strata":
+            if os.path.basename(os.readlink(f"/proc/{pid}/exe")) == "nostroma":
                 return pid
         except OSError:
             pass
@@ -69,7 +69,7 @@ def engine_read_bytes():
 
 
 def ask(msgs):
-    body = json.dumps({"model": "strata", "messages": msgs, "max_tokens": a.max_tokens, "temperature": 0,
+    body = json.dumps({"model": "nostroma", "messages": msgs, "max_tokens": a.max_tokens, "temperature": 0,
                        "stream": True, "stream_options": {"include_usage": True}}).encode()
     r = urllib.request.Request(a.base + "/v1/chat/completions", data=body, headers={"Content-Type": "application/json"})
     t0 = time.time()

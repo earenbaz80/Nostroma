@@ -1,10 +1,10 @@
 #pragma once
 
-#include "strata/core/conversation_cache.hpp"
-#include "strata/env.hpp"
-#include "strata/core/progress.hpp"
-#include "strata/platform/aux_cpus.hpp"
-#include "strata/platform/home_cpus.hpp"
+#include "nostroma/core/conversation_cache.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/core/progress.hpp"
+#include "nostroma/platform/aux_cpus.hpp"
+#include "nostroma/platform/home_cpus.hpp"
 
 #include <cuda_runtime.h>
 
@@ -21,8 +21,8 @@
 #include <sched.h>
 #endif
 
-namespace strata::core { void conversation_checkpoint_join(const void* only); }
-namespace strata::core::conversation_detail {
+namespace nostroma::core { void conversation_checkpoint_join(const void* only); }
+namespace nostroma::core::conversation_detail {
 
 /// The private copy streams and ordering events (below) belong to a thread, but a thread can be short-lived: the layer
 /// split's later stages run each prompt chunk on a fresh std::async thread, and a checkpoint part is saved on it.  The
@@ -116,23 +116,23 @@ inline bool copy_stream_ready(int dev) {
     return (size_t) dev < p.streams.size() && !p.streams[(size_t) dev].empty();
 }
 
-/// STRATA_TEST_COPY_FAIL_AT=N (tests only, #3350): the N-th snapshot / checkpoint copy of the process fails with
+/// NOSTROMA_TEST_COPY_FAIL_AT=N (tests only, #3350): the N-th snapshot / checkpoint copy of the process fails with
 /// cudaErrorMemoryAllocation, as when a card has no memory left for the copy.  Unset: nothing.
 inline long test_copy_fail_at() {
-    static const long v = [] { const char* e = strata::env("NOSTROMA_TEST_COPY_FAIL_AT"); return e ? std::atol(e) : 0L; }();
+    static const long v = [] { const char* e = nostroma::env("NOSTROMA_TEST_COPY_FAIL_AT"); return e ? std::atol(e) : 0L; }();
     return v;
 }
 
-/// First thing a background copy thread does (STRATA_CKPT_ASYNC, STRATA_PARK_ASYNC): a thread the host creates
-/// inherits the host's one CPU (strata/platform/aux_cpus.hpp), where its memcpys would take turns with the decode.
+/// First thing a background copy thread does (NOSTROMA_CKPT_ASYNC, NOSTROMA_PARK_ASYNC): a thread the host creates
+/// inherits the host's one CPU (nostroma/platform/aux_cpus.hpp), where its memcpys would take turns with the decode.
 /// Wide first: the mask the aux placement keeps as this thread's own is the one restore() puts back (a request with
 /// aux_cpus=0), and the host's one CPU must not be it.  Wide means the process's own CPU set from the start-up
-/// (strata/platform/home_cpus.hpp: every CPU unless the engine placed itself on the card's NUMA node).  No output
+/// (nostroma/platform/home_cpus.hpp: every CPU unless the engine placed itself on the card's NUMA node).  No output
 /// depends on where a thread runs.
 inline void background_thread_placement() {
 #if defined(__linux__)
-    strata::platform::widen_to_home();               // the kernel keeps the CPUs the cgroup allows
-    strata::aux_cpus::pin_current_thread();          // (a no-op while the feature is off)
+    nostroma::platform::widen_to_home();               // the kernel keeps the CPUs the cgroup allows
+    nostroma::aux_cpus::pin_current_thread();          // (a no-op while the feature is off)
 #endif
 }
 
@@ -158,10 +158,10 @@ inline cudaError_t copy_nonblocking(void* dst, const void* src, size_t bytes, bo
 /// it to the pagefile, copying it back runs at the drive's page-in speed (measured in the reports: ~190 hard faults
 /// a second, under 1 MB/s) and one memcpy of it stays silent past the 60 s limit, so the watchdog ended an engine
 /// that was only slow.  One beat per 1 MiB slice keeps a copy that moves alive and still lets a real stall show.
-/// STRATA_TEST_SLOW_COPY_US=N (tests only): every 1 MiB slice of a checkpoint copy takes N microseconds more, as when
+/// NOSTROMA_TEST_SLOW_COPY_US=N (tests only): every 1 MiB slice of a checkpoint copy takes N microseconds more, as when
 /// the OS has paged the checkpoints out and each slice is read back from the drive.  Unset: no delay.
 inline long test_slow_copy_us() {
-    static const long v = [] { const char* e = strata::env("NOSTROMA_TEST_SLOW_COPY_US"); return e ? std::atol(e) : 0L; }();
+    static const long v = [] { const char* e = nostroma::env("NOSTROMA_TEST_SLOW_COPY_US"); return e ? std::atol(e) : 0L; }();
     return v;
 }
 
@@ -210,7 +210,7 @@ inline void assign_beating(V& out, const V& src) {
     }
 }
 
-/// copy_checkpoint_beating into `o`, a dropped checkpoint's storage (STRATA_CKPT_POOL): the same bytes
+/// copy_checkpoint_beating into `o`, a dropped checkpoint's storage (NOSTROMA_CKPT_POOL): the same bytes
 inline void copy_checkpoint_into(ConversationCheckpoint& o, const ConversationCheckpoint& c) {
     assign_beating(o.ids, c.ids);
     assign_beating(o.imgs, c.imgs);
@@ -273,4 +273,4 @@ inline cudaError_t order_after_queued() {
     return cudaStreamWaitEvent(nullptr, events[(size_t) dev], 0);
 }
 
-} // namespace strata::core::conversation_detail
+} // namespace nostroma::core::conversation_detail

@@ -31,9 +31,9 @@ int main(int argc, char** argv) {
     const int oc = std::atoi(argv[2]), ic = std::atoi(argv[3]), taps = std::atoi(argv[4]), th = std::atoi(argv[5]);
     const size_t n = raw.size() / 2;
     std::vector<float> w(n);
-    strata::image::bf16_to_f32(raw.data(), n, w.data(), th);
+    nostroma::image::bf16_to_f32(raw.data(), n, w.data(), th);
     std::vector<uint16_t> h((size_t) oc * ic * taps);
-    strata::image::bf16_conv_to_f16(raw.data(), oc, ic, taps, h.data(), th);
+    nostroma::image::bf16_conv_to_f16(raw.data(), oc, ic, taps, h.data(), th);
     FILE* o = std::fopen(argv[6], "wb");
     std::fwrite(w.data(), 4, n, o);
     std::fwrite(h.data(), 2, h.size(), o);

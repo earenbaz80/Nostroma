@@ -36,13 +36,13 @@ class ProfileError(ValueError):
 
 
 def profile_dir() -> Path:
-    explicit = os.environ.get("NOSTROMA_PROFILE_DIR", os.environ.get("STRATA_PROFILE_DIR"))
+    explicit = os.environ.get("NOSTROMA_PROFILE_DIR", os.environ.get("NOSTROMA_PROFILE_DIR"))
     if explicit:
         return Path(explicit).expanduser()
     if os.name == "nt":
         base = os.environ.get("APPDATA")
-        return (Path(base) if base else Path.home() / "AppData" / "Roaming") / "Strata" / "profiles"
-    return Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config"))) / "strata" / "profiles"
+        return (Path(base) if base else Path.home() / "AppData" / "Roaming") / "Nostroma" / "profiles"
+    return Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config"))) / "nostroma" / "profiles"
 
 
 def _name(name: str) -> str:

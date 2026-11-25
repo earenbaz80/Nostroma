@@ -1,7 +1,7 @@
 """An install made by today's Nostroma is found and used in place by the terminal.
 
-The fixture is today's layout: a Nostroma folder with strata-<model>.json run configs (absolute paths into it and into
-the data folder), an engine/ folder, run-<model> scripts, a .venv, and a separate data folder (Strata-data) holding the
+The fixture is today's layout: a Nostroma folder with nostroma-<model>.json run configs (absolute paths into it and into
+the data folder), an engine/ folder, run-<model> scripts, a .venv, and a separate data folder (Nostroma-data) holding the
 GGUF files, prepared packs and the MTP layer; the user's settings.json remembers the data folder and the install. The
 terminal archive is a NEW folder. Nothing may be copied, moved, created or rewritten in the old layout, and the real
 settings file and model folders are never touched: everything lives in a temporary directory, the settings file
@@ -44,23 +44,23 @@ class ExistingInstallIsFoundInPlace(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         base = Path(self.tmp.name)
         self.appdata = base / "appdata"
-        self.old = base / "Strata"                       # today's install (a checkout or an unzipped release)
-        self.data = base / "Strata-data"                 # the data folder settings.json remembers
-        self.terminal = base / "Strata-terminal"         # the new archive, extracted elsewhere
+        self.old = base / "Nostroma"                       # today's install (a checkout or an unzipped release)
+        self.data = base / "Nostroma-data"                 # the data folder settings.json remembers
+        self.terminal = base / "Nostroma-terminal"         # the new archive, extracted elsewhere
         self.profiles = base / "profiles"                # profile storage is outside both layouts
         for d in (self.appdata, self.old, self.data, self.terminal):
             d.mkdir()
         env = mock.patch.dict(os.environ, {"APPDATA": str(self.appdata), "XDG_CONFIG_HOME": str(self.appdata),
-                                           "STRATA_PROFILE_DIR": str(self.profiles),
-                                           "STRATA_RUNTIME_DIR": str(base / "runtime"),
+                                           "NOSTROMA_PROFILE_DIR": str(self.profiles),
+                                           "NOSTROMA_RUNTIME_DIR": str(base / "runtime"),
                                            # the desktop app's folders of whoever runs the tests are not part of this fixture
                                            "LOCALAPPDATA": str(base / "local"), "XDG_DATA_HOME": str(base / "localshare"),
-                                           "STRATA_COMPONENTS_DIR": ""})
+                                           "NOSTROMA_COMPONENTS_DIR": ""})
         env.start()
         self.addCleanup(env.stop)
-        os.environ.pop("STRATA_INSTALL_DIR", None)
+        os.environ.pop("NOSTROMA_INSTALL_DIR", None)
 
-        exe_name = "strata.exe" if os.name == "nt" else "strata"
+        exe_name = "nostroma.exe" if os.name == "nt" else "nostroma"
         (self.old / "engine").mkdir()
         (self.old / "engine" / exe_name).write_bytes(b"engine")
         (self.old / "engine" / exe_name).chmod(0o700)
@@ -83,13 +83,13 @@ class ExistingInstallIsFoundInPlace(unittest.TestCase):
             (pack / "experts.bin").write_bytes(b"experts")
             mtp = self.data / "mtp" / tag
             mtp.mkdir(parents=True)
-            cfg = self.old / f"strata-{tag}.json"
+            cfg = self.old / f"nostroma-{tag}.json"
             cfg.write_text(json.dumps({
                 "exe": str(self.old / "engine" / exe_name), "tokenizer": str(tok), "cwd": str(self.old),
                 "args": ["--native", str(gguf), "--pack", str(pack), "--mtp", str(mtp), "--max-context", str(ctx)],
                 "backend": "cuda", "model_name": tag.upper(), "port": 8080, "log": str(self.old / f"{tag}.log")}),
                 encoding="utf-8")
-            (self.old / f"strata-{tag}.shared-settings.json").write_text("{}")
+            (self.old / f"nostroma-{tag}.shared-settings.json").write_text("{}")
             (self.old / (f"run-{tag}.bat" if os.name == "nt" else f"run-{tag}.sh")).write_text("run\n")
             self.models.append(cfg)
         (self.terminal / "VERSION").write_text("0.1.45\n")
@@ -132,7 +132,7 @@ class ExistingInstallIsFoundInPlace(unittest.TestCase):
 
     def test_a_profile_and_serve_plan_use_the_old_engine_and_models_where_they_are(self):
         found = models.install_dir()
-        config = found / "strata-q2_0.json"
+        config = found / "nostroma-q2_0.json"
         profiles.create("migrated", str(config))
         code, planned = self.cli("serve", "--profile", "migrated", "--plan")
         self.assertEqual(code, 0)
@@ -141,15 +141,15 @@ class ExistingInstallIsFoundInPlace(unittest.TestCase):
         self.assertEqual(Path(plan["engine_exe"]).parent, self.old / "engine")
         argv = plan["engine_argv"]
         native = argv[argv.index("--native") + 1]
-        self.assertEqual(Path(native).parent.parent.parent, self.data)           # Strata-data/models/Q2_0/<gguf>
+        self.assertEqual(Path(native).parent.parent.parent, self.data)           # Nostroma-data/models/Q2_0/<gguf>
         self.assertNothingChanged()
 
     def test_a_folder_with_its_own_configs_and_an_explicit_dir_win_over_the_remembered_install(self):
-        (self.terminal / "strata-local.json").write_bytes((self.old / "strata-q2_0.json").read_bytes())
+        (self.terminal / "nostroma-local.json").write_bytes((self.old / "nostroma-q2_0.json").read_bytes())
         self.assertEqual(models.resolve_install(), (self.terminal, "here"))
-        (self.terminal / "strata-local.json").unlink()
+        (self.terminal / "nostroma-local.json").unlink()
         self.assertEqual(models.resolve_install(str(self.old)), (self.old.resolve(), "explicit"))
-        with mock.patch.dict(os.environ, {"STRATA_INSTALL_DIR": str(self.old)}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_INSTALL_DIR": str(self.old)}):
             self.assertEqual(models.resolve_install()[1], "explicit")
 
     def test_nothing_remembered_means_this_folder_and_no_error(self):
@@ -181,23 +181,23 @@ class ExistingInstallIsFoundInPlace(unittest.TestCase):
         # starting touches the most recently used config (its mtime) and nothing else
         after = snapshot(self.base)
         changed = [rel for rel in self.before if after.get(rel) != self.before[rel]]
-        self.assertEqual([c for c in changed if not c.startswith("Strata/strata-")], [])
+        self.assertEqual([c for c in changed if not c.startswith("Nostroma/nostroma-")], [])
         self.assertEqual(sorted(set(after) - set(self.before)), [])
 
     def test_setup_from_a_new_copy_reuses_the_data_folder_and_moves_no_model_file(self):
         """The explicit setup path (which does gather files) finds the model files already in the data folder."""
-        new_copy = self.base / "Strata-new"
+        new_copy = self.base / "Nostroma-new"
         new_copy.mkdir()
         (new_copy / "setup.py").write_text("# a new copy\n")
-        models_before = {k: v for k, v in self.before.items() if k.startswith("Strata-data/")}
+        models_before = {k: v for k, v in self.before.items() if k.startswith("Nostroma-data/")}
         with mock.patch.object(setup, "ROOT", new_copy), contextlib.redirect_stdout(io.StringIO()):
             data, elsewhere = setup.data_folder(None)
         self.assertTrue(data.samefile(self.data))
         self.assertEqual(elsewhere, [])
         after = snapshot(self.base)
-        self.assertEqual({k: v for k, v in after.items() if k.startswith("Strata-data/")}, models_before)
-        self.assertEqual({k: v for k, v in after.items() if k.startswith("Strata/")},
-                         {k: v for k, v in self.before.items() if k.startswith("Strata/")})
+        self.assertEqual({k: v for k, v in after.items() if k.startswith("Nostroma-data/")}, models_before)
+        self.assertEqual({k: v for k, v in after.items() if k.startswith("Nostroma/")},
+                         {k: v for k, v in self.before.items() if k.startswith("Nostroma/")})
         saved = json.loads(setup.settings_path().read_text())
         self.assertTrue(Path(saved["data_dir"]).samefile(self.data))
         self.assertIn(str(self.old), saved["installs"])                    # the old install stays remembered

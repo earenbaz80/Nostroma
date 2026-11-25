@@ -6,9 +6,9 @@ Measured **2026-10-08** by [Hcl192088](https://github.com/Hcl192088), on one con
 
 ## Full engine source and reproducibility package
 
-**The benchmark used a modified Adrian-derived Strata engine, not an unmodified official upstream binary.**
+**The benchmark used a modified Adrian-derived Nostroma engine, not an unmodified official upstream binary.**
 The exact source tree used in the archived run is published in this user's fork as
-[**benchmark-iq2-source-9ec3806**](https://github.com/Hcl192088/Strata/tree/benchmark-iq2-source-9ec3806),
+[**benchmark-iq2-source-9ec3806**](https://github.com/Hcl192088/Nostroma/tree/benchmark-iq2-source-9ec3806),
 pinned to Git commit `9ec3806058cf32ab27a55e4377daf7cf0d087dec` (tree
 `90346cf6af4fb642ff7847327e0f3456ed90799a`).
 
@@ -17,9 +17,9 @@ pinned to Git commit `9ec3806058cf32ab27a55e4377daf7cf0d087dec` (tree
 - [**provenance.json**](provenance.json) — immutable source, model/pack/MTP/profile/prompt hashes and original arguments.
 
 **Independent community reproduction:** The original `learned-heart.bin` expert
-profile was generated as a Strata expert-cache profile; the historical file's
+profile was generated as a Nostroma expert-cache profile; the historical file's
 hash remains recorded, but **its bytes are not required to rerun the method**.
-Strata has a built-in, opt-in `--expert-profile-save` feature (in `--serve`
+Nostroma has a built-in, opt-in `--expert-profile-save` feature (in `--serve`
 mode with adaptive-cache settings) and `tools/make_profile.py` for generating
 new profiles from a tester's own workload. The original 28,912-token prompt
 is not redistributed; [`make_local_prompt.py`](make_local_prompt.py)
@@ -49,16 +49,16 @@ require publication of a private user's prompt.
 ## Engine, model, and configuration
 
 - Model family / quantization: Qwen3.8-Flash-Next, **IQ2_XS**, native/packed execution with MTP. Exact GGUF filenames and SHA-256 values, pack/MTP/tokenizer hashes, profile hash, and prompt hash are recorded in [provenance.json](provenance.json).
-- Engine: locally built **Adrian-derived Strata** executable from source commit `9ec3806058cf32ab27a55e4377daf7cf0d087dec`; binary SHA-256 is recorded in [provenance.json](provenance.json). It must not be presented as an unmodified upstream release.
+- Engine: locally built **Adrian-derived Nostroma** executable from source commit `9ec3806058cf32ab27a55e4377daf7cf0d087dec`; binary SHA-256 is recorded in [provenance.json](provenance.json). It must not be presented as an unmodified upstream release.
 - Benchmark objective: **accepted decode tokens per second**, not speculative proposals/s, prompt throughput, or total request tok/s.
 - The contemporaneous test-session report records **1,024 generated/accepted output tokens** and exit code 0 with no residual engine processes for each of the five E4/S24 candidate runs. **1,024 is the output length, not the configured context window.**
-- During the primary E4/S24 campaign the verified command used `q4_0` KV, 100,000 context cells, `--kv-resident 20480`, `--spec 6`, `--spec-min-p 0.75`, `--mtp-max-t 3`, `--suffix-draft 3`, `--expert-cache 3796`, 9 pool workers, CPU affinity `all`, host worker, `--adapt-every 4`, `--adapt-swaps 24`, and `STRATA_LOOKAHEAD=0`; the complete public-normalized argument vector and environment are in [provenance.json](provenance.json).
+- During the primary E4/S24 campaign the verified command used `q4_0` KV, 100,000 context cells, `--kv-resident 20480`, `--spec 6`, `--spec-min-p 0.75`, `--mtp-max-t 3`, `--suffix-draft 3`, `--expert-cache 3796`, 9 pool workers, CPU affinity `all`, host worker, `--adapt-every 4`, `--adapt-swaps 24`, and `NOSTROMA_LOOKAHEAD=0`; the complete public-normalized argument vector and environment are in [provenance.json](provenance.json).
 - Adaptive-cache notation **E4/S24** means `--adapt-every 4 --adapt-swaps 24`. The comparison candidate E5/S32 uses `--adapt-every 5 --adapt-swaps 32`.
 - The prompt content is not redistributed, but the verified `neuro.tokens` SHA-256, 28,912 prompt-token length, 100,000-cell context limit, sampling state, resident-memory policy, expert slots, and full environment are recorded in [provenance.json](provenance.json). Cache warm/cold comparability remains unresolved.
 
 ## Method and observed measurements
 
-The operator's workflow ran separate sequential `strata.exe` processes and the archived primary records contain the command, summary, stdout, stderr, exit, process-before/after, and GPU before/after files for each E4/S24 run. The raw evidence was recovered from the desktop archive roots `strata_current_best_phases_20261008/phase3-adaptive-es/E4-S24` and `rtx4070_exact_benchmark_20261008/final-audit-winner-r1..r5`; [provenance.json](provenance.json) is the sanitized public index of those records, while the large raw logs remain local.
+The operator's workflow ran separate sequential `nostroma.exe` processes and the archived primary records contain the command, summary, stdout, stderr, exit, process-before/after, and GPU before/after files for each E4/S24 run. The raw evidence was recovered from the desktop archive roots `nostroma_current_best_phases_20261008/phase3-adaptive-es/E4-S24` and `rtx4070_exact_benchmark_20261008/final-audit-winner-r1..r5`; [provenance.json](provenance.json) is the sanitized public index of those records, while the large raw logs remain local.
 
 The primary E4/S24 rows below are **validated against archived raw telemetry**; comparison rows remain historical session records unless explicitly marked otherwise. See [transcribed-runs.csv](transcribed-runs.csv) for the per-row origin label.
 
@@ -77,7 +77,7 @@ A single candidate run reached **49.53 tok/s** during a later adaptive-decay scr
 
 The primary E4/S24 five-run set is now verified from the archived per-run records rather than transcript-only values. The frozen reference set is likewise pinned to its five archived `final-audit-winner` records. See [provenance.json](provenance.json) for the normalized command, environment, artifact hashes, runtime-reported memory, run values, and evidence roots.
 
-The runtime memory figures are allocations reported by Strata's stderr, not a single peak VRAM measurement. The saved `nvidia-smi` files are run-boundary snapshots and are therefore reported separately.
+The runtime memory figures are allocations reported by Nostroma's stderr, not a single peak VRAM measurement. The saved `nvidia-smi` files are run-boundary snapshots and are therefore reported separately.
 
 ### What these results do and do not show
 

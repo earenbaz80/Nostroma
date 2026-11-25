@@ -2,7 +2,7 @@
  * The agent's tools in the app: the inventory, a tool from each family, and Manual mode's one approval card.
  *
  * Pure tests (the gate's rules, the preset list, the profile) always run. The rest need a built Harness
- * (STRATA_HARNESS_DIR) and skip loudly without it. The model is scripted (tests/helpers/scripted-worker.mjs): what is real is
+ * (NOSTROMA_HARNESS_DIR) and skip loudly without it. The model is scripted (tests/helpers/scripted-worker.mjs): what is real is
  * the Harness, its tool executor, its sandbox, its approval service, the Nostroma gate plugin and the bridge.
  */
 import test from 'node:test';
@@ -15,11 +15,11 @@ import { createAgentBridge } from '../server/agent/agent-bridge.mjs';
 import { resolveHarness } from '../server/agent/harness-runtime.mjs';
 import { buildProfile, GATE_PLUGIN } from '../server/agent/profile.mjs';
 import { STANDARD_PLUGIN_IDS, REMOVED_PLUGIN_IDS, standardPreset } from '../server/agent/preset.mjs';
-import { isReadOnlyShell, manualDecision, maskQuotes, READ_ONLY_TOOLS } from '../server/agent/plugins/strata-gate.mjs';
+import { isReadOnlyShell, manualDecision, maskQuotes, READ_ONLY_TOOLS } from '../server/agent/plugins/nostroma-gate.mjs';
 import { plainToolError, withPlain } from '../server/agent/events.mjs';
 
-const HARNESS = process.env.STRATA_HARNESS_DIR;
-const skip = !HARNESS || !resolveHarness({ env: process.env }).ok ? 'STRATA_HARNESS_DIR is not set to a built Harness' : false;
+const HARNESS = process.env.NOSTROMA_HARNESS_DIR;
+const skip = !HARNESS || !resolveHarness({ env: process.env }).ok ? 'NOSTROMA_HARNESS_DIR is not set to a built Harness' : false;
 const cleanup = dir => { try { rmSync(dir, { recursive: true, force: true, maxRetries: 3 }); } catch { /* the Harness sandbox leaves access entries; best effort */ } };
 const fwd = p => p.replaceAll('\\', '/');
 
@@ -93,7 +93,7 @@ test('the preset: our list is the Harness standard list minus exactly what the a
 test('the profile loads the gate by path, sizes helper agents to the engine slots and keeps no secret', () => {
   const p = buildProfile({ local: [{ id: 'a', baseUrl: 'http://127.0.0.1:1/v1', modelId: 'm', context: 32768, slots: 2, key: 'sekret-key-123' }] });
   const entries = JSON.parse(p.patch.split('\n').slice(1).join('\n'));
-  assert.deepEqual(entries.find(e => e.insert)?.insert, [{ id: 'strata-gate', name: GATE_PLUGIN, config: { web: { provider: 'DuckDuckGo, or Bing when DuckDuckGo is busy', skipAsk: false } } }]);
+  assert.deepEqual(entries.find(e => e.insert)?.insert, [{ id: 'nostroma-gate', name: GATE_PLUGIN, config: { web: { provider: 'DuckDuckGo, or Bing when DuckDuckGo is busy', skipAsk: false } } }]);
   assert.ok(existsSync(GATE_PLUGIN));
   assert.equal(entries.find(e => e.id === 'subagent').config.maxActiveSubagents, 4, 'at least the 4 helpers; more only with more slots');
   assert.equal(entries.find(e => e.id === 'preset-standard').config.plugins.some(x => x.id === 'tool-schedule'), false);
@@ -115,7 +115,7 @@ test('tool failures are said in plain words with the original text kept after th
 
 async function rig(t) {
   const worker = await startScriptedWorker({});
-  const dir = mkdtempSync(join(tmpdir(), 'strata-tools-'));
+  const dir = mkdtempSync(join(tmpdir(), 'nostroma-tools-'));
   const ws = join(dir, 'ws'); mkdirSync(ws, { recursive: true });
   const local = [{ id: 'inst-1', label: 'Scripted', baseUrl: worker.url, modelId: 'scripted-model', context: 32768, slots: 4 }];
   const bridge = createAgentBridge({ dataDir: dir, localInstances: () => local, connections: () => [], env: process.env, startTimeoutMs: 90_000 });
@@ -215,7 +215,7 @@ test('Plan stays read-only and Bypass asks nothing', { skip }, async (t) => {
 test('Manual refuses to start when the gate is not loaded (it would be an open sandbox that nobody asks about)', { skip }, async (t) => {
   // A Harness started without the gate plugin (the bridge's `gate: false`).
   const worker = await startScriptedWorker({});
-  const dir = mkdtempSync(join(tmpdir(), 'strata-nogate-'));
+  const dir = mkdtempSync(join(tmpdir(), 'nostroma-nogate-'));
   mkdirSync(join(dir, 'ws'), { recursive: true });
   const local = [{ id: 'i', baseUrl: worker.url, modelId: 'scripted-model', context: 32768 }];
   const bridge = createAgentBridge({ dataDir: dir, localInstances: () => local, connections: () => [], env: process.env, gate: false, startTimeoutMs: 90_000 });
@@ -225,7 +225,7 @@ test('Manual refuses to start when the gate is not loaded (it would be an open s
 
 test('a tool server set up for the model is connected to the agent: its tools are offered, Manual asks before using them, and its secret never reaches a file', { skip }, async (t) => {
   const worker = await startScriptedWorker({});
-  const dir = mkdtempSync(join(tmpdir(), 'strata-mcp-'));
+  const dir = mkdtempSync(join(tmpdir(), 'nostroma-mcp-'));
   const ws = join(dir, 'ws'); mkdirSync(ws, { recursive: true });
   const mcpServers = { demo: { command: process.execPath, args: [fwd(join(import.meta.dirname, 'helpers', 'mini-mcp.mjs'))], env: { DEMO_TOKEN: 'tok-123456-secret' } }, off: { command: 'x', disabled: true } };
   const local = [{ id: 'i', baseUrl: worker.url, modelId: 'scripted-model', context: 32768, slots: 2, mcpServers }];
@@ -248,7 +248,7 @@ test('a tool server set up for the model is connected to the agent: its tools ar
   assert.match(cards(manual)[1].effect, /Use the connected tool demo \/ shout/);
   // the secret is in the environment of the agent only: never in the profile file
   const files = JSON.stringify(readdirDeep(join(dir, 'agent')).filter(f => f.endsWith('.yml')).map(f => readFileSync(f, 'utf8')));
-  assert.ok(files.includes('process.env.STRATA_MCP_0_E_DEMO_TOKEN') && !files.includes('tok-123456-secret'));
+  assert.ok(files.includes('process.env.NOSTROMA_MCP_0_E_DEMO_TOKEN') && !files.includes('tok-123456-secret'));
 });
 
 function readdirDeep(dir) {
@@ -259,7 +259,7 @@ function readdirDeep(dir) {
 
 test('the output budget is not the old 8192, and the Reasoning menu reaches the request (off sends enable_thinking false)', { skip }, async (t) => {
   const worker = await startScriptedWorker({});
-  const dir = mkdtempSync(join(tmpdir(), 'strata-think-'));
+  const dir = mkdtempSync(join(tmpdir(), 'nostroma-think-'));
   const ws = join(dir, 'ws'); mkdirSync(ws, { recursive: true });
   const local = [{ id: 'i', baseUrl: worker.url, modelId: 'scripted-model', context: 65536 }];
   const bridge = createAgentBridge({ dataDir: dir, localInstances: () => local, connections: () => [], env: process.env, startTimeoutMs: 90_000 });

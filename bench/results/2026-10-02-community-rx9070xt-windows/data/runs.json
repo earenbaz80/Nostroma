@@ -1,5 +1,5 @@
 {
-  "label": "strata-0.1.35-qwen38-flashnext-iq3s",
+  "label": "nostroma-0.1.35-qwen38-flashnext-iq3s",
   "model": "qwen3.8-flash-next-iq3_s",
   "url": "http://127.0.0.1:8080/v1",
   "extra": {

@@ -18,15 +18,15 @@
 #if defined(__x86_64__) || defined(_M_X64) || defined(__i386__)
 #if defined(_MSC_VER)
 #include <intrin.h>
-#define STRATA_VIT_PAUSE() _mm_pause()
+#define NOSTROMA_VIT_PAUSE() _mm_pause()
 #else
-#define STRATA_VIT_PAUSE() __builtin_ia32_pause()
+#define NOSTROMA_VIT_PAUSE() __builtin_ia32_pause()
 #endif
 #else
-#define STRATA_VIT_PAUSE() ((void) 0)
+#define NOSTROMA_VIT_PAUSE() ((void) 0)
 #endif
 
-namespace strata_vit {
+namespace nostroma_vit {
 
 class Team {
 public:
@@ -63,7 +63,7 @@ public:
             cv_.notify_all();
         }
         work(g, 0);
-        while (remaining_.load(std::memory_order_acquire) > 0) STRATA_VIT_PAUSE();
+        while (remaining_.load(std::memory_order_acquire) > 0) NOSTROMA_VIT_PAUSE();
     }
 
 private:
@@ -92,7 +92,7 @@ private:
                 const auto t0 = std::chrono::steady_clock::now();
                 int spins = 0;
                 while ((g = gen_.load(std::memory_order_acquire)) == seen) {
-                    STRATA_VIT_PAUSE();
+                    NOSTROMA_VIT_PAUSE();
                     if ((++spins & 255) == 0 && std::chrono::steady_clock::now() - t0 > std::chrono::microseconds(150)) {
                         std::unique_lock<std::mutex> lk(mu_);
                         sleepers_.fetch_add(1, std::memory_order_seq_cst);
@@ -120,4 +120,4 @@ private:
     std::condition_variable cv_;
 };
 
-}  // namespace strata_vit
+}  // namespace nostroma_vit

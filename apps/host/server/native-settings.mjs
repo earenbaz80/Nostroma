@@ -28,14 +28,14 @@ export const NATIVE_FIELDS=[
  {id:'mcp_max_rounds',label:'Maximum tool rounds',group:'Tools',type:'number',min:1,max:100},
  {id:'mcp_max_result_chars',label:'Maximum tool result characters',group:'Tools',type:'number',min:100,max:1000000},
 ];
-/** Engine environment names the app shows and edits: STRATA_*. Any other name in a model's file is kept untouched and not shown. */
-export const ENV_FLAG=/^STRATA_[A-Z0-9_]+$/;
+/** Engine environment names the app shows and edits: NOSTROMA_*. Any other name in a model's file is kept untouched and not shown. */
+export const ENV_FLAG=/^NOSTROMA_[A-Z0-9_]+$/;
 /**
  * The speed features of 0.2.7 that have a switch in Expert settings. A switch has a default ('on' or 'off'); outside it, it writes exactly the
  * environment entries `env` into the model's settings file ("env"); back in its default it removes them, so a default launch carries none of them.
- * "Faster long prompts" (Qwen KVA) is OFF by default (owner decision, 26 October): STRATA_KVA=1 turns it on, and an earlier test build's STRATA_KVA=0 reads as off.
- * "Faster answers on 12 GB NVIDIA cards" (residency-biased routing) is OFF by default since 0.2.8 (owner decision, 29 October; #4402): STRATA_ROUTE_PRIOR=1.5
- * turns it on, and the STRATA_ROUTE_PRIOR=0 that 0.2.7's Off wrote is the default state now. The other two are on by default. The names are the engine switch contract (phaseA-tests/notes-027-plan.md); nostroma_control/speed_switches.py says the
+ * "Faster long prompts" (Qwen KVA) is OFF by default (owner decision, 26 October): NOSTROMA_KVA=1 turns it on, and an earlier test build's NOSTROMA_KVA=0 reads as off.
+ * "Faster answers on 12 GB NVIDIA cards" (residency-biased routing) is OFF by default since 0.2.8 (owner decision, 29 October; #4402): NOSTROMA_ROUTE_PRIOR=1.5
+ * turns it on, and the NOSTROMA_ROUTE_PRIOR=0 that 0.2.7's Off wrote is the default state now. The other two are on by default. The names are the engine switch contract (phaseA-tests/notes-027-plan.md); nostroma_control/speed_switches.py says the
  * same for the Terminal (tests/terminal/test_speed_switches.py compares the two).
  */
 /* The table (ids, words, defaults, environment entries) is generated from nostroma_control/speed_switches.py into policy-generated.mjs; this file only adds the group the screen lists them under and the rules for where a switch applies (below), which tests/speed-switches.test.mjs and tests/terminal/test_speed_switches.py run against the same cases. */
@@ -62,7 +62,7 @@ export function speedSwitchApplies(id,{deepseek=false,backend=null,gpus=[],arch=
  if(id==='faster_radeon_9000')return backend==='hip'&&(gpus??[]).some(g=>(!g.vendor||g.vendor==='amd')&&(GFX12.test(String(g.arch??''))||(!g.arch&&RADEON_9000.test(String(g.name??'')))));
  return false;
 }
-/** The switch is outside its default when every entry it writes is in the environment with its value; anything less or other (a hand-edited file, STRATA_KVA=0) is the default state and is left alone. */
+/** The switch is outside its default when every entry it writes is in the environment with its value; anything less or other (a hand-edited file, NOSTROMA_KVA=0) is the default state and is left alone. */
 export function speedSwitchIsSet(env,id){const sw=SPEED_SWITCHES.find(s=>s.id===id),has=entries=>!!entries&&Object.keys(entries).length>0&&Object.entries(entries).every(([name,value])=>env?.[name]===value);return !!sw&&(has(sw.env)||has(sw.legacy));}
 /** Is the feature on for a launch with this environment? */
 export function speedSwitchIsOn(env,id){const sw=SPEED_SWITCHES.find(s=>s.id===id);return !!sw&&speedSwitchIsSet(env,id)!==(sw.default==='on');}
@@ -97,7 +97,7 @@ export function validateNativeSettings(values){
  for(const [key,value] of Object.entries(values)){
 
   if(key==='args'){if(!Array.isArray(value)||value.length>200||value.some(v=>typeof v!=='string'||v.length>4000||/[\n\r\0]/.test(v))||value.some(v=>['--host','--port','--api-key'].includes(v)))throw new Error('Engine arguments must be text values. Network access stays managed by Nostroma.');result.args=[...value];continue;}
-  if(key==='env'){if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Engine environment must be an object.');const env={};for(const [name,text] of Object.entries(value)){if(!ENV_FLAG.test(name)||typeof text!=='string'||text.length>4000||text.includes('\0'))throw new Error('Use STRATA_ environment flags with text values.');env[name]=text;}result.env=env;continue;}
+  if(key==='env'){if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Engine environment must be an object.');const env={};for(const [name,text] of Object.entries(value)){if(!ENV_FLAG.test(name)||typeof text!=='string'||text.length>4000||text.includes('\0'))throw new Error('Use NOSTROMA_ environment flags with text values.');env[name]=text;}result.env=env;continue;}
   if(key==='sampling'){if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Sampling must be an object.');const limits={temperature:[0,10],top_p:[Number.MIN_VALUE,1],top_k:[1,64],min_p:[0,1],repetition_penalty:[Number.MIN_VALUE,10],presence_penalty:[0,10],frequency_penalty:[0,10],penalty_last_n:[0,1048576],seed:[1,2147483647]};for(const [name,n] of Object.entries(value)){if(name==='experimental_speed_projection'){if(typeof n!=='boolean')throw new Error('Speed projection must be on or off.');continue;}if(!limits[name]||!Number.isFinite(n)||(['top_k','seed','penalty_last_n'].includes(name)&&!Number.isInteger(n))||n<limits[name][0]||n>limits[name][1])throw new Error(`Choose a valid sampling ${name}.`);}result.sampling={...value};continue;}
   const field=NATIVE_FIELDS.find(f=>f.id===key);if(!field)throw new Error(`Unknown native setting: ${key}`);
   if(value===null||value===''){result[key]=null;continue;}

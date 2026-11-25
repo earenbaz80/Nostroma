@@ -16,10 +16,10 @@
  "engine_prompt_tps": 500.6,
  "engine_decode_tps": 58.7,
  "log_lines": [
-  "strata serve: prompt 1132 tokens = 0 reused + 1132 read in 2261 ms (500.6 tok/s), 256 generated in 4361 ms (58.7 tok/s), drafts accepted 150 of 215, 1 checkpoints",
-  "strata serve: decode expert cache hit rate: 69.1% (96115 hits / 139056 lookups); 15504 more read by the GPU over PCIe or from another GPU (10.0% of all 154560 routed)"
+  "nostroma serve: prompt 1132 tokens = 0 reused + 1132 read in 2261 ms (500.6 tok/s), 256 generated in 4361 ms (58.7 tok/s), drafts accepted 150 of 215, 1 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 69.1% (96115 hits / 139056 lookups); 15504 more read by the GPU over PCIe or from another GPU (10.0% of all 154560 routed)"
  ],
- "answer_head": "The file `chat.py` is a lightweight, standard-library-only command-line interface for interacting with a running Strata server. It implements a streaming chat client that connects to the server's OpenAI-compatible `/v1/chat/completions` endpoint.\n\n**Key Features:**\n1.  **Streaming Support:** It cons",
+ "answer_head": "The file `chat.py` is a lightweight, standard-library-only command-line interface for interacting with a running Nostroma server. It implements a streaming chat client that connects to the server's OpenAI-compatible `/v1/chat/completions` endpoint.\n\n**Key Features:**\n1.  **Streaming Support:** It cons",
  "metrics_after": {
   "engine": {
    "model": "qwen3.8-flash-next-unsloth-ud-iq4_xs",

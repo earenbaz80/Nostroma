@@ -16,7 +16,7 @@ def ask(url,key,prompt,timeout):
     global index
     index+=1
     p=out/f'probe-{index}.json'
-    record={'request':{'model':'strata','max_tokens':40,'temperature':0,'chat_template_kwargs':{'enable_thinking':False},'messages':[{'role':'user','content':prompt}]}}
+    record={'request':{'model':'nostroma','max_tokens':40,'temperature':0,'chat_template_kwargs':{'enable_thinking':False},'messages':[{'role':'user','content':prompt}]}}
     p.write_text(json.dumps(record))
     try:
         answer,n,seconds=original(url,key,prompt,timeout)

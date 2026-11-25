@@ -13,9 +13,9 @@
 // Runs on any CPU with AVX (the kernels are compiled for SSE4.2 + AVX); on an AVX2 machine it checks the
 // older-CPU path exactly as an AVX-only machine runs it (the engine's dispatch gate is separate: this calls
 // the kernels directly).
-#include "strata/kernels/cpu/iq_avx1.hpp"
-#include "strata/kernels/cpu/native_expert.hpp"
-#include "strata/kernels/cpu/expert_layout.hpp"
+#include "nostroma/kernels/cpu/iq_avx1.hpp"
+#include "nostroma/kernels/cpu/native_expert.hpp"
+#include "nostroma/kernels/cpu/expert_layout.hpp"
 
 #include "ggml.h"
 #include "ggml-cpu.h"
@@ -34,7 +34,7 @@
 #include <sched.h>
 #endif
 
-namespace cpu = strata::kernels::cpu;
+namespace cpu = nostroma::kernels::cpu;
 using Clock = std::chrono::steady_clock;
 
 namespace {
@@ -257,7 +257,7 @@ void run_bench(int mb, const std::vector<int>& nts) {
 }  // namespace
 
 int main(int argc, char** argv) {
-    ggml_cpu_init();   // the oracle's own tables (native_fmt used to do it; the pool no longer calls ggml-cpu with STRATA_OWN_CPU_QUANT)
+    ggml_cpu_init();   // the oracle's own tables (native_fmt used to do it; the pool no longer calls ggml-cpu with NOSTROMA_OWN_CPU_QUANT)
     bool bench = false;
     int mb = 128, cpu_pin = -1;
     std::vector<int> nts = {1, 2, 4};

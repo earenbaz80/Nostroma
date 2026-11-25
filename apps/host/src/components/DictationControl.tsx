@@ -77,8 +77,8 @@ export function DictationControl({ draft, onDraft, sessionId, disabled }: {
             if (!document.querySelector('.dialog-layer'))
                 toggleRef.current();
         };
-        window.addEventListener('strata:dictation', event);
-        return () => window.removeEventListener('strata:dictation', event);
+        window.addEventListener('nostroma:dictation', event);
+        return () => window.removeEventListener('nostroma:dictation', event);
     }, []);
     useEffect(() => { controller.current?.dispose(); controller.current = null; active.current = false; setState('finished'); setVisible(false); return () => controller.current?.dispose(); }, [sessionId]);
     useEffect(() => {

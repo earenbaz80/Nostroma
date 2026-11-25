@@ -1,13 +1,13 @@
 // (asserts stay on in a Release build: the test is its own check)
 #undef NDEBUG
-#include "strata/program/reply_branch.hpp"
+#include "nostroma/program/reply_branch.hpp"
 
 #include <cassert>
 #include <cstdint>
 #include <iostream>
 #include <vector>
 
-using strata::program::live_tail_is_replaced_reply;
+using nostroma::program::live_tail_is_replaced_reply;
 
 namespace {
 constexpr int64_t S = 900;   // <|im_start|>

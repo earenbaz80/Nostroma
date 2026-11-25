@@ -54,7 +54,7 @@ export function NativeLocalModel({ onBack }: { onBack: () => void }) {
     useEffect(() => { const path = parseLocation(window.location.hash).query.get('path'); if (path) { setTyped(path); void check(path); } }, []);
     /* Files that sit in a Nostroma data folder (<data>/models/<tag>) with their prepared model data beside them: that folder is used as the data
      * folder, so the prepared data is not made a second time. A folder the installer would not accept as a data folder is not passed. */
-    const ownDataFolder = (() => { const d = checked?.preview.already_set_up?.pack ? checked.preview.already_set_up.data_dir : null; return d && /strata/i.test(d.split(/[\\/]/).filter(Boolean).pop() ?? '') ? d : null; })();
+    const ownDataFolder = (() => { const d = checked?.preview.already_set_up?.pack ? checked.preview.already_set_up.data_dir : null; return d && /nostroma/i.test(d.split(/[\\/]/).filter(Boolean).pop() ?? '') ? d : null; })();
     async function prepare() {
         if (!usable || !selection || !checked)
             return;

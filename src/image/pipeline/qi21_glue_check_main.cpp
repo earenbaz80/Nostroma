@@ -1,13 +1,13 @@
-// src/image/pipeline/qi21_glue_check_main.cpp - test program strata-glue-check (not shipped): the steps of
-// include/strata/image/qi21_image.hpp on given inputs, for tools/test_qi21_glue.py (numpy float32 expectations) and
+// src/image/pipeline/qi21_glue_check_main.cpp - test program nostroma-glue-check (not shipped): the steps of
+// include/nostroma/image/qi21_image.hpp on given inputs, for tools/test_qi21_glue.py (numpy float32 expectations) and
 // for the check against stable-diffusion.cpp's own stage dumps.
 //
-//   strata-glue-check latent <noise.bin> <sigma0> <out.bin>
-//   strata-glue-check cond <hidden.bin> <n> <hidden_dim> <weights.bin> <n_system> <out.bin>
-//   strata-glue-check unit <in.bin> <out.bin>
-//   strata-glue-check dumps <dump dir> [...]      noise.bin -> qi21_initial_latent(noise, 1.0) == dit_x_0.bin
+//   nostroma-glue-check latent <noise.bin> <sigma0> <out.bin>
+//   nostroma-glue-check cond <hidden.bin> <n> <hidden_dim> <weights.bin> <n_system> <out.bin>
+//   nostroma-glue-check unit <in.bin> <out.bin>
+//   nostroma-glue-check dumps <dump dir> [...]      noise.bin -> qi21_initial_latent(noise, 1.0) == dit_x_0.bin
 //                                                 byte for byte (prints GLUE-DUMPS PASS / FAIL)
-#include "strata/image/qi21_image.hpp"
+#include "nostroma/image/qi21_image.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -16,7 +16,7 @@
 #include <string>
 #include <vector>
 
-using namespace strata::image;
+using namespace nostroma::image;
 
 namespace {
 

@@ -16,9 +16,9 @@
  "engine_prompt_tps": 5588.9,
  "engine_decode_tps": 139.9,
  "log_lines": [
-  "strata serve: conversation cache: parked 130424 tokens in 455.2 ms; parked=2 bytes=5636901276 evictions=0 snapshot_bytes=2819798084 reused_kv_bytes=0",
-  "strata serve: prompt 130680 tokens = 0 reused + 130680 read in 23382 ms (5588.9 tok/s), 79 generated in 565 ms (139.9 tok/s), drafts accepted 41 of 54, 6 checkpoints",
-  "strata serve: decode expert cache hit rate: 96.7% (44102 hits / 45600 lookups)"
+  "nostroma serve: conversation cache: parked 130424 tokens in 455.2 ms; parked=2 bytes=5636901276 evictions=0 snapshot_bytes=2819798084 reused_kv_bytes=0",
+  "nostroma serve: prompt 130680 tokens = 0 reused + 130680 read in 23382 ms (5588.9 tok/s), 79 generated in 565 ms (139.9 tok/s), drafts accepted 41 of 54, 6 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 96.7% (44102 hits / 45600 lookups)"
  ],
  "answer_head": "I can\u2019t see the full contents of the last file in your message (it appears truncated), so I can\u2019t reliably explain what it does or produce a correct unified diff against it.\n\nIf you paste the complete last file (or tell me its path and contents), I\u2019ll:\n1) explain what it does, and\n2) propose one con",
  "metrics_after": {

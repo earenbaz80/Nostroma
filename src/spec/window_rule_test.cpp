@@ -1,19 +1,19 @@
 // src/spec/window_rule_test.cpp - which rule picks the verify window, and whose q lists judge the candidates (spec/window_rule.hpp).
 //
 // DFlash2 runs with the MTP layer loaded beside it as the fallback (use_mtp stays true).  Before this rule existed, the cost-aware
-// window (STRATA_SPEC_COST=1, a GB10 default) read `chain_rows`, which only the MTP chain writes, so DFlash2 candidates were
-// verified one row at a time; and the MTP's q lists (STRATA_SPEC_PROB=1) were attached to DFlash2's windows.  The tests:
+// window (NOSTROMA_SPEC_COST=1, a GB10 default) read `chain_rows`, which only the MTP chain writes, so DFlash2 candidates were
+// verified one row at a time; and the MTP's q lists (NOSTROMA_SPEC_PROB=1) were attached to DFlash2's windows.  The tests:
 //   1. the table of the fixed cases (DFlash2 + cost rule with and without --draft-conf / --spec-min-p);
 //   2. the DEFAULT PATH IS UNCHANGED: for every input the old inline code handled correctly (MTP as the source, any flags;
 //      DFlash2 with --draft-conf > 0 or with the cost rule off) a copy of the old code returns the same window;
 //   3. the q rule.
-#include "strata/spec/window_rule.hpp"
+#include "nostroma/spec/window_rule.hpp"
 
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 
-using namespace strata::spec;
+using namespace nostroma::spec;
 
 namespace {
 int g_fail = 0;

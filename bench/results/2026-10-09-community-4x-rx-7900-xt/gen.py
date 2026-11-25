@@ -1,4 +1,4 @@
-"""Build the bench prompts at exact token counts with Strata's own tokenizer (run in the runner's venv).
+"""Build the bench prompts at exact token counts with Nostroma's own tokenizer (run in the runner's venv).
 
 usage: gen.py SRC_ROOT TOKENIZER_DIR > prompts.jsonl
 Each prompt is "Run id: <uuid>" + a slice of the repository text (tools/needle_bench.py's haystack) +
@@ -14,7 +14,7 @@ from pathlib import Path
 src, tok_dir = Path(sys.argv[1]), Path(sys.argv[2])
 sys.path.insert(0, str(src / "tools"))
 import needle_bench  # noqa: E402
-import strata_tokenizer as ST  # noqa: E402
+import nostroma_tokenizer as ST  # noqa: E402
 
 TEMPLATE_TOKENS = 12
 ASK = "\n\nSummarize the material above: what it is, its main parts, and how they fit together."

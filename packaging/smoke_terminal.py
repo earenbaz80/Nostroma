@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Smoke-test a terminal archive in a clean environment.
 
-    python packaging/smoke_terminal.py release/artifacts/strata-terminal-0.1.45-windows-x86_64.zip [--json out.json]
+    python packaging/smoke_terminal.py release/artifacts/nostroma-terminal-0.1.45-windows-x86_64.zip [--json out.json]
 
 The archive is extracted into a fresh folder whose name has a space in it (so a moved or awkward path is part of
 the test), and every command runs with a PATH that holds no Python (Windows: System32 only; POSIX: a folder with
@@ -83,7 +83,7 @@ def clean_env(sandbox: Path) -> tuple[dict, list[str]]:
 
 
 def launcher(root: Path) -> list[str]:
-    return [str(root / "bin" / "strata.cmd")] if os.name == "nt" else [str(root / "bin" / "strata")]
+    return [str(root / "bin" / "nostroma.cmd")] if os.name == "nt" else [str(root / "bin" / "nostroma")]
 
 
 def as_command(args: list[str]):
@@ -136,7 +136,7 @@ def main() -> int:
     ap.add_argument("--keep", action="store_true", help="keep the extracted folder")
     a = ap.parse_args()
     archive = Path(a.archive).resolve()
-    sandbox = Path(tempfile.mkdtemp(prefix="strata smoke "))
+    sandbox = Path(tempfile.mkdtemp(prefix="nostroma smoke "))
     results: dict = {"archive": archive.name, "sandbox_has_space": " " in str(sandbox), "checks": {}}
     ok = True
     proc = None
@@ -144,7 +144,7 @@ def main() -> int:
         root = extract(archive, sandbox / "extract")
         env, _ = clean_env(sandbox)
         results["root"] = str(root)
-        strata = launcher(root)
+        nostroma = launcher(root)
 
         # no other Python can be found from this environment
         if os.name == "nt":
@@ -167,25 +167,25 @@ def main() -> int:
             ok &= bool(cond)
             print(("PASS " if cond else "FAIL ") + name)
 
-        r = run([*strata, "--version"], env, root)
+        r = run([*nostroma, "--version"], env, root)
         inside = inside_archive(root, r["stdout"])
-        check("version", r["rc"] == 0 and r["stdout"].startswith("strata ") and inside,
+        check("version", r["rc"] == 0 and r["stdout"].startswith("nostroma ") and inside,
               rc=r["rc"], output=r["stdout"].strip(), interpreter_inside_archive=inside)
 
         if os.name == "nt":
             ps = Path(env["SystemRoot"]) / "System32" / "WindowsPowerShell" / "v1.0" / "powershell.exe"
-            r = run([str(ps), "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(root / "bin" / "strata.ps1"),
+            r = run([str(ps), "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(root / "bin" / "nostroma.ps1"),
                      "--version"], env, root)
-            check("version (strata.ps1)", r["rc"] == 0 and inside_archive(root, r["stdout"]),
+            check("version (nostroma.ps1)", r["rc"] == 0 and inside_archive(root, r["stdout"]),
                   rc=r["rc"], output=r["stdout"].strip(), stderr=r["stderr"].strip()[:200])
 
-        r = run([*strata, "doctor"], env, root)
+        r = run([*nostroma, "doctor"], env, root)
         check("doctor", r["rc"] == 0, rc=r["rc"], output=r["stdout"].strip()[:600])
 
-        r = run([*strata, "profile", "list"], env, root)
+        r = run([*nostroma, "profile", "list"], env, root)
         check("profile list", r["rc"] == 0, rc=r["rc"], output=r["stdout"].strip()[:300])
 
-        r = run([*strata, "install"], env, root)
+        r = run([*nostroma, "install"], env, root)
         # since 0.2.4 the Terminal carries setup.py: with no keyboard it stops at the first question, in plain words and with a non-zero code
         # (an older Terminal without the installer answers rc 5 "no installer")
         stopped = r["rc"] not in (0, None) and ("no installer" in r["stderr"] or "setup stopped" in (r["stdout"] + r["stderr"]).lower())
@@ -197,13 +197,13 @@ def main() -> int:
         cfg_dir.mkdir()
         (cfg_dir / "engine.exe").write_bytes(b"not an engine")
         (cfg_dir / "tokenizer.json").write_text("{}", encoding="utf-8")
-        cfg = cfg_dir / "strata-mock.json"
+        cfg = cfg_dir / "nostroma-mock.json"
         cfg.write_text(json.dumps({"exe": str(cfg_dir / "engine.exe"), "tokenizer": str(cfg_dir / "tokenizer.json"),
                                    "args": [], "model_name": "mock"}), encoding="utf-8")
         port = free_port()
         log = sandbox / "serve.log"
         with log.open("wb") as lf:
-            proc = subprocess.Popen(as_command([*strata, "serve", "--profile", str(cfg), "--engine", "mock",
+            proc = subprocess.Popen(as_command([*nostroma, "serve", "--profile", str(cfg), "--engine", "mock",
                                                 "--port", str(port), "--host", "127.0.0.1"]),
                                     env=env, cwd=str(root), stdout=lf, stderr=subprocess.STDOUT,
                                     stdin=subprocess.DEVNULL)

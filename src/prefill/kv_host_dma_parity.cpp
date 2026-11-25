@@ -1,5 +1,5 @@
 // src/prefill/kv_host_dma_parity.cpp - the prompt path's K/V append under KV streaming, both ways (GPU, synthetic, no model):
-//   (a) the append kernel writes the host copy itself (STRATA_KV_HOST_DMA=0),
+//   (a) the append kernel writes the host copy itself (NOSTROMA_KV_HOST_DMA=0),
 //   (b) the append writes the staging pool and the VRAM slots only, then kv_unstage_to_host copies the chunk's blocks
 //       from the staging pool to the host copy by DMA on the same stream (the CUDA default, core/kv_host_dma.hpp).
 // Per format (fp16, int8 + scales, q4_0) a 4,048-cell context is appended in four chunks whose starts are not block
@@ -10,12 +10,12 @@
 // the host copies as zeros, so a block that was not copied, or a copy that ran before its append, shows up.
 //
 //   kv_host_dma_parity [--device N]     exit 0: every case equal; 1: a difference; 77: no GPU
-#include "strata/kernels/kv_q4.hpp"
-#include "strata/kernels/kv_q8.hpp"
-#include "strata/kernels/kv_stream.hpp"
-#include "strata/kernels/qsa.hpp"
-#include "strata/kernels/qsa_decode_attn.hpp"
-#include "strata/prefill/kernels.hpp"
+#include "nostroma/kernels/kv_q4.hpp"
+#include "nostroma/kernels/kv_q8.hpp"
+#include "nostroma/kernels/kv_stream.hpp"
+#include "nostroma/kernels/qsa.hpp"
+#include "nostroma/kernels/qsa_decode_attn.hpp"
+#include "nostroma/prefill/kernels.hpp"
 
 #include <cuda_runtime.h>
 
@@ -28,7 +28,7 @@
 #include <string>
 #include <vector>
 
-namespace k = strata::kernels;
+namespace k = nostroma::kernels;
 
 namespace {
 bool ck(cudaError_t e, const char* what) {
@@ -139,7 +139,7 @@ int run_format(int fmt) {
             if (fmt == k::kKvQ4)
                 k::kv_append_q4(lp.k_q4, lp.v_q4, d_table, p0, T, dK, dV, s, cs, host_w, &sp);
             else
-                strata::prefill::kv_append(dK, dV, T, p0, d_table, ps, fmt == k::kKvF16 ? lp.k_pool : nullptr,
+                nostroma::prefill::kv_append(dK, dV, T, p0, d_table, ps, fmt == k::kKvF16 ? lp.k_pool : nullptr,
                                            fmt == k::kKvF16 ? lp.v_pool : nullptr, lp.k_q, lp.v_q, lp.k_scale, lp.v_scale,
                                            cs, host_w, &sp);
             if (w == 1) k::kv_unstage_to_host(as_attn(stage[w], fmt), hp, fmt, p0 / ps, (end + ps - 1) / ps, s, cs);

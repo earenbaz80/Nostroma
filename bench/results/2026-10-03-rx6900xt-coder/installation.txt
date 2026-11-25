@@ -1,4 +1,4 @@
-Strata - Qwen3.8-Flash-Next on a normal PC (a GPU + system RAM + CPU)
+Nostroma - Qwen3.8-Flash-Next on a normal PC (a GPU + system RAM + CPU)
 
 === Step 1: checking your PC ===
   Your AMD GPUs:
@@ -24,23 +24,23 @@ Strata - Qwen3.8-Flash-Next on a normal PC (a GPU + system RAM + CPU)
 
 === Step 3: Python packages ===
   Installing numpy, jinja2, regex, pyyaml, tqdm, requests, cmake, ninja, pillow, psutil ...
-  > C:\Dev\Strata\.venv\Scripts\python.exe -m pip install --quiet --disable-pip-version-check numpy==2.5.3; python_version >= "3.12" numpy==2.4.6; python_version == "3.11" numpy==2.2.6; python_version < "3.11" jinja2==3.1.6 regex==2026.9.10 pyyaml==6.0.3 tqdm==4.70.1 requests==2.34.2 cmake==4.4.3 ninja==1.13.2 pillow==12.3.0 psutil==7.2.2 markupsafe==3.0.3 certifi==2026.7.22 charset-normalizer==3.5.1 idna==3.20 urllib3==2.8.0 colorama==0.4.6; sys_platform == "win32"
+  > C:\Dev\Nostroma\.venv\Scripts\python.exe -m pip install --quiet --disable-pip-version-check numpy==2.5.3; python_version >= "3.12" numpy==2.4.6; python_version == "3.11" numpy==2.2.6; python_version < "3.11" jinja2==3.1.6 regex==2026.9.10 pyyaml==6.0.3 tqdm==4.70.1 requests==2.34.2 cmake==4.4.3 ninja==1.13.2 pillow==12.3.0 psutil==7.2.2 markupsafe==3.0.3 certifi==2026.7.22 charset-normalizer==3.5.1 idna==3.20 urllib3==2.8.0 colorama==0.4.6; sys_platform == "win32"
   [ok] numpy, jinja2, regex, pyyaml, tqdm, requests, cmake, ninja, pillow, psutil installed
 
-=== Step 4: the Strata engine ===
+=== Step 4: the Nostroma engine ===
 
   llama.cpp source:   0.01 / 0.04 GB (21%)
   [ok] llama.cpp source downloaded
   [ok] llama.cpp 3cf0325 (gguf-py, ggml, mtmd)
-  Downloading the ready-made Strata engine for AMD GPUs (with the ROCm libraries it uses) ...
+  Downloading the ready-made Nostroma engine for AMD GPUs (with the ROCm libraries it uses) ...
 
-  Strata AMD engine:   0.01 / 0.60 GB (1%)
-  [ok] Strata AMD engine downloaded
+  Nostroma AMD engine:   0.01 / 0.60 GB (1%)
+  [ok] Nostroma AMD engine downloaded
   [ok] ready-made AMD engine 0.1.38 for gfx1100, gfx1101, gfx1102, gfx1200, gfx1201, gfx1030 (ROCm 10.2.0a20260930)
-  [ok] engine: C:\Dev\Strata\engine\strata.exe
+  [ok] engine: C:\Dev\Nostroma\engine\nostroma.exe
 
 === Step 5: downloading Qwen3.8-Flash-Next Coder IQ1_M ===
-  The model files go in C:\Dev\Strata-data\models\coder-IQ1_M
+  The model files go in C:\Dev\Nostroma-data\models\coder-IQ1_M
   Files you already have: put them here with their original names (Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00001-of-00002.gguf, Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00002-of-00002.gguf), or use --gguf-dir <their folder>.
 
   Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00001-of-00002.gguf:   0.01 / 29.61 GB (0%)
@@ -198,15 +198,15 @@ Strata - Qwen3.8-Flash-Next on a normal PC (a GPU + system RAM + CPU)
   [ok] Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00002-of-00002.gguf downloaded
   [ok] model files present
 
-=== Step 6: preparing the model for Strata ===
-  > C:\Dev\Strata\.venv\Scripts\python.exe C:\Dev\Strata\tools\iq_pack.py --gguf C:\Dev\Strata-data\models\coder-IQ1_M\Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00001-of-00002.gguf --out C:\Dev\Strata-data\packs\coder-iq1_m
+=== Step 6: preparing the model for Nostroma ===
+  > C:\Dev\Nostroma\.venv\Scripts\python.exe C:\Dev\Nostroma\tools\iq_pack.py --gguf C:\Dev\Nostroma-data\models\coder-IQ1_M\Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00001-of-00002.gguf --out C:\Dev\Nostroma-data\packs\coder-iq1_m
 model shards: Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00001-of-00002.gguf, Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00002-of-00002.gguf
 index.txt: 1079 tensors, 302 served natively, 0 in extra.bin, arena 1.37 GiB
 tokenizer/: vocab 248320, merges 247587, pre qwen35, specials {'tokenizer.ggml.eos_token_id': 248046, 'tokenizer.ggml.padding_token_id': 248044, 'tokenizer.ggml.bos_token_id': 248044}
-  [ok] model prepared: C:\Dev\Strata-data\packs\coder-iq1_m
+  [ok] model prepared: C:\Dev\Nostroma-data\packs\coder-iq1_m
   The MTP draft layer (speculative decoding, ~2x faster output) comes from the original Qwen checkpoint:
   only its ~5 GB of MTP tensors are downloaded.
-  > C:\Dev\Strata\.venv\Scripts\python.exe C:\Dev\Strata\tools\mtp_fetch.py fetch --out C:\Dev\Strata-data\mtp
+  > C:\Dev\Nostroma\.venv\Scripts\python.exe C:\Dev\Nostroma\tools\mtp_fetch.py fetch --out C:\Dev\Nostroma-data\mtp
 # MTP block in the BF16 checkpoint
 
 31 tensors, 5.214 GB, in 28 shards.
@@ -349,7 +349,7 @@ mtp.layers.0.self_attn.q_proj.weight 100%
 mtp.layers.0.self_attn.v_proj.weight 100%
 mtp.pre_fc_norm_embedding.weight 100%
 mtp.pre_fc_norm_hidden.weight 100%
-  > C:\Dev\Strata\.venv\Scripts\python.exe C:\Dev\Strata\tools\mtp_pack.py --src C:\Dev\Strata-data\mtp --experts q2_0 --out C:\Dev\Strata-data\mtp\mtp-q2_0.gguf
+  > C:\Dev\Nostroma\.venv\Scripts\python.exe C:\Dev\Nostroma\tools\mtp_pack.py --src C:\Dev\Nostroma-data\mtp --experts q2_0 --out C:\Dev\Nostroma-data\mtp\mtp-q2_0.gguf
 mtp.fc_embedding.weight: BF16 13.1 MB
 mtp.fc_hidden.weight: BF16 13.1 MB
 mtp.hyper_connection_mixer.hc_norm.weight: F32 0.0 MB
@@ -381,9 +381,9 @@ mtp.layers.0.self_attn.q_proj.weight: BF16 62.9 MB
 mtp.layers.0.self_attn.v_proj.weight: BF16 2.6 MB
 mtp.pre_fc_norm_embedding.weight: F32 0.0 MB
 mtp.pre_fc_norm_hidden.weight: F32 0.0 MB
-wrote C:\Dev\Strata-data\mtp\mtp-q2_0.gguf: 0.889 GB of tensor data
-  > C:\Dev\Strata\.venv\Scripts\python.exe C:\Dev\Strata\tools\mtp_rt.py --gguf C:\Dev\Strata-data\mtp\mtp-q2_0.gguf --out C:\Dev\Strata-data\mtp\rt
-experts.bin 707788800 B, dense.bin 116099072 B, 29 tensors -> C:\Dev\Strata-data\mtp\rt
+wrote C:\Dev\Nostroma-data\mtp\mtp-q2_0.gguf: 0.889 GB of tensor data
+  > C:\Dev\Nostroma\.venv\Scripts\python.exe C:\Dev\Nostroma\tools\mtp_rt.py --gguf C:\Dev\Nostroma-data\mtp\mtp-q2_0.gguf --out C:\Dev\Nostroma-data\mtp\rt
+experts.bin 707788800 B, dense.bin 116099072 B, 29 tensors -> C:\Dev\Nostroma-data\mtp\rt
   fc_embedding.weight q8_0 2560 2560 0 6963200
   fc_hidden.weight q8_0 2560 2560 6963200 6963200
   hyper_connection_mixer.hc_norm.weight f32 1 10240 13926400 40960
@@ -413,7 +413,7 @@ experts.bin 707788800 B, dense.bin 116099072 B, 29 tensors -> C:\Dev\Strata-data
   self_attn.v_proj.weight q8_0 512 2560 114655232 1392640
   pre_fc_norm_embedding.weight f32 1 2560 116047872 10240
   pre_fc_norm_hidden.weight f32 1 10240 116058112 40960
-  [ok] MTP draft layer: C:\Dev\Strata-data\mtp\rt
+  [ok] MTP draft layer: C:\Dev\Nostroma-data\mtp\rt
 
 === Step 7: writing the start script ===
   [ok] KV streaming on: the context's KV cache lives in RAM (0.9 GB), more experts fit in VRAM

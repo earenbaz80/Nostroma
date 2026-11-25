@@ -22,9 +22,9 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include "strata/kernels/native_rope.hpp"
-#include "strata/env.hpp"
-#include "strata/kernels/mrope.hpp"
+#include "nostroma/kernels/native_rope.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kernels/mrope.hpp"
 #include <cuda_runtime.h>
 #include <atomic>
 #include <cmath>
@@ -33,14 +33,14 @@
 #include <limits>
 #include <stdexcept>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 std::atomic<bool> enabled{false};
 bool overlaps(const void* a, size_t an, const void* b, size_t bn) {
     auto x = reinterpret_cast<uintptr_t>(a), y = reinterpret_cast<uintptr_t>(b);
     return x <= y ? y - x < an : x - y < bn;
 }
-// TAB (#280, STRATA_ROPE_TABLE=1): the angles from the session's float64 table.  The host launches <false> whenever
+// TAB (#280, NOSTROMA_ROPE_TABLE=1): the angles from the session's float64 table.  The host launches <false> whenever
 // no table applies - the default - so the default kernel is 0.1.31's code exactly (the table read is not in it;
 // with it merely skipped at run time, the compiled default path changed its results).
 template <bool TAB>
@@ -149,10 +149,10 @@ bool same_scaling(const RopeScaling& a, const RopeScaling& b) {
            a.orig_ctx == b.orig_ctx && a.ext_factor == b.ext_factor && a.attn_factor == b.attn_factor &&
            a.beta_fast == b.beta_fast && a.beta_slow == b.beta_slow;
 }
-// opt-in: STRATA_ROPE_TABLE=1 (the table's angles differ from the fast-math ones in the last bits, so outputs move)
+// opt-in: NOSTROMA_ROPE_TABLE=1 (the table's angles differ from the fast-math ones in the last bits, so outputs move)
 bool rope_table_enabled() {
     static const bool on = [] {
-        const char* e = strata::env("NOSTROMA_ROPE_TABLE");
+        const char* e = nostroma::env("NOSTROMA_ROPE_TABLE");
         return e != nullptr && e[0] == '1';
     }();
     return on;
@@ -175,10 +175,10 @@ void native_rope_set_enabled(bool value) { enabled.store(value, std::memory_orde
 bool native_rope_enabled() { return enabled.load(std::memory_order_relaxed); }
 bool native_norm_rope_usable(int head_dim, int n_rot) {
     static const bool on = [] {
-        const char* off = strata::env("NOSTROMA_NO_NORM_ROPE");
+        const char* off = nostroma::env("NOSTROMA_NO_NORM_ROPE");
         if (off != nullptr && off[0] != '\0' && off[0] != '0') return false;
 #if defined(__HIPCC__)
-        const char* v = strata::env("NOSTROMA_NORM_ROPE");   // AMD: opt in until rope_parity check 6 passes there
+        const char* v = nostroma::env("NOSTROMA_NORM_ROPE");   // AMD: opt in until rope_parity check 6 passes there
         return v != nullptr && v[0] != '\0' && v[0] != '0';
 #else
         return true;

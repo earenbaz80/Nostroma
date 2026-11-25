@@ -1,7 +1,7 @@
 // tools/vision/own/test_image_prep.cpp - own_prep_check: our picture preparation against mtmd's, bit for bit.
 //
-//   strata-vision-own-prep-check <mmproj.gguf> <oracle dir> <min_tokens> <max_tokens> <image> [<image> ...]
-// The oracle files come from strata-vision-prep-oracle (oracle_prep.cpp) run with the same limits.  For every image: our decode, smart_resize,
+//   nostroma-vision-own-prep-check <mmproj.gguf> <oracle dir> <min_tokens> <max_tokens> <image> [<image> ...]
+// The oracle files come from nostroma-vision-prep-oracle (oracle_prep.cpp) run with the same limits.  For every image: our decode, smart_resize,
 // bicubic resize with padding and normalisation must reproduce mtmd's float buffer exactly (same size, every value equal).
 // Without images it only runs the self-checks of smart_resize.
 #include "image_prep.h"
@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-using namespace strata_vit;
+using namespace nostroma_vit;
 
 static int g_fail = 0;
 #define CHECK(c) do { if (!(c)) { std::printf("FAIL %s:%d: %s\n", __FILE__, __LINE__, #c); ++g_fail; } } while (0)

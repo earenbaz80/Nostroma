@@ -1,6 +1,6 @@
 // metal/src/ref_quant.cpp - see ref_quant.h.  The i-quant loops are transcribed from ggml-quants.c
 // (dequantize_row_iq2_xxs / iq2_xs / iq2_s / iq3_xxs / iq3_s / iq4_nl / iq4_xs) at 3cf03257; the K-quants and the
-// 32-blocks from Strata's include/strata/artifact/dequant.hpp (themselves transcribed from the same commit).
+// 32-blocks from Nostroma's include/nostroma/artifact/dequant.hpp (themselves transcribed from the same commit).
 #include "ref_quant.h"
 
 #include <algorithm>
@@ -112,9 +112,9 @@ static void get_scale_min_k4(int j, const uint8_t* q, uint8_t& d, uint8_t& m) {
 // lut[x >> 21] and lut[(x >> 10) & 2047] (fp16 pairs) give weights 4t..4t+3, times the fp16 scale.
 static void deq_tq(int kb, const uint8_t* b, float* y) {
     uint32_t st[32];
-    if (kb == 8) strata::kernels::cpu::tq_detail::tq_states<8>(b + 2, st);
-    else if (kb == 6) strata::kernels::cpu::tq_detail::tq_states<6>(b + 2, st);
-    else strata::kernels::cpu::tq_detail::tq_states<7>(b + 2, st);
+    if (kb == 8) nostroma::kernels::cpu::tq_detail::tq_states<8>(b + 2, st);
+    else if (kb == 6) nostroma::kernels::cpu::tq_detail::tq_states<6>(b + 2, st);
+    else nostroma::kernels::cpu::tq_detail::tq_states<7>(b + 2, st);
     const float d = f16_to_f32(rd16(b));
     for (int t = 0; t < 32; ++t) {
         const uint32_t x = st[t] * 0x9e3779b1u;

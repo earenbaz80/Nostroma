@@ -34,7 +34,7 @@ ROOT = Path(__file__).resolve().parents[2]
 INSTALLER_MODULES = {"setup", "pip", "ensurepip", "venv", "huggingface_hub", "modelscope", "metal.setup_mac",
                      "sycl.setup_intel"}
 #: Files that may be loaded on the start/serve side besides the control, cli and serve packages.
-ALLOWED_TOOLS = {"tools.strata_tokenizer", "tools.gguf_reader"}   # read-only: a tokenizer and a GGUF header reader
+ALLOWED_TOOLS = {"tools.nostroma_tokenizer", "tools.gguf_reader"}   # read-only: a tokenizer and a GGUF header reader
 
 #: argv words that mean "acquire": a subprocess whose literal argv contains one of these is an installer.
 INSTALL_WORDS = {"pip", "pip3", "git", "cmake", "ninja", "npm", "npx", "pnpm", "yarn", "winget", "apt-get", "apt",
@@ -63,7 +63,7 @@ def _sources():
             if p.name.startswith("test_") or p.name == "__init__.py":
                 continue
             yield p
-    yield ROOT / "strata.py"
+    yield ROOT / "nostroma.py"
 
 
 class ImportGraphTests(unittest.TestCase):
@@ -163,9 +163,9 @@ class StartNeverAcquiresTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        self.root = Path(self.tmp.name) / "Strata"
+        self.root = Path(self.tmp.name) / "Nostroma"
         self.root.mkdir()
-        self.data = Path(self.tmp.name) / "Strata-data"
+        self.data = Path(self.tmp.name) / "Nostroma-data"
         (self.data / "models").mkdir(parents=True)
         self.gguf = self.data / "models" / "m.gguf"
         self.gguf.write_bytes(b"GGUF")
@@ -175,7 +175,7 @@ class StartNeverAcquiresTests(unittest.TestCase):
         # an engine older than this Nostroma expects: a start used to download the new one
         (eng / "BUILD.json").write_text(json.dumps({"version": "0.1.1", "source": "prebuilt", "backend": "cuda",
                                                     "archs": [86]}))
-        self.cfg = self.root / "strata-q2_0.json"
+        self.cfg = self.root / "nostroma-q2_0.json"
         self.cfg.write_text(json.dumps({
             "exe": str(eng / setup.EXE), "args": ["--native", str(self.gguf), "--max-context", "8192"],
             "tokenizer": str(self.data / "tok.json"), "model_name": "Q2_0", "port": 8080}))
@@ -268,7 +268,7 @@ class StartNeverAcquiresTests(unittest.TestCase):
             lambda: setup._urlopen(urllib.request.Request("https://example.invalid/")),
             lambda: setup.reachable("https://example.invalid/"),
             lambda: setup.get_prebuilt("https://example.invalid/", {"arch": "86"}, "none"),
-            lambda: setup.cmake_build(self.root, self.root / "b", "strata", [], None, ""),
+            lambda: setup.cmake_build(self.root, self.root / "b", "nostroma", [], None, ""),
             lambda: setup.pip_cuda_libs(13),
         ]
         with mock.patch.object(urllib.request, "urlopen", rec.urlopen), mock.patch.object(setup.netpolicy, "urlopen", rec.urlopen), \
@@ -299,18 +299,18 @@ class CliServeIsOfflineTests(unittest.TestCase):
     def test_serve_plan_reaches_no_network_and_runs_no_program(self):
         rec = _Recorder()
         with tempfile.TemporaryDirectory() as d:
-            cfg = Path(d) / "strata-x.json"
+            cfg = Path(d) / "nostroma-x.json"
             gguf = Path(d) / "m.gguf"
             gguf.write_bytes(b"GGUF")
             tok = Path(d) / "t.json"
             tok.write_text("{}")
-            exe = Path(d) / "strata.exe"
+            exe = Path(d) / "nostroma.exe"
             exe.write_bytes(b"x")
             cfg.write_text(json.dumps({"exe": str(exe), "args": ["--native", str(gguf)], "tokenizer": str(tok)}))
             out = io.StringIO()
             with mock.patch.object(urllib.request, "urlopen", rec.urlopen), \
                     mock.patch.object(subprocess, "run", rec.program), mock.patch.object(subprocess, "Popen", rec.program), \
-                    mock.patch.dict(os.environ, {"STRATA_PROFILE_DIR": str(Path(d) / "profiles")}), \
+                    mock.patch.dict(os.environ, {"NOSTROMA_PROFILE_DIR": str(Path(d) / "profiles")}), \
                     contextlib.redirect_stdout(out):
                 code = cli.main(["serve", "--profile", str(cfg), "--plan", "--output", "json"])
         self.assertEqual(code, 0, out.getvalue())
@@ -325,10 +325,10 @@ class CliServeIsOfflineTests(unittest.TestCase):
         self.assertEqual([a for a in rec.programs if not read_only(a)], [])
         self.assertNotIn("setup", sys.modules.get("nostroma_cli.cli").__dict__.get("__name__", ""))
 
-    def test_strata_install_without_the_installer_is_a_typed_error(self):
+    def test_nostroma_install_without_the_installer_is_a_typed_error(self):
         err = io.StringIO()
         with tempfile.TemporaryDirectory() as d, \
-                mock.patch.dict(os.environ, {"STRATA_INSTALL_DIR": d}), \
+                mock.patch.dict(os.environ, {"NOSTROMA_INSTALL_DIR": d}), \
                 mock.patch.object(cli, "ROOT", Path(d)), contextlib.redirect_stderr(err):
             code = cli.main(["install"])
         self.assertEqual(code, 5)

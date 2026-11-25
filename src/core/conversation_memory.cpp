@@ -1,5 +1,5 @@
-#include "strata/core/conversation_memory.hpp"
-#include "strata/env.hpp"
+#include "nostroma/core/conversation_memory.hpp"
+#include "nostroma/env.hpp"
 
 #include <algorithm>
 #include <atomic>
@@ -24,7 +24,7 @@
 #include <sys/sysctl.h>
 #endif
 
-namespace strata::core {
+namespace nostroma::core {
 
 namespace fs = std::filesystem;
 
@@ -342,7 +342,7 @@ std::optional<HostMemoryReading> sample_host_memory(const MemoryProbePaths& path
         if (explicit_limit != 0) return {};
         static std::atomic<bool> warned{false};
         if (!warned.exchange(true))
-            std::fprintf(stderr, "[strata] memory guard: the cgroup memory files could not be read or parsed, using "
+            std::fprintf(stderr, "[nostroma] memory guard: the cgroup memory files could not be read or parsed, using "
                                  "MemAvailable; set --memory-limit-mib to the container's limit\n");
         cg = CgroupScan{};
     }
@@ -355,7 +355,7 @@ std::optional<HostMemoryReading> sample_host_memory(const MemoryProbePaths& path
             own_mapped = own_evictable_mapped_bytes(text.str(), locked_own_file_bytes());
         }
     }
-    return combine(available, total, cg, explicit_limit, mem_credit_inactive_only(strata::env("NOSTROMA_MEM_CREDIT_INACTIVE")), own_mapped);
+    return combine(available, total, cg, explicit_limit, mem_credit_inactive_only(nostroma::env("NOSTROMA_MEM_CREDIT_INACTIVE")), own_mapped);
 }
 
 std::optional<HostMemoryReading> sample_host_memory() {
@@ -392,4 +392,4 @@ std::optional<uint64_t> available_host_bytes() {
     return reading->available;
 }
 
-} // namespace strata::core
+} // namespace nostroma::core

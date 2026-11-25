@@ -1,10 +1,10 @@
-#include "strata/core/ple_residency.hpp"
+#include "nostroma/core/ple_residency.hpp"
 
 #include <cstdio>
 #include <cstdlib>
 #include <limits>
 
-using namespace strata::core;
+using namespace nostroma::core;
 namespace {
 int checks = 0;
 void check(bool ok, const char* label) {
@@ -21,12 +21,12 @@ int main() {
     // (table + 8 GiB) admitted it and the expert load then failed with error 1453.  Not admitted now.
     check(!ple_resident_admit(45ull * GiB + (1ull << 28), table, arena, 8 * GiB), "64 GB PC with the IQ3_S arena: not admitted");
     check(!ple_resident_admit(40ull * GiB, table, arena, 8 * GiB), "40 GiB: not admitted");
-    // STRATA_DEFAULTS=026: the policy does not run (v0.2.6 had none); an explicit STRATA_PLE_AUTO_RAM wins either way
+    // NOSTROMA_DEFAULTS=026: the policy does not run (v0.2.6 had none); an explicit NOSTROMA_PLE_AUTO_RAM wins either way
     check(ple_auto_ram_allowed(nullptr, false), "policy on by default");
-    check(!ple_auto_ram_allowed(nullptr, true), "policy off under STRATA_DEFAULTS=026");
-    check(ple_auto_ram_allowed("1", true), "STRATA_PLE_AUTO_RAM=1 wins over 026");
-    check(!ple_auto_ram_allowed("0", false), "STRATA_PLE_AUTO_RAM=0 is the old off switch");
-    check(!ple_auto_ram_allowed("0", true), "STRATA_PLE_AUTO_RAM=0 under 026");
+    check(!ple_auto_ram_allowed(nullptr, true), "policy off under NOSTROMA_DEFAULTS=026");
+    check(ple_auto_ram_allowed("1", true), "NOSTROMA_PLE_AUTO_RAM=1 wins over 026");
+    check(!ple_auto_ram_allowed("0", false), "NOSTROMA_PLE_AUTO_RAM=0 is the old off switch");
+    check(!ple_auto_ram_allowed("0", true), "NOSTROMA_PLE_AUTO_RAM=0 under 026");
     // a PC that holds the table, the arena and 8 GiB
     check(ple_resident_admit(table + arena + 8 * GiB, table, arena, 8 * GiB), "exactly table + arena + headroom is admitted");
     check(!ple_resident_admit(table + arena + 8 * GiB - 1, table, arena, 8 * GiB), "one byte below is not");
@@ -72,8 +72,8 @@ int main() {
         check(arena_ram_fallback_allowed(nullptr, false, false), "fallback on by default");
         check(!arena_ram_fallback_allowed(nullptr, true, false), "a hand-set --ple-io ram is kept");
         check(!arena_ram_fallback_allowed(nullptr, false, true), "a shared arena file is kept");
-        check(!arena_ram_fallback_allowed("0", false, false), "STRATA_ARENA_RAM_FALLBACK=0 is the old behaviour");
-        check(arena_ram_fallback_allowed("1", false, false), "STRATA_ARENA_RAM_FALLBACK=1");
+        check(!arena_ram_fallback_allowed("0", false, false), "NOSTROMA_ARENA_RAM_FALLBACK=0 is the old behaviour");
+        check(arena_ram_fallback_allowed("1", false, false), "NOSTROMA_ARENA_RAM_FALLBACK=1");
         check(arena_ram_fallback_allowed("", false, false), "an empty value is unset");
         check(!arena_ram_fallback_allowed("1", true, false), "the user's --ple-io ram wins over the env value");
     }
@@ -139,7 +139,7 @@ int main() {
         }
     }
     // --ram-keep-gib W (R5070): ONE setting for both RAM decisions at the start.  The arena is used only if W GiB stay available after it;
-    // otherwise the RAM copy leaves max(W, the safety headroom: 8 GiB Windows, 4 GiB elsewhere), unless STRATA_RESIDENT_HEADROOM_GIB is set.
+    // otherwise the RAM copy leaves max(W, the safety headroom: 8 GiB Windows, 4 GiB elsewhere), unless NOSTROMA_RESIDENT_HEADROOM_GIB is set.
     {
         const uint64_t need = 46ull * GiB + 860ull * (1ull << 20) + 2660000ull;   // IQ3_S: 46.84 GiB of experts and the spare blob
         const uint64_t none = std::numeric_limits<uint64_t>::max();
@@ -173,7 +173,7 @@ int main() {
                 }
                 // the environment variable wins over both W and the safety headroom, even when smaller
                 const RamKeepPlan e = ram_keep_plan(need, avail, 8 * GiB, std::optional<uint64_t>(2 * GiB), safety);
-                check(e.headroom == 2 * GiB, "STRATA_RESIDENT_HEADROOM_GIB still wins");
+                check(e.headroom == 2 * GiB, "NOSTROMA_RESIDENT_HEADROOM_GIB still wins");
                 check(e.arena == (avail >= need + 8 * GiB), "the environment does not move the arena decision");
             }
         }

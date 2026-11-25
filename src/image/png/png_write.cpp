@@ -1,5 +1,5 @@
-// src/image/png/png_write.cpp - see include/strata/image/png_write.hpp.
-#include "strata/image/png_write.hpp"
+// src/image/png/png_write.cpp - see include/nostroma/image/png_write.hpp.
+#include "nostroma/image/png_write.hpp"
 
 #include <algorithm>
 #include <array>
@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <cstring>
 
-namespace strata::image {
+namespace nostroma::image {
 namespace {
 
 const std::array<uint32_t, 256>& crc_table() {
@@ -125,4 +125,4 @@ std::string png_write_file(const std::string& path, const uint8_t* pixels, int w
     return std::fclose(f) == 0 && ok ? std::string() : "png_write: cannot write " + path;
 }
 
-}  // namespace strata::image
+}  // namespace nostroma::image

@@ -18,8 +18,8 @@ class DotInModelId(unittest.TestCase):
     def test_a_run_config_with_a_dotted_name_is_listed(self):
         with tempfile.TemporaryDirectory() as tmp:
             folder = Path(tmp)
-            (folder / "strata-deepseek-v4.1-flash-ist-das-2.00bpw.json").write_text(json.dumps(
-                {"exe": "/x/strata-dsv41", "tokenizer": str(folder), "args": ["--max-context", "8192"], "model_name": "deepseek-v4.1-flash"}))
+            (folder / "nostroma-deepseek-v4.1-flash-ist-das-2.00bpw.json").write_text(json.dumps(
+                {"exe": "/x/nostroma-dsv41", "tokenizer": str(folder), "args": ["--max-context", "8192"], "model_name": "deepseek-v4.1-flash"}))
             listed = models.list_installed(str(folder))
             self.assertEqual([m["id"] for m in listed["models"]], ["deepseek-v4.1-flash-ist-das-2.00bpw"])
 

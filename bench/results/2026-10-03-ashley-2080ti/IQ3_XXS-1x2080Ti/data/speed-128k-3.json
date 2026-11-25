@@ -16,8 +16,8 @@
  "engine_prompt_tps": 492.2,
  "engine_decode_tps": 33.7,
  "log_lines": [
-  "strata serve: prompt 130793 tokens = 0 reused + 130793 read in 265753 ms (492.2 tok/s), 256 generated in 7590 ms (33.7 tok/s), drafts accepted 146 of 212, 6 checkpoints",
-  "strata serve: decode expert cache hit rate: 53.1% (70368 hits / 132503 lookups)"
+  "nostroma serve: prompt 130793 tokens = 0 reused + 130793 read in 265753 ms (492.2 tok/s), 256 generated in 7590 ms (33.7 tok/s), drafts accepted 146 of 212, 6 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 53.1% (70368 hits / 132503 lookups)"
  ],
  "answer_head": "I'll analyze the last file in the repository listing and then propose a concrete improvement.\n\n## What the last file does\n\nThe last file is `build-vision/CMakeFiles/4.2.3/CompilerIdCUDA/tmp/CMakeCUDACompilerId.cudafe1.cpp`.\n\nThis is a **CMake-generated intermediate file** produced during the CUDA co",
  "metrics_after": {

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # benchmark-iq3s.sh - client used for bench/results/2026-10-09-community-rtx-5060ti-wsl2-iq3_s-0141
-# Run from the Strata repo root inside WSL:  PORT=8080 bash benchmark-iq3s.sh
+# Run from the Nostroma repo root inside WSL:  PORT=8080 bash benchmark-iq3s.sh
 # The API key is read at runtime from the launcher env file and never stored here.
 # Original run targeted :8083 (2026-10-09 01:14 JST); set PORT=8080 for the moved server.
 set -u
@@ -14,11 +14,11 @@ cd "$D" || exit 1
 KEY=$(sed -n 's/^API_KEY=//p' "$ENV_FILE" | tr -d '\r' | head -1)
 echo "=== IQ3_S bench : $(date) ==="
 echo "--- ESP active in engine log? ---"
-grep -i "control vector" strata-iq3_s.log | tail -2 || echo "(no control-vector line yet)"
+grep -i "control vector" nostroma-iq3_s.log | tail -2 || echo "(no control-vector line yet)"
 echo
 KEY="$KEY" PORT="$PORT" ./.venv/bin/python - <<'PY'
 import json,os,random,time,urllib.request
-KEY=os.environ['KEY']; PORT=os.environ['PORT']; LOG='strata-iq3_s.log'
+KEY=os.environ['KEY']; PORT=os.environ['PORT']; LOG='nostroma-iq3_s.log'
 MODEL='qwen3.8-flash-next-iq3_s'
 def count():
     with open(LOG,errors='replace') as f: return len(f.read().splitlines())
@@ -38,7 +38,7 @@ def line(n0,tag):
     time.sleep(2.0)
     with open(LOG,errors='replace') as f: L=f.read().splitlines()
     m=[l for l in L[n0:] if 'prompt ' in l and 'read in' in l]
-    for l in m[-1:]: print('   ['+tag+'] '+l.split('strata serve: ')[-1][:185])
+    for l in m[-1:]: print('   ['+tag+'] '+l.split('nostroma serve: ')[-1][:185])
 def txt(d): return d['choices'][0]['message'].get('content') or ''
 
 send('Say hello.', 8)

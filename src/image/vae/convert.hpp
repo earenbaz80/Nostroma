@@ -1,11 +1,11 @@
 // src/image/vae/convert.hpp - host-side weight conversion of Nostroma's VAE decoder, split over threads.
 // Every value is converted on its own (bf16 -> f32 exact, f32 -> f16 round to nearest even with
-// strata::kernels::f16_from_f32), so the result is the same bytes for any thread count
+// nostroma::kernels::f16_from_f32), so the result is the same bytes for any thread count
 // (tools/image/gate/test_vae_convert.py checks it on every bf16 bit pattern).  Host only.
 #pragma once
 
-#include "strata/kernels/bf16_bits.hpp"
-#include "strata/kernels/f16_bits.hpp"
+#include "nostroma/kernels/bf16_bits.hpp"
+#include "nostroma/kernels/f16_bits.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -14,7 +14,7 @@
 #include <thread>
 #include <vector>
 
-namespace strata::image {
+namespace nostroma::image {
 
 // fn(begin, end) over [0, n) in `threads` contiguous parts (threads <= 1: on the calling thread).
 template <class F>
@@ -34,7 +34,7 @@ inline uint16_t bf16_at(const unsigned char* raw, size_t i) { return (uint16_t) 
 
 // bf16 bits (little-endian bytes) -> float, values [b, e).
 inline void bf16_to_f32_range(const unsigned char* raw, size_t b, size_t e, float* out) {
-    for (size_t i = b; i < e; ++i) out[i] = strata::kernels::f32_from_bf16(bf16_at(raw, i));
+    for (size_t i = b; i < e; ++i) out[i] = nostroma::kernels::f32_from_bf16(bf16_at(raw, i));
 }
 
 // A convolution's bf16 weights [oc][ic][taps] -> f16 bits [oc][taps * ic] (row index tap * ic + i), rows [ob, oe).
@@ -44,7 +44,7 @@ inline void bf16_conv_to_f16_rows(const unsigned char* raw, int ic, int taps, si
         for (int i = 0; i < ic; ++i)
             for (int t = 0; t < taps; ++t)
                 out[o * K + (size_t) t * ic + i] =
-                    strata::kernels::f16_from_f32(strata::kernels::f32_from_bf16(bf16_at(raw, (o * ic + i) * taps + t)));
+                    nostroma::kernels::f16_from_f32(nostroma::kernels::f32_from_bf16(bf16_at(raw, (o * ic + i) * taps + t)));
 }
 
 // The same two over threads (the test's entry points; the decoder splits a list of jobs instead).
@@ -55,4 +55,4 @@ inline void bf16_conv_to_f16(const unsigned char* raw, int oc, int ic, int taps,
     parallel_ranges((size_t) oc, threads, [&](size_t b, size_t e) { bf16_conv_to_f16_rows(raw, ic, taps, b, e, out); });
 }
 
-}  // namespace strata::image
+}  // namespace nostroma::image

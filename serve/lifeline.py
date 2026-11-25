@@ -32,7 +32,7 @@ from nostroma_control import procs
 
 _REAL_POPEN = subprocess.Popen                  # tests replace subprocess.Popen; isinstance needs the class
 LINUX = sys.platform.startswith("linux")
-MODE = (os.environ.get("STRATA_LIFELINE") or "").strip().lower()        # "watcher" forces the portable path (tests)
+MODE = (os.environ.get("NOSTROMA_LIFELINE") or "").strip().lower()        # "watcher" forces the portable path (tests)
 
 _libc = None
 if LINUX:
@@ -51,7 +51,7 @@ class _Anchor:
 
     def __init__(self) -> None:
         self._jobs: queue.Queue = queue.Queue()
-        self._thread = threading.Thread(target=self._run, name="strata-lifeline-anchor", daemon=True)
+        self._thread = threading.Thread(target=self._run, name="nostroma-lifeline-anchor", daemon=True)
         self._thread.start()
 
     def _run(self) -> None:
@@ -299,8 +299,8 @@ def popen(args, role: str = "engine", **kw) -> subprocess.Popen:
         with _children_lock:
             _children.add(child)
     try:
-        token = procs.write_record(child.pid, role, profile=os.environ.get("STRATA_RUNTIME_PROFILE") or None)
-        threading.Thread(target=_after_exit, args=(child, token), name="strata-lifeline-reaper", daemon=True).start()
+        token = procs.write_record(child.pid, role, profile=os.environ.get("NOSTROMA_RUNTIME_PROFILE") or None)
+        threading.Thread(target=_after_exit, args=(child, token), name="nostroma-lifeline-reaper", daemon=True).start()
     except Exception:  # noqa: BLE001 - a record is a safety net, never a reason to fail a start
         pass
     return child
@@ -330,7 +330,7 @@ def install_stop_handlers(request_stop, finished: threading.Event | None = None)
         if sig is None:
             continue
         try:
-            # `nohup strata serve ... &` asks to outlive its terminal: a hangup that is ignored at start stays ignored
+            # `nohup nostroma serve ... &` asks to outlive its terminal: a hangup that is ignored at start stays ignored
             if name == "SIGHUP" and signal.getsignal(sig) == signal.SIG_IGN:
                 continue
             signal.signal(sig, in_main(reason))

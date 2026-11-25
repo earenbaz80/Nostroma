@@ -4,7 +4,7 @@ import argparse, hashlib, importlib.util, json, os, re, signal, sys, threading, 
 from pathlib import Path
 
 R = Path(__file__).resolve().parent
-SOURCE = Path(os.environ['STRATA_ROOT'])
+SOURCE = Path(os.environ['NOSTROMA_ROOT'])
 
 def digest(x):
     return hashlib.sha256(json.dumps(x).encode()).hexdigest()
@@ -13,17 +13,17 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('mode', choices=['matched'])
     a = ap.parse_args()
-    runid = os.environ.get('STRATA_TEST_ID','public-fixtures')
-    ram = Path(os.environ['STRATA_TEST_RAM'])
+    runid = os.environ.get('NOSTROMA_TEST_ID','public-fixtures')
+    ram = Path(os.environ['NOSTROMA_TEST_RAM'])
     out = Path(os.environ['BENCH_OUTPUT'])
     out.mkdir(exist_ok=False)
     sys.path[:0] = [str(SOURCE), str(SOURCE / 'tools')]
-    from serve.server import StrataEngine, ENGINE_REQUEST
+    from serve.server import NostromaEngine, ENGINE_REQUEST
     from serve.frontend import ChatTemplate
-    from strata_tokenizer import Tokenizer
+    from nostroma_tokenizer import Tokenizer
     spec = importlib.util.spec_from_file_location('frozen', R / 'frozen-community.py')
     frozen = importlib.util.module_from_spec(spec); spec.loader.exec_module(frozen)
-    cfg = json.loads(Path(os.environ.get('STRATA_TEST_PROFILE',str(R/'profile.json'))).read_text())
+    cfg = json.loads(Path(os.environ.get('NOSTROMA_TEST_PROFILE',str(R/'profile.json'))).read_text())
     cfg['exe']=os.path.expandvars(cfg['exe']);cfg['cwd']=os.path.expandvars(cfg['cwd'])
     cfg['args']=[os.path.expandvars(x) for x in cfg['args']]
     tok = Tokenizer.from_gguf(Path(cfg['args'][cfg['args'].index('--native') + 1]))
@@ -43,9 +43,9 @@ def main():
     our512 = shaped(frozen.TASKS[0], 512)
     warm = shaped(frozen.WARMUP, 512)
     canary = tok.encode(tpl.render([{'role':'user','content':'Reply only with CANARY_MAPLE_73.'}], enable_thinking=False), parse_special=True)
-    env = dict(os.environ); env['STRATA_TRACE']='1'; assert 'STRATA_DBG_NAN' not in env
+    env = dict(os.environ); env['NOSTROMA_TRACE']='1'; assert 'NOSTROMA_DBG_NAN' not in env
     short=[int(x) for x in (R/'benchy-short.ids').read_text().strip().split(',')]; assert len(short)==20
-    class Engine(StrataEngine):
+    class Engine(NostromaEngine):
         def _parse_done(self, line):
             self.done_line = line
             return super()._parse_done(line)
@@ -74,7 +74,7 @@ def main():
         with log.open() as f: f.seek(offset); raw=f.read()
         assert not re.search(r'\b[1-9]\d* (?:of \d+ logits )?non-finite\b|\bnonfinite [1-9]\d*',raw)
         allowed = [x for x in raw.splitlines() if ENGINE_REQUEST.search(x) or
-                   re.match(r'^strata (?:trace: (?:read \d|lent \d|refilled \d|prompt chunk)|prefill timing:|prefill timing \(|serve: prompt|generate: prompt)',x)]
+                   re.match(r'^nostroma (?:trace: (?:read \d|lent \d|refilled \d|prompt chunk)|prefill timing:|prefill timing \(|serve: prompt|generate: prompt)',x)]
         row={'label':label,'input_tokens':len(ids),'output_cap':cap,'output_tokens':len(output),
              'input_ids_sha256':digest(ids),'output_ids_sha256':digest(output),'native':n,
              'native_done_line':engine.done_line,'prompt_tps':len(ids)*1000/n['prompt_ms'],
@@ -100,8 +100,8 @@ def main():
         print(json.dumps({k:row[k] for k in ['label','input_tokens','output_tokens','prompt_tps','ttft_s','total_s']}),flush=True)
     try:
         life={'mode':a.mode,'binary_sha256':hashlib.file_digest(Path(cfg['exe']).open('rb'),'sha256').hexdigest(),
-              'args':cfg['args'],'diagnostic_env':{k:env[k] for k in ['STRATA_TRACE','STRATA_STAGER_THREADS','OMP_NUM_THREADS','MKL_NUM_THREADS']},
-              'intermediate_tensor_diagnostic':env.get('STRATA_DBG_NAN'), 'instrumented':False}
+              'args':cfg['args'],'diagnostic_env':{k:env[k] for k in ['NOSTROMA_TRACE','NOSTROMA_STAGER_THREADS','OMP_NUM_THREADS','MKL_NUM_THREADS']},
+              'intermediate_tensor_diagnostic':env.get('NOSTROMA_DBG_NAN'), 'instrumented':False}
         life['launches']=[]
         for rep in range(1,4):
             assert not cancel.is_set();streams.clear()
@@ -118,7 +118,7 @@ def main():
             engine.close();engine=None
             for _ in range(5):time.sleep(1);assert not cancel.is_set()
             raw=log.read_text()
-            launch['startup_geometry']=[x for x in raw.splitlines() if re.match(r'^strata (?:generate|serve): (?:GPU \d+:|expert cache \d|\d+ of \d+ experts missing|\d+ MiB of VRAM free|prompt path|session is up)',x)]
+            launch['startup_geometry']=[x for x in raw.splitlines() if re.match(r'^nostroma (?:generate|serve): (?:GPU \d+:|expert cache \d|\d+ of \d+ experts missing|\d+ MiB of VRAM free|prompt path|session is up)',x)]
             save()
         life['native_exit']=0
     except BaseException as e:

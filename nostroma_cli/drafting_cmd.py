@@ -154,7 +154,7 @@ def run(a) -> int:
         if machine:
             print(json.dumps({"schema_version": 1, "ok": False, "error": {"code": "which_model", "message": SEVERAL_MODELS}}, ensure_ascii=False))
         else:
-            print(f"strata: {SEVERAL_MODELS}", file=sys.stderr)
+            print(f"nostroma: {SEVERAL_MODELS}", file=sys.stderr)
         return 2
     want = _inputs(a)
     folder = want["data_dir"]
@@ -211,7 +211,7 @@ def run(a) -> int:
         if machine:
             print(json.dumps({"schema_version": 1, "ok": False, "error": {"code": "drafting_failed", "message": str(exc)}}, ensure_ascii=False))
         else:
-            print(f"\nstrata: {exc}", file=sys.stderr)
+            print(f"\nnostroma: {exc}", file=sys.stderr)
         return 5
     if machine:
         print(json.dumps({"schema_version": 1, "ok": True, "event": "result", "pack": str(out)}, ensure_ascii=False))

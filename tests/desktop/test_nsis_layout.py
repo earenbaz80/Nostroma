@@ -1,4 +1,4 @@
-r"""The Windows installer must never touch the user's data. The app lives in %LOCALAPPDATA%\Programs\Strata; %LOCALAPPDATA%\Strata
+r"""The Windows installer must never touch the user's data. The app lives in %LOCALAPPDATA%\Programs\Nostroma; %LOCALAPPDATA%\Nostroma
 holds engines, model run configs, tuning. A build that installed the app into the data folder is migrated by removing only its app
 files. Exercised with makensis on a temp layout (the template's own migration macro, extracted and run); skipped without NSIS."""
 
@@ -12,9 +12,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 TEMPLATE = ROOT / "apps" / "desktop" / "src-tauri" / "nsis" / "installer.nsi"
 MAKENSIS = Path(os.environ.get("LOCALAPPDATA", "")) / "tauri" / "NSIS" / "makensis.exe"
-DATA = ["components/engine/0.1.45/strata.exe", "install/strata-iq3_s.json", "procs/p.json", "runtime/r.json", "time-skip/t.json",
+DATA = ["components/engine/0.1.45/nostroma.exe", "install/nostroma-iq3_s.json", "procs/p.json", "runtime/r.json", "time-skip/t.json",
         "presets/p.json"]
-APP = ["strata-desktop.exe", "uninstall.exe", "host/server/index.mjs", "node/node.exe", "control/python/python.exe"]
+APP = ["nostroma-desktop.exe", "uninstall.exe", "host/server/index.mjs", "node/node.exe", "control/python/python.exe"]
 BS = "\\"
 
 
@@ -28,7 +28,7 @@ def touch(base: Path, names):
 class TemplateTests(unittest.TestCase):
     text = TEMPLATE.read_text(encoding="utf-8")
 
-    def test_the_default_folder_is_programs_strata_and_the_data_folder_is_never_remembered_as_the_app(self):
+    def test_the_default_folder_is_programs_nostroma_and_the_data_folder_is_never_remembered_as_the_app(self):
         self.assertIn(r'StrCpy $INSTDIR "$LOCALAPPDATA\Programs\${PRODUCTNAME}"', self.text)
         self.assertIn(r'StrCmp $4 "$LOCALAPPDATA\${PRODUCTNAME}" restore_done 0', self.text)
         self.assertIn("StrIsUnder", self.text)          # a remembered folder under Temp is ignored too
@@ -56,7 +56,7 @@ class TemplateTests(unittest.TestCase):
 class MigrationTests(unittest.TestCase):
     def run_nsis(self, body: str, work: Path):
         template = TEMPLATE.read_text(encoding="utf-8")
-        block = chr(10).join(re.search(rf"; STRATA-{name}-BEGIN.*?; STRATA-{name}-END", template, re.S).group(0) for name in ("MIGRATE", "STOP", "CLEAN"))
+        block = chr(10).join(re.search(rf"; NOSTROMA-{name}-BEGIN.*?; NOSTROMA-{name}-END", template, re.S).group(0) for name in ("MIGRATE", "STOP", "CLEAN"))
         script = work / "t.nsi"
         script.write_text('Unicode true\nOutFile "t.exe"\nRequestExecutionLevel user\nSilentInstall silent\n' + block + "\nSection\n" + body + "\nSectionEnd\n", encoding="utf-8")
         done = subprocess.run([str(MAKENSIS), "/V1", str(script)], cwd=work, capture_output=True, text=True)
@@ -64,7 +64,7 @@ class MigrationTests(unittest.TestCase):
         subprocess.run([str(work / "t.exe")], cwd=work, check=True, timeout=60)
 
     def layout(self, base: Path) -> Path:
-        old = base / "Strata"
+        old = base / "Nostroma"
         touch(old, DATA + APP)
         return old
 
@@ -72,8 +72,8 @@ class MigrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
             old = self.layout(base)
-            new = base / "Programs" / "Strata"
-            self.run_nsis(f'!insertmacro StrataMigrateOldInstall "{old}" "{new}"', base)
+            new = base / "Programs" / "Nostroma"
+            self.run_nsis(f'!insertmacro NostromaMigrateOldInstall "{old}" "{new}"', base)
             for name in DATA:
                 self.assertTrue((old / name).is_file(), f"data kept: {name}")
             for name in APP:
@@ -85,15 +85,15 @@ class MigrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
             old = self.layout(base)
-            self.run_nsis(f'!insertmacro StrataMigrateOldInstall "{old}" "{old}"', base)
+            self.run_nsis(f'!insertmacro NostromaMigrateOldInstall "{old}" "{old}"', base)
             for name in DATA + APP:
                 self.assertTrue((old / name).is_file(), name)
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
-            touch(base / "Strata", DATA)                   # data only: no strata-desktop.exe
-            self.run_nsis(f'!insertmacro StrataMigrateOldInstall "{base / "Strata"}" "{base / "Programs" / "Strata"}"', base)
+            touch(base / "Nostroma", DATA)                   # data only: no nostroma-desktop.exe
+            self.run_nsis(f'!insertmacro NostromaMigrateOldInstall "{base / "Nostroma"}" "{base / "Programs" / "Nostroma"}"', base)
             for name in DATA:
-                self.assertTrue((base / "Strata" / name).is_file(), name)
+                self.assertTrue((base / "Nostroma" / name).is_file(), name)
 
     def test_an_uninstall_of_the_template_kind_leaves_data_in_a_shared_folder(self):
         """The uninstaller deletes named files and uses non-recursive RMDir: in a folder that also holds data (a legacy install) the
@@ -107,7 +107,7 @@ class MigrationTests(unittest.TestCase):
             self.run_nsis("\n".join(lines), base)
             for name in DATA:
                 self.assertTrue((old / name).is_file(), name)
-            self.assertFalse((old / "strata-desktop.exe").exists())
+            self.assertFalse((old / "nostroma-desktop.exe").exists())
 
 
     def test_the_uninstaller_stops_only_the_processes_started_from_the_install_folder(self):
@@ -116,7 +116,7 @@ class MigrationTests(unittest.TestCase):
             self.skipTest("no PING.EXE to stand in for a running Nostroma process")
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
-            inst, other = base / "Programs" / "Strata", base / "Elsewhere"
+            inst, other = base / "Programs" / "Nostroma", base / "Elsewhere"
             for folder in (inst / "node", other):
                 folder.mkdir(parents=True)
             mine = inst / "node" / "node.exe"
@@ -125,7 +125,7 @@ class MigrationTests(unittest.TestCase):
                 target.write_bytes(ping.read_bytes())
             procs = [subprocess.Popen([str(p), "-t", "127.0.0.1"], stdout=subprocess.DEVNULL) for p in (mine, theirs)]
             try:
-                self.run_nsis(f'!insertmacro StrataStopOwnProcesses "{inst}"', base)
+                self.run_nsis(f'!insertmacro NostromaStopOwnProcesses "{inst}"', base)
                 procs[0].wait(timeout=20)
                 self.assertIsNotNone(procs[0].poll(), "the process from the install folder was stopped")
                 self.assertIsNone(procs[1].poll(), "a process of the same name elsewhere is left running")
@@ -140,21 +140,21 @@ class MigrationTests(unittest.TestCase):
         """Strix, standard user: after the app had run, Python bytecode caches under control\\ kept the program folder alive."""
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
-            inst = base / "Programs" / "Strata"
-            touch(inst, ["strata-desktop.exe", "control/python/python.exe", "control/python/Lib/__pycache__/argparse.cpython-312.pyc",
+            inst = base / "Programs" / "Nostroma"
+            touch(inst, ["nostroma-desktop.exe", "control/python/python.exe", "control/python/Lib/__pycache__/argparse.cpython-312.pyc",
                          "control/serve/__pycache__/server.cpython-312.pyc", "host/server/index.mjs", "host/logs/made-at-run.txt", "node/node.exe",
                          "harness/BUNDLE.json", "components/engine/keep.txt", "runtime/keep.json"])
-            self.run_nsis(f'!insertmacro StrataRemoveAppFolders "{inst}"', base)
+            self.run_nsis(f'!insertmacro NostromaRemoveAppFolders "{inst}"', base)
             for folder in ("control", "host", "node", "harness"):
                 self.assertFalse((inst / folder).exists(), folder)
-            for name in ("components/engine/keep.txt", "runtime/keep.json", "strata-desktop.exe"):
+            for name in ("components/engine/keep.txt", "runtime/keep.json", "nostroma-desktop.exe"):
                 self.assertTrue((inst / name).is_file(), f"kept: {name}")
 
     def test_the_uninstaller_clears_those_folders_before_the_last_rmdir(self):
         text = TEMPLATE.read_text(encoding="utf-8")
         uninstall = text[text.index("Section Uninstall"):]
-        self.assertIn('!insertmacro StrataRemoveAppFolders "$INSTDIR"', uninstall)
-        self.assertLess(uninstall.index("StrataRemoveAppFolders"), uninstall.index('RMDir "$INSTDIR"'))
+        self.assertIn('!insertmacro NostromaRemoveAppFolders "$INSTDIR"', uninstall)
+        self.assertLess(uninstall.index("NostromaRemoveAppFolders"), uninstall.index('RMDir "$INSTDIR"'))
         self.assertNotRegex(uninstall, r'RMDir /r "\$INSTDIR"')
 
 
@@ -162,7 +162,7 @@ class StopOrderTests(unittest.TestCase):
     def test_the_uninstaller_stops_them_before_it_removes_files(self):
         text = TEMPLATE.read_text(encoding="utf-8")
         uninstall = text[text.index("Section Uninstall"):]
-        self.assertLess(uninstall.index("StrataStopOwnProcesses"), uninstall.index(r'Delete "$INSTDIR\${MAINBINARYNAME}.exe"'))
+        self.assertLess(uninstall.index("NostromaStopOwnProcesses"), uninstall.index(r'Delete "$INSTDIR\${MAINBINARYNAME}.exe"'))
 
 
 if __name__ == "__main__":

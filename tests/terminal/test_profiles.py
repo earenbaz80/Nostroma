@@ -19,9 +19,9 @@ class OperatorProfileTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        self.env = mock.patch.dict(os.environ, {"STRATA_PROFILE_DIR": str(self.root / "profiles"),
-                                             "STRATA_RUNTIME_DIR": str(self.root / "runtime"),
-                                             "STRATA_API_KEY": ""})
+        self.env = mock.patch.dict(os.environ, {"NOSTROMA_PROFILE_DIR": str(self.root / "profiles"),
+                                             "NOSTROMA_RUNTIME_DIR": str(self.root / "runtime"),
+                                             "NOSTROMA_API_KEY": ""})
         self.env.start()
         self.addCleanup(self.env.stop)
         engine = self.root / "engine"
@@ -120,7 +120,7 @@ class OperatorProfileTests(unittest.TestCase):
         with redirect_stdout(output), redirect_stderr(diagnostics):
             self.assertNotEqual(main(["profile", "show", "missing", "--quiet"]), 0)
         self.assertEqual(output.getvalue(), "")
-        self.assertIn("strata:", diagnostics.getvalue())
+        self.assertIn("nostroma:", diagnostics.getvalue())
         output, diagnostics = io.StringIO(), io.StringIO()
         def failed_operation(_a):
             print("x" * 70_000)
@@ -421,7 +421,7 @@ class OperatorProfileTests(unittest.TestCase):
     def test_calibration_preview_has_no_engine_or_config_side_effects(self):
         profiles.create("local", str(self.config))
         before = self.config.read_bytes()
-        with mock.patch("serve.server.StrataEngine", side_effect=AssertionError("engine started")), \
+        with mock.patch("serve.server.NostromaEngine", side_effect=AssertionError("engine started")), \
                 mock.patch("tools.calibrate.run", side_effect=AssertionError("measurement started")):
             code, result = self.command("engine", "calibrate", "--profile", "local", "--plan", "--output", "json")
         self.assertEqual(code, 0)

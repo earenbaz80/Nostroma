@@ -12,8 +12,8 @@ for name, tgt in (("b5", PA + "/b5"), ("src5", PA + "/src5"), ("bint", I + "/b-i
     if not os.path.lexists(W + "/" + name):
         os.symlink(tgt, W + "/" + name)
 REPL = '[{"gpus":[0]},{"gpus":[1]}]'
-PA_ENV = ["STRATA_QSA_SLOTS=1", "STRATA_BATCH_SELF_COMMIT=1", "STRATA_SLOT_COPY_DIRECT=1", "STRATA_CKPT_POOL=1", "STRATA_CKPT_POOL_READY=4",
-          "STRATA_SLOT_CKPT_MOVE=1", "STRATA_SLOT_COPY_BATCHSYNC=1", "STRATA_REPLICA_SHARED_ARENA=1"]
+PA_ENV = ["NOSTROMA_QSA_SLOTS=1", "NOSTROMA_BATCH_SELF_COMMIT=1", "NOSTROMA_SLOT_COPY_DIRECT=1", "NOSTROMA_CKPT_POOL=1", "NOSTROMA_CKPT_POOL_READY=4",
+          "NOSTROMA_SLOT_CKPT_MOVE=1", "NOSTROMA_SLOT_COPY_BATCHSYNC=1", "NOSTROMA_REPLICA_SHARED_ARENA=1"]
 
 
 def armrun(tag, build, src, loadcmd=None):
@@ -38,7 +38,7 @@ def armrun(tag, build, src, loadcmd=None):
 
 def mine(tag, env, post=None, exe=None, repo=None, rounds=2):
     out = f"{OUT}/{tag}"
-    cmd = [PY, R + "/h/tools/par_run.py", "--box", "boston", "--tag", tag, "--exe", exe or I + "/b-int/strata", "--repo", repo or I + "/int",
+    cmd = [PY, R + "/h/tools/par_run.py", "--box", "boston", "--tag", tag, "--exe", exe or I + "/b-int/nostroma", "--repo", repo or I + "/int",
            "--gpus", "0,1", "--parallel", "8", "--server-extra", ("--replicas 2" if "A9" not in tag else ""), "--env", ";".join(env), "--rounds", "2",
            "--work", f"w2:8,16@--nonce rc --max-tokens 128 --rounds {rounds} --warm-requests 2", "--out", out]
     if post:
@@ -49,10 +49,10 @@ def mine(tag, env, post=None, exe=None, repo=None, rounds=2):
 
 
 THEIR_LOAD = f"{PY} {PA}/par_load.py {{url}} --conc 8,16 --rounds 2 --prompt-tokens 1000 --max-tokens 128 --out /dev/null"
-MY_STACK = PA_ENV + ["STRATA_BATCH_GDN_GROUPS=1", "STRATA_BATCH_ATTN_ROWS=1"]
+MY_STACK = PA_ENV + ["NOSTROMA_BATCH_GDN_GROUPS=1", "NOSTROMA_BATCH_ATTN_ROWS=1"]
 if "A7" in sys.argv: mine("A7_myarm_burst_rounds1", PA_ENV)
 if "A8" in sys.argv: mine("A8_myarm_sustained_rounds6", PA_ENV, rounds=6)
-if "A9" in sys.argv: mine("A9_layersplit_b1like_rounds1", ["STRATA_QSA_SLOTS=1"] , rounds=1, exe=I + "/b-base/strata", repo=I + "/base")
+if "A9" in sys.argv: mine("A9_layersplit_b1like_rounds1", ["NOSTROMA_QSA_SLOTS=1"] , rounds=1, exe=I + "/b-base/nostroma", repo=I + "/base")
 which = [x for x in sys.argv[1:] if x not in ("A7", "A8", "A9")] if len(sys.argv) > 1 else ["A1", "A2", "A3", "A4", "A5", "A6"]
 if "A1" in which: armrun("A1_pa_exact_theirload", "b5", "src5")
 if "A2" in which: armrun("A2_pa_exact_myload", "b5", "src5", R + "/h/tools/par/my_load.py")

@@ -1,7 +1,7 @@
 """nostroma_control/netpolicy.py against local servers: one that accepts and never answers (a black hole), a port that refuses, a server
 that answers and then trickles bytes, a server that answers normally. Timings are scaled down (limits under a second); the rule's own
 numbers are checked as constants. The slow real-time trickle test (bytes every 20-50 s for more than 5 minutes) runs with
-STRATA_SLOW_NET_TESTS=1."""
+NOSTROMA_SLOW_NET_TESTS=1."""
 import http.server
 import os
 import re
@@ -316,7 +316,7 @@ class WorkingServers(Base):
         with N.open_url(opener.open, srv.url(), limits=(0.2, 0.2), memory=self.memory) as r:
             self.assertEqual(r.read(), b"x" * 8)
 
-    @unittest.skipUnless(os.environ.get("STRATA_SLOW_NET_TESTS") == "1", "real-time trickle: STRATA_SLOW_NET_TESTS=1")
+    @unittest.skipUnless(os.environ.get("NOSTROMA_SLOW_NET_TESTS") == "1", "real-time trickle: NOSTROMA_SLOW_NET_TESTS=1")
     def test_real_time_trickle_for_more_than_five_minutes(self):
         """A few bytes every 20-50 s for about 6 minutes, with the rule's own STALL_S: the link is slow but alive and is never cut."""
         gaps = [20, 35, 50, 25, 45, 30, 50, 40, 20, 50]             # 365 s

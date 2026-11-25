@@ -1,11 +1,11 @@
-// src/prefill/gemm_dequant_side_parity.cu - STRATA_DEQUANT_SIDE: Gemm::native with the dense-weight dequant on a side
+// src/prefill/gemm_dequant_side_parity.cu - NOSTROMA_DEQUANT_SIDE: Gemm::native with the dense-weight dequant on a side
 // stream into two scratches (Gemm::set_dequant_side) against the serial form, bitwise (GPU, synthetic, no model).
 //
 // A run of dense projections (Q4_K and Q6_K weights of the engine's shapes, one of them larger than the scratch so it takes
 // the sliced path, which keeps the serial form) is executed twice from the same inputs: once serially, once with the side
 // stream.  Every output must be identical bit for bit.  Also a run with a long queue of compute work ahead of each GEMM, so
 // the side dequant really overlaps it.  Exit 77 without a CUDA device.
-#include "strata/prefill/gemm.hpp"
+#include "nostroma/prefill/gemm.hpp"
 
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
@@ -52,7 +52,7 @@ int main() {
     if (!ok(cudaStreamCreate(&st), "stream")) return 1;
     const int64_t T = 512;
     const int64_t scratch_elems = 2560LL * 4096;   // 6144 x 2560 does not fit: the sliced path
-    strata::prefill::Gemm gemm;
+    nostroma::prefill::Gemm gemm;
     std::string err;
     if (!gemm.init(st, scratch_elems, err)) { std::printf("FAIL: %s\n", err.c_str()); return 1; }
     uint16_t* scratch2 = nullptr;

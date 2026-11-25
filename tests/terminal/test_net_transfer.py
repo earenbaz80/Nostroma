@@ -1,7 +1,7 @@
 """Lane NET item 2: the update path's downloads (nostroma_control/transfer.py: the engine, the shape engine, Control, the app, DFlash2, the picture
 reader) and the feed read under the network rule, against local servers: a black hole fails fast with the plain sentence; a connection that breaks
 after bytes came is resumed; a link that trickles is never cut; 5 minutes (scaled) without a new byte ends it with W6. The real-time proof (bytes every
-20-50 s for 365 s, the rule's own 60 s stall) runs with STRATA_SLOW_NET_TESTS=1."""
+20-50 s for 365 s, the rule's own 60 s stall) runs with NOSTROMA_SLOW_NET_TESTS=1."""
 
 from __future__ import annotations
 
@@ -71,7 +71,7 @@ class Scaled(unittest.TestCase):
                   mock.patch.object(transfer, "_opener", netpolicy.build_opener(urllib.request.ProxyHandler({}), transfer._PolicyRedirects))):
             p.start()
             self.addCleanup(p.stop)
-        t = tempfile.TemporaryDirectory(prefix="strata-nettransfer-")
+        t = tempfile.TemporaryDirectory(prefix="nostroma-nettransfer-")
         self.addCleanup(t.cleanup)
         self.dir = Path(t.name)
 
@@ -140,7 +140,7 @@ class TransferRule(Scaled):
         self.assertEqual(self.fetch(srv2.url("/e")).read_bytes(), BODY)
         self.assertEqual(st2["ranges"], ["bytes=5120-"])
 
-    @unittest.skipUnless(os.environ.get("STRATA_SLOW_NET_TESTS") == "1", "real-time: STRATA_SLOW_NET_TESTS=1")
+    @unittest.skipUnless(os.environ.get("NOSTROMA_SLOW_NET_TESTS") == "1", "real-time: NOSTROMA_SLOW_NET_TESTS=1")
     def test_real_time_trickle_for_more_than_five_minutes_with_the_rules_own_numbers(self):
         """A few bytes every 20-50 s for 365 s, STALL_S 60 and GIVE_UP_S 300 as shipped: the slow link that works is not cut."""
         gaps = [20, 35, 50, 25, 45, 30, 50, 40, 20, 50]
@@ -170,12 +170,12 @@ class FeedRule(Scaled):
         self.addCleanup(hole.close)
         with mock.patch.object(transfer, "FIRST_TRY_SECONDS", 0.4):
             with self.assertRaises(feed.FeedError) as cm:
-                feed.fetch(f"http://127.0.0.1:{hole.port}/strata-feed.json", {"k": b"x" * 32}, timeout=0.8)
+                feed.fetch(f"http://127.0.0.1:{hole.port}/nostroma-feed.json", {"k": b"x" * 32}, timeout=0.8)
         self.assertEqual(str(cm.exception), "127.0.0.1 did not answer within 1 seconds, so the update check could not run. Check that this computer "
                                             "can open https://127.0.0.1, then try again. Nostroma keeps working with what is installed.")
         t0 = time.monotonic()                                       # the same run asks again: no second wait
         with self.assertRaises(feed.FeedError) as cm:
-            feed.fetch(f"http://127.0.0.1:{hole.port}/strata-feed.json", {"k": b"x" * 32}, timeout=0.8)
+            feed.fetch(f"http://127.0.0.1:{hole.port}/nostroma-feed.json", {"k": b"x" * 32}, timeout=0.8)
         self.assertLess(time.monotonic() - t0, 0.2)
         self.assertEqual(str(cm.exception), "127.0.0.1 did not answer a moment ago, so the update check was not tried again. "
                                             "Nostroma keeps working with what is installed.")
@@ -183,7 +183,7 @@ class FeedRule(Scaled):
     def test_an_offline_computer_gets_the_answer_at_once(self):
         t0 = time.monotonic()
         with self.assertRaises(feed.FeedError) as cm:
-            feed.fetch(f"http://127.0.0.1:{refused_port()}/strata-feed.json", {"k": b"x" * 32}, timeout=30)
+            feed.fetch(f"http://127.0.0.1:{refused_port()}/nostroma-feed.json", {"k": b"x" * 32}, timeout=30)
         self.assertLess(time.monotonic() - t0, AT_ONCE_S)           # no wait and no retry for an offline user (owner 11-01)
         self.assertEqual(str(cm.exception), "this computer could not connect to 127.0.0.1 (it looks offline), so the update check could not run. "
                                             "Nostroma keeps working with what is installed.")
@@ -394,7 +394,7 @@ class Destination(Scaled):
 
 class NoRoomWords(unittest.TestCase):
     """The sentences themselves, with real-sized numbers (no transfer)."""
-    PART = Path("/home/ana/.local/share/strata/updates/partial/1f2e3d4c5b6a7980.part")
+    PART = Path("/home/ana/.local/share/nostroma/updates/partial/1f2e3d4c5b6a7980.part")
 
     def words(self, err, got, size, free=None, what="the engine 0.1.59 (cuda)", **kw):
         usage = mock.Mock(free=free) if free is not None else None
@@ -433,8 +433,8 @@ class NoRoomWords(unittest.TestCase):
                       "check it for errors. The part already downloaded is kept and the next try continues from there.\n(OSError:", said)
 
     def test_the_generic_name_becomes_the_file_name(self):
-        said = self.words(errno.ENOSPC, 1, 2, what="the download", location="https://example.org/a/b/strata-0.1.59-cuda.zip")
-        self.assertIn(" is full, so the file strata-0.1.59-cuda.zip stopped downloading after ", said)
+        said = self.words(errno.ENOSPC, 1, 2, what="the download", location="https://example.org/a/b/nostroma-0.1.59-cuda.zip")
+        self.assertIn(" is full, so the file nostroma-0.1.59-cuda.zip stopped downloading after ", said)
 
 
 if __name__ == "__main__":

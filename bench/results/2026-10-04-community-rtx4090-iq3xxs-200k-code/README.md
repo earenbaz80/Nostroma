@@ -1,6 +1,6 @@
 # Community benchmark: NVIDIA GeForce RTX 4090
 
-Measured on 2026-10-04 by [Dmitry-B](https://github.com/Dmitry-B). This tests Strata 0.1.39 with qwen3.8-flash-next-iq3_xxs and a 204800-token context. Prompts are code-explanation text; greedy decoding, a 256-token output cap, three runs per configuration; TTFT measured over streaming. These are synthetic workloads; they do not establish general answer quality.
+Measured on 2026-10-04 by [Dmitry-B](https://github.com/Dmitry-B). This tests Nostroma 0.1.39 with qwen3.8-flash-next-iq3_xxs and a 204800-token context. Prompts are code-explanation text; greedy decoding, a 256-token output cap, three runs per configuration; TTFT measured over streaming. These are synthetic workloads; they do not establish general answer quality.
 
 ## Hardware and software
 
@@ -8,20 +8,20 @@ Measured on 2026-10-04 by [Dmitry-B](https://github.com/Dmitry-B). This tests St
 - CPU: AMD Ryzen 9 7950X 16-Core Processor (32 logical CPUs).
 - RAM: 46464 MiB installed; storage layout: see env.json (lsblk output).
 - Ubuntu 26.04.1 LTS, kernel 7.0.0-38-generic; NVIDIA driver 610.57.04; release 13.4, V13.4.92.
-- Strata commit `2900da3ba8de27a467b4b3fcea6a4ca2a9061bea` (branch bench/2026-10-03-rtx4090-community); engine 0.1.39, release binary from the repository's engine/ directory.
-- Background workloads: a dsh/Authentik/Caddy web stack and stock Ubuntu services; the GPU was dedicated to Strata but the operating system was not isolated.
+- Nostroma commit `2900da3ba8de27a467b4b3fcea6a4ca2a9061bea` (branch bench/2026-10-03-rtx4090-community); engine 0.1.39, release binary from the repository's engine/ directory.
+- Background workloads: a dsh/Authentik/Caddy web stack and stock Ubuntu services; the GPU was dedicated to Nostroma but the operating system was not isolated.
 
 ## Model and configuration
 
-- Model: qwen3.8-flash-next-iq3_xxs (the Strata server's model name); GGUF filenames, sizes, and modification times are in env.json (no hashes).
+- Model: qwen3.8-flash-next-iq3_xxs (the Nostroma server's model name); GGUF filenames, sizes, and modification times are in env.json (no hashes).
 - Context 204800; INT8 KV; resident experts; GPU vision - see the config copy below.
 - Draft vocabulary subset: `draft_vocab=cyrillic` (the English/code subset plus the whole Cyrillic script, ~106k rows). This is wider than the default `en` subset; draft acceptance on English text was unaffected (78-80%), but it can cost a few percent of decode speed.
 
 ```text
-/home/dgbox/Strata/engine/strata --serve --pack /home/dgbox/Strata-data/packs/iq3_xxs --native /home/dgbox/Strata-data/models/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf --ple-gguf /home/dgbox/Strata-data/models/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00002-of-00002.gguf --expert-profile /home/dgbox/Strata/data/expert-profile-learned.bin --expert-cache auto --prefill auto --spec 4 --mtp /home/dgbox/Strata-data/mtp/rt --max-context 204800 --kv int8 --mmap-experts --vision --vram-reserve-mib 989 --control-vector-scaled /home/dgbox/Strata/data/experimental-speed-projection/Qwen3.8-Flash-Next-experimental-speed-projection.gguf:1.0 --control-vector-layer-range 4 44 --cvec-mode project --cvec-dir per-layer --pcie-frac 0.00 --spec-min-p 0.50 --pool-workers 10 --expert-profile-save /home/dgbox/Strata/data/expert-profile-learned.bin --expert-profile-save-every 10
+/home/dgbox/Nostroma/engine/nostroma --serve --pack /home/dgbox/Nostroma-data/packs/iq3_xxs --native /home/dgbox/Nostroma-data/models/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf --ple-gguf /home/dgbox/Nostroma-data/models/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00002-of-00002.gguf --expert-profile /home/dgbox/Nostroma/data/expert-profile-learned.bin --expert-cache auto --prefill auto --spec 4 --mtp /home/dgbox/Nostroma-data/mtp/rt --max-context 204800 --kv int8 --mmap-experts --vision --vram-reserve-mib 989 --control-vector-scaled /home/dgbox/Nostroma/data/experimental-speed-projection/Qwen3.8-Flash-Next-experimental-speed-projection.gguf:1.0 --control-vector-layer-range 4 44 --cvec-mode project --cvec-dir per-layer --pcie-frac 0.00 --spec-min-p 0.50 --pool-workers 10 --expert-profile-save /home/dgbox/Nostroma/data/expert-profile-learned.bin --expert-profile-save-every 10
 ```
 
-Full server config: [config.json](config.json) (was at /home/dgbox/Strata/strata-200k.json), environment details: [env.json](env.json).
+Full server config: [config.json](config.json) (was at /home/dgbox/Nostroma/nostroma-200k.json), environment details: [env.json](env.json).
 
 ## Method
 
@@ -61,7 +61,7 @@ Full server config: [config.json](config.json) (was at /home/dgbox/Strata/strata
 
 The same PC, the same model and the same run configuration as
 [2026-10-03-community-rtx4090-iq3xxs-200k-code](../2026-10-03-community-rtx4090-iq3xxs-200k-code/README.md)
-(engine 0.1.38, Strata commit `1d5e1ea`). Only the Strata version changed: 0.1.38 -> 0.1.39, source build, same
+(engine 0.1.38, Nostroma commit `1d5e1ea`). Only the Nostroma version changed: 0.1.38 -> 0.1.39, source build, same
 CUDA 13.4, same `sm_89`, same arguments, same `expert-profile-learned.bin`. The engine's auto prompt chunk is
 unchanged in both (`prompt chunk auto: 8192` in the server log), so the byte-budget ring of #583 does not apply to
 this configuration.

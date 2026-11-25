@@ -13,7 +13,7 @@
 # The level-zero loader and the compute runtime stay the PC's own (the Intel graphics PPA / `apt install libze1 intel-opencl-icd`);
 # the oneAPI runtime the engine loads (libsycl, the Unified Runtime adapters, the MKL SYCL libraries) is bundled by collect_libs.py.
 # Every ELF file of the package gets RUNPATH $ORIGIN, so the package finds its own libraries with no environment
-# (`env -i ./strata --version` runs); Intel's libraries ship without it (libur_loader has $ORIGIN/../lib, libmkl_core none).
+# (`env -i ./nostroma --version` runs); Intel's libraries ship without it (libur_loader has $ORIGIN/../lib, libmkl_core none).
 # The package lands in $OUT (default ./out-engine-sycl). Nothing is uploaded or signed.
 set -eu
 repo=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
@@ -40,34 +40,34 @@ iccver=$(icpx --version | sed -n 's/.*Compiler \([0-9][0-9.]*\).*/\1/p' | head -
 cd "$repo"
 . "$repo/packaging/shape_build.sh"; shape_setup "$repo"
 ggml=""
-# ggml is the vendored third_party/strata-ggml. STRATA_GGML_DIR=<llama.cpp checkout> (or LLAMA_CPP=, the name this script used before) builds from that
+# ggml is the vendored third_party/nostroma-ggml. NOSTROMA_GGML_DIR=<llama.cpp checkout> (or LLAMA_CPP=, the name this script used before) builds from that
 # checkout instead: an override kept for two releases. (LLAMA_CPP used to set a FetchContent variable that the CMake files stopped reading when ggml was
 # vendored, so it did nothing, and a llama.cpp tree downloaded into third_party/ was picked up by itself; neither happens now.)
-override=${STRATA_GGML_DIR:-${LLAMA_CPP:-}}
-[ -z "$override" ] || ggml="-DSTRATA_GGML_DIR=$override"
+override=${NOSTROMA_GGML_DIR:-${LLAMA_CPP:-}}
+[ -z "$override" ] || ggml="-DNOSTROMA_GGML_DIR=$override"
 # shellcheck disable=SC2086
 cmake -S sycl -B "$build" -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx \
-    -DSTRATA_SYCL_PARITY=OFF -DSTRATA_SYCL_IQ_DECODE_FAST=${IQ_DECODE_FAST:-ON} ${aot:+"-DSTRATA_SYCL_AOT=$aot"} $ggml ${STRATA_CMAKE_EXTRA:-} $shape_cmake   # STRATA_CMAKE_EXTRA: e.g. -DSTRATA_GEOMETRY_FILE=/abs/path/geometry.hpp
-cmake --build "$build" --target strata -j "$jobs"
+    -DNOSTROMA_SYCL_PARITY=OFF -DNOSTROMA_SYCL_IQ_DECODE_FAST=${IQ_DECODE_FAST:-ON} ${aot:+"-DNOSTROMA_SYCL_AOT=$aot"} $ggml ${NOSTROMA_CMAKE_EXTRA:-} $shape_cmake   # NOSTROMA_CMAKE_EXTRA: e.g. -DNOSTROMA_GEOMETRY_FILE=/abs/path/geometry.hpp
+cmake --build "$build" --target nostroma -j "$jobs"
 
 ver=$(sed -n 's/^[[:space:]]*project([^)]*VERSION[[:space:]]*\([0-9][0-9.]*\).*/\1/p' CMakeLists.txt | head -1)
 commit=${COMMIT:-$(git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)}   # a git archive has no .git: pass COMMIT=
-stage=$(mktemp -d "${TMPDIR:-/tmp}/strata-sycl-stage.XXXXXX")
+stage=$(mktemp -d "${TMPDIR:-/tmp}/nostroma-sycl-stage.XXXXXX")
 trap 'rm -rf "$stage"' EXIT
-cp "$build/strata" "$stage/"
+cp "$build/nostroma" "$stage/"
 code=${aot:+AOT $aot}; code=${code:-JIT from SPIR-V}
 echo "{\"version\": \"$ver\", \"source\": \"packaging/build_sycl_linux.sh\", \"sycl\": \"oneAPI DPC++ $iccver ($code)\", \"portable\": false}" > "$stage/BUILD.json"
 # libsycl and the MKL SYCL libraries come through ldd; the Unified Runtime adapters (level zero, opencl) are dlopen'd, so they are named
-"$py" packaging/collect_libs.py --binary "$build/strata" --search "$oneapi/compiler/latest/lib" --search "$oneapi/mkl/latest/lib" \
+"$py" packaging/collect_libs.py --binary "$build/nostroma" --search "$oneapi/compiler/latest/lib" --search "$oneapi/mkl/latest/lib" \
     --also 'libur_adapter_level_zero*.so*' --also 'libur_adapter_opencl*.so*' --out "$stage"
 # RUNPATH $ORIGIN on the engine and on every bundled library (the same way packaging/build_hip_linux.sh does it)
-for f in "$stage/strata" "$stage"/*.so "$stage"/*.so.*; do
+for f in "$stage/nostroma" "$stage"/*.so "$stage"/*.so.*; do
   [ -f "$f" ] && [ ! -L "$f" ] && patchelf --set-rpath '$ORIGIN' "$f"
 done
-for f in "$stage/strata" "$stage"/*.so "$stage"/*.so.*; do
+for f in "$stage/nostroma" "$stage"/*.so "$stage"/*.so.*; do
   [ -f "$f" ] && [ ! -L "$f" ] && { readelf -d "$f" | grep -q 'RUNPATH.*\[\$ORIGIN\]' || { echo "build_sycl_linux.sh: $(basename "$f") has no RUNPATH \$ORIGIN" >&2; exit 1; }; }
 done
-shape_check "$stage/strata"
+shape_check "$stage/nostroma"
 if [ -n "$aot" ]; then arch_args=$(echo "$aot" | tr ',' '\n' | sed 's/^/--arch /' | tr '\n' ' '); else arch_args="--arch intel-arc"; fi
 mkdir -p "$out"
 # shellcheck disable=SC2086
@@ -75,6 +75,6 @@ mkdir -p "$out"
     --platform linux-x86_64 --build-id "${commit}-oneapi${iccver}" --include SYSTEM-LIBS.txt $shape_pkg
 for d in "$out"/*/; do
   "$py" packaging/package_engine.py --verify "$d"; "$py" packaging/binary_deps.py "$d"
-  env -i "$d/strata" --version > /dev/null || { echo "build_sycl_linux.sh: env -i $d/strata --version does not run" >&2; exit 1; }
+  env -i "$d/nostroma" --version > /dev/null || { echo "build_sycl_linux.sh: env -i $d/nostroma --version does not run" >&2; exit 1; }
 done
 echo "built: $out"

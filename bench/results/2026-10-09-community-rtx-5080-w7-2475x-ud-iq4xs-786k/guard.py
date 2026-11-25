@@ -3,7 +3,7 @@ porta 8080 durante una misura.
 
 Il server tiene un totale cumulativo delle richieste finite (serve/server.py: `self.totals = {... "requests": 0 ...}`,
 incrementato a richiesta completata) e lo pubblica in GET /metrics sotto "totals". Presente in tutte le build in
-C:\\strata-lab\\pr dalla 0.1.26 in poi; l'endpoint non chiede chiave quando il config non ne ha una.
+C:\\nostroma-lab\\pr dalla 0.1.26 in poi; l'endpoint non chiede chiave quando il config non ne ha una.
 
 Uso: leggere il contatore subito prima e subito dopo le proprie richieste e controllare che la differenza sia
 esattamente il numero di richieste fatte dallo script. Se e' maggiore, qualcun altro ha generato su quel server

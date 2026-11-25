@@ -113,7 +113,7 @@ class SetupIntel(unittest.TestCase):
 
     def run_it(self, m, cfg, vram, drv="i915", **kw):
         notes = []
-        c = m.to_sycl(cfg, m.ROOT / "build-sycl" / "strata", 64.0, {}, vram, drv, "56a1", fit_notes=notes, **kw)
+        c = m.to_sycl(cfg, m.ROOT / "build-sycl" / "nostroma", 64.0, {}, vram, drv, "56a1", fit_notes=notes, **kw)
         return c, notes
 
     def test_gyro_m_on_the_a750_gets_a_config_that_starts_and_one_line(self):

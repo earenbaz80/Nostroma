@@ -1,6 +1,6 @@
 """Finding the engine package for this machine in a local component folder. There is no download path.
 
-The engine (the C++ `strata` binary and its GPU runtime libraries) is a separate, independently versioned
+The engine (the C++ `nostroma` binary and its GPU runtime libraries) is a separate, independently versioned
 component. The desktop app and the terminal start whatever is installed in the component folder; nothing here, and
 nothing on the start path, fetches an engine. A missing or unusable engine is a typed error that says what to do
 (`EngineMissing`, exit code 5, the same family as `acquisition.AcquisitionRefused`) and never an attempt to get one.
@@ -9,16 +9,16 @@ Layout (``components_dir()``)::
 
     <components>/engine/<version>-<platform>-<backend>/
         engine-component.json        the manifest (below)
-        strata.exe | strata          the entrypoint (path from the manifest)
+        nostroma.exe | nostroma          the entrypoint (path from the manifest)
         *.dll | *.so                 the GPU runtime libraries, hashed in the manifest too
         BUILD.json                   optional, the engine's own build record
 
 Manifest (``engine-component.json``, schema 2; schema 1 packages still load). packaging/README.md has the full table::
 
-    {"schema_version": 2, "id": "strata-engine", "name": "strata-engine", "version": "0.1.45",
+    {"schema_version": 2, "id": "nostroma-engine", "name": "nostroma-engine", "version": "0.1.45",
      "platform": "linux-x86_64", "backend": "cuda", "archs": ["sm_86", "compute_89"],
      "min_driver": {"nvidia": "580.65"}, "build_id": "be885026f9-cuda13.0", "min_runtime": "0.1.45",
-     "entrypoint": "strata", "files": [{"path": "strata", "sha256": "...", "bytes": 1}, ...],
+     "entrypoint": "nostroma", "files": [{"path": "nostroma", "sha256": "...", "bytes": 1}, ...],
      "signature": null}                      # S6 fills it; verify_signature() is the hook
 
 Checks, in order, and each one names what failed:
@@ -26,7 +26,7 @@ Checks, in order, and each one names what failed:
 * the manifest parses strictly; file paths are relative, plain, and stay inside the component folder;
 * the platform and backend are combinations the project commits to (`components.BACKEND_MATRIX`);
 * the backend is the one this machine's GPU needs (detected, or asked for);
-* the signature (none yet; a verifier registered by S6 is called, and `STRATA_REQUIRE_SIGNED_COMPONENTS=1` refuses
+* the signature (none yet; a verifier registered by S6 is called, and `NOSTROMA_REQUIRE_SIGNED_COMPONENTS=1` refuses
   an unsigned or unverifiable package);
 * every listed file exists with the listed size, and every file's SHA-256 matches (`verify(full=True)`, which is what
   a start does; the quick listing/status path hashes only the entrypoint);
@@ -55,10 +55,10 @@ from nostroma_control.targets import BACKEND_MATRIX, backend_supported, host_pla
 SCHEMA_VERSION = 2
 READABLE_SCHEMAS = (1, 2)           # schema 1 (S3's first packages: no archs/min_driver/build_id/signature) still loads
 MANIFEST = "engine-component.json"
-COMPONENT_ID = "strata-engine"
-ENV_DIR = "STRATA_COMPONENTS_DIR"
-ENV_BACKEND = "STRATA_ENGINE_BACKEND"
-ENV_REQUIRE_SIGNED = "STRATA_REQUIRE_SIGNED_COMPONENTS"
+COMPONENT_ID = "nostroma-engine"
+ENV_DIR = "NOSTROMA_COMPONENTS_DIR"
+ENV_BACKEND = "NOSTROMA_ENGINE_BACKEND"
+ENV_REQUIRE_SIGNED = "NOSTROMA_REQUIRE_SIGNED_COMPONENTS"
 #: The updater's state (``nostroma update``, ``nostroma components rollback``) lives in the component folder; the only member the
 #: start path reads is ``engine.pinned``: the folder a manual rollback chose, which wins over a newer installed package.
 UPDATE_STATE = Path(".updates") / "state.json"
@@ -176,7 +176,7 @@ def package_lib_dirs(folder) -> list[str]:
 # ----------------------------------------------------------------------------------------------- where
 
 def components_dir(environ=None, *, windows: bool | None = None, home: Path | None = None) -> Path:
-    """The per-user component folder. ``STRATA_COMPONENTS_DIR`` wins (the app and the tests set it)."""
+    """The per-user component folder. ``NOSTROMA_COMPONENTS_DIR`` wins (the app and the tests set it)."""
     environ = os.environ if environ is None else environ
     explicit = environ.get(ENV_DIR)
     if explicit:
@@ -184,8 +184,8 @@ def components_dir(environ=None, *, windows: bool | None = None, home: Path | No
     windows = os.name == "nt" if windows is None else windows
     home = Path.home() if home is None else home
     if windows:
-        return Path(environ.get("LOCALAPPDATA") or str(home / "AppData" / "Local")) / "Strata" / "components"
-    return Path(environ.get("XDG_DATA_HOME") or str(home / ".local" / "share")) / "strata" / "components"
+        return Path(environ.get("LOCALAPPDATA") or str(home / "AppData" / "Local")) / "Nostroma" / "components"
+    return Path(environ.get("XDG_DATA_HOME") or str(home / ".local" / "share")) / "nostroma" / "components"
 
 
 def engine_dir(root: Path | None = None) -> Path:
@@ -276,9 +276,9 @@ def _plain_relative(path: str) -> str:
 
 
 def read_manifest(folder: Path, component_id: str = COMPONENT_ID) -> EngineComponent:
-    """The manifest of the package in `folder`. `component_id` is the component the caller expects: the Nostroma engine (``strata-engine``) or the engine of
-    one model shape (``strata-q4-lite``, nostroma_control/shape_engine.py). A package of one kind is never read as the other: the id and the ``shape`` member
-    must agree with it, so an older Control (which only knows ``strata-engine``) refuses a shape engine that was put into its engine folder by hand."""
+    """The manifest of the package in `folder`. `component_id` is the component the caller expects: the Nostroma engine (``nostroma-engine``) or the engine of
+    one model shape (``nostroma-q4-lite``, nostroma_control/shape_engine.py). A package of one kind is never read as the other: the id and the ``shape`` member
+    must agree with it, so an older Control (which only knows ``nostroma-engine``) refuses a shape engine that was put into its engine folder by hand."""
     path = folder / MANIFEST
     try:
         data = json.loads(path.read_text(encoding="utf-8-sig"))
@@ -365,7 +365,7 @@ def read_manifest_any(folder: Path) -> EngineComponent:
 
 #: A signature verifier is ``fn(payload: bytes, signature: dict, component) -> None``; it raises
 #: ``IntegrityProblem`` (or any exception) when the signature does not hold. S6 registers one that checks the project's
-#: key; until then there is none, unsigned packages load (unless ``STRATA_REQUIRE_SIGNED_COMPONENTS=1``), and a package
+#: key; until then there is none, unsigned packages load (unless ``NOSTROMA_REQUIRE_SIGNED_COMPONENTS=1``), and a package
 #: that carries a signature nobody can check is reported as "signature not verified", never as verified.
 _verifier: Callable[[bytes, dict, "EngineComponent"], None] | None = None
 
@@ -384,7 +384,7 @@ def signing_payload(manifest: dict) -> bytes:
 
 def verify_signature(component: "EngineComponent", environ=None) -> str:
     """"verified", "unsigned" or "unverified" (signed, no verifier yet). Raises IntegrityProblem for a bad signature,
-    and for an unsigned or unverifiable package when ``STRATA_REQUIRE_SIGNED_COMPONENTS`` is set."""
+    and for an unsigned or unverifiable package when ``NOSTROMA_REQUIRE_SIGNED_COMPONENTS`` is set."""
     environ = os.environ if environ is None else environ
     required = environ.get(ENV_REQUIRE_SIGNED, "").strip().lower() in ("1", "true", "yes", "on")
     if not component.signature:
@@ -527,7 +527,7 @@ def save_backend(value, environ=None) -> Path | None:
 
 def detect_backend(environ=None) -> tuple[str | None, str]:
     """(backend, how) for this machine: the engine family its GPU needs. Bounded, read-only probes of tools that are
-    already installed; ``STRATA_ENGINE_BACKEND`` overrides (the tests and the support desk use it)."""
+    already installed; ``NOSTROMA_ENGINE_BACKEND`` overrides (the tests and the support desk use it)."""
     environ = os.environ if environ is None else environ
     forced = split_backend(environ.get(ENV_BACKEND, ""))[0]      # "hip-rdna2" starts the hip family (the package choice reads the variant)
     if forced:
@@ -1166,7 +1166,7 @@ def resolve(root: Path | None = None, *, backend: str | None = None, target: str
                                          hip_preference(item.hip_archs), arch_native(item.cuda_archs, archs_here)))
 
 
-#: A run config can name its engine as "component:strata-engine" instead of a path: the server then asks the
+#: A run config can name its engine as "component:nostroma-engine" instead of a path: the server then asks the
 #: component folder for the engine that fits this PC when it starts (a config written before an engine update keeps
 #: working after it, and a config copied to another PC finds that PC's engine).
 REFERENCE_PREFIX = "component:"

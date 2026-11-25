@@ -1,7 +1,7 @@
 """DeepSeek models that this Nostroma no longer runs: how a saved config, a folder, a file or a typed name is recognised, and the words
 a person sees.
 
-Nostroma ran DeepSeek-V4.1-Flash up to 0.2.13 on an engine of its own (strata-dsv41).  This version does not: a DeepSeek config is
+Nostroma ran DeepSeek-V4.1-Flash up to 0.2.13 on an engine of its own (nostroma-dsv41).  This version does not: a DeepSeek config is
 refused before anything starts and before any file of it is written, its model files are never touched, and the words name where
 they are and how large, so the person can decide.  Every check here is local and bounded (config fields, a file name, the first
 bytes of one GGUF, the sizes of the files directly in one or two folders): it answers at once, also offline, and never raises.
@@ -17,12 +17,12 @@ from typing import Any, Iterable, Mapping
 
 #: the family and arch names setup and the server used for DeepSeek-V4.1-Flash
 FAMILY = "deepseek41"
-ENGINE_NAMES = ("strata-dsv41", "strata-dsv41.exe")
+ENGINE_NAMES = ("nostroma-dsv41", "nostroma-dsv41.exe")
 #: the model sizes setup and `nostroma launch` offered under --family deepseek41 (lower case); "UD-IQ1_M" and "UD-IQ1_S" are not here: they are also
 #: Unsloth Qwen names
 MODEL_NAMES = frozenset({"ist-das-2.00bpw", "ist-das-2.25bpw", "ist-das-1.75bpw", "ista-das-coder", "ud-q8_k_xl",
                          "deepseek-v4.1-flash", "deepseek41", "deepseek"})
-#: the config file stem setup wrote (strata-deepseek-v4.1-flash-<size>.json) and the model_name in it
+#: the config file stem setup wrote (nostroma-deepseek-v4.1-flash-<size>.json) and the model_name in it
 TAG = "deepseek-v4.1-flash"
 #: the published file names of the DeepSeek sets (unsloth, ISTA-DAS, the Engram table, the DSpark drafter)
 _FILE = re.compile(r"^(?:dspark-)?DeepSeek-V4[._]?1-Flash[-_].*\.gguf$", re.I)
@@ -31,7 +31,7 @@ _GGUF_HEAD = 1 << 20          # bytes of a GGUF read to find general.architectur
 
 
 # Every sentence below is the owner's approved wording of 11-11 (par/OWNER-WORDING-1111.md): change none without him.
-#: D1: a start of a saved DeepSeek model (the app, `strata start`, a saved launch)
+#: D1: a start of a saved DeepSeek model (the app, `nostroma start`, a saved launch)
 REFUSED = "{name} is a DeepSeek model. This version of Nostroma no longer runs DeepSeek models, so it was not started."
 FILES_STAY = "Its files are still on this computer: {size} in {folder}. Nothing was changed or deleted."
 NEXT = ("Choose a Qwen model to run instead. If you no longer need the DeepSeek files, you can delete that folder "
@@ -47,12 +47,12 @@ OWN_FILES = ("These are DeepSeek model files ({size} in {folder}). This version 
 OWN_FILES_NOSIZE = ("These are DeepSeek model files (in {folder}). This version of Nostroma no longer runs DeepSeek models; "
                     "nothing in the folder was changed. Choose a Qwen model instead.")
 #: D5: the server started directly with a DeepSeek config or tokenizer
-SERVER = ("[strata] this config runs a DeepSeek model ({why}). This version of Nostroma no longer runs DeepSeek models, so the "
+SERVER = ("[nostroma] this config runs a DeepSeek model ({why}). This version of Nostroma no longer runs DeepSeek models, so the "
           "server stops here. The model files were not changed.")
 #: D6: setup's update and its list of installed models
 LEFT_AS_IS = "{name}: a DeepSeek model, left as it is (this version of Nostroma no longer runs DeepSeek models)."
 
-WHY = {"arch": "arch deepseek41", "engine": "engine strata-dsv41", "tokenizer": "DeepSeek tokenizer", "gguf": "DeepSeek model file",
+WHY = {"arch": "arch deepseek41", "engine": "engine nostroma-dsv41", "tokenizer": "DeepSeek tokenizer", "gguf": "DeepSeek model file",
        "name": "DeepSeek model name"}
 
 
@@ -153,7 +153,7 @@ def read_config(path: Any) -> dict | None:
 def config_file_reason(path: Any) -> str | None:
     """config_reason of a run config file (an unreadable file is not DeepSeek's: the usual errors say what is wrong with it)."""
     stem = Path(str(path)).stem.lower() if path else ""
-    if stem.startswith("strata-" + TAG):
+    if stem.startswith("nostroma-" + TAG):
         return "name"
     return config_reason(read_config(path))
 
@@ -260,7 +260,7 @@ _LABELS = {"ist-das-2.00bpw": "ISTA-DAS 2.00 bpw", "ist-das-2.25bpw": "ISTA-DAS 
 def title(cfg: Mapping | None = None, path: Any = None) -> str:
     """The model's name as setup showed it ("DeepSeek-V4.1-Flash ISTA-DAS 2.00 bpw"), from the config file's name when it has setup's form."""
     stem = Path(str(path)).stem.lower() if path else ""
-    head = "strata-" + TAG + "-"
+    head = "nostroma-" + TAG + "-"
     if stem.startswith(head):
         size = stem[len(head):]
         return "DeepSeek-V4.1-Flash " + _LABELS.get(size, size.upper())

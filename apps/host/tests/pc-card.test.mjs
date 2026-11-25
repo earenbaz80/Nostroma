@@ -9,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const stdin = { contents: "import { createElement } from 'react'; import { renderToStaticMarkup } from 'react-dom/server'; import { PcFitCard } from './src/components/PcFitCard'; export { setTranslationLanguage } from './src/lib/i18n'; export const render = props => renderToStaticMarkup(createElement(PcFitCard, props));", resolveDir: fileURLToPath(new URL('..', import.meta.url)), loader: 'ts' };
 const built = await build({ stdin, bundle: true, write: false, format: 'esm', platform: 'node', loader: { '.json': 'json', '.tsx': 'tsx' }, jsx: 'automatic', logLevel: 'silent', banner: { js: "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);" } });
-const dir = mkdtempSync(join(tmpdir(), 'strata-pc-test-'));
+const dir = mkdtempSync(join(tmpdir(), 'nostroma-pc-test-'));
 writeFileSync(join(dir, 'card.mjs'), built.outputFiles[0].text);
 const { render, setTranslationLanguage } = await import(pathToFileURL(join(dir, 'card.mjs')).href);
 rmSync(dir, { recursive: true, force: true });

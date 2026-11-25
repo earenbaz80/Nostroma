@@ -18,7 +18,7 @@ HELPER = Path(__file__).with_name("replay.py")
 
 class ReplayTests(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="strata-replay-fixture-")
+        self.temp = tempfile.TemporaryDirectory(prefix="nostroma-replay-fixture-")
         self.root = Path(self.temp.name)
         shutil.copyfile(HELPER, self.root / "replay.py")
         (self.root / "requests").mkdir()
@@ -126,7 +126,7 @@ class ReplayTests(unittest.TestCase):
     def run_helper(self, entries, *args):
         (self.root / "requests/index.json").write_text(json.dumps({"requests": entries}))
         out = self.root / ("out-" + str(len(list(self.root.glob("out-*")))))
-        env = dict(os.environ, STRATA_BENCHMARK_API_KEY="fixture-secret-do-not-record")
+        env = dict(os.environ, NOSTROMA_BENCHMARK_API_KEY="fixture-secret-do-not-record")
         proc = subprocess.run([sys.executable, str(self.root / "replay.py"), "--url", self.url,
                                "--suite", "confirmation", "--out", str(out), *args],
                               capture_output=True, text=True, env=env, timeout=15)

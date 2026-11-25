@@ -1,5 +1,5 @@
 import { migrateSetup } from './setup.mjs';
-/** Tiny persisted state for the host: one JSON file under STRATA_HOME. */
+/** Tiny persisted state for the host: one JSON file under NOSTROMA_HOME. */
 import { accessSync, constants, mkdirSync, readFileSync, writeFileSync, existsSync, realpathSync, readdirSync, renameSync, statSync, statfsSync, symlinkSync } from 'node:fs';
 import { alignModels, isDriveRoot, libraryFolderFromPick, makeFolder } from './model-folder.mjs';
 import { dirname, isAbsolute, join, parse, relative, resolve } from 'node:path';
@@ -10,12 +10,12 @@ import { envVar } from './env-compat.mjs';
 /**
  * Prefer ~/.nostroma, the way the packaged app stores its data. A folder from the Nostroma days is moved once so chats and
  * settings survive the rename; when it cannot be moved (another volume, no permission) it is used where it is, and nothing
- * is lost. NOSTROMA_HOME names another folder (the older STRATA_HOME still works), and sandboxes or locked-down accounts
+ * is lost. NOSTROMA_HOME names another folder (the older NOSTROMA_HOME still works), and sandboxes or locked-down accounts
  * that cannot write to the home directory fall back to a folder next to the checkout rather than failing to boot.
  */
 export function migrateOldHome(home = homedir()) {
   if (process.env.NOSTROMA_HOME || envVar('HOME')) return false;
-  const from = join(home, '.strata');
+  const from = join(home, '.nostroma');
   const to = join(home, '.nostroma');
   try {
     if (!existsSync(from) || existsSync(to)) return false;
@@ -29,8 +29,8 @@ migrateOldHome();
 function resolveHome() {
   const candidates = [
     process.env.NOSTROMA_HOME, envVar('HOME'),
-    join(homedir(), '.nostroma'), join(homedir(), '.strata'),
-    join(process.cwd(), '.nostroma'), join(process.cwd(), '.strata'),
+    join(homedir(), '.nostroma'), join(homedir(), '.nostroma'),
+    join(process.cwd(), '.nostroma'), join(process.cwd(), '.nostroma'),
   ].filter(Boolean);
   for (const dir of candidates) {
     try {
@@ -77,9 +77,9 @@ function read() {
 let state = read();
 const DEFAULT_MODELS_DIRECTORY=defaultModelDirectory();
 /**
- * The model folder for a new install: the saved one, an existing library inside STRATA_HOME, else Documents/Nostroma/Models. A Documents folder
+ * The model folder for a new install: the saved one, an existing library inside NOSTROMA_HOME, else Documents/Nostroma/Models. A Documents folder
  * that cannot be made (Controlled folder access, a disconnected share, an offline OneDrive known folder) must not stop the host from starting:
- * the models go to STRATA_HOME/models instead, and `notice` says so in plain words.
+ * the models go to NOSTROMA_HOME/models instead, and `notice` says so in plain words.
  */
 export function pickModelsDirectory({ saved, home, preferred, fixedByEnv = false }) {
  if (saved) return { directory: saved, notice: '' };
@@ -112,7 +112,7 @@ export function nativeDataDirectory(input) {
  // A named data root satisfies the installer's guard; its alias leaves weights in place.
  if(root===legacy){
   const data=join(HOME,'Nostroma-data'),nativeModels=join(data,'models');
-  try{if(!existsSync(data)&&existsSync(join(HOME,'Strata-data')))renameSync(join(HOME,'Strata-data'),data);}catch{/* a fresh root is made below */}
+  try{if(!existsSync(data)&&existsSync(join(HOME,'Nostroma-data')))renameSync(join(HOME,'Nostroma-data'),data);}catch{/* a fresh root is made below */}
   mkdirSync(data,{recursive:true});
   // Unlike a fresh default, a retained library must not fall back to an empty folder if linking fails.
   if(!existsSync(nativeModels))symlinkSync(process.platform==='win32'?root:relative(data,root),nativeModels,process.platform==='win32'?'junction':'dir');
@@ -138,7 +138,7 @@ export function validateModelsDirectory(input) {
     if (!statSync(directory).isDirectory()) throw new Error();
     accessSync(directory, constants.R_OK | constants.W_OK | constants.X_OK);
   } catch { throw new Error('This folder is unavailable or not writable. Check the path and folder permissions.'); }
-  // A whole drive (D:\) is not filled with models: D:\Strata\Models is made and used.
+  // A whole drive (D:\) is not filled with models: D:\Nostroma\Models is made and used.
   if (isDriveRoot(directory)) directory = realpathSync(makeFolder(libraryFolderFromPick(directory).path));
   const data = realpathSync(DATA_DIR);
   const contains = (parent, child) => { const r = relative(parent, child); return !r || !r.startsWith('..') && !isAbsolute(r); };

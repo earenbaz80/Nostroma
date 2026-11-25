@@ -1,5 +1,5 @@
 // metal/src/engine/msl/dflash2.metal - the small kernels of the DFlash2 drafter on Metal (the ones between the Q8_0 GEMVs, which are the
-// engine's own gemv_8_* over the DF2P pack): the same math as src/kernels/cuda/dflash2.cu, see include/strata/kernels/dflash2.hpp.
+// engine's own gemv_8_* over the DF2P pack): the same math as src/kernels/cuda/dflash2.cu, see include/nostroma/kernels/dflash2.hpp.
 //
 //   df2_rms         y[r] = x[r] * rsqrt(mean(x[r]^2) + eps) * w            rows of width n (w: the plain weight)
 //   df2_conv        the grouped dynamic 2-tap convolution over the block's rows (+ residual)

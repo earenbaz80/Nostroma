@@ -9,7 +9,7 @@
     "os": "Windows 11 26200",
     "cuda": "12.6",
     "msvc": "19.44",
-    "engine": {"commit": "6f32ec0", "version": "0.1.27", "build": "-DSTRATA_EXPERIMENTAL_SM60=ON -DCMAKE_CUDA_ARCHITECTURES=70"}
+    "engine": {"commit": "6f32ec0", "version": "0.1.27", "build": "-DNOSTROMA_EXPERIMENTAL_SM60=ON -DCMAKE_CUDA_ARCHITECTURES=70"}
   },
   "protocol": {
     "prompt_tokens": 7999,

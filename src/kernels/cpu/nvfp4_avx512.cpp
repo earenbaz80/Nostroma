@@ -1,4 +1,4 @@
-// src/kernels/cpu/nvfp4_avx512.cpp - see include/strata/kernels/cpu/nvfp4_avx512.hpp.
+// src/kernels/cpu/nvfp4_avx512.cpp - see include/nostroma/kernels/cpu/nvfp4_avx512.hpp.
 //
 // Per 64-value block, once: the 64 E2M1 codes in element order, their magnitudes from |kvalues_fp4| (0..12, the
 // doubled E2M1 values), a sign mask (code bit 3), and the four sub-block scales. Per token: the sign moves onto the
@@ -7,8 +7,8 @@
 // CPU one (ggml-impl.h ggml_ue4m3_to_fp32): halved for the doubled table, 0x7F read as 0.
 //
 // Needs AVX512F/BW/VL and VNNI - what cpu_avx512_ok() checks before anything here is called.
-#include "strata/kernels/cpu/nvfp4_avx512.hpp"
-#include "strata/env.hpp"
+#include "nostroma/kernels/cpu/nvfp4_avx512.hpp"
+#include "nostroma/env.hpp"
 
 #define GGML_COMMON_DECL_CPP
 #define GGML_COMMON_IMPL_CPP
@@ -20,7 +20,7 @@
 #include <cstdlib>
 #include <cstring>
 
-namespace strata::kernels::cpu {
+namespace nostroma::kernels::cpu {
 namespace {
 
 // A compile-time table, not a constructor: this file is compiled for a wide ISA, and a namespace-scope object with a
@@ -45,12 +45,12 @@ struct Ue4m3Table {   // ggml_ue4m3_to_fp32 (ggml-impl.h): halved for the double
 };
 constexpr Ue4m3Table kUe4m3;
 
-// software prefetch distance in bytes (STRATA_NVFP4_PREFETCH, 0 = off): the rows stream from DRAM through 4 KB
+// software prefetch distance in bytes (NOSTROMA_NVFP4_PREFETCH, 0 = off): the rows stream from DRAM through 4 KB
 // pages, where the hardware prefetchers stop at every page boundary; the IQ kernel's E-2 knob, same default
 // (read on first use, behind the CPU check: a static initialiser here would run on every CPU, see above)
 inline int prefetch_distance() {
     static const int v = [] {
-        const char* e = strata::env("NOSTROMA_NVFP4_PREFETCH");
+        const char* e = nostroma::env("NOSTROMA_NVFP4_PREFETCH");
         return e ? std::atoi(e) : 2048;
     }();
     return v;
@@ -198,4 +198,4 @@ void nvfp4_512_rows(const uint8_t* w, size_t row_bytes, int n, const void* const
     });
 }
 
-}  // namespace strata::kernels::cpu
+}  // namespace nostroma::kernels::cpu

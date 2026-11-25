@@ -1,6 +1,6 @@
 {
   "batch": 2,
-  "config": "<strata checkout>/bench/results/2026-10-06-community-2x-rx-7900-gre/data/cfg-batch2-B.json",
+  "config": "<nostroma checkout>/bench/results/2026-10-06-community-2x-rx-7900-gre/data/cfg-batch2-B.json",
   "max_tokens": 500,
   "requests": [
     {

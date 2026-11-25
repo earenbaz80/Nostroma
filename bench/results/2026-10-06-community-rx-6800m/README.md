@@ -1,7 +1,7 @@
 # Community benchmark on AMD Radeon RX 6800M (gfx1031)
 
 Measured on 2026-10-06 by [Hugua700](https://github.com/Hugua700). This is the low end of what runs
-Strata: one mobile RDNA2 card (12 GB) with 32 GB of system RAM, on Windows, using a **self-built HIP
+Nostroma: one mobile RDNA2 card (12 GB) with 32 GB of system RAM, on Windows, using a **self-built HIP
 engine** (the ready-made Windows HIP zip has no gfx1031 code). Three prompt sizes at two engine
 settings, three runs each, plus six recall checks.
 
@@ -28,7 +28,7 @@ run was deliberately split into short segments rather than one long sweep.
 - **OS:** Windows 11 Home, build 26300
 - **Driver:** AMD 32.0.21045.5002 (2026-08-17)
 - **ROCm:** 10.2.0a20260930 (TheRock wheels)
-- **Strata:** `1735d64` (v0.1.40), engine `0.1.40`, **source build** — `STRATA_HIP_ARCHS=gfx1031`,
+- **Nostroma:** `1735d64` (v0.1.40), engine `0.1.40`, **source build** — `NOSTROMA_HIP_ARCHS=gfx1031`,
   `tools/hip/build_windows.bat`, gfx1031 only; CPU image encoder also built (`vision_src b8ba8d7bfed20e5b`)
 - **Power:** on AC, ASUS "Performance" power plan; nothing else was using the GPU during the runs.
   The integrated Radeon iGPU was idle and is not used.
@@ -60,11 +60,11 @@ run was deliberately split into short segments rather than one long sweep.
   Calibration and experimental speed projection were **not** used.
 
 ```text
-strata.exe --serve --pack F:\Strata-data\packs\sc117-q2_0 ^
-  --native F:\Strata-data\models\sc117-q2_0\Qwen3.8-Flash-Next-GSQ-RCO-abliterated-Q2_0-00001-of-00002.gguf ^
-  --ple-gguf F:\Strata-data\models\sc117-q2_0\Qwen3.8-Flash-Next-GSQ-RCO-abliterated-Q2_0-00002-of-00002.gguf ^
-  --expert-profile F:\Strata\data\expert-profile.bin --expert-cache auto --prefill auto ^
-  --spec 4 --spec-min-p 0.5 --mtp F:\Strata-data\mtp\rt ^
+nostroma.exe --serve --pack F:\Nostroma-data\packs\sc117-q2_0 ^
+  --native F:\Nostroma-data\models\sc117-q2_0\Qwen3.8-Flash-Next-GSQ-RCO-abliterated-Q2_0-00001-of-00002.gguf ^
+  --ple-gguf F:\Nostroma-data\models\sc117-q2_0\Qwen3.8-Flash-Next-GSQ-RCO-abliterated-Q2_0-00002-of-00002.gguf ^
+  --expert-profile F:\Nostroma\data\expert-profile.bin --expert-cache auto --prefill auto ^
+  --spec 4 --spec-min-p 0.5 --mtp F:\Nostroma-data\mtp\rt ^
   --max-context 65536 --kv int8 --kv-resident 32768 --resident-experts --vision
 ```
 
@@ -75,7 +75,7 @@ strata.exe --serve --pack F:\Strata-data\packs\sc117-q2_0 ^
 
 Requests went through `/v1/chat/completions`, **one at a time**. Speed numbers are the server's own
 `timings` object (`prompt_per_second`, `predicted_per_second`, `prompt_ms` as TTFT), the same source
-the existing reports use; `strata-bench.py` records the whole object per run. Model loading is not
+the existing reports use; `nostroma-bench.py` records the whole object per run. Model loading is not
 included in any timing.
 
 - **Warm-up:** one short request is sent and discarded before each configuration. The engine's
@@ -85,7 +85,7 @@ included in any timing.
   `tools/make_profile.py`, `tools/bench_prefill.py`, `setup.py`, `serve/server.py`), so anyone can
   rebuild them. The ~512-token prompt is a short instruction; the 2K and 8K prompts are a block of
   that source followed by "summarize what the code above does".
-- **Prefix reuse is defeated on purpose.** Strata reuses a cached conversation prefix, so a repeated
+- **Prefix reuse is defeated on purpose.** Nostroma reuses a cached conversation prefix, so a repeated
   prompt makes runs 2..N read only a handful of new tokens and their prompt speed is not comparable
   to run 1. Every measured run therefore carries a unique leading `# benchmark run <nonce>` line;
   the "Reused" column below is 0 for every row as a result. `data/*.json` keeps the raw
@@ -97,7 +97,7 @@ included in any timing.
 ## Results
 
 Server setting: `default` = the launch command above; `f16` = the same with
-**`STRATA_HIP_PROMPT_F16=1`** in the environment (the engine suggests it on gfx1031:
+**`NOSTROMA_HIP_PROMPT_F16=1`** in the environment (the engine suggests it on gfx1031:
 *"reads long prompts about 2x faster here"*).
 
 | Configuration | Actual prompt tokens | Reused tokens | Generated tokens | Runs | Prompt tok/s median and range | Decode tok/s median and range | TTFT seconds median and range |
@@ -109,9 +109,9 @@ Server setting: `default` = the launch command above; `f16` = the same with
 | f16, ~2K | 2,311 | 0 | 256 | 3 | 63.0 (52.5–64.3) | 14.5 (13.2–14.9) | 36.7 (35.9–44.1) |
 | f16, ~8K | 8,727 | 0 | 256 | 3 | 113.5 (105.9–120.2) | 14.1 (13.8–14.3) | 76.9 (72.6–82.4) |
 
-Per-run data: `data/strata-bench-default.json`, `data/strata-bench-default8k.json`,
-`data/strata-bench-f16.json` (every run's full `timings` object, wall time and answer head),
-`data/strata-bench-recall.json`.
+Per-run data: `data/nostroma-bench-default.json`, `data/nostroma-bench-default8k.json`,
+`data/nostroma-bench-f16.json` (every run's full `timings` object, wall time and answer head),
+`data/nostroma-bench-recall.json`.
 
 **Prefill improves with prompt length, decode does not.** Prompt speed rises 50 → 60 → 92 tok/s as
 the prompt grows: the fixed per-request cost is amortized. Decode is 9–27 tok/s and does not follow a
@@ -119,7 +119,7 @@ clean trend — it was 9.1 tok/s at 2K and 14.7 tok/s at 8K in the default runs,
 of the usual expectation; the spread is larger than the effect, so treat decode as "about 10–25 tok/s
 on this machine" rather than reading the ordering.
 
-### ⭐ `STRATA_HIP_PROMPT_F16=1`: +6 % to +29 % here, against +69 % to +101 % on gfx1030
+### ⭐ `NOSTROMA_HIP_PROMPT_F16=1`: +6 % to +29 % here, against +69 % to +101 % on gfx1030
 
 | Prompt tokens | default prompt tok/s | f16 prompt tok/s | change |
 | ---: | ---: | ---: | --- |

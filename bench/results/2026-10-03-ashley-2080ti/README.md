@@ -1,6 +1,6 @@
 # Ashley-PC: RTX 2080 Ti / i9-9900KF, Qwen3.8-Flash-Next IQ3_XXS
 
-Strata 0.1.38 (release build, archs 75/86/89/120, CUDA 13.0, portable), Windows 11,
+Nostroma 0.1.38 (release build, archs 75/86/89/120, CUDA 13.0, portable), Windows 11,
 measured 3 Oct 26. Turing-class data point for issue #165 lineage: oldest GPU in
 the tree so far (sm_75, 2019 silicon), 11 GB VRAM, 64 GB DDR4-3200.
 
@@ -61,4 +61,4 @@ at ~200 W of a 260 W limit.
 - Windows telemetry via engine's own /metrics hardware block (psutil on Windows).
 
 Files: `IQ3_XXS-1x2080Ti/matrix.{md,json}`, `data/speed-<ctx>-<run>.json` (12),
-`hw.txt`, patched harness in `data/strata-bench.py`.
+`hw.txt`, patched harness in `data/nostroma-bench.py`.

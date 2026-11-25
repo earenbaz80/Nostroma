@@ -1,9 +1,9 @@
-# Community benchmark: 2x AMD Radeon RX 6900 XT 16 GB (gfx1030), Ryzen 5 5600X, 128 GB RAM - Strata 0.1.40.1
+# Community benchmark: 2x AMD Radeon RX 6900 XT 16 GB (gfx1030), Ryzen 5 5600X, 128 GB RAM - Nostroma 0.1.40.1
 
 Measured on 2026-10-06 on a Linux desktop. This tests the original Qwen3.8-Flash-Next (GSQ-RCO IQ3_S) with a
 131,072-token context in the three ways two cards can be used - one card alone, a layer split across both, and one card
 with the other as an expert helper (`--remote-expert-opt`) - on engine 0.1.40.1 as released, on 0.1.40.1 with the two
-switches it ships for this card family (`STRATA_HIP_PROMPT_F16=1 STRATA_SH_STREAM=1`), and on 0.1.40.1 with the three
+switches it ships for this card family (`NOSTROMA_HIP_PROMPT_F16=1 NOSTROMA_SH_STREAM=1`), and on 0.1.40.1 with the three
 open gfx103x pull requests #1150, #1151 and #1167 applied on top of those switches. The adaptive expert swaps were
 **on** (the default) in every configuration; the 0.1.39 report from this machine had them off because of #884.
 
@@ -36,12 +36,12 @@ match the GFXOFF-off rows to the token). The one-card configurations ran at the 
   7.15, rocBLAS 5.6.0.8d1ae90e). hipBLASLt ships no gfx1030 kernels, so the plain hipBLAS/rocBLAS path runs.
 - **Source, stock:** [earenbaz80/Nostroma](https://github.com/earenbaz80/Nostroma) `main` at `82f46a8` (engine 0.1.40.1).
 - **Source, "PRs":** `82f46a8` with #1150 (PR #540's attention kernel on gfx103x, bit-exact), #1151 (the QSA block
-  scores on rocBLAS SGEMM, opt-in `STRATA_SELECT_SGEMM=1`) and #1167 (a rocBLAS solution table for the FP16 prompt
-  GEMMs, `STRATA_ROCBLAS_TUNING`) merged locally, plus #1148 (a test skip) and #1149 (tests and an off-by-default
+  scores on rocBLAS SGEMM, opt-in `NOSTROMA_SELECT_SGEMM=1`) and #1167 (a rocBLAS solution table for the FP16 prompt
+  GEMMs, `NOSTROMA_ROCBLAS_TUNING`) merged locally, plus #1148 (a test skip) and #1149 (tests and an off-by-default
   range counter for the FP16 route); the tree is `341922e` in each `BUILD.txt`. The engine source of #1148 and #1149
   does not change any number here.
-- **Build:** both trees built by hand with cmake and ROCm's clang: `-DCMAKE_BUILD_TYPE=Release -DSTRATA_ENABLE_HIP=ON
-  -DCMAKE_HIP_ARCHITECTURES=gfx1030 -DSTRATA_PREFILL_MMQ=ON` (the options setup uses for AMD), llama.cpp at the pinned
+- **Build:** both trees built by hand with cmake and ROCm's clang: `-DCMAKE_BUILD_TYPE=Release -DNOSTROMA_ENABLE_HIP=ON
+  -DCMAKE_HIP_ARCHITECTURES=gfx1030 -DNOSTROMA_PREFILL_MMQ=ON` (the options setup uses for AMD), llama.cpp at the pinned
   commit. Each configuration's `BUILD.txt` has the tree, the commit, the binary's SHA-256, the environment and the
   GFXOFF knob's reading at start.
 - **Other load:** nothing else used the GPUs during the runs (telemetry, below). The machine's other services (an idle
@@ -64,8 +64,8 @@ chunks), MTP with `--spec 4 --spec-min-p 0.5`, suffix drafting on, and the adapt
 | name | cards | engine | environment |
 | --- | --- | --- | --- |
 | `single-stock` | one (PCI 0f) | stock | none |
-| `single-sw` | one | stock | `STRATA_HIP_PROMPT_F16=1 STRATA_SH_STREAM=1` |
-| `single-prs` | one | PRs | the two above + `STRATA_ROCBLAS_TUNING=/work/prs/tools/hip STRATA_SELECT_SGEMM=1 STRATA_SELECT_SGEMM_VERBOSE=1 STRATA_IO_THREADS=128` |
+| `single-sw` | one | stock | `NOSTROMA_HIP_PROMPT_F16=1 NOSTROMA_SH_STREAM=1` |
+| `single-prs` | one | PRs | the two above + `NOSTROMA_ROCBLAS_TUNING=/work/prs/tools/hip NOSTROMA_SELECT_SGEMM=1 NOSTROMA_SELECT_SGEMM_VERBOSE=1 NOSTROMA_IO_THREADS=128` |
 | `split-stock` | both, `layer_split: auto` | stock | none |
 | `split-sw` | both | stock | the two switches |
 | `split-prs` | both | PRs | as `single-prs` |
@@ -74,7 +74,7 @@ chunks), MTP with `--spec 4 --spec-min-p 0.5`, suffix drafting on, and the adapt
 | `helper-prs` | the same | PRs | as `single-prs` |
 | `split-stock-gfxoffon`, `split-sw-gfxoffon` | both | stock | as the two split arms above, GFXOFF at the kernel default; stalled at 128K (below) |
 
-The engine's own log confirms each switch: `STRATA_HIP_PROMPT_F16=1: the prompt's 16-bit GEMMs run FP16 in and out`
+The engine's own log confirms each switch: `NOSTROMA_HIP_PROMPT_F16=1: the prompt's 16-bit GEMMs run FP16 in and out`
 (once per card), `prefill gemm: rocBLAS tuning enabled (112 rows, 76 with a solution, gfx1030, rocBLAS 5.6.0.8d1ae90e)`
 and the `qsa select: SGEMM reach<=... ` measurement lines (`engine.log` in each folder).
 
@@ -87,11 +87,11 @@ count in amdgpu (`amdgpu_gfx_off_ctrl`): a 0 is undone only by a later 1.
 
 [benchmark.py](benchmark.py) is the script of the
 [RTX 5090 report](../2026-09-30-community-rtx-5090/README.md), unchanged. It builds deterministic synthetic Python
-filler, puts a different nonce near the start of each request, and counts the rendered chat prompt with Strata's
+filler, puts a different nonce near the start of each request, and counts the rendered chat prompt with Nostroma's
 tokenizer. [monitor.py](monitor.py) samples RAM, swap and both cards' VRAM, GTT, busy percentage, power and temperature
 from sysfs once per second.
 
-Every configuration started its own server (`serve/server.py --engine strata --config <config.json> --port 8089` from
+Every configuration started its own server (`serve/server.py --engine nostroma --config <config.json> --port 8089` from
 its tree), and ran, in this order:
 
 ```bash
@@ -170,7 +170,7 @@ What the tables show:
 
 - **The two shipped switches** read prompts 1.8x faster at 4K and 2.0x at 32K and 128K on one card (the FP16 prompt
   GEMMs, #835 in 0.1.40), 1.8-2.0x on the split, and decode 5-13% faster (the shared-expert stream fork, off by default
-  in 0.1.40, `STRATA_SH_STREAM=1`): one card 47.5 -> 50.5, split 62.1 -> 70.4 and 67.0 -> 73.3, helper 71.3 -> 74.9.
+  in 0.1.40, `NOSTROMA_SH_STREAM=1`): one card 47.5 -> 50.5, split 62.1 -> 70.4 and 67.0 -> 73.3, helper 71.3 -> 74.9.
   The 128K first-token time on one card goes from 279 s to 140 s.
 - **The pull requests** add 20-22% at 4K (the rocBLAS solution table, #1167: the GDN projection below 1,152 tokens) and
   17-23% at 32K and 128K (the attention kernel #1150 and, at 128K, the SGEMM block scores #1151): one card
@@ -201,7 +201,7 @@ These are sampled values; brief peaks between samples can be missed.
 
 With GFXOFF at the kernel's default, `split-stock` and `split-sw` each answered their 4K and 32K requests and then
 stopped making progress on the first 128,000-token request while reading the prompt - `engine.log`:
-`strata serve: no progress for 60 s during a request (reading the prompt (batched): finishing the chunk from token
+`nostroma serve: no progress for 60 s during a request (reading the prompt (batched): finishing the chunk from token
 24576)` (stock; 40960 for the switches arm), with the stall report showing the expert pool idle and no layer served -
 and the server restarted the engine (#29); each arm stalled once more during its recall checks (chunk 65536 in the
 switches arm), so one needle of six went unanswered there and `needles.out` counts 5 of 5. The same two configurations
@@ -223,7 +223,7 @@ configurations, at depths 10%, 50% and 90% at both lengths (`needles.json` in ea
 - The two-card numbers are with GFXOFF disabled (above); the one-card numbers at the default. On this machine the
   setting did not change any measured speed, but it is a non-default kernel state.
 - The "PRs" numbers are for pull requests that were open when this was measured. #1150 and #1151 do not change the
-  attention or selection values beyond FP32 summation order; the FP16 prompt route (`STRATA_HIP_PROMPT_F16=1`, in
+  attention or selection values beyond FP32 summation order; the FP16 prompt route (`NOSTROMA_HIP_PROMPT_F16=1`, in
   0.1.40 as an opt-in) does, and its distribution check is in
   [bench/results/2026-10-04-rdna2-fp16-prompt](../2026-10-04-rdna2-fp16-prompt/README.md).
 - The 0.1.39 numbers quoted for comparison are from this machine's 2026-10-05 run of the same script (stock `6f32ec0`,

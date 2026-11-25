@@ -1,5 +1,5 @@
 // The 0.2.7 speed features have a switch in Expert settings (the model's "Native engine settings"). "Faster long prompts" (Qwen KVA) is OFF by default (owner
-// decision, 26 October) and STRATA_KVA=1 turns it on; the Radeon RX 9000 one is on by default and turning it off writes its entry.
+// decision, 26 October) and NOSTROMA_KVA=1 turns it on; the Radeon RX 9000 one is on by default and turning it off writes its entry.
 // Back in its default a switch removes its entries, so a default launch carries none of them. nostroma_control/speed_switches.py says the same for the
 // Terminal (tests/terminal/test_speed_switches.py).
 import test from 'node:test';
@@ -12,10 +12,10 @@ import { nativeFixture } from './helpers/native-fixture.mjs';
 
 const read = rel => readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8').replace(/\r\n/g, '\n');
 const ENV = {      // what each switch writes outside its default
-  faster_long_prompts: { STRATA_KVA: '1' },
-  faster_12gb_nvidia: { STRATA_ROUTE_PRIOR: '1.5' },
-  faster_radeon_9000: { STRATA_PCIE_FRAC_DEFAULT: 'old' },
-  picture_reader: { STRATA_VISION_TOWER: 'mtmd' },
+  faster_long_prompts: { NOSTROMA_KVA: '1' },
+  faster_12gb_nvidia: { NOSTROMA_ROUTE_PRIOR: '1.5' },
+  faster_radeon_9000: { NOSTROMA_PCIE_FRAC_DEFAULT: 'old' },
+  picture_reader: { NOSTROMA_VISION_TOWER: 'mtmd' },
 };
 /* The fixture's run configs read pictures ("vision"), so a Qwen model also gets the picture reader row (Image reading); the Speed tests below leave it out. */
 const speed = rows => rows.filter(s => s.id !== 'picture_reader');
@@ -35,11 +35,11 @@ test('there are exactly five switches in the app, the picture reader among them 
 });
 
 test('the Terminal\'s Qwen "0.2.6 behaviour" switch is not in the app', () => {
-  assert.ok(!SPEED_SWITCHES.some(s => s.env.STRATA_DEFAULTS || /0\.2\.6 behaviour/.test(s.label)));
-  assert.ok(!Object.values(SPEED_SWITCHES.flatMap(s => Object.keys(s.env))).includes('STRATA_DEFAULTS'));
+  assert.ok(!SPEED_SWITCHES.some(s => s.env.NOSTROMA_DEFAULTS || /0\.2\.6 behaviour/.test(s.label)));
+  assert.ok(!Object.values(SPEED_SWITCHES.flatMap(s => Object.keys(s.env))).includes('NOSTROMA_DEFAULTS'));
 });
 
-test('Faster answers on 12 GB NVIDIA cards: only for Qwen on a discrete CUDA card of 13 GiB or less; off by default since 0.2.8 (#4402), On writes STRATA_ROUTE_PRIOR=1.5', () => {
+test('Faster answers on 12 GB NVIDIA cards: only for Qwen on a discrete CUDA card of 13 GiB or less; off by default since 0.2.8 (#4402), On writes NOSTROMA_ROUTE_PRIOR=1.5', () => {
   const ids = context => speedSwitchRows({}, context).map(r => r.id);
   assert.deepEqual(ids({ backend: 'cuda', gpus: [RTX3060] }), ['faster_long_prompts', 'faster_12gb_nvidia']);
   assert.deepEqual(ids({ backend: 'cuda', gpus: [{ ...RTX3060, vram_gb: 13 }] }), ['faster_long_prompts', 'faster_12gb_nvidia'], '13 GiB counts');
@@ -56,19 +56,19 @@ test('Faster answers on 12 GB NVIDIA cards: only for Qwen on a discrete CUDA car
   assert.deepEqual(ids({ backend: 'sycl', gpus: [RTX3060] }), [], 'not a CUDA build');
   assert.deepEqual(ids({ backend: 'cuda', gpus: [RTX3060], arch: 'qwen35moe' }), [], 'Qwen3.6-35B-A3B: the routing needs 512 experts');
   assert.deepEqual(ids({ deepseek: true, backend: 'cuda', gpus: [RTX3060] }), [], 'a DeepSeek settings file (no longer run): no switch');
-  // a default launch carries nothing: the engine then runs as 0.2.6 did (STRATA_ROUTE_PRIOR unset = 0)
+  // a default launch carries nothing: the engine then runs as 0.2.6 did (NOSTROMA_ROUTE_PRIOR unset = 0)
   assert.equal(speedSwitchIsOn({}, 'faster_12gb_nvidia'), false);
   assert.equal(speedSwitchRows({}, { backend: 'cuda', gpus: [RTX3060] }).find(r => r.id === 'faster_12gb_nvidia').on, false);
   assert.deepEqual(setSpeedSwitch({ PATH: '/bin' }, 'faster_12gb_nvidia', false), { PATH: '/bin' }, 'Off is the default: it writes nothing');
   // the explicit opt-in the row writes
   const on = setSpeedSwitch({ PATH: '/bin' }, 'faster_12gb_nvidia', true);
-  assert.deepEqual(on, { PATH: '/bin', STRATA_ROUTE_PRIOR: '1.5' });
+  assert.deepEqual(on, { PATH: '/bin', NOSTROMA_ROUTE_PRIOR: '1.5' });
   assert.equal(speedSwitchIsOn(on, 'faster_12gb_nvidia'), true);
   assert.deepEqual(setSpeedSwitch(on, 'faster_12gb_nvidia', false), { PATH: '/bin' }, 'back to Off removes the entry');
-  // the 0.2.7 "Off" wrote STRATA_ROUTE_PRIOR=0: that file is in the default state now, and On replaces it with 1.5
-  assert.equal(speedSwitchIsOn({ STRATA_ROUTE_PRIOR: '0' }, 'faster_12gb_nvidia'), false);
-  assert.deepEqual(setSpeedSwitch({ STRATA_ROUTE_PRIOR: '0' }, 'faster_12gb_nvidia', true), { STRATA_ROUTE_PRIOR: '1.5' });
-  assert.deepEqual(setSpeedSwitch({ STRATA_ROUTE_PRIOR: '0' }, 'faster_12gb_nvidia', false), {}, 'and Off clears it');
+  // the 0.2.7 "Off" wrote NOSTROMA_ROUTE_PRIOR=0: that file is in the default state now, and On replaces it with 1.5
+  assert.equal(speedSwitchIsOn({ NOSTROMA_ROUTE_PRIOR: '0' }, 'faster_12gb_nvidia'), false);
+  assert.deepEqual(setSpeedSwitch({ NOSTROMA_ROUTE_PRIOR: '0' }, 'faster_12gb_nvidia', true), { NOSTROMA_ROUTE_PRIOR: '1.5' });
+  assert.deepEqual(setSpeedSwitch({ NOSTROMA_ROUTE_PRIOR: '0' }, 'faster_12gb_nvidia', false), {}, 'and Off clears it');
   // the words say both sides
   const hint = SPEED_SWITCHES.find(s => s.id === 'faster_12gb_nvidia').hint;
   assert.match(hint, /faster on 12 GB cards/);
@@ -78,26 +78,26 @@ test('Faster answers on 12 GB NVIDIA cards: only for Qwen on a discrete CUDA car
 
 test('a default launch has none of the new environment entries: KVA reads as off, the others as on, and an environment in its default stays as it is', () => {
   for (const sw of SPEED_SWITCHES) assert.equal(speedSwitchIsSet({}, sw.id), false);
-  const env = { PATH: '/native/bin', STRATA_PREFILL: '2' };
+  const env = { PATH: '/native/bin', NOSTROMA_PREFILL: '2' };
   for (const sw of SPEED_SWITCHES) assert.deepEqual(setSpeedSwitch(env, sw.id, sw.default === 'on'), env, 'the default state removes nothing that is not the switch\'s');
   const rows = speedSwitchRows({}, { backend: 'hip', gpus: [R9700] });
   assert.deepEqual(rows.map(r => [r.id, r.on]), [['faster_long_prompts', false], ['faster_radeon_9000', true]]);
   assert.deepEqual(rows.map(r => r.default), ['off', 'on']);
 });
 
-test('Faster long prompts: On writes STRATA_KVA=1, Off removes it, and an earlier test build\'s STRATA_KVA=0 shows as Off', () => {
+test('Faster long prompts: On writes NOSTROMA_KVA=1, Off removes it, and an earlier test build\'s NOSTROMA_KVA=0 shows as Off', () => {
   const env = { PATH: '/native/bin' };
-  assert.deepEqual(setSpeedSwitch(env, 'faster_long_prompts', true), { PATH: '/native/bin', STRATA_KVA: '1' });
-  assert.deepEqual(setSpeedSwitch({ ...env, STRATA_KVA: '1' }, 'faster_long_prompts', false), env);
-  assert.equal(speedSwitchIsOn({ STRATA_KVA: '1' }, 'faster_long_prompts'), true);
-  assert.equal(speedSwitchIsOn({ STRATA_KVA: '0' }, 'faster_long_prompts'), false, 'stored by the off switch of an earlier build: harmless, and Off is what it is now');
+  assert.deepEqual(setSpeedSwitch(env, 'faster_long_prompts', true), { PATH: '/native/bin', NOSTROMA_KVA: '1' });
+  assert.deepEqual(setSpeedSwitch({ ...env, NOSTROMA_KVA: '1' }, 'faster_long_prompts', false), env);
+  assert.equal(speedSwitchIsOn({ NOSTROMA_KVA: '1' }, 'faster_long_prompts'), true);
+  assert.equal(speedSwitchIsOn({ NOSTROMA_KVA: '0' }, 'faster_long_prompts'), false, 'stored by the off switch of an earlier build: harmless, and Off is what it is now');
   assert.equal(speedSwitchIsOn({}, 'faster_long_prompts'), false);
-  assert.deepEqual(setSpeedSwitch({ ...env, STRATA_KVA: '0' }, 'faster_long_prompts', false), env, 'choosing Off again cleans it up');
-  assert.deepEqual(speedSwitchRows({ STRATA_KVA: '0' }, { backend: 'cuda', gpus: [RTX] }).map(r => [r.id, r.on]), [['faster_long_prompts', false]]);
+  assert.deepEqual(setSpeedSwitch({ ...env, NOSTROMA_KVA: '0' }, 'faster_long_prompts', false), env, 'choosing Off again cleans it up');
+  assert.deepEqual(speedSwitchRows({ NOSTROMA_KVA: '0' }, { backend: 'cuda', gpus: [RTX] }).map(r => [r.id, r.on]), [['faster_long_prompts', false]]);
 });
 
 test('each switch outside its default yields exactly its entries and nothing else; back in the default gives back the same environment', () => {
-  const env = { PATH: '/native/bin', STRATA_PREFILL: '2' };
+  const env = { PATH: '/native/bin', NOSTROMA_PREFILL: '2' };
   for (const sw of SPEED_SWITCHES) {
     const other = setSpeedSwitch(env, sw.id, sw.default !== 'on');          // the non-default state: KVA on, the others off
     assert.deepEqual(other, { ...env, ...ENV[sw.id] }, sw.id);
@@ -112,10 +112,10 @@ test('each switch outside its default yields exactly its entries and nothing els
 });
 
 test('a hand-edited file with only some of a switch\'s entries reads as its default and is left alone by an unchanged save', () => {
-  const partial = { STRATA_VISION_TOWER: 'other' };
+  const partial = { NOSTROMA_VISION_TOWER: 'other' };
   assert.equal(speedSwitchIsOn(partial, 'picture_reader'), true);
   assert.deepEqual(setSpeedSwitch(partial, 'faster_long_prompts', false), partial);
-  assert.equal(speedSwitchIsOn({ STRATA_KVA: 'yes' }, 'faster_long_prompts'), false, 'only 1 turns it on');
+  assert.equal(speedSwitchIsOn({ NOSTROMA_KVA: 'yes' }, 'faster_long_prompts'), false, 'only 1 turns it on');
 });
 
 test('a switch shows only where it applies: Qwen on CUDA or HIP, Qwen on a Radeon RX 9000 / R9700; none for a DeepSeek settings file', () => {
@@ -149,8 +149,8 @@ test('the picture reader: offered for a Qwen model that reads pictures, in the I
   assert.ok(!ids({ deepseek: true, backend: 'cuda', gpus: [RTX], vision: true }).includes('picture_reader'), 'a DeepSeek settings file: no switch');
   const sw = SPEED_SWITCHES.find(s => s.id === 'picture_reader');
   assert.deepEqual([sw.group, sw.default, sw.words], ['Image reading', 'on', { on: 'Nostroma\'s own (recommended)', off: 'llama.cpp\'s' }]);
-  assert.deepEqual(setSpeedSwitch({ PATH: '/bin' }, 'picture_reader', false), { PATH: '/bin', STRATA_VISION_TOWER: 'mtmd' });
-  assert.deepEqual(setSpeedSwitch({ PATH: '/bin', STRATA_VISION_TOWER: 'mtmd' }, 'picture_reader', true), { PATH: '/bin' });
+  assert.deepEqual(setSpeedSwitch({ PATH: '/bin' }, 'picture_reader', false), { PATH: '/bin', NOSTROMA_VISION_TOWER: 'mtmd' });
+  assert.deepEqual(setSpeedSwitch({ PATH: '/bin', NOSTROMA_VISION_TOWER: 'mtmd' }, 'picture_reader', true), { PATH: '/bin' });
   const screen = read('../src/components/NativeSettings.tsx');
   assert.match(screen, /options=\{sw\.words \? \[\{ value: sw\.default, label: sw\.words\[sw\.default\] \}/, 'the two option names, the default first');
   assert.match(screen, /\{tr\(switchRows\.filter\(sw => switchGroup\(sw\) === group\)\.map\(switchRow\)\)\}<\/section>/, 'a switch of a field group is shown in that group');
@@ -168,7 +168,7 @@ test('the environment names round-trip through the validator, the public view an
 });
 
 function setConfig(f, model, patch) {
-  const path = join(f.repo, `strata-${model}.json`);
+  const path = join(f.repo, `nostroma-${model}.json`);
   writeFileSync(path, JSON.stringify({ ...JSON.parse(readFileSync(path, 'utf8')), ...patch }));
   return path;
 }
@@ -183,20 +183,20 @@ test('through the host: the settings answer lists the switches that apply, and K
     const first = f.control.settings('iq2_xs');
     assert.deepEqual(speed(first.speedSwitches).map(s => [s.id, s.on]), [['faster_long_prompts', false], ['faster_radeon_9000', true]]);
     assert.deepEqual(speed(first.speedSwitches).map(s => [s.default, s.env]), [['off', ENV.faster_long_prompts], ['on', ENV.faster_radeon_9000]], 'the client writes what the host says');
-    assert.equal('STRATA_KVA' in first.values.env, false, 'default: nothing in the environment');
+    assert.equal('NOSTROMA_KVA' in first.values.env, false, 'default: nothing in the environment');
 
     // the client turns "Faster long prompts" on: it sends the environment with the entry added
     const off = f.control.save('iq2_xs', { values: { env: { ...first.values.env, ...ENV.faster_long_prompts } } });
     const file = JSON.parse(readFileSync(path, 'utf8'));
-    assert.equal(file.env.STRATA_KVA, '1');
+    assert.equal(file.env.NOSTROMA_KVA, '1');
     assert.equal(file.env.PATH, '/native/bin');
-    assert.equal(file.env.STRATA_TOKEN, 'private', 'a credential is kept, not lost behind its mask');
-    assert.equal('STRATA_PCIE_FRAC_DEFAULT' in file.env, false);
+    assert.equal(file.env.NOSTROMA_TOKEN, 'private', 'a credential is kept, not lost behind its mask');
+    assert.equal('NOSTROMA_PCIE_FRAC_DEFAULT' in file.env, false);
     assert.deepEqual(speed(off.speedSwitches).map(s => [s.id, s.on]), [['faster_long_prompts', true], ['faster_radeon_9000', true]]);
 
     // and Off again: the entry is gone and the file is as it was
     const env = { ...off.values.env };
-    delete env.STRATA_KVA;
+    delete env.NOSTROMA_KVA;
     const on = f.control.save('iq2_xs', { values: { env } });
     assert.deepEqual(speed(on.speedSwitches).map(s => s.on), [false, true]);
     const after = JSON.parse(readFileSync(path, 'utf8'));
@@ -217,7 +217,7 @@ test('through the host: Qwen3.6-35B-A3B (its run config has an arch) gets no Fas
   } finally { await f.cleanup(); }
 });
 
-test('through the host: choosing llama.cpp\'s picture reader writes STRATA_VISION_TOWER=mtmd into the model\'s file, and Nostroma\'s own again gives back the same file', async () => {
+test('through the host: choosing llama.cpp\'s picture reader writes NOSTROMA_VISION_TOWER=mtmd into the model\'s file, and Nostroma\'s own again gives back the same file', async () => {
   const f = nativeFixture();
   try {
     f.setHardware({ ram_gb: 64, gpus: [RTX] });
@@ -228,10 +228,10 @@ test('through the host: choosing llama.cpp\'s picture reader writes STRATA_VISIO
     const row = first.speedSwitches.find(s => s.id === 'picture_reader');
     assert.deepEqual([row.on, row.group, row.words.on, row.words.off], [true, 'Image reading', 'Nostroma\'s own (recommended)', 'llama.cpp\'s']);
     const picked = f.control.save('iq2_xs', { values: { env: { ...first.values.env, ...ENV.picture_reader } } });
-    assert.equal(JSON.parse(readFileSync(path, 'utf8')).env.STRATA_VISION_TOWER, 'mtmd');
+    assert.equal(JSON.parse(readFileSync(path, 'utf8')).env.NOSTROMA_VISION_TOWER, 'mtmd');
     assert.equal(picked.speedSwitches.find(s => s.id === 'picture_reader').on, false);
     const env = { ...picked.values.env };
-    delete env.STRATA_VISION_TOWER;
+    delete env.NOSTROMA_VISION_TOWER;
     f.control.save('iq2_xs', { values: { env } });
     assert.deepEqual(JSON.parse(readFileSync(path, 'utf8')), JSON.parse(before));
   } finally { await f.cleanup(); }
@@ -258,7 +258,7 @@ test('the Expert settings show the rows in the existing row layout with an On / 
   const words = [...SPEED_SWITCHES.flatMap(s => [s.label, s.hint, ...Object.values(s.words ?? {})]), 'On (recommended)', 'Off (recommended)'];
   /* The catalogues keep upstream's wording; the host speaks the product's name. Both spellings
      resolve to the same entry (src/lib/i18n.ts), so the words are compared brand-normalised. */
-  const brand = text => text.replace(/Strata/g, 'Nostroma');
+  const brand = text => text.replace(/Nostroma/g, 'Nostroma');
   const english = Object.values(catalog('en')).map(brand);
   const wanted = words.map(brand);
   for (const word of words) assert.ok(english.includes(brand(word)), `English catalog: ${word}`);
@@ -277,7 +277,7 @@ test('the effect texts say what the feature does and what the other choice costs
   for (const sw of SPEED_SWITCHES) {
     assert.ok(sw.words ? sw.hint.includes(`Choose ${sw.words.off}`) : sw.default === 'off' ? /Off by default/.test(sw.hint) : /[Tt]urn off/.test(sw.hint), sw.id);
     assert.ok(sw.hint.length < (sw.id === 'picture_reader' ? 300 : 260), sw.id);   // the picture reader: the owner's approved help line (11-11), 275 characters
-    assert.ok(!/STRATA_|DS4_|env|--/.test(sw.hint), 'no flags or variable names for a non-technical reader');
+    assert.ok(!/NOSTROMA_|DS4_|env|--/.test(sw.hint), 'no flags or variable names for a non-technical reader');
   }
   assert.equal(SPEED_SWITCHES[0].hint, 'Reads very long prompts faster by approximating part of the work. Off by default: answers about long documents can miss or mix up details.');
 });

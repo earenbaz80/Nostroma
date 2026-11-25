@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """msl_text_check.py - are two builds' kernel libraries the same text?
 
-    STRATA_METAL_MSL_DUMP=<dir> strata ...        (any program that compiles kernels through mtl::Context: the engine, a parity binary)
+    NOSTROMA_METAL_MSL_DUMP=<dir> nostroma ...        (any program that compiles kernels through mtl::Context: the engine, a parity binary)
     python3 metal/tools/msl_text_check.py <dumpdir A> <dumpdir B> [--preprocess "clang -E -P -x c++ -nostdinc -undef"] [--air]
 
 The dump holds one NNN.msl per library (the prelude, <metal_stdlib>, ggml-common, then every kernel file: the exact string handed to

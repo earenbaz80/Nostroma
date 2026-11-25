@@ -1,5 +1,5 @@
 {
-  "exe": "/work/stock/build-hip/strata",
+  "exe": "/work/stock/build-hip/nostroma",
   "args": [
     "--pack",
     "/m/packs/iq3_s",
@@ -33,7 +33,7 @@
   ],
   "cwd": "/work/stock",
   "tokenizer": "/m/packs/iq3_s/tokenizer",
-  "model_name": "strata-helper",
+  "model_name": "nostroma-helper",
   "log": "/bench/helper-stock/engine.log",
   "lib_dirs": [
     "/opt/rocm/lib"
@@ -44,6 +44,6 @@
   "gpus_asked": true,
   "env": {
     "HIP_VISIBLE_DEVICES": "1,0",
-    "STRATA_HIP_ADAPT_KERNEL_COPY": "1"
+    "NOSTROMA_HIP_ADAPT_KERNEL_COPY": "1"
   }
 }

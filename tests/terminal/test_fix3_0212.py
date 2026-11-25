@@ -39,7 +39,7 @@ class Base(unittest.TestCase):
             p = mock.patch.object(Catalog, "hardware", lambda self, fresh=False: dict(HW_12, disk_free_gb=500.0))
             p.start()
             self.addCleanup(p.stop)
-        self.tmp = tempfile.TemporaryDirectory(prefix="strata-fix3-")
+        self.tmp = tempfile.TemporaryDirectory(prefix="nostroma-fix3-")
         self.addCleanup(self.tmp.cleanup)
         self.base = Path(self.tmp.name)
 
@@ -254,9 +254,9 @@ class SplitFitCountsFreeMemory(unittest.TestCase):
     def test_a_busy_start_is_quiet_in_auto_and_told_with_on(self):
         busy = [card(0, free=8192), card(1, free=8192)]
         for m, quiet in (("auto", True), ("on", False)):
-            cfg = {"args": ["--native", "/m/x.gguf", "--mtp", "/m/mtp/rt"], "exe": "/e/strata", "split_engine": m}
+            cfg = {"args": ["--native", "/m/x.gguf", "--mtp", "/m/mtp/rt"], "exe": "/e/nostroma", "split_engine": m}
             with mock.patch.object(SE, "scan_model", lambda p: UDQ4):
-                d = SE.apply_to_config(cfg, exe_for_cards=lambda n, cc=None: "/e/strata-split-2", system="linux", probe=lambda i: busy, ram=lambda: (500.0, 400.0))
+                d = SE.apply_to_config(cfg, exe_for_cards=lambda n, cc=None: "/e/nostroma-split-2", system="linux", probe=lambda i: busy, ram=lambda: (500.0, 400.0))
             self.assertEqual((d.use_split, d.quiet), (False, quiet), m)
             self.assertNotIn("split_fallback", cfg, "the run config stays the layer split")
 

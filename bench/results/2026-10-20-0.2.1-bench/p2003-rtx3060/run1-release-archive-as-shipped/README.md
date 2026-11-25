@@ -1,12 +1,12 @@
-# Strata standard benchmark: NVIDIA GeForce RTX 3060
+# Nostroma standard benchmark: NVIDIA GeForce RTX 3060
 
-Protocol `strata-qwen38-thinking-v1-draft.1` (draft), run `20261020T081401Z-f0529433`, started 2026-10-20T08:14:01Z. **Status: nonconforming.**
+Protocol `nostroma-qwen38-thinking-v1-draft.1` (draft), run `20261020T081401Z-f0529433`, started 2026-10-20T08:14:01Z. **Status: nonconforming.**
 
-Written by `strata bench run`. The machine-readable result is [results.json](results.json); every request, its raw usage and timings and the client event offsets are in [outputs.jsonl](outputs.jsonl).
+Written by `nostroma bench run`. The machine-readable result is [results.json](results.json); every request, its raw usage and timings and the client event offsets are in [outputs.jsonl](outputs.jsonl).
 
 This run is not a complete standard result:
 
-- the Strata commit is unknown (not a git checkout and no COMMIT file)
+- the Nostroma commit is unknown (not a git checkout and no COMMIT file)
 
 ## Hardware and software
 
@@ -14,7 +14,7 @@ This run is not a complete standard result:
 - CPU: Intel(R) Core(TM) Ultra 7 265; RAM: 46.2 GiB
 - Storage of the model files: nvme Lexar SSD NM1090 PRO 2TB (nvme)
 - OS: Ubuntu 24.04.5 LTS 7.0.0-38-generic; drivers: gpu-driver 615.71.09; runtime: not measured
-- Strata commit: `not measured`; engine 0.1.46; release build
+- Nostroma commit: `not measured`; engine 0.1.46; release build
 - Background work: none besides sshd
 
 ## Model and configuration

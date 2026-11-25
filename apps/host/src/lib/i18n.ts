@@ -50,8 +50,8 @@ const decode=(text:string)=>text.replace(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos|
    language tests keep their meaning and no translation goes missing: the brand is swapped on the way
    out instead of in 1,850 translated strings. English copy, the key of every string, says the name
    itself. Paths and links keep the upstream name, because they still point at the real folder
-   (~/Documents/Strata/Models) or at the upstream repository. */
-const BRAND=/(?<![\/\\])\bStrata\b(?!\s*[\/\\])/g;
+   (~/Documents/Nostroma/Models) or at the upstream repository. */
+const BRAND=/(?<![\/\\])\bNostroma\b(?!\s*[\/\\])/g;
 const brandName=(text:string)=>text.replace(BRAND,'Nostroma');
 /* English is the key of a string, and the host now says the brand the other way round, so both
    spellings resolve to the same id: "Nostroma engine …" still finds its translation in every

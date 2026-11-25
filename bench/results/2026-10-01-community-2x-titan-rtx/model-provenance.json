@@ -13,6 +13,6 @@
    "sha256_first_64MiB": "55e48098de7a4b66be53aff004c6e067ca1f6a50751eb5ec049d2302d6914bc8"
   }
  ],
- "mtp": "packed from the base checkpoint by setup (tools/mtp_fetch.py, mtp_pack.py) -> Strata-data/mtp/rt",
+ "mtp": "packed from the base checkpoint by setup (tools/mtp_fetch.py, mtp_pack.py) -> Nostroma-data/mtp/rt",
  "pack": "iq_pack.py, every tensor as the GGUF stores it; experts read from the GGUF at start"
 }

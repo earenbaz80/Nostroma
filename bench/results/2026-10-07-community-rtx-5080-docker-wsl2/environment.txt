@@ -8,7 +8,7 @@
 - CPU: AMD Ryzen 9 9950X 16-Core Processor, 16 cores / 32 threads, AVX-512.
 - RAM installed: 64 GB (Windows reports 65,080 MB).
 - RAM visible inside the container: 58,965,274,624 B = 54.9 GiB. This is not Docker Desktop's
-  default: by default it caps the WSL2 VM at 50 % of host RAM (~31 GB), and Strata's setup reads
+  default: by default it caps the WSL2 VM at 50 % of host RAM (~31 GB), and Nostroma's setup reads
   RAM from `/proc/meminfo`, so at 31 GB it silently selected the low-RAM mode for the Coder
   ("the GPU holds ~38 % of IQ1_M's experts, the other ~15 GB stay in RAM"). `%UserProfile%\.wslconfig`
   with `memory=56GB` was added before the measured runs, and setup then chose the normal mode. The
@@ -27,33 +27,33 @@
 ## Container
 
 - Built from the repository's own Dockerfile, **unmodified**:
-  `docker build -t strata --build-arg CUDA_ARCHITECTURES=120 .`
+  `docker build -t nostroma --build-arg CUDA_ARCHITECTURES=120 .`
   (`120` is the RTX 50 architecture; the image keeps the engine inside it, so the container itself
   never compiles.)
 - Base image: `nvidia/cuda:13.0.0-devel-ubuntu24.04@sha256:1e8ac7a54c184a1af8ef2167f28fa98281892a835c981ebcddb1fad04bdd452d`.
 - CUDA 13.0.48 (`nvcc` V13.0.48); GCC 13.3.0 (`Ubuntu 13.3.0-6ubuntu2~24.04`); Python 3.12.3.
-- Strata commit `d5ea7133741e67743c0e886bb426c0ce8d69cf6c` ("Version 0.1.40.3"); engine 0.1.40.3,
+- Nostroma commit `d5ea7133741e67743c0e886bb426c0ce8d69cf6c` ("Version 0.1.40.3"); engine 0.1.40.3,
   `source=local`, CUDA architectures `[120]`, vision compiled for CUDA — see [BUILD.json](BUILD.json).
 - Installed Python packages: [python-packages.txt](python-packages.txt).
 
 ## Launch
 
 Both measured configurations were started the way the image's own entrypoint documents, from the
-same `strata-data` volume, so only `CONTEXT` and `REINSTALL` differ between them:
+same `nostroma-data` volume, so only `CONTEXT` and `REINSTALL` differ between them:
 
 ```bash
-docker run -d --name strata --gpus all --network strata-net \
+docker run -d --name nostroma --gpus all --network nostroma-net \
   -p 127.0.0.1:8080:8080 --ulimit memlock=-1 --stop-timeout 60 \
-  -v strata-data:/data \
+  -v nostroma-data:/data \
   -e FAMILY=coder -e MODEL=IQ1_M -e CONTEXT=131072 -e VISION=cpu -e GPU=0 \
-  strata
+  nostroma
 
 # the second configuration, same volume, settings changed for a model already set up
-docker run -d --name strata --gpus all --network strata-net \
+docker run -d --name nostroma --gpus all --network nostroma-net \
   -p 127.0.0.1:8080:8080 --ulimit memlock=-1 --stop-timeout 60 \
-  -v strata-data:/data \
+  -v nostroma-data:/data \
   -e FAMILY=coder -e MODEL=IQ1_M -e CONTEXT=65536 -e VISION=cpu -e GPU=0 -e REINSTALL=1 \
-  strata
+  nostroma
 ```
 
 The port is published on `127.0.0.1` only, so no API key was configured (`api_key: false` in

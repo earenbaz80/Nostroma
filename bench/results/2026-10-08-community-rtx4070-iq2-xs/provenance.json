@@ -13,16 +13,16 @@
     "cuda_runtime_reported_by_nvidia_smi": "13.1"
   },
   "source": {
-    "repository": "Hcl192088/Strata",
+    "repository": "Hcl192088/Nostroma",
     "commit": "9ec3806058cf32ab27a55e4377daf7cf0d087dec",
     "commit_subject": "docs/fork: C11 cerrada sin adoptar; cola reordenada (C14a-C17, C8, C18)",
     "binary_sha256": "E67EB500C2F43B0E75D3956A17BA71C425830B6D56E2C7C5C7A96559CDEEFA74",
     "binary_bytes": 35676160,
-    "binary_role": "locally built Adrian-derived Strata executable",
+    "binary_role": "locally built Adrian-derived Nostroma executable",
     "exact_source_snapshot_branch": "benchmark-iq2-source-9ec3806",
     "exact_source_tree_sha": "90346cf6af4fb642ff7847327e0f3456ed90799a",
-    "exact_source_url": "https://github.com/Hcl192088/Strata/tree/benchmark-iq2-source-9ec3806",
-    "historical_origin": "AdrianBM96/Strata3060",
+    "exact_source_url": "https://github.com/Hcl192088/Nostroma/tree/benchmark-iq2-source-9ec3806",
+    "historical_origin": "AdrianBM96/Nostroma3060",
     "exact_build_toolchain_identified": false
   },
   "model": {
@@ -198,12 +198,12 @@
       "24"
     ],
     "environment": {
-      "STRATA_FETCH_ADMIT": "0",
-      "STRATA_RESIDENT_HEADROOM_GIB": "3",
-      "STRATA_ADAPT_IF_MISS": "1",
-      "STRATA_EXPERT_FILE_CACHE": "1",
-      "STRATA_PF_FUSED": "1",
-      "STRATA_LOOKAHEAD": "0"
+      "NOSTROMA_FETCH_ADMIT": "0",
+      "NOSTROMA_RESIDENT_HEADROOM_GIB": "3",
+      "NOSTROMA_ADAPT_IF_MISS": "1",
+      "NOSTROMA_EXPERT_FILE_CACHE": "1",
+      "NOSTROMA_PF_FUSED": "1",
+      "NOSTROMA_LOOKAHEAD": "0"
     },
     "output_tokens": 1024,
     "sampling": "greedy as reported by the raw logs; no explicit seed",
@@ -240,7 +240,7 @@
           "output_tokens": 1024,
           "exit_code": 0,
           "residual_processes": 0,
-          "evidence_path": "strata_current_best_phases_20261008/phase3-adaptive-es/E4-S24/run-1-attempt-1"
+          "evidence_path": "nostroma_current_best_phases_20261008/phase3-adaptive-es/E4-S24/run-1-attempt-1"
         },
         {
           "run": 2,
@@ -248,7 +248,7 @@
           "output_tokens": 1024,
           "exit_code": 0,
           "residual_processes": 0,
-          "evidence_path": "strata_current_best_phases_20261008/phase3-adaptive-es/E4-S24/run-2-attempt-1"
+          "evidence_path": "nostroma_current_best_phases_20261008/phase3-adaptive-es/E4-S24/run-2-attempt-1"
         },
         {
           "run": 3,
@@ -256,7 +256,7 @@
           "output_tokens": 1024,
           "exit_code": 0,
           "residual_processes": 0,
-          "evidence_path": "strata_current_best_phases_20261008/phase3-adaptive-es/E4-S24/run-3-attempt-1"
+          "evidence_path": "nostroma_current_best_phases_20261008/phase3-adaptive-es/E4-S24/run-3-attempt-1"
         },
         {
           "run": 4,
@@ -264,7 +264,7 @@
           "output_tokens": 1024,
           "exit_code": 0,
           "residual_processes": 0,
-          "evidence_path": "strata_current_best_phases_20261008/phase3-adaptive-es/E4-S24/run-4-attempt-1"
+          "evidence_path": "nostroma_current_best_phases_20261008/phase3-adaptive-es/E4-S24/run-4-attempt-1"
         },
         {
           "run": 5,
@@ -272,7 +272,7 @@
           "output_tokens": 1024,
           "exit_code": 0,
           "residual_processes": 0,
-          "evidence_path": "strata_current_best_phases_20261008/phase3-adaptive-es/E4-S24/run-5-attempt-1"
+          "evidence_path": "nostroma_current_best_phases_20261008/phase3-adaptive-es/E4-S24/run-5-attempt-1"
         }
       ],
       "n": 5,
@@ -331,7 +331,7 @@
     "reproduction_document": "REPRODUCE.md",
     "independent_method_reproduction_without_original_prompt_or_profile": true,
     "prompt_policy": "original prompt is private; generate a 28,912-token personal input with make_local_prompt.py",
-    "profile_policy": "generate your own expert profile using Strata --expert-profile-save in --serve mode or tools/make_profile.py; original hash kept only for history",
+    "profile_policy": "generate your own expert profile using Nostroma --expert-profile-save in --serve mode or tools/make_profile.py; original hash kept only for history",
     "local_reproducer_supports_prompt_profile_overrides": true,
     "method_vs_exact": "source/build/benchmark method comparable; individual tok/s depends on prompt and learned expert profile"
   }

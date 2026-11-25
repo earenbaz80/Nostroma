@@ -42,7 +42,7 @@ const innerHeight = 800;
 const $ = (id) => (id === "input" ? input : {focus() {}, set value(v) {}, get value() { return ""; }});
 // a credentialed backend: the saved API key and the MCP tools are what a send would use
 async function fetch(path, opts) { calls.push({path: String(path), method: (opts && opts.method) || "GET", auth: !!(opts && opts.headers && opts.headers.Authorization)}); return {ok: true, json: async () => ({})}; }
-const StrataI18n = {lang: "en", setLanguage: async () => {}};
+const NostromaI18n = {lang: "en", setLanguage: async () => {}};
 const store = {get: (_k, d) => d};
 const settings = {chatList: false};
 const urlLang = null;

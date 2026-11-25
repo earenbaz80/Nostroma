@@ -17,7 +17,7 @@ export function TaskEditor({ task, assistant = false, onClose, onSaved }: {
     const valid = !!editor.title.trim() && !!editor.prompt.trim();
     async function action(fn: () => Promise<unknown>) { setPending(true); setError(''); try {
         await fn();
-        window.dispatchEvent(new Event('strata:tasks'));
+        window.dispatchEvent(new Event('nostroma:tasks'));
         onSaved?.();
     }
     catch (e) {

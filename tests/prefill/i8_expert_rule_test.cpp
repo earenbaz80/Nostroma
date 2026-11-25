@@ -1,12 +1,12 @@
-// i8_expert_rule (include/strata/kernels/i8_expert_rule.hpp): when a prompt layer's expert groups take our own int8 kernels (native_expert_i8).
+// i8_expert_rule (include/nostroma/kernels/i8_expert_rule.hpp): when a prompt layer's expert groups take our own int8 kernels (native_expert_i8).
 // Nothing set: the HIP cards gfx1030 / gfx1031 / gfx1032 take them (groups averaging 256 entries or more, the layout and the device allowing it); every
-// other card keeps MMQ.  STRATA_EXPERT_I8=1 asks for them on any card, =0 goes back to the old kernels on the class.  No GPU, no model.
+// other card keeps MMQ.  NOSTROMA_EXPERT_I8=1 asks for them on any card, =0 goes back to the old kernels on the class.  No GPU, no model.
 #include <cstdio>
 #include <initializer_list>
 
-#include "strata/kernels/i8_expert_rule.hpp"
+#include "nostroma/kernels/i8_expert_rule.hpp"
 
-using namespace strata::kernels;
+using namespace nostroma::kernels;
 
 static int failed = 0;
 #define CHECK(x) do { if (!(x)) { std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #x); ++failed; } } while (0)
@@ -108,7 +108,7 @@ int main() {
         CHECK(!i8_layer_takes(-1, false, gcn, 4096, true, true, false));                  // (with MMQ: fused first as well)
         CHECK(i8_layer_takes(-1, false, gcn, 4096, true, false, false) == gfx_arch_is_gfx103x_i8(gcn));
     }
-    // the few-rows route: the limit (STRATA_I8_FEWROWS: not set = the class default, 0 = off, N = N rows per expert)
+    // the few-rows route: the limit (NOSTROMA_I8_FEWROWS: not set = the class default, 0 = off, N = N rows per expert)
     CHECK(i8_fewrows_limit(nullptr, 10) == 10);
     CHECK(i8_fewrows_limit("", 8) == 8);
     CHECK(i8_fewrows_limit("0", 10) == 0);

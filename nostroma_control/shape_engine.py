@@ -1,15 +1,15 @@
 """The engine of one Qwen4 model shape, as its own component (feed member ``shape_engines``), picked by the model.
 
-An engine is compiled for ONE model geometry (``-DSTRATA_GEOMETRY=...``, cmake/strata_geometry.cmake) and refuses a GGUF of another one at load. The Nostroma engine is
+An engine is compiled for ONE model geometry (``-DNOSTROMA_GEOMETRY=...``, cmake/nostroma_geometry.cmake) and refuses a GGUF of another one at load. The Nostroma engine is
 built for Flash-Next. A Qwen4 model of a different shape therefore ships with its own engine package, and that package never replaces the Nostroma engine:
 
-* name: the shape is the compiled geometry's name (``q4_lite``); its component is ``strata-q4-lite``; a feed model of that shape has the family ``qwen4exp_q4_lite``;
+* name: the shape is the compiled geometry's name (``q4_lite``); its component is ``nostroma-q4-lite``; a feed model of that shape has the family ``qwen4exp_q4_lite``;
 * place: ``<components>/shapes/<shape>/engine/<version>-<platform>-<backend>[-<variant>]/``, beside the Nostroma engine's ``<components>/engine/`` and never inside it. The
-  manifest's id is the shape's component (``strata-q4-lite``) and it carries ``"shape"``, so the Nostroma engine's scan never reads it and an older Control (which reads only
-  ``strata-engine``) refuses one that was copied into its engine folder;
+  manifest's id is the shape's component (``nostroma-q4-lite``) and it carries ``"shape"``, so the Nostroma engine's scan never reads it and an older Control (which reads only
+  ``nostroma-engine``) refuses one that was copied into its engine folder;
 * feed: member ``shape_engines`` (the same entry as ``engine``, plus ``shape``). A Control from before this member ignores it, and ignores the models of those shapes too (their
   family is one it does not know);
-* use: the run config of a model of that shape says ``"exe": "component:strata-q4-lite"``. Every start asks ``engine_component.expand``, which resolves it in the shape's folder
+* use: the run config of a model of that shape says ``"exe": "component:nostroma-q4-lite"``. Every start asks ``engine_component.expand``, which resolves it in the shape's folder
   (checks every file's SHA-256 and the signature, as for the Nostroma engine). The Nostroma engine and every model that runs on it are not touched;
 * fetch: setup (the app's Download and the Terminal's launch) fetches the shape's engine through the signed feed when the model is chosen, as it does for DeepSeek's. An explicit
   `nostroma update` brings an installed shape engine up to date. Starting a model never downloads anything.
@@ -28,9 +28,9 @@ from nostroma_control import engine_component as ec
 
 DIR = "shapes"
 FAMILY_PREFIX = "qwen4exp_"
-SHAPE_RE = re.compile(r"[a-z][a-z0-9_]{1,21}[a-z0-9]")                    # q4_lite, q4_mid: the geometry header's name (include/strata/core/geometries/<name>.hpp)
+SHAPE_RE = re.compile(r"[a-z][a-z0-9_]{1,21}[a-z0-9]")                    # q4_lite, q4_mid: the geometry header's name (include/nostroma/core/geometries/<name>.hpp)
 #: component ids that already mean something else; a shape never becomes one of them
-RESERVED = frozenset({"strata-engine", "strata-dsv41", "strata-control", "strata-vision", "strata-device", "strata-terminal", "strata-app", "strata-drafter"})
+RESERVED = frozenset({"nostroma-engine", "nostroma-dsv41", "nostroma-control", "nostroma-vision", "nostroma-device", "nostroma-terminal", "nostroma-app", "nostroma-drafter"})
 #: The reason, inside WORDS["start_failed"]'s "...did not start correctly ({why})", when a shape engine cannot say its shape (owner, 11-09)
 NO_SHAPE_ANSWER = "it does not say which model shape it was built for"
 KEEP_VERSIONS = 2                                                           # the installed shape engine and the one before it
@@ -83,15 +83,15 @@ def valid(shape) -> bool:
 
 
 def component_id(shape: str) -> str:
-    """``q4_lite`` -> ``strata-q4-lite``."""
-    return "strata-" + str(shape).replace("_", "-")
+    """``q4_lite`` -> ``nostroma-q4-lite``."""
+    return "nostroma-" + str(shape).replace("_", "-")
 
 
 def shape_of_component(component: str) -> str | None:
-    """``strata-q4-lite`` -> ``q4_lite``; None for anything that is not a shape's component (``strata-engine`` included)."""
-    if not isinstance(component, str) or not component.startswith("strata-"):
+    """``nostroma-q4-lite`` -> ``q4_lite``; None for anything that is not a shape's component (``nostroma-engine`` included)."""
+    if not isinstance(component, str) or not component.startswith("nostroma-"):
         return None
-    shape = component[len("strata-"):].replace("-", "_")
+    shape = component[len("nostroma-"):].replace("-", "_")
     return shape if valid(shape) and component_id(shape) == component else None
 
 
@@ -109,12 +109,12 @@ def shape_of_family(family) -> str | None:
 
 
 def reference(shape: str) -> str:
-    """The run config's ``exe`` for a model of this shape: ``component:strata-q4-lite``."""
+    """The run config's ``exe`` for a model of this shape: ``component:nostroma-q4-lite``."""
     return ec.REFERENCE_PREFIX + component_id(shape)
 
 
 def exe_name() -> str:
-    return "strata.exe" if os.name == "nt" else "strata"
+    return "nostroma.exe" if os.name == "nt" else "nostroma"
 
 
 # ---------------------------------------------------------------------------------------------- where, what is installed
@@ -194,8 +194,8 @@ def status(components: Path | None = None) -> list[dict]:
 # ---------------------------------------------------------------------------------------------- fetching from the signed feed
 
 def _test_start(exe: Path, timeout: float = 120.0, shape: str | None = None) -> tuple[bool, str]:
-    """The new engine starts: ``strata --version`` runs, loads its libraries and names itself (it needs no graphics card and no model). The package's own folders go on the
-    library path first, as the start path does. With `shape`, ``strata --geometry`` (engine 0.2.13 and later) must name that shape: an engine compiled for another geometry than
+    """The new engine starts: ``nostroma --version`` runs, loads its libraries and names itself (it needs no graphics card and no model). The package's own folders go on the
+    library path first, as the start path does. With `shape`, ``nostroma --geometry`` (engine 0.2.13 and later) must name that shape: an engine compiled for another geometry than
     the signed manifest says is refused here, not at its first load, and so is one that cannot answer the flag (NO_SHAPE_ANSWER, owner 11-09)."""
     import subprocess
     env = dict(os.environ)
@@ -208,7 +208,7 @@ def _test_start(exe: Path, timeout: float = 120.0, shape: str | None = None) -> 
     except (OSError, subprocess.SubprocessError) as exc:
         return False, f"it could not be started ({exc})"
     first = ((done.stdout or "").strip().splitlines() or [""])[0]
-    if done.returncode != 0 or not first.startswith("strata"):
+    if done.returncode != 0 or not first.startswith("nostroma"):
         tail = ((done.stderr or "").strip().splitlines() or [first or f"exit {done.returncode}"])[-1]
         return False, tail[:160]
     if shape:
@@ -219,7 +219,7 @@ def _test_start(exe: Path, timeout: float = 120.0, shape: str | None = None) -> 
 
 
 def check_geometry(exe: Path, shape: str, env: dict | None = None, timeout: float = 60.0) -> tuple[bool, str]:
-    """Does ``strata --geometry`` name `shape`? (True, "") when it does; (False, plain reason) when it names another, or names none: every engine of a model shape is built
+    """Does ``nostroma --geometry`` name `shape`? (True, "") when it does; (False, plain reason) when it names another, or names none: every engine of a model shape is built
     after the flag existed (0.2.13, and the Intel engine since 0.2.14), so one that cannot say its shape is refused (owner, 11-09). The Nostroma engine is never asked."""
     import subprocess
     try:
@@ -227,7 +227,7 @@ def check_geometry(exe: Path, shape: str, env: dict | None = None, timeout: floa
     except (OSError, subprocess.SubprocessError):
         return False, NO_SHAPE_ANSWER
     named = ((done.stdout or "").strip().splitlines() or [""])[0].strip()
-    if done.returncode != 0 or not named or named.startswith("strata") or " " in named:
+    if done.returncode != 0 or not named or named.startswith("nostroma") or " " in named:
         return False, NO_SHAPE_ANSWER                     # an engine that does not know the flag (or answers something else)
     if named != shape:
         return False, f"it was built for a different model shape ({named})"

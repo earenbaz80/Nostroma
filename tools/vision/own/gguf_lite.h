@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-namespace strata_vit {
+namespace nostroma_vit {
 
 enum GgufValueType : uint32_t {
     GV_UINT8 = 0, GV_INT8 = 1, GV_UINT16 = 2, GV_INT16 = 3, GV_UINT32 = 4, GV_INT32 = 5, GV_FLOAT32 = 6, GV_BOOL = 7,
@@ -94,4 +94,4 @@ inline float gguf_bf16_to_f32(uint16_t b) {
     return f;
 }
 
-}  // namespace strata_vit
+}  // namespace nostroma_vit

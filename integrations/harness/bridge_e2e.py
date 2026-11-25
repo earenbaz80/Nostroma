@@ -42,7 +42,7 @@ PROFILE_PATCH = HERE / "profile" / "cordis.patch.yml"
 DEFAULT_DSH = "/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh"
 DEFAULT_PYTHON = REPO.parent / "python311" / "bin" / "python"
 
-WORKSPACE_MARKER = "strata-bridge-e2e"
+WORKSPACE_MARKER = "nostroma-bridge-e2e"
 PROMPT = "Say hello in exactly five words."
 
 
@@ -187,7 +187,7 @@ def main() -> int:
     failure: str | None = None
     session_id = None
 
-    print("strata agent bridge — end to end")
+    print("nostroma agent bridge — end to end")
     print(f"  profile : {PROFILE_PATCH}")
     print(f"  dsh     : {dsh}")
     print(f"  temp    : {tmp}")
@@ -248,9 +248,9 @@ def main() -> int:
         if assistant is None:
             raise BridgeError("the turn completed but committed no assistant message")
         source = ((assistant.get("data") or {}).get("message") or {}).get("source") or {}
-        if source.get("provider") != "strata-local":
+        if source.get("provider") != "nostroma-local":
             raise BridgeError(f"the assistant message names provider {source.get('provider')!r}, "
-                              f"not 'strata-local'")
+                              f"not 'nostroma-local'")
 
         # Independent confirmation that the request actually reached the worker, not just that the
         # session recorded a plausible-looking source.

@@ -10,7 +10,7 @@
 // app.js calls initChats() once, from start().
 "use strict";
 
-const H = StrataHistory;
+const H = NostromaHistory;
 const untitled = () => tr("chat.untitled", "New chat");
 const node = (tag, cls, text) => {
   const n = document.createElement(tag);
@@ -25,7 +25,7 @@ let chats = [], chat = null, chatId = "";
 let sidebarQuery = "", sidebarOpen = true;
 let undoState = null;                // one change, in memory until a new question, another chat or a reload
 let panel = null;                    // the open "Rewind to here" panel or answer editor: {kind, index, el}
-const chatStore = StrataChatStore.createChatStore({
+const chatStore = NostromaChatStore.createChatStore({
   onProblem(kind) {
     toast("warn", tr("store.title", "Chat list not saved"), kind === "memory"
       ? tr("store.memory", "This browser will not keep the chat list. It stays in memory until you close the page.")
@@ -49,7 +49,7 @@ function stillWriting() { toast("warn", tr("busy.stillWriting", "Still writing")
 
 // ------------------------------------------------------------------ the saved-chats list (#1787)
 // Turning the list on: the chat on the screen becomes the first record. Only when the switch is flipped in this visit: on a page
-// load the list is the list, so a fresh chat stays empty and the single chat of before ("strata.chat") is read once, when the
+// load the list is the list, so a fresh chat stays empty and the single chat of before ("nostroma.chat") is read once, when the
 // store is empty.
 async function openChats(fromScreen) {
   await chatStore.start();

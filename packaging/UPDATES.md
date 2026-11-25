@@ -5,7 +5,7 @@ It covers the three updated parts, the feed format, what a PC checks, and the re
 
 Everything that downloads software on a user's PC sits behind one explicit step: `nostroma update` in the Terminal, or
 "Update engine" or "Update Nostroma" in the app's Settings. Starting a model and serving never download anything
-(`STRATA_NO_ACQUIRE` stays on for them; the update step is a separate Control process that is allowed to). Engines are
+(`NOSTROMA_NO_ACQUIRE` stays on for them; the update step is a separate Control process that is allowed to). Engines are
 separate from the app and ship more often. An app-only update downloads no engine bytes, because the Windows and Linux installers are built
 without the engine. An engine update downloads only the package for that PC's GPU.
 **Models and saved tuning presets are never downloaded, replaced or deleted by any update.**
@@ -20,19 +20,19 @@ without the engine. An engine update downloads only the package for that PC's GP
 
 Two separate private keys, both kept by the owner, neither in git, neither the same as Apple/Windows code signing:
 
-* **feed key**: Ed25519, signs `strata-feed.json` and every engine package manifest.
+* **feed key**: Ed25519, signs `nostroma-feed.json` and every engine package manifest.
 * **Tauri updater key**: minisign (what `tauri signer generate` makes), signs the app installers.
 
 <a id="the-feed"></a>
-## The feed (`strata-feed.json` + `strata-feed.json.sig`)
+## The feed (`nostroma-feed.json` + `nostroma-feed.json.sig`)
 
-`strata-feed.json.sig` is `{"alg": "ed25519", "key_id": "<16 hex>", "value": "<base64>"}` over the **exact bytes** of
-`strata-feed.json` (no canonicalisation). The annotated example below illustrates the format; it is not a current signed feed.
+`nostroma-feed.json.sig` is `{"alg": "ed25519", "key_id": "<16 hex>", "value": "<base64>"}` over the **exact bytes** of
+`nostroma-feed.json` (no canonicalisation). The annotated example below illustrates the format; it is not a current signed feed.
 Comments are for this document only; actual feed files must be strict JSON.
 
 ```jsonc
 {
-  "schema_version": 1, "feed": "strata-updates", "channel": "stable",
+  "schema_version": 1, "feed": "nostroma-updates", "channel": "stable",
   "sequence": 12,                           // goes up with every feed; an older one than the last accepted is refused
   "generated_at": "2026-10-20T10:00:00Z", "expires_at": "2027-10-20T10:00:00Z",   // expires_at may be null
   "app": {                                  // exactly Tauri's static updater JSON, plus sha256/size per platform
@@ -40,37 +40,37 @@ Comments are for this document only; actual feed files must be strict JSON.
     "platforms": {"windows-x86_64": {"url": "app/Nostroma-0.2.15-windows-x64-setup.exe", "signature": "<minisign, base64>", "sha256": "...", "size": 71000000}}
   },
   "control": {"version": "0.1.61", "packages": [{"platform": "linux-x86_64", "format": "tar.gz", "url": "control/...tar.gz",
-                                                  "size": 0, "sha256": "...", "installed_bytes": 0, "entry": "strata.py"}]},
+                                                  "size": 0, "sha256": "...", "installed_bytes": 0, "entry": "nostroma.py"}]},
   "engine": {"packages": [{
     "version": "0.1.60", "platform": "linux-x86_64", "backend": "cuda", "variant": "cuda13",
     "archs": ["sm_75", "sm_86", "sm_89", "sm_120", "compute_120"], "min_driver": {"nvidia": "580.65"}, "min_runtime": null,
-    "build_id": "be885026f96a-cuda13.0", "format": "tar.gz", "url": "engine/strata-engine-0.1.60-linux-x86_64-cuda-cuda13.tar.gz",
+    "build_id": "be885026f96a-cuda13.0", "format": "tar.gz", "url": "engine/nostroma-engine-0.1.60-linux-x86_64-cuda-cuda13.tar.gz",
     "size": 505568970,                      // bytes of the archive
     "sha256": "...",                        // of the archive
     "manifest_sha256": "...",               // of the package's engine-component.json (it holds every file's hash)
     "installed_bytes": 840893419, "notes": ""}]},
   "dsv41": {"packages": []}                 // optional: kept frozen for Nostroma 0.2.13 and earlier; this Nostroma does not read it
   "drafters": {"packages": [{               // optional: DFlash2 drafter files Nostroma hosts (one pinned file each, not an archive)
-    "name": "qwen3.8-flash-next-dflash2.strata1.q4_0-selq4.pack", "version": "1", "url": "qwen3.8-flash-next-dflash2.strata1.q4_0-selq4.pack",
+    "name": "qwen3.8-flash-next-dflash2.nostroma1.q4_0-selq4.pack", "version": "1", "url": "qwen3.8-flash-next-dflash2.nostroma1.q4_0-selq4.pack",
     "size": 339694592, "sha256": "4df2e5ab...", "backends": ["metal"], "base": "incoai/Qwen3.8-Flash-Next-DFlash2@a22a1744", "licence": "Apache-2.0"}]}
 }
 ```
 
 The `dsv41` member is kept frozen for Nostroma 0.2.13 and earlier, carried by `feed_tool build-feed --carry-dsv41`.
 
-**A Qwen4 model of another shape (`shape_engines`, optional).** An engine is compiled for one model geometry (`-DSTRATA_GEOMETRY=...`, `cmake/strata_geometry.cmake`) and refuses a GGUF of another one at load. A new-shape Qwen4 therefore ships with its own engine as a
+**A Qwen4 model of another shape (`shape_engines`, optional).** An engine is compiled for one model geometry (`-DNOSTROMA_GEOMETRY=...`, `cmake/nostroma_geometry.cmake`) and refuses a GGUF of another one at load. A new-shape Qwen4 therefore ships with its own engine as a
 separate component, picked by the model, and never in place of the Nostroma engine, so Flash-Next and every other model keep the engine they have (`nostroma_control/shape_engine.py`):
 
 ```jsonc
 "shape_engines": {"packages": [{            // the same entry as "engine" (pack-engine writes it), plus the shape = the geometry's name the engine was compiled for
   "shape": "q4_lite", "version": "0.1.60", "platform": "linux-x86_64", "backend": "cuda", "variant": "cuda13", "archs": ["sm_120"], "min_driver": {"nvidia": "580.65"},
-  "min_runtime": "0.1.58", "build_id": "...", "format": "tar.gz", "url": "strata-q4-lite-0.1.58-linux-x86_64-cuda-cuda13.tar.gz", "size": 0, "sha256": "...", "manifest_sha256": "...", "installed_bytes": 0}]},
+  "min_runtime": "0.1.58", "build_id": "...", "format": "tar.gz", "url": "nostroma-q4-lite-0.1.58-linux-x86_64-cuda-cuda13.tar.gz", "size": 0, "sha256": "...", "manifest_sha256": "...", "installed_bytes": 0}]},
 "models": {"packages": [{"id": "qwen4-lite", "family": "qwen4exp_q4_lite", ...}]}     // the family names the shape: qwen4exp_<shape>
 ```
 
-* Package: `package_engine.py --shape q4_lite ...` (the build made with `-DSTRATA_GEOMETRY=q4_lite`, or `-DSTRATA_GEOMETRY_FILE=` for a header that is not in the tree: use that header's name). The manifest's id is the shape's component (`strata-q4-lite`) and it carries `"shape"`; both are in the signed manifest. `sign-package`, then `pack-engine` (the archive is `strata-q4-lite-<version>-<platform>-<backend>[-<variant>]`, the entry names the shape), one folder of entries, `build-feed --shapes FOLDER`. `build-feed` refuses a model whose family is `qwen4exp_<shape>` when the feed has no engine for that shape; `verify-feed` lists the shape engines. Give the package `--min-runtime` of the Control that knows shape engines.
-* A PC: the model's family (`qwen4exp_q4_lite`) makes setup (the app's Download and the Terminal's launch) fetch the engine of that shape through the signed feed when the model is chosen (resumable download, the archive's SHA-256, the manifest hash the feed names, the package signature, every file's hash, the shape in the manifest, then `nostroma --version` once and `nostroma --geometry`, which must print that shape: an engine compiled for another geometry is refused at install, and so is one that cannot answer the flag ("it does not say which model shape it was built for"; the Intel engine answers it since 0.2.14). Build the engine with `-DSTRATA_GEOMETRY_FILE=` of a header whose label is the shape name: `q4geo_synth.py --from-gguf ... --label q4_lite`), into `<components>/shapes/q4_lite/engine/<version>-<platform>-<backend>/`. The Nostroma engine's folder is not read or written. The model's run config says `"exe": "component:strata-q4-lite"`; every start looks it up there and checks every file. `nostroma update` brings an installed shape engine up to date beside the older one (the newest two are kept) and never installs one by itself. Starting never downloads.
-* Older Controls: they ignore the member (no `engine` entry, no `dsv41` entry), they read only `strata-engine` manifests (a shape package copied into their engine folder is refused: its id is another component), and the model's family is one they do not know, so they list it as "needs a newer Nostroma" and never offer it.
+* Package: `package_engine.py --shape q4_lite ...` (the build made with `-DNOSTROMA_GEOMETRY=q4_lite`, or `-DNOSTROMA_GEOMETRY_FILE=` for a header that is not in the tree: use that header's name). The manifest's id is the shape's component (`nostroma-q4-lite`) and it carries `"shape"`; both are in the signed manifest. `sign-package`, then `pack-engine` (the archive is `nostroma-q4-lite-<version>-<platform>-<backend>[-<variant>]`, the entry names the shape), one folder of entries, `build-feed --shapes FOLDER`. `build-feed` refuses a model whose family is `qwen4exp_<shape>` when the feed has no engine for that shape; `verify-feed` lists the shape engines. Give the package `--min-runtime` of the Control that knows shape engines.
+* A PC: the model's family (`qwen4exp_q4_lite`) makes setup (the app's Download and the Terminal's launch) fetch the engine of that shape through the signed feed when the model is chosen (resumable download, the archive's SHA-256, the manifest hash the feed names, the package signature, every file's hash, the shape in the manifest, then `nostroma --version` once and `nostroma --geometry`, which must print that shape: an engine compiled for another geometry is refused at install, and so is one that cannot answer the flag ("it does not say which model shape it was built for"; the Intel engine answers it since 0.2.14). Build the engine with `-DNOSTROMA_GEOMETRY_FILE=` of a header whose label is the shape name: `q4geo_synth.py --from-gguf ... --label q4_lite`), into `<components>/shapes/q4_lite/engine/<version>-<platform>-<backend>/`. The Nostroma engine's folder is not read or written. The model's run config says `"exe": "component:nostroma-q4-lite"`; every start looks it up there and checks every file. `nostroma update` brings an installed shape engine up to date beside the older one (the newest two are kept) and never installs one by itself. Starting never downloads.
+* Older Controls: they ignore the member (no `engine` entry, no `dsv41` entry), they read only `nostroma-engine` manifests (a shape package copied into their engine folder is refused: its id is another component), and the model's family is one they do not know, so they list it as "needs a newer Nostroma" and never offer it.
 * A Mac does not offer a model of its own shape yet (that install path has no shape step).
 
 The `models` member (optional) is the model list: a new model can ship as a signed feed update, with no Control package. Each entry is one model:
@@ -96,7 +96,7 @@ a bad entry is left out with one log line and the rest of the feed and the other
 the install is the built-in one: the revision and the file pins go where `download` looks them up, the SHA-256 is checked after the download and a wrong file is kept as `.bad`. A `qwen4exp`
 size is one `.gguf` or numbered parts `...-00001-of-0000N.gguf` (up to 9) of one folder; a `qwen35moe` size is one `.gguf`. A model whose family the installed engine does not run is listed as not
 available on this engine and never offered; a family this Control does not know is the same. The last verified feed's list is kept in `<components>/.updates/feed-models.json` (the signed
-feed and its signature, checked again when read), so an offline PC still sees it; a newer feed without the member withdraws the list, an older (replayed) feed is ignored. `STRATA_FEED_MODELS=0`
+feed and its signature, checked again when read), so an offline PC still sees it; a newer feed without the member withdraws the list, an older (replayed) feed is ignored. `NOSTROMA_FEED_MODELS=0`
 turns the whole thing off. Build it with `feed_tool.py model-files FILE... [--repo-dir Q4_K_M]` (sizes and hashes of the real files) and `build-feed --models FOLDER` (the folder holds the
 `<id>.entry.json` files; a malformed one stops the build); `verify-feed` lists the models and exits 3 if Control would drop one. Older Controls (0.2.11 and before) ignore the member.
 
@@ -107,8 +107,8 @@ are pinned in the code too, so the feed can move the file but a feed that lists 
 model keeps the MTP. Make the entry with `feed_tool.py pack-drafter PACK --out RELEASE/drafters --version 1 --backends metal [--url-prefix ""]` (copies the file flat and writes
 `<name>.entry.json`) and pass the folder to `build-feed --drafters RELEASE/drafters`; upload the pack beside the feed in the same release. Older Controls ignore the member.
 
-The member holds two entries (one `pack-drafter` call each, both folders' `.entry.json` files in the same `--drafters` folder): `qwen3.8-flash-next-dflash2.strata1.q4_0-selq4.pack` (339,694,592 bytes) with
-`--backends metal,cuda,hip`, and `qwen3.8-flash-next-dflash2.strata1.q4_0-bf16sel.pack` (522,458,112 bytes, sha256 34ca17fe...) with `--backends sycl` for the Intel Arc engine, which reads only bf16
+The member holds two entries (one `pack-drafter` call each, both folders' `.entry.json` files in the same `--drafters` folder): `qwen3.8-flash-next-dflash2.nostroma1.q4_0-selq4.pack` (339,694,592 bytes) with
+`--backends metal,cuda,hip`, and `qwen3.8-flash-next-dflash2.nostroma1.q4_0-bf16sel.pack` (522,458,112 bytes, sha256 34ca17fe...) with `--backends sycl` for the Intel Arc engine, which reads only bf16
 selector codebooks. Control asks the feed for the file name its table entry (`SET_DEFAULTS`) names and for its own backend, so no platform fetches the other's file.
 
 `url` is relative to the feed's own location (or an absolute `https://` address; a loopback `http://` is allowed so a local test
@@ -117,7 +117,7 @@ For a GitHub release the assets are flat: pack with `--url-prefix ""` and upload
 
 ### What a PC checks, in order
 
-1. the signature of the feed (key ids it trusts: `nostroma_control/update_keys.json`, plus `STRATA_UPDATE_TRUSTED_KEYS` for a test setup, which
+1. the signature of the feed (key ids it trusts: `nostroma_control/update_keys.json`, plus `NOSTROMA_UPDATE_TRUSTED_KEYS` for a test setup, which
    the CLI announces);
 2. `channel`, `expires_at`, and `sequence` not lower than the last accepted feed (the downgrade guard for a replayed old feed);
 3. the engine package that fits **this** PC (`feed.select_engine`): platform, backend (CUDA / HIP / SYCL / Metal as detected),
@@ -131,7 +131,7 @@ For a GitHub release the assets are flat: pack with `--url-prefix ""` and upload
 download (resume, progress) -> SHA-256 of the archive = the feed's -> unpack into `components/.s/<4 hex>/` (short on purpose: Windows paths are limited to 259 characters unless long paths are on; files are written through extended-length paths) (names and links checked,
 total size limited to the feed's `installed_bytes`) -> the manifest is the one the feed names (`manifest_sha256`) and says what the feed says
 -> the manifest's own signature verifies -> every file's hash -> fits this PC -> **test-start from the staging folder through the real start
-path** (isolated owner runtime and profile, `component:strata-engine`, an installed model, one-token probe, stop) -> only then rename
+path** (isolated owner runtime and profile, `component:nostroma-engine`, an installed model, one-token probe, stop) -> only then rename
 into `components/engine/` and re-resolve to make sure a start now picks it. Any failure leaves `engine/` exactly as it was.
 Every older engine is kept until the person deletes it (Settings > Engine, `nostroma components remove`); `state.json` `engine.previous` is the one the last
 switch left. A new engine becomes the one in use and clears any pin. With no model installed yet (first run)
@@ -166,8 +166,8 @@ Exit codes: 0 done or nothing to do, 5 refused (signature, hash, downgrade, no t
 
 On an offline machine, outside any git checkout:
 
-    python packaging/feed_tool.py keygen --out D:\strata-keys          # feed-key.json (SECRET) + feed-key.pub.json
-    npx tauri signer generate -w D:\strata-keys\tauri-updater.key      # asks for a password; prints the public key
+    python packaging/feed_tool.py keygen --out D:\nostroma-keys          # feed-key.json (SECRET) + feed-key.pub.json
+    npx tauri signer generate -w D:\nostroma-keys\tauri-updater.key      # asks for a password; prints the public key
 
 Back both up (a lost feed key means every installed PC needs a build with a new key; a lost Tauri key means the same for the app).
 Then, in git, once, in the commit that ships the first signed release (the release key id is `5d1bc23abbeffd0d`):
@@ -176,7 +176,7 @@ Then, in git, once, in the commit that ships the first signed release (the relea
 * the Tauri public key into `apps/desktop/src-tauri/tauri.conf.json` (`plugins.updater.pubkey`) and into `update_keys.json` as `app_minisign_public`
   (the Terminal verifies the app installer with it).
 
-Only release keys live in `update_keys.json`. A tester or local-test key is never added there: it is passed with `STRATA_UPDATE_TRUSTED_KEYS`
+Only release keys live in `update_keys.json`. A tester or local-test key is never added there: it is passed with `NOSTROMA_UPDATE_TRUSTED_KEYS`
 (a file of extra public keys; `packaging/make_local_feed.py` writes one as `test-trust.json`), so private tester builds keep working
 without their key being part of a release build. A build whose `update_keys.json` is empty (a source checkout from before the keys) refuses every
 feed with "this build trusts no update key".
@@ -212,7 +212,7 @@ All signing happens on the release PC, on the finished files.
     python packaging/feed_tool.py set-app-platform --app-json RELEASE/tauri-latest.json --target windows-x86_64 --version 0.2.15 --archive Nostroma-0.2.15-windows-x64-setup.exe --sig Nostroma-0.2.15-windows-x64-setup.exe.sig --notes "..."
     python packaging/feed_tool.py set-app-platform --app-json RELEASE/tauri-latest.json --target linux-x86_64   --version 0.2.15 --archive Nostroma-0.2.15-linux-x86_64.AppImage --sig Nostroma-0.2.15-linux-x86_64.AppImage.sig
     python packaging/feed_tool.py set-app-platform --app-json RELEASE/tauri-latest.json --target darwin-aarch64 --version 0.2.15 --archive Nostroma.app.tar.gz --sig Nostroma.app.tar.gz.sig
-    python packaging/feed_tool.py build-feed --out RELEASE --sequence N --key <feed-key.json> --engine RELEASE/engine --control RELEASE/control --app-json RELEASE/tauri-latest.json (--carry-dsv41 <the last strata-feed.json> --carry-dsv41-base https://github.com/earenbaz80/Nostroma/releases/download/<DSV41-TAG>/ | --no-dsv41-carry) [--shapes RELEASE/shapes] [--drafters RELEASE/drafters]
+    python packaging/feed_tool.py build-feed --out RELEASE --sequence N --key <feed-key.json> --engine RELEASE/engine --control RELEASE/control --app-json RELEASE/tauri-latest.json (--carry-dsv41 <the last nostroma-feed.json> --carry-dsv41-base https://github.com/earenbaz80/Nostroma/releases/download/<DSV41-TAG>/ | --no-dsv41-carry) [--shapes RELEASE/shapes] [--drafters RELEASE/drafters]
     python packaging/feed_tool.py verify-feed RELEASE --pub <feed-key.pub.json>
 
 `set-app-platform` checks each `.sig` against the public key in `tauri.conf.json`, or `app_minisign_public` from `nostroma_control/update_keys.json` when it names none (`--pubkey` checks against another key), over the exact bytes, so a file signed with another key, or changed after
@@ -236,18 +236,18 @@ The Windows installer and the Linux AppImage need no extra step: their `.sig` fi
 was made (a second `sign-and-notarize.sh` run) makes a new archive: sign and add it again.
 
 `build-feed` also writes `RELEASE/install-manifest.txt`, the file the one-line installers read: one line per Control package,
-`platform version url sha256 size`, taken from the `*.entry.json` files in `RELEASE/control`. The Control package is the Terminal that `install.sh` unpacks (it must hold `bin/strata`).
+`platform version url sha256 size`, taken from the `*.entry.json` files in `RELEASE/control`. The Control package is the Terminal that `install.sh` unpacks (it must hold `bin/nostroma`).
 `install.sh` unpacks with `tar -xzf` and `install.ps1` with `Expand-Archive`, so `windows-x86_64` must be packed with `--format zip` and the other platforms as `tar.gz`;
 `build-feed` leaves a pack in the wrong format out of the manifest and says so. Pack Control for every platform you want the one-line install to cover (`install.sh` knows `linux-x86_64`, `linux-aarch64` and `macos-arm64`, `install.ps1` `windows-x86_64`);
 a platform with no line gets "this release has no Terminal for <platform>". Upload `install.sh` and `install.ps1` from `packaging/` unchanged: their built-in address is the release folder.
 
-**Linux ARM64 (DGX Spark) has its own feed file.** A Control up to 0.1.52 refuses a feed that names a platform it does not know (`the feed's control entry names an unknown platform`), so the `linux-aarch64` entries are not in `strata-feed.json`, which every released client reads. They are in `strata-feed-linux-aarch64.json` (+ `.sig`, same format, same key, its own `sequence`, aarch64 entries only), uploaded to the same release. A Linux ARM64 Terminal reads that file by default, from a folder or a release address (`nostroma_control.feed.feed_name()`); a source that names its own `.json` file is used as given. Until every client skips unknown platforms, each release must publish both files, and the aarch64 file's sequence must never go down.
+**Linux ARM64 (DGX Spark) has its own feed file.** A Control up to 0.1.52 refuses a feed that names a platform it does not know (`the feed's control entry names an unknown platform`), so the `linux-aarch64` entries are not in `nostroma-feed.json`, which every released client reads. They are in `nostroma-feed-linux-aarch64.json` (+ `.sig`, same format, same key, its own `sequence`, aarch64 entries only), uploaded to the same release. A Linux ARM64 Terminal reads that file by default, from a folder or a release address (`nostroma_control.feed.feed_name()`); a source that names its own `.json` file is used as given. Until every client skips unknown platforms, each release must publish both files, and the aarch64 file's sequence must never go down.
 
 The feed is hosted as the files of a GitHub release of `earenbaz80/Nostroma`. The built-in address is
-`https://github.com/earenbaz80/Nostroma/releases/latest/download` (`nostroma_cli/update_cmd.py` `DEFAULT_FEED` adds `/strata-feed.json`; `install.sh`
+`https://github.com/earenbaz80/Nostroma/releases/latest/download` (`nostroma_cli/update_cmd.py` `DEFAULT_FEED` adds `/nostroma-feed.json`; `install.sh`
 and `install.ps1` use the folder). GitHub assets are flat, so build the packages with `--url-prefix ""` and upload every file of the release folder
-as an asset: `strata-feed.json`, `strata-feed.json.sig`, `install-manifest.txt`, `install.sh`, `install.ps1`, the engine and Control archives and the
-app installer and its `.sig` (the feed's app member names it). `STRATA_FEED` (installers) and `--feed` / `STRATA_UPDATE_FEED` (`nostroma update`) override the
+as an asset: `nostroma-feed.json`, `nostroma-feed.json.sig`, `install-manifest.txt`, `install.sh`, `install.ps1`, the engine and Control archives and the
+app installer and its `.sig` (the feed's app member names it). `NOSTROMA_FEED` (installers) and `--feed` / `NOSTROMA_UPDATE_FEED` (`nostroma update`) override the
 address. Nothing in this tree uploads anything.
 
 Publish as a normal release (latest): a pre-release is not found by `latest/download`, so the installers and `nostroma update` would get a 404. The `latest` release must carry every file listed above, so a later hotfix release repeats them all.
@@ -266,7 +266,7 @@ The model list (`models` member) has a gate with a real file, not a mock: `tools
 app's mode (no engine, no pip) against it. It fails when setup raises (`KeyError: 'mmproj'` for a model with no picture reader), fetches the Flash-Next draft
 layer for `drafter: none`, writes a second copy of the experts instead of a RAM budget, or keeps the shipped 48 x 512 expert profile for a model of another shape;
 a second run must change nothing. It runs as `tools/test_feed_model_install_realfile.py` in `python tools/check` (py-tools) when a llama.cpp checkout is
-given (`STRATA_TEST_LLAMA_CPP`, for its gguf-py), and is SKIPPED with that reason otherwise: set the variable wherever the release gate runs. With
+given (`NOSTROMA_TEST_LLAMA_CPP`, for its gguf-py), and is SKIPPED with that reason otherwise: set the variable wherever the release gate runs. With
 `--full --tokenizer-from <real shard> --engine <engine folder built for that shape>` it also starts the engine from the run config and sends one chat request.
 Run it before every release that touches `setup.py`, `nostroma_control/feed_models.py`, `nostroma_control/setup_config.py` or the feed schema, and before a Qwen4 day.
 

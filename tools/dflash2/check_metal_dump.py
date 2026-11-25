@@ -2,7 +2,7 @@
 
     python check_metal_dump.py <dump.bin> <drafter.safetensors> <drafter_config.json>
 
-dump.bin is written by the Metal engine with STRATA_DF2_DUMP=<file> [STRATA_DF2_DUMP_ROUND=n] (metal/src/engine/dflash2.inc): every context row the
+dump.bin is written by the Metal engine with NOSTROMA_DF2_DUMP=<file> [NOSTROMA_DF2_DUMP_ROUND=n] (metal/src/engine/dflash2.inc): every context row the
 drafter was given (positions 0 .. s-1: a prompt short enough that the whole context was fed), the anchor and mask embeddings, and the engine's answer
 of that round (the 8 final normalized rows, the selector's hidden projection, the top-16 per row, the picked tokens and their probabilities, the
 draft head's logits).  The checks:

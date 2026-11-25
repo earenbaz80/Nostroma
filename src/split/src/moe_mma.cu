@@ -10,7 +10,7 @@
 #include <stdexcept>
 #include <string>
 
-#include "qdot.cuh"   // block layouts and codebook tables (strata-quant-common.h)
+#include "qdot.cuh"   // block layouts and codebook tables (nostroma-quant-common.h)
 
 namespace fnx {
 

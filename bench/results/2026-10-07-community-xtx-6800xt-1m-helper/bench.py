@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reproduce one recorded request fixture against an already-running Strata API."""
+"""Reproduce one recorded request fixture against an already-running Nostroma API."""
 import argparse
 import gzip
 import hashlib
@@ -30,8 +30,8 @@ def measure(url, model, prompt, budget, thinking, temperature):
             'top_k': 20 if temperature else 1, 'min_p': 0.0, 'presence_penalty': 0.0, 'seed': 314159,
             'stream': True, 'stream_options': {'include_usage': True}}
     headers = {'Content-Type': 'application/json'}
-    if os.environ.get('STRATA_BENCH_API_KEY'):
-        headers['Authorization'] = 'Bearer ' + os.environ['STRATA_BENCH_API_KEY']
+    if os.environ.get('NOSTROMA_BENCH_API_KEY'):
+        headers['Authorization'] = 'Bearer ' + os.environ['NOSTROMA_BENCH_API_KEY']
     request = urllib.request.Request(url.rstrip('/') + '/v1/chat/completions',
                                      json.dumps(body).encode(), headers)
     start = time.monotonic()

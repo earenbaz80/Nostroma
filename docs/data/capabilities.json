@@ -13,7 +13,7 @@
   {
    "id": "qwen38",
    "name": "Qwen3.8-Flash-Next",
-   "asset_prefix": "strata-engine-",
+   "asset_prefix": "nostroma-engine-",
    "guide": "MODELS.md#qwen38-flash-next",
    "cells": {
     "nvidia_win": {"supported": "yes", "hardware": "", "limits": "", "measured": "[README](../README.md) speed table; [DETAILS.md](DETAILS.md)"},
@@ -28,7 +28,7 @@
   {
    "id": "qwen36",
    "name": "Qwen3.6-35B-A3B",
-   "asset_prefix": "strata-engine-",
+   "asset_prefix": "nostroma-engine-",
    "backends": ["cuda", "hip"],
    "guide": "QWEN36.md",
    "cells": {

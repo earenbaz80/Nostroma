@@ -1,19 +1,19 @@
 // src/kernels/cpu/pool.cpp - P2.S3: the CPU expert pool.  Read pool.hpp first; it explains the protocol.
-#include "strata/kernels/cpu/pool.hpp"
-#include "strata/env.hpp"
-#include "strata/core/progress.hpp"
-#include "strata/platform/aux_cpus.hpp"
-#include "strata/kernels/cpu/expert_layout.hpp"
-#include "strata/kernels/cpu/numa_pool.hpp"
-#include "strata/kernels/cpu/cgroup_cpu.hpp"
+#include "nostroma/kernels/cpu/pool.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/core/progress.hpp"
+#include "nostroma/platform/aux_cpus.hpp"
+#include "nostroma/kernels/cpu/expert_layout.hpp"
+#include "nostroma/kernels/cpu/numa_pool.hpp"
+#include "nostroma/kernels/cpu/cgroup_cpu.hpp"
 
 #include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <chrono>
-#include "strata/platform/cpu_relax.hpp"
+#include "nostroma/platform/cpu_relax.hpp"
 #if defined(_MSC_VER)
-#include <intrin.h>   // __cpuidex, __rdtsc (STRATA_POOL_UMWAIT)
+#include <intrin.h>   // __cpuidex, __rdtsc (NOSTROMA_POOL_UMWAIT)
 #endif
 
 #include <cstdio>
@@ -34,26 +34,26 @@
 #include "pool_affinity_linux.hpp"
 #endif
 
-namespace strata::kernels::cpu {
+namespace nostroma::kernels::cpu {
 
 namespace {
-// STRATA_POOL_UMWAIT=<TSC cycles> (experimental, x86 WAITPKG only): a parked worker waits with UMONITOR/UMWAIT on the
+// NOSTROMA_POOL_UMWAIT=<TSC cycles> (experimental, x86 WAITPKG only): a parked worker waits with UMONITOR/UMWAIT on the
 // epoch's cache line instead of spinning on _mm_pause.  It wakes when the host publishes (a write to that line) or
 // after the cycles, in the light C0.1 state; on a laptop the CPU then gives back the power the spin took, which the
-// GPU's share of the budget gets.  0 or unset (or no WAITPKG): the spin, unchanged.  STRATA_POOL_UMWAIT_C02=1: the
+// GPU's share of the budget gets.  0 or unset (or no WAITPKG): the spin, unchanged.  NOSTROMA_POOL_UMWAIT_C02=1: the
 // deeper C0.2 state (slower wake).  MSVC x64 only for now (the intrinsics need no target flag there); other builds spin.
 uint64_t umwait_cycles() {
     static const uint64_t c = [] {
-        const char* e = strata::env("NOSTROMA_POOL_UMWAIT");
+        const char* e = nostroma::env("NOSTROMA_POOL_UMWAIT");
         if (e == nullptr || std::atoll(e) <= 0) return (uint64_t) 0;
 #if defined(_MSC_VER) && defined(_M_X64) && !defined(__clang__)   // MSVC proper: clang-cl (the Windows HIP build) has no WAITPKG intrinsics by default
         int r[4] = {0, 0, 0, 0};
         __cpuidex(r, 7, 0);
         if (((r[2] >> 5) & 1) == 0) {
-            std::fprintf(stderr, "strata: STRATA_POOL_UMWAIT: this CPU has no WAITPKG, the workers spin\n");
+            std::fprintf(stderr, "nostroma: NOSTROMA_POOL_UMWAIT: this CPU has no WAITPKG, the workers spin\n");
             return (uint64_t) 0;
         }
-        std::fprintf(stderr, "strata: STRATA_POOL_UMWAIT: parked workers wait with UMWAIT (%lld cycles)\n", std::atoll(e));
+        std::fprintf(stderr, "nostroma: NOSTROMA_POOL_UMWAIT: parked workers wait with UMWAIT (%lld cycles)\n", std::atoll(e));
         return (uint64_t) std::atoll(e);
 #else
         return (uint64_t) 0;
@@ -62,13 +62,13 @@ uint64_t umwait_cycles() {
     return c;
 }
 unsigned umwait_state() {
-    static const unsigned s = [] { const char* e = strata::env("NOSTROMA_POOL_UMWAIT_C02"); return e && *e == '1' ? 0u : 1u; }();
+    static const unsigned s = [] { const char* e = nostroma::env("NOSTROMA_POOL_UMWAIT_C02"); return e && *e == '1' ? 0u : 1u; }();
     return s;   // 1 = C0.1 (light), 0 = C0.2
 }
-// STRATA_POOL_UMWAIT_ESC=<TSC cycles> (experimental): an escalating wait - C0.1 for the first cycles of a park, C0.2 after
+// NOSTROMA_POOL_UMWAIT_ESC=<TSC cycles> (experimental): an escalating wait - C0.1 for the first cycles of a park, C0.2 after
 // (a wait that has lasted that long is a GPU phase, a draft or a prompt read, where a slower wake costs little).
 uint64_t umwait_escalate() {
-    static const uint64_t c = [] { const char* e = strata::env("NOSTROMA_POOL_UMWAIT_ESC"); return e ? (uint64_t) (std::max)(0LL, std::atoll(e)) : (uint64_t) 0; }();
+    static const uint64_t c = [] { const char* e = nostroma::env("NOSTROMA_POOL_UMWAIT_ESC"); return e ? (uint64_t) (std::max)(0LL, std::atoll(e)) : (uint64_t) 0; }();
     return c;
 }
 
@@ -575,17 +575,17 @@ bool pin_this_thread(int core, [[maybe_unused]] int worker = -1) {
 #else
     const int error = detail::pin_thread_to_cpu(core);
     if (error != 0)
-        std::fprintf(stderr, "strata cpu pool: affinity for worker %d (CPU %d) failed: %d; previous affinity kept\n",
+        std::fprintf(stderr, "nostroma cpu pool: affinity for worker %d (CPU %d) failed: %d; previous affinity kept\n",
                      worker, core, error);
     return error == 0;
 #endif
 }
 
 #if defined(__linux__)
-// Where the NUMA topology is read from: /sys. STRATA_TEST_SYSFS_ROOT=<dir> reads <dir>/devices/system/{node,cpu} instead,
+// Where the NUMA topology is read from: /sys. NOSTROMA_TEST_SYSFS_ROOT=<dir> reads <dir>/devices/system/{node,cpu} instead,
 // so a test can give the pool a made-up two-node machine (pool_tasks_test); nobody sets it for real.
 std::string sysfs_root() {
-    const char* e = strata::env("NOSTROMA_TEST_SYSFS_ROOT");
+    const char* e = nostroma::env("NOSTROMA_TEST_SYSFS_ROOT");
     return e != nullptr && *e != '\0' ? std::string(e) : std::string("/sys");
 }
 
@@ -621,7 +621,7 @@ NumaSplitDecision decide_real_numa_split([[maybe_unused]] const std::vector<int>
                                          [[maybe_unused]] bool pinned) {
 #if defined(__linux__)
     // the expert source's own reading of it (expert_source.cpp): exactly "1"
-    const char* rotate = strata::env("NOSTROMA_EXCHANGE_ROTATE");
+    const char* rotate = nostroma::env("NOSTROMA_EXCHANGE_ROTATE");
     return decide_numa_split(thread_core, n_workers, pinned, rotate != nullptr && std::strcmp(rotate, "1") == 0, cpu_numa_node);
 #else
     NumaSplitDecision d;
@@ -639,7 +639,7 @@ ThreadAffinity pin_current_thread(int core) {
     ULONG target = 0;
     if (!detail::get_thread_cpu_sets(previous.cpu_sets) || !detail::cpu_set_for_core(core, target) ||
         !SetThreadSelectedCpuSets(GetCurrentThread(), &target, 1)) {
-        std::fprintf(stderr, "strata cpu pool: host CPU Set selection for processor %d failed: %lu; previous placement kept\n",
+        std::fprintf(stderr, "nostroma cpu pool: host CPU Set selection for processor %d failed: %lu; previous placement kept\n",
                      core, (unsigned long) GetLastError());
         return {};
     }
@@ -650,7 +650,7 @@ ThreadAffinity pin_current_thread(int core) {
     int error = detail::get_thread_affinity(previous.mask);
     if (error == 0) error = detail::pin_thread_to_cpu(core);
     if (error != 0) {
-        std::fprintf(stderr, "strata cpu pool: host affinity for CPU %d failed: %d; previous affinity kept\n", core, error);
+        std::fprintf(stderr, "nostroma cpu pool: host affinity for CPU %d failed: %d; previous affinity kept\n", core, error);
         return {};
     }
     previous.valid = true;
@@ -665,12 +665,12 @@ void restore_thread_affinity(const ThreadAffinity& previous) {
     // turning the caller's implicit Windows 11 affinity into an explicit single-group hard mask.
     if (!SetThreadSelectedCpuSets(GetCurrentThread(), previous.cpu_sets.empty() ? nullptr : previous.cpu_sets.data(),
                                  (ULONG) previous.cpu_sets.size()))
-        std::fprintf(stderr, "strata cpu pool: host CPU Set restoration failed: %lu\n",
+        std::fprintf(stderr, "nostroma cpu pool: host CPU Set restoration failed: %lu\n",
                      (unsigned long) GetLastError());
 #else
     const int error = detail::set_thread_affinity(previous.mask);
     if (error != 0)
-        std::fprintf(stderr, "strata cpu pool: host affinity restoration failed: %d\n", error);
+        std::fprintf(stderr, "nostroma cpu pool: host affinity restoration failed: %d\n", error);
 #endif
 }
 
@@ -736,17 +736,17 @@ ExpertPool::ExpertPool(int n_workers, bool pin, bool host_works, PoolAffinity af
     if (tasks < 0 || tasks > kMaxTasks) throw std::invalid_argument("expert pool tasks must be in 0..4096");
     pinned_ = pin;
     layout_ = logical_cpu_layout();   // now, before anything pins the caller (Linux reads the calling thread's allowed CPUs)
-    if (const char* e = strata::env("NOSTROMA_POOL_SPIN_US"))   // a test knob; see kSpinBeforeSleep
+    if (const char* e = nostroma::env("NOSTROMA_POOL_SPIN_US"))   // a test knob; see kSpinBeforeSleep
         spin_before_sleep_ = std::chrono::microseconds((std::max)(0, std::atoi(e)));
-    // STRATA_NUMA_SPLIT, read here for the worker count (the split itself is decided below, once the count is known).
-    // 0.2.2: with 2 or more NUMA nodes and neither variable set the split is tried by itself, and STRATA_NUMA_POOL=0 turns that
+    // NOSTROMA_NUMA_SPLIT, read here for the worker count (the split itself is decided below, once the count is known).
+    // 0.2.2: with 2 or more NUMA nodes and neither variable set the split is tried by itself, and NOSTROMA_NUMA_POOL=0 turns that
     // off (numa_pool.hpp).  One node: pick_numa_pool says Unchanged and nothing below differs from the pool before the split.
-    const char* env = strata::env("NOSTROMA_NUMA_SPLIT");
+    const char* env = nostroma::env("NOSTROMA_NUMA_SPLIT");
     const int numa_nodes = numa_node_count();
-    const NumaPoolPick pool_pick = pick_numa_pool(strata::env("NOSTROMA_NUMA_POOL"), env, numa_nodes);
+    const NumaPoolPick pool_pick = pick_numa_pool(nostroma::env("NOSTROMA_NUMA_POOL"), env, numa_nodes);
     if (!pool_pick.log.empty()) std::fprintf(stderr, "%s\n", pool_pick.log.c_str());
     if (pool_pick.choice == NumaPoolChoice::Off) env = nullptr;
-    bool auto_pool = pool_pick.choice == NumaPoolChoice::Auto;   // the split without STRATA_NUMA_SPLIT: only if it can run
+    bool auto_pool = pool_pick.choice == NumaPoolChoice::Auto;   // the split without NOSTROMA_NUMA_SPLIT: only if it can run
     bool env_off = !auto_pool && (env == nullptr || *env == '\0' || std::strcmp(env, "0") == 0);
     bool env_known = auto_pool || (!env_off && (std::strcmp(env, "1") == 0 || std::strcmp(env, "test") == 0));
     const PoolPlanInput plan_in = pool_plan_input(topo_);
@@ -758,10 +758,10 @@ ExpertPool::ExpertPool(int n_workers, bool pin, bool host_works, PoolAffinity af
         static std::atomic<bool> told{false};   // (a throw-away pool of --pool-affinity measure builds the same list again)
         const bool say = !told.exchange(true);
         if (say)
-            for (const std::string& w : chk.warnings) std::fprintf(stderr, "strata cpu pool: --pool-cores: %s\n", w.c_str());
+            for (const std::string& w : chk.warnings) std::fprintf(stderr, "nostroma cpu pool: --pool-cores: %s\n", w.c_str());
         if (chk.cpus.empty()) {
             if (say)
-                std::fprintf(stderr, "strata cpu pool: --pool-cores: no usable logical processor in the list; the pool uses its "
+                std::fprintf(stderr, "nostroma cpu pool: --pool-cores: no usable logical processor in the list; the pool uses its "
                                      "default placement\n");
         } else {
             topo_.worker_cores = chk.cpus;
@@ -822,7 +822,7 @@ ExpertPool::ExpertPool(int n_workers, bool pin, bool host_works, PoolAffinity af
             topo_ = plain_topo;
             auto_pool = env_known = false;
             env_off = true;
-            std::fprintf(stderr, "strata cpu pool: NUMA pool off: %s (%d NUMA nodes found), the pool runs as before\n",
+            std::fprintf(stderr, "nostroma cpu pool: NUMA pool off: %s (%d NUMA nodes found), the pool runs as before\n",
                          tried.why.c_str(), numa_nodes);
         }
     } else if (env_known) {
@@ -841,15 +841,15 @@ ExpertPool::ExpertPool(int n_workers, bool pin, bool host_works, PoolAffinity af
     for (int i = 0; i < n_; ++i) wstate_[(size_t) i].store(kParked);
     hstate_ms_.store(now_ms());
     g_diag_pool.store(this);
-    strata::core::diag_pool_fn().store(&diag_active_pool);
+    nostroma::core::diag_pool_fn().store(&diag_active_pool);
     split_.resize((size_t) kMaxSplit);
     split_multi_.resize((size_t) kMaxSplitMulti);
-    // STRATA_NUMA_SPLIT: decided here, before any worker starts (a worker counts into its slice's `parked` from its
+    // NOSTROMA_NUMA_SPLIT: decided here, before any worker starts (a worker counts into its slice's `parked` from its
     // first instruction), and never revised.  Unset: the plan stays empty and nothing below runs.
     NumaSplitPlan plan;
     if (!env_off && !env_known) {
-        plan.why = std::string("unknown STRATA_NUMA_SPLIT value '") + env + "' (use 1 or test)";
-        std::fprintf(stderr, "strata cpu pool: NUMA split off: %s\n", plan.why.c_str());
+        plan.why = std::string("unknown NOSTROMA_NUMA_SPLIT value '") + env + "' (use 1 or test)";
+        std::fprintf(stderr, "nostroma cpu pool: NUMA split off: %s\n", plan.why.c_str());
     } else if (env_known) {
         plan.test = !auto_pool && std::strcmp(env, "test") == 0;
         const int threads = n_ + (host_works_ ? 1 : 0);   // thread j < n_: worker j; j == n_: the host
@@ -888,26 +888,26 @@ ExpertPool::ExpertPool(int n_workers, bool pin, bool host_works, PoolAffinity af
             slice_threads_.assign(2, 0);
             for (int k : slice) ++slice_threads_[(size_t) k];
             if (auto_pool)
-                std::fprintf(stderr, "strata cpu pool: NUMA pool on: %d NUMA nodes found, one slice of the pool per node "
-                                     "(STRATA_NUMA_POOL=0 turns it off)\n", numa_nodes);
+                std::fprintf(stderr, "nostroma cpu pool: NUMA pool on: %d NUMA nodes found, one slice of the pool per node "
+                                     "(NOSTROMA_NUMA_POOL=0 turns it off)\n", numa_nodes);
             if (plan.test)
-                std::fprintf(stderr, "strata cpu pool: NUMA split on (test, no real nodes): slice 0 = %d threads, "
+                std::fprintf(stderr, "nostroma cpu pool: NUMA split on (test, no real nodes): slice 0 = %d threads, "
                                      "slice 1 = %d threads\n", slice_threads_[0], slice_threads_[1]);
             else
-                std::fprintf(stderr, "strata cpu pool: NUMA split on: slice 0 = node %d (%d threads), slice 1 = node %d "
+                std::fprintf(stderr, "nostroma cpu pool: NUMA split on: slice 0 = node %d (%d threads), slice 1 = node %d "
                                      "(%d threads)\n", plan.nodes[0], slice_threads_[0], plan.nodes[1], slice_threads_[1]);
         } else {
-            std::fprintf(stderr, "strata cpu pool: NUMA split off: %s\n", plan.why.c_str());
+            std::fprintf(stderr, "nostroma cpu pool: NUMA split off: %s\n", plan.why.c_str());
         }
     }
     if (n_workers > 0) {
         // recommend, never force: a count above what this CPU uses well runs as configured, with a plain warning
-        // (STRATA_NUMA_SPLIT on: workers on the other socket are the point, that case is not warned about)
+        // (NOSTROMA_NUMA_SPLIT on: workers on the other socket are the point, that case is not warned about)
         PoolPlanInput warn_in = plan_in;
         warn_in.span_packages = plan.on;
         static std::atomic<bool> warned{false};
         const std::string why = pool_workers_warning(n_workers, warn_in, plan_pool_workers(warn_in));
-        if (!why.empty() && !warned.exchange(true)) std::fprintf(stderr, "strata cpu pool: warning: %s\n", why.c_str());
+        if (!why.empty() && !warned.exchange(true)) std::fprintf(stderr, "nostroma cpu pool: warning: %s\n", why.c_str());
     }
     g_numa_plan = std::move(plan);
     g_numa_owner = this;
@@ -915,11 +915,11 @@ ExpertPool::ExpertPool(int n_workers, bool pin, bool host_works, PoolAffinity af
     for (int i = 0; i < n_; ++i) {
         const int core = pin ? (i < (int) topo_.worker_cores.size() ? topo_.worker_cores[(size_t) i] : -1) : -1;
         threads_.emplace_back([this, i, core] {
-            strata::platform::name_this_thread("strata-pool", i);
-            strata::aux_cpus::note_owned_thread();   // --aux-cpus never moves a worker
+            nostroma::platform::name_this_thread("nostroma-pool", i);
+            nostroma::aux_cpus::note_owned_thread();   // --aux-cpus never moves a worker
             // a failed pin only costs locality under the split: the worker keeps the slice it was given
             if (!pin_this_thread(core, i) && core >= 0 && numa_n_ > 0)
-                std::fprintf(stderr, "strata cpu pool: NUMA split: worker %d not pinned to CPU %d, its slice's rows may "
+                std::fprintf(stderr, "nostroma cpu pool: NUMA split: worker %d not pinned to CPU %d, its slice's rows may "
                                      "be read remotely\n", i, core);
             worker(i);
         });
@@ -991,7 +991,7 @@ void ExpertPool::worker(int id) {
         while (epoch_.load(std::memory_order_acquire) == seen) {
             if (stop_.load(std::memory_order_relaxed)) return;
 #if defined(_MSC_VER) && defined(_M_X64) && !defined(__clang__)   // MSVC proper: clang-cl (the Windows HIP build) has no WAITPKG intrinsics by default
-            if (um != 0) {   // STRATA_POOL_UMWAIT: wake on the publish's write to epoch_, or after `um` cycles
+            if (um != 0) {   // NOSTROMA_POOL_UMWAIT: wake on the publish's write to epoch_, or after `um` cycles
                 _umonitor((void*) &epoch_);
                 if (epoch_.load(std::memory_order_acquire) != seen) break;
                 const uint64_t now = __rdtsc();
@@ -1001,7 +1001,7 @@ void ExpertPool::worker(int id) {
             } else
 #endif
             {
-                strata_cpu_pause();
+                nostroma_cpu_pause();
                 if ((++spins & 1023u) != 0) continue;
             }
             if (std::chrono::steady_clock::now() - parked_at < spin_before_sleep_) continue;
@@ -1092,7 +1092,7 @@ int ExpertPool::numa_plan_phase(int per, int nb) {
 
 uint32_t ExpertPool::begin_batch(int n) {
     if (n < 0 || n > 0xffff) {
-        std::fprintf(stderr, "strata: expert pool batch of %d jobs is out of range\n", n);
+        std::fprintf(stderr, "nostroma: expert pool batch of %d jobs is out of range\n", n);
         std::abort();
     }
     // Every job of the previous batch has completed (`wait_done`), and a claim of it can no longer succeed, so
@@ -1122,15 +1122,15 @@ void ExpertPool::wait_parked(const char* what) {
     uint32_t spins = 0;
     std::chrono::steady_clock::time_point t0{};
     while (parked_count() != (uint32_t) n_) {
-        strata_cpu_pause();
+        nostroma_cpu_pause();
         if ((++spins & 1023u) != 0) continue;
         const auto now = std::chrono::steady_clock::now();
         if (spins == 1024u) t0 = now;
         else if (now - t0 > kStall) {
-            std::fprintf(stderr, "strata: the CPU expert pool stalled %s (%u of %d workers parked)%s - stopping the engine "
+            std::fprintf(stderr, "nostroma: the CPU expert pool stalled %s (%u of %d workers parked)%s - stopping the engine "
                                  "so the server can start it again (issue #29)\n",
                          what, parked_count(), n_, numa_counters().c_str());
-            strata::core::release_gpu_waits(stderr);   // #267: the GPU may be spinning on this layer's flag
+            nostroma::core::release_gpu_waits(stderr);   // #267: the GPU may be spinning on this layer's flag
             std::fflush(stderr);
             std::abort();
         }
@@ -1149,15 +1149,15 @@ void ExpertPool::wait_done(int n) {
         else
             d = done_.load(std::memory_order_acquire);
         if (d >= (uint32_t) n) return;                                // `>=`: never a wait that an overshoot outlives
-        strata_cpu_pause();
+        nostroma_cpu_pause();
         if ((++spins & 1023u) != 0) continue;
         const auto now = std::chrono::steady_clock::now();
         if (spins == 1024u || d != seen) { t0 = now; seen = d; }     // progress restarts the clock
         else if (now - t0 > kStall) {
-            std::fprintf(stderr, "strata: the CPU expert pool stalled: %u of %d jobs done, %u of %d workers parked%s - "
+            std::fprintf(stderr, "nostroma: the CPU expert pool stalled: %u of %d jobs done, %u of %d workers parked%s - "
                                  "stopping the engine so the server can start it again (issue #29)\n",
                          d, n, parked_count(), n_, numa_counters().c_str());
-            strata::core::release_gpu_waits(stderr);   // #267
+            nostroma::core::release_gpu_waits(stderr);   // #267
             std::fflush(stderr);
             std::abort();
         }
@@ -1167,7 +1167,7 @@ void ExpertPool::wait_done(int n) {
 void ExpertPool::drain(int id, ExpertScratch& scratch, uint32_t epoch) {
     const int s = numa_n_ == 0 ? 0 : id >= 0 ? wslice_[(size_t) id] : hslice_;
     for (;;) {
-        // STRATA_NUMA_SPLIT: a mode-5/6 batch lives on the slice heads, any other on `head_`; the epoch tag makes the
+        // NOSTROMA_NUMA_SPLIT: a mode-5/6 batch lives on the slice heads, any other on `head_`; the epoch tag makes the
         // other family's claim fail, so `mode_` is never read before a claim has succeeded (pool.hpp)
         int ci = numa_n_ > 0 ? claim_slice(epoch, s) : -1;
         const bool sliced = ci >= 0;
@@ -1406,7 +1406,7 @@ void ExpertPool::run(ExpertJob* jobs, int n) {
 
     // ---- **THE HOST DRAINS TOO (R2.2), INSTEAD OF SPINNING ON `done_`.**
     //
-    // The loop below used to be `while (done_ != n) strata_cpu_pause();`.  The host is pinned to core 0 - the core
+    // The loop below used to be `while (done_ != n) nostroma_cpu_pause();`.  The host is pinned to core 0 - the core
     // `physical_cores(true)` deliberately keeps the five workers off - so for the whole drain that core was
     // idle while five cores did six cores' worth of work.  Measured before the change: 33.7 GB/s against
     // 5/6 x 44.14 = 36.8 for five workers and 44.14 for six.
@@ -1444,12 +1444,12 @@ void ExpertPool::run(ExpertJob* jobs, int n) {
     ms_repark_ += std::chrono::duration<double, std::milli>(t_d - t_c).count();
 }
 
-}  // namespace strata::kernels::cpu
+}  // namespace nostroma::kernels::cpu
 
 #if defined(_WIN32)
-// strata/platform/thread_name.hpp: the Windows half lives here, where <windows.h> is already included.  SetThreadDescription
+// nostroma/platform/thread_name.hpp: the Windows half lives here, where <windows.h> is already included.  SetThreadDescription
 // (Windows 10 1607 and later) is looked up, not linked: older SDKs and toolchains lack the import.
-namespace strata::platform {
+namespace nostroma::platform {
 void name_this_thread(const char* base, int index) {
     char name[64];
     if (index >= 0) std::snprintf(name, sizeof name, "%s-%d", base, index);
@@ -1463,5 +1463,5 @@ void name_this_thread(const char* base, int index) {
     wide[i] = L'\0';
     (void) fn(GetCurrentThread(), wide);
 }
-}  // namespace strata::platform
+}  // namespace nostroma::platform
 #endif

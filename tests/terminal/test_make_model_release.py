@@ -20,12 +20,12 @@ import make_model_release as M  # noqa: E402
 import test_qwen4_intake as T  # noqa: E402
 import qwen4_intake as Q  # noqa: E402
 
-PREV = {"strata-engine-0.1.57-linux-x86_64-cuda-cuda13.tar.gz": 720_000_000, "strata-engine-0.1.57-linux-x86_64-sycl.tar.gz": 187_000_000,
-        "strata-engine-0.1.57-windows-x86_64-cuda-cuda13.zip": 900_000_000, "strata-engine-0.1.57-macos-arm64-metal.tar.gz": 150_000_000,
-        "strata-control-0.1.57-linux-x86_64.tar.gz": 99_000_000,
+PREV = {"nostroma-engine-0.1.57-linux-x86_64-cuda-cuda13.tar.gz": 720_000_000, "nostroma-engine-0.1.57-linux-x86_64-sycl.tar.gz": 187_000_000,
+        "nostroma-engine-0.1.57-windows-x86_64-cuda-cuda13.zip": 900_000_000, "nostroma-engine-0.1.57-macos-arm64-metal.tar.gz": 150_000_000,
+        "nostroma-control-0.1.57-linux-x86_64.tar.gz": 99_000_000,
         "Nostroma-0.2.11-windows-x64-setup.exe": 80_000_000, "Nostroma-0.2.11-windows-x64-setup.exe.sig": 400,
         "Nostroma-0.2.11-linux-x86_64.AppImage": 90_000_000, "Nostroma-0.2.11-macos-arm64.dmg": 160_000_000, "Nostroma.app.tar.gz": 70_000_000,
-        "strata-feed.json": 9000, "strata-feed.json.sig": 200, "SHA256SUMS.txt": 5000, "latest.json": 1500, "install.sh": 9000}
+        "nostroma-feed.json": 9000, "nostroma-feed.json.sig": 200, "SHA256SUMS.txt": 5000, "latest.json": 1500, "install.sh": 9000}
 
 
 def make_prev(d: Path) -> Path:
@@ -73,13 +73,13 @@ class Plan(unittest.TestCase):
         p = json.loads(out)
         self.assertEqual(p["case"], "A")
         names = {c["name"] for c in p["changed"]}
-        self.assertFalse(any(n.startswith(("strata-engine-", "strata-dsv41-", "strata-control-")) for n in names))
-        self.assertTrue({"strata-feed.json", "strata-feed.json.sig", "SHA256SUMS.txt"} <= names)
+        self.assertFalse(any(n.startswith(("nostroma-engine-", "nostroma-dsv41-", "nostroma-control-")) for n in names))
+        self.assertTrue({"nostroma-feed.json", "nostroma-feed.json.sig", "SHA256SUMS.txt"} <= names)
         # G12 of the Q4-P8 rehearsal: a feed model needs no app rebuild (the app lists it from the feed), so case A plans no app and no Mac step
         self.assertFalse(names & {"latest.json", "Nostroma-0.2.12-windows-x64-setup.exe"})
         self.assertFalse(any("App text" in s["what"] or "Mac" in s["what"] for s in p["steps"]))
         kept = {k["name"] for k in p["kept"]}
-        self.assertTrue({n for n in PREV if n.startswith(("strata-engine-", "strata-control-", "Nostroma-"))} <= kept)
+        self.assertTrue({n for n in PREV if n.startswith(("nostroma-engine-", "nostroma-control-", "Nostroma-"))} <= kept)
         self.assertFalse(any("Build the Qwen engine" in s["what"] for s in p["steps"]))
         self.assertEqual(p["entry"]["family"], "qwen35moe")
         self.assertEqual(p["entry"]["hf"], {"repo": "x/y", "revision": "abc"})
@@ -99,7 +99,7 @@ class Plan(unittest.TestCase):
             self.assertIn(good, out)
         for stale in ("z440", "p1004", "m1001"):
             self.assertNotIn(stale, out)
-        self.assertIn("STRATA_GEOMETRY_FILE", out)
+        self.assertIn("NOSTROMA_GEOMETRY_FILE", out)
         self.assertIn("--from-gguf", out)
 
     def test_case_b_ships_the_shape_engine_as_its_own_component_and_rebuilds_nothing_else(self):
@@ -107,14 +107,14 @@ class Plan(unittest.TestCase):
         self.assertEqual(code, 0, err)
         p = json.loads(out)
         names = {c["name"] for c in p["changed"]}
-        self.assertIn("strata-q4-lite-0.1.58-linux-x86_64-sycl.tar.gz", names)
-        self.assertIn("strata-q4-lite-0.1.58-windows-x86_64-cuda-cuda13.zip", names)
-        self.assertFalse(any(n.startswith(("strata-engine-", "strata-control-", "strata-dsv41-")) for n in names), "the Nostroma engine and the Controls are not rebuilt")
+        self.assertIn("nostroma-q4-lite-0.1.58-linux-x86_64-sycl.tar.gz", names)
+        self.assertIn("nostroma-q4-lite-0.1.58-windows-x86_64-cuda-cuda13.zip", names)
+        self.assertFalse(any(n.startswith(("nostroma-engine-", "nostroma-control-", "nostroma-dsv41-")) for n in names), "the Nostroma engine and the Controls are not rebuilt")
         self.assertFalse(any("0.1.57" in n for n in names))
         kept = {k["name"] for k in p["kept"]}
-        self.assertTrue({n for n in PREV if n.startswith(("strata-engine-", "strata-control-", "Nostroma-"))} <= kept)
+        self.assertTrue({n for n in PREV if n.startswith(("nostroma-engine-", "nostroma-control-", "Nostroma-"))} <= kept)
         self.assertFalse(any("Controls: pack" in s["what"] or "App text" in s["what"] for s in p["steps"]))
-        self.assertIn("strata-q4-lite-0.1.58-macos-arm64-metal.tar.gz", names)
+        self.assertIn("nostroma-q4-lite-0.1.58-macos-arm64-metal.tar.gz", names)
         self.assertTrue(any("Mac" in s["what"] and s["owner_only"] for s in p["steps"]), "the owner signs the Mac shape engine")
         self.assertTrue(any("--shape q4_lite" in c for s in p["steps"] for c in s["commands"]))
         self.assertTrue(any("--shapes <shape-entries>" in c for s in p["steps"] for c in s["commands"]))

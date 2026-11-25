@@ -1,4 +1,4 @@
-// check_domain.cpp - TEST-ONLY (OWN-5): exhaustive check of strata_noise.hpp over every input Box-Muller can see.
+// check_domain.cpp - TEST-ONLY (OWN-5): exhaustive check of nostroma_noise.hpp over every input Box-Muller can see.
 // x = float(counter) for every 32-bit counter: the integers 0 .. 2^24-1 plus every float from 2^24 to 2^32
 // (83,886,081 values).  From each x: u (log path) and, with x as y, v (sin path).
 //   mode "glibc": compares log_cr / sin_cr / sqrt_cr with glibc's log / sin / sqrt (bit for bit) and the float s and
@@ -19,9 +19,9 @@
 #include <thread>
 #include <vector>
 
-#include "strata_noise.hpp"
+#include "nostroma_noise.hpp"
 
-using namespace strata_noise;
+using namespace nostroma_noise;
 
 static const uint64_t N_INT = 1ull << 24;
 static const uint64_t F_LO = 0x4B800000ull, F_HI = 0x4F800000ull;
@@ -46,7 +46,7 @@ static inline uint64_t fnv(uint64_t h, uint64_t v) {
 }
 
 int main(int argc, char** argv) {
-    std::printf("sin exception table (compiled in): %zu entries\n", strata_noise::sin_exc().keys.size());
+    std::printf("sin exception table (compiled in): %zu entries\n", nostroma_noise::sin_exc().keys.size());
     const std::string mode = argc > 1 ? argv[1] : "hash";
     const int T = argc > 2 ? std::atoi(argv[2]) : (int) std::thread::hardware_concurrency();
     const int CH = 256;                                   // fixed chunking: the hash does not depend on T

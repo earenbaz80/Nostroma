@@ -1,10 +1,10 @@
-#include "strata/core/expert_source.hpp"
-#include "strata/core/foresight_swap.hpp"
-#include "strata/kernels/cpu/expert.hpp"
-#include "strata/kernels/cpu/expert_layout.hpp"
+#include "nostroma/core/expert_source.hpp"
+#include "nostroma/core/foresight_swap.hpp"
+#include "nostroma/kernels/cpu/expert.hpp"
+#include "nostroma/kernels/cpu/expert_layout.hpp"
 
-#if defined(STRATA_NATIVE_EXPERTS)
-#include "strata/kernels/cpu/native_expert.hpp"
+#if defined(NOSTROMA_NATIVE_EXPERTS)
+#include "nostroma/kernels/cpu/native_expert.hpp"
 #include "ggml.h"
 #endif
 
@@ -54,7 +54,7 @@ struct TempDirectory {
 
     explicit TempDirectory(const fs::path& base = fs::temp_directory_path()) {
         const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
-        path = base / ("strata-file-source-test-" + std::to_string(stamp));
+        path = base / ("nostroma-file-source-test-" + std::to_string(stamp));
         fs::create_directories(path);
     }
 
@@ -85,7 +85,7 @@ void create_pack(const fs::path& dir, uint64_t bytes, const std::vector<std::pai
     }
 }
 
-void check_file_size_rejection(strata::core::FileExpertSource& source, const fs::path& dir, int64_t layers,
+void check_file_size_rejection(nostroma::core::FileExpertSource& source, const fs::path& dir, int64_t layers,
                                int64_t experts, uint64_t expected_bytes) {
     std::string err;
     source.close();
@@ -100,7 +100,7 @@ void check_file_size_rejection(strata::core::FileExpertSource& source, const fs:
 }
 
 #if defined(_WIN32)
-void check_mapped_release(strata::core::FileExpertSource& source, int64_t layer, int64_t expert, uint64_t bytes) {
+void check_mapped_release(nostroma::core::FileExpertSource& source, int64_t layer, int64_t expert, uint64_t bytes) {
     const uint8_t* p = source.blob(layer, expert);
     require(p != nullptr, "release fixture has no mapped blob");
     const std::vector<uint8_t> saved(p, p + (size_t) bytes);
@@ -117,7 +117,7 @@ void check_mapped_release(strata::core::FileExpertSource& source, int64_t layer,
                 "QueryWorkingSetEx failed for the release fixture");
         return state.VirtualAttributes.Valid != 0;
     };
-    const char* setting = std::getenv("STRATA_FILE_RELEASE");
+    const char* setting = std::getenv("NOSTROMA_FILE_RELEASE");
     const bool enabled = setting != nullptr && std::strcmp(setting, "1") == 0;
     for (int round = 0; round < 3; ++round) {
         require(std::memcmp(p, saved.data(), saved.size()) == 0, "release changed the mapped expert bytes");
@@ -142,8 +142,8 @@ void check_mapped_release(strata::core::FileExpertSource& source, int64_t layer,
 #endif
 
 void test_canonical_layout() {
-    using namespace strata::core;
-    using namespace strata::kernels::cpu;
+    using namespace nostroma::core;
+    using namespace nostroma::kernels::cpu;
     constexpr int64_t layers = 2;
     constexpr int64_t experts = 3;
     const uint64_t layer_bytes = (uint64_t) experts * BLOB;
@@ -188,10 +188,10 @@ void test_canonical_layout() {
     require(source.release(0, 0) == 0, "a closed file source released pages");
 }
 
-#if defined(STRATA_NATIVE_EXPERTS)
+#if defined(NOSTROMA_NATIVE_EXPERTS)
 void test_native_variable_layout() {
-    using namespace strata::core;
-    using namespace strata::kernels::cpu;
+    using namespace nostroma::core;
+    using namespace nostroma::kernels::cpu;
     constexpr int64_t layers = 2;
     constexpr int64_t experts = 3;
     constexpr int64_t embedding = 2560;
@@ -257,7 +257,7 @@ void test_native_variable_layout() {
 #endif
 
 void test_complement_plan() {
-    using namespace strata::core::detail;
+    using namespace nostroma::core::detail;
     std::vector<uint64_t> offsets;
     uint64_t bytes = 0;
     std::string error;
@@ -279,7 +279,7 @@ void test_complement_plan() {
 }
 
 void test_resident_lend_region() {
-    using namespace strata::core::detail;
+    using namespace nostroma::core::detail;
     // four slots (sizes 5, 3, 3, 5); the experts no slot holds take 10 bytes
     const std::vector<uint64_t> slots{5, 3, 3, 5};
     require(choose_resident_keep_from(slots, 10, 9, 1) == -1, "a base larger than the budget was accepted");
@@ -294,7 +294,7 @@ void test_resident_lend_region() {
 }
 
 void test_split_lend_regions() {
-    using namespace strata::core::detail;
+    using namespace nostroma::core::detail;
     // two layers, three experts; a layer-0 blob is 5 bytes and a layer-1 blob 3.  The plan under
     // construction already holds the (0,1) expert (an expert no cache holds); stage 0's region lends
     // (0,2) and (0,1) from its highest slots, stage 1's lends (1,2), (1,0), (1,1) in that order.
@@ -339,8 +339,8 @@ void test_split_lend_regions() {
 }
 
 void test_resident_exchange() {
-    using namespace strata::core;
-    using namespace strata::core::detail;
+    using namespace nostroma::core;
+    using namespace nostroma::core::detail;
     // 2 layers x 3 experts; the GPU holds (0,1) and (1,2): the compact copy holds the other four
     std::vector<uint64_t> offsets;
     uint64_t bytes = 0;
@@ -371,7 +371,7 @@ void test_resident_exchange() {
 
 // #4051: the wait for the RAM an arena needs (an engine still exiting gives it back a few seconds late)
 void test_wait_for_ram() {
-    using namespace strata::core::detail;
+    using namespace nostroma::core::detail;
     constexpr uint64_t GiB = 1ull << 30;
     double waited = -1.0;
     uint64_t avail = 0;
@@ -403,7 +403,7 @@ void test_wait_for_ram() {
 
 // #1250: when the page-locked complement is registered in steps, and what a meminfo reading says
 void test_pin_pacing() {
-    using namespace strata::core::detail;
+    using namespace nostroma::core::detail;
     constexpr uint64_t GiB = 1ull << 30;
     // the reporter's reading: 54 GiB available but 16 GiB really free for a 26 GiB complement
     require(pin_depends_on_reclaim(16 * GiB, 26 * GiB, 4 * GiB), "a complement bigger than the free pages was not flagged");
@@ -426,14 +426,14 @@ void test_pin_pacing() {
     require(pin_depends_on_reclaim(numa_pin_free(90 * GiB, {88 * GiB, 2 * GiB}), 26 * GiB, 4 * GiB),
             "an unbalanced two-node host was not paced");
     require(page_cache_hint(info).find("drop_caches") != std::string::npos &&
-            page_cache_hint(info).find("STRATA_DROP_CACHE_ON_EXIT") != std::string::npos &&
+            page_cache_hint(info).find("NOSTROMA_DROP_CACHE_ON_EXIT") != std::string::npos &&
             page_cache_hint(info).find("52.0 GiB") != std::string::npos, "the cache hint is incomplete");
     require(page_cache_hint("MemFree: 100 kB\nCached: 1000 kB\n").empty(), "a small cache was reported");
 }
 
 // NUMA split: per-slice byte ranges of one complement slot (page rule: a page holding a slice-0 byte is slice 0's)
 void test_numa_slice_ranges() {
-    using strata::core::detail::numa_slice_ranges;
+    using nostroma::core::detail::numa_slice_ranges;
     constexpr uint64_t P = 4096;
     const uint64_t roles[3] = {870400, 870400, 921600};
     const uint64_t slot_bytes = roles[0] + roles[1] + roles[2];
@@ -477,7 +477,7 @@ void test_numa_slice_ranges() {
 }
 
 void test_resident_memory_budget() {
-    using strata::core::detail::clamp_resident_budget;
+    using nostroma::core::detail::clamp_resident_budget;
     constexpr uint64_t GiB = 1ull << 30, margin = 256ull << 20, headroom = 4 * GiB;
     constexpr uint64_t unlimited = std::numeric_limits<uint64_t>::max();
     // #730: RAM can hold the requested cache, but Windows cannot commit it.
@@ -506,7 +506,7 @@ void test_resident_memory_budget() {
 }
 
 void test_cgroup_memory_budget() {
-    using namespace strata::core::detail;
+    using namespace nostroma::core::detail;
     constexpr uint64_t GiB = 1ull << 30;
     uint64_t bytes = 0;
 
@@ -577,8 +577,8 @@ void set_env(const char* name, const char* value) {
 // never falls back to the mapping.  The pack lives in the working directory, not the temp directory: a tmpfs /tmp has
 // no O_DIRECT, and there the test says so and skips.
 void test_unbuffered_reads() {
-    using namespace strata::core;
-    using namespace strata::kernels::cpu;
+    using namespace nostroma::core;
+    using namespace nostroma::kernels::cpu;
     constexpr int64_t layers = 2;
     constexpr int64_t experts = 3;
     const uint64_t layer_bytes = (uint64_t) experts * BLOB;
@@ -599,10 +599,10 @@ void test_unbuffered_reads() {
     }
     FileExpertSource source;
     require(source.open(dir.path.string(), layers, experts, err), "could not map the synthetic pack: " + err);
-    set_env("STRATA_UNBUFFERED_LOAD", "1");
+    set_env("NOSTROMA_UNBUFFERED_LOAD", "1");
     std::string why;
     const bool unbuffered = source.set_unbuffered(0, why);
-    set_env("STRATA_UNBUFFERED_LOAD", nullptr);
+    set_env("NOSTROMA_UNBUFFERED_LOAD", nullptr);
 #if defined(_WIN32) || defined(__linux__)
     if (!unbuffered) {
         std::cout << "file_expert_source_test: unbuffered reads skipped (" << why << ")\n";
@@ -636,7 +636,7 @@ void test_unbuffered_reads() {
 // #633: the host RAM probe with fake /proc and cgroup trees: v2 (a limit, "max", a missing or malformed limit), v1
 // (a limit, unlimited), and no cgroup line at all.  Elsewhere than Linux it reads the machine's RAM.
 void test_host_memory() {
-    using namespace strata::core::detail;
+    using namespace nostroma::core::detail;
     constexpr uint64_t GiB = 1ull << 30;
     HostMemory m;
 #if defined(__linux__)
@@ -676,9 +676,9 @@ void test_host_memory() {
                               std::to_string(2 * GiB) + "\nfile_dirty 0\nfile_writeback 0\n");
     put("fs/box/memory.current", std::to_string(19 * GiB) + "\n");
     require(probe("0::/box\n") && m.available == 41 * GiB - 48 * GiB / 64, "container: shmem and locked pages are not credited");
-    set_env("STRATA_MEM_CREDIT_INACTIVE", "1");
-    require(probe("0::/box\n") && m.available == 44 * GiB - 48 * GiB / 64, "STRATA_MEM_CREDIT_INACTIVE=1: the earlier file credit");
-    set_env("STRATA_MEM_CREDIT_INACTIVE", nullptr);
+    set_env("NOSTROMA_MEM_CREDIT_INACTIVE", "1");
+    require(probe("0::/box\n") && m.available == 44 * GiB - 48 * GiB / 64, "NOSTROMA_MEM_CREDIT_INACTIVE=1: the earlier file credit");
+    set_env("NOSTROMA_MEM_CREDIT_INACTIVE", nullptr);
     put("meminfo", "MemTotal: 41943040 kB\nMemAvailable: 104857600 kB\n");   // 40 GiB: the 48 GiB limit is not a container's
     require(probe("0::/box\n") && m.available == 44 * GiB - 48 * GiB / 64, "a limit above MemTotal: the earlier file credit");
     put("meminfo", "MemTotal: 134217728 kB\nMemAvailable: 104857600 kB\n");
@@ -712,11 +712,11 @@ void test_host_memory() {
 #endif
 }
 
-// STRATA_IO_PREFETCH: the experts.bin file tier hands out the same bytes with the Linux I/O path on (whole-blob
+// NOSTROMA_IO_PREFETCH: the experts.bin file tier hands out the same bytes with the Linux I/O path on (whole-blob
 // preads, the read-ahead workers, the mapping for cached blobs), however the reads and the predictions interleave.
 void test_io_prefetch() {
-    using namespace strata::core;
-    using namespace strata::kernels::cpu;
+    using namespace nostroma::core;
+    using namespace nostroma::kernels::cpu;
     constexpr int64_t layers = 3;
     constexpr int64_t experts = 8;
     const uint64_t layer_bytes = (uint64_t) experts * BLOB;
@@ -774,12 +774,12 @@ void test_io_prefetch() {
 }
 
 void test_rotating_source(bool rotate, bool pin) {
-    using namespace strata::core;
-    using namespace strata::kernels::cpu;
+    using namespace nostroma::core;
+    using namespace nostroma::kernels::cpu;
 #if defined(_WIN32)
-    _putenv_s("STRATA_EXCHANGE_ROTATE", rotate ? "1" : "0");
+    _putenv_s("NOSTROMA_EXCHANGE_ROTATE", rotate ? "1" : "0");
 #else
-    setenv("STRATA_EXCHANGE_ROTATE", rotate ? "1" : "0", 1);
+    setenv("NOSTROMA_EXCHANGE_ROTATE", rotate ? "1" : "0", 1);
 #endif
     TempDirectory dir;
     std::string err;
@@ -864,12 +864,12 @@ void test_rotating_source(bool rotate, bool pin) {
 // experts an exchange moves get no copy between commit_copies and commit_flip; and a dropped slot that a window may
 // still read waits `depth` finished windows before it is refilled.
 void test_foresight_exchange(bool two_phase) {
-    using namespace strata::core;
-    using namespace strata::kernels::cpu;
+    using namespace nostroma::core;
+    using namespace nostroma::kernels::cpu;
 #if defined(_WIN32)
-    _putenv_s("STRATA_EXCHANGE_ROTATE", "0");
+    _putenv_s("NOSTROMA_EXCHANGE_ROTATE", "0");
 #else
-    setenv("STRATA_EXCHANGE_ROTATE", "0", 1);
+    setenv("NOSTROMA_EXCHANGE_ROTATE", "0", 1);
 #endif
     TempDirectory dir;
     std::string err;
@@ -951,14 +951,14 @@ void test_foresight_exchange(bool two_phase) {
     src.close();
 }
 
-// STRATA_RAM_ADAPT: an expert read from the file takes the RAM place of another of its layer.
+// NOSTROMA_RAM_ADAPT: an expert read from the file takes the RAM place of another of its layer.
 void test_replace_resident(bool pin) {
-    using namespace strata::core;
-    using namespace strata::kernels::cpu;
+    using namespace nostroma::core;
+    using namespace nostroma::kernels::cpu;
 #if defined(_WIN32)
-    _putenv_s("STRATA_EXCHANGE_ROTATE", "0");
+    _putenv_s("NOSTROMA_EXCHANGE_ROTATE", "0");
 #else
-    setenv("STRATA_EXCHANGE_ROTATE", "0", 1);
+    setenv("NOSTROMA_EXCHANGE_ROTATE", "0", 1);
 #endif
     TempDirectory dir;
     std::string err;
@@ -1030,9 +1030,9 @@ void test_replace_resident(bool pin) {
     require(!src.replace_resident_staged(0, 4, 3) && src.has_resident(0, 3) && src.ram_adapts() == 2,
             "an unstaged expert moved");
     std::string why;
-    set_env("STRATA_UNBUFFERED_LOAD", "1");
+    set_env("NOSTROMA_UNBUFFERED_LOAD", "1");
     const bool unbuffered = src.set_unbuffered(0, why);
-    set_env("STRATA_UNBUFFERED_LOAD", nullptr);
+    set_env("NOSTROMA_UNBUFFERED_LOAD", nullptr);
     if (unbuffered && src.stages_blobs()) {
         require(!src.replace_resident_staged(0, 4, 3) && holds(3), "moved before any demand read");
         require(!src.has_resident(0, 4) && holds(4), "demand read wrong");   // leaves 4 in a stage buffer
@@ -1068,7 +1068,7 @@ int main(int argc, char** argv) {
         test_canonical_layout();
         test_unbuffered_reads();
         test_io_prefetch();
-#if defined(STRATA_NATIVE_EXPERTS)
+#if defined(NOSTROMA_NATIVE_EXPERTS)
         test_native_variable_layout();
 #endif
         if (argc == 2 && std::string(argv[1]) == "--rotation-gpu") {

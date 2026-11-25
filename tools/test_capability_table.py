@@ -42,18 +42,18 @@ class CapabilityTable(unittest.TestCase):
 
     def test_the_version_line_names_carried_packages(self):
         rel = {"product_version": "0.2.14", "control_version": "0.1.60", "engine_version": "0.1.60",
-               "assets": ["strata-engine-0.1.60-linux-x86_64-cuda-cuda13.tar.gz", "strata-engine-0.1.59-linux-x86_64-sycl.tar.gz",
-                          "strata-control-0.1.60-windows-x86_64.zip", "strata-control-0.1.59-linux-aarch64.tar.gz",
-                          "strata-dsv41-0.1.59-macos-arm64-metal.tar.gz", "Strata-0.2.14-macos-arm64.dmg"]}
+               "assets": ["nostroma-engine-0.1.60-linux-x86_64-cuda-cuda13.tar.gz", "nostroma-engine-0.1.59-linux-x86_64-sycl.tar.gz",
+                          "nostroma-control-0.1.60-windows-x86_64.zip", "nostroma-control-0.1.59-linux-aarch64.tar.gz",
+                          "nostroma-dsv41-0.1.59-macos-arm64-metal.tar.gz", "Nostroma-0.2.14-macos-arm64.dmg"]}
         self.assertEqual(ct.versions_line(rel), "App and Terminal 0.2.14, Control and engines 0.1.60; these packages stay at 0.1.59: "
                          "Control linux-aarch64; DeepSeek engines macos-arm64-metal; engines linux-x86_64-sycl. "
                          "App, Control and engine versions differ on purpose.")
         hotfix = {"product_version": "0.2.13", "control_version": "0.1.59.1", "engine_version": "0.1.59",
-                  "assets": ["strata-control-0.1.59.1-linux-x86_64.tar.gz", "strata-engine-0.1.59-linux-x86_64-sycl.tar.gz"]}
+                  "assets": ["nostroma-control-0.1.59.1-linux-x86_64.tar.gz", "nostroma-engine-0.1.59-linux-x86_64-sycl.tar.gz"]}
         self.assertEqual(ct.versions_line(hotfix), "App and Terminal 0.2.13, Control and engines 0.1.59. "
                          "App, Control and engine versions differ on purpose.")
         carried = {"product_version": "0.2.15", "control_version": "0.1.61", "engine_version": "0.1.60",
-                   "assets": ["strata-control-0.1.61-linux-x86_64.tar.gz", "strata-engine-0.1.60-linux-x86_64-cuda-cuda13.tar.gz"]}
+                   "assets": ["nostroma-control-0.1.61-linux-x86_64.tar.gz", "nostroma-engine-0.1.60-linux-x86_64-cuda-cuda13.tar.gz"]}
         self.assertEqual(ct.versions_line(carried), "App and Terminal 0.2.15, Control 0.1.61, engines 0.1.60. "
                          "App, Control and engine versions differ on purpose.")
 

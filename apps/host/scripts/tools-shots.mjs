@@ -2,7 +2,7 @@
  * Settings -> Tools screenshots from the real UI. The host's /api/agent/tools answer is replaced by a fixture (page.route) so every state can be
  * shown without a model or a Harness.
  *
- *   STRATA_URL=http://127.0.0.1:8899 SHOTS=./tools-shots node scripts/tools-shots.mjs
+ *   NOSTROMA_URL=http://127.0.0.1:8899 SHOTS=./tools-shots node scripts/tools-shots.mjs
  */
 import { chromium } from 'playwright-core';
 import { existsSync, mkdirSync } from 'node:fs';
@@ -10,7 +10,7 @@ import { join, resolve } from 'node:path';
 import { envVar } from '../server/env-compat.mjs';
 
 const BASE = envVar('URL');
-if (!BASE) { console.error('STRATA_URL is required'); process.exit(2); }
+if (!BASE) { console.error('NOSTROMA_URL is required'); process.exit(2); }
 const SHOTS = resolve(process.env.SHOTS ?? 'tools-shots');
 mkdirSync(SHOTS, { recursive: true });
 const CHROME = process.env.CHROME ?? ['C:/Program Files/Google/Chrome/Application/chrome.exe', '/usr/bin/google-chrome'].find(existsSync);

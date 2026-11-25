@@ -3,7 +3,7 @@
 Measured on 2026-10-04 by [zimuhuan-code](https://github.com/zimuhuan-code), on the same headless
 server as the speed report in this folder, with the same model, quantisation and pack.
 
-⚠️ **These runs are on Strata `6f32ec0` (v0.1.39)**, not on the `db4f91a` (v0.1.37) build the speed
+⚠️ **These runs are on Nostroma `6f32ec0` (v0.1.39)**, not on the `db4f91a` (v0.1.37) build the speed
 table in that report was measured with — the engine was upgraded afterwards, so the two are kept
 in separate files rather than merged into one table.
 
@@ -21,15 +21,15 @@ single run** — see the limitations for what that does and does not support.
 Identical to the report in this folder (2× RTX 3060 12 GB, driver 595.84, Xeon E5-2678 v3,
 121.5 GiB RAM, headless Linux). What differs:
 
-- **Strata commit `6f32ec0` (v0.1.39)**, source build. Build options: `CXX=/usr/bin/g++-14`,
-  `CUDAHOSTCXX=/usr/bin/g++-14`, `STRATA_NVCC=/usr/local/cuda-12.8/bin/nvcc`
+- **Nostroma commit `6f32ec0` (v0.1.39)**, source build. Build options: `CXX=/usr/bin/g++-14`,
+  `CUDAHOSTCXX=/usr/bin/g++-14`, `NOSTROMA_NVCC=/usr/local/cuda-12.8/bin/nvcc`
   (0.1.39 honours that switch natively; on this machine's glibc, CUDA 12.9 headers do not compile).
 - Model, quantisation and pack are unchanged from the speed report.
 
 ## Model and configuration
 
 ```text
-strata --serve --pack /…/strata/packs/iq3_s --native /…/IQ3_S/…-00001-of-00002.gguf \
+nostroma --serve --pack /…/nostroma/packs/iq3_s --native /…/IQ3_S/…-00001-of-00002.gguf \
   --ple-gguf /…/IQ3_S/…-00002-of-00002.gguf --expert-profile /…/data/expert-profile.bin \
   --expert-cache auto --prefill auto --spec 4 --spec-min-p 0.5 --mtp /…/mtp/rt \
   --max-context 524288 --rope-scaling yarn --rope-scale 2 --kv int8 --kv-resident 32768 \
@@ -81,8 +81,8 @@ Why not simply switch on the config's `fit_max_tokens` (which the 400 text offer
 clamps `max_tokens` to whatever room is left — at a 524,392-token prompt the room is zero — whereas
 the question needs a short but non-empty answer, so the prompt itself had to shrink.
 
-Scripts published here read the endpoint and API key from environment variables (`STRATA_URL`,
-`STRATA_KEY`), and the captured JSON has the host name, the host address and local paths shortened.
+Scripts published here read the endpoint and API key from environment variables (`NOSTROMA_URL`,
+`NOSTROMA_KEY`), and the captured JSON has the host name, the host address and local paths shortened.
 
 ## Results
 

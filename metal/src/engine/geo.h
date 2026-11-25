@@ -1,5 +1,5 @@
-// metal/src/engine/geo.h - the shape the Metal engine is compiled for, from strata::core::kCompiledGeometry (cmake -DSTRATA_GEOMETRY /
-// -DSTRATA_GEOMETRY_FILE, include/strata/core/geometry.hpp), and the #define prelude that hands it to the kernels.
+// metal/src/engine/geo.h - the shape the Metal engine is compiled for, from nostroma::core::kCompiledGeometry (cmake -DNOSTROMA_GEOMETRY /
+// -DNOSTROMA_GEOMETRY_FILE, include/nostroma/core/geometry.hpp), and the #define prelude that hands it to the kernels.
 //
 // Host side: window.cpp, prompt_chain.inc and stream.cpp take their sizes from here instead of from literals (hidden 2560, 640 wide
 // experts, 48 layers, 24 query heads, ...).  For Flash-Next's header every value below is the number it replaced.
@@ -10,13 +10,13 @@
 // the GDN) or a held-fixed constant of the family (state 128, head width 256, 4 hyper-connection streams, indexer 4 x 128).
 #pragma once
 
-#include "strata/core/geometry.hpp"
+#include "nostroma/core/geometry.hpp"
 
 #include <string>
 
-namespace strata_metal::geo {
+namespace nostroma_metal::geo {
 
-inline constexpr const strata::core::ModelGeometry& G = strata::core::kCompiledGeometry;
+inline constexpr const nostroma::core::ModelGeometry& G = nostroma::core::kCompiledGeometry;
 
 inline constexpr int N = (int) G.n_embd;             // hidden
 inline constexpr int HC = (int) G.hc;                // hyper-connection streams (4)
@@ -58,7 +58,7 @@ inline constexpr int GDN_FUSED = CONV + ZV + 2 * HV; // the four GDN input proje
 
 // the kernels' defaults are Flash-Next's: a macro is defined only for what this build changes
 inline std::string prelude() {
-    const strata::core::ModelGeometry d;
+    const nostroma::core::ModelGeometry d;
     std::string s;
     auto def = [&](const char* name, int64_t v, int64_t dv) {
         if (v != dv) s += std::string("#define ") + name + " " + std::to_string((long long) v) + "\n";
@@ -72,4 +72,4 @@ inline std::string prelude() {
     return s;
 }
 
-}  // namespace strata_metal::geo
+}  // namespace nostroma_metal::geo

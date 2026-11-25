@@ -39,10 +39,10 @@ TEMPLATE_NAMES = ("RELEASE-NOTES.md", "MODEL-CARD.md", "CHECKLIST.md")
 sys.path.insert(0, str(ROOT))                         # nostroma_control.shape_engine (the shape names)
 
 # artifact names in a release upload folder (phaseA-tests/rel0211/PUBLISH-PLAN.md, scripts/relfinal/expect_rc1.py)
-ENGINE_RE = re.compile(r"^strata-engine-(?P<v>\d[\d.]*)-(?P<plat>.+?)\.(?:tar\.gz|zip)$")
-CONTROL_RE = re.compile(r"^strata-control-(?P<v>\d[\d.]*)-(?P<plat>.+?)\.(?:tar\.gz|zip)$")
+ENGINE_RE = re.compile(r"^nostroma-engine-(?P<v>\d[\d.]*)-(?P<plat>.+?)\.(?:tar\.gz|zip)$")
+CONTROL_RE = re.compile(r"^nostroma-control-(?P<v>\d[\d.]*)-(?P<plat>.+?)\.(?:tar\.gz|zip)$")
 APP_RE = re.compile(r"^(Nostroma-\d[\d.]*-(windows-x64-setup\.exe|linux-x86_64\.AppImage|macos-arm64\.dmg)(\.sig)?|Nostroma\.app\.tar\.gz(\.sig)?)$")
-FEED_NAMES = ["strata-feed.json", "strata-feed.json.sig", "strata-feed-linux-aarch64.json", "strata-feed-linux-aarch64.json.sig"]
+FEED_NAMES = ["nostroma-feed.json", "nostroma-feed.json.sig", "nostroma-feed-linux-aarch64.json", "nostroma-feed-linux-aarch64.json.sig"]
 SMALL_NAMES = ["SHA256SUMS.txt", "latest.json", "install.sh", "install.ps1", "install-manifest.txt"]
 
 # where each platform's Qwen engine is built (phaseA-tests/rel0211/RELEASE-STATE.md "Build plan" and the box rules)
@@ -131,10 +131,10 @@ def plan(report: dict, set_index: int, a, prev: dict) -> dict:
     n += 1
     if case == "B":
         shape = a.shape
-        comp = "strata-" + shape.replace("_", "-")
+        comp = "nostroma-" + shape.replace("_", "-")
         for e in prev["engine"]:
             if e["name"].endswith((".tar.gz", ".zip")):
-                new = renamed(e["name"], e["version"], a.engine_version).replace("strata-engine-", comp + "-", 1)
+                new = renamed(e["name"], e["version"], a.engine_version).replace("nostroma-engine-", comp + "-", 1)
                 changed.append({"name": new, "size": e["size"], "est": True, "why": "the engine of the shape %s, its own component" % shape})
         kept += [{"name": e["name"], "size": e["size"], "why": "the Nostroma engine is not touched: Flash-Next and every other model keep it"} for e in prev["engine"]]
         kept += [{"name": e["name"], "size": e["size"], "why": "no Control rebuild: a Control of 0.2.13 or later already knows shape engines"} for e in prev["control"]]
@@ -145,7 +145,7 @@ def plan(report: dict, set_index: int, a, prev: dict) -> dict:
              ["# the shape fields the intake listed:"] + ["#   %s is %s (kernels built for %s)" % (d["key"], d["got"], d.get("kernels_built_for", d.get("limit")))
                                                           for d in v.get("shape_fields_that_differ", [])]
              + ["python tools/q4geo_synth.py --from-gguf <first shard> --header <geo.hpp> --label %s" % shape,
-                "# every build passes -DSTRATA_GEOMETRY_FILE=<geo.hpp> (Linux packaging scripts: STRATA_CMAKE_EXTRA=\"-DSTRATA_GEOMETRY_FILE=<geo.hpp>\"); give the engines their own version %s" % a.engine_version],
+                "# every build passes -DNOSTROMA_GEOMETRY_FILE=<geo.hpp> (Linux packaging scripts: NOSTROMA_CMAKE_EXTRA=\"-DNOSTROMA_GEOMETRY_FILE=<geo.hpp>\"); give the engines their own version %s" % a.engine_version],
              note="the engine built for this shape refuses Flash-Next files, so it ships as its own component named after the shape (%s) and never in place of the Nostroma engine (owner, 2026-11-08; RESULTS-SHAPE.md)" % comp)
         n += 1
         for box, es in sorted(by_box.items()):
@@ -154,10 +154,10 @@ def plan(report: dict, set_index: int, a, prev: dict) -> dict:
                   "python packaging/package_engine.py --src <stage> --backend <backend> --version %s --shape %s --min-runtime <the Control that knows shape engines> ...   # the usual --arch/--variant/--tree/--min-driver of that platform" % (a.engine_version, shape),
                   "python packaging/feed_tool.py sign-package <package-folder> --key <FEED-KEY>   # OWNER'S KEY, not run here",
                   "python packaging/feed_tool.py pack-engine <package-folder> --out <shape-packs> --url-prefix=   # the archive is %s-<version>-<platform>-<backend>, the entry names the shape" % comp],
-                 [renamed(e["name"], e["version"], a.engine_version).replace("strata-engine-", comp + "-", 1) + "  (" + gib(e["size"]) + ", estimated)" for e in es])
+                 [renamed(e["name"], e["version"], a.engine_version).replace("nostroma-engine-", comp + "-", 1) + "  (" + gib(e["size"]) + ", estimated)" for e in es])
             n += 1
         step("%d" % n, "Mac: the owner signs and notarises the unsigned %s engine on his Mac, then it is signed into the feed" % shape, "the owner's Mac, about 45 min of his time", 45,
-             ["bash sign-and-notarize.sh --engine strata-engine-%s-macos-arm64-metal-unsigned-folder.tar.gz   # the code is generic: the entrypoint comes from the manifest (the package's id is %s)" % (a.engine_version, comp),
+             ["bash sign-and-notarize.sh --engine nostroma-engine-%s-macos-arm64-metal-unsigned-folder.tar.gz   # the code is generic: the entrypoint comes from the manifest (the package's id is %s)" % (a.engine_version, comp),
               "python packaging/feed_tool.py sign-package <the signed folder> --key <FEED-KEY>   # OWNER'S KEY, not run here", "python packaging/feed_tool.py pack-engine <the signed folder> --out <shape-packs> --url-prefix="],
              [comp + "-%s-macos-arm64-metal.tar.gz" % a.engine_version], owner=True,
              note="a Mac installs a model of its own shape like every other platform (Terminal and app): the Mac engine of the shape is part of the release; after the Mac package exists and before build-feed")
@@ -186,7 +186,7 @@ def plan(report: dict, set_index: int, a, prev: dict) -> dict:
              ["bash sign-and-notarize.sh Nostroma-%s-macos-arm64.dmg%s --updater-archive --out signed" % (a.app_version, mac_extra)],
              ["the signed folder (dmg, Nostroma.app.tar.gz and its .sig)"], owner=True)
         n += 1
-    feed_cmd = ("python packaging/feed_tool.py build-feed --out <RELEASE> --key <FEED-KEY> --sequence %d --engine <engine-entries> --carry-dsv41 <the last strata-feed.json> --carry-dsv41-base https://github.com/earenbaz80/Nostroma/releases/download/<DSV41-TAG>/ "
+    feed_cmd = ("python packaging/feed_tool.py build-feed --out <RELEASE> --key <FEED-KEY> --sequence %d --engine <engine-entries> --carry-dsv41 <the last nostroma-feed.json> --carry-dsv41-base https://github.com/earenbaz80/Nostroma/releases/download/<DSV41-TAG>/ "
                 "--drafters <drafter-entries> --models <models-folder> --control <control-entries>%s%s   # OWNER'S KEY; `--models` is Q4-PREP-B's change"
                 % (a.sequence, " --shapes <shape-entries>" if case == "B" else "", " --app-json latest.json" if with_app else ""))
     step("%d" % n, "Sign the feeds at sequence %d (the shared one and linux-aarch64)" % a.sequence, "owner PC, with the owner's key at that moment", 3,
@@ -199,17 +199,17 @@ def plan(report: dict, set_index: int, a, prev: dict) -> dict:
     step("%d" % n, "Assemble the upload folder and check it", "owner PC, python only", 5,
          ["python phaseA-tests/rel0211/scripts/relfinal/final_rc1.py --mode real --work <FINAL> --key <FEED-KEY> --pub <FEED-KEY.pub.json>   # 0.2.11's assembly: hard links, SHA256SUMS; copy it for this version first",
           "python phaseA-tests/rel0211/scripts/relfinal/check_sums_rc1.py --upload <UPLOAD>",
-          "python phaseA-tests/rel0211/scripts/relfinal/check_feeds_rc1.py --shared <UPLOAD>/strata-feed.json --arm <UPLOAD>/strata-feed-linux-aarch64.json --upload <UPLOAD> --pub <FEED-KEY.pub.json> --src <repo> --seq %d" % a.sequence],
+          "python phaseA-tests/rel0211/scripts/relfinal/check_feeds_rc1.py --shared <UPLOAD>/nostroma-feed.json --arm <UPLOAD>/nostroma-feed-linux-aarch64.json --upload <UPLOAD> --pub <FEED-KEY.pub.json> --src <repo> --seq %d" % a.sequence],
          ["the upload folder"])
     n += 1
     up = sum(c["size"] or 0 for c in changed)
     step("%d" % n, "Publish (the owner's word first): draft release, upload, feed LAST, then flip Latest", "owner PC", None,
          ["bash phaseA-tests/rel0211/publish211.sh   # the dry run of the 0.2.11 publish; copy it for this release (tag, sequence, folders) and print its plan",
-          "# the printed plan: gh release create <TAG> --draft ...; gh release upload ... (packages, Controls, installers, install files, strata-feed.json LAST); gh release edit <TAG> --draft=false --latest"],
+          "# the printed plan: gh release create <TAG> --draft ...; gh release upload ... (packages, Controls, installers, install files, nostroma-feed.json LAST); gh release edit <TAG> --draft=false --latest"],
          ["upload: %s in %d files, %s" % (gib(up), len(changed), upload_minutes(up))], owner=True)
     n += 1
     step("%d" % n, "Verify from the public URLs", "any box", 20,
-         ["download every asset back and sha256sum -c SHA256SUMS.txt", "python packaging/feed_tool.py verify-feed <public strata-feed.json> --pub <FEED-KEY.pub.json>",
+         ["download every asset back and sha256sum -c SHA256SUMS.txt", "python packaging/feed_tool.py verify-feed <public nostroma-feed.json> --pub <FEED-KEY.pub.json>",
           "a clean-home install and `nostroma update --check` on a Linux box: the sequence is %d and the model is listed" % a.sequence], [])
     return {"id": a.id, "case": case, "set": s["files"][0]["name"], "steps": steps, "changed": changed, "kept": kept, "entry": entry,
             "warnings": warn, "upload_bytes": up}
@@ -369,7 +369,7 @@ def main(argv=None) -> int:
     ap.add_argument("--id", required=True, help="the model's id in the feed")
     ap.add_argument("--app-version", required=True)
     ap.add_argument("--engine-version", help="case B: the version of the new shape engine")
-    ap.add_argument("--shape", help="case B: the name of the geometry the engines are compiled for (q4_lite): the engine ships as its own component strata-q4-<shape> and the model's family is qwen4exp_<shape>")
+    ap.add_argument("--shape", help="case B: the name of the geometry the engines are compiled for (q4_lite): the engine ships as its own component nostroma-q4-<shape> and the model's family is qwen4exp_<shape>")
     ap.add_argument("--min-engine", help="the minimum engine version for the model (case A: the engine that runs it)")
     ap.add_argument("--sequence", type=int, required=True, help="the next feed sequence")
     ap.add_argument("--prev-upload", type=Path, help="the previous release's upload folder (names and sizes)")

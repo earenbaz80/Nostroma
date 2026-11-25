@@ -1,5 +1,5 @@
 // sycl/src/kernels/dq_dense_parity.cpp - model-free check of the Qwen engine's dense weight kernels on a SYCL device against the
-// CPU dequantizers of include/strata/artifact/dequant.hpp (ggml's dequantize_row_*): for every dense type the engine reads
+// CPU dequantizers of include/nostroma/artifact/dequant.hpp (ggml's dequantize_row_*): for every dense type the engine reads
 // (Q4_0 Q5_0 Q5_1 Q8_0 Q3_K Q4_K Q5_K Q6_K IQ4_NL IQ4_XS Q2_0), random legal blocks, no model file.
 //   dequant   dequant_f32 / dequant_f16 / dequant_bf16 / dequant_f16_ld, the per-group kernels (and, with -DDQ_HAVE_WIDE, the
 //             CUDA wide ones: dequant_set_wide 0 / 1), whole matrices and row slices, widths with k % 1024 == 0 and without
@@ -11,10 +11,10 @@
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "strata/artifact/dequant.hpp"
-#include "strata/kernels/dequant_bf16.hpp"
-#include "strata/kernels/native_mmvq.hpp"
-#include "strata/sycl_queue.hpp"
+#include "nostroma/artifact/dequant.hpp"
+#include "nostroma/kernels/dequant_bf16.hpp"
+#include "nostroma/kernels/native_mmvq.hpp"
+#include "nostroma/sycl_queue.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -26,7 +26,7 @@
 #include <string>
 #include <vector>
 
-namespace K = strata::kernels;
+namespace K = nostroma::kernels;
 
 namespace {
 
@@ -66,7 +66,7 @@ void sane(int id, uint8_t* p, std::mt19937_64& rng) {
     }
 }
 void cpu_block(int id, const uint8_t* b, float* out) {
-    using namespace strata;
+    using namespace nostroma;
     switch (id) {
         case 2: dequantize_q4_0(b, out); break;
         case 6: dequantize_q5_0(b, out); break;
@@ -91,7 +91,7 @@ void fail(Tally& t, const std::string& s) {
     std::printf("  FAIL %s\n", s.c_str());
 }
 
-sycl::queue& Q() { return *strata::q_of(nullptr); }
+sycl::queue& Q() { return *nostroma::q_of(nullptr); }
 void* S() { return (void*) &Q(); }   // (native MMVQ wants an explicit, non-null stream)
 
 void run_dequant(const Ty& ty, bool quick) {
@@ -241,7 +241,7 @@ void run_mmvq(const Ty& ty, bool quick) {
                     for (int b = 0; b < n_in / 32; ++b) {
                         const uint8_t* p = &qh[((size_t) c * (n_in / 32) + b) * 36];
                         uint16_t hd; std::memcpy(&hd, p, 2);
-                        const float d = strata::fp16_to_fp32(hd);
+                        const float d = nostroma::fp16_to_fp32(hd);
                         for (int j = 0; j < 32; ++j) xh[(size_t) c * n_in + b * 32 + j] = d * (float) (int8_t) p[4 + j];
                     }
                 size_t bad = 0, nonf = 0;

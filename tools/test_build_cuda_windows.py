@@ -25,23 +25,23 @@ class ConfigureLine(unittest.TestCase):
     def test_cuda13_is_the_release_line(self):
         # the 0.1.59 zips' line: 75;86;89;120 real + 120 PTX, portable, native experts, no tests (the K-quant and Q6_K options at their defaults)
         got = B.configure_args(Path("S"), Path("Bd"), "cuda13", CUDA13, [])
-        self.assertEqual(got, ["-G", "Ninja", "-S", "S", "-B", "Bd", "-DCMAKE_BUILD_TYPE=Release", "-DSTRATA_ENABLE_CUDA=ON", "-DSTRATA_BUILD_TESTS=OFF",
-                               "-DSTRATA_NATIVE_EXPERTS=ON", "-DSTRATA_PORTABLE=ON", "-DSTRATA_MMQ=OFF",
+        self.assertEqual(got, ["-G", "Ninja", "-S", "S", "-B", "Bd", "-DCMAKE_BUILD_TYPE=Release", "-DNOSTROMA_ENABLE_CUDA=ON", "-DNOSTROMA_BUILD_TESTS=OFF",
+                               "-DNOSTROMA_NATIVE_EXPERTS=ON", "-DNOSTROMA_PORTABLE=ON", "-DNOSTROMA_MMQ=OFF",
                                "-DCMAKE_CUDA_ARCHITECTURES=75-real;86-real;89-real;120-real;120-virtual",
                                "-DCMAKE_CUDA_COMPILER=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.0/bin/nvcc.exe",
                                "-DCUDAToolkit_ROOT=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.0"])
 
     def test_cuda12_is_the_pascal_and_volta_build(self):
         got = B.configure_args(Path("S"), Path("Bd"), "cuda12", CUDA12, [])
-        self.assertIn("-DSTRATA_EXPERIMENTAL_SM60=ON", got)
+        self.assertIn("-DNOSTROMA_EXPERIMENTAL_SM60=ON", got)
         self.assertIn("-DCMAKE_CUDA_ARCHITECTURES=60-real;61-real;70-real;75-real;80-real;86-real;89-real;89-virtual", got)
         self.assertEqual(B.VARIANTS["cuda12"][2], "576.02")      # the 0.1.59 cuda12 zip's min_driver
         self.assertEqual(B.VARIANTS["cuda13"][2], "580.65")
 
     def test_extra_arguments_come_last_and_the_override_is_named(self):
-        got = B.configure_args(Path("S"), Path("Bd"), "cuda13", CUDA13, ["-DSTRATA_MMQ=ON"], ggml_dir="C:\\ref\\llama.cpp")
-        self.assertEqual(got[-2:], ["-DSTRATA_GGML_DIR=C:/ref/llama.cpp", "-DSTRATA_MMQ=ON"])
-        self.assertLess(got.index("-DSTRATA_MMQ=OFF"), got.index("-DSTRATA_MMQ=ON"))   # the A/B override wins (the last -D counts)
+        got = B.configure_args(Path("S"), Path("Bd"), "cuda13", CUDA13, ["-DNOSTROMA_MMQ=ON"], ggml_dir="C:\\ref\\llama.cpp")
+        self.assertEqual(got[-2:], ["-DNOSTROMA_GGML_DIR=C:/ref/llama.cpp", "-DNOSTROMA_MMQ=ON"])
+        self.assertLess(got.index("-DNOSTROMA_MMQ=OFF"), got.index("-DNOSTROMA_MMQ=ON"))   # the A/B override wins (the last -D counts)
 
     def test_an_arch_override_keeps_ptx_for_the_last(self):
         self.assertEqual(B.parse_archs("120"), (120,))
@@ -63,7 +63,7 @@ class ConfigureLine(unittest.TestCase):
 FAKE_CMAKE = """#!/bin/sh
 case "$FAKE_MODE" in
   kq) exit 0 ;;
-  nokq) echo "ninja: error: unknown target 'strata_kq'" >&2; exit 1 ;;
+  nokq) echo "ninja: error: unknown target 'nostroma_kq'" >&2; exit 1 ;;
   *) echo "ninja: error: loading 'build.ninja': No such file or directory" >&2; exit 1 ;;
 esac
 """
@@ -83,9 +83,9 @@ class Targets(unittest.TestCase):
     def call(self, mode):
         return B.engine_targets(str(self.cmake), self.tmp, env=dict(os.environ, FAKE_MODE=mode))
 
-    def test_with_and_without_strata_kq(self):
-        self.assertEqual(self.call("kq"), ["strata", "strata_kq"])
-        self.assertEqual(self.call("nokq"), ["strata"])
+    def test_with_and_without_nostroma_kq(self):
+        self.assertEqual(self.call("kq"), ["nostroma", "nostroma_kq"])
+        self.assertEqual(self.call("nokq"), ["nostroma"])
 
     def test_any_other_failure_stops(self):
         with self.assertRaises(SystemExit):
@@ -96,10 +96,10 @@ class Targets(unittest.TestCase):
         for with_kq in (True, False):
             src, build = self.tmp / ("s%d" % with_kq), self.tmp / ("b%d" % with_kq)
             src.mkdir()
-            text = "cmake_minimum_required(VERSION 3.16)\nproject(t NONE)\nadd_custom_target(strata)\n" + ("add_custom_target(strata_kq)\n" if with_kq else "")
+            text = "cmake_minimum_required(VERSION 3.16)\nproject(t NONE)\nadd_custom_target(nostroma)\n" + ("add_custom_target(nostroma_kq)\n" if with_kq else "")
             (src / "CMakeLists.txt").write_text(text, encoding="utf-8")
             subprocess.run(["cmake", "-G", "Ninja", "-S", str(src), "-B", str(build)], check=True, capture_output=True, timeout=600)
-            self.assertEqual(B.engine_targets("cmake", build), ["strata", "strata_kq"] if with_kq else ["strata"])
+            self.assertEqual(B.engine_targets("cmake", build), ["nostroma", "nostroma_kq"] if with_kq else ["nostroma"])
 
 
 if __name__ == "__main__":

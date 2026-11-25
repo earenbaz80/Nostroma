@@ -1,6 +1,6 @@
-// tools/vision/own/compare_sve.cpp - compares two strata-vision output files (SVE1) of the same picture.
+// tools/vision/own/compare_sve.cpp - compares two nostroma-vision output files (SVE1) of the same picture.
 //
-//   strata-vision-own-compare <a.sve> <b.sve>
+//   nostroma-vision-own-compare <a.sve> <b.sve>
 // Prints one line:  n=<tokens> nx= ny= dim= global=<cosine of the two whole files as vectors> tokmin=<smallest per-token cosine>
 //                   tokmean=<mean per-token cosine> maxabs=<largest |a-b|> rel_rms=<rms(a-b)/rms(a)>
 // Exit 0 when both files read and have the same shape; 1 otherwise ("MISMATCH ..." printed).
@@ -34,7 +34,7 @@ static bool load(const char* path, Sve& s) {
 int main(int argc, char** argv) {
     int worst = 0;
     if (argc == 5 && std::strcmp(argv[3], "--worst") == 0) worst = std::atoi(argv[4]);
-    else if (argc != 3) { std::fprintf(stderr, "usage: strata-vision-own-compare a.sve b.sve [--worst K]\n"); return 2; }
+    else if (argc != 3) { std::fprintf(stderr, "usage: nostroma-vision-own-compare a.sve b.sve [--worst K]\n"); return 2; }
     Sve a, b;
     if (!load(argv[1], a) || !load(argv[2], b)) return 1;
     if (a.n != b.n || a.nx != b.nx || a.ny != b.ny || a.dim != b.dim) {

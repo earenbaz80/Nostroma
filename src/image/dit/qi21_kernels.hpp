@@ -8,7 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace strata::image::qi21 {
+namespace nostroma::image::qi21 {
 
 // x += h * tanh(g) (when h), then out = LayerNorm(x) * (1 + m) (when out); no affine, eps.  T rows of C (C <= 8192).
 int res_ln_mod(void* stream, float* x, const float* h, const float* g, float* out, const float* m, int T, int C, float eps);
@@ -28,7 +28,7 @@ int swiglu(void* stream, const float* gu, float* out, int T, int F);
 int attn_exact(void* stream, const float* q, int q_tstride, const void* k, const void* v, int kv_tstride, float* out,
                int H, int Lq, int Lk, int causal);
 
-// 1 when this device runs attn_fast (NVIDIA sm_80+: mma.sync; HIP gfx11: WMMA; gfx12 unless STRATA_QI_GFX12_ATTN=0)
+// 1 when this device runs attn_fast (NVIDIA sm_80+: mma.sync; HIP gfx11: WMMA; gfx12 unless NOSTROMA_QI_GFX12_ATTN=0)
 int has_fast_attn(int device);
 
 // flash attention for the image tokens: q f16 head-major, k / v f16 head-major, out f32 token-major
@@ -57,4 +57,4 @@ int gelu_tanh(void* stream, float* x, int64_t n);
 // out[r] = x[r] / sqrt(mean(x[r]^2) + eps) * (w + 1), T rows of C (txt_in's zero-centred RMSNorm)
 int rms_norm_w1(void* stream, const float* x, const float* w, float* out, int T, int C, float eps);
 
-}  // namespace strata::image::qi21
+}  // namespace nostroma::image::qi21

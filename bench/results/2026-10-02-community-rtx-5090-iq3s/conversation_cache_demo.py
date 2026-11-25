@@ -23,7 +23,7 @@ from needle_bench import haystack, CHARS_PER_TOKEN  # noqa: E402
 
 URL = "http://127.0.0.1:8080/v1/chat/completions"
 MODEL = "qwen3.8-flash-next-iq3_s"
-LOG = ROOT / "strata-iq3_s.log"
+LOG = ROOT / "nostroma-iq3_s.log"
 DOC_TOKENS = 60_000
 
 
@@ -65,7 +65,7 @@ def main() -> int:
         mark = len(LOG.read_text(encoding="utf-8", errors="replace"))
         r = ask([{"role": m[0], "content": m[1]} for m in msgs])
         conv.append(("assistant", r["answer"]))
-        new = [l for l in re.findall(r"strata serve: (?:conversation cache:|prompt) [^\n]*", LOG.read_text(encoding="utf-8", errors="replace")[mark:])]
+        new = [l for l in re.findall(r"nostroma serve: (?:conversation cache:|prompt) [^\n]*", LOG.read_text(encoding="utf-8", errors="replace")[mark:])]
         r["step"], r["engine_lines"] = name, new
         rows.append(r)
         print(f"{name:24} prompt {r['prompt_tokens']:>7,}  reused {r['cached_tokens']:>7,}  "

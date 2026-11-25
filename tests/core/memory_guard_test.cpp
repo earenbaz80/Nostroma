@@ -1,6 +1,6 @@
 // available_host_bytes(): MemAvailable, the cgroup limits above this process, and the operator's cap, on fixture
 // directories standing in for /proc/meminfo, /proc/self/cgroup and /sys/fs/cgroup.  CPU only, no GPU.
-#include "strata/core/conversation_memory.hpp"
+#include "nostroma/core/conversation_memory.hpp"
 
 #ifdef _WIN32
 #include <process.h>
@@ -16,7 +16,7 @@
 #include <fstream>
 #include <string>
 
-using namespace strata::core;
+using namespace nostroma::core;
 namespace fs = std::filesystem;
 
 namespace {
@@ -34,11 +34,11 @@ struct Fixture {
     fs::path dir;
     Fixture() {
         static int n = 0;
-        dir = fs::temp_directory_path() / ("strata_memory_guard_" + std::to_string((long) ::getpid()) + "_" + std::to_string(n++));
+        dir = fs::temp_directory_path() / ("nostroma_memory_guard_" + std::to_string((long) ::getpid()) + "_" + std::to_string(n++));
         fs::remove_all(dir);
         fs::create_directories(dir / "cgroup");
         // this process's own mappings: none unless a test says so (the real /proc/self/status is never read)
-        std::ofstream(dir / "status", std::ios::binary) << "Name:\tstrata\nRssAnon:\t    1024 kB\nRssFile:\t       0 kB\nRssShmem:\t       0 kB\n";
+        std::ofstream(dir / "status", std::ios::binary) << "Name:\tnostroma\nRssAnon:\t    1024 kB\nRssFile:\t       0 kB\nRssShmem:\t       0 kB\n";
     }
     ~Fixture() { std::error_code ec; fs::remove_all(dir, ec); }
     void put(const std::string& rel, const std::string& text) {
@@ -55,7 +55,7 @@ struct Fixture {
     MemoryProbePaths paths() const {
         return {(dir / "meminfo").string(), (dir / "self_cgroup").string(), (dir / "cgroup").string(), (dir / "status").string()};
     }
-    void rss_file(uint64_t bytes) { put("status", "Name:\tstrata\nRssFile:\t" + std::to_string(bytes / 1024) + " kB\n"); }
+    void rss_file(uint64_t bytes) { put("status", "Name:\tnostroma\nRssFile:\t" + std::to_string(bytes / 1024) + " kB\n"); }
     std::optional<HostMemoryReading> sample(uint64_t explicit_limit = 0) const { return sample_host_memory(paths(), explicit_limit); }
 };
 
@@ -120,11 +120,11 @@ int main() {
     {
         Fixture f;
         f.meminfo(120 * GiB, 25 * GiB);   // the stale view: MemAvailable says 25 GiB
-        f.self("0::/system.slice/strata.service");
+        f.self("0::/system.slice/nostroma.service");
         f.put("cgroup/memory.max", "max\n"); f.put("cgroup/memory.high", "max\n");
         f.put("cgroup/memory.current", 99 * GiB + 724 * MiB);
-        f.put("cgroup/system.slice/strata.service/memory.max", "max\n");
-        f.put("cgroup/system.slice/strata.service/memory.current", 97 * GiB);
+        f.put("cgroup/system.slice/nostroma.service/memory.max", "max\n");
+        f.put("cgroup/system.slice/nostroma.service/memory.current", 97 * GiB);
         check(f.sample() && f.sample()->available == 25 * GiB && f.sample()->source == MemorySource::meminfo,
               "without the cap the stale MemAvailable is believed");
         auto r = f.sample(100 * GiB);
@@ -272,12 +272,12 @@ int main() {
         };
         Fixture f;
         f.meminfo(120 * GiB, 25 * GiB);
-        f.self("0::/system.slice/strata.service");
+        f.self("0::/system.slice/nostroma.service");
         f.put("cgroup/memory.max", "max\n"); f.put("cgroup/memory.high", "max\n");
         f.put("cgroup/memory.current", 98 * GiB + 324 * MiB);
         f.put("cgroup/memory.stat", stat(3 * GiB + 800 * MiB, 27 * GiB, 65 * GiB));
-        f.put("cgroup/system.slice/strata.service/memory.max", "max\n");
-        f.put("cgroup/system.slice/strata.service/memory.current", 90 * GiB);
+        f.put("cgroup/system.slice/nostroma.service/memory.max", "max\n");
+        f.put("cgroup/system.slice/nostroma.service/memory.current", 90 * GiB);
         // the operator's cap: the root's memory.current less the root's inactive_file; active_file and shmem are not credited
         auto r = f.sample(99 * GiB);
         check(r && r->source == MemorySource::flag && r->available == 99 * GiB - (98 * GiB + 324 * MiB - 3 * GiB - 800 * MiB),
@@ -312,12 +312,12 @@ int main() {
         }
         // a cgroup limit's own group is credited from its own memory.stat
         f.put("cgroup/memory.stat", stat(0, 0, 0));
-        f.put("cgroup/system.slice/strata.service/memory.max", 92 * GiB);
-        f.put("cgroup/system.slice/strata.service/memory.stat", stat(1 * GiB, 0, 0));
+        f.put("cgroup/system.slice/nostroma.service/memory.max", 92 * GiB);
+        f.put("cgroup/system.slice/nostroma.service/memory.stat", stat(1 * GiB, 0, 0));
         r = f.sample();
         check(r && r->source == MemorySource::cgroup && r->available == 3 * GiB && r->credit == 1 * GiB &&
                   r->limit == 92 * GiB && r->current == 90 * GiB, "a cgroup limit credits its own group's inactive_file");
-        f.put("cgroup/system.slice/strata.service/memory.stat", stat(500 * GiB, 0, 0));
+        f.put("cgroup/system.slice/nostroma.service/memory.stat", stat(500 * GiB, 0, 0));
         f.meminfo(300 * GiB, 200 * GiB);
         r = f.sample();
         check(r && r->available == 92 * GiB && r->credit == 90 * GiB, "cgroup term: the credit stops at the usage too");
@@ -367,11 +367,11 @@ int main() {
         check(cache_credit_for_limit({5, 9}, 10, std::nullopt, false, none0) == 5, "MemTotal unknown: inactive");
         check(cache_credit_for_limit({5, 9}, 10, total11, true, none0) == 5, "the switch: inactive");
         // RssFile from /proc/self/status, less the locked file bytes
-        const std::string status = "Name:\tstrata\nVmLck:\t  999 kB\nRssAnon:\t 100 kB\nRssFile:\t 2048 kB\nRssShmem:\t 64 kB\n";
+        const std::string status = "Name:\tnostroma\nVmLck:\t  999 kB\nRssAnon:\t 100 kB\nRssFile:\t 2048 kB\nRssShmem:\t 64 kB\n";
         check(own_evictable_mapped_bytes(status, 0) == std::optional<uint64_t>(2 * MiB), "RssFile in bytes");
         check(own_evictable_mapped_bytes(status, 1 * MiB) == std::optional<uint64_t>(1 * MiB), "locked file bytes come off");
         check(own_evictable_mapped_bytes(status, 3 * MiB) == std::optional<uint64_t>(0), "floor 0");
-        check(!own_evictable_mapped_bytes("Name:\tstrata\nRssAnon:\t 1 kB\n", 0), "no RssFile: unknown");
+        check(!own_evictable_mapped_bytes("Name:\tnostroma\nRssAnon:\t 1 kB\n", 0), "no RssFile: unknown");
         check(!own_evictable_mapped_bytes("RssFile:\t 12 MB\n", 0) && !own_evictable_mapped_bytes("RssFile:\t x kB\n", 0) &&
                   !own_evictable_mapped_bytes("RssFile:\t 1 kB\nRssFile:\t 2 kB\n", 0), "malformed RssFile: unknown");
         check(locked_own_file_bytes() == 0, "nothing locked by default");
@@ -379,7 +379,7 @@ int main() {
         check(locked_own_file_bytes() == 5 * MiB, "locked bytes round trip");
         set_locked_own_file_bytes(0);
         check(mem_credit_inactive_only("1") && !mem_credit_inactive_only("0") && !mem_credit_inactive_only(nullptr) &&
-                  !mem_credit_inactive_only(""), "STRATA_MEM_CREDIT_INACTIVE=1 only");
+                  !mem_credit_inactive_only(""), "NOSTROMA_MEM_CREDIT_INACTIVE=1 only");
     }
     // a container (limit below MemTotal) restarted with its model file's pages still cached: the same figure cold and warm
     {
@@ -404,18 +404,18 @@ int main() {
         check(f.sample() && f.sample()->available == cold->available, "warm, inactive: the same figure");
         // the way back
 #ifdef _WIN32
-        _putenv_s("STRATA_MEM_CREDIT_INACTIVE", "1");
+        _putenv_s("NOSTROMA_MEM_CREDIT_INACTIVE", "1");
 #else
-        setenv("STRATA_MEM_CREDIT_INACTIVE", "1", 1);
+        setenv("NOSTROMA_MEM_CREDIT_INACTIVE", "1", 1);
 #endif
         f.put("cgroup/memory.stat", stat(table, 1 * GiB));
         const auto old = f.sample();
         check(old && old->available == limit - (7 * GiB + table - 1 * GiB) && old->credit == 1 * GiB,
-              "STRATA_MEM_CREDIT_INACTIVE=1: active pages are not credited, as before");
+              "NOSTROMA_MEM_CREDIT_INACTIVE=1: active pages are not credited, as before");
 #ifdef _WIN32
-        _putenv_s("STRATA_MEM_CREDIT_INACTIVE", "");
+        _putenv_s("NOSTROMA_MEM_CREDIT_INACTIVE", "");
 #else
-        unsetenv("STRATA_MEM_CREDIT_INACTIVE");
+        unsetenv("NOSTROMA_MEM_CREDIT_INACTIVE");
 #endif
         check(f.sample() && f.sample()->available == cold->available, "switch cleared: the lists rule again");
         // the engine maps the table (ram mode, lock refused): its resident pages are its own, not free - cold and warm alike
@@ -468,7 +468,7 @@ int main() {
         a = arena_cgroup_room(48 * GiB, 16 * GiB, cache, std::optional<uint64_t>(48 * GiB), false);
         check(!a.applies, "a limit at MemTotal: the earlier rule (caller)");
         check(!arena_cgroup_room(48 * GiB, 16 * GiB, cache, std::nullopt, false).applies, "MemTotal unknown: the earlier rule");
-        check(!arena_cgroup_room(48 * GiB, 16 * GiB, cache, host, true).applies, "STRATA_MEM_CREDIT_INACTIVE=1: the earlier rule");
+        check(!arena_cgroup_room(48 * GiB, 16 * GiB, cache, host, true).applies, "NOSTROMA_MEM_CREDIT_INACTIVE=1: the earlier rule");
         a = arena_cgroup_room(8 * GiB, 9 * GiB, "inactive_file 0\n", host, false);
         check(a.applies && a.room == 0, "usage over the limit: 0");
         a = arena_cgroup_room(48 * GiB, 16 * GiB, "", host, false);

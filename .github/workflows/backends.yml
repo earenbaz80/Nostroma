@@ -2,11 +2,11 @@ name: Backend compile checks
 
 # Compile and link every engine backend with a pinned toolchain, without a GPU: nothing is run, so a call into a kernel that only
 # exists for another backend (or an API a toolkit version dropped) fails here instead of on a user's machine.  Hardware runs are separate.
-#   CUDA 12.9 and 13.0   nvidia/cuda devel container   target strata (no MMQ, the default) (CMake preset cuda-compile)
-#   HIP (ROCm 7.2)       rocm/dev container            target strata                      (CMake preset hip-compile)
-#   SYCL (oneAPI 2026.1) ubuntu + Intel's apt repo     target strata of sycl/             (the commands of packaging/build_sycl_linux.sh)
-#   Metal                macOS runner                  target strata                      (metal/; metal-build.yml keeps its own strata build)
-# ggml comes from the vendored third_party/strata-ggml (frozen at llama.cpp's pin), the same tree the release builds use: nothing is downloaded.
+#   CUDA 12.9 and 13.0   nvidia/cuda devel container   target nostroma (no MMQ, the default) (CMake preset cuda-compile)
+#   HIP (ROCm 7.2)       rocm/dev container            target nostroma                      (CMake preset hip-compile)
+#   SYCL (oneAPI 2026.1) ubuntu + Intel's apt repo     target nostroma of sycl/             (the commands of packaging/build_sycl_linux.sh)
+#   Metal                macOS runner                  target nostroma                      (metal/; metal-build.yml keeps its own nostroma build)
+# ggml comes from the vendored third_party/nostroma-ggml (frozen at llama.cpp's pin), the same tree the release builds use: nothing is downloaded.
 # Architectures are fewer than the release package's (compile time); the flags that decide which sources and defines are built are the release's.
 
 on:
@@ -64,7 +64,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # the cuda12 package is the one for Pascal and Volta: sm_60 needs STRATA_EXPERIMENTAL_SM60 (packaging/build_cuda_linux.sh)
+          # the cuda12 package is the one for Pascal and Volta: sm_60 needs NOSTROMA_EXPERIMENTAL_SM60 (packaging/build_cuda_linux.sh)
           - { cuda: '12.9', image: '12.9.1-devel-ubuntu24.04', archs: '60-real;61-real;70-real;86-real', sm60: 'ON' }
           - { cuda: '13.0', image: '13.0.2-devel-ubuntu24.04', archs: '75-real;86-real;120-real', sm60: 'OFF' }
     steps:
@@ -85,10 +85,10 @@ jobs:
         run: |
           nvcc --version | tail -2
           cmake --preset cuda-compile -B build \
-            "-DCMAKE_CUDA_ARCHITECTURES=${{ matrix.archs }}" -DSTRATA_EXPERIMENTAL_SM60=${{ matrix.sm60 }} \
+            "-DCMAKE_CUDA_ARCHITECTURES=${{ matrix.archs }}" -DNOSTROMA_EXPERIMENTAL_SM60=${{ matrix.sm60 }} \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_CUDA_COMPILER_LAUNCHER=ccache
-      - name: Build strata
-        run: cmake --build build --target strata -j "$(nproc)"
+      - name: Build nostroma
+        run: cmake --build build --target nostroma -j "$(nproc)"
       - name: Cache statistics
         run: ccache -s | head -8
 
@@ -117,8 +117,8 @@ jobs:
           cmake --preset hip-compile -B build \
             -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_HIP_COMPILER_ROCM_ROOT=/opt/rocm -DCMAKE_PREFIX_PATH=/opt/rocm \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_HIP_COMPILER_LAUNCHER=ccache
-      - name: Build strata
-        run: cmake --build build --target strata -j "$(nproc)"
+      - name: Build nostroma
+        run: cmake --build build --target nostroma -j "$(nproc)"
       - name: Cache statistics
         run: ccache -s | head -8
 
@@ -154,14 +154,14 @@ jobs:
           . /opt/intel/oneapi/setvars.sh --force >/dev/null
           icpx --version | head -1
           cmake -S sycl -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx \
-            -DSTRATA_SYCL_PARITY=OFF -DSTRATA_SYCL_IQ_DECODE_FAST=ON \
+            -DNOSTROMA_SYCL_PARITY=OFF -DNOSTROMA_SYCL_IQ_DECODE_FAST=ON \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-          cmake --build build --target strata -j "$(nproc)"
+          cmake --build build --target nostroma -j "$(nproc)"
       - name: Cache statistics
         run: ccache -s | head -8
 
   metal:
-    name: Metal strata
+    name: Metal nostroma
     # the macOS 26 SDK: metal/src/mtl_rt.mm names MTLGPUFamilyMetal4 behind @available (a run-time check); the names must be in the SDK
     runs-on: macos-26
     timeout-minutes: 60
@@ -190,5 +190,5 @@ jobs:
           cmake -S metal -B build-metal -G Ninja -DCMAKE_BUILD_TYPE=Release \
             -DMETAL_CPP_DIR="$PWD/_mcpp/metal-cpp" \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-      - name: Build and link strata
-        run: cmake --build build-metal --target strata
+      - name: Build and link nostroma
+        run: cmake --build build-metal --target nostroma

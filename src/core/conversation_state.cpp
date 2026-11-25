@@ -1,5 +1,5 @@
-#include "strata/core/conversation_snapshot.hpp"
-#include "strata/env.hpp"
+#include "nostroma/core/conversation_snapshot.hpp"
+#include "nostroma/env.hpp"
 #include "conversation_checked.hpp"
 #include "conversation_copy.hpp"
 #include "conversation_trace.hpp"
@@ -14,7 +14,7 @@
 #include <limits>
 #include <mutex>
 
-namespace strata::core {
+namespace nostroma::core {
 namespace {
 using conversation_detail::add;
 using conversation_detail::product;
@@ -68,7 +68,7 @@ bool checkpoint_targets(const SessionState& ss, const ModelGeometry& g, size_t t
         (owned_qsa(ss) && !ss.qsa_states)) return fail(error, "invalid session running-state targets");
     for (size_t j = 0; j < owned_qsa(ss); ++j) {
         const auto& st = owned(ss, j);
-        const auto block = strata::kernels::qsa_real_shapes().idx_block;
+        const auto block = nostroma::kernels::qsa_real_shapes().idx_block;
         size_t pooled_bytes = 0;
         if (!st.idx_tail || !st.idx_dead || !st.idx_block_pos || !st.idx_pooled ||
             st.max_cells < 0 || tokens > (uint64_t) st.max_cells ||
@@ -122,8 +122,8 @@ bool conversation_state_sizes(const ModelGeometry& g, ConversationStateSizes& z,
         !product(convolution, {(uint64_t) g.ssm_conv_channels, (uint64_t) (g.ssm_d_conv - 1)}) ||
         !add(recurrence, convolution) ||
         !product(z.gdn, {(uint64_t) g.n_gdn_layers(), recurrence, sizeof(float)}) ||
-        !product(z.ple, {strata::kernels::NG_HIST, strata::kernels::NG_HC_DIM, sizeof(float)}) ||
-        !product(z.tail, {(uint64_t) (strata::kernels::qsa_real_shapes().idx_block - 1),
+        !product(z.ple, {nostroma::kernels::NG_HIST, nostroma::kernels::NG_HC_DIM, sizeof(float)}) ||
+        !product(z.tail, {(uint64_t) (nostroma::kernels::qsa_real_shapes().idx_block - 1),
                           (uint64_t) g.idx_key_dim, sizeof(float)}) ||
         !product(z.dead, {(uint64_t) g.idx_key_dim, sizeof(float)}))
         return fail(error, "running-state byte count overflow");
@@ -160,14 +160,14 @@ bool conversation_checkpoint_validate(const ConversationCheckpoint& c, const Ses
     return true;
 }
 
-#if defined(STRATA_GPU_METAL)
-}  // namespace strata::core
-namespace strata::metal_engine {
+#if defined(NOSTROMA_GPU_METAL)
+}  // namespace nostroma::core
+namespace nostroma::metal_engine {
 // the running state lives in the Metal decode window (metal/src/engine/window.cpp), not in the session's buffers
-bool window_checkpoint_save(strata::core::ConversationCheckpoint& c, const strata::core::SessionState* ss, std::string& error);
-bool window_checkpoint_restore(const strata::core::ConversationCheckpoint& c, const strata::core::SessionState* ss, std::string& error);
-}  // namespace strata::metal_engine
-namespace strata::core {
+bool window_checkpoint_save(nostroma::core::ConversationCheckpoint& c, const nostroma::core::SessionState* ss, std::string& error);
+bool window_checkpoint_restore(const nostroma::core::ConversationCheckpoint& c, const nostroma::core::SessionState* ss, std::string& error);
+}  // namespace nostroma::metal_engine
+namespace nostroma::core {
 #endif
 
 namespace {
@@ -182,13 +182,13 @@ struct CkptAsync {
     int dev = -1;
 };
 CkptAsync& ckpt_async() { static CkptAsync a; return a; }
-// STRATA_CKPT_VRAM_SLOTS=N (with STRATA_CKPT_ASYNC): the last N saved GDN states stay in VRAM (allocated only while
+// NOSTROMA_CKPT_VRAM_SLOTS=N (with NOSTROMA_CKPT_ASYNC): the last N saved GDN states stay in VRAM (allocated only while
 // more than 1.5 GB stays free); a restore of a checkpoint whose tag a slot holds copies device to device.
 struct VramSlot { void* p = nullptr; size_t n = 0; uint64_t tag = 0, used = 0; int dev = -1; };
 struct VramSlots { std::vector<VramSlot> s; uint64_t clock = 0, next_tag = 0; };
 VramSlots& vram_slots() { static VramSlots v; return v; }
 int vram_slots_n() {
-    static const int n = [] { const char* v = strata::env("NOSTROMA_CKPT_VRAM_SLOTS"); return v ? std::max(0, std::min(16, std::atoi(v))) : 0; }();
+    static const int n = [] { const char* v = nostroma::env("NOSTROMA_CKPT_VRAM_SLOTS"); return v ? std::max(0, std::min(16, std::atoi(v))) : 0; }();
     return n;
 }
 // a slot for `n` bytes on `dev`: a free one, a new one if VRAM allows, else the least recently used (nullptr: none)
@@ -208,26 +208,26 @@ VramSlot* vram_slot_for(size_t n, int dev) {
     return best;
 }
 bool ckpt_async_on() {
-#if defined(STRATA_USE_HIP) || defined(STRATA_HIP_GFX906) || defined(STRATA_GPU_METAL)
+#if defined(NOSTROMA_USE_HIP) || defined(NOSTROMA_HIP_GFX906) || defined(NOSTROMA_GPU_METAL)
     return false;
 #else
-    static const bool on = [] { const char* v = strata::env("NOSTROMA_CKPT_ASYNC"); return v != nullptr && v[0] == '1'; }();
+    static const bool on = [] { const char* v = nostroma::env("NOSTROMA_CKPT_ASYNC"); return v != nullptr && v[0] == '1'; }();
     return on;
 #endif
 }
-// STRATA_CKPT_GATHER=1 (CUDA, opt-in): the small running-state vectors (ple, then each layer's indexer tail, dead row
+// NOSTROMA_CKPT_GATHER=1 (CUDA, opt-in): the small running-state vectors (ple, then each layer's indexer tail, dead row
 // and block position: 1 + 3 x layers pieces) are gathered device to device into one buffer, allocated once, and
 // fetched with ONE copy into a pinned buffer, then copied into the vectors.  A small D2H copy issued while the
-// checkpoint DMA (STRATA_CKPT_ASYNC) is in flight waits behind the 4 MiB piece on the copy engine: one such wait
+// checkpoint DMA (NOSTROMA_CKPT_ASYNC) is in flight waits behind the 4 MiB piece on the copy engine: one such wait
 // instead of 37.  The same bytes in the same places.  One set of buffers: the mutex serializes the saves a layer
-// split runs on one thread per stage (STRATA_CKPT_THREADS), which otherwise gather through the same buffer.
+// split runs on one thread per stage (NOSTROMA_CKPT_THREADS), which otherwise gather through the same buffer.
 struct CkptGather { std::mutex mu; void* stage = nullptr; void* host = nullptr; size_t cap = 0; int dev = -1; };
 CkptGather& ckpt_gather() { static CkptGather a; return a; }
 bool ckpt_gather_on() {
-#if defined(STRATA_USE_HIP) || defined(STRATA_HIP_GFX906) || defined(STRATA_GPU_METAL)
+#if defined(NOSTROMA_USE_HIP) || defined(NOSTROMA_HIP_GFX906) || defined(NOSTROMA_GPU_METAL)
     return false;
 #else
-    static const bool on = [] { const char* v = strata::env("NOSTROMA_CKPT_GATHER"); return v != nullptr && v[0] == '1'; }();
+    static const bool on = [] { const char* v = nostroma::env("NOSTROMA_CKPT_GATHER"); return v != nullptr && v[0] == '1'; }();
     return on;
 #endif
 }
@@ -276,34 +276,34 @@ void conversation_checkpoint_join(const void* only) {
     std::lock_guard<std::mutex> lk(a.mu);
     if (a.pending.valid() && (only == nullptr || only == a.dst)) {
         const cudaError_t e = a.pending.get();
-        if (e != cudaSuccess) std::fprintf(stderr, "strata: STRATA_CKPT_ASYNC: a checkpoint copy failed (%s)\n", cudaGetErrorString(e));
+        if (e != cudaSuccess) std::fprintf(stderr, "nostroma: NOSTROMA_CKPT_ASYNC: a checkpoint copy failed (%s)\n", cudaGetErrorString(e));
     }
 }
 
 namespace {
-// conversation_checkpoint_save; `staged` (STRATA_CKPT_ASYNC): the GDN bytes land in `c.gdn` on the background thread
+// conversation_checkpoint_save; `staged` (NOSTROMA_CKPT_ASYNC): the GDN bytes land in `c.gdn` on the background thread
 // after this returns (conversation_checkpoint_join waits for them)
 bool checkpoint_save(ConversationCheckpoint& c, const SessionState& ss, const ModelGeometry& g, std::string& error,
                      bool& staged) {
     staged = false;
     const auto j0 = std::chrono::steady_clock::now();
     conversation_checkpoint_join(nullptr);   // (the staging buffer is reused)
-    if (strata::env("NOSTROMA_PARK_TRACE")) std::fprintf(stderr, "strata parktrace: save join %.2f ms\n",
+    if (nostroma::env("NOSTROMA_PARK_TRACE")) std::fprintf(stderr, "nostroma parktrace: save join %.2f ms\n",
         std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - j0).count());
-#if defined(STRATA_GPU_METAL)
+#if defined(NOSTROMA_GPU_METAL)
     (void) g;
-    return strata::metal_engine::window_checkpoint_save(c, &ss, error);
+    return nostroma::metal_engine::window_checkpoint_save(c, &ss, error);
 #endif
     ConversationStateSizes z;
     if (!checkpoint_targets(ss, g, c.ids.size(), z, error)) return false;
     const size_t layers = owned_qsa(ss);
-    static const bool atr = strata::env("NOSTROMA_PARK_TRACE") != nullptr;
+    static const bool atr = nostroma::env("NOSTROMA_PARK_TRACE") != nullptr;
     const bool ready = c.gdn.size() == z.gdn;   // (a pooled checkpoint's pages are in; a fresh vector faults them all)
     const auto r0 = std::chrono::steady_clock::now();
     const long rf0 = atr ? conversation_trace::thread_minflt() : 0;
     c.gdn.resize(z.gdn); c.ple.resize(ss.ple_hist ? z.ple : 0);
     c.tails.resize(layers * z.tail); c.dead.resize(layers * z.dead); c.block_pos.resize(layers * z.block_pos);
-    if (atr) std::fprintf(stderr, "strata parktrace: save vectors %s, resize %.2f ms, %ld faults, gdn %zu MB at %p (%s)\n", ready ? "ready" : "fresh",
+    if (atr) std::fprintf(stderr, "nostroma parktrace: save vectors %s, resize %.2f ms, %ld faults, gdn %zu MB at %p (%s)\n", ready ? "ready" : "fresh",
         std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - r0).count(),
         conversation_trace::thread_minflt() - rf0, c.gdn.size() >> 20, (const void*) c.gdn.data(), conversation_trace::where(c.gdn.data()));
     if (ckpt_async_on() && c.gdn.size() >= ((size_t) 1 << 20)) {
@@ -339,7 +339,7 @@ bool checkpoint_save(ConversationCheckpoint& c, const SessionState& ss, const Mo
             void* host = a.host;
             const uint8_t* stage = (const uint8_t*) dsrc;
             cudaStream_t st = a.stream;
-            if (atr) std::fprintf(stderr, "strata parktrace: async ckpt d2d %.2f ms\n",
+            if (atr) std::fprintf(stderr, "nostroma parktrace: async ckpt d2d %.2f ms\n",
                 std::chrono::duration<double, std::milli>(q1 - q0).count());
             std::lock_guard<std::mutex> lk(a.mu);
             // the DMA in 4 MiB pieces, one in flight: a D2H copy queues behind the one before it on the copy engine, and
@@ -367,7 +367,7 @@ bool checkpoint_save(ConversationCheckpoint& c, const SessionState& ss, const Mo
     if (!staged && !copy(c.gdn.data(), ss.gdn_state, c.gdn.size(), error)) return false;
     const auto s0 = std::chrono::steady_clock::now();
     const bool ok = [&] {
-        // STRATA_CKPT_GATHER=1: the small vectors through one device gather and one copy (else one copy each)
+        // NOSTROMA_CKPT_GATHER=1: the small vectors through one device gather and one copy (else one copy each)
         if (ckpt_gather_on()) {
             const int r = ckpt_gather_small(c, ss, z, layers, error);
             if (r != 0) return r > 0;
@@ -381,7 +381,7 @@ bool checkpoint_save(ConversationCheckpoint& c, const SessionState& ss, const Mo
         }
         return true;
     }();
-    if (atr) std::fprintf(stderr, "strata parktrace: save small copies %.2f ms\n",
+    if (atr) std::fprintf(stderr, "nostroma parktrace: save small copies %.2f ms\n",
         std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - s0).count());
     return ok;
 }
@@ -403,9 +403,9 @@ bool conversation_checkpoint_restore(const ConversationCheckpoint& c, SessionSta
             if (x.tag == c.dev_tag && x.dev == dev && x.n == c.gdn.size()) { x.used = ++vram_slots().clock; hit = &x; }
     }
     if (hit == nullptr) conversation_checkpoint_join(c.gdn.data());
-#if defined(STRATA_GPU_METAL)
+#if defined(NOSTROMA_GPU_METAL)
     (void) g;
-    if (!strata::metal_engine::window_checkpoint_restore(c, &ss, error)) return false;
+    if (!nostroma::metal_engine::window_checkpoint_restore(c, &ss, error)) return false;
     ss.ple_prev[0] = c.ids.size() >= 2 ? c.ids[c.ids.size() - 2] : -1;
     ss.ple_prev[1] = c.ids.size() >= 1 ? c.ids[c.ids.size() - 1] : -1;
     return true;
@@ -422,7 +422,7 @@ bool conversation_checkpoint_restore(const ConversationCheckpoint& c, SessionSta
             !copy(st.idx_dead, c.dead.data() + j * z.dead, z.dead, error) ||
             !copy(st.idx_block_pos, c.block_pos.data() + j * z.block_pos, z.block_pos, error)) return false;
         if (!c.ids.empty()) {
-            const size_t row = c.ids.size() / strata::kernels::qsa_real_shapes().idx_block;
+            const size_t row = c.ids.size() / nostroma::kernels::qsa_real_shapes().idx_block;
             if (!copy(st.idx_pooled + row * g.idx_key_dim, c.dead.data() + j * z.dead, z.dead, error)) return false;
         }
     }
@@ -453,7 +453,7 @@ bool conversation_checkpoint_copy(const SessionState& from, SessionState& to, co
         if (!acopy(b.idx_tail, a.idx_tail, zf.tail) || !acopy(b.idx_dead, a.idx_dead, zf.dead) ||
             !acopy(b.idx_block_pos, a.idx_block_pos, zf.block_pos)) return false;
         if (!ids.empty()) {   // restore writes the saved `dead` row into the pooled row the next token fills
-            const size_t row = ids.size() / strata::kernels::qsa_real_shapes().idx_block;
+            const size_t row = ids.size() / nostroma::kernels::qsa_real_shapes().idx_block;
             if (!acopy(b.idx_pooled + row * g.idx_key_dim, a.idx_dead, zf.dead)) return false;
         }
     }
@@ -515,7 +515,7 @@ bool conversation_snapshot_capture_bytes(const ConversationKvReuse& reuse, const
     return true;
 }
 
-// (conversation_snapshot.cpp) STRATA_PARK_TRACE: conversation_kv_save's time since the park's begin, by part (ms)
+// (conversation_snapshot.cpp) NOSTROMA_PARK_TRACE: conversation_kv_save's time since the park's begin, by part (ms)
 void conversation_kv_save_trace(double& attrs_ms, double& resize_ms, double& copy_ms);
 long conversation_kv_save_trace_faults();   // (E1) minor faults of the K/V buffer resizes of this park's saves
 
@@ -525,12 +525,12 @@ bool conversation_snapshot_save(SavedConversation& image, const ConversationView
                                 ConversationKvReuse reuse, size_t* reused_bytes,
                                 std::vector<ConversationCheckpoint>* storage,
                                 std::vector<ConversationCheckpoint>* moved) {
-    static const bool ptr = strata::env("NOSTROMA_PARK_TRACE") != nullptr;
+    static const bool ptr = nostroma::env("NOSTROMA_PARK_TRACE") != nullptr;
     auto now = [] { return std::chrono::steady_clock::now(); };
     auto ms = [](std::chrono::steady_clock::time_point a, std::chrono::steady_clock::time_point b) {
         return std::chrono::duration<double, std::milli>(b - a).count(); };
     const auto pj = now();
-    conversation_checkpoint_join(nullptr);   // the last turn checkpoint's DMA (STRATA_CKPT_ASYNC)
+    conversation_checkpoint_join(nullptr);   // the last turn checkpoint's DMA (NOSTROMA_CKPT_ASYNC)
     conversation_park_join();                // the previous park's K/V DMA
     const auto p0 = now();
     size_t estimate = 0;
@@ -551,7 +551,7 @@ bool conversation_snapshot_save(SavedConversation& image, const ConversationView
     const long ck_faults = ptr ? conversation_trace::thread_minflt() - cf0 : 0;
     if (ptr)   // (E1: where each copied checkpoint's running state went: faults of the whole copy, address, heap or mapping)
         for (const auto& c : captured.checkpoints)
-            std::fprintf(stderr, "strata parktrace: ckpt copy gdn %zu MB at %p (%s)\n", c.gdn.size() >> 20,
+            std::fprintf(stderr, "nostroma parktrace: ckpt copy gdn %zu MB at %p (%s)\n", c.gdn.size() >> 20,
                          (const void*) c.gdn.data(), conversation_trace::where(c.gdn.data()));
     if (moved != nullptr)
         for (auto& c : *moved) {
@@ -563,12 +563,12 @@ bool conversation_snapshot_save(SavedConversation& image, const ConversationView
     captured.kv = std::move(reuse.kv);
     const size_t layers = owned_qsa(ss);
     captured.kv.resize(layers + (draft ? 1 : 0));
-    // STRATA_PARK_VRAM_MIB: the retained layers' tokens go now (joined above, so no wait): held past the launch below,
+    // NOSTROMA_PARK_VRAM_MIB: the retained layers' tokens go now (joined above, so no wait): held past the launch below,
     // their replacement would join the copy just launched
     for (auto& k : captured.kv) k.pending.reset();
     bool live_staged = false;
     const bool live_saved = checkpoint_save(captured.live, ss, g, error, live_staged);
-    // STRATA_CKPT_ASYNC: the running state lands in live.gdn after the save returns; the image waits for that copy
+    // NOSTROMA_CKPT_ASYNC: the running state lands in live.gdn after the save returns; the image waits for that copy
     // before the vector is freed (an eviction within the copy's ~70 ms), as `pending` does for the K/V.  The join is
     // selective: a no-op once the copy has landed or another checkpoint's is in flight.
     if (live_staged)
@@ -579,14 +579,14 @@ bool conversation_snapshot_save(SavedConversation& image, const ConversationView
     if (!live_saved) return false;
     const auto p3 = now();
     const int64_t upto = (int64_t) view.ids.size();
-    // STRATA_PARK_ASYNC: the K/V bytes these saves copy (the stage they need; an over-estimate by the kept prefix)
+    // NOSTROMA_PARK_ASYNC: the K/V bytes these saves copy (the stage they need; an over-estimate by the kept prefix)
     size_t kv_need = 0;
     for (size_t j = 0; j < layers; ++j) kv_need += conversation_kv_bytes(owned(ss, j), g, upto, true);
     if (draft) kv_need += conversation_kv_bytes(*draft, g, upto, false);
     const bool staged = conversation_park_async_begin(kv_need);
     const auto p4 = now();
     struct Abandon { bool on; ~Abandon() { if (on) conversation_park_async_abandon(); } } abandon{staged};
-    double kv_max = 0, kv_sum = 0;   // (STRATA_PARK_TRACE: the per-layer save time)
+    double kv_max = 0, kv_sum = 0;   // (NOSTROMA_PARK_TRACE: the per-layer save time)
     const long kf0 = ptr ? conversation_trace::thread_minflt() : 0;
     for (size_t j = 0; j < layers; ++j) {
         const auto k0 = now();
@@ -601,12 +601,12 @@ bool conversation_snapshot_save(SavedConversation& image, const ConversationView
         for (const auto& k : captured.kv) kvb += k.bytes();
         double attrs_ms = 0, resize_ms = 0, copy_ms = 0;
         conversation_kv_save_trace(attrs_ms, resize_ms, copy_ms);   // (the main layers' saves above)
-        std::fprintf(stderr, "strata parktrace: joins %.1f ms, sync %.1f ms, %zu checkpoints copied %.1f ms, live state %.1f ms, "
+        std::fprintf(stderr, "nostroma parktrace: joins %.1f ms, sync %.1f ms, %zu checkpoints copied %.1f ms, live state %.1f ms, "
                              "begin %.1f ms, K/V %zu MB %.1f ms (layer max %.2f, sum %.2f; attrs %.2f, resize %.2f, copy %.2f)\n",
                      ms(pj, p0), ms(p0, p1), captured.checkpoints.size(), ms(p1, p2), ms(p2, p3), ms(p3, p4), kvb >> 20,
                      ms(p4, now()), kv_max, kv_sum, attrs_ms, resize_ms, copy_ms);
         static const bool thp_said = [] {
-            std::fprintf(stderr, "strata parktrace: THP enabled %s; defrag %s; page size %ld; sbrk end %p\n",
+            std::fprintf(stderr, "nostroma parktrace: THP enabled %s; defrag %s; page size %ld; sbrk end %p\n",
                          conversation_trace::sys_line("/sys/kernel/mm/transparent_hugepage/enabled").c_str(),
                          conversation_trace::sys_line("/sys/kernel/mm/transparent_hugepage/defrag").c_str(),
                          conversation_trace::page_size(), conversation_trace::brk_end());
@@ -615,11 +615,11 @@ bool conversation_snapshot_save(SavedConversation& image, const ConversationView
         (void) thp_said;
         // E1: page faults per phase (a 4 KiB first touch = 1, a 2 MiB huge page = 1).  (Not AnonHugePages: reading /proc/self/smaps_rollup
         // walks the 47 GB expert mapping and costs ~0.5 s a read, which the first E1 job (e1, 11-11) put inside the park's own times.)
-        std::fprintf(stderr, "strata parktrace: faults: checkpoint copies %ld, K/V resize %ld (copy phase included in the layer loop: %ld)\n",
+        std::fprintf(stderr, "nostroma parktrace: faults: checkpoint copies %ld, K/V resize %ld (copy phase included in the layer loop: %ld)\n",
                      ck_faults, conversation_kv_save_trace_faults(), kv_faults_total);
         if (!captured.kv.empty()) {
             const auto& k0 = captured.kv.front();
-            std::fprintf(stderr, "strata parktrace: K/V layer 0 buffers (bytes): k %zu v %zu k_scale %zu v_scale %zu pooled %zu; %zu layers; "
+            std::fprintf(stderr, "nostroma parktrace: K/V layer 0 buffers (bytes): k %zu v %zu k_scale %zu v_scale %zu pooled %zu; %zu layers; "
                                  "segment %zu MiB\n", k0.k.size(), k0.v.size(), k0.k_scale.size(), k0.v_scale.size(), k0.pooled.size(),
                          captured.kv.size(), ConversationBuffer::segment_bytes >> 20);
         }
@@ -631,7 +631,7 @@ bool conversation_snapshot_save(SavedConversation& image, const ConversationView
     abandon.on = false;
     if (staged && !conversation_park_async_launch(error)) return false;
     if (staged) {
-        // STRATA_PARK_VRAM_MIB: the image's slot goes with the image, after the copy that reads it; each K/V layer
+        // NOSTROMA_PARK_VRAM_MIB: the image's slot goes with the image, after the copy that reads it; each K/V layer
         // carries a token of its own too (the layers outlive the image when they are retained for the next park, and
         // the copy fills their buffers).  Without a slot: the image's join as before, no layer tokens.
         const uint64_t slot = conversation_park_slot_tag();
@@ -660,7 +660,7 @@ bool conversation_snapshot_sources(SavedConversation& meta, std::vector<SessionK
     captured.live.ids = view.ids; captured.live.imgs = view.images;
     captured.cvec = view.cvec; captured.checkpoints = conversation_detail::copy_checkpoints_beating(view.checkpoints);
     if (!conversation_checkpoint_save(captured.live, ss, g, error)) return false;
-    // STRATA_CKPT_ASYNC: the caller writes `meta` to the session file at once, so the running state's copy lands first
+    // NOSTROMA_CKPT_ASYNC: the caller writes `meta` to the session file at once, so the running state's copy lands first
     conversation_checkpoint_join(captured.live.gdn.data());
     const int64_t upto = (int64_t) view.ids.size();
     const size_t layers = owned_qsa(ss);
@@ -728,7 +728,7 @@ ConversationRestore conversation_snapshot_restore(const SavedConversation& image
                                                    const ModelGeometry& g, const QsaState* draft, std::string& error) {
     conversation_checkpoint_join(image.live.gdn.data());
     for (const auto& c : image.checkpoints) conversation_checkpoint_join(c.gdn.data());
-    conversation_park_join_for(image);   // (STRATA_PARK_VRAM_MIB: no wait when the K/V comes from its slot)
+    conversation_park_join_for(image);   // (NOSTROMA_PARK_VRAM_MIB: no wait when the K/V comes from its slot)
     if (!conversation_snapshot_validate(image, ss, g, draft, error)) return ConversationRestore::invalid;
     if (!sync(error)) return ConversationRestore::transfer_failed;
     const int64_t upto = (int64_t) image.live.ids.size();
@@ -765,7 +765,7 @@ ConversationRestore conversation_snapshot_restore(const SavedConversation& image
                                                    const ModelGeometry& g, const QsaState& draft, std::string& error) {
     conversation_checkpoint_join(image.live.gdn.data());
     for (const auto& c : image.checkpoints) conversation_checkpoint_join(c.gdn.data());
-    conversation_park_join_for(image);   // (STRATA_PARK_VRAM_MIB: no wait when the K/V comes from its slot)
+    conversation_park_join_for(image);   // (NOSTROMA_PARK_VRAM_MIB: no wait when the K/V comes from its slot)
     return conversation_snapshot_restore(image, ss, g, &draft, error);
 }
 ConversationRestore conversation_snapshot_restore_prefix(const SavedConversation& image, int64_t upto,
@@ -773,7 +773,7 @@ ConversationRestore conversation_snapshot_restore_prefix(const SavedConversation
                                                           const QsaState& draft, std::string& error) {
     conversation_checkpoint_join(image.live.gdn.data());
     for (const auto& c : image.checkpoints) conversation_checkpoint_join(c.gdn.data());
-    conversation_park_join_for(image);   // (STRATA_PARK_VRAM_MIB: no wait when the K/V comes from its slot)
+    conversation_park_join_for(image);   // (NOSTROMA_PARK_VRAM_MIB: no wait when the K/V comes from its slot)
     return conversation_snapshot_restore_prefix(image, upto, ss, g, &draft, error);
 }
 ConversationRestore conversation_snapshot_restore_prefix(const SavedConversation& image, int64_t upto,
@@ -781,7 +781,7 @@ ConversationRestore conversation_snapshot_restore_prefix(const SavedConversation
                                                           const QsaState* draft, std::string& error) {
     conversation_checkpoint_join(image.live.gdn.data());
     for (const auto& c : image.checkpoints) conversation_checkpoint_join(c.gdn.data());
-    conversation_park_join_for(image);   // (STRATA_PARK_VRAM_MIB: no wait when the K/V comes from its slot)
+    conversation_park_join_for(image);   // (NOSTROMA_PARK_VRAM_MIB: no wait when the K/V comes from its slot)
     // a layer split's image (stage images) is restored stage by stage, never in part
     if (!image.stage_images.empty()) {
         fail(error, "a layer split's image restored as a single session");
@@ -801,4 +801,4 @@ ConversationRestore conversation_snapshot_restore_prefix(const SavedConversation
         return ConversationRestore::transfer_failed;
     return ConversationRestore::restored;
 }
-} // namespace strata::core
+} // namespace nostroma::core

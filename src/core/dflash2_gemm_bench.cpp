@@ -3,7 +3,7 @@
 //     dflash2_gemm_bench [iters] [q4]      (q4: the Q4_0 pack's GEMM, kernels/cuda/dflash2.cu gemm4_*)
 //
 // Weight sets are cycled through 2 GiB of distinct matrices so the L2 cache cannot hold them (the drafter reads each matrix once per round).
-#include "strata/kernels/dflash2.hpp"
+#include "nostroma/kernels/dflash2.hpp"
 
 #include <cuda_runtime.h>
 
@@ -51,15 +51,15 @@ int main(int argc, char** argv) {
         std::vector<int> vars = {1, 2, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23};
         if (q4) for (int v = 24; v <= 45; ++v) vars.push_back(v);
         for (int var : vars) {
-            strata::kernels::df2_gemm_variant(var);
+            nostroma::kernels::df2_gemm_variant(var);
             const int ncols = 8;
             const size_t ny = (size_t) 8 * sh.n_out * (sh.mats == 3 ? 3 : sh.mats);
             {   // bitwise against variant 1
-                strata::kernels::Df2Mat m[3];
+                nostroma::kernels::Df2Mat m[3];
                 for (int i = 0; i < sh.mats; ++i) m[i] = {w[(size_t) i], y + (size_t) i * 8 * sh.n_out, sh.n_out, q4};
                 if (sh.mats == 3) { m[1].n_out = 1024; m[2].n_out = 1024; }
                 cudaMemset(y, 0, ny * 4);
-                strata::kernels::df2_gemm(m, sh.mats, xq, xd, sh.n_in, ncols, nullptr);
+                nostroma::kernels::df2_gemm(m, sh.mats, xq, xd, sh.n_in, ncols, nullptr);
                 cudaDeviceSynchronize();
                 std::vector<float> hy(ny);
                 cudaMemcpy(hy.data(), y, ny * 4, cudaMemcpyDeviceToHost);
@@ -69,10 +69,10 @@ int main(int argc, char** argv) {
             cudaDeviceSynchronize();
             cudaEventRecord(a);
             for (int it = 0; it < iters; ++it) {
-                strata::kernels::Df2Mat m[3];
+                nostroma::kernels::Df2Mat m[3];
                 for (int i = 0; i < sh.mats; ++i) m[i] = {w[(size_t) (it % sets) * sh.mats + i], y + (size_t) i * 8 * sh.n_out, sh.n_out, q4};
                 if (sh.mats == 3) { m[1].n_out = 1024; m[2].n_out = 1024; }
-                strata::kernels::df2_gemm(m, sh.mats, xq, xd, sh.n_in, ncols, nullptr);
+                nostroma::kernels::df2_gemm(m, sh.mats, xq, xd, sh.n_in, ncols, nullptr);
             }
             cudaEventRecord(b);
             cudaEventSynchronize(b);

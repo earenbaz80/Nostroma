@@ -7,13 +7,13 @@
 
 #include "../generic.hpp"
 #include "../registry.hpp"
-#include "strata/quant/dot.hpp"
+#include "nostroma/quant/dot.hpp"
 
 #if !defined(_MSC_VER) && (!defined(__AVX512VNNI__) || !defined(__AVX512VL__))
 #error "dot_avx512.cpp needs AVX-512 VL and VNNI"
 #endif
 
-namespace strata::quant {
+namespace nostroma::quant {
 namespace avx512 {
 
 #include "x86_helpers.inc"
@@ -32,4 +32,4 @@ const DotKernel kTable[] = {
 
 DotTable avx512_dot_table() noexcept { return {kTable, (int) (sizeof kTable / sizeof kTable[0])}; }
 
-}  // namespace strata::quant
+}  // namespace nostroma::quant

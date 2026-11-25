@@ -30,24 +30,24 @@ def gguf(path: Path, arch: str, extra_kv_first: bool = False) -> Path:
     return path
 
 
-QWEN = {"exe": "/x/components/engine/0.1.60-linux-x86_64-cuda/strata", "args": ["--model", "/m/q.gguf"], "arch": "qwen3next",
+QWEN = {"exe": "/x/components/engine/0.1.60-linux-x86_64-cuda/nostroma", "args": ["--model", "/m/q.gguf"], "arch": "qwen3next",
         "model_name": "qwen3.8-flash-next-iq3_s"}
-DS = {"exe": "/x/engine-dsv41/0.1.59-linux-x86_64-cuda-cuda13/strata-dsv41", "args": ["--pack", "/nowhere/deepseek"],
+DS = {"exe": "/x/engine-dsv41/0.1.59-linux-x86_64-cuda-cuda13/nostroma-dsv41", "args": ["--pack", "/nowhere/deepseek"],
       "arch": "deepseek41", "model_name": "deepseek-v4.1-flash"}
 
 
 class ConfigReason(unittest.TestCase):
     def test_each_reason(self):
         self.assertEqual(retired.config_reason(DS), "arch")
-        self.assertEqual(retired.config_reason({"exe": "C:\\S\\engine-dsv41\\v\\strata-dsv41.exe", "args": []}), "engine")
-        self.assertEqual(retired.config_reason({"exe": "/x/strata", "model_name": "deepseek-v4.1-flash-ist-das-2.00bpw"}), "name")
+        self.assertEqual(retired.config_reason({"exe": "C:\\S\\engine-dsv41\\v\\nostroma-dsv41.exe", "args": []}), "engine")
+        self.assertEqual(retired.config_reason({"exe": "/x/nostroma", "model_name": "deepseek-v4.1-flash-ist-das-2.00bpw"}), "name")
         with tempfile.TemporaryDirectory() as d:
             tok = Path(d) / "tokenizer"
             tok.mkdir()
             (tok / "tokenizer.json").write_text(json.dumps({"pre": "deepseek3"}), encoding="utf-8")
-            self.assertEqual(retired.config_reason({"exe": "/x/strata", "tokenizer": str(tok)}), "tokenizer")
+            self.assertEqual(retired.config_reason({"exe": "/x/nostroma", "tokenizer": str(tok)}), "tokenizer")
             (tok / "tokenizer.json").write_text(json.dumps({"pre": "qwen35"}), encoding="utf-8")
-            self.assertIsNone(retired.config_reason({"exe": "/x/strata", "tokenizer": str(tok)}))
+            self.assertIsNone(retired.config_reason({"exe": "/x/nostroma", "tokenizer": str(tok)}))
 
     def test_qwen_configs_never_match(self):
         self.assertIsNone(retired.config_reason(QWEN))
@@ -57,12 +57,12 @@ class ConfigReason(unittest.TestCase):
     def test_bad_input_never_raises(self):
         for bad in (None, 3, "x", [], {"exe": 5, "arch": 7, "args": None, "tokenizer": 9}):
             self.assertIsNone(retired.config_reason(bad))
-        self.assertIsNone(retired.config_file_reason("/no/such/strata-x.json"))
-        self.assertEqual(retired.config_file_reason("/no/such/strata-deepseek-v4.1-flash-ist-das-2.00bpw.json"), "name")
+        self.assertIsNone(retired.config_file_reason("/no/such/nostroma-x.json"))
+        self.assertEqual(retired.config_file_reason("/no/such/nostroma-deepseek-v4.1-flash-ist-das-2.00bpw.json"), "name")
 
     def test_config_file(self):
         with tempfile.TemporaryDirectory() as d:
-            p = Path(d) / "strata-anything.json"
+            p = Path(d) / "nostroma-anything.json"
             p.write_text(json.dumps(DS), encoding="utf-8")
             self.assertEqual(retired.config_file_reason(p), "arch")
             p.write_text(json.dumps(QWEN), encoding="utf-8")

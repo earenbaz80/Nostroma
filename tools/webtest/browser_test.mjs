@@ -95,7 +95,7 @@ test("preview: run with scripts keeps the page and the network out of reach", as
   assert.equal(page.url(), url, "the page did not navigate");
   assert.equal(await page.title(), title);
   assert.equal(await page.evaluate(() => document.querySelectorAll("iframe").length), 1, "no frame was added to the page");
-  assert.equal(await page.evaluate(() => typeof localStorage.getItem("strata.chat")), "string", "the page's own store is untouched");
+  assert.equal(await page.evaluate(() => typeof localStorage.getItem("nostroma.chat")), "string", "the page's own store is untouched");
   // a message to the page is the only thing that can cross; the page has no listener of its own, so nothing happens with it
   assert.ok(!(await page.evaluate(() => /addEventListener\(["']message["']/.test(document.scripts[document.scripts.length - 1].textContent || ""))));
   // closing the preview ends the script
@@ -279,8 +279,8 @@ htest("history: everything is off by default - the page is the page it was", asy
   assert.equal(Object.keys(mock.state.requests[0]).sort().join(), "messages,model,reasoning_effort,stream", "the request has no new field");
   assert.equal(await page.evaluate(() => settings.whileBusy), "wait");
   const dbs = await page.evaluate(async () => (indexedDB.databases ? (await indexedDB.databases()).map((d) => d.name) : []));
-  assert.ok(!dbs.includes("strata"), "the browser store is never opened while the list is off");
-  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("strata.chat")).length), 2, "one chat in localStorage, as before");
+  assert.ok(!dbs.includes("nostroma"), "the browser store is never opened while the list is off");
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("nostroma.chat")).length), 2, "one chat in localStorage, as before");
   // Enter while an answer is being written does nothing
   await say(page, "#hold one");
   await page.waitForFunction(() => busy !== null);
@@ -352,7 +352,7 @@ htest("list: switching it on keeps the chat on the screen; off keeps it as the s
   await page.click("#s-list");
   await page.click("#s-apply");
   await page.waitForFunction(() => document.getElementById("sidebar").hidden);
-  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("strata.chat")).length), 0, "the empty chat you were in is the single chat now");
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("nostroma.chat")).length), 0, "the empty chat you were in is the single chat now");
   await page.close();
 });
 
@@ -604,12 +604,12 @@ htest("history: another chat or New chat does not lose a waiting message", async
 // ------------------------------------------------------------------------------------------------ language
 htest("language: English until the user picks one; a pick translates the chat and is kept", async ({ browser, mock }) => {
   const page = await openPage(browser, mock, { seed: on() });
-  assert.equal(await page.evaluate(() => StrataI18n.lang), "en");
+  assert.equal(await page.evaluate(() => NostromaI18n.lang), "en");
   assert.equal(await page.$eval("html", (e) => e.lang), "en");
   assert.equal(await page.$eval("#tab-btn-chat", (e) => e.textContent.trim()), "Chat");
   await page.evaluate(() => { document.getElementById("tab-btn-about").click(); });
   await page.select("#lang", "de");
-  await page.waitForFunction(() => StrataI18n.lang === "de");
+  await page.waitForFunction(() => NostromaI18n.lang === "de");
   assert.equal(await page.$eval("html", (e) => e.lang), "de");
   assert.equal(await page.$eval("#tab-btn-chat", (e) => e.textContent.trim()), "Chat");
   assert.equal(await page.$eval("#tab-btn-about", (e) => e.textContent.trim()), "Info");
@@ -620,9 +620,9 @@ htest("language: English until the user picks one; a pick translates the chat an
   assert.equal(await page.$eval(".history-actions button:last-child", (e) => e.textContent), "Bis hier zurückgehen");
   assert.equal(await page.$eval("#sidebar-foot", (e) => e.textContent), "1 Chat · in diesem Browser gespeichert");
   await page.reload({ waitUntil: "networkidle0" });
-  assert.equal(await page.evaluate(() => StrataI18n.lang), "de", "kept in this browser");
+  assert.equal(await page.evaluate(() => NostromaI18n.lang), "de", "kept in this browser");
   await page.select("#lang", "en");
-  await page.waitForFunction(() => StrataI18n.lang === "en");
+  await page.waitForFunction(() => NostromaI18n.lang === "en");
   assert.equal(await page.$eval("#input", (e) => e.placeholder), "Ask anything…");
   assert.deepEqual(page.errors.filter((e) => !e.includes("404")), [], "(About asks for /config, which the mock does not have)");
   await page.close();
@@ -631,14 +631,14 @@ htest("language: English until the user picks one; a pick translates the chat an
 htest("language: /?lang= is for one visit, an unknown code stays English, every language loads", async ({ browser, mock }) => {
   let page = await openPage(browser, mock, { query: "?lang=ru" });
   assert.equal(await page.$eval("#send-btn", (e) => e.getAttribute("aria-label")), "Отправить");
-  assert.equal(await page.evaluate(() => localStorage.getItem("strata.lang")), null, "not remembered");
+  assert.equal(await page.evaluate(() => localStorage.getItem("nostroma.lang")), null, "not remembered");
   await page.close();
   page = await openPage(browser, mock, { query: "?lang=xx" });
-  assert.equal(await page.evaluate(() => StrataI18n.lang), "en");
+  assert.equal(await page.evaluate(() => NostromaI18n.lang), "en");
   await page.close();
   for (const lang of ["de", "es", "ja", "ko", "pt", "ru", "zh"]) {
     page = await openPage(browser, mock, { query: "?lang=" + lang, seed: on() });
-    assert.equal(await page.evaluate(() => StrataI18n.lang), lang);
+    assert.equal(await page.evaluate(() => NostromaI18n.lang), lang);
     assert.notEqual(await page.$eval("#send-btn", (e) => e.getAttribute("aria-label")), "Send", lang);
     await ask(page, "hello " + lang);
     assert.deepEqual(page.errors, [], lang);

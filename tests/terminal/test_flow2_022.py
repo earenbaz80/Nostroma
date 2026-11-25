@@ -24,7 +24,7 @@ class Base(unittest.TestCase):
         p = mock.patch.object(Catalog, "hardware", lambda self, fresh=False: dict(HW_12, disk_free_gb=500.0))
         p.start()
         self.addCleanup(p.stop)
-        self.tmp = tempfile.TemporaryDirectory(prefix="strata-flow2-")
+        self.tmp = tempfile.TemporaryDirectory(prefix="nostroma-flow2-")
         self.addCleanup(self.tmp.cleanup)
         self.base = Path(self.tmp.name)
 
@@ -189,7 +189,7 @@ class PlanWords(Base):
 
     def test_nothing_is_downloaded_when_everything_is_here(self):
         folder = self.files(self.base / "IQ3_XXS", IQ3XXS, "IQ3_XXS")
-        data = self.base / "Strata" 
+        data = self.base / "Nostroma" 
         (data / "models" / "x").mkdir(parents=True)
         (data / "mtp" / "rt").mkdir(parents=True)
         (data / "mtp" / "rt" / "experts.bin").write_bytes(b"x")
@@ -291,7 +291,7 @@ class QuietStep(Base):
 
     def test_a_silent_pack_step_says_what_it_does_and_that_it_is_still_going(self):
         seen = self.run_steps([(0, "=== Step 5: Getting the model files ==="), (0, "all model files present"),
-                               (0, "=== Step 6: Preparing the model for Strata ==="),
+                               (0, "=== Step 6: Preparing the model for Nostroma ==="),
                                (0, "> python tools/iq_pack.py --gguf x --out y --experts-bin"), (1.6, "[X] stopped for the test")])
         pack = [x for x in seen if x.startswith("Packing the experts into one file")]
         self.assertTrue(pack, seen)
@@ -301,7 +301,7 @@ class QuietStep(Base):
         self.assertNotIn("Setup step 6", " ".join(seen))
 
     def test_no_heartbeat_while_lines_keep_coming(self):
-        seen = self.run_steps([(0, "=== Step 6: Preparing the model for Strata ==="), (0, "> python tools/iq_pack.py --gguf x --out y --experts-bin")] +
+        seen = self.run_steps([(0, "=== Step 6: Preparing the model for Nostroma ==="), (0, "> python tools/iq_pack.py --gguf x --out y --experts-bin")] +
                               [(0.1, f"  layer {i}") for i in range(5)] + [(0, "[X] stopped")], heartbeat=2.0)
         self.assertFalse([x for x in seen if "still working" in x])
 

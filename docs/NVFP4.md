@@ -17,8 +17,8 @@ nostroma launch --family nvfp4 --model NVFP4
 
 | Size in setup and the app | Name | Source |
 | --- | --- | --- |
-| `NVFP4` | NVFP4 (Nostroma's version) | GPTQ-quantized pack, `Maximilian228/Qwen3.8-Flash-Next-NVFP4-GPTQ-Strata` |
-| `NVFP4-NVIDIA` | NVFP4 (NVIDIA's version) | `nvidia/Qwen3.8-Flash-Next-NVFP4` quantizes the routed experts the same way (NVFP4, group 16; other layers BF16, PLE table FP8, MTP experts FP8). Setup offers it as the ready-made pack `Maximilian228/Qwen3.8-Flash-Next-NVIDIA-NVFP4-Strata`. |
+| `NVFP4` | NVFP4 (Nostroma's version) | GPTQ-quantized pack, `Maximilian228/Qwen3.8-Flash-Next-NVFP4-GPTQ-Nostroma` |
+| `NVFP4-NVIDIA` | NVFP4 (NVIDIA's version) | `nvidia/Qwen3.8-Flash-Next-NVFP4` quantizes the routed experts the same way (NVFP4, group 16; other layers BF16, PLE table FP8, MTP experts FP8). Setup offers it as the ready-made pack `Maximilian228/Qwen3.8-Flash-Next-NVIDIA-NVFP4-Nostroma`. |
 | `NVFP4-QAD` | NVFP4 (NVIDIA, trained for FP4) | `nvidia/Qwen3.8-Flash-Next-FP4-Local`, converted on your PC ([below](#nvidias-fp4-local-checkpoint)) |
 
 All three read pictures through the original model's picture reader file that setup downloads with them
@@ -48,7 +48,7 @@ python tools/iq_pack.py --gguf <model>.gguf --out <pack dir>
 Run it like an IQ pack, with the GGUF as its own dense-weight source and the PLE table from an IQ GGUF's PLE shard:
 
 ```sh
-strata --pack <pack dir> --native <model>.gguf --native-dense-gguf <model>.gguf \
+nostroma --pack <pack dir> --native <model>.gguf --native-dense-gguf <model>.gguf \
        --ple-gguf <an IQ model's shard with per_layer_token_embd> --mtp <mtp/rt> \
        --expert-profile data/expert-profile.bin --expert-cache auto --prefill auto --spec 4 ...
 ```
@@ -65,8 +65,8 @@ the bytes over PCIe. The PCIe share of the missed experts is therefore 0.25 for 
 0.55 the copy kernel was 40% of all GPU kernel time (nsys, 300-token decode). Measurements are in
 [History](#history--older-measurements).
 
-`STRATA_ROUTE_TAIL_SKIP` is off by default for NVFP4 experts, because it moves the answers by more than the quantization
-itself. `STRATA_ROUTE_TAIL_SKIP=7` turns it on.
+`NOSTROMA_ROUTE_TAIL_SKIP` is off by default for NVFP4 experts, because it moves the answers by more than the quantization
+itself. `NOSTROMA_ROUTE_TAIL_SKIP=7` turns it on.
 
 ## Where the global scales go
 
@@ -81,7 +81,7 @@ range.
 
 ## Prompt path precision
 
-`STRATA_PREFILL_NVFP4` picks how the batched prompt path multiplies the experts:
+`NOSTROMA_PREFILL_NVFP4` picks how the batched prompt path multiplies the experts:
 
 | Mode | Kernel | Activations | One product against FP64 (`mmq_nvfp4_parity`) |
 | --- | --- | --- | --- |
@@ -93,7 +93,7 @@ range.
 `src/prefill/mmq_nvfp4_w4a8.cu` compiles mmq.cuh's int8 NVFP4 path with Blackwell's FP4 MMA hidden from both the device
 code and the host's tile config, so it is the same on every architecture. Decode already multiplies at this precision.
 The FP4 MMA exists only in the arch-specific target, so `src/prefill/mmq_nvfp4_w4a4.cu` (the FP4 x FP4 kernel and its FP4
-activation quantizer) is the one unit CMake builds with `12x` to `12xa` (`strata_mmq_w4a4`). The rest of the engine keeps
+activation quantizer) is the one unit CMake builds with `12x` to `12xa` (`nostroma_mmq_w4a4`). The rest of the engine keeps
 the architectures as given and runs on sm_121 too. A card without that unit's image (another architecture, or sm_121
 against a 120a build) falls back to `w4a8` with a note.
 
@@ -110,7 +110,7 @@ against a 120a build) falls back to `w4a8` with a note.
 `w4a8` is the default. It is 4.5x closer to the reference than `w4a4`, at 86% of its speed, and it is the precision every
 generated token already runs at. `fp16` is the choice when the prompt must be read exactly.
 
-`STRATA_DUMP_MOE_INPUT` with `mmq_nvfp4_parity --real` tests one product on a real prompt's rows: layer 20, its 12
+`NOSTROMA_DUMP_MOE_INPUT` with `mmq_nvfp4_parity --real` tests one product on a real prompt's rows: layer 20, its 12
 busiest experts, max|x|/rms 4 median and 9 at most.
 
 | Mode | Gate/up error | Down error (heavier SwiGLU tails) |
@@ -127,12 +127,12 @@ NVFP4's 16-value scales are applied in FP32 after every int8 step, which only Bl
 `src/kernels/cpu/nvfp4_avx512.cpp` computes the CPU pool's NVFP4 rows in 512-bit lanes. Each 64-value block is decoded
 once for every token of a verify window: `vpdpbusd` on |E2M1| codes, with the sign moved onto the activation. The
 arithmetic is ggml-cpu's `ggml_vec_dot_nvfp4_q8_0`, with the float additions ordered differently (worst 4.5e-7 relative,
-`nvfp4_avx512_parity`). `STRATA_NO_NVFP4_512=1` falls back to ggml-cpu.
+`nvfp4_avx512_parity`). `NOSTROMA_NO_NVFP4_512=1` falls back to ggml-cpu.
 
 A CPU without AVX-512 (Zen 1 to 3, Intel Core 4th to 10th and 12th to 14th gen, Core Ultra, Xeon E5 v3/v4) runs the same
 rows in 256-bit lanes (`src/kernels/cpu/nvfp4_avx2.cpp`): ggml's AVX2 arithmetic step for step, so every row is bit-equal
 to ggml-cpu's (`nvfp4_cpu_parity`, 0 of 1280x9 and 2560x9 rows differ on a Ryzen 5 5600X, a Ryzen 7 255 and a Core Ultra
-7 265). `STRATA_NO_NVFP4_256=1` falls back to ggml-cpu. An NVFP4 pack is a native pack (its folder holds
+7 265). `NOSTROMA_NO_NVFP4_256=1` falls back to ggml-cpu. An NVFP4 pack is a native pack (its folder holds
 `native_experts.txt`), so the engine starts on such a CPU. The AVX-512 requirement belongs to the canonical Q2_0 pack
 only; a `--pack` folder without `native_experts.txt` is read as that pack, and the engine says so before it refuses.
 
@@ -164,7 +164,7 @@ to two tokens a window and about 12% below at four. The CPU's memory decides, no
 ## Images
 
 The packs keep Qwen's vision tower unquantized, so the original's image encoder reads pictures for them (`--vision`;
-strata-vision opens the dense GGUF for the vocabulary). Pictures are on by default. Setup and the app pick the CPU reader
+nostroma-vision opens the dense GGUF for the vocabulary). Pictures are on by default. Setup and the app pick the CPU reader
 under 24 GB of graphics memory and the GPU reader from 24 GB (`--vision cpu` and `--vision gpu` change it). The encoder on
 the GPU takes about 1.1 GiB of VRAM.
 
@@ -182,7 +182,7 @@ HIP: the decode kernels use no CUDA-only intrinsics. The NVFP4 MMQ instance and 
 
 - `nvfp4_expert_gpu_parity`: the decode kernels against ggml's reference.
 - `nvfp4_avx512_parity`: the CPU rows against ggml-cpu (with `--expert`: one whole expert).
-- `mmq_nvfp4_parity`: the prompt path's products against FP64 (with `--real`: rows dumped by `STRATA_DUMP_MOE_INPUT`).
+- `mmq_nvfp4_parity`: the prompt path's products against FP64 (with `--real`: rows dumped by `NOSTROMA_DUMP_MOE_INPUT`).
 - `tools/nvfp4_verify.py` and `tools/nvfp4_verify_gguf.py`: the conversion, bit for bit.
 
 ## NVIDIA's FP4-Local checkpoint
@@ -197,7 +197,7 @@ What the checkpoint holds, and what `tools/nvfp4_local_pack.py` does with it:
 | --- | --- |
 | Routed experts: NVFP4 (E2M1, E4M3 scale per 16, F32 scale per tensor); the scales stored in NVIDIA's "CSF" form (`.nvfp4_csf_fixed` U8 + `.nvfp4_csf_exceptions` U32) | The scales are decoded to the plain E4M3 matrix (byte-exact; the format is the one vLLM's loader documents), then repacked exactly like every other NVFP4 pack: `experts.bin` with the same 36-byte super-blocks and the 16-byte scale tail. Checked: 304 complete experts and the whole `experts.bin` (SHA-256) equal the route through a full GGUF. |
 | Attention, GDN projections, shared experts, indexer: MXFP8 (E4M3 values, E8M0 scale per 32) | Dequantized exactly, then Q8_0 (same 32-value blocks; +0.6% RMS on top of MXFP8's own ~3%), or BF16 for the small projections the BF16 kernels read. |
-| N-gram (PLE) table, 26.8 GiB: NVFP4 rows of 160 values | A one-tensor GGUF of 90-byte rows (80 B codes + 10 E4M3 scales, one F32 for the table), read by the PLE format `NVFP4` (`strata.ple.format = nvfp4x16`) in `ngram.cpp`; same row size as IQ4_NL. |
+| N-gram (PLE) table, 26.8 GiB: NVFP4 rows of 160 values | A one-tensor GGUF of 90-byte rows (80 B codes + 10 E4M3 scales, one F32 for the table), read by the PLE format `NVFP4` (`nostroma.ple.format = nvfp4x16`) in `ngram.cpp`; same row size as IQ4_NL. |
 | MTP head: NVFP4 experts, BF16 rest | A Q2_0 draft layer built with `mtp_pack.py` / `mtp_rt.py` (88.7% of drafts accepted over 225 test requests). |
 | Vision tower | Not converted. Pictures are read by the original model's picture reader (the shared `mmproj` file that setup downloads); the dense GGUF supplies the vocabulary. |
 
@@ -207,7 +207,7 @@ about 110 GB of free disk beside the 102 GB download, which can be deleted after
 files on NVMe it took about 12 minutes.
 
 > **Measured on:** RTX PRO 5000 72 GB (Blackwell), 128K context, int8 KV, every expert in VRAM
-> (`tools/strata_bench.py`). Nostroma version not recorded.
+> (`tools/nostroma_bench.py`). Nostroma version not recorded.
 
 | Measure | Result |
 | --- | --- |
@@ -252,14 +252,14 @@ PCIe share sweep at 262K context (decode tok/s):
 | --- | ---: | ---: | ---: |
 | NVFP4 GPTQ, experts on the CPU | 92.09% | 0.070 | 1.12 |
 | NVFP4 GPTQ, 1,500 experts on the GPU | 91.79% | 0.069 | 1.07 |
-| The same with `STRATA_ROUTE_TAIL_SKIP=7` | 88.59% | 0.118 | 1.76 |
+| The same with `NOSTROMA_ROUTE_TAIL_SKIP=7` | 88.59% | 0.118 | 1.76 |
 | NVFP4 GPTQ with the GSQ-RCO IQ4_NL n-gram table instead of the FP8 one | 92.15% | 0.069 | 1.07 |
 | For comparison, Unsloth UD-Q5_K_XL | 94.55% | 0.038 | 0.64 |
 | Unsloth UD-Q4_K_XL | 93.09% | 0.056 | - |
 | Unsloth UD-IQ4_XS | 88.91% | 0.101 | 1.60 |
 | GSQ-RCO IQ3_S | 87.69% | 0.144 | 1.98 |
 
-`STRATA_ROUTE_TAIL_SKIP=7` gave +7 to 25% decode on the RTX 3060 and +47 to 55% on the RTX 5070 (64 GB).
+`NOSTROMA_ROUTE_TAIL_SKIP=7` gave +7 to 25% decode on the RTX 3060 and +47 to 55% on the RTX 5070 (64 GB).
 
 > **Measured on:** decode experts (`nvfp4_decode_bench`, 64 distinct experts per call), share of the card's DRAM bandwidth
 > in brackets.
@@ -279,8 +279,8 @@ the RTX 3060 took 2.26 ms at 4 tokens.
 | Mode | Time | First-token KL |
 | --- | ---: | ---: |
 | `w4a8` (default) | 1.52 ms | 0.0068 |
-| `w4a4x2` (`STRATA_PREFILL_NVFP4=w4a4x2`) | 1.13 ms | 0.0056 |
-| `w4a4x2` with down too (`STRATA_PREFILL_X2_MIN_K=640`) | 0.995 ms | 0.0044 |
+| `w4a4x2` (`NOSTROMA_PREFILL_NVFP4=w4a4x2`) | 1.13 ms | 0.0056 |
+| `w4a4x2` with down too (`NOSTROMA_PREFILL_X2_MIN_K=640`) | 0.995 ms | 0.0044 |
 | UD-IQ4_XS's experts | 1.20 ms | - |
 
 On a 64 GB PC the prompt waits for the experts read from the SSD, so the modes give the same prompt speed there. `w4a8`

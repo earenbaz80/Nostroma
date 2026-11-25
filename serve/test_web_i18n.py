@@ -86,7 +86,7 @@ class Served(unittest.TestCase):
     def test_i18n_script_and_refusals(self):
         code, ctype, body = self.get("/web/i18n.js")
         self.assertEqual(code, 200)
-        self.assertIn(b"StrataI18n", body)
+        self.assertIn(b"NostromaI18n", body)
         for path in ("/web/locales/../server.py", "/web/locales/nope.json", "/web/vendor/katex/../../app.js",
                      "/web/vendor/katex/dist/missing.js", "/web/locales/de.json%00"):
             with self.subTest(path=path):

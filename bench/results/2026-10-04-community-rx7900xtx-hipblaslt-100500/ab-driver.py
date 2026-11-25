@@ -8,7 +8,7 @@ driver A/Bs the SAME nightly engine on the SAME workload with and without a fres
 gfx1100-hipblaslt-100500 table (tuned on this host against the nightly SDK's own
 libhipblaslt by build-hip-0138/tune_hipblaslt under LD_LIBRARY_PATH).
 
-Methodology = rates_amd.py: one-shot `strata generate`, greedy, 256 generated tokens,
+Methodology = rates_amd.py: one-shot `nostroma generate`, greedy, 256 generated tokens,
 prefill_tok_s = prompt_tokens / GPU_timeline_s, decode from the engine's own decode line,
 median of 3 clean cells per arm (STALL_FRAC flagging, flagged cells never published).
 One 1k cell on the table arm is the decode sanity check (decode is O(1) in context).
@@ -25,21 +25,21 @@ import sys
 import time
 
 TS = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
-OUT = f"/home/zacch/projects/strata-amd/artifacts/rocm/results/record-hipblaslt-100500-{TS}.json"
-LOGDIR = "/home/zacch/projects/strata-amd/artifacts/rocm/logs"
+OUT = f"/home/zacch/projects/nostroma-amd/artifacts/rocm/results/record-hipblaslt-100500-{TS}.json"
+LOGDIR = "/home/zacch/projects/nostroma-amd/artifacts/rocm/logs"
 
-SDK = "/home/zacch/strata-rocm-experiments/20261003-231142/sdk"
-EXE = "/home/zacch/strata-rocm-experiments/20261003-231142/build-nightly/strata"
-TABLE = "/home/zacch/strata-rocm-experiments/20261003-231142/gfx1100-hipblaslt-100500.txt"
+SDK = "/home/zacch/nostroma-rocm-experiments/20261003-231142/sdk"
+EXE = "/home/zacch/nostroma-rocm-experiments/20261003-231142/build-nightly/nostroma"
+TABLE = "/home/zacch/nostroma-rocm-experiments/20261003-231142/gfx1100-hipblaslt-100500.txt"
 
 # the nightly candidate's exact serving args (serve-nightly-8082.json) - the config the
 # PR's r10 numbers and runs.json describe.
 COMMON = [
-    "--pack", "/home/zacch/projects/strata-amd/packs/iq3_s",
+    "--pack", "/home/zacch/projects/nostroma-amd/packs/iq3_s",
     "--native", "/home/zacch/models/flash-next-iq3s/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf",
     "--ple-gguf", "/home/zacch/models/flash-next-iq3s/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf",
     "--mtp", "/mnt/LINUXWINSHARE/Backup/models/mtp/rt",
-    "--expert-profile", "/home/zacch/projects/strata-amd/Strata/data/expert-profile.bin",
+    "--expert-profile", "/home/zacch/projects/nostroma-amd/Nostroma/data/expert-profile.bin",
     "--expert-cache", "auto", "--spec", "3",
     "--kv", "int8", "--kv-resident", "32768", "--prefill", "8192",
     # without an explicit reserve the cache auto-sizes against ~all free VRAM and the later
@@ -48,20 +48,20 @@ COMMON = [
     "--vram-reserve-mib", "3072",
 ]
 ARM_ENV = {
-    "nightly-100500": {"STRATA_HIPBLASLT_TUNING": TABLE},
+    "nightly-100500": {"NOSTROMA_HIPBLASLT_TUNING": TABLE},
     "nightly-notable": {},
 }
 BASE_ENV = {
     "LD_LIBRARY_PATH": f"{SDK}/lib",
-    "STRATA_PREFILL_RING": "96",
-    "STRATA_GR_V3": "1",
-    "STRATA_SELECT_WMMA": "1",
-    "STRATA_PREFILL_TIMING": "1",
+    "NOSTROMA_PREFILL_RING": "96",
+    "NOSTROMA_GR_V3": "1",
+    "NOSTROMA_SELECT_WMMA": "1",
+    "NOSTROMA_PREFILL_TIMING": "1",
     "HIP_VISIBLE_DEVICES": "0",
     "HOME": "/home/zacch",
 }
 
-TOKENS = "/home/zacch/projects/strata-amd/artifacts/rocm/workloads/qsa-profile-%d.tokens"
+TOKENS = "/home/zacch/projects/nostroma-amd/artifacts/rocm/workloads/qsa-profile-%d.tokens"
 PLAN = [
     # (arm, tier, prompt tokens, token file, --max-context)
     ("nightly-100500", "1k",   1024,   TOKENS % 1024,   9216),
@@ -91,7 +91,7 @@ def stale_engine_holders():
     out = subprocess.run(["ps", "-eo", "pid,cmd"], capture_output=True, text=True).stdout
     hits = []
     for l in out.splitlines():
-        if ("build-nightly/strata" in l or "build-hip" in l and "/strata" in l) \
+        if ("build-nightly/nostroma" in l or "build-hip" in l and "/nostroma" in l) \
                 and "ps -eo" not in l and "appimage" not in l.lower():
             hits.append(l.strip())
     return hits
@@ -135,7 +135,7 @@ def run_cell(arm, tier, tokfile, ctx, seq):
     scope = ["systemd-run", "--user", "--collect", "--wait", "--pipe", f"--unit={unit}",
              "-p", "MemoryMax=66G", "-p", "MemoryHigh=61G", "-p", "Restart=no",
              "/usr/sbin/bash", "-c",
-             f"cd /home/zacch/projects/strata-amd && exec env {envstr} {EXE} {cmd}"]
+             f"cd /home/zacch/projects/nostroma-amd && exec env {envstr} {EXE} {cmd}"]
     with open(log_path, "w") as lf:
         t0 = time.time()
         p = subprocess.run(scope, stdout=lf, stderr=subprocess.STDOUT, timeout=3600)
@@ -183,13 +183,13 @@ def main():
     state = {"record": "hipblaslt-100500-unconfound", "at": TS,
              "pr": "https://github.com/earenbaz80/Nostroma/pull/745",
              "method": ("rates_amd.py methodology on the PR #745 nightly candidate (ROCm 10.2 "
-                        "nightly SDK + rocWMMA, spec 3): one-shot strata generate, greedy, 256 "
+                        "nightly SDK + rocWMMA, spec 3): one-shot nostroma generate, greedy, 256 "
                         "generated tokens; prefill_tok_s = prompt_tokens / GPU_timeline_s; median "
                         "of 3 clean cells per arm (STALL_FRAC=0.4 flagging, flagged cells never "
-                        "published); arms differ ONLY in STRATA_HIPBLASLT_TUNING "
+                        "published); arms differ ONLY in NOSTROMA_HIPBLASLT_TUNING "
                         "(gfx1100-hipblaslt-100500.txt tuned on this host vs unset)."),
              "engine": EXE, "sdk": SDK, "table": TABLE, "table_provenance": {
-                 "tuner": "/home/zacch/projects/strata/build-hip-0138/tune_hipblaslt under "
+                 "tuner": "/home/zacch/projects/nostroma/build-hip-0138/tune_hipblaslt under "
                           "LD_LIBRARY_PATH=<sdk>/lib",
                  "shapes": "artifacts/rocm/tables/hipblaslt-shapes-canon.json (16 shapes x "
                            "{4096,8192} buckets, union of shipped gfx1100 tables + upstream "

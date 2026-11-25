@@ -16,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from serve.frontend import ChatTemplate  # noqa: E402
-from serve.server import HOLD_KEY, REASONING_WRAP_UP, ByteTokenizer, Service, StrataEngine, serve  # noqa: E402
+from serve.server import HOLD_KEY, REASONING_WRAP_UP, ByteTokenizer, Service, NostromaEngine, serve  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -324,12 +324,12 @@ class SamplerObject(HoldCase):
 
 class HoldKey(unittest.TestCase):
     def test_the_gen_key(self):
-        self.assertEqual(StrataEngine.sampling_keys({HOLD_KEY: (512, 248069)}), " hold=512:248069")
+        self.assertEqual(NostromaEngine.sampling_keys({HOLD_KEY: (512, 248069)}), " hold=512:248069")
 
     def test_only_the_servers_own_value_is_sent(self):
         for v in ([512, 1], (0, 1), (5, -1), (5,), ("5", 1), (True, 1), None, 7):
             with self.subTest(v=v):
-                self.assertNotIn("hold=", StrataEngine.sampling_keys({HOLD_KEY: v}))
+                self.assertNotIn("hold=", NostromaEngine.sampling_keys({HOLD_KEY: v}))
 
 
 if __name__ == "__main__":

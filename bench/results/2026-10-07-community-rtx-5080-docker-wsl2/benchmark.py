@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Serial, fresh-prompt Strata benchmark. Run inside its prepared environment.
+"""Serial, fresh-prompt Nostroma benchmark. Run inside its prepared environment.
 
 This is the script from bench/results/2026-09-30-community-rtx-5090/benchmark.py,
 unchanged except for the defaults, so the numbers stay comparable with that
 report. Only --root, --pack, --url and --out defaults were repointed at the
-Docker image layout (/opt/strata, /data/packs/coder-iq1_m, port 8080).
+Docker image layout (/opt/nostroma, /data/packs/coder-iq1_m, port 8080).
 """
 import argparse
 import hashlib
@@ -23,7 +23,7 @@ def get(url):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--root", type=Path, default=Path("/opt/strata"))
+    parser.add_argument("--root", type=Path, default=Path("/opt/nostroma"))
     parser.add_argument("--pack", type=Path, default=Path("/data/packs/coder-iq1_m"))
     parser.add_argument("--url", default="http://127.0.0.1:8080")
     parser.add_argument("--out", type=Path, default=Path("/data/bench"))
@@ -32,7 +32,7 @@ def main():
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     sys.path[:0] = [str(args.root), str(args.root / "tools")]
-    from strata_tokenizer import Tokenizer
+    from nostroma_tokenizer import Tokenizer
     from serve.frontend import ChatTemplate, openai_to_messages
     directory = args.pack / "tokenizer"
     vocab = json.loads((directory / "vocab.json").read_text(encoding="utf-8"))
@@ -47,7 +47,7 @@ def main():
     rows = []
 
     def request(content, maximum=256):
-        return {"model": "strata", "messages": [{"role": "user", "content": content}],
+        return {"model": "nostroma", "messages": [{"role": "user", "content": content}],
                 "temperature": 0, "reasoning_effort": "none", "max_tokens": maximum,
                 "stream": True, "stream_options": {"include_usage": True}}
 

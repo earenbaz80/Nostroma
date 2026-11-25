@@ -1,10 +1,10 @@
-// The picture reader's room in the resident RAM mode (strata/core/reader_room.hpp): only an engine that serves pictures, was asked for
+// The picture reader's room in the resident RAM mode (nostroma/core/reader_room.hpp): only an engine that serves pictures, was asked for
 // the shrinking cache and runs the resident RAM mode keeps the reader's 2,048 MiB in its reserve; every other start keeps its reserve.
-#include "strata/core/reader_room.hpp"
+#include "nostroma/core/reader_room.hpp"
 
 #include <cstdio>
 
-using namespace strata::core;
+using namespace nostroma::core;
 
 namespace {
 int failed = 0;

@@ -1,7 +1,7 @@
 // x86_helpers.inc - ggml's x86 helpers (horizontal sums, nibble and bit unpacking, scale shuffles, sign tables) (llama.cpp ggml/src/ggml-cpu/arch/x86/quants.c at 3cf03257f219afbe7334045ff7c6a06ac68c627d,
 // Copyright (c) 2023-2026 The ggml authors, MIT) in the layer's signature.  Included by dot_avx.cpp and dot_avx2.cpp inside their tier namespace: the
 // #if __AVX2__ / __AVX__ / generic branches are ggml's own, so each tier gives the bits of ggml-cpu built for that flavour.
-// Needs before it: <immintrin.h>, internal.hpp, h2f / f2h (fp16 conversions) and the strata::quant::generic dot declarations.
+// Needs before it: <immintrin.h>, internal.hpp, h2f / f2h (fp16 conversions) and the nostroma::quant::generic dot declarations.
 
 // some compilers don't provide _mm256_set_m128i, e.g. gcc 7
 #define MM256_SET_M128I(a, b) _mm256_insertf128_si256(_mm256_castsi128_si256(b), (a), 1)

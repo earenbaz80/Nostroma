@@ -1,17 +1,17 @@
 // #4590: which tokens the repeat / frequency / presence penalties count.  Header-only, CPU, no model.
 //
 // Default: the current reply only.  The prompt (the new task's digits, a quoted earlier answer, earlier assistant turns)
-// is not in the window; the last prompt token, which the first decode step feeds in, is.  STRATA_PENALTY_PROMPT=1 is the
+// is not in the window; the last prompt token, which the first decode step feeds in, is.  NOSTROMA_PENALTY_PROMPT=1 is the
 // old window: the last penalty_last_n tokens of prompt + reply.
-#include "strata/kernels/sampler.hpp"
+#include "nostroma/kernels/sampler.hpp"
 
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
 
-using strata::kernels::penalty_counts_prompt;
-using strata::kernels::penalty_rows;
-using strata::kernels::penalty_window_from;
+using nostroma::kernels::penalty_counts_prompt;
+using nostroma::kernels::penalty_rows;
+using nostroma::kernels::penalty_window_from;
 
 namespace {
 int checks = 0;

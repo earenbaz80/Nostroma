@@ -16,10 +16,10 @@
  "engine_prompt_tps": 1725.6,
  "engine_decode_tps": 69.3,
  "log_lines": [
-  "strata serve: prompt 261068 tokens = 0 reused + 261068 read in 151288 ms (1725.6 tok/s), 256 generated in 3693 ms (69.3 tok/s), drafts accepted 151 of 231, 6 checkpoints",
-  "strata serve: decode expert cache hit rate: 96.3% (153481 hits / 159304 lookups)"
+  "nostroma serve: prompt 261068 tokens = 0 reused + 261068 read in 151288 ms (1725.6 tok/s), 256 generated in 3693 ms (69.3 tok/s), drafts accepted 151 of 231, 6 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 96.3% (153481 hits / 159304 lookups)"
  ],
- "answer_head": "I'll analyze the last file in the repository listing and then propose a concrete improvement.\n\n## What `serve/web/app.js` does\n\nThis file is the **entire client-side logic of the Strata web application** \u2014 a framework-free, single-file JavaScript app that talks only to the local Strata server. It po",
+ "answer_head": "I'll analyze the last file in the repository listing and then propose a concrete improvement.\n\n## What `serve/web/app.js` does\n\nThis file is the **entire client-side logic of the Nostroma web application** \u2014 a framework-free, single-file JavaScript app that talks only to the local Nostroma server. It po",
  "metrics_after": {
   "engine": {
    "model": "qwen3.8-flash-next-iq3_xxs",

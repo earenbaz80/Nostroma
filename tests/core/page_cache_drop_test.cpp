@@ -1,8 +1,8 @@
-// the file-cache give-back during and after the expert load (include/strata/core/page_cache_drop.hpp).  No GPU.  Cases: the flag and the
+// the file-cache give-back during and after the expert load (include/nostroma/core/page_cache_drop.hpp).  No GPU.  Cases: the flag and the
 // switch, one range and one whole file of a temporary file, every error path (empty path, missing file, bad descriptor, empty range) ignored,
 // the final call over a mixed list (a missing file and a repeated path among good ones), the meminfo reader, the draft line.  (The device rule
 // is checked in src/core/arch_defaults_test.cpp.)
-#include "strata/core/page_cache_drop.hpp"
+#include "nostroma/core/page_cache_drop.hpp"
 
 #include <cstdint>
 #include <cstdio>
@@ -17,8 +17,8 @@
 #include <unistd.h>
 #endif
 
-using namespace strata::core;
-namespace pcd = strata::core::page_cache_drop;
+using namespace nostroma::core;
+namespace pcd = nostroma::core::page_cache_drop;
 
 namespace {
 int failed = 0;
@@ -65,16 +65,16 @@ int main() {
         arena_cache_drop_flag().store(false);
         CHECK(!pcd::enabled());
 #if defined(__linux__)
-        ::unsetenv("STRATA_NO_ARENA_CACHE_DROP");
+        ::unsetenv("NOSTROMA_NO_ARENA_CACHE_DROP");
         arena_cache_drop_flag().store(true);
         CHECK(pcd::enabled());
-        ::setenv("STRATA_NO_ARENA_CACHE_DROP", "1", 1);
+        ::setenv("NOSTROMA_NO_ARENA_CACHE_DROP", "1", 1);
         CHECK(!pcd::enabled() && pcd::off_by_env());
-        ::setenv("STRATA_NO_ARENA_CACHE_DROP", "0", 1);
+        ::setenv("NOSTROMA_NO_ARENA_CACHE_DROP", "0", 1);
         CHECK(pcd::enabled() && !pcd::off_by_env());
-        ::setenv("STRATA_NO_ARENA_CACHE_DROP", "", 1);
+        ::setenv("NOSTROMA_NO_ARENA_CACHE_DROP", "", 1);
         CHECK(pcd::enabled() && !pcd::off_by_env());
-        ::unsetenv("STRATA_NO_ARENA_CACHE_DROP");
+        ::unsetenv("NOSTROMA_NO_ARENA_CACHE_DROP");
 #else
         arena_cache_drop_flag().store(true);
         CHECK(!pcd::enabled());   // never off Linux
@@ -162,7 +162,7 @@ int main() {
         CHECK(s.find("9.0 GiB") != std::string::npos);
         CHECK(s.find("6.0 GiB") != std::string::npos);
         CHECK(s.find("520 ms") != std::string::npos);
-        CHECK(s.find("STRATA_NO_ARENA_CACHE_DROP=1") != std::string::npos);
+        CHECK(s.find("NOSTROMA_NO_ARENA_CACHE_DROP=1") != std::string::npos);
         pcd::Outcome grew;   // the cache grew meanwhile and nothing was advised behind: nothing to say
         grew.cached_before = 1ull << 30;
         grew.cached_after = 2ull << 30;

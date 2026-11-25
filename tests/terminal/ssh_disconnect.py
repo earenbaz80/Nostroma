@@ -21,7 +21,7 @@ from pathlib import Path
 from tests.terminal import lifecycle_matrix as m
 root = Path("/data/split-life/sshrig"); import shutil; shutil.rmtree(root, ignore_errors=True); root.mkdir(parents=True)
 rig = m.Rig(root)
-print(json.dumps({"argv": rig.serve_argv(), "env": {k: v for k, v in rig.env.items() if k.startswith(("STRATA_", "FAKE_", "XDG_", "LOCALAPPDATA", "PYTHONPATH"))}, "port": rig.port}))
+print(json.dumps({"argv": rig.serve_argv(), "env": {k: v for k, v in rig.env.items() if k.startswith(("NOSTROMA_", "FAKE_", "XDG_", "LOCALAPPDATA", "PYTHONPATH"))}, "port": rig.port}))
 '''
 
 REMOTE_STATE = r'''
@@ -32,7 +32,7 @@ from nostroma_control import procs, runtime
 port = %(port)d
 left = [r for r in procs.records() if procs.start_token(r["pid"]) == r["token"]]
 import psutil
-fam = [p.pid for p in psutil.process_iter(["cmdline"]) if any("sshrig" in c or "serve.server" in c or "strata.py" in c for c in (p.info["cmdline"] or [])) and p.pid != os.getpid()]
+fam = [p.pid for p in psutil.process_iter(["cmdline"]) if any("sshrig" in c or "serve.server" in c or "nostroma.py" in c for c in (p.info["cmdline"] or [])) and p.pid != os.getpid()]
 with socket.socket() as s:
     s.settimeout(0.5); open_ = s.connect_ex(("127.0.0.1", port)) == 0
 try:

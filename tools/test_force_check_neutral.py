@@ -175,7 +175,7 @@ class GateRefusesEngineText(unittest.TestCase):
             Path(t, "s.json").write_text(json.dumps({"config": "x", "items": []}))
             Path(t, "cfg.json").write_text(json.dumps({"exe": "none", "args": []}))
             r = subprocess.run([sys.executable, str(TOOL), "gate", str(Path(t, "cfg.json")), str(Path(t, "s.json")), str(Path(t, "o")),
-                                "--cand-env", "STRATA_X=1"], capture_output=True, text=True, timeout=60)
+                                "--cand-env", "NOSTROMA_X=1"], capture_output=True, text=True, timeout=60)
             self.assertNotEqual(r.returncode, 0)
             self.assertIn("neutral writer", r.stdout + r.stderr)
 

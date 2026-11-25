@@ -1,4 +1,4 @@
-"""The picture reader reads on the processor instead of ending the launch (owner, 2026-11-10): the NVIDIA reader (strata-vision) is the CPU reader too,
+"""The picture reader reads on the processor instead of ending the launch (owner, 2026-11-10): the NVIDIA reader (nostroma-vision) is the CPU reader too,
 without --gpu, so a GPU reader that does not start - resident or on demand, whatever the cause - falls back to it, with one log line; when the cause was a
 card with no room, the words for the Terminal's summary go with it (Vision.cpu_note, /metrics engine.vision_note, Runner.report_vision).
 
@@ -29,7 +29,7 @@ def plain_popen(what, args, **kw):
 
 class Construction(unittest.TestCase):
     def make(self, **vision):
-        cfg = {"exe": "/engine/strata-vision", "mmproj": "/m/mmproj.gguf", "model": "/m/model.gguf", "gpu": True, **vision}
+        cfg = {"exe": "/engine/nostroma-vision", "mmproj": "/m/mmproj.gguf", "model": "/m/model.gguf", "gpu": True, **vision}
         with mock.patch.object(server.Vision, "work_dir", return_value=Path(tempfile.gettempdir())):
             return server.Vision(cfg, lazy=True)
 
@@ -40,7 +40,7 @@ class Construction(unittest.TestCase):
                 self.assertIn("--gpu", v.spawn[0])
                 self.assertIsNotNone(v.fallback)
                 self.assertNotIn("--gpu", v.fallback[0])
-                self.assertTrue(v.fallback[0][0].endswith("strata-vision"))
+                self.assertTrue(v.fallback[0][0].endswith("nostroma-vision"))
                 self.assertIsNone(v.cpu_note)
 
     def test_the_persons_image_limit_goes_with_it(self):
@@ -51,9 +51,9 @@ class Construction(unittest.TestCase):
         self.assertIsNone(self.make(gpu=False).fallback)
 
     def test_amd_readers_keep_their_own_cpu_reader(self):
-        self.assertIsNone(self.make(exe="/engine/strata-vision-hip").fallback)                       # no cpu_exe next to it: nothing to fall back to
-        v = self.make(exe="/engine/strata-vision-hip", cpu_exe="/engine/strata-vision")
-        self.assertTrue(v.fallback[0][0].endswith("strata-vision"))
+        self.assertIsNone(self.make(exe="/engine/nostroma-vision-hip").fallback)                       # no cpu_exe next to it: nothing to fall back to
+        v = self.make(exe="/engine/nostroma-vision-hip", cpu_exe="/engine/nostroma-vision")
+        self.assertTrue(v.fallback[0][0].endswith("nostroma-vision"))
 
 
 class Fallback(unittest.TestCase):
@@ -126,7 +126,7 @@ class Fallback(unittest.TestCase):
         self.assertTrue(v.on_cpu)
         self.assertTrue(v.alive())
         self.assertEqual(v.cpu_note, NOTE)                       # card 2: the reader's card 0 of "2,3"; 114 MiB free read after it failed
-        self.assertIn("[strata] the GPU picture reader did not start", said)
+        self.assertIn("[nostroma] the GPU picture reader did not start", said)
         self.assertIn("pictures are read on the CPU", said)
 
     def test_the_need_in_the_note_follows_the_image_limit(self):

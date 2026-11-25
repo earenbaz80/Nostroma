@@ -1,13 +1,13 @@
 // tests/program/stage_reserve_test.cpp - #3702: the later-stage reserve arithmetic of the layer split search.
 // reserve_mib / room_bytes must equal generate.cpp's `stage_room` expression as it was written there. (The unused
 // window-term proposal and its checks are in research/stage-reserve-proposal/.)
-#include "strata/program/stage_reserve.hpp"
+#include "nostroma/program/stage_reserve.hpp"
 
 #include <cstdint>
 #include <cstdio>
 #include <string>
 
-using namespace strata::program::stage_reserve;
+using namespace nostroma::program::stage_reserve;
 
 namespace {
 int g_fail = 0;

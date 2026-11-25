@@ -1,6 +1,6 @@
 # Community benchmark: RTX 4000 Ada 2-GPU vs 3-GPU layer split
 
-Measured on 2026-10-02 on a Dell PowerEdge R7515 running Ubuntu 24.04.5 LTS. This is a community comparison of the same Qwen3.8-Flash-Next IQ3_S model under two Strata GPU layouts on one host.
+Measured on 2026-10-02 on a Dell PowerEdge R7515 running Ubuntu 24.04.5 LTS. This is a community comparison of the same Qwen3.8-Flash-Next IQ3_S model under two Nostroma GPU layouts on one host.
 
 The useful result is narrow: on this machine, adding a third, lower-power RTX 4000 SFF Ada did not materially improve decode throughput, while the 16.6K-token fresh-prompt case became substantially slower. This is consistent with a slow extra pipeline stage outweighing additional expert-cache capacity once the two faster cards are already sufficient for this workload.
 
@@ -15,8 +15,8 @@ The useful result is narrow: on this machine, adding a third, lower-power RTX 40
 - GPU 2: NVIDIA RTX 4000 Ada Generation, 20,475 MiB, 130 W power limit.
 - PCIe: both 130 W cards use x16 links; one of the two negotiated **PCIe 3.0 x16** during these experiments. The exact bus-to-link mapping was not retained, so no per-card Gen4 claim is made here.
 - Storage type: **not retained** in the benchmark artifact.
-- Strata engine 0.1.35, locally built for Ada / SM89 with vision disabled; exact compiler/build flags beyond the SM89 target were not retained.
-- Strata source commit: `d9ab8435f654c368c586340d490915f6addf56a3`.
+- Nostroma engine 0.1.35, locally built for Ada / SM89 with vision disabled; exact compiler/build flags beyond the SM89 target were not retained.
+- Nostroma source commit: `d9ab8435f654c368c586340d490915f6addf56a3`.
 
 No user names, host names, API keys, LAN addresses, or personal filesystem paths are included in this directory.
 
@@ -42,13 +42,13 @@ GPU layouts:
 1. **2 GPU:** GPU 1 + GPU 2, the two 130 W full-height cards.
 2. **3 GPU:** GPU 1 + GPU 0 + GPU 2, inserting the 70 W SFF card between the two 130 W cards.
 
-Strata selected the layer placement automatically. For the 2-GPU run, the saved startup log reports GPUs `[1, 2]`, auto layer split, and an expert cache of 8,092 experts using 14.56 GiB of VRAM. The exact per-GPU layer boundary was not retained. The corresponding detailed 3-GPU startup log was accidentally overwritten after the experiment, so no exact 3-GPU split boundary or cache-count claim is made here.
+Nostroma selected the layer placement automatically. For the 2-GPU run, the saved startup log reports GPUs `[1, 2]`, auto layer split, and an expert cache of 8,092 experts using 14.56 GiB of VRAM. The exact per-GPU layer boundary was not retained. The corresponding detailed 3-GPU startup log was accidentally overwritten after the experiment, so no exact 3-GPU split boundary or cache-count claim is made here.
 
 ## Workload
 
 A local deterministic 12-request smoke suite was replayed unchanged for both layouts. It contains small math, logic, Python, electronics, instruction-following, agent-planning, base-rate, and long-context prompts. The final case is a 16,591-token synthetic archive lookup with two relevant records and many distractors.
 
-The raw request prompts, responses, usage, wall time, Strata timing fields, and MTP draft/acceptance counters for the original comparison are preserved in:
+The raw request prompts, responses, usage, wall time, Nostroma timing fields, and MTP draft/acceptance counters for the original comparison are preserved in:
 
 - `results-2gpu.jsonl`
 - `results-3gpu.jsonl`
@@ -97,7 +97,7 @@ Because of those differences, the follow-up numbers below should not be compared
 
 ### Resolved current-production launch configuration
 
-The pure-2GPU control was launched through the Strata Docker entrypoint with the following credential-free environment:
+The pure-2GPU control was launched through the Nostroma Docker entrypoint with the following credential-free environment:
 
 ```text
 FAMILY=qwen
@@ -115,7 +115,7 @@ After persistent setup state was regenerated, the resolved engine argument list 
 --pack /data/packs/iq3_s
 --native /data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf
 --ple-gguf /data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf
---expert-profile /opt/strata/data/expert-profile.bin
+--expert-profile /opt/nostroma/data/expert-profile.bin
 --expert-cache auto
 --prefill auto
 --spec 4
@@ -143,7 +143,7 @@ The pure-2GPU run also showed the expected workload split: autoregressive decode
 
 ### Reproducibility note: persistent setup state
 
-During the helper sweep, a nominally restored 2-GPU run was initially found to still be using the SFF. The persistent Strata setup state under `/data` regenerated the previously stored experimental arguments:
+During the helper sweep, a nominally restored 2-GPU run was initially found to still be using the SFF. The persistent Nostroma setup state under `/data` regenerated the previously stored experimental arguments:
 
 ```
 --expert-cache-device1 3000 --split-device 2
@@ -169,7 +169,7 @@ For the current pure-2GPU control:
 - model loading was complete before the benchmark and is excluded from request wall times;
 - every retained request reports `reused_tokens = 0` / engine `cache_n = 0`;
 - client wall time covers the complete HTTP request;
-- prompt/decode throughput comes from Strata engine timing fields, not generated-tokens divided by total wall time;
+- prompt/decode throughput comes from Nostroma engine timing fields, not generated-tokens divided by total wall time;
 - TTFT was **not measured**;
 - GPU power/utilization/memory were sampled with `nvidia-smi` every 500 ms;
 - RAM peak during inference and paging activity were **not measured** in the retained run;
@@ -192,7 +192,7 @@ A separate STREAM run on this 4-channel configuration measured:
 
 The lack of improvement from 8 to 16 threads on Copy suggests the current configuration is already close to its available memory-bandwidth ceiling rather than being core-count limited.
 
-A planned follow-up will populate the remaining four channels (8 x 32 GB total) and repeat both STREAM and the same pure-2GPU Strata benchmark. That test should help separate GPU-side cache effects from host expert-tier bandwidth effects.
+A planned follow-up will populate the remaining four channels (8 x 32 GB total) and repeat both STREAM and the same pure-2GPU Nostroma benchmark. That test should help separate GPU-side cache effects from host expert-tier bandwidth effects.
 
 ## Interpretation
 
@@ -204,7 +204,7 @@ This should not be generalized to all three-GPU systems. A third card may still 
 
 ## Limitations
 
-- One host, one model, one quantization, one Strata engine family, and one small synthetic workload.
+- One host, one model, one quantization, one Nostroma engine family, and one small synthetic workload.
 - The original layer-split benchmark and the later expert-cache sweep used different production settings; comparisons are only made within each controlled pair.
 - STREAM was measured separately from the inference run rather than concurrently.
 - Exact auto-selected per-GPU layer boundaries were not retained; the detailed 3-GPU startup log was accidentally overwritten after the experiment.

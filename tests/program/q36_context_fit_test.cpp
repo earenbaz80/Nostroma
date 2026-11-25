@@ -1,6 +1,6 @@
-// strata-q36's one-session context check (GitHub #5715, include/strata/qwen35/context_fit.hpp): the reporter's RTX 5070 12 GB starts from its log,
+// nostroma-q36's one-session context check (GitHub #5715, include/nostroma/qwen35/context_fit.hpp): the reporter's RTX 5070 12 GB starts from its log,
 // a card where every expert fits, and a card too small for any sentence.  CPU only.
-#include "strata/qwen35/context_fit.hpp"
+#include "nostroma/qwen35/context_fit.hpp"
 
 #include <cstdio>
 #include <string>
@@ -20,7 +20,7 @@ constexpr size_t STATE = 30 * 32 * 128 * 128 * 4;     // the GDN layers' state (
 
 // UD-Q4_K_XL on the reporter's RTX 5070: at 64K the log says 0.45 GiB free after the session and 1256 MiB needed by the hybrid buffers.
 // fr0 (before the session, after the fp16 copy at this context) = 0.45 GiB + the session; the fp16 copy grows with the context.
-strata::qwen35::OneSessionInput rtx5070(size_t ctx) {
+nostroma::qwen35::OneSessionInput rtx5070(size_t ctx) {
     const size_t fr0_64k = (size_t) (0.45 * GiB) + KV * 65536 + STATE;
     const size_t fr0 = fr0_64k + SHARED * 65536 - SHARED * ctx;
     const size_t outputs = 2048 * 8 * 2048 * 4 + 2048 * 8 * 4;
@@ -30,7 +30,7 @@ strata::qwen35::OneSessionInput rtx5070(size_t ctx) {
 // UD-Q4_K_XL on an RTX 3060 Ti 8 GB, prompt chunk 512: the build with MMQ said 1.50 GiB needed, 0.41 GiB free, 7168 tokens fit at 32K; the build
 // without MMQ went on and ended in place_experts with 1159 MiB needed (the staging pair, ~1127 MiB, + the CPU part's outputs) and 114 MiB free.
 // staging_counted: whether the engine passes the staging pair (one_session_staging_counted), as the engine does at q36_engine.cu's fit check.
-strata::qwen35::OneSessionInput rtx3060ti(size_t ctx, bool staging_counted) {
+nostroma::qwen35::OneSessionInput rtx3060ti(size_t ctx, bool staging_counted) {
     const size_t outputs = 512 * 8 * 2048 * 4 + 512 * 8 * 4;
     const size_t staging = 1127 * MiB;
     const size_t fr0_32k = (size_t) (0.41 * GiB) + staging + outputs - SHARED * 32768;
@@ -40,8 +40,8 @@ strata::qwen35::OneSessionInput rtx3060ti(size_t ctx, bool staging_counted) {
 }  // namespace
 
 int main() {
-    using strata::qwen35::one_session_fit;
-    using strata::qwen35::one_session_fit_line;
+    using nostroma::qwen35::one_session_fit;
+    using nostroma::qwen35::one_session_fit_line;
     // 32K ran on that card: no refusal
     check(!one_session_fit(rtx5070(32768)).refuse, "32K on the 12 GB card is not refused");
     // 64K ended with the hybrid buffers' text, 128K with the bare out-of-memory line: now the owner's sentence, with the size that fits
@@ -60,18 +60,18 @@ int main() {
     check(!one_session_fit(rtx5070((size_t) f64.fit)).refuse, "the size it names is not refused");
     // a card where every main layer's experts still fit after the session: no hybrid minimum asked, only the session itself
     {
-        strata::qwen35::OneSessionInput in{131072, KV, SHARED, STATE, (size_t) (24.0 * GiB), (size_t) (18.0 * GiB), 0, 0, 1100 * MiB, 128 * MiB};
+        nostroma::qwen35::OneSessionInput in{131072, KV, SHARED, STATE, (size_t) (24.0 * GiB), (size_t) (18.0 * GiB), 0, 0, 1100 * MiB, 128 * MiB};
         check(!one_session_fit(in).refuse, "a 32 GB card at 128K with every expert fitting is not refused");
         in.fr0 = (size_t) (5.0 * GiB);   // the session alone (5.4 GiB) does not fit
         check(one_session_fit(in).refuse, "a session larger than the free VRAM is refused");
     }
     // a card where not even 1024 tokens fit: nothing said here, the engine goes on as before
-    check(!one_session_fit(strata::qwen35::OneSessionInput{32768, KV, SHARED, STATE, 1100 * MiB, (size_t) (19.0 * GiB), 0, 0, 1000 * MiB, 128 * MiB}).refuse,
+    check(!one_session_fit(nostroma::qwen35::OneSessionInput{32768, KV, SHARED, STATE, 1100 * MiB, (size_t) (19.0 * GiB), 0, 0, 1000 * MiB, 128 * MiB}).refuse,
           "no sentence when nothing fits");
     // the staging pair in the floor: the build with MMQ keeps its rule (MMQ or our int8 kernels on a layer), the build without MMQ counts it on the
     // streamed prompt path too (the fused kernels take the layers there: use_mmq false, n_i8 0), as place_experts allocates it
     {
-        using strata::qwen35::one_session_staging_counted;
+        using nostroma::qwen35::one_session_staging_counted;
         check(one_session_staging_counted(true, false, true, true), "MMQ build, a layer on MMQ: counted (as before)");
         check(one_session_staging_counted(false, true, true, true), "MMQ build, a layer on our int8 kernels: counted (as before)");
         check(!one_session_staging_counted(false, false, true, true), "MMQ build, every layer fused: not counted (as before)");
@@ -82,7 +82,7 @@ int main() {
     }
     // the RTX 3060 Ti at 32K: without the staging pair (the no-MMQ build before) no sentence; with it the MMQ build's line, word for word
     {
-        using strata::qwen35::one_session_staging_counted;
+        using nostroma::qwen35::one_session_staging_counted;
         check(!one_session_fit(rtx3060ti(32768, false)).refuse, "3060 Ti 32K, staging not counted: not refused (the old no-MMQ gap)");
         const auto f = one_session_fit(rtx3060ti(32768, one_session_staging_counted(false, false, true, false)));
         check(f.refuse, "3060 Ti 32K, no-MMQ build, fused layers: refused in words");

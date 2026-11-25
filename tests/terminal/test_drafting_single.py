@@ -48,7 +48,7 @@ class Base(unittest.TestCase):
         (self.data / "dflash2" / drafting.VOCAB_NAME).write_bytes(b"v" * 100)
         (self.data / "mtp" / "rt" / "experts.bin").write_bytes(b"e" * 100)
         (self.data / "mtp" / "rt" / drafting.VOCAB_NAME).write_bytes(b"v" * 100)
-        self.exe = Path(self.tmp.name) / "strata-engine"
+        self.exe = Path(self.tmp.name) / "nostroma-engine"
         self.exe.write_bytes(b"--mtp-draft-vocab FILE (or --mtp DIR ... --draft-fallback")   # an engine of the usual form (rc1 and later)
         self.args = ["--native", "m.gguf", "--pack", str(self.data / "packs" / "tag"), "--mtp", str(self.data / "mtp" / "rt"), "--spec", "4", "--batch-mtp",
                      "--mtp-q4", "all", "--spec-min-p", "0.5", "--max-context", "131072"]
@@ -269,20 +269,20 @@ class TheServerAndTheTerminalEndAtTheSameArguments(Base):
         (Path(self.tmp.name) / "data").mkdir(exist_ok=True)
         (Path(self.tmp.name) / "data" / "draft_vocab_en.bin").write_bytes(b"x")
         for mode in (None, "auto", "mtp"):
-            cfg = {"exe": "component:strata-engine", "args": ["--pack", str(self.data / "packs" / "tag"), "--native", "/m/a-00001-of-00004.gguf", "--mtp", str(self.data / "mtp" / "rt"),
+            cfg = {"exe": "component:nostroma-engine", "args": ["--pack", str(self.data / "packs" / "tag"), "--native", "/m/a-00001-of-00004.gguf", "--mtp", str(self.data / "mtp" / "rt"),
                                                               "--max-context", "131072", "--layer-split", "auto"],
                    "cwd": self.tmp.name, "tokenizer": "tok", "port": 8080, "gpu": [0, 1], "env": {}, "model_name": NAMES["qwen"]}
             if mode:
                 cfg["drafting"] = mode
-            d = TS.S.apply_to_config(cfg, exe_for_cards=lambda n, cc=None: "/e/strata-split-2", system="linux", probe=lambda idx: TS.cards(), ram=lambda: (125.0, 80.0),
+            d = TS.S.apply_to_config(cfg, exe_for_cards=lambda n, cc=None: "/e/nostroma-split-2", system="linux", probe=lambda idx: TS.cards(), ram=lambda: (125.0, 80.0),
                                      scan=lambda path: TS.udq4())
             self.assertTrue(d.use_split, (mode, d.reasons))
             args = self.server_args(cfg)
             self.assertEqual(loaded(args), {"mtp"}, mode)
             self.assertNotIn("--draft", args, mode)          # (the split engine's own --draft-vocab is its draft head file, not the DFlash2 drafter)
-        cfg = {"exe": "component:strata-engine", "args": ["--pack", str(self.data / "packs" / "tag"), "--native", "/m/a-00001-of-00004.gguf", "--mtp", str(self.data / "mtp" / "rt"), "--layer-split", "auto"],
+        cfg = {"exe": "component:nostroma-engine", "args": ["--pack", str(self.data / "packs" / "tag"), "--native", "/m/a-00001-of-00004.gguf", "--mtp", str(self.data / "mtp" / "rt"), "--layer-split", "auto"],
                "cwd": self.tmp.name, "tokenizer": "tok", "port": 8080, "gpu": [0, 1], "env": {}, "drafting": "dflash2", "model_name": NAMES["qwen"]}
-        d = TS.S.apply_to_config(cfg, exe_for_cards=lambda n, cc=None: "/e/strata-split-2", system="linux", probe=lambda idx: TS.cards(), ram=lambda: (125.0, 80.0),
+        d = TS.S.apply_to_config(cfg, exe_for_cards=lambda n, cc=None: "/e/nostroma-split-2", system="linux", probe=lambda idx: TS.cards(), ram=lambda: (125.0, 80.0),
                                  scan=lambda path: TS.udq4())
         self.assertFalse(d.use_split, "an explicit DFlash2 keeps the layer split, now with DFlash2")
         self.assertEqual(loaded(self.server_args(cfg)), {"dflash2"})
@@ -293,7 +293,7 @@ class TheServerAndTheTerminalEndAtTheSameArguments(Base):
         self.assertEqual((loaded(args), [a for a in args if a.startswith("--draft")]), (set(), []))
 
     def test_the_terminal_choices_reach_the_engine_alone(self):
-        base = {"exe": "component:strata-engine", "model_name": NAMES["qwen"], "port": 8080, "args": list(self.args)}
+        base = {"exe": "component:nostroma-engine", "model_name": NAMES["qwen"], "port": 8080, "args": list(self.args)}
         for choice, want in ((None, {"dflash2"}), ("auto", {"dflash2"}), ("dflash2", {"dflash2"}), ("mtp", {"mtp"}), ("off", set())):
             with mock.patch.object(drafting, "detect_hardware", return_value=("cuda", ["sm_120"])):
                 cfg = derive_config(base, S.LaunchSettings(drafting=choice), bool_flags=frozenset())
@@ -306,7 +306,7 @@ class TheServerAndTheTerminalEndAtTheSameArguments(Base):
         from nostroma_cli.launch import modelstate
         for saved, key, want in (("mtp", "auto", {"dflash2"}), ("off", "auto", {"dflash2"}), ("dflash2", "mtp", {"mtp"}), ("mtp", "dflash2", {"dflash2"}),
                                  ("mtp", "off", set()), (None, "auto", {"dflash2"}), ("auto", "auto", {"dflash2"}), (None, "mtp", {"mtp"})):
-            base = {"exe": "component:strata-engine", "model_name": NAMES["qwen"], "port": 8080, "args": list(self.args), **({} if saved is None else {"drafting": saved})}
+            base = {"exe": "component:nostroma-engine", "model_name": NAMES["qwen"], "port": 8080, "args": list(self.args), **({} if saved is None else {"drafting": saved})}
             with mock.patch.object(drafting, "detect_hardware", return_value=("cuda", ["sm_120"])):
                 cfg = derive_config(base, S.LaunchSettings(drafting=modelstate.drafting_to_save(key, saved)), bool_flags=frozenset())
             self.assertEqual(loaded(self.server_args(cfg)), want, (saved, key))

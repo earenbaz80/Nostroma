@@ -68,8 +68,8 @@ _cf_seen: dict[tuple[str, float], str | None] = {}
 
 
 def _cloudflared_places() -> list[str]:
-    """Where a cloudflared might be: STRATA_CLOUDFLARED if set, then PATH, then the usual install places."""
-    explicit = os.environ.get("NOSTROMA_CLOUDFLARED", os.environ.get("STRATA_CLOUDFLARED", "")).strip()
+    """Where a cloudflared might be: NOSTROMA_CLOUDFLARED if set, then PATH, then the usual install places."""
+    explicit = os.environ.get("NOSTROMA_CLOUDFLARED", os.environ.get("NOSTROMA_CLOUDFLARED", "")).strip()
     if explicit:
         return [explicit]
     name = "cloudflared.exe" if WINDOWS else "cloudflared"
@@ -306,7 +306,7 @@ def firewall_note(kind: str) -> str | None:
 
 def new_key() -> str:
     import secrets
-    return "sk-strata-" + secrets.token_urlsafe(24)
+    return "sk-nostroma-" + secrets.token_urlsafe(24)
 
 
 def _config_key(path) -> str | None:

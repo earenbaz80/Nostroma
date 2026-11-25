@@ -3,8 +3,8 @@
 OpenAI-compatible server): the first N HellaSwag and Winogrande items, reasoning off, greedy, answer = one letter.
 Run it on two engines serving the same weights, then compare with --compare A_DIR B_DIR.
 
-Usage: strata-quality-eval.py LABEL OUTDIR BASE_URL [--conc 1] [--hs 400] [--wg 400]
-       strata-quality-eval.py --compare DIR_A DIR_B
+Usage: nostroma-quality-eval.py LABEL OUTDIR BASE_URL [--conc 1] [--hs 400] [--wg 400]
+       nostroma-quality-eval.py --compare DIR_A DIR_B
 """
 import argparse, concurrent.futures as cf, json, math, os, re, sys, time, urllib.request
 

@@ -28,7 +28,7 @@ class NonBlockingOut:
         self._idle = True
         self.dropped_chunks = 0
         self.dropped_bytes = 0
-        self._thread = threading.Thread(target=self._run, name="strata-console", daemon=True)
+        self._thread = threading.Thread(target=self._run, name="nostroma-console", daemon=True)
         self._thread.start()
 
     # ---- what the program calls: never blocks on the console

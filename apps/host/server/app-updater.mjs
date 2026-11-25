@@ -3,7 +3,7 @@
  *
  * The desktop app updates itself with Tauri's signed updater, which lives in the Rust shell (apps/desktop/src-tauri). The
  * UI is served by this host, so it cannot call the shell directly; the shell opens a loopback listener, protected by a
- * random token it hands only to this host (STRATA_SHELL_BRIDGE, STRATA_SHELL_TOKEN), and this module is its client.
+ * random token it hands only to this host (NOSTROMA_SHELL_BRIDGE, NOSTROMA_SHELL_TOKEN), and this module is its client.
  * Outside the desktop app (a browser, a test, a source checkout) there is no bridge and `createAppUpdater` returns null.
  *
  * The shell does the checking against the signed feed (its own minisign key) and the installing; nothing here downloads
@@ -12,8 +12,8 @@
  */
 
 export function createAppUpdater({ env = process.env, fetcher = fetch, sleep = ms => new Promise(r => setTimeout(r, ms)) } = {}) {
-  const base = (env.NOSTROMA_SHELL_BRIDGE ?? env.STRATA_SHELL_BRIDGE);
-  const token = (env.NOSTROMA_SHELL_TOKEN ?? env.STRATA_SHELL_TOKEN);
+  const base = (env.NOSTROMA_SHELL_BRIDGE ?? env.NOSTROMA_SHELL_BRIDGE);
+  const token = (env.NOSTROMA_SHELL_TOKEN ?? env.NOSTROMA_SHELL_TOKEN);
   if (!base || !token || !/^http:\/\/127\.0\.0\.1:\d+$/.test(base)) return null;
   async function call(path, method = 'GET', timeoutMs = 120_000) {
     const response = await fetcher(`${base}${path}`, { method, headers: { authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(timeoutMs) });

@@ -1,6 +1,6 @@
-# Strata 0.2.4: DeepSeek V4.1-Flash in the Terminal
+# Nostroma 0.2.4: DeepSeek V4.1-Flash in the Terminal
 
-Strata now runs DeepSeek V4.1-Flash on a PC with one 12 GB graphics card and 46 to 64 GB of RAM. The engine keeps the experts it uses most in RAM and streams the rest from your SSD.
+Nostroma now runs DeepSeek V4.1-Flash on a PC with one 12 GB graphics card and 46 to 64 GB of RAM. The engine keeps the experts it uses most in RAM and streams the rest from your SSD.
 
 **DeepSeek is in the Terminal (`nostroma launch`, `nostroma install`) in this release. The desktop app is unchanged (it stays 0.2.3) and gets DeepSeek in a later update.**
 
@@ -20,7 +20,7 @@ Strata now runs DeepSeek V4.1-Flash on a PC with one 12 GB graphics card and 46 
 
 ## Speed on real PCs
 
-Output is the speed of the answer. Prompt is how fast Strata reads what you send it.
+Output is the speed of the answer. Prompt is how fast Nostroma reads what you send it.
 
 | PC | output | prompt |
 |---|---|---|
@@ -33,7 +33,7 @@ These are the 2.00-bit set. The 2.25-bit set reads 13% more data per token, so e
 
 ## How it works
 
-- **A RAM expert store that sizes itself.** The model is a mixture of experts: each token uses a few of thousands of small blocks. Strata keeps the busiest ones in RAM, takes whatever RAM is free, and reads the rest from the SSD with direct reads. On the RTX 5070 PC with 64 GB this gave 4.3 to 4.9 tokens/s where memory-mapping the files gave 1.8 to 2.2.
+- **A RAM expert store that sizes itself.** The model is a mixture of experts: each token uses a few of thousands of small blocks. Nostroma keeps the busiest ones in RAM, takes whatever RAM is free, and reads the rest from the SSD with direct reads. On the RTX 5070 PC with 64 GB this gave 4.3 to 4.9 tokens/s where memory-mapping the files gave 1.8 to 2.2.
 - **Hot-expert profiles ship with the engine,** so the first prompts do not start cold.
 - **Faster prompts.** The engine now reads long prompts layer by layer in big chunks instead of 16 tokens at a time. A 200-token prompt went from 3.6 to 6.4 tokens/s on the RTX 5070 PC, and 8K prompts reach 231 tokens/s.
 - **Faster prompts on Radeon AI PRO R9700.** New matrix-core kernels (RDNA4) read prompts 36% faster at 8K and 49% faster at 32K on 4 cards (370 to 505 and 550 to 818 tokens/s). Answer speed does not change. They are on by default on these cards.
@@ -66,20 +66,20 @@ These are the 2.00-bit set. The 2.25-bit set reads 13% more data per token, so e
 
 ## The DeepSeek engine is a separate download
 
-DeepSeek runs on its own engine package, `strata-dsv41`, which sits beside your Qwen engine and never replaces it. There are two ways to get it.
+DeepSeek runs on its own engine package, `nostroma-dsv41`, which sits beside your Qwen engine and never replaces it. There are two ways to get it.
 
-- **Automatic:** choose DeepSeek in `nostroma launch` or `nostroma install`. Strata downloads the package that fits your PC, checks its signature and installs it.
-- **By hand:** download the package for your system from this page, check it against `SHA256SUMS.txt`, and run `nostroma launch --model ist-das-2.00bpw --dsv41-package PATH-TO-FILE` (or `python setup.py --family deepseek41 --dsv41-package PATH-TO-FILE`). Strata checks that it is the DeepSeek engine, that it fits your system and that its signature and file hashes are good, and refuses anything else. You can also put the file in the `engine-dsv41` folder next to `engine`.
+- **Automatic:** choose DeepSeek in `nostroma launch` or `nostroma install`. Nostroma downloads the package that fits your PC, checks its signature and installs it.
+- **By hand:** download the package for your system from this page, check it against `SHA256SUMS.txt`, and run `nostroma launch --model ist-das-2.00bpw --dsv41-package PATH-TO-FILE` (or `python setup.py --family deepseek41 --dsv41-package PATH-TO-FILE`). Nostroma checks that it is the DeepSeek engine, that it fits your system and that its signature and file hashes are good, and refuses anything else. You can also put the file in the `engine-dsv41` folder next to `engine`.
 
 | System | File |
 |---|---|
-| Windows, NVIDIA RTX 30 / 40 / 50 | `strata-dsv41-0.1.49-windows-x86_64-cuda-cuda13.tar.gz` |
-| Linux, NVIDIA RTX 30 / 40 / 50 | `strata-dsv41-0.1.49-linux-x86_64-cuda-cuda13.tar.gz` |
-| Linux, Radeon AI PRO R9700 / RX 9070 | `strata-dsv41-0.1.49-linux-x86_64-hip-rx9070.tar.gz` |
+| Windows, NVIDIA RTX 30 / 40 / 50 | `nostroma-dsv41-0.1.49-windows-x86_64-cuda-cuda13.tar.gz` |
+| Linux, NVIDIA RTX 30 / 40 / 50 | `nostroma-dsv41-0.1.49-linux-x86_64-cuda-cuda13.tar.gz` |
+| Linux, Radeon AI PRO R9700 / RX 9070 | `nostroma-dsv41-0.1.49-linux-x86_64-hip-rx9070.tar.gz` |
 
 ## Downloads
 
-Everything from 0.2.3 is attached again, so the release page still holds every file. New in this release: the three Control packages (`strata-control-0.1.49-windows-x86_64.zip`, `-linux-x86_64.tar.gz`, `-macos-arm64.tar.gz`) and the three DeepSeek packages above. The installers, AppImages, dmg and the Qwen engine packages are the 0.2.3 files.
+Everything from 0.2.3 is attached again, so the release page still holds every file. New in this release: the three Control packages (`nostroma-control-0.1.49-windows-x86_64.zip`, `-linux-x86_64.tar.gz`, `-macos-arm64.tar.gz`) and the three DeepSeek packages above. The installers, AppImages, dmg and the Qwen engine packages are the 0.2.3 files.
 
 ## Thanks
 

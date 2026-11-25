@@ -3,15 +3,15 @@
 // kq_cpu_bench times one format pair; a decode window is 48 layers back to back, each layer a different format pair, ~12 missed experts a layer
 // of 1-4 token rows each, split over the pool's threads with a join between gate/up and down.  This runs that shape on the engine's own entry points
 // (native_gu_rows + native_down_rows) over DRAM-sized expert memory: for every layer the pair is that layer's (native_experts.txt of the pack), the
-// number of distinct missed experts and each one's token rows are drawn to match what the engine logs (STRATA_DECODE_TIMING: "CPU experts X (Y entries)"),
+// number of distinct missed experts and each one's token rows are drawn to match what the engine logs (NOSTROMA_DECODE_TIMING: "CPU experts X (Y entries)"),
 // and the experts are picked at random from a per-pair arena of several GB, so every expert is a cold read.  Output: ms per window and per layer.
 //
 //   kq_window_bench --layers PACK/native_experts.txt [--windows 60] [--threads 8] [--distinct 11.6] [--rows 1.7] [--arena-mb 2048] [--reps 3]
 //
 // It is a replay with synthetic routing calibrated on observed means, not an engine run: it says what the kernels do to the pool's time, not what a
 // request's tokens/s do.
-#include "strata/kernels/cpu/expert_layout.hpp"
-#include "strata/kernels/cpu/native_expert.hpp"
+#include "nostroma/kernels/cpu/expert_layout.hpp"
+#include "nostroma/kernels/cpu/native_expert.hpp"
 
 #include "ggml.h"
 #include "ggml-cpu.h"
@@ -30,7 +30,7 @@
 #include <thread>
 #include <vector>
 
-namespace cpu = strata::kernels::cpu;
+namespace cpu = nostroma::kernels::cpu;
 
 namespace {
 
@@ -164,7 +164,7 @@ int main(int argc, char** argv) {
                 n_rows += nt;
             }
         }
-    if (!dump_trace.empty()) {   // the synthetic windows in the STRATA_ROUTE_DUMP text form (every expert a miss), for replay_place.py
+    if (!dump_trace.empty()) {   // the synthetic windows in the NOSTROMA_ROUTE_DUMP text form (every expert a miss), for replay_place.py
         std::FILE* tf = std::fopen(dump_trace.c_str(), "w");
         if (tf) {
             for (int w = 0; w < windows; ++w)

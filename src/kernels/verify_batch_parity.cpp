@@ -4,22 +4,22 @@
 //     build/verify_batch_parity
 //
 // 1. native_gr_post_multi against n native_gr_post calls (the hyper-connection write before the PLE block).
-// 2. native_ple_postops_batch_snap (STRATA_DF_PLE) against the per-token loop of the verify window: per token
+// 2. native_ple_postops_batch_snap (NOSTROMA_DF_PLE) against the per-token loop of the verify window: per token
 //    native_ple_postops, ple_history_advance and a copy of the history (the commit's snapshot); the results, the final
 //    history and every snapshot, for windows of 2..8 tokens.
 //    Skipped where the engine switches the batched PLE post-ops off itself (an engine built with CUDA 12.8 on a compute
-//    capability 12.0 card: sm120_series.hpp ple_batch_resolve, the rule the prompt path uses; STRATA_PLE_BATCH=1 runs it anyway).
+//    capability 12.0 card: sm120_series.hpp ple_batch_resolve, the rule the prompt path uses; NOSTROMA_PLE_BATCH=1 runs it anyway).
 // GPU, synthetic, no model.
-#include "strata/kernels/f16_bits.hpp"
-#include "strata/env.hpp"
-#include "strata/kernels/kv_q4.hpp"
-#include "strata/kernels/kv_stream.hpp"
-#include "strata/kernels/native_gr_postops.hpp"
-#include "strata/kernels/native_ple_postops.hpp"
-#include "strata/kernels/ngram.hpp"
-#include "strata/kernels/ple.hpp"
-#include "strata/kernels/qsa.hpp"
-#include "strata/core/sm120_series.hpp"
+#include "nostroma/kernels/f16_bits.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kernels/kv_q4.hpp"
+#include "nostroma/kernels/kv_stream.hpp"
+#include "nostroma/kernels/native_gr_postops.hpp"
+#include "nostroma/kernels/native_ple_postops.hpp"
+#include "nostroma/kernels/ngram.hpp"
+#include "nostroma/kernels/ple.hpp"
+#include "nostroma/kernels/qsa.hpp"
+#include "nostroma/core/sm120_series.hpp"
 
 #include <cuda_runtime.h>
 
@@ -30,7 +30,7 @@
 #include <random>
 #include <vector>
 
-namespace k = strata::kernels;
+namespace k = nostroma::kernels;
 
 namespace {
 
@@ -171,19 +171,19 @@ int main() {
     cudaStream_t s = nullptr;
     ck(cudaStreamCreateWithFlags(&s, cudaStreamNonBlocking), "stream");
     gr_post(s);
-    // the engine's own rule for the batched PLE post-ops (prefill.cpp ple_batch_enabled, same toolkit arguments): off for a CUDA 12.8 build on a 12.0 card unless STRATA_PLE_BATCH says otherwise
-#if defined(CUDART_VERSION) && !defined(STRATA_USE_HIP) && !defined(__HIPCC__)
+    // the engine's own rule for the batched PLE post-ops (prefill.cpp ple_batch_enabled, same toolkit arguments): off for a CUDA 12.8 build on a 12.0 card unless NOSTROMA_PLE_BATCH says otherwise
+#if defined(CUDART_VERSION) && !defined(NOSTROMA_USE_HIP) && !defined(__HIPCC__)
     constexpr int kRt = CUDART_VERSION;
     constexpr bool kHip = false;
 #else
     constexpr int kRt = 0;      // a HIP build has no CUDA toolkit version: the engine passes 0 and hip = true
     constexpr bool kHip = true;
 #endif
-    if (strata::ple_batch_resolve(strata::env("NOSTROMA_PLE_BATCH"), kRt, kHip, prop.major, prop.minor))
+    if (nostroma::ple_batch_resolve(nostroma::env("NOSTROMA_PLE_BATCH"), kRt, kHip, prop.major, prop.minor))
         ple(s);
     else
         std::printf("SKIP native_ple_postops_batch_snap: built with CUDA 12.8 for RTX 50: the batched PLE post-ops are switched off in this build "
-                    "(STRATA_PLE_BATCH=1 runs the step anyway)\n");
+                    "(NOSTROMA_PLE_BATCH=1 runs the step anyway)\n");
     std::printf("verify_batch_parity: %s\n", g_fail ? "FAIL" : "PASS");
     return g_fail ? 1 : 0;
 }

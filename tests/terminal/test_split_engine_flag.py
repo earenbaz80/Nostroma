@@ -13,7 +13,7 @@ from tests.terminal.launch_support import run_cli
 
 
 class Flag(unittest.TestCase):
-    BASE = {"exe": "component:strata-engine", "args": ["--pack", "/d/packs/x", "--mtp", "/d/mtp/rt"], "port": 8080, "model_name": "m"}
+    BASE = {"exe": "component:nostroma-engine", "args": ["--pack", "/d/packs/x", "--mtp", "/d/mtp/rt"], "port": 8080, "model_name": "m"}
 
     def test_the_flag_is_listed_checked_copyable_and_saved_in_the_launch_config(self):
         code, out, _ = run_cli(["launch", "--help"])

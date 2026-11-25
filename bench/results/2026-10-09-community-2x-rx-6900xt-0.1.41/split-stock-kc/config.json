@@ -1,5 +1,5 @@
 {
-  "exe": "/work/stock/build-hip/strata",
+  "exe": "/work/stock/build-hip/nostroma",
   "args": [
     "--pack",
     "/m/packs/iq3_s",
@@ -32,7 +32,7 @@
   ],
   "cwd": "/work/stock",
   "tokenizer": "/m/packs/iq3_s/tokenizer",
-  "model_name": "strata-split",
+  "model_name": "nostroma-split",
   "log": "/bench/split-stock-kc/engine.log",
   "lib_dirs": [
     "/opt/rocm/lib"
@@ -46,7 +46,7 @@
   "gpus_asked": true,
   "layer_split": "auto",
   "env": {
-    "STRATA_HIP_ADAPT_KERNEL_COPY": "1"
+    "NOSTROMA_HIP_ADAPT_KERNEL_COPY": "1"
   },
   "gpu_order": "as_given"
 }

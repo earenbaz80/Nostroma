@@ -21,12 +21,12 @@
 //      Asserted as a property, not as a value, because that is what the source comment claims.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 #include <dpct/dpct.hpp>
-#include "strata/kernels/gr.hpp"
-#include "strata/kernels/fused_gr.hpp"
-#include "strata/kernels/native_mmvq.hpp"
-#include "strata/core/geometry.hpp"
+#include "nostroma/kernels/gr.hpp"
+#include "nostroma/kernels/fused_gr.hpp"
+#include "nostroma/kernels/native_mmvq.hpp"
+#include "nostroma/core/geometry.hpp"
 
 #include <cmath>
 #include <cstdio>
@@ -159,16 +159,16 @@ const char* activation_mode_name(int mode) {
     return mode == 2 ? "native pinned GR" : (mode == 1 ? "FP32" : "BF16");
 }
 void select_activation_mode(int mode) {
-    strata::kernels::gr_set_native_mmvf(mode == 2);
+    nostroma::kernels::gr_set_native_mmvf(mode == 2);
     // In mode 2 the precision-only switch is deliberately false: native MMVF must imply FP32 by itself.
-    strata::kernels::gr_set_fp32_activations(mode == 1);
+    nostroma::kernels::gr_set_fp32_activations(mode == 1);
 }
 
 // A diagonal GR fixture makes activation precision observable without summation-order ambiguity.
 // Two-wide matrices satisfy native MMVF's pair ABI, while each nonzero dot has only one nonzero product.
 // At R=1 and eps=0, xn=gamma exactly; any rounding in xn or lo comes from the selected activation contract.
 int scalar_activation_contract() {
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     const GrShapes sh{2, 1, 2};
     float *d_R = nullptr, *d_norm = nullptr, *d_mixed = nullptr, *d_inject = nullptr;
     uint16_t* d_weights = nullptr;
@@ -355,8 +355,8 @@ int scalar_activation_contract() {
 
 int fused_multi_lds_parity(const float* d_norm, const uint16_t* d_down, const uint16_t* d_up,
                            const uint16_t* d_inject, float eps) {
-    using namespace strata::kernels;
-    constexpr int N = strata::core::kCompiledGeometry.n_embd, HC = strata::core::kCompiledGeometry.hc, LR = strata::core::kCompiledGeometry.hc_lr, D = N * HC, T = kFusedGrMaxT;   // the compiled shape (Q4-SYCL; Flash-Next: 2560 / 4 / 320)
+    using namespace nostroma::kernels;
+    constexpr int N = nostroma::core::kCompiledGeometry.n_embd, HC = nostroma::core::kCompiledGeometry.hc, LR = nostroma::core::kCompiledGeometry.hc_lr, D = N * HC, T = kFusedGrMaxT;   // the compiled shape (Q4-SYCL; Flash-Next: 2560 / 4 / 320)
     std::mt19937 rng(0x6f8a);
     std::normal_distribution<float> normal(0.0f, 0.3f);
     std::vector<float> r((size_t) T * D), bo((size_t) T * N), inj((size_t) T * HC);
@@ -484,9 +484,9 @@ int fused_multi_lds_parity(const float* d_norm, const uint16_t* d_down, const ui
       std::exit(1);
     }
     };
-    // the split read (STRATA_GR_V3=1) sums in another order than the single-token kernel: equal within float
+    // the split read (NOSTROMA_GR_V3=1) sums in another order than the single-token kernel: equal within float
     // rounding, not to the bit, so it is compared with a relative tolerance; the default kernels bit for bit
-    static const bool v3 = [] { const char* v = strata::env("NOSTROMA_GR_V3"); return v != nullptr && std::atoi(v) != 0; }();
+    static const bool v3 = [] { const char* v = nostroma::env("NOSTROMA_GR_V3"); return v != nullptr && std::atoi(v) != 0; }();
     auto close = [](const std::vector<float>& x, const std::vector<float>& y) {
         double worst = 0.0, mag = 1e-30;
         for (size_t i = 0; i < x.size(); ++i) {
@@ -596,7 +596,7 @@ int fused_multi_lds_parity(const float* d_norm, const uint16_t* d_down, const ui
     }
 
 
-    // S26 STRATA_QFUSE: the read's own q8_1 image of `mixed` must be the bytes native_quantize_q8_1 writes from it -
+    // S26 NOSTROMA_QFUSE: the read's own q8_1 image of `mixed` must be the bytes native_quantize_q8_1 writes from it -
     // for every T (1..8), directly and through a captured graph replayed twice (the group counters must reset)
     {
         uint8_t *d_q = nullptr, *d_ref = nullptr;
@@ -652,12 +652,12 @@ int fused_multi_lds_parity(const float* d_norm, const uint16_t* d_down, const ui
                     check(DPCT_CHECK_ERROR(stream->ext_oneapi_graph(*qx)),
                           "qfuse replay 2");
                 }
-                strata::kernels::native_quantize_q8_1(d_mixed, d_ref, N, tt, stream);
+                nostroma::kernels::native_quantize_q8_1(d_mixed, d_ref, N, tt, stream);
                 check(DPCT_CHECK_ERROR(stream->wait()), "qfuse sync");
                 if (qx) { delete (qx); delete (qg); }
                 if (v3) { std::printf("  QFUSE: the v3 read writes no q8_1 (%s)\n", wrote ? "WRONG: it says it did" : "ok"); qbad += wrote; break; }
                 // SYCL port: fused_gr_read_multi never writes the q8_1 image here (fused_gr.dp.cpp: the caller quantizes),
-                // so there is nothing to compare - the engine's STRATA_QFUSE path falls back to native_quantize_q8_1
+                // so there is nothing to compare - the engine's NOSTROMA_QFUSE path falls back to native_quantize_q8_1
                 if (!wrote && tt == 1 && rep == 0) { std::printf("  QFUSE: not built in the SYCL port (the caller quantizes): skipped\n"); qskip = true; break; }
                 check(DPCT_CHECK_ERROR((dpct::get_current_device().queues_wait_and_throw(), dpct::get_in_order_queue())
                                            .memcpy(hq.data(), d_q,
@@ -675,7 +675,7 @@ int fused_multi_lds_parity(const float* d_norm, const uint16_t* d_down, const ui
                 }
             }
         }
-        std::printf("  fused GR read + q8_1 (STRATA_QFUSE), T 1..8, direct and graph replays: %s\n", qbad ? "FAIL" : qskip ? "skipped" : "pass");
+        std::printf("  fused GR read + q8_1 (NOSTROMA_QFUSE), T 1..8, direct and graph replays: %s\n", qbad ? "FAIL" : qskip ? "skipped" : "pass");
         bad += qbad;
         sycl::free(d_q, dpct::get_in_order_queue());
             sycl::free(d_ref, dpct::get_in_order_queue());
@@ -827,16 +827,16 @@ int main(int argc, char** argv) {
               d_inj, q_inject.data(), q_inject.size() * sizeof(uint16_t)).wait()),
           "c inj");
 
-    const strata::kernels::GrShapes sh{n_embd, hc, hc_lr};
+    const nostroma::kernels::GrShapes sh{n_embd, hc, hc_lr};
     // DEVICE memory: the workspace is written by the kernel.
     void* d_ws_raw = nullptr;
     check(DPCT_CHECK_ERROR(d_ws_raw = (void *)sycl::malloc_device(
-                               strata::kernels::gr_workspace_bytes(sh),
+                               nostroma::kernels::gr_workspace_bytes(sh),
                                dpct::get_in_order_queue())),
           "m ws");
-    strata::kernels::GrWorkspace ws;
-    strata::kernels::gr_workspace_init(sh, d_ws_raw, ws);
-    strata::kernels::gr_read(d_R, d_norm, d_down, d_up, d_inj, eps, sh, ws, d_mixed, d_inject, nullptr);
+    nostroma::kernels::GrWorkspace ws;
+    nostroma::kernels::gr_workspace_init(sh, d_ws_raw, ws);
+    nostroma::kernels::gr_read(d_R, d_norm, d_down, d_up, d_inj, eps, sh, ws, d_mixed, d_inject, nullptr);
     std::vector<float> got_mixed((size_t) n_embd), got_inject((size_t) hc);
     check(DPCT_CHECK_ERROR((dpct::get_current_device().queues_wait_and_throw(), dpct::get_in_order_queue())
                                .memcpy(got_mixed.data(), d_mixed,
@@ -910,8 +910,8 @@ int main(int argc, char** argv) {
         fp32.round_activation = false;
         std::vector<float> wm, wi, gm((size_t) n_embd), gi((size_t) hc);
         reference(R, w_norm, w_down, w_up, w_inject, eps, n_embd, hc, hc_lr, fp32, wm, wi);
-        strata::kernels::gr_set_fp32_activations(true);
-        strata::kernels::gr_read(d_R, d_norm, d_down, d_up, d_inj, eps, sh, ws, d_mixed, d_inject, nullptr);
+        nostroma::kernels::gr_set_fp32_activations(true);
+        nostroma::kernels::gr_read(d_R, d_norm, d_down, d_up, d_inj, eps, sh, ws, d_mixed, d_inject, nullptr);
         check(DPCT_CHECK_ERROR(
                   (dpct::get_current_device().queues_wait_and_throw(), dpct::get_in_order_queue())
                       .memcpy(gm.data(), d_mixed, gm.size() * sizeof(float))
@@ -922,13 +922,13 @@ int main(int argc, char** argv) {
                       .memcpy(gi.data(), d_inject, gi.size() * sizeof(float))
                       .wait()),
               "FP32 inject");
-        strata::kernels::gr_set_fp32_activations(false);
+        nostroma::kernels::gr_set_fp32_activations(false);
         const double rm = rel_diff(wm, gm), ri = rel_diff(wi, gi);
         const bool ok = rm <= 1e-4 && ri <= 1e-4;
         std::printf("  FP32 activations vs reference: %s (mixed %.3e, inject %.3e)\n",
                     ok ? "pass" : "FAIL", rm, ri);
         if (!ok) ++bad;
-        strata::kernels::gr_read(d_R, d_norm, d_down, d_up, d_inj, eps, sh, ws, d_mixed, d_inject, nullptr);
+        nostroma::kernels::gr_read(d_R, d_norm, d_down, d_up, d_inj, eps, sh, ws, d_mixed, d_inject, nullptr);
         check(DPCT_CHECK_ERROR(
                   (dpct::get_current_device().queues_wait_and_throw(), dpct::get_in_order_queue())
                       .memcpy(gm.data(), d_mixed, gm.size() * sizeof(float))
@@ -988,7 +988,7 @@ int main(int argc, char** argv) {
             DPCT_CHECK_ERROR(d_bad = sycl::malloc_device<float>(
                                  bad_mixed.size(), dpct::get_in_order_queue())),
             "m bad");
-        strata::kernels::gr_read(d_R, d_norm, d_down_bad, d_up_bad, d_inj, eps, sh, ws, d_bad, d_inject,
+        nostroma::kernels::gr_read(d_R, d_norm, d_down_bad, d_up_bad, d_inj, eps, sh, ws, d_bad, d_inject,
                                  nullptr);
         check(DPCT_CHECK_ERROR((dpct::get_current_device().queues_wait_and_throw(), dpct::get_in_order_queue())
                                    .memcpy(bad_mixed.data(), d_bad,
@@ -1011,7 +1011,7 @@ int main(int argc, char** argv) {
                                .memcpy(d_inject, &sentinel, sizeof(float))
                                .wait()),
           "c sentinel");
-    strata::kernels::gr_read(d_R, d_norm, d_down, d_up, nullptr, eps, sh, ws, d_mixed, d_inject, nullptr);
+    nostroma::kernels::gr_read(d_R, d_norm, d_down, d_up, nullptr, eps, sh, ws, d_mixed, d_inject, nullptr);
     float after = 0.0f;
     check(DPCT_CHECK_ERROR((dpct::get_current_device().queues_wait_and_throw(), dpct::get_in_order_queue())
                                .memcpy(&after, d_inject, sizeof(float))
@@ -1066,7 +1066,7 @@ int main(int argc, char** argv) {
               d_zi, zero_inj.data(), zero_inj.size() * sizeof(float)).wait()),
           "c zi");
 
-    strata::kernels::gr_write(d_Rw, d_bo, d_zi, sh, d_outw, nullptr);
+    nostroma::kernels::gr_write(d_Rw, d_bo, d_zi, sh, d_outw, nullptr);
     std::vector<float> got_write((size_t) hc_dim);
     check(DPCT_CHECK_ERROR((dpct::get_current_device().queues_wait_and_throw(), dpct::get_in_order_queue())
                                .memcpy(got_write.data(), d_outw,
@@ -1122,7 +1122,7 @@ int main(int argc, char** argv) {
     check(DPCT_CHECK_ERROR((dpct::get_current_device().queues_wait_and_throw(), dpct::get_in_order_queue()).memcpy(
               d_zi, inj.data(), inj.size() * sizeof(float)).wait()),
           "c inj2");
-    strata::kernels::gr_write(d_Rw, d_bo, d_zi, sh, d_outw, nullptr);
+    nostroma::kernels::gr_write(d_Rw, d_bo, d_zi, sh, d_outw, nullptr);
     check(DPCT_CHECK_ERROR((dpct::get_current_device().queues_wait_and_throw(), dpct::get_in_order_queue())
                                .memcpy(got_write.data(), d_outw,
                                        got_write.size() * sizeof(float))
@@ -1146,7 +1146,7 @@ int main(int argc, char** argv) {
     // ---- THE REAL DIMENSIONS. Exercise all activation/projection variants at n_embd=2560, hc=4, hc_lr=320.
     // Workspace sizing and every full weight row must agree with the model geometry.
     {
-        const long long rn = strata::core::kCompiledGeometry.n_embd, rhc = strata::core::kCompiledGeometry.hc, rlr = strata::core::kCompiledGeometry.hc_lr, rdim = rhc * rn;   // the compiled shape
+        const long long rn = nostroma::core::kCompiledGeometry.n_embd, rhc = nostroma::core::kCompiledGeometry.hc, rlr = nostroma::core::kCompiledGeometry.hc_lr, rdim = rhc * rn;   // the compiled shape
         std::mt19937 rrng(99);
         std::normal_distribution<float> rg(0.0f, 1.0f);
         auto rbf16 = [&](size_t n, float sigma) {
@@ -1240,17 +1240,17 @@ int main(int argc, char** argv) {
                   dJ, qi.data(), qi.size() * 2).wait()),
               "crJ");
 
-        const strata::kernels::GrShapes rsh{rn, rhc, rlr};
+        const nostroma::kernels::GrShapes rsh{rn, rhc, rlr};
         void* rws_raw = nullptr;
         check(DPCT_CHECK_ERROR(rws_raw = (void *)sycl::malloc_device(
-                                   strata::kernels::gr_workspace_bytes(rsh),
+                                   nostroma::kernels::gr_workspace_bytes(rsh),
                                    dpct::get_in_order_queue())),
               "m rws");
-        strata::kernels::GrWorkspace rws;
-        strata::kernels::gr_workspace_init(rsh, rws_raw, rws);
+        nostroma::kernels::GrWorkspace rws;
+        nostroma::kernels::gr_workspace_init(rsh, rws_raw, rws);
         for (int mode = 0; mode < 3; ++mode) {
             select_activation_mode(mode);
-            strata::kernels::gr_read(dR, dN, dD, dU, dJ, eps, rsh, rws, dM, dI, nullptr);
+            nostroma::kernels::gr_read(dR, dN, dD, dU, dJ, eps, rsh, rws, dM, dI, nullptr);
             std::vector<float> gm((size_t) rn), gi((size_t) rhc);
             check(DPCT_CHECK_ERROR((dpct::get_current_device().queues_wait_and_throw(), dpct::get_in_order_queue())
                                        .memcpy(gm.data(), dM, gm.size() * 4)

@@ -1,6 +1,6 @@
 {
   "header": {
-    "engine": "Strata Qwen3.8-Flash-Next",
+    "engine": "Nostroma Qwen3.8-Flash-Next",
     "host": "Shin-BlackMamba / Ubuntu 24.04.5 LTS",
     "kernel": "6.8.0-146-generic",
     "nvidia_driver": "595.91.07",

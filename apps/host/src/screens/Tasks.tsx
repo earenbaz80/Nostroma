@@ -39,8 +39,8 @@ export function TasksScreen() {
         };
         load();
         const timer = setInterval(load, 3000);
-        window.addEventListener('strata:tasks', load);
-        return () => { alive = false; clearInterval(timer); window.removeEventListener('strata:tasks', load); };
+        window.addEventListener('nostroma:tasks', load);
+        return () => { alive = false; clearInterval(timer); window.removeEventListener('nostroma:tasks', load); };
     }, []);
     async function action(fn: () => Promise<unknown>) {
         setPending(true);
@@ -48,7 +48,7 @@ export function TasksScreen() {
         try {
             await fn();
             await refresh();
-            window.dispatchEvent(new Event('strata:tasks'));
+            window.dispatchEvent(new Event('nostroma:tasks'));
         }
         catch (e) {
             setError(e instanceof Error ? e.message : String(e));

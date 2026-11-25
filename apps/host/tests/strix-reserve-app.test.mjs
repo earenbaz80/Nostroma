@@ -13,7 +13,7 @@ const strixWin = { cpu: { cores: 16 }, ram_gb: 63.6, gpus: [{ index: 0, name: 'A
 const strixLinux = { cpu: { cores: 16 }, ram_gb: 63.6, gpus: [{ index: 0, name: 'AMD Radeon 8060S', vram_gb: 95.8, uma: true, dedicated_gb: 64 }] };
 const setupArgs = ['--max-context', '131072', '--kv', 'int8', '--resident-budget-gib', '38', '--vram-reserve-mib', '700'];
 const noReserveArgs = ['--max-context', '131072', '--kv', 'int8', '--resident-budget-gib', '38'];
-const pictures = { gpu: true, exe: 'strata-vision-hip.exe' };
+const pictures = { gpu: true, exe: 'nostroma-vision-hip.exe' };
 
 test('Windows Strix Halo, setup wrote 700: both profiles, pictures on or off, keep 700 (it was 1024 / 2048)', () => {
   for (const profile of ['work', 'performance']) for (const vision of [undefined, pictures]) {

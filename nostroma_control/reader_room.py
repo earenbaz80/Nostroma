@@ -1,6 +1,6 @@
 """The picture reader and a graphics card that has no room for it: what its output says, and the words.
 
-The GPU picture reader (strata-vision, llama.cpp's mtmd) asks the card for its weights and work buffers when it starts.  A card that another program
+The GPU picture reader (nostroma-vision, llama.cpp's mtmd) asks the card for its weights and work buffers when it starts.  A card that another program
 has filled answers "cudaMalloc failed: out of memory" (the same text on AMD cards, whose runtime ggml names the same way) and ggml aborts: the reader cannot
 print an answer of its own.  Its lines end up in the engine log (its stderr is the log):
 

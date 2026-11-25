@@ -16,11 +16,11 @@
  "engine_prompt_tps": 5706.6,
  "engine_decode_tps": 149.0,
  "log_lines": [
-  "strata serve: conversation cache: parked 4267 tokens in 49.7 ms; parked=4 bytes=1159062996 evictions=2 snapshot_bytes=301311472 reused_kv_bytes=0",
-  "strata serve: prompt 33132 tokens = 0 reused + 33132 read in 5806 ms (5706.6 tok/s), 256 generated in 1718 ms (149.0 tok/s), drafts accepted 131 of 157, 3 checkpoints",
-  "strata serve: decode expert cache hit rate: 93.4% (126859 hits / 135840 lookups)"
+  "nostroma serve: conversation cache: parked 4267 tokens in 49.7 ms; parked=4 bytes=1159062996 evictions=2 snapshot_bytes=301311472 reused_kv_bytes=0",
+  "nostroma serve: prompt 33132 tokens = 0 reused + 33132 read in 5806 ms (5706.6 tok/s), 256 generated in 1718 ms (149.0 tok/s), drafts accepted 131 of 157, 3 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 93.4% (126859 hits / 135840 lookups)"
  ],
- "answer_head": "I can't propose a diff for `build-vision/CMakeCache.txt` \u2014 it is a generated file, not source.\n\n**What it is:** the CMake cache for a separate, secondary build tree (`build-vision/`) configured from `tools/vision/` (project `strata_vision`). It records the resolved configuration of that build: GCC 1",
+ "answer_head": "I can't propose a diff for `build-vision/CMakeCache.txt` \u2014 it is a generated file, not source.\n\n**What it is:** the CMake cache for a separate, secondary build tree (`build-vision/`) configured from `tools/vision/` (project `nostroma_vision`). It records the resolved configuration of that build: GCC 1",
  "metrics_after": {
   "engine": {
    "model": "qwen3.8-flash-next-iq3_s",

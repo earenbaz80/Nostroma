@@ -41,7 +41,7 @@ test('the time allowed is 2 minutes unless the tool says more, at most an hour',
 });
 
 test('a command runs in the folder the call names, then the tool\'s, then the home folder; a missing folder is a plain refusal', async () => {
-  const dir = realpathSync(mkdtempSync(join(tmpdir(), 'strata-cmd-')));
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), 'nostroma-cmd-')));
   const other = join(dir, 'other'); mkdirSync(other);
   try {
     const pwd = `${node} -e "console.log(process.cwd())"`;
@@ -59,10 +59,10 @@ test('a command runs in the folder the call names, then the tool\'s, then the ho
 });
 
 test('a relative path in the command finds its file in the tool\'s folder', async () => {
-  const dir = realpathSync(mkdtempSync(join(tmpdir(), 'strata-cmd-')));
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), 'nostroma-cmd-')));
   try {
     mkdirSync(join(dir, 'tools'));
-    writeFileSync(join(dir, 'tools', 'foo.js'), 'console.log("from foo " + (process.env.STRATA_INPUT || ""));');
+    writeFileSync(join(dir, 'tools', 'foo.js'), 'console.log("from foo " + (process.env.NOSTROMA_INPUT || ""));');
     const r = await runCommand({ command: `${node} tools/foo.js`, cwd: dir, input: 'hello' });
     assert.deepEqual([r.ok, r.text], [true, 'from foo hello']);
   } finally { rmSync(dir, { recursive: true, force: true }); }
@@ -79,9 +79,9 @@ test('a command over the limit is ended and says so; output over the cap says it
 });
 
 test('PowerShell commands run on Windows (Get-ChildItem, $env:)', { skip: !WIN && 'PowerShell is checked on Windows' }, async () => {
-  const r = await runCommand({ command: 'Write-Output ("a" + $env:STRATA_INPUT)', input: 'b' });
+  const r = await runCommand({ command: 'Write-Output ("a" + $env:NOSTROMA_INPUT)', input: 'b' });
   assert.deepEqual([r.ok, r.text], [true, 'ab']);
-  const dir = realpathSync(mkdtempSync(join(tmpdir(), 'strata-cmd-')));
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), 'nostroma-cmd-')));
   try {
     writeFileSync(join(dir, 'note.txt'), 'hi');
     const read = await runCommand({ command: 'Get-Content note.txt', cwd: dir });
@@ -91,7 +91,7 @@ test('PowerShell commands run on Windows (Get-ChildItem, $env:)', { skip: !WIN &
 
 test('Settings keeps a command tool\'s folder, shell and time, validates them, and an edit that does not send them keeps them', () => {
   let stored;
-  const dir = mkdtempSync(join(tmpdir(), 'strata-cmdset-'));
+  const dir = mkdtempSync(join(tmpdir(), 'nostroma-cmdset-'));
   try {
     const tools = createAgentTools({ read: () => stored, write: v => { stored = v; }, dataDir: dir });
     tools.addCustom({ name: 'Build', about: 'Builds the project.', kind: 'command', command: 'npm run build', cwd: 'C:\\work\\app', shell: 'cmd', timeoutSec: 900 });
@@ -115,7 +115,7 @@ import { readFileSync } from 'node:fs';
 const require_read = file => readFileSync(file, 'utf8');
 
 test('the tool server over stdio: the call may name a folder, and the tool\'s own settings apply', async () => {
-  const dir = realpathSync(mkdtempSync(join(tmpdir(), 'strata-cmdsrv-')));
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), 'nostroma-cmdsrv-')));
   const work = join(dir, 'work'); mkdirSync(work);
   const file = join(dir, 'tools.json');
   writeFileSync(file, JSON.stringify({ commands: {

@@ -1,6 +1,6 @@
 // The app's Load, headless, for the config snapshot.  node app_driver.mjs <world.json> <plain|models>
 //
-// The host's own createNativeControl runs the Load exactly as the app does.  Fake: the installer process (strata_mcp.py: catalog and hardware), Control's
+// The host's own createNativeControl runs the Load exactly as the app does.  Fake: the installer process (nostroma_mcp.py: catalog and hardware), Control's
 // model list, engine package, profile save and start (they record what the host hands over).  Real: Control's `drafting plan` and `drafting fetch`, run
 // through the Python shim on the same simulated machine, with the download replaced by a recorder.  No engine starts, nothing is downloaded, no network.
 import { EventEmitter } from 'node:events';
@@ -11,19 +11,19 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const [worldFile, which] = process.argv.slice(2);
 const spec = JSON.parse(readFileSync(worldFile, 'utf8'));
 const root = spec.root;
-const repo = process.env.STRATA_SNAPSHOT_REPO;
-const python = process.env.STRATA_SNAPSHOT_PYTHON;
+const repo = process.env.NOSTROMA_SNAPSHOT_REPO;
+const python = process.env.NOSTROMA_SNAPSHOT_PYTHON;
 const here = dirname(fileURLToPath(import.meta.url));
 
 // every per-user place the host or Control writes to is inside the scratch folder
 Object.assign(process.env, {
   HOME: join(root, 'home'), USERPROFILE: join(root, 'home'), APPDATA: join(root, 'roaming'), LOCALAPPDATA: join(root, 'local'),
   XDG_CONFIG_HOME: join(root, 'xdg-config'), XDG_STATE_HOME: join(root, 'state'), XDG_DATA_HOME: join(root, 'xdg-data'),
-  STRATA_SETTINGS_FILE: join(root, 'settings.json'), STRATA_COMPONENTS_DIR: join(root, 'components'), STRATA_INSTALL_DIR: join(root, 'install'),
-  STRATA_PROFILE_DIR: join(root, 'config', 'profiles'), STRATA_RUNTIME_DIR: join(root, 'runtime'), STRATA_SNAPSHOT_WORLD: worldFile,
+  NOSTROMA_SETTINGS_FILE: join(root, 'settings.json'), NOSTROMA_COMPONENTS_DIR: join(root, 'components'), NOSTROMA_INSTALL_DIR: join(root, 'install'),
+  NOSTROMA_PROFILE_DIR: join(root, 'config', 'profiles'), NOSTROMA_RUNTIME_DIR: join(root, 'runtime'), NOSTROMA_SNAPSHOT_WORLD: worldFile,
 });
-for (const k of ['STRATA_API_KEY', 'STRATA_ENGINE_BACKEND', 'STRATA_UPDATE_FEED', 'STRATA_NATIVE_REPO']) delete process.env[k];
-mkdirSync(process.env.STRATA_COMPONENTS_DIR, { recursive: true });
+for (const k of ['NOSTROMA_API_KEY', 'NOSTROMA_ENGINE_BACKEND', 'NOSTROMA_UPDATE_FEED', 'NOSTROMA_NATIVE_REPO']) delete process.env[k];
+mkdirSync(process.env.NOSTROMA_COMPONENTS_DIR, { recursive: true });
 
 const { createNativeControl } = await import(pathToFileURL(join(repo, 'apps/host/server/native-control.mjs')).href);
 const { createControl } = await import(pathToFileURL(join(repo, 'apps/host/server/control-runtime.mjs')).href);
@@ -63,16 +63,16 @@ const catalog = { families: [{ family, title: info.title, about: 'x', images: tr
   contexts: [8192, 32768, 131072], recommendation: { family, model, context: info.context }, context_note: '' };
 
 const spawnProcess = (command, argv) => {
-  if (!String(argv[0]).endsWith('strata_mcp.py')) throw new Error('no process but the installer may be started in packaged mode: ' + command + ' ' + argv.join(' '));
+  if (!String(argv[0]).endsWith('nostroma_mcp.py')) throw new Error('no process but the installer may be started in packaged mode: ' + command + ' ' + argv.join(' '));
   const child = new EventEmitter(); child.stdout = new EventEmitter(); child.stderr = new EventEmitter(); child.exitCode = null;
   child.kill = () => { child.exitCode = 0; queueMicrotask(() => child.emit('exit', 0)); return true; };
   child.stdin = { write(line) {
     const message = JSON.parse(line); if (!message.id) return;
     let result;
     if (message.method === 'initialize') result = { protocolVersion: '2024-11-05' };
-    else if (message.method === 'tools/list') result = { tools: ['strata_models', 'strata_status', 'strata_install', 'strata_remove'].map(name => ({ name })) };
-    else if (message.params.name === 'strata_models') result = { structuredContent: catalog };
-    else if (message.params.name === 'strata_status') result = { structuredContent: { hardware, recommendation: catalog.recommendation, install: null, running: [], summary: 'x' } };
+    else if (message.method === 'tools/list') result = { tools: ['nostroma_models', 'nostroma_status', 'nostroma_install', 'nostroma_remove'].map(name => ({ name })) };
+    else if (message.params.name === 'nostroma_models') result = { structuredContent: catalog };
+    else if (message.params.name === 'nostroma_status') result = { structuredContent: { hardware, recommendation: catalog.recommendation, install: null, running: [], summary: 'x' } };
     else result = { structuredContent: { summary: 'x', install: { running: false, exit_code: 0 } } };
     queueMicrotask(() => child.stdout.emit('data', Buffer.from(JSON.stringify({ jsonrpc: '2.0', id: message.id, result }) + '\n')));
   } };
@@ -96,8 +96,8 @@ try {
   native.state();
   for (let i = 0; i < 100 && !probe; i++) await new Promise(r => setTimeout(r, 20));    // the host asks once, at its first state; the Load must start after the answer
   if (probe) { await probe.catch(() => {}); await new Promise(r => setTimeout(r, 100)); }
-  // STRATA_SNAPSHOT_APP_ARGS (JSON): more of what the Models screen passes (resourceProfile, vision), for the tests that need it; the golden runs leave it unset
-  const extra = process.env.STRATA_SNAPSHOT_APP_ARGS ? JSON.parse(process.env.STRATA_SNAPSHOT_APP_ARGS) : {};
+  // NOSTROMA_SNAPSHOT_APP_ARGS (JSON): more of what the Models screen passes (resourceProfile, vision), for the tests that need it; the golden runs leave it unset
+  const extra = process.env.NOSTROMA_SNAPSHOT_APP_ARGS ? JSON.parse(process.env.NOSTROMA_SNAPSHOT_APP_ARGS) : {};
   const args = { ...(which === 'models' ? { model: tag, values: { drafting: 'auto' } } : { model: tag }), ...extra };
   const job = await until(native.operation('load', args));
   if (job.state !== 'done') { console.error('Load ended in state ' + job.state + ': ' + (job.error ?? '')); exitCode = 3; }

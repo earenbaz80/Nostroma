@@ -1,4 +1,4 @@
-# strata fused prompt kernels: weight decode digests (tests/cuda/prefill_decode_golden.cu), v1
+# nostroma fused prompt kernels: weight decode digests (tests/cuda/prefill_decode_golden.cu), v1
 # format group blocks input-fnv64 output-fnv64 (output: per 32-value sub-block 8 int8 words + the bits of s0, s1)
 IQ2_XXS 0 256 09934c45006cc54b ebc5c6ddf98738ae
 IQ2_XXS 1 256 4c9bdf901bf83fb4 50e6bdb14a5c2b28

@@ -1,14 +1,14 @@
 {
- "gguf": "C:/Users/AI-Server/Desktop/Strata/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf",
+ "gguf": "C:/Users/AI-Server/Desktop/Nostroma/IQ3_XXS/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf",
  "llama_server": "C:/1402-h/llama/llama-server.exe",
- "strata_cfg": "C:/Users/AI-Server/Desktop/Strata/Public/Engine/strata-iq3_xxs.json",
- "strata_exe": "C:/Users/AI-Server/Desktop/Strata/GitHub/release/z040/strata.exe",
- "serve": "C:/Users/AI-Server/Desktop/Strata/GitHub/wt-1402-h/serve",
- "cwd": "C:/Users/AI-Server/Desktop/Strata/Public/Engine",
+ "nostroma_cfg": "C:/Users/AI-Server/Desktop/Nostroma/Public/Engine/nostroma-iq3_xxs.json",
+ "nostroma_exe": "C:/Users/AI-Server/Desktop/Nostroma/GitHub/release/z040/nostroma.exe",
+ "serve": "C:/Users/AI-Server/Desktop/Nostroma/GitHub/wt-1402-h/serve",
+ "cwd": "C:/Users/AI-Server/Desktop/Nostroma/Public/Engine",
  "configs": [
   {
-   "name": "strata-setup",
-   "kind": "strata",
+   "name": "nostroma-setup",
+   "kind": "nostroma",
    "args": [],
    "override": {
     "--max-context": "36864"

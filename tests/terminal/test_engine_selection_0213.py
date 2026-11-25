@@ -112,10 +112,10 @@ class LauncherChoice(Tree):
             cat = C.Catalog()
             hw = {"ram_gb": 64.0, "os": "Linux", "cpu": {"avx2": True}, "gpus": shared_gpus, "disk_free_gb": 500}
             fake = lambda root="/sys/class/drm": REAL_ARC(str(self.root))      # noqa: E731
-            with mock.patch.dict(os.environ, env or {}, clear=False), mock.patch.object(cat.strata, "hardware", return_value=hw), \
+            with mock.patch.dict(os.environ, env or {}, clear=False), mock.patch.object(cat.nostroma, "hardware", return_value=hw), \
                     mock.patch.object(C, "intel_arc_cards", fake), mock.patch("nostroma_control.engine_component.status", return_value={"usable": False}):
                 if not env:
-                    os.environ.pop("STRATA_ENGINE_BACKEND", None)
+                    os.environ.pop("NOSTROMA_ENGINE_BACKEND", None)
                 comp = cat.computer()
                 return comp.engine_vendor, [g["name"] for g in comp.usable_gpus], [g["name"] for g in comp.ignored_gpus]
 
@@ -132,7 +132,7 @@ class LauncherChoice(Tree):
             with self.subTest(did=did):
                 self.tearDown(); self.setUp()
                 build(self.root, ("card0", NVIDIA, "0x2204", None), ("card1", INTEL, did, None))
-                vendor, usable, ignored = self.computer([self.RTX], {"STRATA_ENGINE_BACKEND": "sycl"})
+                vendor, usable, ignored = self.computer([self.RTX], {"NOSTROMA_ENGINE_BACKEND": "sycl"})
                 self.assertEqual(vendor, "intel")
                 self.assertEqual(len(usable), 1)
                 self.assertIn("NVIDIA GeForce RTX 3090", ignored)

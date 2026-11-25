@@ -19,11 +19,11 @@ export async function fetchUpdateCheck(signal?: AbortSignal): Promise<UpdateChec
   const response = await fetch('/api/updates/check', { signal });
   if (!response.ok) throw new Error('Could not check for updates. Try again.');
   const data = await response.json() as UpdateCheckResult;
-  if (!data.strata?.status || !data.engine?.status || !data.checkedAt) throw new Error('The update service returned an incomplete result.');
+  if (!data.nostroma?.status || !data.engine?.status || !data.checkedAt) throw new Error('The update service returned an incomplete result.');
   return data;
 }
 
-const EVENT = 'strata:update-check';
+const EVENT = 'nostroma:update-check';
 
 /** Remember a finished check and tell every Settings panel that shows it. */
 export function publishUpdateCheck(result: UpdateCheckResult, now: InstalledVersions) {

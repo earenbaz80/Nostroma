@@ -14,7 +14,7 @@ TOOLS = [{'type': 'function', 'function': {'name': 'read_file', 'description': '
 
 def recall(n):
     filler = 'This is irrelevant background about routine office cleaning schedules. Ignore it when extracting marked keys.\n'
-    return 'START_KEY=CLENEX-4181\n' + filler * n + 'MIDDLE_KEY=STRATA-8081\n' + filler * n + 'END_KEY=LONDON-9060\nReturn only JSON with start, middle and end holding the three marked key values.'
+    return 'START_KEY=CLENEX-4181\n' + filler * n + 'MIDDLE_KEY=NOSTROMA-8081\n' + filler * n + 'END_KEY=LONDON-9060\nReturn only JSON with start, middle and end holding the three marked key values.'
 
 
 def wait_idle(base):
@@ -35,8 +35,8 @@ def main():
     a = p.parse_args()
     if a.output.exists():
         p.error('Output exists; choose a new path. No requests were sent.')
-    if os.environ.get('STRATA_API_KEY'):
-        b.AUTH_HEADERS['Authorization'] = 'Bearer ' + os.environ['STRATA_API_KEY']
+    if os.environ.get('NOSTROMA_API_KEY'):
+        b.AUTH_HEADERS['Authorization'] = 'Bearer ' + os.environ['NOSTROMA_API_KEY']
     status = b.get_json(a.base, '/v1/status')
     if not status.get('loaded') or status.get('model') != a.model or status.get('context', {}).get('max_positions') != 122880:
         p.error('Expected the selected loaded model at 122880 context. No benchmark request sent.')

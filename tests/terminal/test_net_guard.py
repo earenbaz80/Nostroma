@@ -44,14 +44,14 @@ def udp() -> socket.socket:
 
 
 class Guarded(unittest.TestCase):
-    """The guard is on for these tests whatever the run says: a run with STRATA_TEST_ALLOW_NETWORK=1 (a live run, or a check that sets it) switches it
+    """The guard is on for these tests whatever the run says: a run with NOSTROMA_TEST_ALLOW_NETWORK=1 (a live run, or a check that sets it) switches it
     off for the others, and these tests are about the guard itself."""
 
     def setUp(self):
         p = mock.patch.dict(os.environ)
         p.start()
         self.addCleanup(p.stop)
-        os.environ.pop("STRATA_TEST_ALLOW_NETWORK", None)
+        os.environ.pop("NOSTROMA_TEST_ALLOW_NETWORK", None)
 
 
 class Refused(Guarded):
@@ -66,7 +66,7 @@ class Refused(Guarded):
         self.assertEqual(len(guard._reached), 6)
 
     def test_a_real_host_name_is_refused(self):
-        for host in ("github.com", "huggingface.co", "example.com", "strata-feed.invalid"):
+        for host in ("github.com", "huggingface.co", "example.com", "nostroma-feed.invalid"):
             with self.assertRaises(socket.gaierror, msg=host):
                 socket.getaddrinfo(host, 443)
         self.assertEqual(len(guard._reached), 4)
@@ -122,7 +122,7 @@ class Allowed(Guarded):
 
 class OptOut(Guarded):
     def test_a_live_test_that_sets_the_variable_is_let_through_and_nothing_is_counted(self):
-        os.environ["STRATA_TEST_ALLOW_NETWORK"] = "1"
+        os.environ["NOSTROMA_TEST_ALLOW_NETWORK"] = "1"
         before = (len(guard._reached), len(guard._allowed))
         with tcp() as s, mock.patch.object(guard, "_real_connect", return_value=None):
             s.connect(("93.184.216.34", 80))

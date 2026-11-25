@@ -27,15 +27,15 @@ import type { Session } from './types';
  */
 
 /** The old whole-list entry of the released versions (0.2.10 and before). */
-export const LEGACY_SESSIONS_KEY = 'strata.sessions.v1';
+export const LEGACY_SESSIONS_KEY = 'nostroma.sessions.v1';
 /** The order of the chats in the short-lived per-chat browser layout (this branch before the files). */
-export const SESSION_INDEX_KEY = 'strata.sessions.v2';
+export const SESSION_INDEX_KEY = 'nostroma.sessions.v2';
 /** One chat per entry in that layout: this prefix plus the chat id. */
-export const SESSION_KEY_PREFIX = 'strata.session.v2.';
+export const SESSION_KEY_PREFIX = 'nostroma.session.v2.';
 /** Set when the browser's chats were handed to the host. After it, the host's files are the only truth. */
-export const HOST_FLAG_KEY = 'strata.chats.host.v1';
+export const HOST_FLAG_KEY = 'nostroma.chats.host.v1';
 /** Chats that were not yet on the host when the page went away (a last-moment copy, taken back at the next start). */
-export const PENDING_KEY = 'strata.chats.pending.v1';
+export const PENDING_KEY = 'nostroma.chats.pending.v1';
 
 /** The part of `Storage` that is read from. */
 export interface StorageLike {
@@ -70,8 +70,8 @@ function readIndex(storage: StorageLike): string[] {
 }
 
 /**
- * Every chat in the browser's storage, from both layouts: one entry per chat (strata.session.v2.<id>) and the old whole list
- * (strata.sessions.v1). Where a chat is in both, the per-chat entry wins. Nothing is written, moved or removed.
+ * Every chat in the browser's storage, from both layouts: one entry per chat (nostroma.session.v2.<id>) and the old whole list
+ * (nostroma.sessions.v1). Where a chat is in both, the per-chat entry wins. Nothing is written, moved or removed.
  */
 export function readBrowserSessions(storage: StorageLike): { sessions: Session[]; damaged: string[] } {
   const damaged: string[] = [];

@@ -80,7 +80,7 @@ class Sha256(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.f = Path(self.tmp.name) / "x-00002-of-00004.gguf"
-        self.f.write_bytes(b"strata" * 1000)
+        self.f.write_bytes(b"nostroma" * 1000)
         self.sha = hashlib.sha256(self.f.read_bytes()).hexdigest()
 
     def tearDown(self):
@@ -107,7 +107,7 @@ class Sha256(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("does not match the pinned SHA-256", out)
         self.assertFalse(self.f.exists())
-        self.assertEqual(self.f.with_name(self.f.name + ".bad").read_bytes(), b"strata" * 1000)   # the bytes are kept
+        self.assertEqual(self.f.with_name(self.f.name + ".bad").read_bytes(), b"nostroma" * 1000)   # the bytes are kept
         self.assertFalse(self.f.with_name(self.f.name + ".done").exists())   # downloaded again next time
 
     def test_wrong_size(self):
@@ -120,10 +120,10 @@ class Sha256(unittest.TestCase):
 class Config(unittest.TestCase):
     def test_choices_from_config(self):
         with tempfile.TemporaryDirectory() as t:
-            for name, family, model in (("strata-unsloth-ud-q4_k_xl.json", "unsloth", M),
-                                        ("strata-swift-iq3_xxs.json", "swift", "IQ3_XXS"),
-                                        ("strata-iq3_s.json", "qwen", "IQ3_S"),
-                                        ("strata-coder-iq1_m.json", "coder", "IQ1_M")):
+            for name, family, model in (("nostroma-unsloth-ud-q4_k_xl.json", "unsloth", M),
+                                        ("nostroma-swift-iq3_xxs.json", "swift", "IQ3_XXS"),
+                                        ("nostroma-iq3_s.json", "qwen", "IQ3_S"),
+                                        ("nostroma-coder-iq1_m.json", "coder", "IQ1_M")):
                 p = Path(t) / name
                 p.write_text(json.dumps({"args": ["--max-context", "8192"]}))
                 ch = setup.choices_from_config(p)
@@ -178,7 +178,7 @@ class Base(unittest.TestCase):
             self.runs.append([str(x) for x in cmd])
 
         patches = [
-            mock.patch.dict(os.environ, {"STRATA_FEED_MODELS": "0"}),       # the feed's model list is not read from the real feed (the test guard in conftest.py)
+            mock.patch.dict(os.environ, {"NOSTROMA_FEED_MODELS": "0"}),       # the feed's model list is not read from the real feed (the test guard in conftest.py)
             mock.patch.object(setup, "ROOT", self.t),
             mock.patch.object(setup, "GPU_PICK", None),
             mock.patch.object(setup, "data_folder", lambda d, *a, **k: (self.t / "data", [])),
@@ -219,7 +219,7 @@ class Base(unittest.TestCase):
             for p in patches:
                 st.enter_context(p)
             code, out = quiet(setup.main)
-        cfg = self.t / f"strata-unsloth-{m.lower()}.json"
+        cfg = self.t / f"nostroma-unsloth-{m.lower()}.json"
         return code, out, (json.loads(cfg.read_text()) if cfg.exists() else None)
 
 class Main(Base):
@@ -511,7 +511,7 @@ class IQ4XS(Base):
         self.assertEqual(cfg["tokenizer"], str(pack / "tokenizer"))
         self.assertFalse(cfg["vision"]["gpu"])                                 # pictures on by default, the CPU reader under 24 GB
         with tempfile.TemporaryDirectory() as t:                               # a start reads the choice back
-            p = Path(t) / "strata-unsloth-ud-iq4_xs.json"
+            p = Path(t) / "nostroma-unsloth-ud-iq4_xs.json"
             p.write_text(json.dumps(cfg))
             ch = setup.choices_from_config(p)
             self.assertEqual((ch["family"], ch["model"]), ("unsloth", X))
@@ -741,9 +741,9 @@ class LayerSplit(unittest.TestCase):
     def start(self, ram, gpu=(0, 1), offered=None):
         from test_setup_risk import run
         with tempfile.TemporaryDirectory() as d:
-            exe = Path(d) / "strata.exe"
+            exe = Path(d) / "nostroma.exe"
             exe.write_bytes(b"")
-            p = Path(d) / "strata-unsloth-ud-q4_k_xl.json"
+            p = Path(d) / "nostroma-unsloth-ud-q4_k_xl.json"
             before = {"exe": str(exe), "args": ["--pack", "p", "--resident-budget-gib", "40", "--kv", "int8"],
                       "gpu": 0, "gpus_asked": offered is None}
             p.write_text(json.dumps(before))

@@ -5,7 +5,7 @@
 // (vit_metal.metal, and the tensor-op products in vit_metal_mpp.metal) are embedded in the program and compiled when the reader starts.
 //
 // The products: the Metal 4 tensor ops (MetalPerformancePrimitives matmul2d) where they compile and a self-test against the plain simdgroup kernel
-// passes, decided per product at load and logged once; else the plain kernel.  STRATA_VIT_NO_MPP=1 (a diagnostic) asks for the plain kernel everywhere.
+// passes, decided per product at load and logged once; else the plain kernel.  NOSTROMA_VIT_NO_MPP=1 (a diagnostic) asks for the plain kernel everywhere.
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
 
@@ -25,7 +25,7 @@
 #include <mach/mach.h>
 #include <malloc/malloc.h>
 
-namespace strata_vit {
+namespace nostroma_vit {
 
 namespace {
 
@@ -70,9 +70,9 @@ uint16_t host_f32_to_f16(float f) {
     std::memcpy(&u, &h, 2);
     return u;
 }
-// STRATA_VIT_MEM=1 (a diagnostic, stderr only): the process's physical footprint (what the gate reads with `footprint`) at a point of the load
+// NOSTROMA_VIT_MEM=1 (a diagnostic, stderr only): the process's physical footprint (what the gate reads with `footprint`) at a point of the load
 void footprint_note(const char* where) {
-    static const bool on = std::getenv("STRATA_VIT_MEM") != nullptr;
+    static const bool on = std::getenv("NOSTROMA_VIT_MEM") != nullptr;
     if (!on) return;
     task_vm_info_data_t vi;
     mach_msg_type_number_t n = TASK_VM_INFO_COUNT;
@@ -196,8 +196,8 @@ struct VitGpuImpl {
         for (const BO& b : bufs) [e setBuffer:b.b offset:b.off atIndex:i++];
         [e setBytes:args length:args_bytes atIndex:15];
         [e dispatchThreadgroups:grid threadsPerThreadgroup:MTLSizeMake(threads, 1, 1)];
-        // STRATA_VIT_MEM=1: the footprint after the first run of each kernel (the GPU waited for), to see which one takes memory on first use
-        static const bool mem = std::getenv("STRATA_VIT_MEM") != nullptr;
+        // NOSTROMA_VIT_MEM=1: the footprint after the first run of each kernel (the GPU waited for), to see which one takes memory on first use
+        static const bool mem = std::getenv("NOSTROMA_VIT_MEM") != nullptr;
         if (mem && seen.insert(fn).second) {
             (void) finish();
             footprint_note(("first run of " + fn).c_str());
@@ -392,7 +392,7 @@ bool VitGpu::load(const Gguf& gg, const VitGeometry& g, int device, int max_patc
             if (!m.lib) { err = std::string("the Metal kernels do not compile: ") + (e ? [[e localizedDescription] UTF8String] : "unknown"); return false; }
         }
         footprint_note("plain kernels compiled");
-        if (std::getenv("STRATA_VIT_MEM")) {     // diagnostic: does any first dispatch cost the ~250 MB, or only the product kernels' (D5)?
+        if (std::getenv("NOSTROMA_VIT_MEM")) {     // diagnostic: does any first dispatch cost the ~250 MB, or only the product kernels' (D5)?
             std::string e;
             id<MTLBuffer> t = m.buf(4096, false, e), tb = m.buf(4096, false, e);
             const EltArgs a{0, 0, 16};
@@ -403,10 +403,10 @@ bool VitGpu::load(const Gguf& gg, const VitGeometry& g, int device, int max_patc
         }
         // the tensor-op products: Metal 4 only, then per product a self-test against the plain kernel
         std::string mpp_why;
-        const bool no_mpp = std::getenv("STRATA_VIT_NO_MPP") != nullptr;
+        const bool no_mpp = std::getenv("NOSTROMA_VIT_NO_MPP") != nullptr;
         bool metal4 = false;
         if (@available(macOS 26.0, *)) metal4 = [m.dev supportsFamily:MTLGPUFamilyMetal4];
-        if (no_mpp) mpp_why = "STRATA_VIT_NO_MPP";
+        if (no_mpp) mpp_why = "NOSTROMA_VIT_NO_MPP";
         else if (!metal4) mpp_why = "no Metal 4 on this GPU or macOS";
         else {
             MTLCompileOptions* o = [MTLCompileOptions new];
@@ -422,12 +422,12 @@ bool VitGpu::load(const Gguf& gg, const VitGeometry& g, int device, int max_patc
             m.mpp_s = m.mpp_check("vk_gemm_s", "vm_gemm_s", 1, false, true, w_s);
             m.mpp_pv = m.mpp_check("vk_gemm_pv", "vm_gemm_pv", 1, true, false, w_pv);
         }
-        // diagnostics: the plain kernel for one product only (STRATA_VIT_NO_MPP_W: the weight products, _S: the scores, _PV: the context)
-        if (std::getenv("STRATA_VIT_NO_MPP_W")) { m.mpp_bf16 = m.mpp_f16 = false; w_bf = w_f16 = "STRATA_VIT_NO_MPP_W"; }
-        if (std::getenv("STRATA_VIT_NO_MPP_S")) { m.mpp_s = false; w_s = "STRATA_VIT_NO_MPP_S"; }
-        if (std::getenv("STRATA_VIT_NO_MPP_PV")) { m.mpp_pv = false; w_pv = "STRATA_VIT_NO_MPP_PV"; }
+        // diagnostics: the plain kernel for one product only (NOSTROMA_VIT_NO_MPP_W: the weight products, _S: the scores, _PV: the context)
+        if (std::getenv("NOSTROMA_VIT_NO_MPP_W")) { m.mpp_bf16 = m.mpp_f16 = false; w_bf = w_f16 = "NOSTROMA_VIT_NO_MPP_W"; }
+        if (std::getenv("NOSTROMA_VIT_NO_MPP_S")) { m.mpp_s = false; w_s = "NOSTROMA_VIT_NO_MPP_S"; }
+        if (std::getenv("NOSTROMA_VIT_NO_MPP_PV")) { m.mpp_pv = false; w_pv = "NOSTROMA_VIT_NO_MPP_PV"; }
         auto say = [&](bool on, const std::string& w) { return on ? std::string("tensor op") : "plain" + (w.empty() ? (mpp_why.empty() ? std::string() : " (" + mpp_why + ")") : " (" + w + ")"); };
-        std::fprintf(stderr, "strata-vision: Metal tower on %s; products: BF16 weights %s, F16 weights %s, attention S %s, P*V %s; patch matrix float32, one output a thread\n",
+        std::fprintf(stderr, "nostroma-vision: Metal tower on %s; products: BF16 weights %s, F16 weights %s, attention S %s, P*V %s; patch matrix float32, one output a thread\n",
                      [[m.dev name] UTF8String], say(m.mpp_bf16, w_bf).c_str(), say(m.mpp_f16, w_f16).c_str(), say(m.mpp_s, w_s).c_str(), say(m.mpp_pv, w_pv).c_str());
         m.bytes = m.work_bytes = 0;
         footprint_note("kernels compiled, self-test done");
@@ -463,12 +463,12 @@ bool VitGpu::load(const Gguf& gg, const VitGeometry& g, int device, int max_patc
                 !m.upload_matrix(L.down, gg, p + "ffn_down.weight", err) || !m.upload_f32(L.down_b, gg, p + "ffn_down.bias", err))
                 return false;
         }
-        if (const char* e = std::getenv("STRATA_VIT_REF_ROUND")) m.round_out = std::atoi(e) != 0;
-        if (const char* e = std::getenv("STRATA_VIT_ROWS")) { const int v = std::atoi(e); if (v >= 16) m.kRows = v; }
-        if (const char* e = std::getenv("STRATA_VIT_SCORES")) { const int v = std::atoi(e); if (v >= 1) { m.kScoreElems = (size_t) v << 20; m.scores_env = true; } }
-        if (const char* e = std::getenv("STRATA_VIT_SCORES_LARGE")) { const long v = std::atol(e); if (v >= 1) m.kScoreElemsLarge = (size_t) v << 20; }
-        if (const char* e = std::getenv("STRATA_VIT_NPAD")) { const int v = std::atoi(e); if (v >= 8 && v % 8 == 0) m.n_pad = v; }
-        if (const char* e = std::getenv("STRATA_VIT_QALIGN")) { const int v = std::atoi(e); if (v >= 1) m.q_align = v; }
+        if (const char* e = std::getenv("NOSTROMA_VIT_REF_ROUND")) m.round_out = std::atoi(e) != 0;
+        if (const char* e = std::getenv("NOSTROMA_VIT_ROWS")) { const int v = std::atoi(e); if (v >= 16) m.kRows = v; }
+        if (const char* e = std::getenv("NOSTROMA_VIT_SCORES")) { const int v = std::atoi(e); if (v >= 1) { m.kScoreElems = (size_t) v << 20; m.scores_env = true; } }
+        if (const char* e = std::getenv("NOSTROMA_VIT_SCORES_LARGE")) { const long v = std::atol(e); if (v >= 1) m.kScoreElemsLarge = (size_t) v << 20; }
+        if (const char* e = std::getenv("NOSTROMA_VIT_NPAD")) { const int v = std::atoi(e); if (v >= 8 && v % 8 == 0) m.n_pad = v; }
+        if (const char* e = std::getenv("NOSTROMA_VIT_QALIGN")) { const int v = std::atoi(e); if (v >= 1) m.q_align = v; }
         footprint_note("weights uploaded");
         const bool ok = m.size_buffers(std::max(max_patches, 16), err);
         footprint_note("work buffers");
@@ -492,8 +492,8 @@ bool VitGpu::encode(const PreparedImage& img, std::vector<float>& rows, int& nx,
         ny = ph / 2;
         if (!m.size_buffers(N, err)) return false;
         m.fail.clear();
-        // STRATA_VIT_PROF=1 (a diagnostic, stderr only, off by default): the time of each stage, the GPU waited for after every stage
-        static const bool prof = std::getenv("STRATA_VIT_PROF") != nullptr;
+        // NOSTROMA_VIT_PROF=1 (a diagnostic, stderr only, off by default): the time of each stage, the GPU waited for after every stage
+        static const bool prof = std::getenv("NOSTROMA_VIT_PROF") != nullptr;
         double pt[10] = {0};
         auto pclock = [] { return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now().time_since_epoch()).count(); };
         double pmark = prof ? pclock() : 0.0;
@@ -619,4 +619,4 @@ bool VitGpu::encode(const PreparedImage& img, std::vector<float>& rows, int& nx,
     }
 }
 
-}  // namespace strata_vit
+}  // namespace nostroma_vit

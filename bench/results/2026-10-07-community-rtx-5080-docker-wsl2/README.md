@@ -31,7 +31,7 @@ environment, so three things that are specific to it are written up in
   3,726 GB HDD and was not used.
 - Windows 10 Pro 26H2 build 26300; WSL 2.7.10.0, kernel 6.18.33.2-2; Docker Desktop
   4.84.0 (client and server 29.6.2, buildx v0.35.0-desktop.2); NVIDIA driver 617.14.
-- Strata commit `d5ea7133741e67743c0e886bb426c0ce8d69cf6c` ("Version 0.1.40.3"); engine
+- Nostroma commit `d5ea7133741e67743c0e886bb426c0ce8d69cf6c` ("Version 0.1.40.3"); engine
   **0.1.40.3**, `source=local`, CUDA architectures `[120]`, vision compiled for CUDA —
   [BUILD.json](BUILD.json).
 - CUDA 13.0.48 (`nvcc` V13.0.48); GCC 13.3.0; Python 3.12.3. Installed Python packages:
@@ -56,19 +56,19 @@ downloaded. The unmodified installer prepared the pack (`/data/packs/coder-iq1_m
 on disk) and the Q2_0 MTP experts.
 
 Both configurations were produced by the image's own entrypoint from the same
-`strata-data` volume; only `CONTEXT` and `REINSTALL` differ between them. The recorded
+`nostroma-data` volume; only `CONTEXT` and `REINSTALL` differ between them. The recorded
 engine configuration is [config-131072.json](config-131072.json) and
 [config-65536.json](config-65536.json):
 
 ```text
 # 131,072-token limit
-docker run -d --name strata --gpus all --network strata-net \
+docker run -d --name nostroma --gpus all --network nostroma-net \
   -p 127.0.0.1:8080:8080 --ulimit memlock=-1 --stop-timeout 60 \
-  -v strata-data:/data \
-  -e FAMILY=coder -e MODEL=IQ1_M -e CONTEXT=131072 -e VISION=cpu -e GPU=0 strata
+  -v nostroma-data:/data \
+  -e FAMILY=coder -e MODEL=IQ1_M -e CONTEXT=131072 -e VISION=cpu -e GPU=0 nostroma
 
 # 65,536-token limit, same volume
-  ... -e CONTEXT=65536 -e VISION=cpu -e GPU=0 -e REINSTALL=1 strata
+  ... -e CONTEXT=65536 -e VISION=cpu -e GPU=0 -e REINSTALL=1 nostroma
 ```
 
 Settings both configurations share: `--expert-cache auto`, `--prefill auto`, `--kv int8`,
@@ -90,7 +90,7 @@ What differs, from the engine's startup log:
 At 131,072 the engine warned about its own configuration:
 
 ```text
-strata serve: 152 MiB of VRAM free with everything loaded - LOW: requests may stall;
+nostroma serve: 152 MiB of VRAM free with everything loaded - LOW: requests may stall;
 add --vram-reserve-mib 1060 to the config's args (or lower --max-context)
 ```
 
@@ -103,11 +103,11 @@ stalled, at either limit, including the 130,560-token prompt.
 The benchmark is the script from
 [bench/results/2026-09-30-community-rtx-5090/benchmark.py](../2026-09-30-community-rtx-5090/benchmark.py),
 attached here as [benchmark.py](benchmark.py), **unchanged except for four defaults**
-(`--root /opt/strata`, `--pack /data/packs/coder-iq1_m`, `--url http://127.0.0.1:8080`,
+(`--root /opt/nostroma`, `--pack /data/packs/coder-iq1_m`, `--url http://127.0.0.1:8080`,
 `--out /data/bench`), so the numbers stay comparable with that report. It builds
 deterministic synthetic Python functions, puts a different nonce near the start of every
 request so no prompt prefix can be reused, counts the complete rendered chat prompt with
-Strata's own tokenizer, and verifies its count against the engine afterwards.
+Nostroma's own tokenizer, and verifies its count against the engine afterwards.
 
 One warm-up request was excluded. Three runs were executed at each length, serially, in
 increasing-length order, on the same loaded engine. Every measured request read its entire
@@ -205,7 +205,7 @@ model answered `K7QX-4291` for the drawn `K7QX-4291` in 1.1 s at 261 prompt toke
 ([data-131072/image-check.json](data-131072/image-check.json),
 [image-check.png](data-131072/image-check.png)). The encoder falling back to the CPU is
 visible in the log as `ggml_cuda_init: failed to initialize CUDA` followed by
-`strata-vision: on the CPU, 16 threads`, which is what `VISION=cpu` asks for.
+`nostroma-vision: on the CPU, 16 threads`, which is what `VISION=cpu` asks for.
 
 ## Notes for users of this environment
 
@@ -226,14 +226,14 @@ visible in the log as `ggml_cuda_init: failed to initialize CUDA` followed by
    measured here therefore leaves 512 tokens: 130,560 of 131,072 and 65,024 of 65,536.
 3. **The port is published on `127.0.0.1` only**, so no API key was set
    (`"api_key": false` in `/health`). Other containers reach the same server over a
-   user-defined Docker network at `http://strata:8080`; nothing was exposed to the LAN.
+   user-defined Docker network at `http://nostroma:8080`; nothing was exposed to the LAN.
 
 ## Limitations
 
 - **One session per configuration.** The warm-up state differs between them, and the
   128K-vs-64K comparison in the results is a comparison of two sessions, not of two
   interleaved settings. The engine's own log shows CUDA-graph capture
-  (`strata verify: capturing the N-token window`) happening during the first requests of a
+  (`nostroma verify: capturing the N-token window`) happening during the first requests of a
   session, which is one candidate explanation for the ordering; it was not tested. Treat the
   difference as an observation to reproduce, not a result.
 - **One machine, one quantization, one GPU, one synthetic workload.** Long output, sampled
@@ -245,7 +245,7 @@ visible in the log as `ggml_cuda_init: failed to initialize CUDA` followed by
   measured 50.0 GB/s. Whether the narrower link costs anything here was not tested — the
   link is a property of this machine's slot wiring, so absolute numbers may move on a host
   that runs the card at x16.
-- **Windows and WSL2 are between Strata and the hardware.** File I/O and page-locked memory
+- **Windows and WSL2 are between Nostroma and the hardware.** File I/O and page-locked memory
   go through the WSL2 VM; `--ulimit memlock=-1` was passed and the engine reported
   `MAP_HUGETLB unavailable` with transparent huge pages requested instead. Numbers from a
   bare-metal Linux host with the same card are not guaranteed to match.

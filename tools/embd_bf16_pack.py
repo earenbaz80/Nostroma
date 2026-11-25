@@ -10,7 +10,7 @@ out of the safetensors file - nothing decoded or rounded.
 
     python tools/embd_bf16_pack.py --gguf <model.gguf> --out <token-embd-bf16.gguf>
 
-instead dequantizes a GGUF's own token_embd.weight to BF16 (round-to-nearest-even, tools/strata_quants.py), for a file whose
+instead dequantizes a GGUF's own token_embd.weight to BF16 (round-to-nearest-even, tools/nostroma_quants.py), for a file whose
 embedding type has no GPU dequantizer in the engine (Agention's Gyro-S stores it as Q6_K).  That is the GGUF's values
 rounded to BF16, not the checkpoint's.
 """
@@ -42,9 +42,9 @@ def kv_string(key, val):
 
 
 def write_header(dim, vocab, source, what):
-    kvs = [kv_string("general.architecture", "strata-embd"),
+    kvs = [kv_string("general.architecture", "nostroma-embd"),
            kv_string("general.name", what),
-           kv_string("strata.embd.source", source)]
+           kv_string("nostroma.embd.source", source)]
     head = b"GGUF" + struct.pack("<IQQ", 3, 1, len(kvs)) + b"".join(kvs)
     head += gguf_string("token_embd.weight") + struct.pack("<I", 2) + struct.pack("<QQ", dim, vocab)
     head += struct.pack("<I", GGML_TYPE_BF16) + struct.pack("<Q", 0)

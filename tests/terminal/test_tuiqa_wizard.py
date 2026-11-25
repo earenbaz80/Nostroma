@@ -98,8 +98,8 @@ class SaveChoices(Base):
 
 
 def path_of(n: int) -> str:
-    """A storage path of exactly `n` characters, starting with /home/ana/ and ending with /Strata-data."""
-    head, tail = "/home/ana/", "/Strata-data"
+    """A storage path of exactly `n` characters, starting with /home/ana/ and ending with /Nostroma-data."""
+    head, tail = "/home/ana/", "/Nostroma-data"
     p = head + ("models-and-more-" * 20)[: n - len(head) - len(tail)] + tail
     assert len(p) == n
     return p
@@ -130,7 +130,7 @@ class StoragePath(Base):
                     self.assertEqual(len(rows), 1, (n, shown))
                     row = rows[0].strip()
                     self.assertTrue(row.startswith("Storage   /home/ana/"), (n, row))
-                    self.assertTrue(row.endswith("/Strata-data"), (n, row))
+                    self.assertTrue(row.endswith("/Nostroma-data"), (n, row))
                     self.assertLessEqual(len(rows[0]), 80, (n, row))
                     if n <= 60:
                         self.assertIn(path, row, "a path that fits is shown whole")
@@ -143,11 +143,11 @@ class StoragePath(Base):
     def test_middle_shorten(self):
         from nostroma_cli.launch.screens import middle_shorten
         self.assertEqual(middle_shorten("C:/a/b", 10), "C:/a/b")
-        p = "C:\\Users\\Ana\\Documents\\Strata\\a-very-long-folder-name-for-models\\Strata-data"
+        p = "C:\\Users\\Ana\\Documents\\Nostroma\\a-very-long-folder-name-for-models\\Nostroma-data"
         s = middle_shorten(p, 40)
         self.assertEqual(len(s), 40)
-        self.assertEqual(s, "C:\\Users\\Ana\\Do\u2026e-for-models\\Strata-data")          # 2/5 of the room for the start, the rest for the end
-        self.assertEqual(middle_shorten(p, 40, "..."), "C:\\Users\\Ana\\D...-for-models\\Strata-data")
+        self.assertEqual(s, "C:\\Users\\Ana\\Do\u2026e-for-models\\Nostroma-data")          # 2/5 of the room for the start, the rest for the end
+        self.assertEqual(middle_shorten(p, 40, "..."), "C:\\Users\\Ana\\D...-for-models\\Nostroma-data")
         self.assertEqual(middle_shorten(p, 3), p[0] + "\u2026" + p[-1])            # the smallest: one character on each side
         self.assertEqual(middle_shorten("/home/\u6a21\u578b\u6a21\u578b\u6a21\u578b/data", 12), "/hom\u2026\u578b/data")   # wide characters count as two cells
 
@@ -160,11 +160,11 @@ class AdvancedLayout(Base):
         ctx.settings.family, ctx.settings.model = "qwen", "IQ3_XXS"
         for k, v in choices.items():
             setattr(ctx.settings, k, v)
-        base = {"exe": "component:strata-engine", "vision": {"mmproj": "/x/mmproj.gguf", "gpu": False},
+        base = {"exe": "component:nostroma-engine", "vision": {"mmproj": "/x/mmproj.gguf", "gpu": False},
                 "args": ["--native", "/very/long/path/to/the/models/folder/Qwen3.8-Flash-Next-Something-IQ3_XXS-00001-of-00002.gguf",
                          "--pack", "/very/long/path/to/the/data/packs/iq3_xxs", "--max-context", "131072", "--kv", "int8", "--prefill", "auto",
                          "--vision"]}
-        for p in (mock.patch.object(Ctx, "base_config", lambda self: base), mock.patch.object(Ctx, "engine_exe", lambda self: "/engine/strata"),
+        for p in (mock.patch.object(Ctx, "base_config", lambda self: base), mock.patch.object(Ctx, "engine_exe", lambda self: "/engine/nostroma"),
                   mock.patch("nostroma_cli.launch.params.engine_help_text", return_value=self.HELP)):
             p.start()
             self.addCleanup(p.stop)
@@ -249,7 +249,7 @@ class InstalledModelFolder(Base):
 
     def build(self):
         base = Path(os.environ["LOCALAPPDATA"]).parent / "gui"
-        docs = base / "Documents" / "Strata"
+        docs = base / "Documents" / "Nostroma"
         gguf = docs / "Models" / "qwen-IQ3_XXS" / "Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf"
         gguf.parent.mkdir(parents=True)
         gguf.write_bytes(b"x")
@@ -257,12 +257,12 @@ class InstalledModelFolder(Base):
         pack.mkdir(parents=True)
         mm = docs / "Models" / "mmproj-Qwen3.8-Flash-Next-BF16.gguf"
         mm.write_bytes(b"x")
-        install = Path(os.environ["STRATA_INSTALL_DIR"])
+        install = Path(os.environ["NOSTROMA_INSTALL_DIR"])
         install.mkdir(parents=True, exist_ok=True)
-        cfg = {"exe": "component:strata-engine", "tokenizer": str(pack), "args": ["--pack", str(pack), "--native", str(gguf), "--mtp", str(docs / "mtp" / "rt"),
+        cfg = {"exe": "component:nostroma-engine", "tokenizer": str(pack), "args": ["--pack", str(pack), "--native", str(gguf), "--mtp", str(docs / "mtp" / "rt"),
                                                                                  "--max-context", "32768", "--kv", "int8"],
                "vision": {"mmproj": str(mm), "gpu": False}}
-        (install / "strata-iq3_xxs.json").write_text(json.dumps(cfg))
+        (install / "nostroma-iq3_xxs.json").write_text(json.dumps(cfg))
         return docs
 
     def test_the_folder_starts_where_the_model_is_and_says_what_is_missing(self):

@@ -1,10 +1,10 @@
 // src/quant/dot_generic.cpp - the Generic-contract dot products: one weight row against one quantized activation row, plain C++.
 //
 // Derived from ggml-cpu's `ggml_vec_dot_*_generic` (llama.cpp ggml/src/ggml-cpu/quants.c at 3cf03257f219afbe7334045ff7c6a06ac68c627d,
-// Copyright (c) 2023-2026 The ggml authors, MIT; third_party/strata-ggml/LICENSE), ported to C++ and to the layer's signature.  These are the
-// layer's scalar REFERENCE: what a build without SIMD gives (ggml's STRATA_ISA_FLOOR=none flavour), and what the self-checks compare against.
+// Copyright (c) 2023-2026 The ggml authors, MIT; third_party/nostroma-ggml/LICENSE), ported to C++ and to the layer's signature.  These are the
+// layer's scalar REFERENCE: what a build without SIMD gives (ggml's NOSTROMA_ISA_FLOOR=none flavour), and what the self-checks compare against.
 // Float accumulation is sequential in block order, exactly as in ggml's `_generic` code.
-#define STRATA_QUANT_TABLES
+#define NOSTROMA_QUANT_TABLES
 #include "internal.hpp"
 
 #include <cassert>
@@ -12,21 +12,21 @@
 #include <cstdlib>
 
 #include "registry.hpp"
-#include "strata/quant/dot.hpp"
+#include "nostroma/quant/dot.hpp"
 
-namespace strata::quant {
+namespace nostroma::quant {
 namespace generic {
 
 #define UNUSED(x) (void) (x)
 
-void dot_q2_0_q8_0_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q2_0_q8_0_generic(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const int qk = QK2_0;
     const int nb = n / qk;
 
     assert(n % qk == 0);
 
-    const block_q2_0* STRATA_RESTRICT x = (const block_q2_0*) vx;
-    const block_q8_0* STRATA_RESTRICT y = (const block_q8_0*) vy;
+    const block_q2_0* NOSTROMA_RESTRICT x = (const block_q2_0*) vx;
+    const block_q8_0* NOSTROMA_RESTRICT y = (const block_q8_0*) vy;
 
     float sumf = 0.0f;
 
@@ -37,12 +37,12 @@ void dot_q2_0_q8_0_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_R
 
         // group 64: one Q2_0 block (64 weights) maps to two Q8_0 blocks (2 * 32 = 64)
         for (int k = 0; k < 2; k++) {
-            const block_q8_0 * STRATA_RESTRICT yb = &y[i * 2 + k];
+            const block_q8_0 * NOSTROMA_RESTRICT yb = &y[i * 2 + k];
             const float d1 = fp16_to_fp32(yb->d);
             int sumi_block = 0;
 
-            const uint8_t * STRATA_RESTRICT qs = &x[i].qs[k * 8];
-            const int8_t  * STRATA_RESTRICT qy = yb->qs;
+            const uint8_t * NOSTROMA_RESTRICT qs = &x[i].qs[k * 8];
+            const int8_t  * NOSTROMA_RESTRICT qy = yb->qs;
 
             for (int b = 0; b < 8; ++b) {
                 const uint8_t byte = qs[b];
@@ -62,14 +62,14 @@ void dot_q2_0_q8_0_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_R
     *s = sumf;
 }
 
-void dot_q4_0_q8_0_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q4_0_q8_0_generic(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const int qk = QK8_0;
     const int nb = n / qk;
 
     assert(n % qk == 0);
 
-    const block_q4_0* STRATA_RESTRICT x = (const block_q4_0*) vx;
-    const block_q8_0* STRATA_RESTRICT y = (const block_q8_0*) vy;
+    const block_q4_0* NOSTROMA_RESTRICT x = (const block_q4_0*) vx;
+    const block_q8_0* NOSTROMA_RESTRICT y = (const block_q8_0*) vy;
 
     int ib = 0;
     float sumf = 0;
@@ -93,14 +93,14 @@ void dot_q4_0_q8_0_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_R
     *s = sumf;
 }
 
-void dot_q4_1_q8_1_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q4_1_q8_1_generic(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const int qk = QK8_1;
     const int nb = n / qk;
 
     assert(n % qk == 0);
 
-    const block_q4_1* STRATA_RESTRICT x = (const block_q4_1*) vx;
-    const block_q8_1* STRATA_RESTRICT y = (const block_q8_1*) vy;
+    const block_q4_1* NOSTROMA_RESTRICT x = (const block_q4_1*) vx;
+    const block_q8_1* NOSTROMA_RESTRICT y = (const block_q8_1*) vy;
 
     int ib = 0;
     float sumf = 0;
@@ -124,7 +124,7 @@ void dot_q4_1_q8_1_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_R
     *s = sumf;
 }
 
-void dot_q5_0_q8_0_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q5_0_q8_0_generic(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const int qk = QK8_0;
     const int nb = n / qk;
 
@@ -134,8 +134,8 @@ void dot_q5_0_q8_0_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_R
     assert(n % qk == 0);
     assert(qk == QK5_0);
 
-    const block_q5_0* STRATA_RESTRICT x = (const block_q5_0*) vx;
-    const block_q8_0* STRATA_RESTRICT y = (const block_q8_0*) vy;
+    const block_q5_0* NOSTROMA_RESTRICT x = (const block_q5_0*) vx;
+    const block_q8_0* NOSTROMA_RESTRICT y = (const block_q8_0*) vy;
 
     for (; ib < nb; ++ib) {
         uint32_t qh;
@@ -162,7 +162,7 @@ void dot_q5_0_q8_0_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_R
     *s = sumf;
 }
 
-void dot_q5_1_q8_1_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q5_1_q8_1_generic(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const int qk = QK8_1;
     const int nb = n / qk;
 
@@ -172,8 +172,8 @@ void dot_q5_1_q8_1_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_R
     assert(n % qk == 0);
     assert(qk == QK5_1);
 
-    const block_q5_1* STRATA_RESTRICT x = (const block_q5_1*) vx;
-    const block_q8_1* STRATA_RESTRICT y = (const block_q8_1*) vy;
+    const block_q5_1* NOSTROMA_RESTRICT x = (const block_q5_1*) vx;
+    const block_q8_1* NOSTROMA_RESTRICT y = (const block_q8_1*) vy;
 
     for (; ib < nb; ++ib) {
         uint32_t qh;
@@ -200,14 +200,14 @@ void dot_q5_1_q8_1_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_R
     *s = sumf;
 }
 
-void dot_q8_0_q8_0_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q8_0_q8_0_generic(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     const int qk = QK8_0;
     const int nb = n / qk;
 
     assert(n % qk == 0);
 
-    const block_q8_0* STRATA_RESTRICT x = (const block_q8_0*) vx;
-    const block_q8_0* STRATA_RESTRICT y = (const block_q8_0*) vy;
+    const block_q8_0* NOSTROMA_RESTRICT x = (const block_q8_0*) vx;
+    const block_q8_0* NOSTROMA_RESTRICT y = (const block_q8_0*) vy;
 
     int ib = 0;
     float sumf = 0;
@@ -225,12 +225,12 @@ void dot_q8_0_q8_0_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_R
     *s = sumf;
 }
 
-void dot_iq4_nl_q8_0_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq4_nl_q8_0_generic(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK4_NL == 0);
     static_assert(QK4_NL == QK8_0, "QK4_NL and QK8_0 must be the same");
 
-    const block_iq4_nl* STRATA_RESTRICT x = (const block_iq4_nl*) vx;
-    const block_q8_0* STRATA_RESTRICT y = (const block_q8_0*) vy;
+    const block_iq4_nl* NOSTROMA_RESTRICT x = (const block_iq4_nl*) vx;
+    const block_q8_0* NOSTROMA_RESTRICT y = (const block_q8_0*) vy;
 
     const int nb = n / QK4_NL;
 
@@ -249,12 +249,12 @@ void dot_iq4_nl_q8_0_generic(int n, float* STRATA_RESTRICT s, const void* STRATA
     *s = sumf;
 }
 
-void dot_mxfp4_q8_0_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_mxfp4_q8_0_generic(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_MXFP4 == 0);
     static_assert(QK_MXFP4 == QK8_0, "QK_MXFP4 and QK8_0 must be the same");
 
-    const block_mxfp4* STRATA_RESTRICT x = (const block_mxfp4*) vx;
-    const block_q8_0* STRATA_RESTRICT y = (const block_q8_0*) vy;
+    const block_mxfp4* NOSTROMA_RESTRICT x = (const block_mxfp4*) vx;
+    const block_q8_0* NOSTROMA_RESTRICT y = (const block_q8_0*) vy;
 
     const int nb = n / QK_MXFP4;
 
@@ -275,11 +275,11 @@ void dot_mxfp4_q8_0_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_
     *s = sumf;
 }
 
-void dot_nvfp4_q8_0_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_nvfp4_q8_0_generic(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_NVFP4 == 0);
 
-    const block_nvfp4* STRATA_RESTRICT x = (const block_nvfp4*) vx;
-    const block_q8_0* STRATA_RESTRICT y = (const block_q8_0*) vy;
+    const block_nvfp4* NOSTROMA_RESTRICT x = (const block_nvfp4*) vx;
+    const block_q8_0* NOSTROMA_RESTRICT y = (const block_q8_0*) vy;
 
     const int nb = n / QK_NVFP4;
 
@@ -305,10 +305,10 @@ void dot_nvfp4_q8_0_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_
     *s = sumf;
 }
 
-void dot_q2_K_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q2_K_q8_K_generic(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
 
-    const block_q2_K* STRATA_RESTRICT x = (const block_q2_K*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_q2_K* NOSTROMA_RESTRICT x = (const block_q2_K*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -352,14 +352,14 @@ void dot_q2_K_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_R
     *s = sumf;
 }
 
-void dot_q3_K_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q3_K_q8_K_generic(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_K == 0);
 
     const uint32_t kmask1 = 0x03030303;
     const uint32_t kmask2 = 0x0f0f0f0f;
 
-    const block_q3_K* STRATA_RESTRICT x = (const block_q3_K*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_q3_K* NOSTROMA_RESTRICT x = (const block_q3_K*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -382,11 +382,11 @@ void dot_q3_K_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_R
 
     float sumf = 0;
     for (int i = 0; i < nb; ++i) {
-        const uint8_t * STRATA_RESTRICT q3 = x[i].qs;
-        const uint8_t * STRATA_RESTRICT hm = x[i].hmask;
-        const  int8_t * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q3 = x[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT hm = x[i].hmask;
+        const  int8_t * NOSTROMA_RESTRICT q8 = y[i].qs;
         memset(aux32, 0, 8*sizeof(int32_t));
-        int8_t * STRATA_RESTRICT a = aux8;
+        int8_t * NOSTROMA_RESTRICT a = aux8;
         uint8_t m = 1;
         for (int j = 0; j < QK_K; j += 128) {
             for (int l = 0; l < 32; ++l) a[l] = q3[l] & 3;
@@ -426,11 +426,11 @@ void dot_q3_K_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_R
     *s = sumf;
 }
 
-void dot_q4_K_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q4_K_q8_K_generic(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_K == 0);
 
-    const block_q4_K* STRATA_RESTRICT x = (const block_q4_K*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_q4_K* NOSTROMA_RESTRICT x = (const block_q4_K*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -451,10 +451,10 @@ void dot_q4_K_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_R
 
     float sumf = 0;
     for (int i = 0; i < nb; ++i) {
-        const uint8_t * STRATA_RESTRICT q4 = x[i].qs;
-        const  int8_t * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q4 = x[i].qs;
+        const  int8_t * NOSTROMA_RESTRICT q8 = y[i].qs;
         memset(aux32, 0, 8*sizeof(int32_t));
-        int8_t * STRATA_RESTRICT a = aux8;
+        int8_t * NOSTROMA_RESTRICT a = aux8;
         for (int j = 0; j < QK_K/64; ++j) {
             for (int l = 0; l < 32; ++l) a[l] = (int8_t)(q4[l] & 0xF);
             a += 32;
@@ -496,11 +496,11 @@ void dot_q4_K_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_R
     *s = sumf;
 }
 
-void dot_q5_K_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q5_K_q8_K_generic(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_K == 0);
 
-    const block_q5_K* STRATA_RESTRICT x = (const block_q5_K*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_q5_K* NOSTROMA_RESTRICT x = (const block_q5_K*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -521,11 +521,11 @@ void dot_q5_K_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_R
 
     float sumf = 0;
     for (int i = 0; i < nb; ++i) {
-        const uint8_t * STRATA_RESTRICT q4 = x[i].qs;
-        const uint8_t * STRATA_RESTRICT hm = x[i].qh;
-        const  int8_t * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q4 = x[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT hm = x[i].qh;
+        const  int8_t * NOSTROMA_RESTRICT q8 = y[i].qs;
         memset(aux32, 0, 8*sizeof(int32_t));
-        int8_t * STRATA_RESTRICT a = aux8;
+        int8_t * NOSTROMA_RESTRICT a = aux8;
         uint8_t m = 1;
         for (int j = 0; j < QK_K/64; ++j) {
             for (int l = 0; l < 32; ++l) a[l] = (int8_t)(q4[l] & 0xF);
@@ -571,11 +571,11 @@ void dot_q5_K_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_R
     *s = sumf;
 }
 
-void dot_q6_K_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_q6_K_q8_K_generic(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_K == 0);
 
-    const block_q6_K* STRATA_RESTRICT x = (const block_q6_K*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_q6_K* NOSTROMA_RESTRICT x = (const block_q6_K*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -587,11 +587,11 @@ void dot_q6_K_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_R
 
     float sumf = 0;
     for (int i = 0; i < nb; ++i) {
-        const uint8_t * STRATA_RESTRICT q4 = x[i].ql;
-        const uint8_t * STRATA_RESTRICT qh = x[i].qh;
-        const  int8_t * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q4 = x[i].ql;
+        const uint8_t * NOSTROMA_RESTRICT qh = x[i].qh;
+        const  int8_t * NOSTROMA_RESTRICT q8 = y[i].qs;
         memset(aux32, 0, 8*sizeof(int32_t));
-        int8_t * STRATA_RESTRICT a = aux8;
+        int8_t * NOSTROMA_RESTRICT a = aux8;
         for (int j = 0; j < QK_K; j += 128) {
             for (int l = 0; l < 32; ++l) {
                 a[l +  0] = (int8_t)((q4[l +  0] & 0xF) | (((qh[l] >> 0) & 3) << 4)) - 32;
@@ -621,11 +621,11 @@ void dot_q6_K_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_R
     *s = sumf;
 }
 
-void dot_iq1_s_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq1_s_q8_K_generic(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_K == 0);
 
-    const block_iq1_s* STRATA_RESTRICT x = (const block_iq1_s*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_iq1_s* NOSTROMA_RESTRICT x = (const block_iq1_s*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -659,11 +659,11 @@ void dot_iq1_s_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_
     *s = sumf;
 }
 
-void dot_iq1_m_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq1_m_q8_K_generic(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_K == 0);
 
-    const block_iq1_m* STRATA_RESTRICT x = (const block_iq1_m*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_iq1_m* NOSTROMA_RESTRICT x = (const block_iq1_m*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -715,11 +715,11 @@ void dot_iq1_m_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_
     *s = sumf;
 }
 
-void dot_iq2_xxs_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq2_xxs_q8_K_generic(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_K == 0);
 
-    const block_iq2_xxs* STRATA_RESTRICT x = (const block_iq2_xxs*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_iq2_xxs* NOSTROMA_RESTRICT x = (const block_iq2_xxs*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -729,8 +729,8 @@ void dot_iq2_xxs_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRAT
     float sumf = 0.f;
     for (int i = 0; i < nb; ++i) {
         const float d = fp16_to_fp32(x[i].d) * y[i].d;
-        const uint16_t * STRATA_RESTRICT q2 = x[i].qs;
-        const int8_t   * STRATA_RESTRICT q8 = y[i].qs;
+        const uint16_t * NOSTROMA_RESTRICT q2 = x[i].qs;
+        const int8_t   * NOSTROMA_RESTRICT q8 = y[i].qs;
         int32_t bsum = 0;
         for (int ib32 = 0; ib32 < QK_K/32; ++ib32) {
             memcpy(aux32, q2, 2*sizeof(uint32_t));
@@ -752,20 +752,20 @@ void dot_iq2_xxs_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRAT
     *s = 0.125f * sumf;
 }
 
-void dot_iq2_xs_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq2_xs_q8_K_generic(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_K == 0);
 
-    const block_iq2_xs* STRATA_RESTRICT x = (const block_iq2_xs*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_iq2_xs* NOSTROMA_RESTRICT x = (const block_iq2_xs*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
     float sumf = 0.f;
     for (int i = 0; i < nb; ++i) {
         const float d = fp16_to_fp32(x[i].d) * y[i].d;
-        const uint16_t * STRATA_RESTRICT q2 = x[i].qs;
-        const uint8_t  * STRATA_RESTRICT sc = x[i].scales;
-        const int8_t   * STRATA_RESTRICT q8 = y[i].qs;
+        const uint16_t * NOSTROMA_RESTRICT q2 = x[i].qs;
+        const uint8_t  * NOSTROMA_RESTRICT sc = x[i].scales;
+        const int8_t   * NOSTROMA_RESTRICT q8 = y[i].qs;
         int32_t bsum = 0;
         for (int ib32 = 0; ib32 < QK_K/32; ++ib32) {
             const uint16_t ls1 = 2*(sc[ib32] & 0xf) + 1;
@@ -797,11 +797,11 @@ void dot_iq2_xs_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA
     *s = 0.125f * sumf;
 }
 
-void dot_iq2_s_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq2_s_q8_K_generic(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_K == 0);
 
-    const block_iq2_s* STRATA_RESTRICT x = (const block_iq2_s*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_iq2_s* NOSTROMA_RESTRICT x = (const block_iq2_s*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -844,11 +844,11 @@ void dot_iq2_s_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_
     *s = 0.125f * sumf;
 }
 
-void dot_iq3_xxs_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq3_xxs_q8_K_generic(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_K == 0);
 
-    const block_iq3_xxs* STRATA_RESTRICT x = (const block_iq3_xxs*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_iq3_xxs* NOSTROMA_RESTRICT x = (const block_iq3_xxs*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -857,9 +857,9 @@ void dot_iq3_xxs_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRAT
     float sumf = 0.f;
     for (int i = 0; i < nb; ++i) {
         const float d = fp16_to_fp32(x[i].d) * y[i].d;
-        const uint8_t * STRATA_RESTRICT q3 = x[i].qs;
-        const uint8_t * STRATA_RESTRICT gas = x[i].qs + QK_K/4;
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT q3 = x[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT gas = x[i].qs + QK_K/4;
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
         int32_t bsum = 0;
         for (int ib32 = 0; ib32 < QK_K/32; ++ib32) {
             memcpy(&aux32, gas, sizeof(uint32_t)); gas += sizeof(uint32_t);
@@ -883,21 +883,21 @@ void dot_iq3_xxs_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRAT
     *s = 0.25f * sumf;
 }
 
-void dot_iq3_s_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq3_s_q8_K_generic(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_K == 0);
 
-    const block_iq3_s* STRATA_RESTRICT x = (const block_iq3_s*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_iq3_s* NOSTROMA_RESTRICT x = (const block_iq3_s*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
     float sumf = 0.f;
     for (int i = 0; i < nb; ++i) {
         const float d = fp16_to_fp32(x[i].d) * y[i].d;
-        const uint8_t * STRATA_RESTRICT qs = x[i].qs;
-        const uint8_t * STRATA_RESTRICT qh = x[i].qh;
-        const uint8_t * STRATA_RESTRICT signs = x[i].signs;
-        const int8_t  * STRATA_RESTRICT q8 = y[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT qs = x[i].qs;
+        const uint8_t * NOSTROMA_RESTRICT qh = x[i].qh;
+        const uint8_t * NOSTROMA_RESTRICT signs = x[i].signs;
+        const int8_t  * NOSTROMA_RESTRICT q8 = y[i].qs;
         int32_t bsum = 0;
         for (int ib32 = 0; ib32 < QK_K/32; ib32 += 2) {
             const uint32_t ls1 = 2*(x[i].scales[ib32/2] & 0xf) + 1;
@@ -934,11 +934,11 @@ void dot_iq3_s_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_
     *s = sumf;
 }
 
-void dot_iq4_xs_q8_K_generic(int n, float* STRATA_RESTRICT s, const void* STRATA_RESTRICT vx, const void* STRATA_RESTRICT vy) {
+void dot_iq4_xs_q8_K_generic(int n, float* NOSTROMA_RESTRICT s, const void* NOSTROMA_RESTRICT vx, const void* NOSTROMA_RESTRICT vy) {
     assert(n % QK_K == 0);
 
-    const block_iq4_xs* STRATA_RESTRICT x = (const block_iq4_xs*) vx;
-    const block_q8_K* STRATA_RESTRICT y = (const block_q8_K*) vy;
+    const block_iq4_xs* NOSTROMA_RESTRICT x = (const block_iq4_xs*) vx;
+    const block_q8_K* NOSTROMA_RESTRICT y = (const block_q8_K*) vy;
 
     const int nb = n / QK_K;
 
@@ -1001,4 +1001,4 @@ void dot_ref(Type w, int n, float* s, const void* wrow, const void* act) {
     std::abort();
 }
 
-}  // namespace strata::quant
+}  // namespace nostroma::quant

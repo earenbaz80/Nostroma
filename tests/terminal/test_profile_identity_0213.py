@@ -24,7 +24,7 @@ def _cfg(home: Home, name: str, key: str) -> Path:
 
 
 def _profile(home: Home, pid: str, cfg: Path | None, port: int | None = None, host: str | None = None) -> None:
-    d = Path(home.env["STRATA_PROFILE_DIR"])
+    d = Path(home.env["NOSTROMA_PROFILE_DIR"])
     d.mkdir(parents=True, exist_ok=True)
     ov = {}
     if port is not None:
@@ -35,7 +35,7 @@ def _profile(home: Home, pid: str, cfg: Path | None, port: int | None = None, ho
 
 
 def _broken(home: Home, pid: str, how: str = "garbage") -> None:
-    d = Path(home.env["STRATA_PROFILE_DIR"])
+    d = Path(home.env["NOSTROMA_PROFILE_DIR"])
     d.mkdir(parents=True, exist_ok=True)
     (d / f"{pid}.json").write_text("{not json" if how == "garbage" else json.dumps({"schema_version": 1, "id": pid}), encoding="utf-8")
 
@@ -46,7 +46,7 @@ class RunningLaunchesBrokenProfile(unittest.TestCase):
     def _rows(self, first_broken: bool):
         from nostroma_cli.launch import cmd
         with Home() as home:
-            good_cfg = _cfg(home, "good", "sk-strata-GOOD")
+            good_cfg = _cfg(home, "good", "sk-nostroma-GOOD")
             if first_broken:
                 _broken(home, "launch-a-broken")
                 _profile(home, "launch-b-good", good_cfg, port=18123, host="0.0.0.0")
@@ -77,7 +77,7 @@ class RunningLaunchesBrokenProfile(unittest.TestCase):
         from nostroma_cli.launch import cmd
         for first_broken in (True, False):
             with self.subTest(first_broken=first_broken), Home() as home:
-                good_cfg = _cfg(home, "good", "sk-strata-GOOD")
+                good_cfg = _cfg(home, "good", "sk-nostroma-GOOD")
                 bad_id, good_id = ("launch-a-broken", "launch-b-good") if first_broken else ("launch-b-broken", "launch-a-good")
                 _broken(home, bad_id)
                 _profile(home, good_id, good_cfg, port=18123)
@@ -86,7 +86,7 @@ class RunningLaunchesBrokenProfile(unittest.TestCase):
                     good = cmd.launch_info(good_id[7:])
                 self.assertIsNone(bad["key"])
                 self.assertNotEqual(bad["port"], 18123)
-                self.assertEqual(good["key"], "sk-strata-GOOD")
+                self.assertEqual(good["key"], "sk-nostroma-GOOD")
                 self.assertEqual(good["port"], 18123)
 
 
@@ -98,31 +98,31 @@ class KeptKeyBrokenProfile(unittest.TestCase):
         for order in ("broken-first", "broken-last"):
             for how in ("garbage", "missing-fields"):
                 with self.subTest(order=order, how=how), Home() as home:
-                    cfg = _cfg(home, "ok", "sk-strata-KEEP")
+                    cfg = _cfg(home, "ok", "sk-nostroma-KEEP")
                     if order == "broken-first":
                         _broken(home, "launch-a-bad", how)
                         _profile(home, "launch-b-ok", cfg)
                     else:
                         _profile(home, "launch-a-ok", cfg)
                         _broken(home, "launch-b-bad", how)
-                    self.assertEqual(access.kept_key(), "sk-strata-KEEP")
+                    self.assertEqual(access.kept_key(), "sk-nostroma-KEEP")
 
     def test_the_named_launch_with_a_damaged_profile_falls_back_to_the_other_valid_key(self):
         from nostroma_cli.launch import access
         with Home() as home:
-            cfg = _cfg(home, "ok", "sk-strata-KEEP")
+            cfg = _cfg(home, "ok", "sk-nostroma-KEEP")
             _broken(home, "launch-mine")
             _profile(home, "launch-other", cfg)
-            self.assertEqual(access.kept_key("mine"), "sk-strata-KEEP")
+            self.assertEqual(access.kept_key("mine"), "sk-nostroma-KEEP")
 
     def test_a_config_row_without_a_source_is_skipped_not_fatal(self):
         from nostroma_cli.launch import access
         with Home() as home:
-            cfg = _cfg(home, "ok", "sk-strata-KEEP")
+            cfg = _cfg(home, "ok", "sk-nostroma-KEEP")
             _profile(home, "launch-ok", cfg)
             rows = [{"id": "launch-err", "error": "cannot read profile (PermissionError)"}, {"id": "launch-ok", "source_config": str(cfg)}]
             with mock.patch("nostroma_control.profiles.list_profiles", return_value=rows):
-                self.assertEqual(access.kept_key(), "sk-strata-KEEP")
+                self.assertEqual(access.kept_key(), "sk-nostroma-KEEP")
 
     def test_no_valid_profile_still_returns_none(self):
         from nostroma_cli.launch import access

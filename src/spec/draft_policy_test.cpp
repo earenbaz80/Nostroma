@@ -6,7 +6,7 @@
 //   3. lookup drafts that are always accepted are taken, and the window grows with them;
 //   4. match-length buckets learn separately (short matches failing does not stop long ones);
 //   5. the policy never proposes a window beyond its cap.
-#include "strata/spec/draft_policy.hpp"
+#include "nostroma/spec/draft_policy.hpp"
 
 #include <cmath>
 #include <cstdint>
@@ -16,7 +16,7 @@
 #include <string>
 #include <vector>
 
-using strata::spec::DraftPolicy;
+using nostroma::spec::DraftPolicy;
 
 namespace {
 int g_fail = 0;
@@ -244,7 +244,7 @@ int main() {
     }
     {
         // CostLearner: plain trimmed means per size, interpolation, readiness and the disturbance checks.
-        using strata::spec::CostLearner;
+        using nostroma::spec::CostLearner;
         CostLearner L;
         for (int i = 0; i < 200; ++i) {
             L.add(0, 1, 10.0 + (i % 3));                            // 10, 11, 12: mean 11
@@ -283,7 +283,7 @@ int main() {
     {
         // The fixture of the Mac lane's fresh learning run (M5 Max, Q2_0, 30 requests of 256 tokens): sample counts and mean round ms per window size.
         // 4 rows had 2 samples: its value comes from its neighbours, not from the two samples.
-        using strata::spec::CostLearner;
+        using nostroma::spec::CostLearner;
         const auto fill = [](CostLearner& L, int t, int n, double ms, double age) {   // n samples around ms (+-1 %, mean ms)
             for (int i = 0; i < n; ++i) L.add(0, t, ms * (1.0 + 0.005 * ((i % 5) - 2)), age);
         };
@@ -366,63 +366,63 @@ int main() {
     {
         // The table file: a round trip, another key, a cut-short file, a missing file, a folder that does not exist yet.
         namespace fs = std::filesystem;
-        using strata::spec::CostFile;
+        using nostroma::spec::CostFile;
         std::error_code ec;
-        const fs::path dir = fs::temp_directory_path(ec) / ("strata-dpt-" + std::to_string((unsigned long long) (uintptr_t) &ec));
+        const fs::path dir = fs::temp_directory_path(ec) / ("nostroma-dpt-" + std::to_string((unsigned long long) (uintptr_t) &ec));
         const std::string path = (dir / "sub" / "t.costs").string();
         CostFile c;
         c.key = "card A|engine 1|model m\nspec 6";
         c.tables[0] = {15.18, 18.55, 20.69, 23.65};
         c.tables[2] = {16.0, 19.0};
         std::string why;
-        check(strata::spec::write_cost_file(path, c, why), "file: written, its folder made");
+        check(nostroma::spec::write_cost_file(path, c, why), "file: written, its folder made");
         CostFile r;
-        const bool ok = strata::spec::read_cost_file(path, c.key, r, why);
+        const bool ok = nostroma::spec::read_cost_file(path, c.key, r, why);
         check(ok && r.tables[0].size() == 4 && r.tables[0][3] == 23.65 && r.tables[1].empty() && r.tables[2].size() == 2,
               "file: read back with its key, every bucket as written");
-        check(!strata::spec::read_cost_file(path, "card B|engine 1|model m spec 6", r, why) && !why.empty(), "file: another key is not loaded");
-        check(!strata::spec::read_cost_file((dir / "none.costs").string(), c.key, r, why), "file: a missing file is not loaded");
-        { std::ofstream f(path, std::ios::binary | std::ios::trunc); f << "strata-draft-costs 2\nkey x\nbucket 0 15.1,18"; }
-        check(!strata::spec::read_cost_file(path, "x", r, why), "file: a cut-short file (no end line) is not loaded");
-        { std::ofstream f(path, std::ios::binary | std::ios::trunc); f << "strata-draft-costs 2\nkey x\nbucket 0 15.1,abc\nend\n"; }
-        check(!strata::spec::read_cost_file(path, "x", r, why), "file: a malformed table is not loaded");
-        check(strata::spec::write_cost_file(path, c, why) && strata::spec::read_cost_file(path, c.key, r, why), "file: a bad file is replaced whole");
+        check(!nostroma::spec::read_cost_file(path, "card B|engine 1|model m spec 6", r, why) && !why.empty(), "file: another key is not loaded");
+        check(!nostroma::spec::read_cost_file((dir / "none.costs").string(), c.key, r, why), "file: a missing file is not loaded");
+        { std::ofstream f(path, std::ios::binary | std::ios::trunc); f << "nostroma-draft-costs 2\nkey x\nbucket 0 15.1,18"; }
+        check(!nostroma::spec::read_cost_file(path, "x", r, why), "file: a cut-short file (no end line) is not loaded");
+        { std::ofstream f(path, std::ios::binary | std::ios::trunc); f << "nostroma-draft-costs 2\nkey x\nbucket 0 15.1,abc\nend\n"; }
+        check(!nostroma::spec::read_cost_file(path, "x", r, why), "file: a malformed table is not loaded");
+        check(nostroma::spec::write_cost_file(path, c, why) && nostroma::spec::read_cost_file(path, c.key, r, why), "file: a bad file is replaced whole");
         check(!fs::exists(fs::path(path + ".tmp"), ec), "file: no temporary file is left");
         check(r.cpu_share < 0.0, "file: no share written, none read");
         c.cpu_share = 0.45;
-        check(strata::spec::write_cost_file(path, c, why) && strata::spec::read_cost_file(path, c.key, r, why) && r.cpu_share == 0.45,
+        check(nostroma::spec::write_cost_file(path, c, why) && nostroma::spec::read_cost_file(path, c.key, r, why) && r.cpu_share == 0.45,
               "file: the CPU prompt share is stored and read back with the table");
-        { std::ofstream f(path, std::ios::binary | std::ios::trunc); f << "strata-draft-costs 2\nkey x\nbucket 0 15.1,18\nshare 1.7\nend\n"; }
-        check(!strata::spec::read_cost_file(path, "x", r, why), "file: a share outside 0..1 is not loaded");
+        { std::ofstream f(path, std::ios::binary | std::ios::trunc); f << "nostroma-draft-costs 2\nkey x\nbucket 0 15.1,18\nshare 1.7\nend\n"; }
+        check(!nostroma::spec::read_cost_file(path, "x", r, why), "file: a share outside 0..1 is not loaded");
         // the decode PCIe share PcieAuto settled on (repeatable output): stored and read back; a file written before it has none, and
         // still loads (the engine then refines the share as before and writes it)
-        { std::ofstream f(path, std::ios::binary | std::ios::trunc); f << "strata-draft-costs 2\nkey x\nbucket 0 15.1,18\nshare 0.900\nend\n"; }
-        check(strata::spec::read_cost_file(path, "x", r, why) && r.cpu_share == 0.9 && r.pcie_frac < 0.0,
+        { std::ofstream f(path, std::ios::binary | std::ios::trunc); f << "nostroma-draft-costs 2\nkey x\nbucket 0 15.1,18\nshare 0.900\nend\n"; }
+        check(nostroma::spec::read_cost_file(path, "x", r, why) && r.cpu_share == 0.9 && r.pcie_frac < 0.0,
               "file: a file from before the PCIe share loads, with no PCIe share");
         c.pcie_frac = 0.15;
-        check(strata::spec::write_cost_file(path, c, why) && strata::spec::read_cost_file(path, c.key, r, why) && r.pcie_frac == 0.15 &&
+        check(nostroma::spec::write_cost_file(path, c, why) && nostroma::spec::read_cost_file(path, c.key, r, why) && r.pcie_frac == 0.15 &&
                   r.cpu_share == 0.45 && r.tables[0].size() == 4,
               "file: the PCIe share is stored and read back with the table and the prompt share");
-        { std::ofstream f(path, std::ios::binary | std::ios::trunc); f << "strata-draft-costs 2\nkey x\nbucket 0 15.1,18\npcie -0.2\nend\n"; }
-        check(!strata::spec::read_cost_file(path, "x", r, why), "file: a PCIe share outside 0..1 is not loaded");
-        { std::ofstream f(path, std::ios::binary | std::ios::trunc); f << "strata-draft-costs 2\nkey x\nbucket 0 15.1,18\npcie 0.15x\nend\n"; }
-        check(!strata::spec::read_cost_file(path, "x", r, why), "file: a malformed PCIe share is not loaded");
+        { std::ofstream f(path, std::ios::binary | std::ios::trunc); f << "nostroma-draft-costs 2\nkey x\nbucket 0 15.1,18\npcie -0.2\nend\n"; }
+        check(!nostroma::spec::read_cost_file(path, "x", r, why), "file: a PCIe share outside 0..1 is not loaded");
+        { std::ofstream f(path, std::ios::binary | std::ios::trunc); f << "nostroma-draft-costs 2\nkey x\nbucket 0 15.1,18\npcie 0.15x\nend\n"; }
+        check(!nostroma::spec::read_cost_file(path, "x", r, why), "file: a malformed PCIe share is not loaded");
         // version 1 (learned from every round, so from the slow state of a long burst): not loaded, learned again
-        { std::ofstream f(path, std::ios::binary | std::ios::trunc); f << "strata-draft-costs 1\nkey x\nbucket 0 15.1,18\nend\n"; }
-        check(!strata::spec::read_cost_file(path, "x", r, why) && why.find("format") != std::string::npos, "file: a version 1 table is not loaded (learned again)");
+        { std::ofstream f(path, std::ios::binary | std::ios::trunc); f << "nostroma-draft-costs 1\nkey x\nbucket 0 15.1,18\nend\n"; }
+        check(!nostroma::spec::read_cost_file(path, "x", r, why) && why.find("format") != std::string::npos, "file: a version 1 table is not loaded (learned again)");
         // a start closed in the middle of learning leaves no table: nothing is written before the stretch is ready, and a half-written temporary file
         // (the process died while writing) is never read as the table
         fs::remove(fs::path(path), ec);
-        { std::ofstream f(path + ".tmp", std::ios::binary | std::ios::trunc); f << "strata-draft-costs 2\nkey x\nbucket 0 15.1,18"; }
-        check(!strata::spec::read_cost_file(path, "x", r, why), "file: a half-written temporary file beside a missing table is not a table");
-        check(strata::spec::write_cost_file(path, c, why) && strata::spec::read_cost_file(path, c.key, r, why) && !fs::exists(fs::path(path + ".tmp"), ec),
+        { std::ofstream f(path + ".tmp", std::ios::binary | std::ios::trunc); f << "nostroma-draft-costs 2\nkey x\nbucket 0 15.1,18"; }
+        check(!nostroma::spec::read_cost_file(path, "x", r, why), "file: a half-written temporary file beside a missing table is not a table");
+        check(nostroma::spec::write_cost_file(path, c, why) && nostroma::spec::read_cost_file(path, c.key, r, why) && !fs::exists(fs::path(path + ".tmp"), ec),
               "file: the next write replaces the leftover temporary file and the table loads");
         fs::remove_all(dir, ec);
     }
     {
         // sizes with too few samples: a rough measurement counts when it is not below the trend, a stalled handful does not, and a fill above the
         // measured sizes never flattens the measured trend (Radeon 780M, 11-13: sizes 1 / 3 measured at 76.2 / 111.6 ms, size 4 with 6 rounds at 143)
-        using strata::spec::CostLearner;
+        using nostroma::spec::CostLearner;
         const auto fill = [](CostLearner& L, int t, int n, double ms) {
             for (int i = 0; i < n; ++i) L.add(0, t, ms * (1.0 + 0.004 * ((i % 5) - 2)));
         };
@@ -546,9 +546,9 @@ int main() {
     }
     {   // DRAFT-COSTS-5: a real price is the MEDIAN of its 16 rounds; the monotone guard repairs an inversion from the trusted side
         namespace fs = std::filesystem;
-        using strata::spec::CalAcc;
-        using strata::spec::CostFile;
-        using strata::spec::CostLearner;
+        using nostroma::spec::CalAcc;
+        using nostroma::spec::CostFile;
+        using nostroma::spec::CostLearner;
         using Cal = std::array<std::array<CalAcc, CostLearner::kMaxT + 1>, CostLearner::kCtxBuckets>;
         using Rc = std::array<std::array<double, CostLearner::kMaxT + 1>, CostLearner::kCtxBuckets>;
         using Real = std::array<unsigned, CostLearner::kCtxBuckets>;
@@ -577,7 +577,7 @@ int main() {
             check(m.calibrate(cf, rep) && std::fabs(cf.real_cost[0][2] - 14.5) < 1e-9, "median: sixteen rounds of two values: the mean of the two middle ones");
         }
         {   // the rounds survive the file (a start collects part of them, the next start the rest) and a file line without them still loads (mean as before)
-            const fs::path dir = fs::temp_directory_path() / ("strata-dpt-med-" + std::to_string((unsigned long long) (uintptr_t) &tab));
+            const fs::path dir = fs::temp_directory_path() / ("nostroma-dpt-med-" + std::to_string((unsigned long long) (uintptr_t) &tab));
             const std::string path = (dir / "m.costs").string();
             CostFile c;
             c.key = "k";
@@ -590,9 +590,9 @@ int main() {
             c.cal[0][3].n = 2;   // no rounds kept (a file of an older build): only the sum
             c.cal[0][3].sum = 33.0;
             std::string why;
-            check(strata::spec::write_cost_file(path, c, why), "median file: written");
+            check(nostroma::spec::write_cost_file(path, c, why), "median file: written");
             CostFile r;
-            check(strata::spec::read_cost_file(path, c.key, r, why), "median file: read back");
+            check(nostroma::spec::read_cost_file(path, c.key, r, why), "median file: read back");
             check(r.cal[0][2].n == 3 && r.cal[0][2].nv == 3 && std::fabs((double) r.cal[0][2].vals[1] - 14.0) < 1e-6 && std::fabs(r.cal[0][2].sum - 43.5) < 1e-3,
                   "median file: the kept rounds come back with their count and sum");
             check(r.cal[0][3].n == 2 && r.cal[0][3].nv == 0 && std::fabs(r.cal[0][3].sum - 33.0) < 1e-3, "median file: a line without rounds keeps only n and sum (the mean decides)");
@@ -664,11 +664,11 @@ int main() {
         }
     }
     {   // calibration against real rounds
-        using strata::spec::CalAcc;
-        using strata::spec::CostFile;
-        using strata::spec::CostLearner;
-        using strata::spec::read_cost_file;
-        using strata::spec::write_cost_file;
+        using nostroma::spec::CalAcc;
+        using nostroma::spec::CostFile;
+        using nostroma::spec::CostLearner;
+        using nostroma::spec::read_cost_file;
+        using nostroma::spec::write_cost_file;
         using Cal = std::array<std::array<CalAcc, CostLearner::kMaxT + 1>, CostLearner::kCtxBuckets>;
         using Rc = std::array<std::array<double, CostLearner::kMaxT + 1>, CostLearner::kCtxBuckets>;
         using Real = std::array<unsigned, CostLearner::kCtxBuckets>;
@@ -893,9 +893,9 @@ int main() {
         check((ch.real[0] & 1u) != 0 && h.table_held() && !h.fixed(), "calib: one real size does not bring the table into use");
     }
     {
-        // STRATA_DRAFT_COSTS_LEARN=1 keeps its one-start promise (f-dc-learn-fix): (a) a request of the learning stretch starts a new busy run; (b) the table it writes is used by the next start at once.
-        using strata::spec::CostFile;
-        using strata::spec::CostLearner;
+        // NOSTROMA_DRAFT_COSTS_LEARN=1 keeps its one-start promise (f-dc-learn-fix): (a) a request of the learning stretch starts a new busy run; (b) the table it writes is used by the next start at once.
+        using nostroma::spec::CostFile;
+        using nostroma::spec::CostLearner;
         namespace fs = std::filesystem;
         static_assert(CostLearner::starts_busy_run(false, 0.0, false) && !CostLearner::starts_busy_run(true, 0.01, false) && CostLearner::starts_busy_run(true, 0.5, false),
                       "no learning stretch: the first request and a pause of kIdleS start a busy run, a request a few ms later does not");
@@ -924,14 +924,14 @@ int main() {
         c.key = "card A|engine 1|model m";
         c.tables[0] = {12.3456, 14.2, 16.2004, 18.5};
         c.state_effect = true;
-        strata::spec::mark_learned_real(c);
+        nostroma::spec::mark_learned_real(c);
         check(c.real[0] == 0xFu && c.real[1] == 0u && c.real_cost[0][1] == 12.346 && c.tables[0][0] == 12.346 && c.tables[0][2] == 16.2 && c.real_cost[0][3] == 16.2,
               "learn (b): every size of the stretch's table is marked real, its cost rounded to the file's 3 decimals");
-        const fs::path dir = fs::temp_directory_path() / ("strata-dpt-learn-" + std::to_string((unsigned long long) (uintptr_t) &c));
+        const fs::path dir = fs::temp_directory_path() / ("nostroma-dpt-learn-" + std::to_string((unsigned long long) (uintptr_t) &c));
         const std::string path = (dir / "t.costs").string();
         std::string why;
         CostFile r;
-        check(strata::spec::write_cost_file(path, c, why) && strata::spec::read_cost_file(path, c.key, r, why) && r.real[0] == 0xFu && r.real_cost[0][4] == 18.5 && r.tables[0][1] == 14.2,
+        check(nostroma::spec::write_cost_file(path, c, why) && nostroma::spec::read_cost_file(path, c.key, r, why) && r.real[0] == 0xFu && r.real_cost[0][4] == 18.5 && r.tables[0][1] == 14.2,
               "learn (b): the marks and the costs survive the file");
         DraftPolicy used(6);
         used.set_fixed_costs(r.tables[0].data(), (int) r.tables[0].size(), 0);

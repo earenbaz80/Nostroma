@@ -21,12 +21,12 @@ class ComponentStart(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.root = Path(tmp.name)
-        self.config = self.root / "strata-iq3_s.json"
+        self.config = self.root / "nostroma-iq3_s.json"
         self.gguf = self.root / "model.gguf"
         self.gguf.write_bytes(b"GGUF")
         self.cards = [{"index": i, "name": f"RTX {i}", "arch": "89", "vram_gb": 24.0} for i in range(2)]
 
-    def run_start(self, exe="component:strata-engine", backend="cuda", gpu=0, win=False, keep=None):
+    def run_start(self, exe="component:nostroma-engine", backend="cuda", gpu=0, win=False, keep=None):
         cfg = {"exe": exe, "backend": backend, "args": ["--native", str(self.gguf)],
                "gpu": gpu, "gpus_asked": True, "model_name": "test", "port": 8080}
         self.config.write_text(json.dumps(cfg), encoding="utf-8")
@@ -34,7 +34,7 @@ class ComponentStart(unittest.TestCase):
         with contextlib.ExitStack() as st:
             st.enter_context(contextlib.redirect_stdout(self.output))
             st.enter_context(mock.patch.object(setup, "WIN", win))
-            st.enter_context(mock.patch.dict(os.environ, {"STRATA_EXECV": ""}))
+            st.enter_context(mock.patch.dict(os.environ, {"NOSTROMA_EXECV": ""}))
             st.enter_context(mock.patch.object(setup, "gpus", return_value=self.cards))
             st.enter_context(mock.patch.object(setup, "amd_gpus", return_value=[
                 {"index": i, "name": f"Radeon {i}", "arch": "gfx1201", "vram_gb": 24.0} for i in range(2)]))
@@ -55,7 +55,7 @@ class ComponentStart(unittest.TestCase):
         self.assertIn(str(setup.ROOT / "serve" / "server.py"), argv)
         self.assertEqual(argv[argv.index("--config") + 1], str(self.config))
         self.assertEqual(self.server.call_args.kwargs["env"][setup.acquisition.ENV], "1")
-        self.assertEqual(json.loads(self.config.read_text())["exe"], "component:strata-engine")
+        self.assertEqual(json.loads(self.config.read_text())["exe"], "component:nostroma-engine")
 
     def test_component_uses_saved_gpu_without_looking_for_a_source_build(self):
         self.assertEqual(self.run_start(gpu=None), 0)
@@ -81,7 +81,7 @@ class ComponentStart(unittest.TestCase):
         self.server.assert_not_called()
 
     def test_missing_literal_engine_path_is_still_reported(self):
-        missing = str(self.root / "strata")
+        missing = str(self.root / "nostroma")
         with self.assertRaises(SystemExit):
             self.run_start(exe=missing)
         self.assertIn(missing, self.output.getvalue())
@@ -90,7 +90,7 @@ class ComponentStart(unittest.TestCase):
     def test_component_reference_survives_saving_start_settings(self):
         self.assertEqual(self.run_start(keep={"host": "127.0.0.1", "vram_reserve_mib": 1024}), 0)
         saved = json.loads(self.config.read_text())
-        self.assertEqual(saved["exe"], "component:strata-engine")
+        self.assertEqual(saved["exe"], "component:nostroma-engine")
         self.assertEqual(saved["args"][-2:], ["--vram-reserve-mib", "1024"])
 
 

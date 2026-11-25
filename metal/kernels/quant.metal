@@ -2,7 +2,7 @@
 // SIMD lane decodes at a time into raw values q[0..UNIT) and one scale s, so that the unit's dot with x is
 // s * sum(q[j] * x[j]).  Every GEMV kernel (moe.metal, gemv.metal) is written once over these.
 //
-// Decode rules transcribed from ggml-quants.c dequantize_row_* (3cf03257) and Strata's Q2_0 contract
+// Decode rules transcribed from ggml-quants.c dequantize_row_* (3cf03257) and Nostroma's Q2_0 contract
 // (docs/q2_0-contract.md); the grids and sign tables are ggml-common.h's (prepended by the runtime).  The tables a
 // format needs are copied to threadgroup memory once per threadgroup (constant-memory lookups with divergent indices
 // serialise on Apple GPUs).
@@ -10,9 +10,9 @@
 // Blocks start at 2-byte aligned addresses (18, 66, 74, 82, 98, 110 bytes), so every multi-byte field is read as
 // ushorts.
 
-#ifndef STRATA_XH16_DECL
-#define STRATA_XH16_DECL
-// STRATA_METAL_F16 (function constant 25): the window's x also as half planes, after the float planes and S16:
+#ifndef NOSTROMA_XH16_DECL
+#define NOSTROMA_XH16_DECL
+// NOSTROMA_METAL_F16 (function constant 25): the window's x also as half planes, after the float planes and S16:
 // [3][plane] halves - raw (IQ4_XS), x * 4^-(i % 4) (Q2_0), x * 2^-8 at odd i (the K-quants); idx = t * n + d, jj = d % 16
 constant bool XH16 [[function_constant(25)]];
 constant bool xh16 = is_function_constant_defined(XH16) && XH16;
@@ -653,7 +653,7 @@ static inline float lane_sum(float v) {
 }
 
 // ---- Gyro: the block Hadamard rotation of the activations ------------------------------------------------------------
-// Hadamard-folded experts (docs/GYRO.md, include/strata/kernels/cpu/hadamard.hpp) take y = H (s * x) per block of 128
+// Hadamard-folded experts (docs/GYRO.md, include/nostroma/kernels/cpu/hadamard.hpp) take y = H (s * x) per block of 128
 // values (the normalized Sylvester-Walsh-Hadamard matrix, s = a +/-1 sign vector of the width) in place of x: the gate/up
 // input and the down input.  One thread per value, 128 threads a block, grid (width / 128, rows).  The butterflies run in
 // the CPU's order (len = 1, 2, 4, ...; lower element a + c, upper a - c), so the rotated floats are the CPU's and the

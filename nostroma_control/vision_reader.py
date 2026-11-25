@@ -1,21 +1,21 @@
-"""Which picture reader an engine folder gets: the GPU one (`strata-vision-hip` on AMD, `strata-vision-sycl` on Intel Arc, `strata-vision --gpu`
-on a Mac) or the CPU one (`strata-vision`).
+"""Which picture reader an engine folder gets: the GPU one (`nostroma-vision-hip` on AMD, `nostroma-vision-sycl` on Intel Arc, `nostroma-vision --gpu`
+on a Mac) or the CPU one (`nostroma-vision`).
 
-An AMD engine package carries two programs for pictures.  `strata-vision` is the CPU reader: it needs nothing from the GPU
-runtime, so it starts on every PC.  `strata-vision-hip` is the same reader on the card (llama.cpp's HIP backend), a
+An AMD engine package carries two programs for pictures.  `nostroma-vision` is the CPU reader: it needs nothing from the GPU
+runtime, so it starts on every PC.  `nostroma-vision-hip` is the same reader on the card (llama.cpp's HIP backend), a
 fraction of a second per picture instead of seconds.  Setup writes the run config with the GPU reader first and the CPU
 reader as its fallback (`vision.cpu_exe`); the server (serve/server.py, Vision) starts the CPU reader by itself, with one
 log line, when the GPU reader does not start: the HIP runtime does not load, the card is not one the build has code for
 (the reader says so before it runs a kernel), or the card is busy.  Nothing is asked of the user.
 
-A Mac has one program for both: `strata-vision` is built with Metal, `--gpu` reads on the Mac's GPU and without it on the CPU, so the
+A Mac has one program for both: `nostroma-vision` is built with Metal, `--gpu` reads on the Mac's GPU and without it on the CPU, so the
 CPU reader is the same file and the fallback needs no second program.  Unified memory changes the 24 GB rule: nothing is taken from a
 separate card, the reader's ~1.1 GB is the mmproj file itself on either side (measured on an M4, footprint 1,050 MB on the CPU, 1,179 MB
 on the GPU), and the CPU reader takes ~50 s for a 260-token picture where the GPU one takes 0.45 s (ggml has no BF16 vector kernel on
 ARM).  So a Mac reads on the GPU unless the person asks for the CPU.
 
-An Intel Arc engine folder (engine-sycl/) carries the CPU reader; `strata-vision-sycl` (llama.cpp's SYCL backend, tools/vision with
-STRATA_VISION_SYCL, built by `setup --backend sycl --vision gpu` on a PC that has the oneAPI compiler) is the GPU reader there.
+An Intel Arc engine folder (engine-sycl/) carries the CPU reader; `nostroma-vision-sycl` (llama.cpp's SYCL backend, tools/vision with
+NOSTROMA_VISION_SYCL, built by `setup --backend sycl --vision gpu` on a PC that has the oneAPI compiler) is the GPU reader there.
 
 `choose` is the whole decision; setup.py calls it, and tools/test_vision_reader.py checks every branch.
 """
@@ -25,9 +25,9 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-CPU_READER = "strata-vision"
-GPU_READER = "strata-vision-hip"
-SYCL_READER = "strata-vision-sycl"
+CPU_READER = "nostroma-vision"
+GPU_READER = "nostroma-vision-hip"
+SYCL_READER = "nostroma-vision-sycl"
 GPU_READERS = (GPU_READER, SYCL_READER)       # the GPU reader of an engine folder: the first one it carries
 
 #: Owner decision 2026-10-18: pictures are ON by default, and the reader runs on the CPU for a card under 24 GB (the GPU reader keeps about
@@ -73,7 +73,7 @@ def reader_name(base: str, windows: bool) -> str:
 
 
 def find(folder: Path | str, windows: bool, *, mac: bool = False) -> dict:
-    """The readers in an engine folder: {"cpu": Path | None, "gpu": Path | None}.  On a Mac (mac=True) `strata-vision` is both: it has
+    """The readers in an engine folder: {"cpu": Path | None, "gpu": Path | None}.  On a Mac (mac=True) `nostroma-vision` is both: it has
     Metal built in and `--gpu` picks the GPU."""
     folder = Path(folder)
     found = {}
@@ -109,7 +109,7 @@ def choose(folder: Path | str, asked: str, *, windows: bool, gpu_arch: str = "",
     gpu_arch: the card's architecture when setup knows it ("gfx1201"); archs: what the GPU reader was built for
     (BUILD.json `vision_archs`, else the package's `archs`).  A card the build does not list gets the CPU reader here;
     when the card is unknown the GPU reader is tried and falls back by itself (see the module doc).
-    mac: the Mac's one program, `strata-vision`: "gpu" runs it with --gpu and keeps the same file as the CPU reader to fall back on."""
+    mac: the Mac's one program, `nostroma-vision`: "gpu" runs it with --gpu and keeps the same file as the CPU reader to fall back on."""
     asked = (asked or "").lower()
     if asked in ("no", "none", "off", ""):
         return Reader("none")
@@ -192,7 +192,7 @@ def retry_gpu_start(*, linux: bool, arm: bool, hip: bool, text: str, retries_don
 
 def cpu_fallback(vision_cfg: dict, same_program: bool = False) -> dict | None:
     """The same section for the CPU reader, when the GPU reader has one to fall back on; None otherwise.  AMD and Intel name it (`cpu_exe`);
-    the NVIDIA reader (`strata-vision`) is the CPU reader too, without --gpu - `same_program` takes that one (the on-demand reader's
+    the NVIDIA reader (`nostroma-vision`) is the CPU reader too, without --gpu - `same_program` takes that one (the on-demand reader's
     start, which must read the picture whatever the card has left)."""
     if not vision_cfg.get("gpu"):
         return None

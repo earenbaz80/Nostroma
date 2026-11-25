@@ -75,7 +75,7 @@ def alive(pid: int) -> bool:
 @unittest.skipUnless(POSIX, "SIGTERM is a POSIX signal; Windows ends the tree through a job object (test_bench_stop.py)")
 class TermEndsTheEngine(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="strata-benchterm-")
+        self.temp = tempfile.TemporaryDirectory(prefix="nostroma-benchterm-")
         self.addCleanup(self.temp.cleanup)
         self.pidfile = Path(self.temp.name) / "kid.pid"
         self.ready = Path(self.temp.name) / "ready"

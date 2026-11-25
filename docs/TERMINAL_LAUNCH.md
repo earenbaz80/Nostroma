@@ -78,7 +78,7 @@ nostroma launch --preset "IQ3_XXS 128K"                                  # a sav
 nostroma launch --family qwen --model iq3_xxs --context 128k --parallel 4 --vision off --tune quick \
               --access lan --port 8080 --save-preset "Office" --no-tui
 nostroma launch --model-path /data/models/IQ3_XXS --no-tui               # files you already have
-nostroma launch --preset Office --set prefill=65536 --set STRATA_PIN_BY_NEED=1 --no-tui
+nostroma launch --preset Office --set prefill=65536 --set NOSTROMA_PIN_BY_NEED=1 --no-tui
 nostroma launch --family qwen --model q2_0 --context 64k --restart --no-tui
 nostroma launch --list-presets
 nostroma launch --show-key
@@ -100,7 +100,7 @@ nostroma launch --show-key
 | `--drafting auto\|mtp\|dflash2\|off` | Which drafter guesses ahead. `dflash2` is for Qwen3.8-Flash-Next only and downloads its drafter once (0.34 GB for the models that have a tuned drafter, 0.52 GB on Intel Arc, else 1.2 GB). If it cannot run, MTP is used and the start says why. |
 | `--gpu LIST`, `--gpu-roles LIST` | Which cards to use, and a role per card. |
 | `--tune quick\|thorough\|skip`, `--tune-allow-small`, `--retune` | Tuning. `--retune` measures again; a model tuned before for the same choices on this computer reuses the stored result. |
-| `--set KEY=VALUE` | An advanced engine setting or `STRATA_*` variable (repeatable). Unknown names get a warning. |
+| `--set KEY=VALUE` | An advanced engine setting or `NOSTROMA_*` variable (repeatable). Unknown names get a warning. |
 | `--pool-cores LIST` | Experimental: pin CPU workers to these logical processors, for example `2-14:2` ([DETAILS.md](DETAILS.md)). |
 | `--access local\|lan\|cloudflare\|tailscale`, `--port N` | Who can reach the server. |
 | `--api-key KEY`, `--api-key-env NAME`, `--new-key`, `--no-api-key` | The key clients must send. |
@@ -110,7 +110,7 @@ nostroma launch --show-key
 | `--restart` | Stop a model that is serving other choices (or holds the port), then start these. |
 | `--open` | Open the server's web page once it serves. |
 | `--plan` | Show what would happen and exit. It lists the model, context, picture setting and what would download (0 when everything is here). |
-| `--feed URL\|DIR` | The signed update feed. Default: `STRATA_UPDATE_FEED` or the project's. |
+| `--feed URL\|DIR` | The signed update feed. Default: `NOSTROMA_UPDATE_FEED` or the project's. |
 | `--output human\|json` | Output format. |
 | `--status`, `--stop`, `--show-key` | Show, stop, or print the key of the running launch (add `--preset NAME` to pick one). |
 
@@ -155,7 +155,7 @@ With two or more cards the Overview shows the busiest card's load, all cards' me
 
 **Windows console.** In the classic Windows 10 console the monitor switches that window's font to Cascadia Mono when it is installed
 and draws the full look. Otherwise it draws a solid-block look and shows one line suggesting Windows Terminal. Nothing is saved and
-Windows Terminal, Linux and macOS are never touched. `STRATA_GLYPHS=unicode|ascii|solid` forces a look.
+Windows Terminal, Linux and macOS are never touched. `NOSTROMA_GLYPHS=unicode|ascii|solid` forces a look.
 
 ## Connect your apps: `nostroma connect`
 
@@ -188,11 +188,11 @@ as the config does; OpenClaw needs Node 24.16 or newer.
 
 `nostroma models list` looks in these places (one function, `nostroma_control/discovery.py`):
 
-- the folder you name with `--install-dir` or `STRATA_INSTALL_DIR` (then only that one)
+- the folder you name with `--install-dir` or `NOSTROMA_INSTALL_DIR` (then only that one)
 - the Terminal's own folder
 - folders earlier installs remembered in `settings.json`
 - the desktop app's install folder, which the Terminal shares: `%LOCALAPPDATA%\Nostroma\install` on Windows,
-  `$XDG_DATA_HOME/nostroma/install` (normally `~/.local/share/strata/install`) on Linux and macOS
+  `$XDG_DATA_HOME/nostroma/install` (normally `~/.local/share/nostroma/install`) on Linux and macOS
 
 The data folder is the one you set, else the app's (`app-settings.json` beside its install folder, else a `Documents/Nostroma` that holds
 models), else Nostroma's default.

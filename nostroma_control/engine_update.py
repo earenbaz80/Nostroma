@@ -60,7 +60,7 @@ def notice_line(root=None, how: str = f"Update with {NEXT_STEP}.") -> str | None
 
 ATTEMPT_FILE = "notice-attempt.json"
 CHECK_TIMEOUT_S = 5.0                    # one read of the feed waits this long at most (twice: the transfer layer tries a web address once more)
-CHECK_ENV = "STRATA_UPDATE_CHECK"        # "0" / "off": no daily check (a tester's or a privacy switch; the default is on in the launch monitor only)
+CHECK_ENV = "NOSTROMA_UPDATE_CHECK"        # "0" / "off": no daily check (a tester's or a privacy switch; the default is on in the launch monitor only)
 
 
 def _hours_since(text) -> float | None:
@@ -126,7 +126,7 @@ def start_daily_check(on_done: Callable[[], None] | None = None, root=None, *, f
                 on_done()
         except BaseException:                            # noqa: BLE001 - never a message, never a trace
             pass
-    thread = threading.Thread(target=work, name="strata-daily-check", daemon=True)
+    thread = threading.Thread(target=work, name="nostroma-daily-check", daemon=True)
     thread.start()
     return thread
 

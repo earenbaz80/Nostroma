@@ -58,19 +58,19 @@ class GuiLayout(unittest.TestCase):
     """The desktop app's folders, as the Windows (and Linux) app lays them out, plus an empty Terminal folder."""
 
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory(prefix="strata-discovery-")
+        self.tmp = tempfile.TemporaryDirectory(prefix="nostroma-discovery-")
         self.addCleanup(self.tmp.cleanup)
         base = Path(self.tmp.name)
         self.base = base
         self.env = {"LOCALAPPDATA": str(base / "local"), "XDG_DATA_HOME": str(base / "local"), "APPDATA": str(base / "roaming"),
                     "XDG_CONFIG_HOME": str(base / "config"), "USERPROFILE": str(base / "home"), "HOME": str(base / "home"),
                     "XDG_STATE_HOME": str(base / "state"), "XDG_DOCUMENTS_DIR": ""}
-        settings = Path(self.env["APPDATA"]) / "Strata" if os.name == "nt" else Path(self.env["XDG_CONFIG_HOME"]) / "strata"
+        settings = Path(self.env["APPDATA"]) / "Nostroma" if os.name == "nt" else Path(self.env["XDG_CONFIG_HOME"]) / "nostroma"
         self.settings_path = settings / "settings.json"
         patch = mock.patch.dict(os.environ, self.env)
         patch.start()
         self.addCleanup(patch.stop)
-        for key in ("STRATA_INSTALL_DIR", "STRATA_SETTINGS_FILE", "STRATA_COMPONENTS_DIR", "STRATA_DOCUMENTS_DIR"):
+        for key in ("NOSTROMA_INSTALL_DIR", "NOSTROMA_SETTINGS_FILE", "NOSTROMA_COMPONENTS_DIR", "NOSTROMA_DOCUMENTS_DIR"):
             patch = mock.patch.dict(os.environ)
             patch.start()
             self.addCleanup(patch.stop)
@@ -82,7 +82,7 @@ class GuiLayout(unittest.TestCase):
         p.start()
         self.addCleanup(p.stop)
         self.install = discovery.app_install_dir()
-        self.docs = base / "home" / "Documents" / "Strata"
+        self.docs = base / "home" / "Documents" / "Nostroma"
         gyro = self.docs / "Models" / "gyro-Gyro-S"
         gyro.mkdir(parents=True)
         self.gguf = gyro / GYRO_S
@@ -99,11 +99,11 @@ class GuiLayout(unittest.TestCase):
         engine.write_bytes(b"e")
         tok = self.docs / "packs" / "gyro-gyro-s" / "tokenizer"
         (tok / "vocab.json").write_text("{}")
-        self.cfg = {"exe": "component:strata-engine", "tokenizer": str(tok), "model_name": "qwen3.8-flash-next-gyro-gyro-s",
+        self.cfg = {"exe": "component:nostroma-engine", "tokenizer": str(tok), "model_name": "qwen3.8-flash-next-gyro-gyro-s",
                     "args": ["--pack", str(self.docs / "packs" / "gyro-gyro-s"), "--native", str(self.gguf), "--ple-gguf", str(self.gguf),
                              "--mtp", str(self.docs / "mtp" / "rt"), "--max-context", "131072", "--kv", "int8", "--vision"],
                     "vision": {"exe": str(engine), "mmproj": str(self.mmproj), "model": str(self.gguf), "gpu": False}}
-        self.config_path = self.install / "strata-gyro-gyro-s.json"
+        self.config_path = self.install / "nostroma-gyro-gyro-s.json"
         self.config_path.write_text(json.dumps(self.cfg))
         (self.install.parent / "app-settings.json").write_text(json.dumps({"data_dir": str(self.docs), "installs": [str(self.install)]}))
 
@@ -141,9 +141,9 @@ class GuiLayout(unittest.TestCase):
         self.assertEqual([p.source for p in discovery.places(explicit=str(other))], ["explicit"])
 
     def test_a_remembered_older_install_and_the_app_install_are_both_listed(self):
-        old = self.base / "T-Strata"
+        old = self.base / "T-Nostroma"
         old.mkdir()
-        (old / "strata-qwen-iq3_xxs.json").write_text(json.dumps({"exe": "e", "tokenizer": "t", "args": []}))
+        (old / "nostroma-qwen-iq3_xxs.json").write_text(json.dumps({"exe": "e", "tokenizer": "t", "args": []}))
         settings = self.settings_path
         settings.parent.mkdir(parents=True)
         settings.write_text(json.dumps({"installs": [str(old)]}))
@@ -152,11 +152,11 @@ class GuiLayout(unittest.TestCase):
         self.assertEqual(got["install_dir_source"], "remembered")
 
     def test_inside_the_app_an_older_install_is_still_not_adopted(self):
-        old = self.base / "T-Strata"
+        old = self.base / "T-Nostroma"
         old.mkdir()
-        (old / "strata-x.json").write_text(json.dumps({"exe": "e", "tokenizer": "t", "args": []}))
+        (old / "nostroma-x.json").write_text(json.dumps({"exe": "e", "tokenizer": "t", "args": []}))
         app_settings = self.install.parent / "app-settings.json"
-        with mock.patch.dict(os.environ, {"STRATA_SETTINGS_FILE": str(app_settings)}):
+        with mock.patch.dict(os.environ, {"NOSTROMA_SETTINGS_FILE": str(app_settings)}):
             settings = self.settings_path
             settings.parent.mkdir(parents=True)
             settings.write_text(json.dumps({"installs": [str(old)]}))

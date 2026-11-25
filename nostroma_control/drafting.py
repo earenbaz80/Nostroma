@@ -39,7 +39,7 @@ DEFAULT_MODE = "auto"
 LABELS = {"auto": "Auto (recommended)", "mtp": "MTP", "dflash2": "DFlash2", "off": "Off"}
 DRAFTERS = ("mtp", "dflash2", "off")
 
-#: The engine families that have the DFlash2 code (CMakeLists.txt STRATA_HAVE_DFLASH2). Auto picks DFlash2 on these; a computer with any other engine keeps the
+#: The engine families that have the DFlash2 code (CMakeLists.txt NOSTROMA_HAVE_DFLASH2). Auto picks DFlash2 on these; a computer with any other engine keeps the
 #: MTP. Intel SYCL joined with the DF2-SYCL engine (Arc A750 measured: a tie with the MTP, section 8-9 of phaseA-tests/blackwell/RESULTS-DF2SYCL.md). Metal: the DF2-METAL engine.
 DFLASH2_BACKENDS = ("cuda", "hip", "metal", "sycl")
 
@@ -71,7 +71,7 @@ def card_class(archs: Any) -> str:
 
 # --------------------------------------------------------------------------------------------------- where the engine can run it
 #
-# The DFlash2 code (src/core/dflash2.cpp, src/kernels/cuda/dflash2.cu) is compiled into the engines of DFLASH2_BACKENDS (CMakeLists.txt, STRATA_HAVE_DFLASH2);
+# The DFlash2 code (src/core/dflash2.cpp, src/kernels/cuda/dflash2.cu) is compiled into the engines of DFLASH2_BACKENDS (CMakeLists.txt, NOSTROMA_HAVE_DFLASH2);
 # the others have none, and a PC with no supported graphics card has no engine to run it. Where the code exists, three words say what was
 # measured (DFlash2 against MTP, same prompts, same flags; the numbers are in the comment above SUGGESTED and in phaseA-tests/blackwell/RESULTS-DRAFT.md):
 #   tested    measured on this kind of card: faster on some kinds of text, slower on others
@@ -230,31 +230,31 @@ _MARK_SELQ4 = b"selector codebooks: Q4_0 rows"      # text of an engine that rea
 # on Metal +4.5% / +3.4% output tokens per second against the stock pack at 0.5, greedy identity 120 of 120 per set, WITH --draft-conf 0.7 (at 0.5 it is a wash, and the
 # stock pack is 5% worse at 0.7: the setting belongs to the pack). It is a file Nostroma hosts (the repository publishes only the bf16 file).
 # Apache-2.0, modified by Nostroma: data/dflash2-tuned/ (LICENSE, NOTICE.md) ships with Nostroma and is copied beside the file when it is fetched.
-TUNED_NAME = "qwen3.8-flash-next-dflash2.strata1.q4_0-selq4.pack"
+TUNED_NAME = "qwen3.8-flash-next-dflash2.nostroma1.q4_0-selq4.pack"
 TUNED_BYTES = 339694592
 TUNED_SHA256 = "4df2e5ab2b47c064afbe662e16e4f06569877125c2d0e2123a4ac755266c664c"
 TUNED_GB = 0.34
 # The same tuned weights for an engine that reads only the bf16 selector codebooks (the SYCL 0.2.11 engine refuses the Q4_0-selector pack above): the Q4_0 pack of tools/dflash2_pack.py
 # --q4_0 (the tool reproduces the stock Arc pack cda40d62... exactly from the stock weights). Its own name, size and SHA-256; the feed lists it for ["sycl"] only.
-TUNED_BF16_NAME = "qwen3.8-flash-next-dflash2.strata1.q4_0-bf16sel.pack"
+TUNED_BF16_NAME = "qwen3.8-flash-next-dflash2.nostroma1.q4_0-bf16sel.pack"
 TUNED_BF16_BYTES = 522458112
 TUNED_BF16_SHA256 = "34ca17fee701ff088b6069acc35a26661d237953f5d114be0a3f7dae3ec5cda9"
 TUNED_BF16_GB = 0.52
-#: Where it is hosted (owner 11-06, recommendation of the coordinator): a GitHub release asset of earenbaz80/Nostroma, listed in the signed feed (strata-feed.json, feed key 5d1bc23a) as a
+#: Where it is hosted (owner 11-06, recommendation of the coordinator): a GitHub release asset of earenbaz80/Nostroma, listed in the signed feed (nostroma-feed.json, feed key 5d1bc23a) as a
 #: `drafters` entry (packaging/feed_tool.py pack-drafter, build-feed --drafters), so the app gets the feed's signature, offline handling and updates the same way as engine packages.
 #: The entry's url is relative to the feed (flat release assets); the size and SHA-256 above are pinned in the code as well, so the feed can move the file but never swap its bytes.
 #: Written alternative, not implemented: a Hugging Face repository under the owner's account (a resolve address of the pinned commit), fetched with the
 #: same pins; it would need the one address below and loses the feed's signature.
 TUNED_FEED_MEMBER = "drafters"
 TUNED_BACKEND = "metal"                          # the engine family the feed entry must list
-TUNED_URL_ENV = "STRATA_DFLASH2_TUNED_URL"       # tests and mirrors: a direct address (https, file:) of the same pinned bytes, instead of the feed
+TUNED_URL_ENV = "NOSTROMA_DFLASH2_TUNED_URL"       # tests and mirrors: a direct address (https, file:) of the same pinned bytes, instead of the feed
 TUNED_LICENCE_FOLDER = "data/dflash2-tuned"        # LICENSE (Apache-2.0) and NOTICE.md, shipped in data/ with the draft vocabularies
 TUNED_BASE = "incoai/Qwen3.8-Flash-Next-DFlash2 revision a22a1744e85c17364dcc54a6a420af7135d4c7f6"
 LEGACY_PACK_NAME = "qwen3.8-flash-next-dflash2.q8.pack"      # what Nostroma 0.2.9 test builds packed: still used when it is the one on disk
 VRAM_GB = DRAFTER_GB["dflash2"]   # graphics memory with the MTP layer not loaded and the bf16-selector pack: 890 MiB (RESULTS-DF2MEM.md); vram_gb() has the true figure for this computer
 FOLDER = "dflash2"           # under the model data folder, next to ``mtp``
 SPEC_WINDOW = 6              # --spec with DFlash2: the widest window of drafted words per round (measured best on Blackwell; the engine caps it per card)
-WIDE_WINDOW = 8              # --spec on the two card classes whose engine cap (include/strata/core/draft_cap.hpp dflash2_auto_cap) is 8: Strix Halo and Blackwell cc 12.0 with >= 48 GB (window_for). The engine only ever lowers --spec to its cap, so every other card keeps SPEC_WINDOW
+WIDE_WINDOW = 8              # --spec on the two card classes whose engine cap (include/nostroma/core/draft_cap.hpp dflash2_auto_cap) is 8: Strix Halo and Blackwell cc 12.0 with >= 48 GB (window_for). The engine only ever lowers --spec to its cap, so every other card keeps SPEC_WINDOW
 MTP_WINDOW = 4               # the MTP's usual --spec: the window it runs when DFlash2 falls back to it, unless the config names another
 DRAFT_CONF = 0.35            # --draft-conf with DFlash2: the window ends where the chance that every draft so far holds falls below this (the card holds most experts)
 
@@ -864,22 +864,22 @@ def merged_args(cfg: dict[str, Any]) -> list[str]:
 
 
 def slots_draft_nothing(args: list[Any], slots: int | float | None = 0) -> bool:
-    """Do this start's request slots draft nothing? Yes for 2 or more requests at once with no ``--batch-mtp`` (and no ``STRATA_BATCH_MTP``, no ``--pipeline-windows``) in the arguments:
+    """Do this start's request slots draft nothing? Yes for 2 or more requests at once with no ``--batch-mtp`` (and no ``NOSTROMA_BATCH_MTP``, no ``--pipeline-windows``) in the arguments:
     the engine runs the slots with one token per request and step, and only a single request drafts. (Called for a start that runs the MTP layer: the slots' own DFlash2 drafts are
     ``slot_drafts_run``; with ``--batch-mtp`` the slots carry MTP drafts and the usual line stays.)"""
     items = [str(a) for a in args or []]
     if request_count(items, slots) < 2 or "--batch-mtp" in items or "--pipeline-windows" in items:
         return False
-    return os.environ.get("NOSTROMA_BATCH_MTP", os.environ.get("STRATA_BATCH_MTP", "0")) in ("", "0")
+    return os.environ.get("NOSTROMA_BATCH_MTP", os.environ.get("NOSTROMA_BATCH_MTP", "0")) in ("", "0")
 
 
 def slot_drafts_run(args: list[Any], slots: int | float | None = 0, split: bool = False) -> bool:
-    """Does a DFlash2 start draft in its request slots too (``--draft dflash2 --batch N``, a drafter per slot)? Yes for 2 or more requests at once, unless ``STRATA_BATCH_DF2=0`` (the way back,
+    """Does a DFlash2 start draft in its request slots too (``--draft dflash2 --batch N``, a drafter per slot)? Yes for 2 or more requests at once, unless ``NOSTROMA_BATCH_DF2=0`` (the way back,
     as the engine reads it), a layer split (``split`` or ``--layer-split``: its slots draft only where they run as one group, not decided here) or ``--pipeline-windows``."""
     items = [str(a) for a in args or []]
     if split or request_count(items, slots) < 2 or "--layer-split" in items or "--pipeline-windows" in items:
         return False
-    return os.environ.get("NOSTROMA_BATCH_DF2", os.environ.get("STRATA_BATCH_DF2", "")) != "0"
+    return os.environ.get("NOSTROMA_BATCH_DF2", os.environ.get("NOSTROMA_BATCH_DF2", "")) != "0"
 
 
 def mtp_line(reason: str) -> str:
@@ -1027,7 +1027,7 @@ def slot_drafts_by_default(mode: Any, *, backend: str | None, archs: Any = None,
     and slots with no drafts? Yes when ALL of these hold, the class that was measured and nothing else: the choice is Auto; the start serves 2 requests at once (SLOT_DRAFT_REQUESTS);
     one CUDA card of the large-VRAM Blackwell class holding every expert (big_blackwell: sm_120, at least 48 GB, the first CONF_STEPS step; None for several cards and for the Spark's
     shared memory); no layer split; the DFlash2 drafter is on this computer (``drafter_here``); and the person has not chosen otherwise: no ``--batch-mtp`` or ``--pipeline-windows`` in
-    the arguments, ``STRATA_BATCH_MTP`` not set, ``STRATA_BATCH_DF2=0`` not set (the way back, as the engine reads it). Every other class (AMD, the Spark, Strix, Metal, Arc, several
+    the arguments, ``NOSTROMA_BATCH_MTP`` not set, ``NOSTROMA_BATCH_DF2=0`` not set (the way back, as the engine reads it). Every other class (AMD, the Spark, Strix, Metal, Arc, several
     cards, a streaming card) and every other request count keep their rule as it was: the MTP loaded and slots with no drafts, or what the person named. A start that serves one request
     at a time never comes here."""
     if normalize(mode) != "auto" or split or not drafter_here:
@@ -1035,7 +1035,7 @@ def slot_drafts_by_default(mode: Any, *, backend: str | None, archs: Any = None,
     items = [str(a) for a in args or []]
     if any(a in items for a in ("--layer-split", "--batch-mtp", "--pipeline-windows")):
         return False
-    if os.environ.get("NOSTROMA_BATCH_MTP", os.environ.get("STRATA_BATCH_MTP", "0")) not in ("", "0") or os.environ.get("NOSTROMA_BATCH_DF2", os.environ.get("STRATA_BATCH_DF2", "")) == "0":
+    if os.environ.get("NOSTROMA_BATCH_MTP", os.environ.get("NOSTROMA_BATCH_MTP", "0")) not in ("", "0") or os.environ.get("NOSTROMA_BATCH_DF2", os.environ.get("NOSTROMA_BATCH_DF2", "")) == "0":
         return False
     if request_count(items, slots) not in SLOT_DRAFT_REQUESTS:
         return False

@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-namespace strata_vit {
+namespace nostroma_vit {
 
 enum class NormKind { LayerNorm, RMSNorm };
 enum class ActKind { GeluTanh, GeluErf, Silu, GeluQuick };
@@ -57,4 +57,4 @@ bool vit_geometry_from_gguf(const Gguf& gg, VitGeometry& g, std::string& err);
 // True when the operations this geometry needs are all implemented; otherwise `why` says which one is not.
 bool vit_geometry_supported(const VitGeometry& g, std::string& why);
 
-}  // namespace strata_vit
+}  // namespace nostroma_vit

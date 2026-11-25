@@ -1,11 +1,11 @@
-// STRATA_PREFILL_TIMING mark coalescing (PR #4006): repeated marks in the running phase add nothing to the totals.
+// NOSTROMA_PREFILL_TIMING mark coalescing (PR #4006): repeated marks in the running phase add nothing to the totals.
 // No GPU: the timeline is simulated, one fake clock tick per launch.
 #include <cstdio>
 #include <vector>
 
-#include "strata/prefill/timer_marks.hpp"
+#include "nostroma/prefill/timer_marks.hpp"
 
-using strata::prefill::timer_mark_repeats;
+using nostroma::prefill::timer_mark_repeats;
 
 static int failed = 0;
 #define CHECK(x) do { if (!(x)) { std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #x); ++failed; } } while (0)

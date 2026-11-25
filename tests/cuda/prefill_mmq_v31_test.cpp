@@ -4,15 +4,15 @@
 // dequantized weights.  MMQ rounds the activations to q8_1 by design, so this is a screen for layout, stride,
 // expert-bound and row-id errors, not a bit-exactness test (the bounds are those of prefill_mmq_kquant_test).
 //
-// Q5_0 has an MMQ instance only in a build with STRATA_ORCA_Q4KS_MMQ=ON (#296): without it the Q5_0 down product is
+// Q5_0 has an MMQ instance only in a build with NOSTROMA_ORCA_Q4KS_MMQ=ON (#296): without it the Q5_0 down product is
 // reported as "not in this build" (the prompt path then dequantizes to FP16 and runs cuBLAS) and does not fail.
 //
 //     prefill_mmq_v31_test [--require-q5_0]        --require-q5_0: a build without the Q5_0 instance fails
 //     prefill_mmq_v31_test --bench [--reps N]       Q5_0 down: MMQ against the dequantize-to-FP16 + cuBLAS route
 //                                                    (what a build without the instance runs), per expert-group size
-#include "strata/kernels/dequant_bf16.hpp"
-#include "strata/prefill/mmq_ids_margin.hpp"
-#include "strata/prefill/moe_mmq.hpp"
+#include "nostroma/kernels/dequant_bf16.hpp"
+#include "nostroma/prefill/mmq_ids_margin.hpp"
+#include "nostroma/prefill/moe_mmq.hpp"
 
 #include "ggml.h"
 
@@ -33,7 +33,7 @@
 #include <vector>
 
 namespace {
-namespace mmq = strata::prefill::mmq;
+namespace mmq = nostroma::prefill::mmq;
 
 void ck(cudaError_t e, const char* what) {
     if (e != cudaSuccess) throw std::runtime_error(std::string(what) + ": " + cudaGetErrorString(e));
@@ -233,11 +233,11 @@ void bench(ggml_type t, int reps) {
         // for a type without an instance); the dequantize alone is timed too
         const double t_deq = time_ms([&] {
             for (int e = 0; e < NE; ++e)
-                strata::kernels::dequant_f16((int) t, (const uint8_t*) dw.p + (size_t) e * eb, 0, N, FF, (uint16_t*) dwh.p, s);
+                nostroma::kernels::dequant_f16((int) t, (const uint8_t*) dw.p + (size_t) e * eb, 0, N, FF, (uint16_t*) dwh.p, s);
         }, s, reps, 5);
         const double t_f16 = time_ms([&] {
             for (int e = 0; e < NE; ++e) {
-                strata::kernels::dequant_f16((int) t, (const uint8_t*) dw.p + (size_t) e * eb, 0, N, FF, (uint16_t*) dwh.p, s);
+                nostroma::kernels::dequant_f16((int) t, (const uint8_t*) dw.p + (size_t) e * eb, 0, N, FF, (uint16_t*) dwh.p, s);
                 cublasGemmEx(h, CUBLAS_OP_T, CUBLAS_OP_N, (int) N, per, (int) FF, &one, dwh.p, CUDA_R_16F, (int) FF,
                              (const __half*) dxh.p + (size_t) e * per * FF, CUDA_R_16F, (int) FF, &zero,
                              (float*) dy.p + (size_t) e * per * N, CUDA_R_32F, (int) N, CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT);

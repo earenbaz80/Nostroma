@@ -4,7 +4,7 @@ This page is for people who already have a model and want to read a running serv
 To set up and serve a new model, use [`nostroma launch`](TERMINAL_LAUNCH.md).
 
 The commands use the `nostroma` command from the [Terminal install](INSTALL.md#the-terminal), which carries its own Python.
-In a source checkout, type `python nostroma.py` in place of `nostroma`, from the repository root (`python strata.py` is the same program under the name it had before). These commands read, prepare
+In a source checkout, type `python nostroma.py` in place of `nostroma`, from the repository root (`python nostroma.py` is the same program under the name it had before). These commands read, prepare
 and rerun a model you already have; they do not download one. All options, permissions and limits are in [TERMINAL.md](TERMINAL.md).
 
 ## Read a running server
@@ -26,25 +26,25 @@ The Overview puts serving state, prompt and answer speed, batch/queue pressure, 
 For a remote server, use HTTPS or a local SSH tunnel. A saved connection stores only the credential environment variable's **name**:
 
 ```sh
-nostroma connection create work --url https://example.invalid --credential-env STRATA_TELEMETRY_KEY
+nostroma connection create work --url https://example.invalid --credential-env NOSTROMA_TELEMETRY_KEY
 nostroma monitor --connection work
 ```
 
-Set `STRATA_TELEMETRY_KEY` in the environment before connecting. Replace `example.invalid` with your own server root. The monitor client never needs a management credential.
+Set `NOSTROMA_TELEMETRY_KEY` in the environment before connecting. Replace `example.invalid` with your own server root. The monitor client never needs a management credential.
 
 ## Prepare and rerun a local model
 
 Use the run config written by setup. Start by reviewing its components and effective launch; neither command starts an engine:
 
 ```sh
-nostroma doctor --profile /absolute/path/to/strata-model.json --components --output json
-nostroma serve --profile /absolute/path/to/strata-model.json --plan --output json
+nostroma doctor --profile /absolute/path/to/nostroma-model.json --components --output json
+nostroma serve --profile /absolute/path/to/nostroma-model.json --plan --output json
 ```
 
 For repeatable local management, create a named profile from that config. Review changes before saving them:
 
 ```sh
-nostroma profile create four-gpu --from-config /absolute/path/to/strata-model.json
+nostroma profile create four-gpu --from-config /absolute/path/to/nostroma-model.json
 nostroma profile set four-gpu parallel=8 batch_groups=auto max_queue=32 queue_timeout=15 batch_telemetry=true --plan
 nostroma profile set four-gpu parallel=8 batch_groups=auto max_queue=32 queue_timeout=15 batch_telemetry=true
 nostroma profile show four-gpu --effective --output json

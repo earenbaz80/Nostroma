@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Community benchmark: laufender Server (Port 8080), 3 Laeufe je Laenge, 256 Token, greedy, Prompt ohne Cache (Nonce vorn)."""
 import json, re, time, random, pathlib, statistics, urllib.request, sys
-ROOT = pathlib.Path.home() / "ai/Strata"
+ROOT = pathlib.Path.home() / "ai/Nostroma"
 OUT = pathlib.Path(sys.argv[1]); OUT.mkdir(parents=True, exist_ok=True)
-LOG = pathlib.Path.home() / "ai/Strata-0.1.36/strata-swift-iq3_xxs.log"
+LOG = pathlib.Path.home() / "ai/Nostroma-0.1.36/nostroma-swift-iq3_xxs.log"
 MODEL = "swift-1.5-iq3_xxs"
 files = []
 for d, g in [("docs", "*.md"), ("src", "*.cpp"), ("src", "*.cu"), ("include", "*.hpp"), ("serve", "*.py"), ("tools", "*.py"), ("third_party/llama.cpp/docs", "*.md")]:

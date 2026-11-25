@@ -15,7 +15,7 @@ import re
 from dataclasses import asdict, dataclass, field, fields
 from typing import Any
 
-SCHEMA = "strata.launch/1"
+SCHEMA = "nostroma.launch/1"
 
 #: setup.py's CONTEXTS (kept here only as the fallback when the installer files are not next to this terminal).
 FALLBACK_CONTEXTS = (8192, 32768, 65536, 131072, 204800, 262144, 393216, 524288)
@@ -105,7 +105,7 @@ class LaunchSettings:
     port: int = DEFAULT_PORT
     api_key: str | None = None                 # never shown whole; stored only in the private preset file
     no_key: bool = False                       # served beyond this computer without a key, on purpose (--no-api-key); a warning, never a refusal
-    extra: dict[str, str] = field(default_factory=dict)    # Advanced: --set key=value (flags and STRATA_* variables)
+    extra: dict[str, str] = field(default_factory=dict)    # Advanced: --set key=value (flags and NOSTROMA_* variables)
     # filled in by the run, kept in the preset
     tuned_preset: str | None = None            # id of the tuning preset the tuner saved
     tuned_at: str | None = None
@@ -228,12 +228,12 @@ def check_context(s: LaunchSettings, *, max_fit_tokens: int | None = None) -> li
 
 # ----------------------------------------------------------------------------------------------------- advanced settings
 
-_ENV_NAME = re.compile(r"^(?=[A-Za-z0-9_]*[A-Z])[A-Za-z_][A-Za-z0-9_]*$")     # any name with a capital letter: STRATA_X, IGC_EnableDPEmulation, ZES_ENABLE_SYSMAN
+_ENV_NAME = re.compile(r"^(?=[A-Za-z0-9_]*[A-Z])[A-Za-z_][A-Za-z0-9_]*$")     # any name with a capital letter: NOSTROMA_X, IGC_EnableDPEmulation, ZES_ENABLE_SYSMAN
 _FLAG_NAME = re.compile(r"^[a-z][a-z0-9-]*$")
 
 
 def split_setting(text: str) -> tuple[str, str]:
-    """`prefill=65536`, `--prefill=65536`, `STRATA_PIN_BY_NEED=1` -> (key, value); the key is a `--flag` or an ENV name."""
+    """`prefill=65536`, `--prefill=65536`, `NOSTROMA_PIN_BY_NEED=1` -> (key, value); the key is a `--flag` or an ENV name."""
     key, sep, value = text.partition("=")
     key = key.strip()
     if not key:
@@ -243,7 +243,7 @@ def split_setting(text: str) -> tuple[str, str]:
     flag = key[2:] if key.startswith("--") else key
     flag = flag.replace("_", "-")
     if not _FLAG_NAME.match(flag):
-        raise ValueError(f"'{text}' is not a setting name. Write it like prefill=65536 or STRATA_PIN_BY_NEED=1.")
+        raise ValueError(f"'{text}' is not a setting name. Write it like prefill=65536 or NOSTROMA_PIN_BY_NEED=1.")
     return "--" + flag, value.strip()
 
 

@@ -9,12 +9,12 @@ no real user folder (every run has its own scratch HOME, data folder and install
 
 ```
 python -m pytest tests/snapshot -q -p no:cacheprovider      # the gate: about a minute; needs Python 3.11+ and Node 24
-STRATA_SNAPSHOT_UPDATE=1 python -m pytest tests/snapshot     # after an intended change: rewrites golden/, then review the git diff of golden/
+NOSTROMA_SNAPSHOT_UPDATE=1 python -m pytest tests/snapshot     # after an intended change: rewrites golden/, then review the git diff of golden/
 python -m tests.snapshot.generate --out DIR                  # write the snapshot of this tree somewhere else (to compare two branches)
 python -m tests.snapshot.report --golden DIR_A --against DIR_B   # Markdown: where the entry points differ, what changed between A and B
 ```
 
-`STRATA_SNAPSHOT_SKIP_APP=1` skips the two app entry points by name when Node is not installed (the test prints what it skipped).
+`NOSTROMA_SNAPSHOT_SKIP_APP=1` skips the two app entry points by name when Node is not installed (the test prints what it skipped).
 The same command works on Windows, Linux and macOS; the golden files hold no path, user name or time of the machine that made them.
 
 ## What is simulated

@@ -16,9 +16,9 @@
  "engine_prompt_tps": 6092.4,
  "engine_decode_tps": 190.4,
  "log_lines": [
-  "strata serve: conversation cache: parked 130524 tokens in 462.4 ms; parked=4 bytes=5479600112 evictions=6 snapshot_bytes=2821324428 reused_kv_bytes=0",
-  "strata serve: prompt 130772 tokens = 0 reused + 130772 read in 21465 ms (6092.4 tok/s), 42 generated in 221 ms (190.4 tok/s), drafts accepted 28 of 29, 6 checkpoints",
-  "strata serve: decode expert cache hit rate: 96.0% (20283 hits / 21120 lookups)"
+  "nostroma serve: conversation cache: parked 130524 tokens in 462.4 ms; parked=4 bytes=5479600112 evictions=6 snapshot_bytes=2821324428 reused_kv_bytes=0",
+  "nostroma serve: prompt 130772 tokens = 0 reused + 130772 read in 21465 ms (6092.4 tok/s), 42 generated in 221 ms (190.4 tok/s), drafts accepted 28 of 29, 6 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 96.0% (20283 hits / 21120 lookups)"
  ],
  "answer_head": "I'll start by exploring the repository structure to understand what we're working with.",
  "metrics_after": {

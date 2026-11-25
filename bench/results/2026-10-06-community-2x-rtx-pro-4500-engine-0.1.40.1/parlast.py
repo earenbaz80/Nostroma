@@ -3,7 +3,7 @@
 import json, sys, time, threading, pathlib, urllib.request, statistics
 OUT = pathlib.Path(sys.argv[1]); LEVELS = [int(x) for x in sys.argv[2].split(",")]
 ROUNDS = int(sys.argv[3]); PTOK = int(sys.argv[4]); OTOK = int(sys.argv[5])
-ROOT = pathlib.Path.home() / "ai/Strata-0.1.36"
+ROOT = pathlib.Path.home() / "ai/Nostroma-0.1.36"
 files = []
 for d, g in [("docs", "*.md"), ("src", "*.cpp"), ("src", "*.cu"), ("include", "*.hpp"), ("serve", "*.py"), ("tools", "*.py"), ("third_party/llama.cpp/docs", "*.md")]:
     files += sorted((ROOT / d).rglob(g))

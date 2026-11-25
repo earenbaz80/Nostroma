@@ -18,7 +18,7 @@ ARC = [{"vendor": "intel", "name": "Intel Arc Pro B65", "vram_gb": 32.0, "usable
 
 class SavedChoice(unittest.TestCase):
     def env(self, d):
-        return {"STRATA_SETTINGS_FILE": str(Path(d) / "settings.json")}
+        return {"NOSTROMA_SETTINGS_FILE": str(Path(d) / "settings.json")}
 
     def test_names_people_type(self):
         self.assertEqual([ec.clean_backend_name(x) for x in ("Intel", "nvidia", "AMD", "sycl", "arc", "toaster", "")],
@@ -27,14 +27,14 @@ class SavedChoice(unittest.TestCase):
     def test_a_saved_choice_decides_and_keeps_the_other_settings(self):
         with tempfile.TemporaryDirectory() as d:
             env = self.env(d)
-            Path(env["STRATA_SETTINGS_FILE"]).write_text(json.dumps({"data_dir": "/x"}))
+            Path(env["NOSTROMA_SETTINGS_FILE"]).write_text(json.dumps({"data_dir": "/x"}))
             with mock.patch.object(ec, "gpu_makes_present", lambda: {"cuda", "sycl"}):
                 ec.save_backend("intel", env)
-                self.assertEqual(json.loads(Path(env["STRATA_SETTINGS_FILE"]).read_text()), {"data_dir": "/x", "engine_backend": "sycl"})
+                self.assertEqual(json.loads(Path(env["NOSTROMA_SETTINGS_FILE"]).read_text()), {"data_dir": "/x", "engine_backend": "sycl"})
                 self.assertEqual(ec.detect_backend(env), ("sycl", "saved choice"))
                 self.assertEqual(ec.detect_backend({**env, ec.ENV_BACKEND: "cuda"}), ("cuda", "environment"), "the environment still wins")
                 ec.save_backend(None, env)
-                self.assertEqual(json.loads(Path(env["STRATA_SETTINGS_FILE"]).read_text()), {"data_dir": "/x"})
+                self.assertEqual(json.loads(Path(env["NOSTROMA_SETTINGS_FILE"]).read_text()), {"data_dir": "/x"})
 
     def test_a_choice_for_a_make_this_pc_does_not_have_is_ignored(self):
         with tempfile.TemporaryDirectory() as d:

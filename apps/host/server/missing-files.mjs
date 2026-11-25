@@ -5,7 +5,7 @@
  */
 import { basename } from 'node:path';
 
-const PART_WORDS = { engine: 'the engine program', 'component:strata-engine': 'the engine program', 'tokenizer/vocab.json': 'the tokenizer', 'tokenizer/merges.txt': 'the tokenizer', 'tokenizer/token_type.json': 'the tokenizer' };
+const PART_WORDS = { engine: 'the engine program', 'component:nostroma-engine': 'the engine program', 'tokenizer/vocab.json': 'the tokenizer', 'tokenizer/merges.txt': 'the tokenizer', 'tokenizer/token_type.json': 'the tokenizer' };
 
 /** Short readable names, no duplicates, most useful first. */
 export function missingNames(controlParts, installerFiles) {

@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createChatStore, realIo, validChatId, storeFailure } from '../server/chat-store.mjs';
 
-const scratch = () => mkdtempSync(join(tmpdir(), 'strata-chats-'));
+const scratch = () => mkdtempSync(join(tmpdir(), 'nostroma-chats-'));
 const chat = (id, n, len, extra = {}) => ({
   id, title: `Chat ${id}`, createdAt: `2026-11-0${(id.charCodeAt(0) % 8) + 1}T10:00:00.000Z`, updatedAt: `2026-11-04T10:00:0${n % 10}.000Z`, workspace: 'C:/w', tokensIn: 0, tokensOut: 0,
   messages: Array.from({ length: n }, (_, i) => ({ id: `${id}-m${i}`, role: i % 2 ? 'assistant' : 'user', content: `${id}:${i}:` + String.fromCharCode(97 + (i % 26)).repeat(len) })),

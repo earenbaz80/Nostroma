@@ -24,10 +24,10 @@
 
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
-#include "strata/kprof.hpp"
+#include "nostroma/kprof.hpp"
 #include <dpct/dpct.hpp>
-#include "strata/sycl_queue.hpp"
-#include "strata/kernels/native_gr_norm.hpp"
+#include "nostroma/sycl_queue.hpp"
+#include "nostroma/kernels/native_gr_norm.hpp"
 
 #include <cmath>
 #include <cstddef>
@@ -35,7 +35,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 
 __dpct_inline__ float norm_warp_sum(float value) {
@@ -113,14 +113,14 @@ void native_gr_rms_norm_weighted_multi(const float* input, const float* gamma, f
     check_pointer(input);
     check_pointer(gamma);
     check_pointer(output);
-    const auto cuda_stream = strata::q_of(stream);
+    const auto cuda_stream = nostroma::q_of(stream);
     const dpct::dim3 grid{unsigned(n_rows), unsigned(n_tok), 1u};
     if (n_cols < 1024)
     {
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(cuda_stream, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<
+        nostroma::kprof::kp(cuda_stream, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<
             class weighted_rms_norm_60b509, dpct_kernel_scalar<256>>>(
             sycl::nd_range<3>(grid * sycl::range(1, 1, 256),
                               sycl::range(1, 1, 256)),
@@ -138,7 +138,7 @@ void native_gr_rms_norm_weighted_multi(const float* input, const float* gamma, f
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(cuda_stream, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<
+        nostroma::kprof::kp(cuda_stream, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<
             class weighted_rms_norm_9382c8, dpct_kernel_scalar<1024>>>(
             sycl::nd_range<3>(grid * sycl::range(1, 1, 1024),
                               sycl::range(1, 1, 1024)),
@@ -170,4 +170,4 @@ void native_gr_rms_norm_weighted_multi(const float* input, const float* gamma, f
                                  dpct::get_error_string_dummy(error));
 }
 
-} // namespace strata::kernels
+} // namespace nostroma::kernels

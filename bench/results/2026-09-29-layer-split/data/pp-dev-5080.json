@@ -56,17 +56,17 @@
   }
  ],
  "engine_lines": [
-  "strata generate: expert cache auto: 9.15 GiB free, 700 MiB reserved -> 3415 slots",
-  "strata generate: expert cache 4293 slots, 8.17 GiB of VRAM; policy is",
-  "strata serve: the prompt path borrows 2343 cache slots (4.42 GiB)",
-  "strata serve: decode expert cache hit rate: 59.6% (2749 hits / 4610 lookups)",
-  "strata serve: decode expert cache hit rate: 64.2% (2136 hits / 3329 lookups)",
-  "strata serve: decode expert cache hit rate: 67.3% (2309 hits / 3432 lookups)",
-  "strata serve: decode expert cache hit rate: 72.5% (2539 hits / 3504 lookups)",
-  "strata serve: decode expert cache hit rate: 77.3% (2817 hits / 3642 lookups)",
-  "strata serve: decode expert cache hit rate: 75.3% (16500 hits / 21916 lookups)",
-  "strata serve: decode expert cache hit rate: 80.0% (2978 hits / 3723 lookups)",
-  "strata serve: decode expert cache hit rate: 84.2% (98752 hits / 117301 lookups)",
-  "strata serve: decode expert cache hit rate: 70.1% (69215 hits / 98718 lookups)"
+  "nostroma generate: expert cache auto: 9.15 GiB free, 700 MiB reserved -> 3415 slots",
+  "nostroma generate: expert cache 4293 slots, 8.17 GiB of VRAM; policy is",
+  "nostroma serve: the prompt path borrows 2343 cache slots (4.42 GiB)",
+  "nostroma serve: decode expert cache hit rate: 59.6% (2749 hits / 4610 lookups)",
+  "nostroma serve: decode expert cache hit rate: 64.2% (2136 hits / 3329 lookups)",
+  "nostroma serve: decode expert cache hit rate: 67.3% (2309 hits / 3432 lookups)",
+  "nostroma serve: decode expert cache hit rate: 72.5% (2539 hits / 3504 lookups)",
+  "nostroma serve: decode expert cache hit rate: 77.3% (2817 hits / 3642 lookups)",
+  "nostroma serve: decode expert cache hit rate: 75.3% (16500 hits / 21916 lookups)",
+  "nostroma serve: decode expert cache hit rate: 80.0% (2978 hits / 3723 lookups)",
+  "nostroma serve: decode expert cache hit rate: 84.2% (98752 hits / 117301 lookups)",
+  "nostroma serve: decode expert cache hit rate: 70.1% (69215 hits / 98718 lookups)"
  ]
 }

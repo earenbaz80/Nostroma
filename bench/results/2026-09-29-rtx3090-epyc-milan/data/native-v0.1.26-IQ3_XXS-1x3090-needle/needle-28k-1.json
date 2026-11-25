@@ -16,8 +16,8 @@
  "engine_prompt_tps": 2134.7,
  "engine_decode_tps": 66.5,
  "log_lines": [
-  "strata serve: prompt 29820 tokens = 0 reused + 29820 read in 13969 ms (2134.7 tok/s), 8 generated in 120 ms (66.5 tok/s), drafts accepted 6 of 6, 2 checkpoints",
-  "strata serve: decode expert cache hit rate: 80.6% (3033 hits / 3764 lookups)"
+  "nostroma serve: prompt 29820 tokens = 0 reused + 29820 read in 13969 ms (2134.7 tok/s), 8 generated in 120 ms (66.5 tok/s), drafts accepted 6 of 6, 2 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 80.6% (3033 hits / 3764 lookups)"
  ],
  "answer_head": "64EC0999",
  "needle_found": true,

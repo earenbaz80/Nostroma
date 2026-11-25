@@ -5,7 +5,7 @@ second copy of the experts).
 
     python -m pytest tools/test_feed_model_install_realfile.py
 
-Needs numpy (no llama.cpp checkout and no STRATA_TEST_LLAMA_CPP any more: the preparation tools use tools/strata_gguf.py, not gguf-py); without it the test is SKIPPED
+Needs numpy (no llama.cpp checkout and no NOSTROMA_TEST_LLAMA_CPP any more: the preparation tools use tools/nostroma_gguf.py, not gguf-py); without it the test is SKIPPED
 with that reason, which `tools/check` prints. The engine step (one request) is the gate script's own --engine option and needs a box with an engine built for the file's shape.
 """
 from __future__ import annotations
@@ -31,7 +31,7 @@ class FeedModelInstallFromRealFile(unittest.TestCase):
             self.skipTest(str(e))
         except ImportError:
             self.skipTest("numpy is not installed (tools/q4geo_synth.py needs it)")
-        work = Path(tempfile.mkdtemp(prefix="strata-feed-install-"))
+        work = Path(tempfile.mkdtemp(prefix="nostroma-feed-install-"))
         self.addCleanup(shutil.rmtree, work, True)
         try:
             res = gate.check(work, None, gate.TINY, lambda s: None)

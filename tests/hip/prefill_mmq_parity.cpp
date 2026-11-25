@@ -1,10 +1,10 @@
-// Standalone diagnostic harness for strata-prefill's optional MMQ path.
+// Standalone diagnostic harness for nostroma-prefill's optional MMQ path.
 // Keep this artifact outside the project source until it is reviewed and wired into a HIP test target.
 // It compares GGML's MMQ result (with its intended q8_1 activation rounding) to a CPU FP32 product using
 // GGML's own dequantizer for the exact same weight blocks. The tolerances screen layout/stride/bounds errors;
 // they do not assert bitwise or FP16 parity.
-#include "strata/prefill/mmq_ids_margin.hpp"
-#include "strata/prefill/moe_mmq.hpp"
+#include "nostroma/prefill/mmq_ids_margin.hpp"
+#include "nostroma/prefill/moe_mmq.hpp"
 #include "ggml.h"
 #include <hip/hip_runtime.h>
 
@@ -22,12 +22,12 @@
 #include <vector>
 
 namespace {
-using strata::prefill::mmq::Context;
-using strata::prefill::mmq::Product;
-using strata::prefill::mmq::matrix_bytes;
-using strata::prefill::mmq::q8_bytes;
-using strata::prefill::mmq::quantize;
-using strata::prefill::mmq::supported;
+using nostroma::prefill::mmq::Context;
+using nostroma::prefill::mmq::Product;
+using nostroma::prefill::mmq::matrix_bytes;
+using nostroma::prefill::mmq::q8_bytes;
+using nostroma::prefill::mmq::quantize;
+using nostroma::prefill::mmq::supported;
 
 void hip_check(hipError_t e, const char * what) {
     if (e != hipSuccess) throw std::runtime_error(std::string(what) + ": " + hipGetErrorString(e));
@@ -132,7 +132,7 @@ Metrics run_product(Context & ctx, hipStream_t stream, const std::string & name,
     DeviceBuffer dsrc(src_ids.size() * sizeof(int32_t));
     // llama.cpp's mul_mat_q and its stream-k fixup read the row-id table up to a J-column tile (J <= 128) past the last row, up to roundup(max_rows, J) from an
     // expert's first row (mmq_ids_margin.hpp): the table has the margin, its extra entries hold row index 0 (valid; they are read, never used)
-    const size_t ids_rows = (size_t) strata::prefill::mmq::mmq_ids_table_rows((uint64_t) rows, (uint64_t) *std::max_element(counts.begin(), counts.end()));
+    const size_t ids_rows = (size_t) nostroma::prefill::mmq::mmq_ids_table_rows((uint64_t) rows, (uint64_t) *std::max_element(counts.begin(), counts.end()));
     std::vector<int32_t> dst_table(dst_ids);
     dst_table.resize(ids_rows, 0);
     DeviceBuffer ddst(dst_table.size() * sizeof(int32_t));
@@ -224,7 +224,7 @@ std::vector<std::vector<uint8_t>> synthetic_q2(int experts, int64_t out_rows, in
 }
 
 // A synthetic matrix of any ggml type with a host quantizer (the K-quants: the dense GGUF tensors the
-// STRATA_DENSE_MMQ path multiplies on HIP).  K stays a 256-value multiple: the dense path only takes
+// NOSTROMA_DENSE_MMQ path multiplies on HIP).  K stays a 256-value multiple: the dense path only takes
 // such K, and a partial 256-value chunk would read past the synthetic tensor's end.
 std::vector<std::vector<uint8_t>> synthetic_of_type(ggml_type type, int experts, int64_t out_rows, int64_t cols,
                                                      int trial) {
@@ -333,13 +333,13 @@ int main(int argc, char ** argv) {
                             make_activations(rows, 640, trial + 3), src, dst);
                 ++trial;
             }
-            // The K-quant instances a STRATA_MMQ_KQUANTS build adds (the dense GGUF projections of the
+            // The K-quant instances a NOSTROMA_MMQ_KQUANTS build adds (the dense GGUF projections of the
             // mixed-quant packs through Gemm::native).  Skipped when the build does not have them.
             for (const auto & [name, type] : std::initializer_list<std::pair<const char *, ggml_type>>{
                      {"Q4_K", GGML_TYPE_Q4_K}, {"Q5_K", GGML_TYPE_Q5_K}, {"Q6_K", GGML_TYPE_Q6_K},
                      {"Q5_1", GGML_TYPE_Q5_1}}) {
                 if (!supported((int) type)) {
-                    std::cout << "synthetic-" << name << " skipped: not built (STRATA_MMQ_KQUANTS off?)\n";
+                    std::cout << "synthetic-" << name << " skipped: not built (NOSTROMA_MMQ_KQUANTS off?)\n";
                     continue;
                 }
                 const int rows = 5;
@@ -351,7 +351,7 @@ int main(int argc, char ** argv) {
             }
             // Round 0214 (the new Unsloth Qwen3.8-Flash-Next quants): every gate/up type of the new sets at 1280 x 2560 and
             // every down type at 2560 x 640 (FF 640 is not a multiple of 256: the 32-block types only).  Q5_0 is built
-            // only with STRATA_ORCA_Q4KS_MMQ (the opt-in); IQ1_M has no MMQ instance (its prompts take the gather route).
+            // only with NOSTROMA_ORCA_Q4KS_MMQ (the opt-in); IQ1_M has no MMQ instance (its prompts take the gather route).
             for (const auto & [name, type] : std::initializer_list<std::pair<const char *, ggml_type>>{
                      {"IQ1_M", GGML_TYPE_IQ1_M}, {"IQ2_XXS", GGML_TYPE_IQ2_XXS}, {"IQ2_XS", GGML_TYPE_IQ2_XS},
                      {"IQ2_S", GGML_TYPE_IQ2_S}, {"IQ3_XXS", GGML_TYPE_IQ3_XXS}, {"IQ4_XS", GGML_TYPE_IQ4_XS},

@@ -12,7 +12,7 @@ dell'assistente; i ragionamenti vecchi tolti (il template non li rimanda comunqu
 
 La prima richiesta paga la lettura a freddo (campione singolo, non entra nelle corse). Le corse riusano il prefisso
 in cache. Contatore della porta (guard.py): una richiesta estranea rende la misura SPORCA e il file non si salva.
-Il risultato va in C:\\strata-lab\\results\\pw-<label>.json, stesso schema di pw_bench / long_bench.
+Il risultato va in C:\\nostroma-lab\\results\\pw-<label>.json, stesso schema di pw_bench / long_bench.
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ from pathlib import Path
 
 from guard import report_extra, requests_total
 
-THREAD = r"C:\strata-lab\jan-threads\nasdaqpredictor-50c5608c-2026-10-02\messages.jsonl"
+THREAD = r"C:\nostroma-lab\jan-threads\nasdaqpredictor-50c5608c-2026-10-02\messages.jsonl"
 QUESTION = ("Riassumi in dettaglio tutto il lavoro svolto in questa conversazione: per ogni fase indica cosa e' "
             "stato fatto, quali file e quali risultati numerici sono stati prodotti e quali decisioni sono state "
             "prese. Scrivi almeno 600 parole.")
@@ -56,7 +56,7 @@ def thread_messages(path: str) -> list[dict]:
 
 
 def one(url: str, messages: list[dict], max_tokens: int, timeout: float) -> dict:
-    body = {"model": "strata", "max_tokens": max_tokens, "temperature": 0,
+    body = {"model": "nostroma", "max_tokens": max_tokens, "temperature": 0,
             "chat_template_kwargs": {"enable_thinking": False},
             "messages": messages + [{"role": "user", "content": QUESTION}]}
     req = urllib.request.Request(url.rstrip("/") + "/v1/chat/completions", data=json.dumps(body).encode(),
@@ -84,7 +84,7 @@ def main() -> int:
     ap.add_argument("--timeout", type=float, default=7200)
     a = ap.parse_args()
 
-    out = Path(r"C:\strata-lab\results") / f"pw-{a.label}.json"
+    out = Path(r"C:\nostroma-lab\results") / f"pw-{a.label}.json"
     if out.exists():
         print(f"{out} esiste gia': scegli un'altra etichetta")
         return 1

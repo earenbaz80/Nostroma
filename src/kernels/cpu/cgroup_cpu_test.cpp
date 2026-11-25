@@ -1,6 +1,6 @@
-// cgroup_cpu_test: the CPU quota a container or a systemd unit puts on the process (include/strata/kernels/cpu/cgroup_cpu.hpp), read from a
+// cgroup_cpu_test: the CPU quota a container or a systemd unit puts on the process (include/nostroma/kernels/cpu/cgroup_cpu.hpp), read from a
 // fake cgroup mount in a temp directory and a made-up /proc/self/cgroup.  No threads, no real cgroups: it runs anywhere.
-#include "strata/kernels/cpu/cgroup_cpu.hpp"
+#include "nostroma/kernels/cpu/cgroup_cpu.hpp"
 
 #include <cmath>
 #include <cstdio>
@@ -9,7 +9,7 @@
 #include <fstream>
 #include <string>
 
-namespace cpu = strata::kernels::cpu;
+namespace cpu = nostroma::kernels::cpu;
 namespace fs = std::filesystem;
 
 static int g_fail = 0;
@@ -29,7 +29,7 @@ static void put(const fs::path& file, const std::string& text) {
 }
 
 int main() {
-    const fs::path root = fs::temp_directory_path() / ("strata_cgroup_cpu_test_" + std::to_string((long long) std::time(nullptr)));
+    const fs::path root = fs::temp_directory_path() / ("nostroma_cgroup_cpu_test_" + std::to_string((long long) std::time(nullptr)));
     fs::remove_all(root);
     const std::string r = root.string();
 

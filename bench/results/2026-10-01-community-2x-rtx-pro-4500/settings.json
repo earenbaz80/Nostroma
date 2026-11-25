@@ -1,14 +1,14 @@
 {
- "exe": "/home/qni/ai/Strata/engine/strata",
+ "exe": "/home/qni/ai/Nostroma/engine/nostroma",
  "args": [
   "--pack",
-  "/home/qni/ai/Strata-data/packs/swift-iq3_xxs",
+  "/home/qni/ai/Nostroma-data/packs/swift-iq3_xxs",
   "--native",
   "/mnt/models/models/gguf/Swift-IQ3_XXS/Swift-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf",
   "--ple-gguf",
   "/mnt/models/models/gguf/Swift-IQ3_XXS/Swift-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf",
   "--expert-profile",
-  "/home/qni/ai/Strata/data/expert-profile.bin",
+  "/home/qni/ai/Nostroma/data/expert-profile.bin",
   "--expert-cache",
   "auto",
   "--prefill",
@@ -18,7 +18,7 @@
   "--spec-min-p",
   "0.5",
   "--mtp",
-  "/home/qni/ai/Strata-data/mtp/rt",
+  "/home/qni/ai/Nostroma-data/mtp/rt",
   "--max-context",
   "262144",
   "--kv",
@@ -27,10 +27,10 @@
   "--vram-reserve-mib",
   "700"
  ],
- "cwd": "/home/qni/ai/Strata",
- "tokenizer": "/home/qni/ai/Strata-data/packs/swift-iq3_xxs/tokenizer",
+ "cwd": "/home/qni/ai/Nostroma",
+ "tokenizer": "/home/qni/ai/Nostroma-data/packs/swift-iq3_xxs/tokenizer",
  "model_name": "swift-1.5-iq3_xxs",
- "log": "/home/qni/ai/Strata/strata-swift-iq3_xxs.log",
+ "log": "/home/qni/ai/Nostroma/nostroma-swift-iq3_xxs.log",
  "lib_dirs": [
   "/usr/local/cuda-13.3/bin",
   "/usr/local/cuda-13.3/lib64"
@@ -43,8 +43,8 @@
  "gpus_asked": true,
  "layer_split": "25",
  "vision": {
-  "exe": "/home/qni/ai/Strata/engine/strata-vision",
-  "mmproj": "/home/qni/ai/Strata-data/models/mmproj-Swift-Qwen3.8-Flash-Next-BF16.gguf",
+  "exe": "/home/qni/ai/Nostroma/engine/nostroma-vision",
+  "mmproj": "/home/qni/ai/Nostroma-data/models/mmproj-Swift-Qwen3.8-Flash-Next-BF16.gguf",
   "model": "/mnt/models/models/gguf/Swift-IQ3_XXS/Swift-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf",
   "gpu": true,
   "max_tokens": 1024

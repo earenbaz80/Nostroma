@@ -1,4 +1,4 @@
-// src/kernels/cuda/qsa_pattn.cu - see include/strata/kernels/qsa_pattn.hpp.
+// src/kernels/cuda/qsa_pattn.cu - see include/nostroma/kernels/qsa_pattn.hpp.
 //
 // Every value below is computed by the operation the production path uses, on the same operands, in the same order:
 //   - score of (cell, head): each lane l's partial k8[0] * q[8l] + ... + k8[7] * q[8l + 7] with k8[e] = (float) code * sc,
@@ -11,10 +11,10 @@
 //     w = __expf(m - M), L = fmaf(l, w, L), acc = fmaf(acc_c, w, acc); out = L > 0 ? acc / L : 0.
 // qsa_pattn_parity compares the outputs with qsa_decode_attn_batch's byte for byte on synthetic selections.
 // Only the default variant of the contributor's PR (#3943) is kept: ps_score_x_kernel + ps_value_d4_kernel.
-#include "strata/kernels/qsa_pattn.hpp"
-#include "strata/env.hpp"
-#include "strata/kernels/kv_q8.hpp"
-#include "strata/core/geometry.hpp"
+#include "nostroma/kernels/qsa_pattn.hpp"
+#include "nostroma/env.hpp"
+#include "nostroma/kernels/kv_q8.hpp"
+#include "nostroma/core/geometry.hpp"
 
 #include <cuda_runtime.h>
 
@@ -23,41 +23,41 @@
 #include <cstdlib>
 #include <cstring>
 
-#if !defined(__HIPCC__) && defined(STRATA_EXPERIMENTAL_SM60)
-#define STRATA_PATTN_BUILT 1   // the CUDA build with STRATA_EXPERIMENTAL_SM60 only (not HIP, not Metal)
+#if !defined(__HIPCC__) && defined(NOSTROMA_EXPERIMENTAL_SM60)
+#define NOSTROMA_PATTN_BUILT 1   // the CUDA build with NOSTROMA_EXPERIMENTAL_SM60 only (not HIP, not Metal)
 #include <cuda_fp16.h>
 #else
-#define STRATA_PATTN_BUILT 0
+#define NOSTROMA_PATTN_BUILT 0
 #endif
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 
-// STRATA_PATTN_SM60=1 turns it on (a tester switch, read once).  In a build without the sm_6x kernels it says so and stays off.
+// NOSTROMA_PATTN_SM60=1 turns it on (a tester switch, read once).  In a build without the sm_6x kernels it says so and stays off.
 int pattn_mode() {
     static const int m = [] {
-        const char* v = strata::env("NOSTROMA_PATTN_SM60");
+        const char* v = nostroma::env("NOSTROMA_PATTN_SM60");
         const int x = v != nullptr && *v != '\0' ? std::atoi(v) : 0;
         if (x == 0) return 0;
-#if STRATA_PATTN_BUILT
-        std::fprintf(stderr, "strata pattn: STRATA_PATTN_SM60=%d: the prompt path's QSA attention on the sm_6x score / "
+#if NOSTROMA_PATTN_BUILT
+        std::fprintf(stderr, "nostroma pattn: NOSTROMA_PATTN_SM60=%d: the prompt path's QSA attention on the sm_6x score / "
                              "value kernels (bit for bit qsa_decode_attn_batch; int8 K/V)\n", x);
         return 1;
 #else
-        std::fprintf(stderr, "strata pattn: STRATA_PATTN_SM60 is set, but this build has no sm_6x kernels "
-                             "(CUDA with STRATA_EXPERIMENTAL_SM60 only); the usual attention runs\n");
+        std::fprintf(stderr, "nostroma pattn: NOSTROMA_PATTN_SM60 is set, but this build has no sm_6x kernels "
+                             "(CUDA with NOSTROMA_EXPERIMENTAL_SM60 only); the usual attention runs\n");
         return 0;
 #endif
     }();
     return m;
 }
 
-#if STRATA_PATTN_BUILT
+#if NOSTROMA_PATTN_BUILT
 namespace {
 
 constexpr int HD = 256;
 constexpr int G = 12;
-static_assert(HD == strata::core::kCompiledGeometry.head_dim &&
-              G == strata::core::kCompiledGeometry.n_head / strata::core::kCompiledGeometry.n_head_kv,
+static_assert(HD == nostroma::core::kCompiledGeometry.head_dim &&
+              G == nostroma::core::kCompiledGeometry.n_head / nostroma::core::kCompiledGeometry.n_head_kv,
               "qsa_pattn is compiled for core/geometry.hpp");
 constexpr int CHUNK = 64;
 constexpr int THREADS = 256;
@@ -442,7 +442,7 @@ bool qsa_pattn_batch_any_arch(const float* q, const QsaAttnPools& pools, const i
         static bool warned = false;
         if (!warned) {
             warned = true;
-            std::fprintf(stderr, "strata pattn: launch failed (%s); the usual attention runs instead\n", cudaGetErrorString(e));
+            std::fprintf(stderr, "nostroma pattn: launch failed (%s); the usual attention runs instead\n", cudaGetErrorString(e));
         }
         return false;
     }
@@ -456,4 +456,4 @@ bool qsa_pattn_batch_any_arch(const float*, const QsaAttnPools&, const int32_t*,
                               float*, uint64_t, float*, int64_t, void*) { return false; }
 #endif
 
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels

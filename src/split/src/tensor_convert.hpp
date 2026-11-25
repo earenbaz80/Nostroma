@@ -1,4 +1,4 @@
-// strata-split: load-time conversion of the small tensors of a GGUF whose types the engine does not read, to the types it does
+// nostroma-split: load-time conversion of the small tensors of a GGUF whose types the engine does not read, to the types it does
 // (what Unsloth's UD-Q4_K_XL file carries: Q8_0 for every dense matrix, the shared experts, the embeddings, the hyper-connection
 // and PLE projections; F32 for the routers, the injections and the SSM gates). A set with other types for them (the ISTA-DAS IQ3_S
 // set keeps K-quants, IQ4_XS and BF16 there) is dequantized to float and quantized again, once, at load. A tensor that already has the

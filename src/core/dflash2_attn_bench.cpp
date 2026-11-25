@@ -1,7 +1,7 @@
 // src/core/dflash2_attn_bench.cpp - the drafter's attention (kernels/dflash2.hpp df2_attention) on random K/V: time per call and GB/s of K/V read.
 //
 //     dflash2_attn_bench [iters] [context]
-#include "strata/kernels/dflash2.hpp"
+#include "nostroma/kernels/dflash2.hpp"
 
 #include <cuda_runtime.h>
 
@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
     const int iters = argc > 1 ? std::atoi(argv[1]) : 100;
     const int ctx = argc > 2 ? std::atoi(argv[2]) : 2047;
     const int ring = 2064;
-    using namespace strata::kernels;
+    using namespace nostroma::kernels;
     float *q, *kr, *vr, *kb, *vb, *part, *out;
     int32_t* pos;
     cudaMalloc((void**) &q, 8 * 32 * 128 * 4);

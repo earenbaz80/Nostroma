@@ -15,7 +15,7 @@
 #include <cstdlib>
 #include <type_traits>
 
-namespace strata::prefill::ws::detail {
+namespace nostroma::prefill::ws::detail {
 namespace {
 
 constexpr int DN_ROWS = 2560, DN_K = 640;
@@ -435,7 +435,7 @@ __global__ void __launch_bounds__(NT, 1) dn_kernel(const Chunk* __restrict__ chu
     }
 }
 
-// ---- STRATA_WS_FAST=1 (ws::fast(), moe_ws.hpp): the 256 x 32 tier (2-block steps, pairs of tokens) with fewer
+// ---- NOSTROMA_WS_FAST=1 (ws::fast(), moe_ws.hpp): the 256 x 32 tier (2-block steps, pairs of tokens) with fewer
 // instructions per pass, the same Dm rows bit for bit: every token's operations and their order are dn_kernel's.
 // (Prototyped as a bench variant on one GP100 die: memcmp-equal to dn_kernel on real IQ4_NL layers at T 1024 and
 // 1536, lognormal sigma 0.5 / 1.0 and a flat-32 control; 4.7-9.2% faster, 122 -> 102 registers, still two CTAs per
@@ -621,7 +621,7 @@ void dn_q2_0(const Layer& L, double u, cudaStream_t s) {
 }
 
 // IQ4_NL: 128 rows x 8 tokens (4-block steps) below 5 rows per expert, 256 x 16 below 20, then 256 x 32 (2-block steps);
-// `fast` (STRATA_WS_FAST=1): the 256 x 32 tier runs dn_kernel_fast instead - the same Dm rows
+// `fast` (NOSTROMA_WS_FAST=1): the 256 x 32 tier runs dn_kernel_fast instead - the same Dm rows
 void dn_iq4_nl(const Layer& L, double u, cudaStream_t s, bool fast) {
     if (L.nchunks <= 0) return;
     const char* w = (const char*) L.w;
@@ -642,4 +642,4 @@ void dn_iq4_nl(const Layer& L, double u, cudaStream_t s, bool fast) {
     ck(cudaGetLastError(), "down IQ4_NL");
 }
 
-}  // namespace strata::prefill::ws::detail
+}  // namespace nostroma::prefill::ws::detail

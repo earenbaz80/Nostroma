@@ -112,7 +112,7 @@ class ReleaseTools(unittest.TestCase):
         raw = (ROOT / "spark" / "build_engine.sh").read_bytes()
         self.assertNotIn(b"\r", raw)
         self.assertIn(b'linux-aarch64', raw)
-        self.assertIn(b"-DSTRATA_PORTABLE=ON", raw)
+        self.assertIn(b"-DNOSTROMA_PORTABLE=ON", raw)
 
 
 class GB10Probes(unittest.TestCase):
@@ -140,20 +140,20 @@ class GB10Probes(unittest.TestCase):
 
     def test_the_launch_probe_counts_a_gb10_as_unified_memory(self):
         sys.path.insert(0, str(ROOT / "tools"))
-        import strata_mcp
+        import nostroma_mcp
         smi = "0, NVIDIA GB10, [N/A], 12.1, 580.173.02\n"
-        with mock.patch.object(strata_mcp, "run_quiet", return_value=smi), \
-                mock.patch.object(strata_mcp, "own_ram_gb", return_value=121.6), \
-                mock.patch.object(strata_mcp.platform, "machine", return_value="aarch64"):
-            found = strata_mcp.own_nvidia_gpus()
+        with mock.patch.object(nostroma_mcp, "run_quiet", return_value=smi), \
+                mock.patch.object(nostroma_mcp, "own_ram_gb", return_value=121.6), \
+                mock.patch.object(nostroma_mcp.platform, "machine", return_value="aarch64"):
+            found = nostroma_mcp.own_nvidia_gpus()
         self.assertEqual(len(found), 1)
         self.assertTrue(found[0]["uma"])
         self.assertEqual(found[0]["arch"], "121")
         self.assertAlmostEqual(found[0]["vram_gb"], 115.6, places=1)
         self.assertEqual(found[0]["dedicated_gb"], 0.0)
-        with mock.patch.object(strata_mcp, "run_quiet", return_value=smi), \
-                mock.patch.object(strata_mcp.platform, "machine", return_value="x86_64"):
-            self.assertEqual(strata_mcp.own_nvidia_gpus(), [])
+        with mock.patch.object(nostroma_mcp, "run_quiet", return_value=smi), \
+                mock.patch.object(nostroma_mcp.platform, "machine", return_value="x86_64"):
+            self.assertEqual(nostroma_mcp.own_nvidia_gpus(), [])
 
 
 if __name__ == "__main__":

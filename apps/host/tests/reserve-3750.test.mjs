@@ -61,9 +61,9 @@ test('a reserve the person set is theirs, 3256 included: it is not replaced by t
 });
 
 test('a start that still dies for lack of cache room (the reporter\'s own log) is started again once with less kept free', () => {
-  const log = 'server_exited (exit code 1): strata generate: expert cache auto: 6.62 GiB free, 3256 MiB reserved (+218 MiB for the draft head) -> 1301 slots | '
-    + 'strata generate: only 0 MiB free once the slots are written (reserve 3256 MiB); shrinking the expert cache | '
-    + 'strata serve: verify: needs the profile-filled VRAM expert tier (--expert-profile and --expert-cache); with --expert-cache auto, no VRAM was left for it';
+  const log = 'server_exited (exit code 1): nostroma generate: expert cache auto: 6.62 GiB free, 3256 MiB reserved (+218 MiB for the draft head) -> 1301 slots | '
+    + 'nostroma generate: only 0 MiB free once the slots are written (reserve 3256 MiB); shrinking the expert cache | '
+    + 'nostroma serve: verify: needs the profile-filled VRAM expert tier (--expert-profile and --expert-cache); with --expert-cache auto, no VRAM was left for it';
   const cfg = reporterFile();
   const safer = saferStart(cfg, rx9070xt, { arenaGb: 83 }, log);
   assert.ok(safer, 'a second try is offered');
@@ -71,7 +71,7 @@ test('a start that still dies for lack of cache room (the reporter\'s own log) i
   assert.ok(next < 3256 && next >= 1024, `reserve ${next}`);
   assert.equal(flag(cfg.args, '--vram-reserve-mib'), '3256', 'the input is not changed and nothing is saved');
   // at the app's own 1536 the same failure still gets its second try, down to the 1024 floor and then a shorter context
-  const tight = saferStart({ ...cfg, args: cfg.args.map(a => (a === '3256' ? '1536' : a)) }, rx9070xt, { arenaGb: 83 }, log + ' | strata generate: no VRAM is left for the expert cache: it needs at least 288 slots (639 MiB), about 900 MiB more than this card has free. To make room: a smaller --max-context (the session, mostly its KV cache, takes 2200 MiB at 262144 tokens)');
+  const tight = saferStart({ ...cfg, args: cfg.args.map(a => (a === '3256' ? '1536' : a)) }, rx9070xt, { arenaGb: 83 }, log + ' | nostroma generate: no VRAM is left for the expert cache: it needs at least 288 slots (639 MiB), about 900 MiB more than this card has free. To make room: a smaller --max-context (the session, mostly its KV cache, takes 2200 MiB at 262144 tokens)');
   assert.equal(flag(tight.config.args, '--vram-reserve-mib'), '1024');
   assert.ok(Number(flag(tight.config.args, '--max-context')) < 262144, 'the rest comes from the context');
 });

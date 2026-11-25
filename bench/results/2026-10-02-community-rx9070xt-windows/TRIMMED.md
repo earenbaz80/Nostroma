@@ -7,5 +7,5 @@ the README, summaries, configs and per-run results are unchanged. The files belo
 
 | file | bytes | why |
 |---|---:|---|
-| `data/strata-device.log` | 927 | log/raw dump |
-| `data/strata-iq3_s.log` | 6,735 | log/raw dump |
+| `data/nostroma-device.log` | 927 | log/raw dump |
+| `data/nostroma-iq3_s.log` | 6,735 | log/raw dump |

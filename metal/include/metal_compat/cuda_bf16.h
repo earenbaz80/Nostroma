@@ -13,7 +13,7 @@ typedef uint16_t __nv_bfloat16;
 typedef uint16_t __nv_bfloat162;
 typedef uint8_t __nv_fp8_storage_t;
 
-static inline uint16_t strata_f32_to_bf16_rn(float f) {
+static inline uint16_t nostroma_f32_to_bf16_rn(float f) {
     uint32_t u;
     std::memcpy(&u, &f, sizeof u);
     if ((u & 0x7fffffffu) > 0x7f800000u) return (uint16_t) ((u >> 16) | 0x0040u);   // NaN keeps a payload
@@ -21,7 +21,7 @@ static inline uint16_t strata_f32_to_bf16_rn(float f) {
     return (uint16_t) r;
 }
 
-static inline __nv_bfloat16 __float2bfloat16_rn(float f) { return strata_f32_to_bf16_rn(f); }
+static inline __nv_bfloat16 __float2bfloat16_rn(float f) { return nostroma_f32_to_bf16_rn(f); }
 static inline uint16_t __bfloat16_as_ushort(__nv_bfloat16 v) { return v; }
 
 // E4M3 (no infinities, max 448), round to nearest even - the inverse of the half conversion the engine also uses

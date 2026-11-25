@@ -8,10 +8,10 @@ The median throughput was **411.1 prompt tok/s and 52.8 decode tok/s** for 4,096
 
 - **GPUs used:** 2x NVIDIA GeForce RTX 2080 Ti, 22,528 MiB reported VRAM each; `nvidia-smi` indices 0 and 2. An RTX 3070 8 GB was present but not selected. The configured power limit was 100 W per GPU. PCIe bandwidth under load was not measured.
 - **CPU and RAM:** AMD Ryzen 9 5950X (16 cores / 32 logical CPUs, AVX2); 62 GiB usable RAM; no swap.
-- **Storage:** model GGUF shards on a local ext4 volume; Strata packs and MTP draft data on NFS storage. No model download occurred during this benchmark.
+- **Storage:** model GGUF shards on a local ext4 volume; Nostroma packs and MTP draft data on NFS storage. No model download occurred during this benchmark.
 - **OS and runtime:** Ubuntu 22.04.5 LTS, kernel 6.8.0-138-generic; NVIDIA driver 580.178.04; CUDA 12.8.
-- **Source and engine:** Strata commit `82f46a8c8f475f001ad76d92f58f4a4f8ffb0253`; locally compiled engine 0.1.40 for CUDA SM 75, source id `6f298dff754d187f`.
-- **Other workloads:** no other GPU compute process was present when Strata started. This was not an otherwise fully isolated host.
+- **Source and engine:** Nostroma commit `82f46a8c8f475f001ad76d92f58f4a4f8ffb0253`; locally compiled engine 0.1.40 for CUDA SM 75, source id `6f298dff754d187f`.
+- **Other workloads:** no other GPU compute process was present when Nostroma started. This was not an otherwise fully isolated host.
 
 ## Model and configuration
 
@@ -31,7 +31,7 @@ The upstream community `benchmark.py` from `bench/results/2026-09-30-community-r
 python benchmark.py --targets 4096,32768 --runs 3
 ```
 
-It sends deterministic synthetic Python source with a distinct nonce before each filler, counts the complete rendered chat prompt with Strata's tokenizer, streams each response, and records engine metrics. One short warm-up was excluded. The six measured requests ran serially on one loaded engine; all processed the full prompt with **zero reused tokens** and generated exactly 256 tokens. Loading time is excluded.
+It sends deterministic synthetic Python source with a distinct nonce before each filler, counts the complete rendered chat prompt with Nostroma's tokenizer, streams each response, and records engine metrics. One short warm-up was excluded. The six measured requests ran serially on one loaded engine; all processed the full prompt with **zero reused tokens** and generated exactly 256 tokens. Loading time is excluded.
 
 Prompt tok/s is freshly processed prompt tokens divided by the engine's `prompt_ms`; decode tok/s is `engine_generated / decode_ms`. TTFT and total duration are client-side loopback measurements. The raw request, streamed response, engine metrics, and aggregate summary are included in this directory.
 

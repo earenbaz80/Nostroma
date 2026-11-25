@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Замер параллельности Strata: сколько запросов одновременно и что с скоростью.
+"""Замер параллельности Nostroma: сколько запросов одновременно и что с скоростью.
 
 Нужен для проверки `"parallel": N` / `--batch N` / `--batch-mtp` (docs/BATCHING.md):
-штатный strata-bench.py измеряет один запрос, а batching меняет именно картину
+штатный nostroma-bench.py измеряет один запрос, а batching меняет именно картину
 нескольких клиентов. Здесь два режима:
 
   solo  — по одному запросу (опора: что должно остаться на одном клиенте)
@@ -13,7 +13,7 @@
 TTFT и ожидание в очереди — из стриминга. Это два прохода на каждый размер:
 движковые тайминги и клиентские задержки в одном ответе не появляются.
 
-usage: strata-conc-bench.py [--levels 1,2,3,4] [--prompt-tokens 8000] [--max-tokens 256]
+usage: nostroma-conc-bench.py [--levels 1,2,3,4] [--prompt-tokens 8000] [--max-tokens 256]
                             [--repeats 2] [--json out.json] [--label TEXT]
 """
 import argparse
@@ -30,9 +30,9 @@ import threading
 import time
 import urllib.request
 
-REPO = os.environ.get("STRATA_REPO", "/home/dgbox/Strata")
-CFG = os.environ.get("STRATA_CFG", REPO + "/strata-200k.json")
-PORT = int(os.environ.get("STRATA_PORT", "8080"))
+REPO = os.environ.get("NOSTROMA_REPO", "/home/dgbox/Nostroma")
+CFG = os.environ.get("NOSTROMA_CFG", REPO + "/nostroma-200k.json")
+PORT = int(os.environ.get("NOSTROMA_PORT", "8080"))
 BASE = f"http://127.0.0.1:{PORT}"
 
 FILLERS = [
@@ -61,7 +61,7 @@ def api_key():
 def server_cmdline():
     """Аргументы движка, с которыми он сейчас запущен (для провенанса)."""
     try:
-        out = subprocess.run(["pgrep", "-f", "engine/strata --serve"], capture_output=True, text=True).stdout.split()
+        out = subprocess.run(["pgrep", "-f", "engine/nostroma --serve"], capture_output=True, text=True).stdout.split()
         for pid in out[:1]:
             cmd = open(f"/proc/{pid}/cmdline", "rb").read().decode().split("\0")
             return " ".join(x for x in cmd if x)
@@ -233,7 +233,7 @@ def main():
     ap.add_argument("--label", default="")
     a = ap.parse_args()
 
-    ratio = float(os.environ.get("STRATA_TOKENS_PER_CHAR", "0.28"))  # токенов на символ (русский текст)
+    ratio = float(os.environ.get("NOSTROMA_TOKENS_PER_CHAR", "0.28"))  # токенов на символ (русский текст)
     ver = engine_version()
     slots = batch_slots()
     print(f"сервер: {BASE}, движок: {ver}, слотов движка (concurrency.serving): {slots}")

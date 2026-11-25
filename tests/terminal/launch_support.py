@@ -21,24 +21,24 @@ class Home:
     """A throw-away per-user home: profiles, presets, launch presets, state, components and install folder."""
 
     def __init__(self) -> None:
-        self.tmp = tempfile.TemporaryDirectory(prefix="strata-launch-test-")
+        self.tmp = tempfile.TemporaryDirectory(prefix="nostroma-launch-test-")
         base = Path(self.tmp.name)
         self.base = base
         self.env = {
-            "STRATA_PROFILE_DIR": str(base / "config" / "profiles"),
-            "STRATA_PRESET_DIR": str(base / "config" / "presets"),
-            "STRATA_LAUNCH_PRESET_DIR": str(base / "config" / "launch-presets"),
-            "STRATA_COMPONENTS_DIR": str(base / "components"),
-            "STRATA_INSTALL_DIR": str(base / "install"),
-            "STRATA_RUNTIME_DIR": str(base / "runtime"),
+            "NOSTROMA_PROFILE_DIR": str(base / "config" / "profiles"),
+            "NOSTROMA_PRESET_DIR": str(base / "config" / "presets"),
+            "NOSTROMA_LAUNCH_PRESET_DIR": str(base / "config" / "launch-presets"),
+            "NOSTROMA_COMPONENTS_DIR": str(base / "components"),
+            "NOSTROMA_INSTALL_DIR": str(base / "install"),
+            "NOSTROMA_RUNTIME_DIR": str(base / "runtime"),
             "XDG_STATE_HOME": str(base / "state"),
             "LOCALAPPDATA": str(base / "local"),
-            "APPDATA": str(base / "roaming"),            # Windows: %APPDATA%\Strata\settings.json (remembered Nostroma folders), profiles, connections
-            "XDG_CONFIG_HOME": str(base / "xdg-config"),  # Linux/macOS: ~/.config/strata/settings.json
+            "APPDATA": str(base / "roaming"),            # Windows: %APPDATA%\Nostroma\settings.json (remembered Nostroma folders), profiles, connections
+            "XDG_CONFIG_HOME": str(base / "xdg-config"),  # Linux/macOS: ~/.config/nostroma/settings.json
             "HOME": str(base / "home"),
             "USERPROFILE": str(base / "home"),
         }
-        self.env_clear = ("STRATA_SETTINGS_FILE", "STRATA_CONNECTION_DIR", "CUDA_VISIBLE_DEVICES", "HIP_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES")   # a developer's own variables must not leak into a test either
+        self.env_clear = ("NOSTROMA_SETTINGS_FILE", "NOSTROMA_CONNECTION_DIR", "CUDA_VISIBLE_DEVICES", "HIP_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES")   # a developer's own variables must not leak into a test either
         (base / "home").mkdir(parents=True, exist_ok=True)
         self.patch = mock.patch.dict(os.environ, self.env)
 
@@ -55,7 +55,7 @@ class Home:
 
 def catalog(hw: dict | None = None, root: Path | None = None):
     from nostroma_cli.launch.catalog import Catalog
-    return Catalog(root=root or Path(os.environ["STRATA_INSTALL_DIR"]), hardware=hw or HW_12)
+    return Catalog(root=root or Path(os.environ["NOSTROMA_INSTALL_DIR"]), hardware=hw or HW_12)
 
 
 def text_of(app) -> str:

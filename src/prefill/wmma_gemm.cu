@@ -17,25 +17,25 @@
 //       2. gemm_wmma_16x16_1w: 1 wave (32 threads), 16T x 16N x 16K tile, zero LDS/barriers, for small T/N.
 
 #include "wmma_gemm.h"
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 
 #include <hip/hip_runtime.h>
 #include <hip/hip_fp16.h>
 #include <hip/hip_bfloat16.h>
 
 #include <cstdlib>
-#include "strata/kernels/gfx_arch.hpp"
+#include "nostroma/kernels/gfx_arch.hpp"
 
 #include <atomic>
 #include <cstring>
 
-// STRATA_WMMA_GFX11 is defined by the BUILD (CMakeLists.txt, from CMAKE_HIP_ARCHITECTURES), not inferred
+// NOSTROMA_WMMA_GFX11 is defined by the BUILD (CMakeLists.txt, from CMAKE_HIP_ARCHITECTURES), not inferred
 // from compiler macros: measured on this toolchain the HOST pass of a HIP compile does not define
 // __gfx1100__ but does define __HIP_DEVICE_COMPILE__, so a compiler-macro guard here silently selected the
 // "return false" stub at the bottom of this file for the very symbol the engine links - the WMMA path then
 // never ran, while the same file compiled with hipcc (as the probes do) took the real branch.  One
 // build-defined macro is uniform across the host and device passes.
-#if defined(STRATA_WMMA_GFX11)
+#if defined(NOSTROMA_WMMA_GFX11)
 
 using v8fp32 = float __attribute__((ext_vector_type(8)));
 
@@ -43,22 +43,22 @@ using v8fp32 = float __attribute__((ext_vector_type(8)));
 // below (gfx1100 / 1101 / 1102 / 1103 / 1150 / 1151): a gfx11 part outside the list (gfx1152) has no device code
 // here, so it takes the hipBLASLt / hipBLAS paths instead of running a kernel that is not there.  Cached per device
 // (hipGetDeviceProperties is not cheap, and a mixed-GPU box has more than one answer).
-static bool strata_wmma_gfx11_device() {
+static bool nostroma_wmma_gfx11_device() {
     static std::atomic<int> cache[64];   // 0 unknown, 1 yes, 2 no
     int dev = 0;
     if (hipGetDevice(&dev) != hipSuccess || dev < 0 || dev >= 64) return false;
     int c = cache[dev].load(std::memory_order_acquire);
     if (c == 0) {
         hipDeviceProp_t prop{};
-        const bool ok = hipGetDeviceProperties(&prop, dev) == hipSuccess && strata::kernels::gfx_arch_is_gfx11_wmma(prop.gcnArchName);
+        const bool ok = hipGetDeviceProperties(&prop, dev) == hipSuccess && nostroma::kernels::gfx_arch_is_gfx11_wmma(prop.gcnArchName);
         c = ok ? 1 : 2;
         cache[dev].store(c, std::memory_order_release);
     }
     return c == 1;
 }
 
-// The same answer for host code that decides whether to pad an activation's row stride (prefill.cpp, STRATA_PF_PAD).
-bool strata_pf_padded_gemm_available() { return strata_wmma_gfx11_device(); }
+// The same answer for host code that decides whether to pad an activation's row stride (prefill.cpp, NOSTROMA_PF_PAD).
+bool nostroma_pf_padded_gemm_available() { return nostroma_wmma_gfx11_device(); }
 
 template <typename ElemT>
 struct WmmaTraits;
@@ -266,14 +266,14 @@ __global__ void gemm_wmma_64x64_4w(
 }
 
 template <typename ElemT>
-static inline bool strata_wmma_gemm_dispatch(const uint16_t* X, const uint16_t* W, float* Y,
+static inline bool nostroma_wmma_gemm_dispatch(const uint16_t* X, const uint16_t* W, float* Y,
                                              int64_t T, int64_t N, int64_t K, int64_t ldy, float beta,
                                              void* stream) {
     if (!X || !W || !Y) return false;
     if (T <= 0 || N <= 0 || K <= 0) return false;
     // Runtime gate (review): run only on gfx11 devices, whatever this build compiled for.  The build-time
-    // STRATA_WMMA_GFX11 macro controls whether the intrinsics compile; this check controls whether they run.
-    if (!strata_wmma_gfx11_device()) return false;
+    // NOSTROMA_WMMA_GFX11 macro controls whether the intrinsics compile; this check controls whether they run.
+    if (!nostroma_wmma_gfx11_device()) return false;
     if (K % 16 != 0) return false;
     if (beta != 0.0f && beta != 1.0f) return false;
     if (ldy <= 0) ldy = N;
@@ -293,20 +293,20 @@ static inline bool strata_wmma_gemm_dispatch(const uint16_t* X, const uint16_t* 
     return true;
 }
 
-bool strata_wmma_gemm_f16(const uint16_t* X, const uint16_t* W, float* Y,
+bool nostroma_wmma_gemm_f16(const uint16_t* X, const uint16_t* W, float* Y,
                           int64_t T, int64_t N, int64_t K, int64_t ldy, float beta,
                           void* stream) {
-    return strata_wmma_gemm_dispatch<_Float16>(X, W, Y, T, N, K, ldy, beta, stream);
+    return nostroma_wmma_gemm_dispatch<_Float16>(X, W, Y, T, N, K, ldy, beta, stream);
 }
 
-bool strata_wmma_gemm_bf16(const uint16_t* X, const uint16_t* W, float* Y,
+bool nostroma_wmma_gemm_bf16(const uint16_t* X, const uint16_t* W, float* Y,
                            int64_t T, int64_t N, int64_t K, int64_t ldy, float beta,
                            void* stream) {
-    return strata_wmma_gemm_dispatch<__bf16>(X, W, Y, T, N, K, ldy, beta, stream);
+    return nostroma_wmma_gemm_dispatch<__bf16>(X, W, Y, T, N, K, ldy, beta, stream);
 }
 
 // ===========================================================================
-// S23 (opt-in STRATA_PF_GEMM=1): the prompt projections' FP16 GEMM on gfx11 (gfx1151: 30-33 TFLOPS on the 16K-row
+// S23 (opt-in NOSTROMA_PF_GEMM=1): the prompt projections' FP16 GEMM on gfx11 (gfx1151: 30-33 TFLOPS on the 16K-row
 // projection shapes where the tuned hipBLASLt reaches 25-27; s23/gemm_probe4.hip).  Block 128 x BN (BN 256 or 128),
 // BK 32, 8 waves of 64 x BN/4, LDS double buffer with the next stage prefetched into named registers (arrays there
 // went to scratch), grouped tile order (8 row tiles sweep all column tiles: the weights stream from DRAM once per
@@ -481,7 +481,7 @@ __global__ void __launch_bounds__(256) kernel_bk64(const _Float16* __restrict__ 
         }
 #endif
 }
-// S23 (STRATA_PF_HCDOWN=1): the hyper-connection read's down (N nd = 320) and inject (N ni = 4) projections of xn16
+// S23 (NOSTROMA_PF_HCDOWN=1): the hyper-connection read's down (N nd = 320) and inject (N ni = 4) projections of xn16
 // (BF16, T x 10240, token stride ldx: 10240 + 64 avoids the 4 KB-multiple stride) as ONE GEMM - weight rows
 // [w_down; w_inject] read from the two tensors, the epilogue splitting the columns into lo (T x nd) and inj (T x ni),
 // so xn16 is read once.  128 x 128 blocks, the BK 64 single-buffer scheme of kernel_bk64.  s23/hcdown_probe.hip,
@@ -577,7 +577,7 @@ __global__ void __launch_bounds__(256) kernel_hcdown(const uint16_t* __restrict_
 #endif
 }
 
-// S23/S (STRATA_HCD_EXACT=1): the HC down projection (N 320, K 10240, BF16 in, FP32 out) bitwise equal to hipBLASLt
+// S23/S (NOSTROMA_HCD_EXACT=1): the HC down projection (N 320, K 10240, BF16 in, FP32 out) bitwise equal to hipBLASLt
 // solution 1176 / 1177 (MT32x96 / MT96x96, StaggerU 32, stride 256 B): every output is the k tiles of 32 accumulated in
 // order, 16 per WMMA, starting at k tile 4 * (token tile of 96 % 32) and wrapping (hcd_bit / hcd_perm probes: 0 of
 // 5.2 M outputs differ at T 16384).  96 x 160 blocks (two per token tile), 6 waves of 32 x 80.
@@ -654,11 +654,11 @@ __global__ void __launch_bounds__(HX_NT) kernel_hcd_exact(const uint16_t* __rest
 }
 }  // namespace pfg
 
-bool strata_pf_hcdown_bf16(const uint16_t* X, int64_t ldx, const uint16_t* Wd, const uint16_t* Wi, int64_t nd,
+bool nostroma_pf_hcdown_bf16(const uint16_t* X, int64_t ldx, const uint16_t* Wd, const uint16_t* Wi, int64_t nd,
                            int64_t ni, float* lo, float* inj, int64_t T, int64_t K, void* stream) {
     if (!X || !Wd || !Wi || !lo || !inj || T < 64 || nd < 1 || ni < 0 || K % 64 != 0 || ldx < K || ldx % 8 != 0) return false;
     if (T > (1LL << 30) || K > (1LL << 30) || ldx > (1LL << 30)) return false;
-    if (!strata_wmma_gfx11_device()) return false;
+    if (!nostroma_wmma_gfx11_device()) return false;
     const int64_t mt = (T + pfg::BM - 1) / pfg::BM;
     const unsigned grid = (unsigned) (mt * ((nd + ni + 127) / 128));
     pfg::kernel_hcdown<<<grid, 256, 0, static_cast<hipStream_t>(stream)>>>(X, (int) ldx, Wd, Wi, (int) nd, (int) ni,
@@ -666,35 +666,35 @@ bool strata_pf_hcdown_bf16(const uint16_t* X, int64_t ldx, const uint16_t* Wd, c
     return hipGetLastError() == hipSuccess;
 }
 
-bool strata_pf_hcdown_exact_bf16(const uint16_t* X, int64_t ldx, const uint16_t* W, float* Y, int64_t T, int64_t N,
+bool nostroma_pf_hcdown_exact_bf16(const uint16_t* X, int64_t ldx, const uint16_t* W, float* Y, int64_t T, int64_t N,
                                  int64_t K, void* stream) {
     if (!X || !W || !Y || T < 1 || N != pfg::HX_N || K != pfg::HX_K || ldx < K || ldx % 8 != 0 || ldx > (1LL << 30) ||
         T > (1LL << 30))
         return false;
-    if (!strata_wmma_gfx11_device()) return false;
+    if (!nostroma_wmma_gfx11_device()) return false;
     const unsigned grid = (unsigned) (2 * ((T + pfg::HX_BM - 1) / pfg::HX_BM));
     pfg::kernel_hcd_exact<<<grid, pfg::HX_NT, 0, static_cast<hipStream_t>(stream)>>>(X, (int) ldx, W, Y, (int) T);
     return hipGetLastError() == hipSuccess;
 }
 
-bool strata_pf_gemm_f16(const uint16_t* X, const uint16_t* W, float* Y, int64_t T, int64_t N, int64_t K, int64_t ldy,
+bool nostroma_pf_gemm_f16(const uint16_t* X, const uint16_t* W, float* Y, int64_t T, int64_t N, int64_t K, int64_t ldy,
                         float beta, void* stream) {
-    return strata_pf_gemm_f16_ld(X, K, W, K, Y, T, N, K, ldy, beta, stream);
+    return nostroma_pf_gemm_f16_ld(X, K, W, K, Y, T, N, K, ldy, beta, stream);
 }
 
-bool strata_pf_gemm_f16_ld(const uint16_t* X, int64_t ldx, const uint16_t* W, int64_t ldw, float* Y, int64_t T,
+bool nostroma_pf_gemm_f16_ld(const uint16_t* X, int64_t ldx, const uint16_t* W, int64_t ldw, float* Y, int64_t T,
                            int64_t N, int64_t K, int64_t ldy, float beta, void* stream) {
     if (!X || !W || !Y || T < 64 || N < 512 || K % pfg::BK != 0 || K < pfg::BK) return false;
     if (beta != 0.0f && beta != 1.0f) return false;
     if (ldy <= 0) ldy = N;
     if (ldx < K || ldw < K || ldx % 8 != 0 || ldw % 8 != 0 || ldx > (1LL << 30) || ldw > (1LL << 30)) return false;
     if (ldy < N || T > (1LL << 30) || N > (1LL << 30) || K > (1LL << 30)) return false;
-    if (!strata_wmma_gfx11_device()) return false;
+    if (!nostroma_wmma_gfx11_device()) return false;
     hipStream_t s = static_cast<hipStream_t>(stream);
     const int acc = beta == 1.0f ? 1 : 0;
     const int64_t mt = (T + pfg::BM - 1) / pfg::BM;
-    // STRATA_PF_BK64=0: the BK 32 kernel for the wide shapes too (the A/B; the same bits)
-    static const bool bk64 = [] { const char* v = strata::env("NOSTROMA_PF_BK64"); return !v || v[0] != '0'; }();
+    // NOSTROMA_PF_BK64=0: the BK 32 kernel for the wide shapes too (the A/B; the same bits)
+    static const bool bk64 = [] { const char* v = nostroma::env("NOSTROMA_PF_BK64"); return !v || v[0] != '0'; }();
     if (N >= 1024 && bk64 && K % 64 == 0) {
         const unsigned grid = (unsigned) (mt * ((N + 255) / 256));
         pfg::kernel_bk64<<<grid, 256, 0, s>>>((const _Float16*) X, (const _Float16*) W, Y, (int) T, (int) N, (int) K,
@@ -713,29 +713,29 @@ bool strata_pf_gemm_f16_ld(const uint16_t* X, int64_t ldx, const uint16_t* W, in
 
 #else
 // Non-HIP / Non-GFX11 compilation fallback
-bool strata_pf_gemm_f16(const uint16_t*, const uint16_t*, float*, int64_t, int64_t, int64_t, int64_t, float, void*) {
+bool nostroma_pf_gemm_f16(const uint16_t*, const uint16_t*, float*, int64_t, int64_t, int64_t, int64_t, float, void*) {
     return false;
 }
-bool strata_pf_gemm_f16_ld(const uint16_t*, int64_t, const uint16_t*, int64_t, float*, int64_t, int64_t, int64_t,
+bool nostroma_pf_gemm_f16_ld(const uint16_t*, int64_t, const uint16_t*, int64_t, float*, int64_t, int64_t, int64_t,
                            int64_t, float, void*) {
     return false;
 }
 // No padded product in this build (no gfx11 target): prefill.cpp does not pad an activation's row stride.
-bool strata_pf_padded_gemm_available() { return false; }
-bool strata_pf_hcdown_bf16(const uint16_t*, int64_t, const uint16_t*, const uint16_t*, int64_t, int64_t, float*, float*,
+bool nostroma_pf_padded_gemm_available() { return false; }
+bool nostroma_pf_hcdown_bf16(const uint16_t*, int64_t, const uint16_t*, const uint16_t*, int64_t, int64_t, float*, float*,
                            int64_t, int64_t, void*) {
     return false;
 }
-bool strata_pf_hcdown_exact_bf16(const uint16_t*, int64_t, const uint16_t*, float*, int64_t, int64_t, int64_t, void*) {
+bool nostroma_pf_hcdown_exact_bf16(const uint16_t*, int64_t, const uint16_t*, float*, int64_t, int64_t, int64_t, void*) {
     return false;
 }
-bool strata_wmma_gemm_f16(const uint16_t*, const uint16_t*, float*,
+bool nostroma_wmma_gemm_f16(const uint16_t*, const uint16_t*, float*,
                           int64_t, int64_t, int64_t, int64_t, float,
                           void*) {
     return false;
 }
 
-bool strata_wmma_gemm_bf16(const uint16_t*, const uint16_t*, float*,
+bool nostroma_wmma_gemm_bf16(const uint16_t*, const uint16_t*, float*,
                            int64_t, int64_t, int64_t, int64_t, float,
                            void*) {
     return false;

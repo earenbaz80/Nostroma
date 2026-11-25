@@ -1,4 +1,4 @@
-// src/prefill/gr_upmix_parity.cu - the hyper-connection read's fused up projection + mix (gr_upmix, STRATA_HC_UPMIX=1)
+// src/prefill/gr_upmix_parity.cu - the hyper-connection read's fused up projection + mix (gr_upmix, NOSTROMA_HC_UPMIX=1)
 // against the default pair (Gemm::bf16 - cuBLAS - writing `gated`, then gr_mix_r), on synthetic inputs of the model's
 // shapes (N = 2560, 4 streams, K = 320).  Where cuBLAS's kernel sums K in the fused kernel's order the outputs are the
 // same bits (CUDA 13.3 on an RTX 5090 from 33 tokens - the prompt path's default there); elsewhere FP32 rounding: the
@@ -6,9 +6,9 @@
 // against an FP64 reference on sampled tokens (the fused one must be as close to it as cuBLAS).
 //   gr_upmix_parity            the checks (T = 1 .. 32768)
 //   gr_upmix_parity --bench    and the timings of the pair and the fused kernel at T = 2048 / 8192 / 32768
-#include "strata/prefill/gemm.hpp"
-#include "strata/prefill/kernels.hpp"
-#include "strata/kernels/gfx_arch.hpp"
+#include "nostroma/prefill/gemm.hpp"
+#include "nostroma/prefill/kernels.hpp"
+#include "nostroma/kernels/gfx_arch.hpp"
 
 #include <cuda_runtime.h>
 
@@ -136,18 +136,18 @@ double exact_mixed(const Inputs& in, int64_t t, int d) {
 
 // f16 (HIP only): the FP16 prompt path, as Prefill::init sets it up (Gemm::set_f16_io + set_act_f16): lo16 holds FP16 bits, the pair's
 // GEMM writes FP16-rounded outputs, gr_upmix runs its FP16 matrix-core variant; the bound against the pair is the FP16 output rounding.
-int check(strata::prefill::Gemm& gm, cudaStream_t st, float* gated, int64_t T, uint32_t seed, bool f16 = false) {
-    if (f16) { gm.set_f16_io(true); strata::prefill::set_act_f16(true); }
+int check(nostroma::prefill::Gemm& gm, cudaStream_t st, float* gated, int64_t T, uint32_t seed, bool f16 = false) {
+    if (f16) { gm.set_f16_io(true); nostroma::prefill::set_act_f16(true); }
     struct Reset {
         bool on;
-        strata::prefill::Gemm& g;
-        ~Reset() { if (on) { g.set_f16_io(false); strata::prefill::set_act_f16(false); } }
+        nostroma::prefill::Gemm& g;
+        ~Reset() { if (on) { g.set_f16_io(false); nostroma::prefill::set_act_f16(false); } }
     } reset{f16, gm};
     Inputs in(T, seed, f16);
     Outputs ref(T), got(T);
     gm.bf16(in.d_lo16, in.d_wu, gated, T, D, LR);
-    strata::prefill::gr_mix_r(in.d_R, in.d_rs, in.d_w, gated, ref.mixed, ref.bf, T, st, ref.h);
-    if (!strata::prefill::gr_upmix(in.d_lo16, in.d_wu, in.d_R, in.d_rs, in.d_w, got.mixed, got.bf, got.h, T, st)) {
+    nostroma::prefill::gr_mix_r(in.d_R, in.d_rs, in.d_w, gated, ref.mixed, ref.bf, T, st, ref.h);
+    if (!nostroma::prefill::gr_upmix(in.d_lo16, in.d_wu, in.d_R, in.d_rs, in.d_w, got.mixed, got.bf, got.h, T, st)) {
         std::printf("FAIL T=%lld: gr_upmix refused (needs CUDA sm_80+)\n", (long long) T);
         return 1;
     }
@@ -198,7 +198,7 @@ float median(std::vector<float> v) {
     return v[v.size() / 2];
 }
 
-void bench(strata::prefill::Gemm& gm, cudaStream_t st, float* gated, int64_t T) {
+void bench(nostroma::prefill::Gemm& gm, cudaStream_t st, float* gated, int64_t T) {
     Inputs in(T, 7);
     Outputs o(T);
     cudaEvent_t e0, e1;
@@ -210,7 +210,7 @@ void bench(strata::prefill::Gemm& gm, cudaStream_t st, float* gated, int64_t T) 
         for (int k = 0; k < 2; ++k) {
             if ((k == 0) == fused_first) {
                 cudaEventRecord(e0, st);
-                strata::prefill::gr_upmix(in.d_lo16, in.d_wu, in.d_R, in.d_rs, in.d_w, o.mixed, o.bf, o.h, T, st);
+                nostroma::prefill::gr_upmix(in.d_lo16, in.d_wu, in.d_R, in.d_rs, in.d_w, o.mixed, o.bf, o.h, T, st);
                 cudaEventRecord(e1, st);
                 cudaEventSynchronize(e1);
                 float ms;
@@ -222,7 +222,7 @@ void bench(strata::prefill::Gemm& gm, cudaStream_t st, float* gated, int64_t T) 
                 cudaEventRecord(e0, st);
                 gm.bf16(in.d_lo16, in.d_wu, gated, T, D, LR);
                 cudaEventRecord(em, st);
-                strata::prefill::gr_mix_r(in.d_R, in.d_rs, in.d_w, gated, o.mixed, o.bf, T, st, o.h);
+                nostroma::prefill::gr_mix_r(in.d_R, in.d_rs, in.d_w, gated, o.mixed, o.bf, T, st, o.h);
                 cudaEventRecord(e1, st);
                 cudaEventSynchronize(e1);
                 float ms, msg;
@@ -254,7 +254,7 @@ int main(int argc, char** argv) {
         }
 #if defined(__HIPCC__)
         cudaDeviceProp prop;   // HIP: the gfx11 matrix-core kernel (gr_upmix refuses every other architecture)
-        if (cudaGetDeviceProperties(&prop, dev) != cudaSuccess || !strata::kernels::gfx_arch_is_gfx11_wmma(prop.gcnArchName)) {
+        if (cudaGetDeviceProperties(&prop, dev) != cudaSuccess || !nostroma::kernels::gfx_arch_is_gfx11_wmma(prop.gcnArchName)) {
             std::printf("gr_upmix_parity: not a gfx11 device, skipped\n");
             return 77;
         }
@@ -270,7 +270,7 @@ int main(int argc, char** argv) {
     }
     cudaStream_t st = nullptr;
     if (!ck(cudaStreamCreate(&st), "stream")) return 1;
-    strata::prefill::Gemm gm;
+    nostroma::prefill::Gemm gm;
     std::string err;
     if (!gm.init(st, (int64_t) D * LR, err)) { std::printf("FAIL: %s\n", err.c_str()); return 1; }
     float* gated = dalloc<float>((size_t) Tmax * D);
@@ -278,7 +278,7 @@ int main(int argc, char** argv) {
     uint32_t seed = 101;
     for (const int64_t T : {1, 7, 16, 31, 32, 33, 48, 63, 64, 65, 96, 126, 127, 128, 129, 600, 1000, 2048, 4099, 8192, 32768}) { if (T <= Tmax) fails += check(gm, st, gated, T, seed++); }
 #if defined(__HIPCC__)
-    // the FP16 prompt path (STRATA_HIP_PROMPT_F16=1): the up-mix reads FP16 images (it read them as BF16 before; the FP64 column is the arbiter)
+    // the FP16 prompt path (NOSTROMA_HIP_PROMPT_F16=1): the up-mix reads FP16 images (it read them as BF16 before; the FP64 column is the arbiter)
     for (const int64_t T : {33, 128, 600, 2048, 4099, 8192}) { if (T <= Tmax) fails += check(gm, st, gated, T, seed++, true); }
 #endif
     if (do_bench) {

@@ -3,8 +3,8 @@
 #   run_linux.sh <repo root> <dir holding core/rng_philox.hpp> <tag> [seeds] [--make-table]
 # <repo root> holds tools/image/gate/noise (the proof programs) and tools/image/sdcpp_noise (the generator).  Work files
 # go to ./noise-work-<tag>.  Steps: apply.py --prepare writes the generator's files and the compiled-in table source;
-# --make-table (x86 glibc box only) first builds without the table (-DSTRATA_NOISE_NO_SIN_EXC), lists where glibc's sin
-# is not correctly rounded (check_domain glibc) and makes strata_sin_exc.bin from it.  Then (always): build plain (-O3,
+# --make-table (x86 glibc box only) first builds without the table (-DNOSTROMA_NOISE_NO_SIN_EXC), lists where glibc's sin
+# is not correctly rounded (check_domain glibc) and makes nostroma_sin_exc.bin from it.  Then (always): build plain (-O3,
 # as sd.cpp's x86 build) and -march=native -ffp-contract=fast variants WITH the table, run the domain check and the
 # seed comparison.
 set -e
@@ -17,12 +17,12 @@ CXX="g++ -std=c++20 -O3 -DNDEBUG -pthread"
 python3 -I -B "$PROD/apply.py" --prepare "$W/inc"
 if [ "$5" = "--make-table" ]; then
   echo "== pass 1: no table, the exhaustive list of glibc sin values that are not correctly rounded"
-  $CXX -DSTRATA_NOISE_NO_SIN_EXC -I"$W/inc" "$GATE/check_domain.cpp" -o out/check_notable
+  $CXX -DNOSTROMA_NOISE_NO_SIN_EXC -I"$W/inc" "$GATE/check_domain.cpp" -o out/check_notable
   time out/check_notable glibc
   python3 -I -B "$GATE/make_sin_exceptions.py" exc_sin.txt
   python3 -I -B "$PROD/apply.py" --prepare "$W/inc"
 fi
-sha256sum "$PROD/strata_sin_exc.bin"
+sha256sum "$PROD/nostroma_sin_exc.bin"
 $CXX -I"$W/inc" "$GATE/check_domain.cpp" -o out/check_plain
 $CXX -march=native -ffp-contract=fast -I"$W/inc" "$GATE/check_domain.cpp" -o out/check_native
 $CXX -DWITH_REF -I"$W/inc" -I"$REF" "$GATE/seeds.cpp" -o out/seeds_plain

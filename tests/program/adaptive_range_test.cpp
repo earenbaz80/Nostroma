@@ -3,9 +3,9 @@
 #include <cstdio>
 #include <vector>
 
-#include "strata/program/adaptive_range.hpp"
+#include "nostroma/program/adaptive_range.hpp"
 
-using strata::program::AdaptiveCopyRange;
+using nostroma::program::AdaptiveCopyRange;
 
 static int failed = 0;
 #define CHECK(x) do { if (!(x)) { std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #x); ++failed; } } while (0)

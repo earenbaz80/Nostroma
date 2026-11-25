@@ -6,11 +6,11 @@ them is how many requests decode together and how the four stages are fed, not m
 * 32 slots in 4 pipelined groups (one group per card), instead of the launcher's 4 requests at a time;
 * the layer split 13,26,39: the output head costs about four layers on the last card, so it gets 9 layers and the others 13;
 * a 2048-token prompt chunk: a smaller chunk reads long prompts faster beside the decodes of the other slots;
-* the three batch switches STRATA_QSA_SLOTS, STRATA_BATCH_SELF_COMMIT and STRATA_SLOT_COPY_DIRECT, which change how the work is
+* the three batch switches NOSTROMA_QSA_SLOTS, NOSTROMA_BATCH_SELF_COMMIT and NOSTROMA_SLOT_COPY_DIRECT, which change how the work is
   scheduled and copied, not what is computed (tools/batch_test.py: every slot decodes the tokens it decodes alone).
 
 Recommend, never force: a setting the person made (the config, `--parallel`, `--layer-split`, an advanced flag, an environment
-variable) always wins, the profile only fills what is not set, and `STRATA_FOUR_CARD_PROFILE=0` (or "four_card_profile": false in
+variable) always wins, the profile only fills what is not set, and `NOSTROMA_FOUR_CARD_PROFILE=0` (or "four_card_profile": false in
 the run config) turns it off.  Only this hardware class is touched; every other computer gets exactly what it got before.
 
 Pure functions, no I/O (the callers pass the cards and the run config).
@@ -24,7 +24,7 @@ PARALLEL = 32                     # slots (requests decoding together)
 GROUPS = 4                        # pipelined groups: one per card
 LAYER_SPLIT = "13,26,39"          # Qwen3.8-Flash-Next has 48 layers: 13 / 13 / 13 / 9 (the output head sits on the last card)
 PREFILL_CHUNK = "2048"
-BATCH_ENV = {"STRATA_QSA_SLOTS": "1", "STRATA_BATCH_SELF_COMMIT": "1", "STRATA_SLOT_COPY_DIRECT": "1"}
+BATCH_ENV = {"NOSTROMA_QSA_SLOTS": "1", "NOSTROMA_BATCH_SELF_COMMIT": "1", "NOSTROMA_SLOT_COPY_DIRECT": "1"}
 PROMPT_CACHE_OFF = False          # --prompt-cache 0 is not part of the default: see docs/BATCHING.md
 MIN_CARD_GB = 28.0                # a 32 GB card reports a little less than its name
 CARDS = 4
@@ -32,8 +32,8 @@ OFF_VALUES = ("0", "off", "no", "false")
 
 
 def disabled(cfg: dict | None = None) -> bool:
-    """The person turned the profile off: STRATA_FOUR_CARD_PROFILE=0 in the environment, or "four_card_profile": false in the config."""
-    if str(os.environ.get("NOSTROMA_FOUR_CARD_PROFILE", os.environ.get("STRATA_FOUR_CARD_PROFILE", ""))).strip().lower() in OFF_VALUES:
+    """The person turned the profile off: NOSTROMA_FOUR_CARD_PROFILE=0 in the environment, or "four_card_profile": false in the config."""
+    if str(os.environ.get("NOSTROMA_FOUR_CARD_PROFILE", os.environ.get("NOSTROMA_FOUR_CARD_PROFILE", ""))).strip().lower() in OFF_VALUES:
         return True
     return bool(cfg) and cfg.get("four_card_profile") is False
 

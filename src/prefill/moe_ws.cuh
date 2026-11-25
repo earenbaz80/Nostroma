@@ -3,11 +3,11 @@
 // so the instances compile in parallel).
 #pragma once
 
-#include "strata/prefill/moe_ws.hpp"
+#include "nostroma/prefill/moe_ws.hpp"
 
 #include <cuda_runtime.h>
 
-namespace strata::prefill::ws::detail {
+namespace nostroma::prefill::ws::detail {
 
 // The two ways every kernel multiplies: int8 values sign-extended to int16 pairs (one PRMT per pair: bytes 0,2 and 1,3)
 // and a pair of products added to a 32-bit sum by two XMAD (mad.wide.s16) - MMQ's dp4a on sm_60, one product at a time.
@@ -43,7 +43,7 @@ void gu_iq2_s(const Layer& L, double u, cudaStream_t s);
 void gu_iq3_xxs(const Layer& L, double u, cudaStream_t s);
 void gu_iq3_s(const Layer& L, double u, cudaStream_t s);
 void dn_q2_0(const Layer& L, double u, cudaStream_t s);
-// `fast`: ws::fast() (STRATA_WS_FAST=1) - the 32-token tier's fast kernel, the same Dm rows
+// `fast`: ws::fast() (NOSTROMA_WS_FAST=1) - the 32-token tier's fast kernel, the same Dm rows
 void dn_iq4_nl(const Layer& L, double u, cudaStream_t s, bool fast);
 
-}  // namespace strata::prefill::ws::detail
+}  // namespace nostroma::prefill::ws::detail

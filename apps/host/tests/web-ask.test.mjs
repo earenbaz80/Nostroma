@@ -3,7 +3,7 @@
  * readable refusal, Plan and Bypass are unchanged, and a switch in Settings -> Tools (off by default) skips the question.
  *
  * The gate is plain ESM, so most of this drives its plugin with a pretend Harness context. The bridge-level tests at the end use the real
- * Harness with a scripted model and skip without STRATA_HARNESS_DIR.
+ * Harness with a scripted model and skip without NOSTROMA_HARNESS_DIR.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -11,7 +11,7 @@ import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { build } from 'esbuild';
-import { apply, manualDecision, planDecision, READ_ONLY_TOOLS, MANUAL_PRESET, PLAN_PRESET, WEB_REFUSAL } from '../server/agent/plugins/strata-gate.mjs';
+import { apply, manualDecision, planDecision, READ_ONLY_TOOLS, MANUAL_PRESET, PLAN_PRESET, WEB_REFUSAL } from '../server/agent/plugins/nostroma-gate.mjs';
 import { buildProfile } from '../server/agent/profile.mjs';
 import { createAgentTools } from '../server/agent/tools-settings.mjs';
 import { startScriptedWorker } from './helpers/scripted-worker.mjs';
@@ -19,8 +19,8 @@ import { createAgentBridge } from '../server/agent/agent-bridge.mjs';
 import { createAgentTaskRunner } from '../server/agent/task-run.mjs';
 import { resolveHarness } from '../server/agent/harness-runtime.mjs';
 
-const HARNESS = process.env.STRATA_HARNESS_DIR;
-const skip = !HARNESS || !resolveHarness({ env: process.env }).ok ? 'STRATA_HARNESS_DIR is not set to a built Harness' : false;
+const HARNESS = process.env.NOSTROMA_HARNESS_DIR;
+const skip = !HARNESS || !resolveHarness({ env: process.env }).ok ? 'NOSTROMA_HARNESS_DIR is not set to a built Harness' : false;
 
 const SEARCH = { name: 'web_search', arguments: { queries: ['heat pump prices'] } };
 const FETCH = { name: 'web_fetch', arguments: { url: 'https://example.com/a' } };
@@ -120,7 +120,7 @@ test('a helper agent works under the chat that started it: one yes covers both, 
 });
 
 test('Bypass never asks, Plan is unchanged, and the Settings switch skips the question in Manual', async () => {
-  const bypass = rig({ preset: 'strata-bypass' });
+  const bypass = rig({ preset: 'nostroma-bypass' });
   assert.equal((await bypass.call(bypass.session('c'), SEARCH)).kind, 'allow');
   assert.equal(bypass.asked.length, 0);
   const plan = rig({ preset: PLAN_PRESET });
@@ -137,7 +137,7 @@ test('Bypass never asks, Plan is unchanged, and the Settings switch skips the qu
 // ---------------------------------------------------------------------------------------------- the setting and the profile
 
 test('Settings -> Tools: "search the web without asking" is off at first, remembered, and reaches the gate', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'strata-web-ask-'));
+  const dir = mkdtempSync(join(tmpdir(), 'nostroma-web-ask-'));
   try {
     let saved = {};
     const tools = createAgentTools({ read: () => saved, write: v => { saved = v; }, dataDir: dir });
@@ -153,7 +153,7 @@ test('Settings -> Tools: "search the web without asking" is off at first, rememb
 });
 
 test('the profile names the search service in the gate\'s question, and carries the switch', () => {
-  const gateOf = tools => JSON.parse(buildProfile({ local: [], tools }).patch.split('\n').slice(1).join('\n')).flatMap(e => e.insert ?? []).find(e => e.id === 'strata-gate').config.web;
+  const gateOf = tools => JSON.parse(buildProfile({ local: [], tools }).patch.split('\n').slice(1).join('\n')).flatMap(e => e.insert ?? []).find(e => e.id === 'nostroma-gate').config.web;
   const base = { off: new Set(), search: { provider: 'builtin', key: '' }, servers: {}, webWithoutAsking: false };
   assert.deepEqual(gateOf(base), { provider: 'DuckDuckGo, or Bing when DuckDuckGo is busy', skipAsk: false });
   assert.deepEqual(gateOf({ ...base, search: { provider: 'exa', key: 'k' }, webWithoutAsking: true }), { provider: 'Exa', skipAsk: true });
@@ -185,7 +185,7 @@ test('the card text and the Settings switch exist in all nine languages', async 
 
 async function bridgeRig(t) {
   const worker = await startScriptedWorker({ chunkDelayMs: 5 });
-  const dir = mkdtempSync(join(tmpdir(), 'strata-webask-'));
+  const dir = mkdtempSync(join(tmpdir(), 'nostroma-webask-'));
   const ws = join(dir, 'ws'); mkdirSync(ws, { recursive: true });
   const local = [{ id: 'i', label: 'S', baseUrl: worker.url, modelId: 'scripted-model', context: 32768, slots: 2 }];
   let n = 0;   // one data folder per bridge: two bridges on one folder share a pid file and end each other's Harness

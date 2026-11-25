@@ -1,7 +1,7 @@
 // Exact multi-row BF16/F32 GEMV checks against independent single-row calls.
-// Run with STRATA_MMVF_ROWS=1; synthetic data, no model or private prompts.
-#include "strata/kernels/bf16_gemv.hpp"
-#include "strata/env.hpp"
+// Run with NOSTROMA_MMVF_ROWS=1; synthetic data, no model or private prompts.
+#include "nostroma/kernels/bf16_gemv.hpp"
+#include "nostroma/env.hpp"
 #include <cuda_runtime.h>
 #include <cstdint>
 #include <cstdio>
@@ -10,7 +10,7 @@
 #include <random>
 #include <vector>
 
-namespace k = strata::kernels;
+namespace k = nostroma::kernels;
 static void ck(cudaError_t e) {
     if (e != cudaSuccess) { std::fprintf(stderr, "%s\n", cudaGetErrorString(e)); std::exit(2); }
 }
@@ -18,8 +18,8 @@ template<class T> static T* alloc(size_t n) {
     T* p = nullptr; ck(cudaMalloc(&p, n * sizeof(T))); return p;
 }
 int main() {
-    const char* flag = strata::env("NOSTROMA_MMVF_ROWS");
-    if (!flag || flag[0] != '1') { std::fprintf(stderr, "set STRATA_MMVF_ROWS=1\n"); return 2; }
+    const char* flag = nostroma::env("NOSTROMA_MMVF_ROWS");
+    if (!flag || flag[0] != '1') { std::fprintf(stderr, "set NOSTROMA_MMVF_ROWS=1\n"); return 2; }
     cudaStream_t s; ck(cudaStreamCreate(&s));
     const int shapes[][2] = {{64,64},{192,67},{512,65},{640,128},{2560,48},
                              {2560,128},{2560,512},{2560,2560},{10240,320}};

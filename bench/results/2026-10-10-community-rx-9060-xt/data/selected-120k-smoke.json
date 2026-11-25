@@ -26,7 +26,7 @@
     "draft_n_accepted": 85
   },
   "finish_reason": "stop",
-  "answer": "```json\n{\n  \"start\": \"CLENEX-4181\",\n  \"middle\": \"STRATA-8081\",\n  \"end\": \"LONDON-9060\"\n}\n```",
+  "answer": "```json\n{\n  \"start\": \"CLENEX-4181\",\n  \"middle\": \"NOSTROMA-8081\",\n  \"end\": \"LONDON-9060\"\n}\n```",
   "tool_calls": [],
   "available_ram_before_GiB": 10.194572448730469,
   "minimum_available_ram_GiB": 9.489490509033203,

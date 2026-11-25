@@ -1,38 +1,38 @@
-// own_only_switches (include/strata/prefill/own_only_switches.hpp): the opt-in fused-kernel switches a build without MMQ turns on by default.  No GPU, no model.
+// own_only_switches (include/nostroma/prefill/own_only_switches.hpp): the opt-in fused-kernel switches a build without MMQ turns on by default.  No GPU, no model.
 #include <cstdio>
 #include <cstring>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "strata/prefill/own_only_switches.hpp"
+#include "nostroma/prefill/own_only_switches.hpp"
 
-using strata::prefill::own_only_default_switches;
-using strata::prefill::own_only_switch_on;
+using nostroma::prefill::own_only_default_switches;
+using nostroma::prefill::own_only_switch_on;
 
 static int failed = 0;
 #define CHECK(x) do { if (!(x)) { std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #x); ++failed; } } while (0)
 
 int main() {
     // CUDA: the list the build had before the Q2_0 kernel joined, in its order, then the Q2_0 / Q2_0 switch last
-    const std::vector<std::string> cuda_before = {"STRATA_PF_FUSED", "STRATA_PF_FUSED_Q50", "STRATA_PF_FUSED_Q8D", "STRATA_PF_FUSED_Q8GU",
-                                                  "STRATA_PF_FUSED_Q6K", "STRATA_PF_FUSED_KQ", "STRATA_PF_FUSED_TQ", "STRATA_PF_FUSED_SM75"};
+    const std::vector<std::string> cuda_before = {"NOSTROMA_PF_FUSED", "NOSTROMA_PF_FUSED_Q50", "NOSTROMA_PF_FUSED_Q8D", "NOSTROMA_PF_FUSED_Q8GU",
+                                                  "NOSTROMA_PF_FUSED_Q6K", "NOSTROMA_PF_FUSED_KQ", "NOSTROMA_PF_FUSED_TQ", "NOSTROMA_PF_FUSED_SM75"};
     const auto cuda = own_only_default_switches(false);
     CHECK(cuda.size() == cuda_before.size() + 1);
     for (size_t i = 0; i < cuda_before.size() && i < cuda.size(); ++i) CHECK(cuda_before[i] == cuda[i]);
-    CHECK(own_only_switch_on("STRATA_PF_FUSED_Q2N", false));
+    CHECK(own_only_switch_on("NOSTROMA_PF_FUSED_Q2N", false));
     // HIP: unchanged (the gfx12 Q2_0 kernel is a default of its own there); no Turing switch, no Q2N
-    const std::vector<std::string> hip_before = {"STRATA_PF_FUSED", "STRATA_PF_FUSED_Q50", "STRATA_PF_FUSED_Q8D", "STRATA_PF_FUSED_Q8GU",
-                                                 "STRATA_PF_FUSED_Q6K", "STRATA_PF_FUSED_KQ", "STRATA_PF_FUSED_TQ"};
+    const std::vector<std::string> hip_before = {"NOSTROMA_PF_FUSED", "NOSTROMA_PF_FUSED_Q50", "NOSTROMA_PF_FUSED_Q8D", "NOSTROMA_PF_FUSED_Q8GU",
+                                                 "NOSTROMA_PF_FUSED_Q6K", "NOSTROMA_PF_FUSED_KQ", "NOSTROMA_PF_FUSED_TQ"};
     const auto hip = own_only_default_switches(true);
     CHECK(hip.size() == hip_before.size());
     for (size_t i = 0; i < hip_before.size() && i < hip.size(); ++i) CHECK(hip_before[i] == hip[i]);
-    CHECK(!own_only_switch_on("STRATA_PF_FUSED_Q2N", true));
-    CHECK(!own_only_switch_on("STRATA_PF_FUSED_SM75", true));
-    CHECK(own_only_switch_on("STRATA_PF_FUSED_SM75", false));
+    CHECK(!own_only_switch_on("NOSTROMA_PF_FUSED_Q2N", true));
+    CHECK(!own_only_switch_on("NOSTROMA_PF_FUSED_SM75", true));
+    CHECK(own_only_switch_on("NOSTROMA_PF_FUSED_SM75", false));
     // names that are not in the list stay off (the other opt-ins of the kernels are not defaults)
-    CHECK(!own_only_switch_on("STRATA_PF_FUSED_SM86", false));
-    CHECK(!own_only_switch_on("STRATA_PF_FUSED_IQ2S", false));
+    CHECK(!own_only_switch_on("NOSTROMA_PF_FUSED_SM86", false));
+    CHECK(!own_only_switch_on("NOSTROMA_PF_FUSED_IQ2S", false));
     CHECK(!own_only_switch_on("", false));
     // no name twice
     for (size_t i = 0; i < cuda.size(); ++i)
@@ -47,43 +47,43 @@ int main() {
         };
         const auto set = [&](const char* k) { env.emplace_back(k, "1"); };
         std::vector<std::string> rec;
-        env.emplace_back("STRATA_PF_FUSED_Q8D", "0");   // the user named one of them (their way back)
-        strata::prefill::own_only_apply_defaults(false, get, set, rec);
+        env.emplace_back("NOSTROMA_PF_FUSED_Q8D", "0");   // the user named one of them (their way back)
+        nostroma::prefill::own_only_apply_defaults(false, get, set, rec);
         CHECK(rec.size() == cuda.size() - 1);
-        CHECK(!strata::prefill::own_only_set_by_build("STRATA_PF_FUSED_Q8D", rec));
-        CHECK(std::string(get("STRATA_PF_FUSED_Q8D")) == "0");        // kept
-        CHECK(strata::prefill::own_only_set_by_build("STRATA_PF_FUSED", rec));
-        CHECK(std::string(get("STRATA_PF_FUSED")) == "1");
-        CHECK(strata::prefill::own_only_set_by_build("STRATA_PF_FUSED_Q2N", rec));
-        // "named by the user" (what the small-card rule reads): the build's own STRATA_PF_FUSED=1 is not, the same text from the user is, "" is neither
-        CHECK(!strata::prefill::own_only_user_named("STRATA_PF_FUSED", get("STRATA_PF_FUSED"), rec));
-        CHECK(strata::prefill::own_only_user_named("STRATA_PF_FUSED_Q8D", get("STRATA_PF_FUSED_Q8D"), rec));
-        CHECK(!strata::prefill::own_only_user_named("STRATA_PF_FUSED", nullptr, rec));
-        CHECK(!strata::prefill::own_only_user_named("STRATA_PF_FUSED_Q8D", "", rec));
-        // a user who set STRATA_PF_FUSED itself (either value) before the initialiser: not recorded, so still the user's
+        CHECK(!nostroma::prefill::own_only_set_by_build("NOSTROMA_PF_FUSED_Q8D", rec));
+        CHECK(std::string(get("NOSTROMA_PF_FUSED_Q8D")) == "0");        // kept
+        CHECK(nostroma::prefill::own_only_set_by_build("NOSTROMA_PF_FUSED", rec));
+        CHECK(std::string(get("NOSTROMA_PF_FUSED")) == "1");
+        CHECK(nostroma::prefill::own_only_set_by_build("NOSTROMA_PF_FUSED_Q2N", rec));
+        // "named by the user" (what the small-card rule reads): the build's own NOSTROMA_PF_FUSED=1 is not, the same text from the user is, "" is neither
+        CHECK(!nostroma::prefill::own_only_user_named("NOSTROMA_PF_FUSED", get("NOSTROMA_PF_FUSED"), rec));
+        CHECK(nostroma::prefill::own_only_user_named("NOSTROMA_PF_FUSED_Q8D", get("NOSTROMA_PF_FUSED_Q8D"), rec));
+        CHECK(!nostroma::prefill::own_only_user_named("NOSTROMA_PF_FUSED", nullptr, rec));
+        CHECK(!nostroma::prefill::own_only_user_named("NOSTROMA_PF_FUSED_Q8D", "", rec));
+        // a user who set NOSTROMA_PF_FUSED itself (either value) before the initialiser: not recorded, so still the user's
         for (const char* v : {"1", "0"}) {
             env.clear();
             rec.clear();
-            env.emplace_back("STRATA_PF_FUSED", v);
-            strata::prefill::own_only_apply_defaults(false, get, set, rec);
-            CHECK(!strata::prefill::own_only_set_by_build("STRATA_PF_FUSED", rec));
-            CHECK(strata::prefill::own_only_user_named("STRATA_PF_FUSED", get("STRATA_PF_FUSED"), rec));
-            CHECK(std::string(get("STRATA_PF_FUSED")) == v);
+            env.emplace_back("NOSTROMA_PF_FUSED", v);
+            nostroma::prefill::own_only_apply_defaults(false, get, set, rec);
+            CHECK(!nostroma::prefill::own_only_set_by_build("NOSTROMA_PF_FUSED", rec));
+            CHECK(nostroma::prefill::own_only_user_named("NOSTROMA_PF_FUSED", get("NOSTROMA_PF_FUSED"), rec));
+            CHECK(std::string(get("NOSTROMA_PF_FUSED")) == v);
         }
         // nothing set: every name of the list is the build's; the HIP list is shorter
         env.clear();
         rec.clear();
-        strata::prefill::own_only_apply_defaults(true, get, set, rec);
+        nostroma::prefill::own_only_apply_defaults(true, get, set, rec);
         CHECK(rec.size() == hip.size());
-        CHECK(strata::prefill::own_only_set_by_build("STRATA_PF_FUSED", rec));
-        CHECK(!strata::prefill::own_only_set_by_build("STRATA_PF_FUSED_SM75", rec));
+        CHECK(nostroma::prefill::own_only_set_by_build("NOSTROMA_PF_FUSED", rec));
+        CHECK(!nostroma::prefill::own_only_set_by_build("NOSTROMA_PF_FUSED_SM75", rec));
         // the process-wide list is empty until the engine's initialiser (a binary that does not link prefill.cpp) runs
-        CHECK(strata::prefill::own_only_recorded().empty());
-        CHECK(!strata::prefill::own_only_user_named("STRATA_PF_FUSED", nullptr));
-        CHECK(strata::prefill::own_only_user_named("STRATA_PF_FUSED", "1"));   // no record: the user's
-        CHECK(!strata::prefill::own_only_build());                              // not an engine without MMQ until its initialiser says so
-        strata::prefill::own_only_build_flag() = true;
-        CHECK(strata::prefill::own_only_build());
+        CHECK(nostroma::prefill::own_only_recorded().empty());
+        CHECK(!nostroma::prefill::own_only_user_named("NOSTROMA_PF_FUSED", nullptr));
+        CHECK(nostroma::prefill::own_only_user_named("NOSTROMA_PF_FUSED", "1"));   // no record: the user's
+        CHECK(!nostroma::prefill::own_only_build());                              // not an engine without MMQ until its initialiser says so
+        nostroma::prefill::own_only_build_flag() = true;
+        CHECK(nostroma::prefill::own_only_build());
     }
     if (failed) {
         std::fprintf(stderr, "own_only_switches_test: %d check(s) failed\n", failed);

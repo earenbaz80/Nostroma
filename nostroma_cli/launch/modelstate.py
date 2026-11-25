@@ -132,7 +132,7 @@ def mmproj_name(catalog, family: str | None) -> str:
         name = (families.get(family or "") or {}).get("mmproj")
         if name:
             return str(name)
-        mod = catalog.strata.setup_module()
+        mod = catalog.nostroma.setup_module()
         if mod is not None and getattr(mod, "MMPROJ", None):
             return str(mod.MMPROJ)
     except Exception:                                        # noqa: BLE001
@@ -230,7 +230,7 @@ def mmproj_size(catalog, family: str | None, name: str) -> int | None:
         _m, families, _c, _s = catalog.tables()
         pin = (families.get(family or "") or {}).get("mmproj_sha256")
         if not pin:
-            mod = catalog.strata.setup_module()
+            mod = catalog.nostroma.setup_module()
             pin = (getattr(mod, "ISTA_FILES", None) or {}).get(name) if mod is not None else None
         return int(pin[0]) if pin else None
     except Exception:                                        # noqa: BLE001
@@ -265,7 +265,7 @@ def reader_present(catalog, family: str | None, data_folders, own: Path | None =
         except OSError:
             pass
     try:                                                     # no pinned file: a verified Unsloth mmproj-F16.gguf the person already has counts, as in setup
-        mod = catalog.strata.setup_module()
+        mod = catalog.nostroma.setup_module()
         alt = (getattr(mod, "ALT_READERS", None) or {}).get(name) if mod is not None else None
         if alt is None:
             return False

@@ -7,14 +7,14 @@
 // canonical Q2_0 pack (its own blob layout) is refused: those kernels are AVX-512 only.  A native pack's Q2_0
 // rows are not routed here: q2_native_kernels() is false when cpu_avx2_ok() is, so they use ggml-cpu too.
 // Local port of the approach in https://github.com/earenbaz80/Nostroma/pull/1077 onto main e8ca9af.
-#include "strata/kernels/cpu/expert.hpp"
-#include "strata/kernels/cpu/iq_avx2.hpp"
-#include "strata/kernels/cpu/iq_avx512.hpp"
-#include "strata/kernels/cpu/kq_avx1.hpp"
-#include "strata/kernels/cpu/kq_avx2.hpp"
-#include "strata/kernels/cpu/iq_avx1.hpp"
-#include "strata/kernels/cpu/nvfp4_avx2.hpp"
-#include "strata/kernels/cpu/nvfp4_avx512.hpp"
+#include "nostroma/kernels/cpu/expert.hpp"
+#include "nostroma/kernels/cpu/iq_avx2.hpp"
+#include "nostroma/kernels/cpu/iq_avx512.hpp"
+#include "nostroma/kernels/cpu/kq_avx1.hpp"
+#include "nostroma/kernels/cpu/kq_avx2.hpp"
+#include "nostroma/kernels/cpu/iq_avx1.hpp"
+#include "nostroma/kernels/cpu/nvfp4_avx2.hpp"
+#include "nostroma/kernels/cpu/nvfp4_avx512.hpp"
 
 #include <atomic>
 #include <cmath>
@@ -26,14 +26,14 @@
 #include <arm_neon.h>
 #endif
 
-namespace strata::kernels::cpu {
+namespace nostroma::kernels::cpu {
 namespace {
 
 std::atomic<bool> oracle_q8_0{false};
 
 [[noreturn]] void unsupported(const char* what) {
     std::fprintf(stderr,
-                 "strata: %s is x86-only (AVX2/AVX-512) and this build has no portable version.\n"
+                 "nostroma: %s is x86-only (AVX2/AVX-512) and this build has no portable version.\n"
                  "        On this CPU use a native GGUF pack (IQ2_XS, IQ3_S, IQ4_NL, Q4_K, ...).\n",
                  what);
     std::abort();
@@ -199,7 +199,7 @@ void bf16_rows_dot_multi(const uint16_t* w, int rows, int cols, const float* x, 
 // aarch64 has none of the x86 kernels: these names are referenced by shared code but reached only behind
 // the x86 feature checks (all of them report unsupported here).
 [[noreturn]] static void cpu_kernel_unreachable(const char* name) {
-    std::fprintf(stderr, "strata: %s is an x86 kernel and cannot run on this CPU\n", name);
+    std::fprintf(stderr, "nostroma: %s is an x86 kernel and cannot run on this CPU\n", name);
     std::abort();
 }
 void act_quant_q8_1_avx1(const float* x, int n, ActQ& a) { cpu_kernel_unreachable("act_quant_q8_1_avx1"); }
@@ -219,4 +219,4 @@ void q2_0_gguf_rows_multi_avx1(const uint8_t* w, size_t row_bytes, int nblocks, 
 void q8k_quant_avx1(const float* x, void* y, int64_t n) { cpu_kernel_unreachable("q8k_quant_avx1"); }
 // (the trellis rows are tq_cpu.cpp's: its scalar kernel runs here, as in the Metal build)
 
-}  // namespace strata::kernels::cpu
+}  // namespace nostroma::kernels::cpu

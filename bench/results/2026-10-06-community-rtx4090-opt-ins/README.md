@@ -1,4 +1,4 @@
-# What two opt-ins cost on a single-GPU RTX 4090: `STRATA_KV_PREFETCH=1`, and `"parallel": 2` with `--batch-mtp`
+# What two opt-ins cost on a single-GPU RTX 4090: `NOSTROMA_KV_PREFETCH=1`, and `"parallel": 2` with `--batch-mtp`
 
 Measured on 2026-10-06 by [Dmitry-B](https://github.com/Dmitry-B), on the machine and with the working configuration
 described in
@@ -7,7 +7,7 @@ described in
 `--spec 4 --mtp`, `draft_vocab=cyrillic`). Engine 0.1.40. Not a version comparison: two checks of two opt-ins, each
 with both arms measured on the same day on the same running server.
 
-Short answer for this PC: **both stay off.** `STRATA_KV_PREFETCH=1` is a 2–4% loss here, because with no
+Short answer for this PC: **both stay off.** `NOSTROMA_KV_PREFETCH=1` is a 2–4% loss here, because with no
 `--kv-resident` there is nothing to overlap. `"parallel": 2` costs 28% of single-client decode and only pays when a
 third or fourth client appears. `--batch-mtp` cannot admit at all with this model's MTP pack.
 
@@ -21,13 +21,13 @@ third or fourth client appears. `--batch-mtp` cannot admit at all with this mode
 | `conc_bench.py` | the concurrency script: N identical-shaped requests sent at the same time |
 | `runs-parallel-off.json`, `runs-parallel-2.json`, `runs-parallel-2-batch-mtp.json` | the three concurrency arms |
 
-## 1. `STRATA_KV_PREFETCH=1` (#732)
+## 1. `NOSTROMA_KV_PREFETCH=1` (#732)
 
 Measured with the machine's working configuration plus that one environment variable, three runs at 32,768 and
 131,072 prompt tokens, code prompts, greedy, 256-token cap. The arm it is compared against is the 0.1.40 code arm of
 the paired report — same day, same arguments, no such variable.
 
-| Configuration | Prompt tok/s without → with `STRATA_KV_PREFETCH=1` |
+| Configuration | Prompt tok/s without → with `NOSTROMA_KV_PREFETCH=1` |
 | --- | --- |
 | 32768-prompt | 3136.3 → 3001.8 (-4.3%) |
 | 131072-prompt | 3118.5 → 3052.3 (-2.1%) |
@@ -65,10 +65,10 @@ only: `"parallel": 2`, and `--batch-mtp` in `args`.
 `"parallel": 2` (no `--batch-mtp`):
 
 ```
-strata generate: --batch: 2 slot sessions on CUDA0 (2.88 GiB each); 7.98 GiB free
-strata generate: --batch 2: the slot sessions take 5.76 GiB of VRAM on CUDA0 that the expert cache would otherwise hold
-strata generate: expert cache 3329 slots, 5.41 GiB of VRAM; policy is PROFILE
-strata verify: batch windows of up to 2 sequences (layers [0, 48))
+nostroma generate: --batch: 2 slot sessions on CUDA0 (2.88 GiB each); 7.98 GiB free
+nostroma generate: --batch 2: the slot sessions take 5.76 GiB of VRAM on CUDA0 that the expert cache would otherwise hold
+nostroma generate: expert cache 3329 slots, 5.41 GiB of VRAM; policy is PROFILE
+nostroma verify: batch windows of up to 2 sequences (layers [0, 48))
 ```
 
 Without it the same start reports `expert cache 6946 slots, 11.17 GiB of VRAM`. So on this model at this context a
@@ -79,12 +79,12 @@ the numbers above are the two starts of this experiment, taken from the same ser
 `--batch-mtp` on top of it — the draft layer cannot be used for an admission, and the request never really starts:
 
 ```
-strata batch: MTP admission for slot 0 failed: mtp: unsupported native MMVQ GGML type
+nostroma batch: MTP admission for slot 0 failed: mtp: unsupported native MMVQ GGML type
 ```
 
 After that the engine died and the server started it again; the two clients that were in flight finished about 300 s
 later having received 1 and 5 tokens. The MTP layer here is the pack setup downloaded for this model
-(`Strata-data/mtp/rt`), and its quant is MMVQ. This is the same family as #1012 (a `--batch` request whose engine
+(`Nostroma-data/mtp/rt`), and its quant is MMVQ. This is the same family as #1012 (a `--batch` request whose engine
 died during its prompt read ends only after 300 s) and #1063 (`--batch-mtp` exits on the first admission with a
 draft-vocab problem), so it is reported as a data point, not as a new bug claim. The fixed behaviour on 0.1.40.1 is
 measured in [2026-10-06-community-rtx4090-toolcall-hotfix](../2026-10-06-community-rtx4090-toolcall-hotfix/README.md).

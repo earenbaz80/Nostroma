@@ -54,8 +54,8 @@ struct MoeArgs {
 // The SSD-streaming arena (metal/src/engine/stream.cpp): with function constant 20 set, expert e of the layer lies in
 // an arena slot, smap[e] = (chunk << 28) | its 16 KiB page in that chunk; the chunks are W (buffer 0) and buffers 7..9
 // (gate_off / up_off / down_off are then offsets inside the slot).  The same block is in moe_mm.metal.
-#ifndef STRATA_ARENA_METAL
-#define STRATA_ARENA_METAL
+#ifndef NOSTROMA_ARENA_METAL
+#define NOSTROMA_ARENA_METAL
 constant bool kArenaFc [[function_constant(20)]];
 constant bool kArena = is_function_constant_defined(kArenaFc) && kArenaFc;
 static inline device const uchar* arena_slot(uint v, device const uchar* W, device const uchar* W1, device const uchar* W2,
@@ -455,18 +455,18 @@ DN_SET(T_Q2_0R)
 DN_SET(T_IQ4_NL)
 // UD files at expert widths divisible by 256: IQ4_XS / IQ3_S downs read raw h like the gate/up's raw-kind formats (the generic
 // X / Dec); the K-quants take moe_down_k (XD above).  Same host names, moe_down_<type>_<L>_<R>_<S>.
-#ifdef STRATA_KQ_DOWN   // the host defines it when a layer's down is one of these types (window.cpp kq_down_prelude): today's sets compile exactly what they did
+#ifdef NOSTROMA_KQ_DOWN   // the host defines it when a layer's down is one of these types (window.cpp kq_down_prelude): today's sets compile exactly what they did
 DN_SET(T_IQ4_XS) DN_SET(T_IQ3_S)
 #define DNK(F, L, R, S) template [[host_name("moe_down_" #F "_" #L "_" #R "_" #S)]] kernel decltype(moe_down_k<F, L, R, S>) moe_down_k<F, L, R, S>;
 #define DNK_SET(F) DNK(F, 8, 1, 4) DNK(F, 8, 2, 4) DNK(F, 8, 4, 4) DNK(F, 8, 1, 8) DNK(F, 8, 2, 8) DNK(F, 4, 1, 4) DNK(F, 4, 2, 4)                    DNK(F, 4, 4, 4) DNK(F, 16, 1, 4) DNK(F, 16, 2, 4) DNK(F, 32, 1, 4) DNK(F, 2, 2, 4)
 DNK_SET(T_Q4_K) DNK_SET(T_Q5_K) DNK_SET(T_Q6_K) DNK_SET(T_Q3_K)
-#endif   // STRATA_KQ_DOWN
-// Gyro (agentionai's trellis experts): TQK6 / TQ2_T gate/up, TQK7 / TQ2_T down (the CUDA engine's STRATA_GU_FMTS / D_FMTS)
+#endif   // NOSTROMA_KQ_DOWN
+// Gyro (agentionai's trellis experts): TQK6 / TQ2_T gate/up, TQK7 / TQ2_T down (the CUDA engine's NOSTROMA_GU_FMTS / D_FMTS)
 GU_SET(T_TQK6) GU_SET(T_TQ2T)
 DN_SET(T_TQK7) DN_SET(T_TQ2T)
 
-#ifdef STRATA_METAL_F16   // window.cpp compiles it in only under STRATA_METAL_F16=1
-// ---- the fp16 path (STRATA_METAL_F16): x from the window's half plane, h also as half for the down
+#ifdef NOSTROMA_METAL_F16   // window.cpp compiles it in only under NOSTROMA_METAL_F16=1
+// ---- the fp16 path (NOSTROMA_METAL_F16): x from the window's half plane, h also as half for the down
 template <int F, int LPR, int NR, int NE>
 static inline void gu_body16(device const uchar* g0, device const uchar* u0, device const half* x,
                              device const float* xs16, device float* h, device half* h16, device const int* etok, int c,
@@ -595,4 +595,4 @@ GU16(T_Q2_0, 32, 1, 8) GU16(T_Q2_0, 16, 1, 4) GU16(T_Q2_0, 16, 2, 4) GU16(T_Q2_0
 DN16(T_Q2_0R, 8, 1, 4) DN16(T_Q2_0R, 8, 2, 4) DN16(T_Q2_0R, 8, 4, 4) DN16(T_Q2_0R, 4, 1, 4) DN16(T_Q2_0R, 4, 2, 4)
 DN16(T_Q2_0R, 4, 4, 4) DN16(T_Q2_0R, 8, 1, 8) DN16(T_Q2_0R, 8, 2, 8) DN16(T_Q2_0R, 16, 1, 4) DN16(T_Q2_0R, 16, 2, 4)
 DN16(T_Q2_0R, 32, 1, 4) DN16(T_Q2_0R, 2, 2, 4)
-#endif   // STRATA_METAL_F16
+#endif   // NOSTROMA_METAL_F16

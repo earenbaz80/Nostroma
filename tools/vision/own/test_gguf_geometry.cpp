@@ -1,6 +1,6 @@
 // tools/vision/own/test_gguf_geometry.cpp - the GGUF reader and the geometry, on files made here and (given paths) on real mmproj files.
 //
-//   strata-vision-own-test [mmproj.gguf ...]
+//   nostroma-vision-own-test [mmproj.gguf ...]
 // Exit 0 when every check passes.  A real mmproj given on the command line is parsed and its geometry printed; the two known Qwen
 // towers (27 layers, width 1152, out 2560 or 2048) are also checked against the numbers read from their headers.
 #include "own_reader.h"
@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 
-using namespace strata_vit;
+using namespace nostroma_vit;
 
 static int g_fail = 0;
 #define CHECK(c) do { if (!(c)) { std::printf("FAIL %s:%d: %s\n", __FILE__, __LINE__, #c); ++g_fail; } } while (0)
@@ -67,12 +67,12 @@ int main(int argc, char** argv) {
         while (vit_gpu_retry_context(true, true, true, tries)) ++tries;
         CHECK(tries == kVitCtxRetries);
     }
-    {   // the default tower (no --tower): auto, or STRATA_VISION_TOWER's value when it is a known one
+    {   // the default tower (no --tower): auto, or NOSTROMA_VISION_TOWER's value when it is a known one
         std::string note;
         CHECK(vision_tower_default(nullptr, note) == "auto" && note.empty());
         CHECK(vision_tower_default("", note) == "auto" && note.empty());
         CHECK(vision_tower_default("mtmd", note) == "mtmd" && vision_tower_default("own", note) == "own" && vision_tower_default("auto", note) == "auto" && note.empty());
-        CHECK(vision_tower_default("llama", note) == "auto" && note.find("STRATA_VISION_TOWER=llama") != std::string::npos);
+        CHECK(vision_tower_default("llama", note) == "auto" && note.find("NOSTROMA_VISION_TOWER=llama") != std::string::npos);
     }
     {   // `--tower auto` on the CPU path by CPU class (owner 11-11: ours below AVX2 too), for both reader files' geometry; the explicit settings are never overruled
         VitGeometry g38;      // the Qwen3.8 tower (projection 2560) and the Qwen3.6 tower (2048): the two public mmproj files' numbers
@@ -107,7 +107,7 @@ int main(int argc, char** argv) {
             CHECK(vision_tower_resolve("auto", own_cpu_reader_supported(g_rms, tier, why)) == "mtmd");
         }
 #if defined(__x86_64__) || defined(_M_X64)
-        // the tier mask (STRATA_FORCE_ISA) caps the tier a CPU runs, never raises it
+        // the tier mask (NOSTROMA_FORCE_ISA) caps the tier a CPU runs, never raises it
         CHECK(quant::best_isa_for(skylake_x, "sse41") == quant::Isa::Sse41 && quant::best_isa_for(skylake_x, "avx") == quant::Isa::Avx && quant::best_isa_for(skylake_x, "avx2") == quant::Isa::Avx2);
         CHECK(quant::best_isa_for(skylake_x, "scalar") == quant::Isa::Scalar && quant::best_isa_for(sandy, "avx2") == quant::Isa::Avx && quant::best_isa_for(nehalem, "avx512") == quant::Isa::Sse41);
         CHECK(quant::isa_ok_for(ivy, quant::Isa::Avx) && !quant::isa_ok_for(ivy, quant::Isa::Avx2) && !quant::isa_ok_for(nehalem, quant::Isa::Avx) && !quant::isa_ok_for(none_, quant::Isa::Sse41));
@@ -120,28 +120,28 @@ int main(int argc, char** argv) {
         CHECK(vision_tower_resolve(vision_tower_default("mtmd", note), true) == "mtmd" && vision_tower_resolve(vision_tower_default("own", note), false) == "own");
         CHECK(vision_tower_resolve(vision_tower_default(nullptr, note), true) == "own");     // no setting at all: auto
     }
-    {   // a start failure under auto comes back as kOwnStartFailed with its reason (nothing on stdout), so strata-vision can start mtmd's reader
+    {   // a start failure under auto comes back as kOwnStartFailed with its reason (nothing on stdout), so nostroma-vision can start mtmd's reader
         OwnReaderOptions o;
-        o.mmproj = "/nonexistent/strata-own-test-mmproj.gguf";
+        o.mmproj = "/nonexistent/nostroma-own-test-mmproj.gguf";
         std::string why;
         o.start_error = &why;
         CHECK(own_reader_run(o) == kOwnStartFailed && why.find("cannot load the vision encoder") != std::string::npos);
     }
     {   // the test hook names one point at a time
 #ifdef _WIN32
-        _putenv_s("STRATA_VIT_TEST_FAIL", "load");
+        _putenv_s("NOSTROMA_VIT_TEST_FAIL", "load");
 #else
-        setenv("STRATA_VIT_TEST_FAIL", "load", 1);
+        setenv("NOSTROMA_VIT_TEST_FAIL", "load", 1);
 #endif
         CHECK(own_reader_inject_failure("load") && !own_reader_inject_failure("gpu") && !own_reader_inject_failure("warmup"));
 #ifdef _WIN32
-        _putenv_s("STRATA_VIT_TEST_FAIL", "");
+        _putenv_s("NOSTROMA_VIT_TEST_FAIL", "");
 #else
-        unsetenv("STRATA_VIT_TEST_FAIL");
+        unsetenv("NOSTROMA_VIT_TEST_FAIL");
 #endif
         CHECK(!own_reader_inject_failure("load"));
     }
-    const std::string tmp = std::string(std::getenv("TMPDIR") ? std::getenv("TMPDIR") : ".") + "/strata_own_test_" + std::to_string((long) std::rand()) + ".gguf";
+    const std::string tmp = std::string(std::getenv("TMPDIR") ? std::getenv("TMPDIR") : ".") + "/nostroma_own_test_" + std::to_string((long) std::rand()) + ".gguf";
 
     // --- 1. a file with every value kind and the four tensor types ---
     {
@@ -246,6 +246,6 @@ int main(int argc, char** argv) {
         CHECK(geo.merger_in == 4608 && geo.merger_hidden == 4608);
     }
 
-    std::printf(g_fail ? "strata-vision-own-test: %d FAILED\n" : "strata-vision-own-test: ok\n", g_fail);
+    std::printf(g_fail ? "nostroma-vision-own-test: %d FAILED\n" : "nostroma-vision-own-test: ok\n", g_fail);
     return g_fail ? 1 : 0;
 }

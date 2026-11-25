@@ -1,4 +1,4 @@
-// src/kernels/ple_iq4nl_dequant_test.cpp - STRATA_PLE_COMPACT: ple_iq4nl_dequant (raw IQ4_NL PLE rows to floats on the
+// src/kernels/ple_iq4nl_dequant_test.cpp - NOSTROMA_PLE_COMPACT: ple_iq4nl_dequant (raw IQ4_NL PLE rows to floats on the
 // device) against iq4nl_dequant_row (the host decode the prompt path used before), bit for bit.  Synthetic bytes, no model.
 //
 //   - every one of the 65,536 fp16 scale patterns (infinities and NaNs included: those are compared as "both NaN") in
@@ -8,8 +8,8 @@
 //     writes for such a row);
 //   - an odd row count (not a multiple of the 256-thread block).
 // Exit 77 without a CUDA device.
-#include "strata/kernels/ngram.hpp"
-#include "strata/kernels/ple.hpp"
+#include "nostroma/kernels/ngram.hpp"
+#include "nostroma/kernels/ple.hpp"
 
 #include <cuda_runtime.h>
 
@@ -21,7 +21,7 @@
 #include <vector>
 
 namespace {
-using namespace strata::kernels;
+using namespace nostroma::kernels;
 
 int check(const std::vector<uint8_t>& raw, int64_t rows, const char* what) {
     float* dout = nullptr;

@@ -20,11 +20,11 @@ def main():
     ap.add_argument("model")
     ap.add_argument("outdir")
     ap.add_argument("dump")
-    ap.add_argument("--gguf-py", help="optional: a folder that holds llama.cpp's gguf package, to compare against it (default: tools/strata_gguf.py)")
+    ap.add_argument("--gguf-py", help="optional: a folder that holds llama.cpp's gguf package, to compare against it (default: tools/nostroma_gguf.py)")
     a = ap.parse_args()
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "tools"))
     if a.gguf_py:
-        os.environ["STRATA_GGUF_PY"] = a.gguf_py
+        os.environ["NOSTROMA_GGUF_PY"] = a.gguf_py
     from _paths import gguf_lib
     gguf = gguf_lib()
     quants = gguf.quants
@@ -47,7 +47,7 @@ def main():
             continue
         name, ty = p[0], int(p[1])
         t = tensors[name]
-        if t.tensor_type.name == "Q2_0":   # Strata's type 42, not in gguf-py's dequantizers: (code - 1) * d, value j in byte j / 4 at bit 2 (j % 4)
+        if t.tensor_type.name == "Q2_0":   # Nostroma's type 42, not in gguf-py's dequantizers: (code - 1) * d, value j in byte j / 4 at bit 2 (j % 4)
             raw = np.ascontiguousarray(t.data).reshape(-1, 18)
             d = raw[:, :2].copy().view(np.float16).astype(np.float64).reshape(-1, 1)
             qs = raw[:, 2:]

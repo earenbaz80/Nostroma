@@ -2,8 +2,8 @@
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "strata/sycl_queue.hpp"
-#include "strata/kernels/qsa_prompt_attn_tla.hpp"
+#include "nostroma/sycl_queue.hpp"
+#include "nostroma/kernels/qsa_prompt_attn_tla.hpp"
 #include <cute/tensor.hpp>
 #include <cute/atom/copy_traits_xe_2d.hpp>
 #include <cfloat>
@@ -12,7 +12,7 @@
 #undef printf
 #endif
 
-namespace strata::kernels::tla_prompt_fp32 {
+namespace nostroma::kernels::tla_prompt_fp32 {
 constexpr int HD=256,G=12,CH=64,Threads=64;
 class Core;
 class Merge;
@@ -167,14 +167,14 @@ void launch(sycl::queue&queue,const float*q,QsaAttnPools p,const int32_t*ids,con
   });
 }
 }
-namespace strata::kernels {
+namespace nostroma::kernels {
 bool qsa_prompt_attn_tla_batch(const float*q,const QsaAttnPools&p,const int32_t*ids,const int32_t*steps,int64_t cap,
  const QsaShapes&sh,float*scratch,float*out,int64_t nq,void*stream){
  if(!q||!ids||!steps||!scratch||!out||!p.k_q||!p.v_q||!p.k_scale||!p.v_scale||!p.page_table||p.k_q4||p.v_q4||
     nq<=0||nq>32||cap<=0||cap>32768||sh.head_dim!=256||sh.n_head_kv!=2||sh.n_head!=24||sh.page_size<=0)return false;
  if((reinterpret_cast<uintptr_t>(p.v_q)&3)||(reinterpret_cast<uintptr_t>(q)&63)||(reinterpret_cast<uintptr_t>(p.k_q)&63))return false;
- auto*queue=strata::q_of(stream);
-#ifdef STRATA_HAVE_ZE
+ auto*queue=nostroma::q_of(stream);
+#ifdef NOSTROMA_HAVE_ZE
  if(queue->get_backend()!=sycl::backend::ext_oneapi_level_zero)return false;
  const auto device=sycl::get_native<sycl::backend::ext_oneapi_level_zero>(queue->get_device());
  static thread_local ze_device_handle_t cached_device=nullptr;
@@ -190,7 +190,7 @@ bool qsa_prompt_attn_tla_batch(const float*q,const QsaAttnPools&p,const int32_t*
 #endif
  tla_prompt_fp32::launch(*queue,q,p,ids,steps,int(cap),sh,scratch,out,int(nq));
  static thread_local bool announced=false;
- if(!announced){std::fprintf(stderr,"strata: using SYCL TLA FP32 prompt attention\n");announced=true;}
+ if(!announced){std::fprintf(stderr,"nostroma: using SYCL TLA FP32 prompt attention\n");announced=true;}
  return true;
 }
 }

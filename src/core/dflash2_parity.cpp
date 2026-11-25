@@ -6,7 +6,7 @@
 // target embedding rows of the anchor and the mask token, and the torch answer (tokens, probabilities, the 8 final normalized rows).  The engine's
 // drafter reads the same pack (Q8_0 weights, Q8_1 activations), so the rows agree to quantization noise, not bitwise: the test checks the rows'
 // cosine similarity, the walk's tokens and the time of a round.
-#include "strata/core/dflash2.hpp"
+#include "nostroma/core/dflash2.hpp"
 
 #include <cuda_runtime.h>
 
@@ -17,7 +17,7 @@
 #include <cstdlib>
 #include <vector>
 
-using strata::core::Dflash2Drafter;
+using nostroma::core::Dflash2Drafter;
 
 int main(int argc, char** argv) {
     if (argc < 3) { std::fprintf(stderr, "usage: dflash2_parity <pack> <case.bin> [rounds]\n"); return 2; }

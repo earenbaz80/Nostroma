@@ -12,7 +12,7 @@ token and image-prefix validation in charge of reuse.
 
 ## Use and limits
 
-Set `STRATA_CACHE_MESSAGE_BOUNDARY=1` before starting the engine, or pass
+Set `NOSTROMA_CACHE_MESSAGE_BOUNDARY=1` before starting the engine, or pass
 `nostroma launch --cache-boundary on` (it writes `cache_boundary` into the
 launch config, which the server turns into that variable; `off` removes it).
 
@@ -39,7 +39,7 @@ It can split prefill chunks and add snapshot cost to a fresh request.
 - Medium thinking: 2,048-token reasoning cap, 8,192-token output cap.
 - Physical GPU power limits stayed at 250 W and 280 W. No power increase.
 - Historical performance tests used an isolated engine based on official
-  v0.1.38 plus reviewed architectds/Strata changes (best, 05c0f36).
+  v0.1.38 plus reviewed architectds/Nostroma changes (best, 05c0f36).
   This PR contains only our change, ported to official main (99f3dbd).
   The historical timings are NOT a measured speedup of this pure-upstream port.
 

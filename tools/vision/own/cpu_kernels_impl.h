@@ -3,12 +3,12 @@
 //   struct V        float vector of V::W lanes: load(p) (unaligned), store(p), set1(x), zero(), operators + - *, fma(a, b, c) = a*b + c, vmax(a, b), reduce_add(v),
 //                   reduce_max(v), vexp(v) (expf, relative error below 3e-7 on [-87, 88])
 //   void conv16(const void* W, int kind, size_t off, int n, float* out)     n elements from W[off] (kind 1 BF16, 2 F16) to float
-//   STRATA_KN_MR    the rows of the register tile (NR is two vectors)
-// or, instead of struct V (STRATA_KN_RAW; the x86 tiers): the elementwise code below runs on a raw vector type VR with free inline functions VW (lanes),
+//   NOSTROMA_KN_MR    the rows of the register tile (NR is two vectors)
+// or, instead of struct V (NOSTROMA_KN_RAW; the x86 tiers): the elementwise code below runs on a raw vector type VR with free inline functions VW (lanes),
 //   vr_load, vr_store(p, v), vr_set1, vr_zero, vr_add, vr_sub, vr_mul, vr_div, vr_fma(a, b, c) = a*b + c, vr_max, vr_hadd, vr_hmax, vr_exp, vr_sqrt1, and the tier
-//   brings its own micro (STRATA_KN_HAS_MICRO).  MSVC kept the wrapper struct in memory (RESULTS-OWN-3V.md 12.14); for the other tiers VR is V through the
+//   brings its own micro (NOSTROMA_KN_HAS_MICRO).  MSVC kept the wrapper struct in memory (RESULTS-OWN-3V.md 12.14); for the other tiers VR is V through the
 //   adapters below.  Both forms are the same operations in the same order, so the results are bit-identical.
-//   STRATA_KN_NAME  the tier's name, STRATA_KN_GETTER the table getter's name
+//   NOSTROMA_KN_NAME  the tier's name, NOSTROMA_KN_GETTER the table getter's name
 //   KN_MIN(a, b), KN_MAX(a, b), KN_COPY(dst, src, n floats), KN_ZERO(dst, n floats), V::sqrt1(x) (a correctly rounded float square root)
 // No standard-library header and no inline library function here (cpu_tier.h says why): the wider tiers define the KN_ helpers as their own internal
 // functions; the scalar tier, compiled at the baseline, as std::min / std::max / std::memcpy / std::memset (the code GCC vectorises best there: with
@@ -17,11 +17,11 @@
 
 #include "cpu_tier.h"
 
-namespace strata_vit {
+namespace nostroma_vit {
 namespace {      // every tier's kernels are internal to its translation unit (the vector types of the tiers share a name)
 namespace kn {
 
-#ifdef STRATA_KN_RAW
+#ifdef NOSTROMA_KN_RAW
 constexpr int W = VW;
 #else
 constexpr int W = V::W;
@@ -42,10 +42,10 @@ inline VR vr_exp(VR a) { return vexp(a); }
 inline float vr_sqrt1(float x) { return V::sqrt1(x); }
 #endif
 constexpr int NR = 2 * W;
-constexpr int MRF = STRATA_KN_MR;
+constexpr int MRF = NOSTROMA_KN_MR;
 
-// ---- the register-tiled product (a tier may bring its own `micro` with the same summation order: STRATA_KN_HAS_MICRO) ----
-#ifndef STRATA_KN_HAS_MICRO
+// ---- the register-tiled product (a tier may bring its own `micro` with the same summation order: NOSTROMA_KN_HAS_MICRO) ----
+#ifndef NOSTROMA_KN_HAS_MICRO
 template <int MR>
 inline void micro(const float* A, size_t lda, const float* B, size_t ldb, int K, float* C, size_t ldc, int init, const float* bias) {
     V acc[MR][2];
@@ -78,7 +78,7 @@ inline void tile_rows(const float* A, size_t lda, int m, const float* B, size_t 
     for (; r < m; ++r) micro<1>(A + (size_t) r * lda, lda, B, ldb, K, C + (size_t) r * ldc, ldc, init, bias);
 }
 
-#ifdef STRATA_KN_RAW
+#ifdef NOSTROMA_KN_RAW
 // The same product for a column tile of ONE vector (a last tile of at most W columns: the attention's P*V with a head size of 72 has 8 left over): each
 // column's sum is the same FMA chain in the same order as in micro (one lane of the same intrinsics), so the results are bit-identical; half the work of a
 // two-vector tile.  Only in the raw-vector tiers (AVX2, AVX-512), where vr_fma is the micro's own FMA intrinsic.
@@ -112,7 +112,7 @@ void gemm(const float* A, size_t lda, int M, const float* B, size_t ldb, int K, 
         if (nc == NR) {
             tile_rows(A, lda, M, B + j0, ldb, K, C + j0, ldc, init, bias ? bias + j0 : nullptr);
         }
-#ifdef STRATA_KN_RAW
+#ifdef NOSTROMA_KN_RAW
         else if (nc <= W && cpu_tier_one_vector_tail()) {      // a last tile of one vector or less: the one-vector product, through a one-vector buffer
             float bb[W] = {0}, cb[MRF][W];
             if (bias) KN_COPY(bb, bias + j0, nc);
@@ -274,10 +274,10 @@ void pos_add(float* xr, const float* a, const float* b, const float* c, const fl
 }  // namespace kn
 }  // namespace
 
-const CpuOps& STRATA_KN_GETTER() {
-    static const CpuOps ops = {STRATA_KN_NAME, kn::MRF, kn::NR, kn::pack_w, kn::conv, kn::gemm, kn::gelu, kn::layernorm, kn::add, kn::round16, kn::softmax_update,
+const CpuOps& NOSTROMA_KN_GETTER() {
+    static const CpuOps ops = {NOSTROMA_KN_NAME, kn::MRF, kn::NR, kn::pack_w, kn::conv, kn::gemm, kn::gelu, kn::layernorm, kn::add, kn::round16, kn::softmax_update,
                                kn::rope_row, kn::pos_add};
     return ops;
 }
 
-}  // namespace strata_vit
+}  // namespace nostroma_vit

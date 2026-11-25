@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Strata contrast probe.
+ * Nostroma contrast probe.
  *
  *   node scripts/contrast.mjs
  *

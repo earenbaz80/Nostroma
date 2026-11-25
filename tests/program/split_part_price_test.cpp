@@ -4,14 +4,14 @@
 // 4090 (not) split the 4090's loan was 2882 MiB for a chunk whose buffers there take 3014 MiB, and its prompt path fell
 // back to 1024-token chunks.  No GPU: the devices are faked (a "current device" and a price per device).  No real
 // mixed-card run backs this test.
-#include "strata/program/split_ring.hpp"
+#include "nostroma/program/split_ring.hpp"
 
 #include <cstdint>
 #include <cstdio>
 #include <vector>
 
-using strata::program::split_lend_slots;
-using strata::program::split_part_figure;
+using nostroma::program::split_lend_slots;
+using nostroma::program::split_part_figure;
 
 namespace {
 int failed = 0;
@@ -20,7 +20,7 @@ int failed = 0;
 constexpr uint64_t MiB = 1ull << 20;
 int current = 0;                         // the faked current device
 
-struct FakeOnDevice {                    // strata::core::OnDevice's contract: -1 leaves the device alone
+struct FakeOnDevice {                    // nostroma::core::OnDevice's contract: -1 leaves the device alone
     int previous = -1;
     explicit FakeOnDevice(int dev) { if (dev >= 0 && dev != current) { previous = current; current = dev; } }
     ~FakeOnDevice() { if (previous >= 0) current = previous; }

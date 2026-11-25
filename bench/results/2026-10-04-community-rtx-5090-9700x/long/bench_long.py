@@ -13,9 +13,9 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-ROOT = Path(r"D:\AI\Strata")
-PACK = Path(r"D:\AI\Strata-data\packs\iq3_xxs")
-OUT = Path(r"D:\AI\Strata-data\community-bench-20261004-long")
+ROOT = Path(r"D:\AI\Nostroma")
+PACK = Path(r"D:\AI\Nostroma-data\packs\iq3_xxs")
+OUT = Path(r"D:\AI\Nostroma-data\community-bench-20261004-long")
 URL = "http://127.0.0.1:5310"
 # 262144 context, 8-token slack, 256-token answer.
 FULL = 262144 - 8 - 256
@@ -107,7 +107,7 @@ def main():
     import sys
     OUT.mkdir(parents=True, exist_ok=True)
     sys.path[:0] = [str(ROOT), str(ROOT / "tools")]
-    from strata_tokenizer import Tokenizer
+    from nostroma_tokenizer import Tokenizer
     from serve.frontend import ChatTemplate, openai_to_messages
 
     directory = PACK / "tokenizer"

@@ -1,5 +1,5 @@
 {
-  "exe": "/work/stock/build-hip/strata",
+  "exe": "/work/stock/build-hip/nostroma",
   "args": [
     "--pack",
     "/m/packs/iq3_s",
@@ -8,7 +8,7 @@
     "--ple-gguf",
     "/m/gguf/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf",
     "--expert-profile",
-    "/home/user/prod-bin/strata-6add1a7/expert-profile.bin",
+    "/home/user/prod-bin/nostroma-6add1a7/expert-profile.bin",
     "--expert-cache",
     "auto",
     "--prefill",
@@ -28,7 +28,7 @@
   ],
   "cwd": "/work/stock",
   "tokenizer": "/m/packs/iq3_s/tokenizer",
-  "model_name": "strata-split",
+  "model_name": "nostroma-split",
   "log": "/results/split-stock/engine.log",
   "lib_dirs": [
     "/opt/rocm/lib"

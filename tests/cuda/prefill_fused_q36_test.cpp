@@ -1,5 +1,5 @@
 // prefill_fused_q36_test - the fused int8 expert kernels at Qwen3.6-35B-A3B's expert shape (n_embd 2048, n_ff 512, 256 experts, top 8):
-// the second copy of moe_fused_iq.cu that src/prefill/moe_fused_iq_q36.cu compiles (strata::prefill::fused_q36, moe_fused_q36.hpp), on
+// the second copy of moe_fused_iq.cu that src/prefill/moe_fused_iq_q36.cu compiles (nostroma::prefill::fused_q36, moe_fused_q36.hpp), on
 // random native expert blobs ([gate rows | up rows | down rows], GGUF blocks) and random routing, per format pair, against
 //   - a double-precision reference: the weights dequantized by ggml's own to_float, times the FP32 activations (gate/up, SwiGLU, down),
 //   - the same with the kernels' int8 rounding of the activations and H per 32 values ("the int8 model"), and
@@ -14,10 +14,10 @@
 // --host-blobs=N [--expect-fallback | --expect-no-fallback] (the first N experts' blobs in host memory: the weight-staging check fails for the launches that hold one and they take the
 // unstaged kernel, same output bits; timing part, use with --no-ref).
 // Exit 77 without a CUDA device of sm_80 or newer.
-#include "strata/prefill/moe_fused.hpp"
-#include "strata/prefill/moe_fused_q36.hpp"
-#include "strata/prefill/mmq_ids_margin.hpp"
-#include "strata/prefill/moe_mmq.hpp"
+#include "nostroma/prefill/moe_fused.hpp"
+#include "nostroma/prefill/moe_fused_q36.hpp"
+#include "nostroma/prefill/mmq_ids_margin.hpp"
+#include "nostroma/prefill/moe_mmq.hpp"
 
 #include "ggml.h"
 
@@ -37,9 +37,9 @@
 #include <vector>
 
 namespace {
-namespace mmq = strata::prefill::mmq;
-namespace fused = strata::prefill::fused;       // the grouping (the shape does not matter for it)
-namespace fq = strata::prefill::fused_q36;      // the kernels of the copy
+namespace mmq = nostroma::prefill::mmq;
+namespace fused = nostroma::prefill::fused;       // the grouping (the shape does not matter for it)
+namespace fq = nostroma::prefill::fused_q36;      // the kernels of the copy
 
 constexpr int N = fq::kQ36Embd, FF = fq::kQ36FF, FF2 = 2 * FF, K = 8, NEXP = 256, GROUP = 16;
 
@@ -598,13 +598,13 @@ int main(int argc, char** argv) {
     try {
         // the formats the Qwen3.6 engine sets up for itself (src/qwen35/q36_engine.cu, main): the K-quant, Q6_K and Q8_0 gate/up kernels
 #ifdef _WIN32
-        _putenv_s("STRATA_PF_FUSED", "1");
+        _putenv_s("NOSTROMA_PF_FUSED", "1");
 #else
-        setenv("STRATA_PF_FUSED", "1", 1);
-        setenv("STRATA_PF_FUSED_KQ", "1", 1);
-        setenv("STRATA_PF_FUSED_Q6K", "1", 1);
-        setenv("STRATA_PF_FUSED_Q8GU", "1", 1);
-        setenv("STRATA_MMQ_KQ", "1", 1);
+        setenv("NOSTROMA_PF_FUSED", "1", 1);
+        setenv("NOSTROMA_PF_FUSED_KQ", "1", 1);
+        setenv("NOSTROMA_PF_FUSED_Q6K", "1", 1);
+        setenv("NOSTROMA_PF_FUSED_Q8GU", "1", 1);
+        setenv("NOSTROMA_MMQ_KQ", "1", 1);
 #endif
         int n = 0;
         if (cudaGetDeviceCount(&n) != cudaSuccess || n == 0) { std::printf("no CUDA device: skipped\n"); return 77; }

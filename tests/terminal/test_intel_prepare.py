@@ -29,10 +29,10 @@ class IntelPack(unittest.TestCase):
             fetched = []
             with mock.patch.object(setup, "get_llama_cpp", lambda: fetched.append(1)), mock.patch.object(setup, "run", fake_run), \
                     mock.patch.object(setup, "gguf_dir_problem", lambda *a: None), \
-                    mock.patch.dict("os.environ", {k: v for k, v in __import__("os").environ.items() if k != "STRATA_GGUF_PY"}, clear=True):
+                    mock.patch.dict("os.environ", {k: v for k, v in __import__("os").environ.items() if k != "NOSTROMA_GGUF_PY"}, clear=True):
                 self.assertEqual(setup.prepare_pack_only(args), 0)
         self.assertIn("iq_pack.py", " ".join(map(str, calls["cmd"])))
-        self.assertNotIn("STRATA_GGUF_PY", calls["env"], "the tool uses tools/strata_gguf.py unless the user named a gguf-py")
+        self.assertNotIn("NOSTROMA_GGUF_PY", calls["env"], "the tool uses tools/nostroma_gguf.py unless the user named a gguf-py")
         self.assertEqual(fetched, [], "nothing is downloaded")
 
 

@@ -22,11 +22,11 @@
 // SOFTWARE.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
-#include "strata/kprof.hpp"
+#include "nostroma/kprof.hpp"
 #include <dpct/dpct.hpp>
-#include "strata/sycl_queue.hpp"
-#include "strata/kernels/native_moe.hpp"
-#include "strata/core/geometry.hpp"
+#include "nostroma/sycl_queue.hpp"
+#include "nostroma/kernels/native_moe.hpp"
+#include "nostroma/core/geometry.hpp"
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
@@ -34,12 +34,12 @@
 #include <stdexcept>
 #include <cmath>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
-constexpr int KU = strata::core::kCompiledGeometry.n_expert_used;   // 10 for Flash-Next: the combine kernel below is written for exactly this many ranks
+constexpr int KU = nostroma::core::kCompiledGeometry.n_expert_used;   // 10 for Flash-Next: the combine kernel below is written for exactly this many ranks
 static_assert(KU >= 1 && KU <= 16, "native_moe: top-k must be 1..16");
 std::atomic<bool> enabled{false};
-// GATED (S26 STRATA_LFUSE): `shared` is the shared expert's unscaled output and sg its raw gate logit per token;
+// GATED (S26 NOSTROMA_LFUSE): `shared` is the shared expert's unscaled output and sg its raw gate logit per token;
 // the row is scaled here as shared_expert_multi did (native_scalar_sigmoid_multi_kernel's expression, then one
 // rounded multiply = scale_rows_kernel's `out *= g`), then added as before
 template <bool ZADD = false, bool GATED = false>
@@ -153,7 +153,7 @@ void native_moe_combine(const float* parts, const float* weights, const float* s
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
 
-            strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+            nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
                 ->template parallel_for<dpct_kernel_name<class combine_k10_vec4_503ec2>>(
                     sycl::nd_range<3>(
                         sycl::range(1, 1, unsigned((n4 + 127) / 128)) *
@@ -171,7 +171,7 @@ void native_moe_combine(const float* parts, const float* weights, const float* s
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        ((sycl::queue *)(strata::q_of(stream)))
+        ((sycl::queue *)(nostroma::q_of(stream)))
             ->/*
 DPCT1050: The template argument of the dpct_kernel_name could not be
 deduced. You need to update this code.
@@ -221,7 +221,7 @@ void native_moe_combine_multi(const float* parts, const float* weights, const fl
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
 
-            strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+            nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
                 ->template parallel_for<dpct_kernel_name<class combine_k10_vec4_44a528>>(
                     sycl::nd_range<3>(sycl::range(1, (unsigned)n_tok,
                                                   unsigned((n4 + 127) / 128)) *
@@ -239,7 +239,7 @@ void native_moe_combine_multi(const float* parts, const float* weights, const fl
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        ((sycl::queue *)(strata::q_of(stream)))
+        ((sycl::queue *)(nostroma::q_of(stream)))
             ->/*
 DPCT1050: The template argument of the dpct_kernel_name could not be
 deduced. You need to update this code.
@@ -287,7 +287,7 @@ void native_moe_combine_multi_hits_gated(const float* hits, const float* weights
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->template parallel_for<
                 dpct_kernel_name<class combine_deb31a, dpct_kernel_scalar<true>,
                                  dpct_kernel_scalar<true>>>(
@@ -329,7 +329,7 @@ void native_moe_combine_multi_hits(const float* hits, const float* weights, cons
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        ((sycl::queue *)(strata::q_of(stream)))
+        ((sycl::queue *)(nostroma::q_of(stream)))
             ->/*
   DPCT1050: The template argument of the dpct_kernel_name could not be
   deduced. You need to update this code.

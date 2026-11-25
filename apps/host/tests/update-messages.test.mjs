@@ -5,7 +5,7 @@ import { plainUpdateError, plainError } from '../server/update-messages.mjs';
 // #4853: an engine that was downloaded and checked, then could not be put in place, used to read "The update didn't finish and nothing was
 // changed" with no reason. The reason is now said in plain words and the technical text stays in details.
 
-const moved = new Error('the new engine could not be moved into place (Nostroma could not use C:\\Users\\x\\AppData\\Local\\Strata\\components\\.s\\ab12\\engine (PermissionError)); copying it did not work either (OSError)');
+const moved = new Error('the new engine could not be moved into place (Nostroma could not use C:\\Users\\x\\AppData\\Local\\Nostroma\\components\\.s\\ab12\\engine (PermissionError)); copying it did not work either (OSError)');
 Object.assign(moved, { exitCode: 6 });
 
 test('an engine that could not be put in place says so and does not blame the download', () => {

@@ -1,6 +1,6 @@
 # Community benchmark: NVIDIA GeForce RTX 4090
 
-Measured on 2026-10-03 by [Dmitry-B](https://github.com/Dmitry-B). This tests Strata 0.1.38 with qwen3.8-flash-next-iq3_s and a 143360-token context. Prompts are code-explanation text; greedy decoding, a 256-token output cap, three runs per configuration; TTFT measured over streaming. These are synthetic workloads; they do not establish general answer quality.
+Measured on 2026-10-03 by [Dmitry-B](https://github.com/Dmitry-B). This tests Nostroma 0.1.38 with qwen3.8-flash-next-iq3_s and a 143360-token context. Prompts are code-explanation text; greedy decoding, a 256-token output cap, three runs per configuration; TTFT measured over streaming. These are synthetic workloads; they do not establish general answer quality.
 
 ## Hardware and software
 
@@ -8,20 +8,20 @@ Measured on 2026-10-03 by [Dmitry-B](https://github.com/Dmitry-B). This tests St
 - CPU: AMD Ryzen 9 7950X 16-Core Processor (32 logical CPUs).
 - RAM: 46464 MiB installed; storage layout: see env.json (lsblk output).
 - Ubuntu 26.04.1 LTS, kernel 7.0.0-38-generic; NVIDIA driver 610.57.04; release 13.4, V13.4.92.
-- Strata commit `99f3dbd0b21d1401b3769e0c0d963913607f380b` (branch main); engine 0.1.38, release binary from the repository's engine/ directory.
-- Background workloads: a dsh/Authentik/Caddy web stack and stock Ubuntu services; the GPU was dedicated to Strata but the operating system was not isolated.
+- Nostroma commit `99f3dbd0b21d1401b3769e0c0d963913607f380b` (branch main); engine 0.1.38, release binary from the repository's engine/ directory.
+- Background workloads: a dsh/Authentik/Caddy web stack and stock Ubuntu services; the GPU was dedicated to Nostroma but the operating system was not isolated.
 
 ## Model and configuration
 
-- Model: qwen3.8-flash-next-iq3_s (the Strata server's model name); GGUF filenames, sizes, and modification times are in env.json (no hashes).
+- Model: qwen3.8-flash-next-iq3_s (the Nostroma server's model name); GGUF filenames, sizes, and modification times are in env.json (no hashes).
 - Context 143360; INT8 KV; resident experts; GPU vision - see the config copy below.
 - Draft vocabulary subset: `draft_vocab=cyrillic` (the English/code subset plus the whole Cyrillic script, ~106k rows). This is wider than the default `en` subset; draft acceptance on English text was unaffected (78-80%), but it can cost a few percent of decode speed.
 
 ```text
-/home/dgbox/Strata/engine/strata --serve --pack /home/dgbox/Strata-data/packs/iq3_s --native /home/dgbox/Strata-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf --ple-gguf /home/dgbox/Strata-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf --expert-profile /home/dgbox/Strata/data/expert-profile-learned-iq3s.bin --expert-cache auto --prefill auto --spec 4 --mtp /home/dgbox/Strata-data/mtp/rt --max-context 143360 --kv int8 --resident-experts --vision --vram-reserve-mib 989 --control-vector-scaled /home/dgbox/Strata/data/experimental-speed-projection/Qwen3.8-Flash-Next-experimental-speed-projection.gguf:1.0 --control-vector-layer-range 4 44 --cvec-mode project --cvec-dir per-layer --spec-min-p 0.5 --expert-profile-save /home/dgbox/Strata/data/expert-profile-learned-iq3s.bin --expert-profile-save-every 10
+/home/dgbox/Nostroma/engine/nostroma --serve --pack /home/dgbox/Nostroma-data/packs/iq3_s --native /home/dgbox/Nostroma-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf --ple-gguf /home/dgbox/Nostroma-data/models/IQ3_S/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00002-of-00002.gguf --expert-profile /home/dgbox/Nostroma/data/expert-profile-learned-iq3s.bin --expert-cache auto --prefill auto --spec 4 --mtp /home/dgbox/Nostroma-data/mtp/rt --max-context 143360 --kv int8 --resident-experts --vision --vram-reserve-mib 989 --control-vector-scaled /home/dgbox/Nostroma/data/experimental-speed-projection/Qwen3.8-Flash-Next-experimental-speed-projection.gguf:1.0 --control-vector-layer-range 4 44 --cvec-mode project --cvec-dir per-layer --spec-min-p 0.5 --expert-profile-save /home/dgbox/Nostroma/data/expert-profile-learned-iq3s.bin --expert-profile-save-every 10
 ```
 
-Full server config: [config.json](config.json) (was at /home/dgbox/Strata/strata-iq3s-140k-resident.json), environment details: [env.json](env.json).
+Full server config: [config.json](config.json) (was at /home/dgbox/Nostroma/nostroma-iq3s-140k-resident.json), environment details: [env.json](env.json).
 
 ## Method
 

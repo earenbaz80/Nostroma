@@ -57,7 +57,7 @@ class Fixture:
 
     def __init__(self, dsh: Path, python: Path, worker_port: int, keep: bool):
         self.dsh, self.python, self.worker_port, self.keep = dsh, python, worker_port, keep
-        self.tmp = Path(tempfile.mkdtemp(prefix="strata-bridge-"))
+        self.tmp = Path(tempfile.mkdtemp(prefix="nostroma-bridge-"))
         (self.tmp / "ws").mkdir()
         self.worker = self.agent = None
         self.agent_port = 0
@@ -151,8 +151,8 @@ def case_completion(fx: Fixture) -> None:
     if assistant is None:
         raise BridgeError("the turn completed but committed no assistant message")
     source = ((assistant.get("data") or {}).get("message") or {}).get("source") or {}
-    if source.get("provider") != "strata-local":
-        raise BridgeError(f"assistant source names {source.get('provider')!r}, not 'strata-local'")
+    if source.get("provider") != "nostroma-local":
+        raise BridgeError(f"assistant source names {source.get('provider')!r}, not 'nostroma-local'")
     n = fx.worker_requests()
     if n < 1:
         raise BridgeError("the session completed but the worker recorded no requests")
@@ -262,7 +262,7 @@ def main() -> int:
             print(f"prerequisite missing: {what} not at {path}", file=sys.stderr)
             return 2
 
-    print("strata <-> harness bridge tests")
+    print("nostroma <-> harness bridge tests")
     print(f"  cases : {', '.join(selected)}")
     print()
     failures = []

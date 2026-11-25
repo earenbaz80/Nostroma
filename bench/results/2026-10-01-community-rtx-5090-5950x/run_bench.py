@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Strata community benchmark runner: warm-up + N measured runs per prompt, server timings, one JSON per config.
+"""Nostroma community benchmark runner: warm-up + N measured runs per prompt, server timings, one JSON per config.
 
 Follows docs/COMMUNITY_BENCHMARKS.md: prompt and decode throughput from the engine's own timings, actual token
 counts, reused (cache_n) vs fresh prompt tokens, every run kept (median and range computed from them).

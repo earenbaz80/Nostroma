@@ -3,7 +3,7 @@
 Question: the engine used to warn at start that "the GPU hit path is NOT CORRECT ... any OUTPUT from it is not". Does
 the expert cache make the output worse?
 
-Method: teacher-forced. `strata --dump-logits` runs a text one token at a time and writes the logits at every
+Method: teacher-forced. `nostroma --dump-logits` runs a text one token at a time and writes the logits at every
 position, so both runs see the same text and each position's next-token prediction can be compared:
 - cache off: no `--expert-cache`, every routed expert computed by the CPU pool;
 - cache on: `--expert-profile pack/profile-decode-8k.bin --expert-cache auto`, 5,130 of the most-used experts on the GPU.

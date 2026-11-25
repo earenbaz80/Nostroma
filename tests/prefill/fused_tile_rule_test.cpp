@@ -1,16 +1,16 @@
-// pick_ww's rule (include/strata/prefill/fused_tile_rule.hpp) for every card class the fused-tile measurements cover, at the two sides of every threshold, and a
+// pick_ww's rule (include/nostroma/prefill/fused_tile_rule.hpp) for every card class the fused-tile measurements cover, at the two sides of every threshold, and a
 // byte-for-byte comparison with the rule as it stood before the sm_120 40-79 SM class was added, for every other class: no GPU, no model.
 #include <cstdint>
 #include <cstdio>
 #include <initializer_list>
 
-#include "strata/prefill/fused_tile_rule.hpp"
-#include "strata/prefill/fused_tq_default.hpp"
+#include "nostroma/prefill/fused_tile_rule.hpp"
+#include "nostroma/prefill/fused_tq_default.hpp"
 
-using strata::prefill::fused_tile::Card;
-using strata::prefill::fused_tile::pick;
-using strata::prefill::fused_tile::Pick;
-using strata::prefill::fused_tile::Why;
+using nostroma::prefill::fused_tile::Card;
+using nostroma::prefill::fused_tile::pick;
+using nostroma::prefill::fused_tile::Pick;
+using nostroma::prefill::fused_tile::Why;
 
 static int failed = 0;
 #define CHECK(x) do { if (!(x)) { std::fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #x); ++failed; } } while (0)
@@ -142,9 +142,9 @@ int main() {
         CHECK(badw == 0);
         std::printf("fused_tile_rule_test: wide class: %lld card / launch combinations checked (%lld wrong)\n", cmpw, badw);
     }
-    // ---- the default rule (native_supported) with the 40-79 SM rule on or off (STRATA_PF_FUSED_SM40, on unless 0; see below): takes_by_default(card, sm40, gate_staged, down_ok)
+    // ---- the default rule (native_supported) with the 40-79 SM rule on or off (NOSTROMA_PF_FUSED_SM40, on unless 0; see below): takes_by_default(card, sm40, gate_staged, down_ok)
     {
-        using strata::prefill::fused_tile::takes_by_default;
+        using nostroma::prefill::fused_tile::takes_by_default;
         const Card a4000s{false, false, 48, true}, s86at39{false, false, 39, true}, s86at40{false, false, 40, true}, s86at79{false, false, 79, true}, s86at80{false, false, 80, true},
             s120at48{true, false, 48, false}, s120at39{true, false, 39, false}, s89{false, false, 60, false}, gb10c{true, true, 48, false};
         // a staged-gate pair (IQ3_S / IQ4_NL, IQ3_XXS / Q2_0, ...) on 48 SMs: on with the switch, today's behaviour (off) without it
@@ -176,7 +176,7 @@ int main() {
     }
     // ---- the 2-bit gate/up formats in the default (owner 11-12): default_gate_format / default_takes(env, card, sm40, gate_staged, down_ok, gu_type)
     {
-        using namespace strata::prefill::fused_tile;
+        using namespace nostroma::prefill::fused_tile;
         // the ids are ggml's (GGML_TYPE_*, asserted in moe_fused_iq.cu): IQ2_XXS 16, IQ2_XS 17, IQ3_XXS 18, IQ1_S 19, IQ4_NL 20, IQ3_S 21, IQ2_S 22, IQ4_XS 23
         CHECK(default_gate_format(16) && default_gate_format(17));                                                    // IQ2_XXS, IQ2_XS: new
         CHECK(default_gate_format(18) && default_gate_format(21) && default_gate_format(22) && default_gate_format(23));   // IQ3_XXS, IQ3_S, IQ2_S, IQ4_XS: as before
@@ -194,8 +194,8 @@ int main() {
                                     const Card c{s120 != 0, s121 != 0, sms, s86 != 0};
                                     const bool want = (s120 || s86) && sms >= 80;   // sm_86 / sm_120, 80+ SMs; gate_staged is false for IQ2_XXS / IQ2_XS (sw_on), so sm40 adds nothing
                                     if (default_takes(-1, c, sm40 != 0, false, d != 0, gu) != want) ++bad2;
-                                    if (default_takes(0, c, sm40 != 0, false, d != 0, gu)) ++bad2;   // STRATA_PF_FUSED=0: the default is off again
-                                    if (default_takes(1, c, sm40 != 0, false, d != 0, gu)) ++bad2;   // STRATA_PF_FUSED=1 is the opt-in, decided elsewhere
+                                    if (default_takes(0, c, sm40 != 0, false, d != 0, gu)) ++bad2;   // NOSTROMA_PF_FUSED=0: the default is off again
+                                    if (default_takes(1, c, sm40 != 0, false, d != 0, gu)) ++bad2;   // NOSTROMA_PF_FUSED=1 is the opt-in, decided elsewhere
                                 }
         CHECK(bad2 == 0);
         std::printf("fused_tile_rule_test: IQ2_XXS / IQ2_XS default: %lld card / switch combinations (%lld wrong)\n", cmp2, bad2);
@@ -211,11 +211,11 @@ int main() {
         // a format outside the list never takes the default
         CHECK(!default_takes(-1, Card{false, false, 84, true}, true, true, true, 19) && !default_takes(-1, Card{false, false, 84, true}, true, true, true, 20));
     }
-    // ---- the 40-79 SM cards in the default (owner 11-12): the staged path is the default there, STRATA_PF_FUSED_SM40=0 the way back.  default_takes_env(env, card, sm40_env, gate_staged, down_ok, gu_type)
+    // ---- the 40-79 SM cards in the default (owner 11-12): the staged path is the default there, NOSTROMA_PF_FUSED_SM40=0 the way back.  default_takes_env(env, card, sm40_env, gate_staged, down_ok, gu_type)
     {
-        using namespace strata::prefill::fused_tile;
+        using namespace nostroma::prefill::fused_tile;
         CHECK(sm40_on(-1) && sm40_on(1) && !sm40_on(0));   // unset and "1" on, "0" off
-        // the whole grid against an oracle written from the sentence of the decision: STRATA_PF_FUSED unset; a format of the default list (IQ2_XXS 16, IQ2_XS 17, IQ3_XXS 18, IQ3_S 21, IQ2_S 22, IQ4_XS 23; not
+        // the whole grid against an oracle written from the sentence of the decision: NOSTROMA_PF_FUSED unset; a format of the default list (IQ2_XXS 16, IQ2_XS 17, IQ3_XXS 18, IQ3_S 21, IQ2_S 22, IQ4_XS 23; not
         // Q8_0 8, Q4_K 12, Q5_K 13, Q6_K 14, IQ1_S 19, IQ4_NL 20, IQ1_M 29); a card with the sm_86 or sm_120 flag; then 80+ SMs always, and 40-79 SMs only for a staged gate/up with an IQ4_NL / Q2_0 down while
         // the switch is not "0"
         const int kTypes[] = {8, 12, 13, 14, 16, 17, 18, 19, 20, 21, 22, 23, 29};
@@ -249,7 +249,7 @@ int main() {
                 CHECK(!default_takes_env(-1, a4000c, 0, true, dn, gu) && !default_takes_env(-1, r5070, 0, true, dn, gu));
                 CHECK(default_takes_env(-1, a6000c, 0, true, dn, gu));   // 80+ SMs: the switch moves nothing
                 CHECK(!default_takes_env(-1, tiny, -1, true, dn, gu) && !default_takes_env(-1, sm60, -1, true, dn, gu));   // 39 SMs, a card with neither flag (sm_60 / sm_80 / sm_89 / AMD): as before
-                CHECK(!default_takes_env(0, a4000c, -1, true, dn, gu) && !default_takes_env(1, a4000c, -1, true, dn, gu));   // STRATA_PF_FUSED=0 is MMQ, =1 is the opt-in decided elsewhere
+                CHECK(!default_takes_env(0, a4000c, -1, true, dn, gu) && !default_takes_env(1, a4000c, -1, true, dn, gu));   // NOSTROMA_PF_FUSED=0 is MMQ, =1 is the opt-in decided elsewhere
             }
         CHECK(!default_takes_env(-1, a4000c, -1, false, true, 22));   // IQ2_S gate/up is not a staged instance: stays on MMQ on 48 SMs (IQ2_S / Q2_0 was 0.97 of MMQ at 32K)
         CHECK(!default_takes_env(-1, a4000c, -1, true, false, 21));   // an IQ3_S gate/up with a down outside IQ4_NL / Q2_0 (Q5_0, Q8_0, K-quants): not taken
@@ -258,11 +258,11 @@ int main() {
         CHECK(default_takes_env(-1, gb10c, -1, true, true, 21) == default_takes_env(-1, r5070, -1, true, true, 21));   // the s121 flag is not looked at by this rule
     }
     // ---- the sibling classes (owner 11-12, "1 Yes"): compute capability 8.0 (A100 class) and 8.9 (RTX 40 / Ada class) take the rules of the cards we tested (8.6; 12.0).  The grid below starts from the compute
-    // capability, builds the card the way dev_info() in src/prefill/moe_fused_iq.cu does (s120 = 12.0 and STRATA_SM120_PERF not 0, s121 = 12.1, s86 = s86_class(cc, STRATA_PF_FUSED_SM86=0)) and checks the
+    // capability, builds the card the way dev_info() in src/prefill/moe_fused_iq.cu does (s120 = 12.0 and NOSTROMA_SM120_PERF not 0, s121 = 12.1, s86 = s86_class(cc, NOSTROMA_PF_FUSED_SM86=0)) and checks the
     // default of native_supported (default_takes_env), the Gyro-S default (fused_tq::on) and the tile rule (pick) against oracles written from the sentence of the decision, not from the code
     {
-        using namespace strata::prefill::fused_tile;
-        namespace tq = strata::prefill::fused_tq;
+        using namespace nostroma::prefill::fused_tile;
+        namespace tq = nostroma::prefill::fused_tq;
         struct Cc { int major, minor; };
         // every capability a CUDA card the engine sees can report, 8.7 (Jetson Orin) and 9.0 (Hopper) included: the class is 8.0, 8.6 and 8.9 only
         const Cc kCc[] = {{6, 0}, {6, 1}, {7, 0}, {7, 5}, {8, 0}, {8, 6}, {8, 7}, {8, 9}, {9, 0}, {10, 0}, {12, 0}, {12, 1}};
@@ -280,11 +280,11 @@ int main() {
             for (int minor = 0; minor < 10; ++minor) {
                 ++cls;
                 if (s86_class(major, minor) != (major == 8 && (minor == 0 || minor == 6 || minor == 9))) ++cls_bad;
-                if (s86_class(major, minor, true)) ++cls_bad;   // STRATA_PF_FUSED_SM86=0: nothing is in the class
+                if (s86_class(major, minor, true)) ++cls_bad;   // NOSTROMA_PF_FUSED_SM86=0: nothing is in the class
                 if (s86_class(major, minor) != (major == 8 && minor == 6)) ++cls_moved;
             }
         CHECK(cls_bad == 0 && cls_moved == 2);
-        // the default of native_supported: STRATA_PF_FUSED (unset / 0 / 1) x SM40 switch (unset / 0 / 1) x STRATA_PF_FUSED_SM86=0 x STRATA_SM120_PERF=0 x 12 capabilities x 0-200 SMs x gate_staged x down_ok x 13 formats
+        // the default of native_supported: NOSTROMA_PF_FUSED (unset / 0 / 1) x SM40 switch (unset / 0 / 1) x NOSTROMA_PF_FUSED_SM86=0 x NOSTROMA_SM120_PERF=0 x 12 capabilities x 0-200 SMs x gate_staged x down_ok x 13 formats
         const int kTypes[] = {8, 12, 13, 14, 16, 17, 18, 19, 20, 21, 22, 23, 29};
         long long cmp = 0, bad = 0, yes_hi = 0, yes_mid = 0, yes_new = 0;
         for (const Cc& cc : kCc)
@@ -317,19 +317,19 @@ int main() {
                     ++same;
                     if (now.s120 != old.s120 || now.s121 != old.s121 || now.sms != old.sms || now.s86 != old.s86) {
                         ++moved_card;
-                        CHECK(cc.major == 8 && (cc.minor == 0 || cc.minor == 9) && off == 0);   // only the two new capabilities, and not under STRATA_PF_FUSED_SM86=0
+                        CHECK(cc.major == 8 && (cc.minor == 0 || cc.minor == 9) && off == 0);   // only the two new capabilities, and not under NOSTROMA_PF_FUSED_SM86=0
                     }
                 }
         CHECK(moved_card == 2 * 11);   // 8.0 and 8.9, SM86 switch not 0, 11 SM counts
-        std::printf("fused_tile_rule_test: sibling classes: %lld capability / SM count / switch cards built, %lld differ from the old flag (8.0 and 8.9 without STRATA_PF_FUSED_SM86=0 only)\n", same, moved_card);
-        // Gyro-S default (fused_tq_default.hpp): STRATA_PF_FUSED_TQ unset / 0 / 1 (the parsed value) x capability x SM86 switch x SM count: on for env 1, else only the class with 80+ SMs
+        std::printf("fused_tile_rule_test: sibling classes: %lld capability / SM count / switch cards built, %lld differ from the old flag (8.0 and 8.9 without NOSTROMA_PF_FUSED_SM86=0 only)\n", same, moved_card);
+        // Gyro-S default (fused_tq_default.hpp): NOSTROMA_PF_FUSED_TQ unset / 0 / 1 (the parsed value) x capability x SM86 switch x SM count: on for env 1, else only the class with 80+ SMs
         long long cmpq = 0, badq = 0;
         for (const Cc& cc : kCc)
             for (int off = 0; off < 2; ++off)
                 for (int tqe = -1; tqe <= 1; ++tqe)
                     for (int sms = 0; sms <= 200; ++sms) {
                         ++cmpq;
-                        const bool want = tqe == 1 || (tqe == -1 && flagged(cc, off != 0, false) && sms >= 80);   // (perf120 false: the 12.0 card is not in the Gyro rule, whatever STRATA_SM120_PERF says)
+                        const bool want = tqe == 1 || (tqe == -1 && flagged(cc, off != 0, false) && sms >= 80);   // (perf120 false: the 12.0 card is not in the Gyro rule, whatever NOSTROMA_SM120_PERF says)
                         if (tq::on(tqe, card_for(cc, sms, off != 0, true).s86, sms) != want) ++badq;
                     }
         CHECK(badq == 0);
@@ -365,8 +365,8 @@ int main() {
         CHECK(!default_takes_env(-1, card_for({8, 9}, 60, false, true), -1, false, true, 22) && !default_takes_env(-1, card_for({8, 0}, 56, false, true), -1, false, true, 16));   // IQ2_S / IQ2_XXS: unstaged, MMQ below 80 SMs
         CHECK(!default_takes_env(-1, card_for({8, 9}, 128, false, true), -1, true, true, 12) && !default_takes_env(-1, card_for({8, 0}, 108, false, true), -1, true, true, 14) &&
               !default_takes_env(-1, card_for({8, 9}, 128, false, true), -1, true, true, 8));   // Q4_K / Q6_K / Q8_0: opt-in on every class
-        CHECK(!default_takes_env(0, card_for({8, 0}, 108, false, true), -1, true, true, 21) && !default_takes_env(1, card_for({8, 9}, 128, false, true), -1, true, true, 21));   // STRATA_PF_FUSED=0 is MMQ, =1 the opt-in decided elsewhere
-        CHECK(!default_takes_env(-1, card_for({8, 0}, 108, true, true), -1, true, true, 21) && !default_takes_env(-1, card_for({8, 9}, 128, true, true), -1, true, true, 21));   // STRATA_PF_FUSED_SM86=0: MMQ again
+        CHECK(!default_takes_env(0, card_for({8, 0}, 108, false, true), -1, true, true, 21) && !default_takes_env(1, card_for({8, 9}, 128, false, true), -1, true, true, 21));   // NOSTROMA_PF_FUSED=0 is MMQ, =1 the opt-in decided elsewhere
+        CHECK(!default_takes_env(-1, card_for({8, 0}, 108, true, true), -1, true, true, 21) && !default_takes_env(-1, card_for({8, 9}, 128, true, true), -1, true, true, 21));   // NOSTROMA_PF_FUSED_SM86=0: MMQ again
         CHECK(!default_takes_env(-1, card_for({8, 7}, 128, false, true), -1, true, true, 21) && !default_takes_env(-1, card_for({9, 0}, 132, false, true), -1, true, true, 21) &&
               !default_takes_env(-1, card_for({7, 5}, 72, false, true), -1, true, true, 21) && !default_takes_env(-1, card_for({6, 0}, 56, false, true), -1, true, true, 21));   // Orin, Hopper, Turing, Pascal: untouched
     }
@@ -409,7 +409,7 @@ int main() {
                 differing, new_class, failed);
     // ---- the weight-staging guard (check_staged_blobs's decision): a failed check makes the launch take the unstaged kernel, it never ends the process
     {
-        using namespace strata::prefill::fused_tile;
+        using namespace nostroma::prefill::fused_tile;
         // the blob: only device and managed memory at an even address pass; a pointer the driver does not know (kUnknown) is left to the launch's own error, as before
         long long cases = 0;
         for (BlobMem m : {BlobMem::kDevice, BlobMem::kManaged, BlobMem::kHost, BlobMem::kUnregistered, BlobMem::kUnknown})
@@ -457,12 +457,12 @@ int main() {
         CHECK(pick(Card{false, false, 48, true}, 81910, E, false, false).ww == 4 && pick(Card{false, false, 48, true}, 81910, E, true, true).ww == 2);   // the staged 128-row choice the fallback overrides
         std::printf("fused_tile_rule_test: staging guard: %lld blob cases, 16 geometries, the check budget and the sticky fallback checked, %d failed so far\n", cases, failed);
     }
-    // ---- the Qwen3.6 engine (strata-q36): which layers take the fused prompt kernels, q36_takes(env, card, sm40_env, gate_staged, down_ok, covered).  The whole grid against an oracle written from the sentence of the
-    // decision: a layer whose pair the kernels do not cover, or STRATA_PF_FUSED=0 (or any value not starting with '1'): MMQ.  =1: the fused kernels on every card.  Unset: the cards of the Flash-Next default rule, an
+    // ---- the Qwen3.6 engine (nostroma-q36): which layers take the fused prompt kernels, q36_takes(env, card, sm40_env, gate_staged, down_ok, covered).  The whole grid against an oracle written from the sentence of the
+    // decision: a layer whose pair the kernels do not cover, or NOSTROMA_PF_FUSED=0 (or any value not starting with '1'): MMQ.  =1: the fused kernels on every card.  Unset: the cards of the Flash-Next default rule, an
     // sm_86-class (8.0 / 8.6 / 8.9) or sm_120 card (not sm_121 alone, not a card with neither flag: sm_75, sm_87, sm_90, AMD) with 80+ SMs for every layer, 40-79 SMs for a staged gate/up with a staged down
-    // while STRATA_PF_FUSED_SM40 is not "0", under 40 SMs never.
+    // while NOSTROMA_PF_FUSED_SM40 is not "0", under 40 SMs never.
     {
-        using namespace strata::prefill::fused_tile;
+        using namespace nostroma::prefill::fused_tile;
         CHECK(pf_env(nullptr) == -1 && pf_env("") == -1 && pf_env("1") == 1 && pf_env("1x") == 1 && pf_env("0") == 0 && pf_env("2") == 0 && pf_env("yes") == 0 && pf_env("off") == 0);
         CHECK(sm40_env_of(nullptr) == -1 && sm40_env_of("0") == 0 && sm40_env_of("1") == 1 && sm40_env_of("") == 1 && sm40_env_of("on") == 1);
         long long cmp = 0, bad = 0, yes_def = 0, yes_opt = 0, no_zero = 0, yes40 = 0, yes80 = 0;
@@ -490,7 +490,7 @@ int main() {
                                         }
         CHECK(bad == 0 && yes_def > 0 && yes_opt > 0 && yes40 > 0 && yes80 > 0 && no_zero > 0);
         std::printf("fused_tile_rule_test: Qwen3.6 engine: %lld switch / SM40 switch / card flag / SM count / format combinations (%lld wrong; %lld yes unset, %lld of them below 80 SMs, %lld at 80+; %lld yes under =1)\n", cmp, bad, yes_def, yes40, yes80, yes_opt);
-        // named cards, formats of UD-Q4_K_XL (a staged K-quant gate/up with a staged Q5_K / Q6_K down), STRATA_PF_FUSED unset
+        // named cards, formats of UD-Q4_K_XL (a staged K-quant gate/up with a staged Q5_K / Q6_K down), NOSTROMA_PF_FUSED unset
         const Card a6000c{false, false, 84, true}, a4000c{false, false, 48, true}, a100{false, false, 108, true}, rtx4090{false, false, 128, true}, rtx3050{false, false, 20, true}, pro5000{true, false, 110, false},
             rtx5090{true, false, 170, false}, rtx5070{true, false, 48, false}, gb10c{false, true, 48, false}, turing{false, false, 68, false}, orin{false, false, 16, false}, hopper{false, false, 132, false};
         for (const Card& c : {a6000c, a100, rtx4090, pro5000, rtx5090}) CHECK(q36_takes(-1, c, -1, true, true, true) && q36_takes(-1, c, 0, true, true, true));      // 80+ SMs: the SM40 switch moves nothing
@@ -498,7 +498,7 @@ int main() {
         for (const Card& c : {rtx3050, gb10c, turing, orin, hopper}) CHECK(!q36_takes(-1, c, -1, true, true, true) && !q36_takes(-1, c, 1, true, true, true));          // under 40 SMs, sm_121, no class flag: MMQ
         CHECK(!q36_takes(-1, a4000c, -1, false, true, true) && !q36_takes(-1, a4000c, -1, true, false, true));   // an unstaged gate/up or down on 48 SMs: MMQ
         CHECK(q36_takes(-1, a6000c, -1, false, false, true) && !q36_takes(-1, a6000c, -1, true, true, false));   // 80+ SMs take any covered pair, never an uncovered one
-        // STRATA_PF_FUSED=0 is MMQ on every card; =1 is the fused kernels on every card that covers the pair (the way strata-q36 behaved with the opt-in)
+        // NOSTROMA_PF_FUSED=0 is MMQ on every card; =1 is the fused kernels on every card that covers the pair (the way nostroma-q36 behaved with the opt-in)
         for (const Card& c : {a6000c, a4000c, a100, rtx4090, pro5000, rtx5090, rtx5070, rtx3050, gb10c, turing, orin, hopper}) {
             CHECK(!q36_takes(0, c, -1, true, true, true) && q36_takes(1, c, -1, false, false, true) && !q36_takes(1, c, -1, true, true, false));
         }
@@ -507,14 +507,14 @@ int main() {
             for (int sm40e = -1; sm40e <= 1; ++sm40e)
                 for (int g = 0; g < 2; ++g)
                     for (int d = 0; d < 2; ++d) CHECK(q36_takes(-1, c, sm40e, g != 0, d != 0, true) == takes_by_default(c, sm40_on(sm40e), g != 0, d != 0));
-        // compute capability: 8.0 / 8.6 / 8.9 are in the class (s86_class), 8.7 / 9.0 / 7.5 are not, STRATA_PF_FUSED_SM86=0 empties it
+        // compute capability: 8.0 / 8.6 / 8.9 are in the class (s86_class), 8.7 / 9.0 / 7.5 are not, NOSTROMA_PF_FUSED_SM86=0 empties it
         CHECK(q36_takes(-1, Card{false, false, 108, s86_class(8, 0)}, -1, true, true, true) && q36_takes(-1, Card{false, false, 128, s86_class(8, 9)}, -1, true, true, true));
         CHECK(!q36_takes(-1, Card{false, false, 16, s86_class(8, 7)}, -1, true, true, true) && !q36_takes(-1, Card{false, false, 132, s86_class(9, 0)}, -1, true, true, true) &&
               !q36_takes(-1, Card{false, false, 68, s86_class(7, 5)}, -1, true, true, true) && !q36_takes(-1, Card{false, false, 84, s86_class(8, 6, true)}, -1, true, true, true));
     }
     // ---- the K-quant pairs of Qwen3.6's UD-Q4_K_XL in the wide class (tile 128 above 112 rows an expert on sm_86 cards with 40+ SMs): wide_pair(gu_type, d_type) and the rule at the engine's launch sizes
     {
-        using namespace strata::prefill::fused_tile;
+        using namespace nostroma::prefill::fused_tile;
         // ggml type ids: Q8_0 8, Q4_K 12, Q5_K 13, Q6_K 14, IQ3_XXS 18, IQ3_S 21, IQ4_XS 23, IQ4_NL 20, Q5_1 7, Q2_0 (any), Q5_0 6
         long long bad = 0, yes = 0;
         for (int gu = 0; gu < 40; ++gu)
@@ -559,7 +559,7 @@ int main() {
     }
     // ---- Flash-Next's K-quant pairs (UD-Q4_K_XL: gate/up Q4_K or Q5_K with a Q5_1 or Q8_0 down): kq_flash_kind(gu_type, d_type) and the tile rule's kq argument.  Flash-Next: 512 experts, top 10, a launch of T tokens = T * 10 rows.
     {
-        using namespace strata::prefill::fused_tile;
+        using namespace nostroma::prefill::fused_tile;
         // ggml type ids: Q5_1 7, Q8_0 8, Q4_K 12, Q5_K 13, Q6_K 14, IQ3_S 21, IQ4_NL 20
         long long bad = 0;
         for (int gu = 0; gu < 40; ++gu)
@@ -637,10 +637,10 @@ int main() {
         CHECK(pick(a6000, 2048 * 8, 256, true, true, 0).ww == pick(a6000, 2048 * 8, 256, true, true).ww);
     }
     // ---- Flash-Next's K-quant experts by default: kq_takes(kq_env, card, sm40_env), whether dev_info sets the K-quant kernels up.  The whole grid against an oracle written from the sentence of the decision:
-    // STRATA_PF_FUSED_KQ=0 (or any value not starting with '1'): never.  =1: every card.  Unset: the cards of the i-quant default rule (an sm_86-class or sm_120 card, not sm_121 alone, not a card with neither
-    // flag) with 80+ SMs, 40-79 SMs while STRATA_PF_FUSED_SM40 is not "0", under 40 SMs never.
+    // NOSTROMA_PF_FUSED_KQ=0 (or any value not starting with '1'): never.  =1: every card.  Unset: the cards of the i-quant default rule (an sm_86-class or sm_120 card, not sm_121 alone, not a card with neither
+    // flag) with 80+ SMs, 40-79 SMs while NOSTROMA_PF_FUSED_SM40 is not "0", under 40 SMs never.
     {
-        using namespace strata::prefill::fused_tile;
+        using namespace nostroma::prefill::fused_tile;
         long long cmp = 0, bad = 0, yes_def = 0, yes40 = 0, yes80 = 0;
         for (int env = -1; env <= 1; ++env)
             for (int sm40e = -1; sm40e <= 1; ++sm40e)
@@ -658,25 +658,25 @@ int main() {
                             }
         CHECK(bad == 0 && yes_def > 0 && yes40 > 0 && yes80 > 0);
         std::printf("fused_tile_rule_test: Flash-Next K-quant default: %lld switch / SM40 switch / card flag / SM count combinations (%lld wrong; %lld yes unset: %lld at 80+ SMs, %lld at 40-79)\n", cmp, bad, yes_def, yes80, yes40);
-        // the switch as the engine reads it: the same reading as STRATA_PF_FUSED's (pf_env)
+        // the switch as the engine reads it: the same reading as NOSTROMA_PF_FUSED's (pf_env)
         CHECK(pf_env(nullptr) == -1 && pf_env("") == -1 && pf_env("1") == 1 && pf_env("0") == 0 && pf_env("off") == 0);
         // named cards, switch unset
         const Card a6000{false, false, 84, true}, a40{false, false, 84, true}, a4000{false, false, 48, true}, a100{false, false, 108, true}, rtx4090{false, false, 128, true}, pro5000{true, false, 110, false},
             rtx5090{true, false, 170, false}, rtx5070{true, false, 48, false}, gb10{false, true, 48, false}, rtx3050{false, false, 20, true}, turing{false, false, 68, false}, hopper{false, false, 132, false};
         for (const Card& c : {a6000, a40, a100, rtx4090, pro5000, rtx5090}) CHECK(kq_takes(-1, c, -1) && kq_takes(-1, c, 0) && kq_takes(-1, c, 1) && !kq_takes(0, c, -1) && kq_takes(1, c, -1));   // 80+ SMs: the SM40 switch moves nothing
-        for (const Card& c : {a4000, rtx5070}) CHECK(kq_takes(-1, c, -1) && kq_takes(-1, c, 1) && !kq_takes(-1, c, 0) && !kq_takes(0, c, -1) && kq_takes(1, c, 0));                             // 40-79 SMs: on, STRATA_PF_FUSED_SM40=0 off
+        for (const Card& c : {a4000, rtx5070}) CHECK(kq_takes(-1, c, -1) && kq_takes(-1, c, 1) && !kq_takes(-1, c, 0) && !kq_takes(0, c, -1) && kq_takes(1, c, 0));                             // 40-79 SMs: on, NOSTROMA_PF_FUSED_SM40=0 off
         for (const Card& c : {gb10, rtx3050, turing, hopper}) CHECK(!kq_takes(-1, c, -1) && !kq_takes(-1, c, 1) && !kq_takes(0, c, -1) && kq_takes(1, c, -1));                                  // sm_121, under 40 SMs, no class flag: the opt-in only
         // the same answer as the i-quant rule for a staged gate/up with a staged down, every card above
         for (const Card& c : {a6000, a4000, a100, rtx4090, pro5000, rtx5090, rtx5070, gb10, rtx3050, turing, hopper})
             for (int sm40e = -1; sm40e <= 1; ++sm40e) CHECK(kq_takes(-1, c, sm40e) == takes_by_default(c, sm40_on(sm40e), true, true));
-        // compute capability: 8.0 / 8.6 / 8.9 are in the class (s86_class), 8.7 / 9.0 / 7.5 are not, STRATA_PF_FUSED_SM86=0 empties it
+        // compute capability: 8.0 / 8.6 / 8.9 are in the class (s86_class), 8.7 / 9.0 / 7.5 are not, NOSTROMA_PF_FUSED_SM86=0 empties it
         CHECK(kq_takes(-1, Card{false, false, 108, s86_class(8, 0)}, -1) && kq_takes(-1, Card{false, false, 128, s86_class(8, 9)}, -1));
         CHECK(!kq_takes(-1, Card{false, false, 16, s86_class(8, 7)}, -1) && !kq_takes(-1, Card{false, false, 132, s86_class(9, 0)}, -1) && !kq_takes(-1, Card{false, false, 68, s86_class(7, 5)}, -1) &&
               !kq_takes(-1, Card{false, false, 84, s86_class(8, 6, true)}, -1));
     }
-    // the Qwen3.6 engine on HIP: gfx12 only, STRATA_PF_FUSED=1 takes a covered pair, =0 never, unset never (a build with MMQ keeps its route); a build without MMQ reads unset as 1
+    // the Qwen3.6 engine on HIP: gfx12 only, NOSTROMA_PF_FUSED=1 takes a covered pair, =0 never, unset never (a build with MMQ keeps its route); a build without MMQ reads unset as 1
     {
-        using namespace strata::prefill::fused_tile;
+        using namespace nostroma::prefill::fused_tile;
         for (int env = -1; env <= 1; ++env)
             for (int gfx12 = 0; gfx12 <= 1; ++gfx12)
                 for (int covered = 0; covered <= 1; ++covered) CHECK(q36_takes_gfx12(env, gfx12 != 0, covered != 0) == (env == 1 && gfx12 && covered));
@@ -691,7 +691,7 @@ int main() {
     }
     // Turing (t75_pick): an i-quant gate/up takes 128 rows from above 56 rows an expert with no upper end; a Q2_0 gate/up keeps the band of pick (the rule as it was for it)
     {
-        using strata::prefill::fused_tile::t75_pick;
+        using nostroma::prefill::fused_tile::t75_pick;
         const Card none{};
         CHECK(t75_pick(rows_at(5.0), E, false) == 4 && t75_pick(rows_at(19.5), E, false) == 4 && t75_pick(rows_at(40.0), E, false) == 4);   // 256 / 1,000 / 2,048 tokens: 64 rows
         CHECK(t75_pick(28672, E, false) == 4 && t75_pick(28673, E, false) == 2);                                                              // 56.0 / 56.002 rows an expert

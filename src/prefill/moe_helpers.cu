@@ -1,11 +1,11 @@
-// src/prefill/moe_helpers.cu - see include/strata/prefill/moe_mmq.hpp.  The prompt experts' helpers that need nothing of llama.cpp's
+// src/prefill/moe_helpers.cu - see include/nostroma/prefill/moe_mmq.hpp.  The prompt experts' helpers that need nothing of llama.cpp's
 // ggml-cuda: the gathers of expert blobs into group buffers, the SwiGLU passes, the row table and the buffer sizes.  P4-SPLIT: cut
-// unchanged from moe_mmq.cu into Nostroma's own prompt library (strata_pf_own), so that a build without llama.cpp's MMQ keeps them.
-#include "strata/prefill/moe_mmq.hpp"
+// unchanged from moe_mmq.cu into Nostroma's own prompt library (nostroma_pf_own), so that a build without llama.cpp's MMQ keeps them.
+#include "nostroma/prefill/moe_mmq.hpp"
 
-#include "strata/prefill/moe_fused.hpp"   // kMoeEmbd, kMoeFF: the compiled geometry's widths
+#include "nostroma/prefill/moe_fused.hpp"   // kMoeEmbd, kMoeFF: the compiled geometry's widths
 
-#include "strata/quant/types.hpp"   // the block geometry of a type id (Nostroma's own type table, no ggml)
+#include "nostroma/quant/types.hpp"   // the block geometry of a type id (Nostroma's own type table, no ggml)
 
 #include <cuda_runtime.h>
 
@@ -13,7 +13,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-namespace strata::prefill::mmq {
+namespace nostroma::prefill::mmq {
 namespace {
 void ck(cudaError_t e, const char* what) {
     if (e != cudaSuccess) {
@@ -79,7 +79,7 @@ __global__ void copy1_kernel(const uint8_t* __restrict__ a, int64_t na, const ui
 // bytes} with the same 2-bit codes in the same order, so a block is a scale and a 16-byte run of codes.
 constexpr int Q2_GU_ROWS = fused::kMoeGuRows, Q2_ROW_GU = fused::kMoeEmbd / 4, Q2_ROW_D = fused::kMoeFF / 4, Q2_SC_GU = fused::kMoeEmbd / 64, Q2_SC_D = fused::kMoeFF / 64;
 static_assert(fused::kMoeEmbd % 64 == 0 && fused::kMoeFF % 64 == 0, "the Nostroma Q2 blob holds whole 64-weight blocks");
-__global__ void strata_q2_kernel(const uint8_t* __restrict__ blob, uint16_t* __restrict__ gu, uint16_t* __restrict__ dn) {
+__global__ void nostroma_q2_kernel(const uint8_t* __restrict__ blob, uint16_t* __restrict__ gu, uint16_t* __restrict__ dn) {
     constexpr size_t O_D_CODES = (size_t) Q2_GU_ROWS * Q2_ROW_GU, O_GU_SC = O_D_CODES + (size_t) fused::kMoeEmbd * Q2_ROW_D,
                      O_D_SC = O_GU_SC + (size_t) Q2_GU_ROWS * Q2_SC_GU * 2;
     const int64_t i = (int64_t) blockIdx.x * blockDim.x + threadIdx.x;   // one GGUF block
@@ -153,7 +153,7 @@ unsigned blocks(int64_t n) { return (unsigned) ((n + 255) / 256); }
 // 144-149 included (128 weights; 34 / 26 / 30 / 42 / 50 / 58 bytes); tests/quant/type_geometry_oracle.cpp checks it against ggml's
 // own table.  An id the table does not know has no size here (0): no prompt path reads such a matrix.
 size_t matrix_bytes(int t, int64_t rows, int64_t cols) {
-    const ::strata::quant::TypeInfo* ti = ::strata::quant::type_info(t);
+    const ::nostroma::quant::TypeInfo* ti = ::nostroma::quant::type_info(t);
     if (ti == nullptr) return 0;
     return (size_t) rows * (size_t) (cols / ti->blck) * ti->bytes;
 }
@@ -209,10 +209,10 @@ bool gather_native_group(const GatherGroup& g, size_t up_off, size_t gu_half_byt
     return true;
 }
 
-void gather_strata_q2(const uint8_t* blob, void* gu_dst, void* d_dst, void* stream) {
-    strata_q2_kernel<<<blocks((int64_t) Q2_GU_ROWS * Q2_SC_GU + (int64_t) fused::kMoeEmbd * Q2_SC_D), 256, 0, (cudaStream_t) stream>>>(blob, (uint16_t*) gu_dst,
+void gather_nostroma_q2(const uint8_t* blob, void* gu_dst, void* d_dst, void* stream) {
+    nostroma_q2_kernel<<<blocks((int64_t) Q2_GU_ROWS * Q2_SC_GU + (int64_t) fused::kMoeEmbd * Q2_SC_D), 256, 0, (cudaStream_t) stream>>>(blob, (uint16_t*) gu_dst,
                                                                                          (uint16_t*) d_dst);
-    ck(cudaGetLastError(), "gather_strata_q2");
+    ck(cudaGetLastError(), "gather_nostroma_q2");
 }
 
 void swiglu_scaled(const float* gu, float* h, int64_t rows, int64_t n_ff, const int32_t* bounds, int n,
@@ -239,4 +239,4 @@ void iota(int32_t* dst, int64_t n, void* stream) {
     ck(cudaGetLastError(), "iota");
 }
 
-}  // namespace strata::prefill::mmq
+}  // namespace nostroma::prefill::mmq

@@ -62,13 +62,13 @@
   "drafts_proposed": 351,
   "checkpoints": 6,
   "cancelled": false,
-  "line": "strata serve: prompt 128463 tokens = 128400 reused + 63 read in 1281 ms (49.2 tok/s), 400 generated in 11428 ms (35.0 tok/s), drafts accepted 209 of 351, 6 checkpoints",
+  "line": "nostroma serve: prompt 128463 tokens = 128400 reused + 63 read in 1281 ms (49.2 tok/s), 400 generated in 11428 ms (35.0 tok/s), drafts accepted 209 of 351, 6 checkpoints",
   "hit_rate_pct": 54.2,
-  "hit_line": "strata serve: decode expert cache hit rate: 54.2% (126441 hits / 233439 lookups)",
+  "hit_line": "nostroma serve: decode expert cache hit rate: 54.2% (126441 hits / 233439 lookups)",
   "kv_vram_pct": 95.86,
   "kv_block_reads": 7049460,
   "kv_ram_mib": 1176.7,
-  "kv_line": "strata serve: KV streaming: 95.86% of 7049460 block reads hit VRAM, 1176.7 MiB read from RAM",
+  "kv_line": "nostroma serve: KV streaming: 95.86% of 7049460 block reads hit VRAM, 1176.7 MiB read from RAM",
   "suffix_windows": 6,
   "suffix_accepted": 6,
   "suffix_proposed": 12
@@ -91,25 +91,25 @@
   "file_mb": 0.0
  },
  "engine_log": [
-  "strata serve: prompt 128463 tokens = 128400 reused + 63 read in 1281 ms (49.2 tok/s), 400 generated in 11428 ms (35.0 tok/s), drafts accepted 209 of 351, 6 checkpoints",
-  "strata serve: decode expert cache hit rate: 54.2% (126441 hits / 233439 lookups)",
-  "strata serve: KV streaming: 95.86% of 7049460 block reads hit VRAM, 1176.7 MiB read from RAM",
-  "strata serve: suffix drafts: 6 windows, 6 of 12 drafts accepted"
+  "nostroma serve: prompt 128463 tokens = 128400 reused + 63 read in 1281 ms (49.2 tok/s), 400 generated in 11428 ms (35.0 tok/s), drafts accepted 209 of 351, 6 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 54.2% (126441 hits / 233439 lookups)",
+  "nostroma serve: KV streaming: 95.86% of 7049460 block reads hit VRAM, 1176.7 MiB read from RAM",
+  "nostroma serve: suffix drafts: 6 windows, 6 of 12 drafts accepted"
  ],
  "server_log": [
-  "[strata] reading the prompt: 128,456 of 128,463 tokens, 1 s so far",
-  "[strata] answering: 24 of max 400 tokens, 30.4 tok/s, 2 s",
-  "[strata] answering: 62 of max 400 tokens, 33.2 tok/s, 3 s",
-  "[strata] answering: 97 of max 400 tokens, 33.7 tok/s, 4 s",
-  "[strata] answering: 135 of max 400 tokens, 34.6 tok/s, 5 s",
-  "[strata] answering: 175 of max 400 tokens, 35.6 tok/s, 6 s",
-  "[strata] answering: 217 of max 400 tokens, 36.4 tok/s, 7 s",
-  "[strata] answering: 252 of max 400 tokens, 36.2 tok/s, 8 s",
-  "[strata] answering: 281 of max 400 tokens, 35.2 tok/s, 9 s",
-  "[strata] answering: 320 of max 400 tokens, 35.3 tok/s, 10 s",
-  "[strata] answering: 358 of max 400 tokens, 35.5 tok/s, 11 s",
-  "[strata] answering: 390 of max 400 tokens, 34.9 tok/s, 13 s",
-  "[strata] done: 400 tokens in 13 s (35.1 tok/s) (length, cancel=False), expert cache 54.2% hit"
+  "[nostroma] reading the prompt: 128,456 of 128,463 tokens, 1 s so far",
+  "[nostroma] answering: 24 of max 400 tokens, 30.4 tok/s, 2 s",
+  "[nostroma] answering: 62 of max 400 tokens, 33.2 tok/s, 3 s",
+  "[nostroma] answering: 97 of max 400 tokens, 33.7 tok/s, 4 s",
+  "[nostroma] answering: 135 of max 400 tokens, 34.6 tok/s, 5 s",
+  "[nostroma] answering: 175 of max 400 tokens, 35.6 tok/s, 6 s",
+  "[nostroma] answering: 217 of max 400 tokens, 36.4 tok/s, 7 s",
+  "[nostroma] answering: 252 of max 400 tokens, 36.2 tok/s, 8 s",
+  "[nostroma] answering: 281 of max 400 tokens, 35.2 tok/s, 9 s",
+  "[nostroma] answering: 320 of max 400 tokens, 35.3 tok/s, 10 s",
+  "[nostroma] answering: 358 of max 400 tokens, 35.5 tok/s, 11 s",
+  "[nostroma] answering: 390 of max 400 tokens, 34.9 tok/s, 13 s",
+  "[nostroma] done: 400 tokens in 13 s (35.1 tok/s) (length, cancel=False), expert cache 54.2% hit"
  ],
  "needle_found": true
 }

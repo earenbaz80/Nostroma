@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Community benchmark: Strata at 1M context under an agent-like workload.
+"""Community benchmark: Nostroma at 1M context under an agent-like workload.
 
 Follows docs/COMMUNITY_BENCHMARKS.md conventions:
 - prompt and decode throughput come from the server's own `timings` block,

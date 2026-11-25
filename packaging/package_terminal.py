@@ -4,7 +4,7 @@
 The requirement this exists for (checklist P04, and the owner's rule that starting or serving never fetches Python
 packages from the internet): a user installs the terminal without Desktop, and needs no development checkout, no
 system Python, no pip run, no compiler. So the archive carries its own Python runtime and its own dependencies, and
-the `strata` launchers prefer them.
+the `nostroma` launchers prefer them.
 
 What goes in
 ------------
@@ -16,12 +16,12 @@ What goes in
   `pip install --require-hashes --no-deps --only-binary=:all:` at BUILD time only: every package, direct or
   transitive, is named with an exact version and the SHA-256 of the wheel(s) accepted, so nothing else can land in
   the bundle. pip itself is the one the interpreter shipped with (not upgraded);
-* the application: `strata.py`, `nostroma_control`, `nostroma_cli`, `serve`, a `VERSION` file and the docs the CLI
+* the application: `nostroma.py`, `nostroma_control`, `nostroma_cli`, `serve`, a `VERSION` file and the docs the CLI
   references;
 * the read-only tooling under `tools/` that the terminal paths import. Everything else under `tools/` is engine
   installation and preparation work and is deliberately excluded: the serving import graph must not pull it in
   (tests/terminal/test_no_acquisition.py checks that);
-* launchers: `bin/strata.cmd` and `bin/strata.ps1` (Windows), `bin/strata` (Linux, macOS).
+* launchers: `bin/nostroma.cmd` and `bin/nostroma.ps1` (Windows), `bin/nostroma` (Linux, macOS).
 
 What does NOT go in
 -------------------
@@ -95,7 +95,7 @@ PYTHON_PIN = {**PYTHON_PINS["darwin-arm64"], "target": "darwin-arm64"}
 
 #: The application, as paths relative to ROOT (copied to the same place in the archive).
 PAYLOAD = (
-    "strata.py",
+    "nostroma.py",
     "nostroma.py",
     "nostroma_control",
     "nostroma_cli",
@@ -111,30 +111,30 @@ PAYLOAD = (
 #: `tools/` modules the terminal paths import. Adding one here is a deliberate act: this list is what keeps
 #: installation/preparation code out of the serving import graph.
 TOOLS_SUBSET = (
-    "strata_tokenizer.py",
+    "nostroma_tokenizer.py",
     "gguf_reader.py",
     "dflash2_pack.py",     # the DFlash2 drafter: nostroma_control/drafting_fetch.py packs the download with it (numpy only)
 )
 
 #: What `nostroma launch` and the desktop app's installer need on top of the read-only terminal: the model catalog and GPU probe
-#: (tools/strata_mcp.py reads setup.py's tables) and the install job, which downloads the model the user chose, prepares it with
-#: the bundled tools and writes a run config naming "component:strata-engine". setup.py runs in its CONTROL mode there
-#: (STRATA_CONTROL_INSTALL=1: no pip, no engine fetch, no compiler). Entry points; their local imports under tools/ come with them.
+#: (tools/nostroma_mcp.py reads setup.py's tables) and the install job, which downloads the model the user chose, prepares it with
+#: the bundled tools and writes a run config naming "component:nostroma-engine". setup.py runs in its CONTROL mode there
+#: (NOSTROMA_CONTROL_INSTALL=1: no pip, no engine fetch, no compiler). Entry points; their local imports under tools/ come with them.
 #: The same list the app's Control component stages (apps/desktop/scripts/stage-control.py uses these names).
-INSTALLER_FILES = ("setup.py", "ref/load.py")   # ref/load.py: strata_pack.py (the Q2_0 AVX-512 repack) imports it
+INSTALLER_FILES = ("setup.py", "ref/load.py")   # ref/load.py: nostroma_pack.py (the Q2_0 AVX-512 repack) imports it
 #: calibrate: setup.py imports it after a tune (calibrate_config, and the earlier tuning that a rerun applies); it was missing from this
 #: list in 0.1.47, so every launch after a tune failed (#3613, #3467). setup_tool_imports() below also reads setup.py itself, so a tools/
 #: module it starts to import is never forgotten again; tests/terminal/test_bundle_imports.py checks the staged bundle.
-INSTALLER_TOOLS = ("strata_mcp", "iq_pack", "strata_pack", "pack_index", "mtp_fetch", "mtp_pack", "mtp_rt", "draft_vocab",
-                   "strata_tokenizer", "gguf_reader", "calibrate")
+INSTALLER_TOOLS = ("nostroma_mcp", "iq_pack", "nostroma_pack", "pack_index", "mtp_fetch", "mtp_pack", "mtp_rt", "draft_vocab",
+                   "nostroma_tokenizer", "gguf_reader", "calibrate")
 #: tools run BY PATH (`python tools/.../x.py`) by setup.py, nostroma_cli or nostroma_control: no import names them, so setup_tool_imports() cannot find
-#: them.  setup.py's by-path tools (nvfp4_local_pack, strata_bench, strata_inspect) were missing from the bundle once.
+#: them.  setup.py's by-path tools (nvfp4_local_pack, nostroma_bench, nostroma_inspect) were missing from the bundle once.
 #: tests/terminal/test_bundle_tools_paths.py reads the by-path references out of the source and fails when one is missing from the bundle.
-INSTALLER_SCRIPTS = ("nvfp4_local_pack", "strata_bench", "strata_inspect")
+INSTALLER_SCRIPTS = ("nvfp4_local_pack", "nostroma_bench", "nostroma_inspect")
 INSTALLER_DATA = "data"           # draft vocabularies, expert profiles: 2 MB
-#: gguf-py and llama.cpp's HF converter at the llama.cpp pin (third_party/strata-gguf-py, 1.8 MB, MIT): the preparation tools import them, so
+#: gguf-py and llama.cpp's HF converter at the llama.cpp pin (third_party/nostroma-gguf-py, 1.8 MB, MIT): the preparation tools import them, so
 #: no llama.cpp download is needed to prepare a model (before 0.2.15 the installed Terminal fetched the 170 MB zip for this)
-INSTALLER_THIRD_PARTY = ("third_party/strata-gguf-py",)
+INSTALLER_THIRD_PARTY = ("third_party/nostroma-gguf-py",)
 #: the Mac install's tools (setup.py's mac_control_setup runs them by path): Unsloth's many-shard sets become ONE GGUF for the Metal engine (stdlib only, 15 KB)
 INSTALLER_METAL_TOOLS = ("metal_repack", "stream_experts")
 
@@ -240,7 +240,7 @@ def install_locked(py: Path, lock: Path, root: Path, wheelhouse: Path | None = N
 
 def drop_build_path_launchers(root: Path, staging: Path, target: str) -> list[str]:
     """pip writes console-script launchers that name the build-time interpreter by absolute path: they break the
-    moment the archive is extracted elsewhere. `python -m <module>` and the `strata` launchers replace them."""
+    moment the archive is extracted elsewhere. `python -m <module>` and the `nostroma` launchers replace them."""
     gone = []
     if target.startswith("windows"):
         scripts = root / "python" / "Scripts"
@@ -326,7 +326,7 @@ def add_installer(folder: Path, source: Path = ROOT) -> dict:
         shutil.copytree(source / name, folder / name, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
         copied.append(name + "/")
     return {"files": copied, "data": INSTALLER_DATA, "setup_sha256": sha256(folder / "setup.py"),
-            "mode": "STRATA_CONTROL_INSTALL=1: downloads the chosen model, prepares it, installs no package and no engine"}
+            "mode": "NOSTROMA_CONTROL_INSTALL=1: downloads the chosen model, prepares it, installs no package and no engine"}
 
 
 def write_archive(root: Path, name: str, out_dir: Path, kind: str) -> Path:
@@ -345,10 +345,10 @@ def write_archive(root: Path, name: str, out_dir: Path, kind: str) -> Path:
 
 
 def build_commit(explicit: str | None = None) -> str | None:
-    """The full commit this archive is built from: --commit, the STRATA_COMMIT variable, STRATA_BUILD_COMMIT (a Docker build
+    """The full commit this archive is built from: --commit, the NOSTROMA_COMMIT variable, NOSTROMA_BUILD_COMMIT (a Docker build
     copies the files without .git and without git), or `git rev-parse HEAD` of the source tree. None when none of them gives
     40 hex digits (a tree copy without .git)."""
-    for candidate in (explicit, os.environ.get("STRATA_COMMIT"), os.environ.get("STRATA_BUILD_COMMIT")):
+    for candidate in (explicit, os.environ.get("NOSTROMA_COMMIT"), os.environ.get("NOSTROMA_BUILD_COMMIT")):
         if candidate and re.fullmatch(r"[0-9a-fA-F]{40}", candidate.strip()):
             return candidate.strip().lower()
     try:
@@ -372,11 +372,11 @@ def main() -> int:
     ap.add_argument("--skip-deps", action="store_true",
                     help="skip the locked install (layout checks only; the result is NOT distributable)")
     ap.add_argument("--commit", default=None, metavar="SHA",
-                    help="the full commit the sources come from, for a tree copy that has no .git (or set STRATA_COMMIT); "
+                    help="the full commit the sources come from, for a tree copy that has no .git (or set NOSTROMA_COMMIT); "
                          "`nostroma bench run` records it, and a standard benchmark without it is nonconforming")
     ap.add_argument("--keep-staging", action="store_true")
     ap.add_argument("--no-installer", action="store_true",
-                    help="leave out setup.py, tools/strata_mcp.py and data/ (the read-only terminal of earlier releases; "
+                    help="leave out setup.py, tools/nostroma_mcp.py and data/ (the read-only terminal of earlier releases; "
                          "`nostroma launch` then cannot list or install models)")
     ap.add_argument("--cache", default=None, help="where the pinned interpreter archive is cached")
     ap.add_argument("--wheelhouse", default=None,
@@ -389,7 +389,7 @@ def main() -> int:
                          "bundled interpreter. Use --skip-deps for a layout check.")
     commit = build_commit(args.commit)
     if commit is None:
-        message = ("the commit of these sources is unknown (no .git here, no --commit, no STRATA_COMMIT): the archive would carry "
+        message = ("the commit of these sources is unknown (no .git here, no --commit, no NOSTROMA_COMMIT): the archive would carry "
                    "no COMMIT file, and every `nostroma bench run` on it would be nonconforming")
         if not args.skip_deps:
             raise SystemExit(message)
@@ -398,14 +398,14 @@ def main() -> int:
     version = args.version or _source_version()
     out_dir = Path(args.out).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
-    name = f"strata-terminal-{version}-{target}"
+    name = f"nostroma-terminal-{version}-{target}"
 
-    cache = Path(args.cache) if args.cache else Path(tempfile.gettempdir()) / "strata-packaging-cache"
+    cache = Path(args.cache) if args.cache else Path(tempfile.gettempdir()) / "nostroma-packaging-cache"
     cache.mkdir(parents=True, exist_ok=True)
     archive = fetch_python(target, cache)
     lock = lock_for(target)
 
-    staging = Path(tempfile.mkdtemp(prefix="strata-terminal-build-"))
+    staging = Path(tempfile.mkdtemp(prefix="nostroma-terminal-build-"))
     root = staging / name
     root.mkdir(parents=True)
     try:
@@ -443,17 +443,17 @@ def main() -> int:
 
         bin_dir = root / "bin"
         bin_dir.mkdir(exist_ok=True)
-        launchers = ["strata.cmd", "strata.ps1"] if target.startswith("windows") else ["strata"]
+        launchers = ["nostroma.cmd", "nostroma.ps1"] if target.startswith("windows") else ["nostroma"]
         for launcher in launchers:
             shutil.copy2(ROOT / "bin" / launcher, bin_dir / launcher)
-            if launcher == "strata":
+            if launcher == "nostroma":
                 (bin_dir / launcher).chmod(0o755)
-            # the other name of the same launcher, on every system: `nostroma` is the command and `strata` the name it had.
+            # the other name of the same launcher, on every system: `nostroma` is the command and `nostroma` the name it had.
             # A Windows PATH entry lists files, and the installer puts neither name in a link of its own, so both have to
             # be in the archive for `nostroma` to be found on the PATH; shipping both everywhere keeps the two archives alike.
-            twin = bin_dir / launcher.replace("strata", "nostroma")
+            twin = bin_dir / launcher.replace("nostroma", "nostroma")
             shutil.copy2(bin_dir / launcher, twin)
-            if launcher == "strata":
+            if launcher == "nostroma":
                 twin.chmod(0o755)
 
         installed: dict[str, str] = {}
@@ -512,7 +512,7 @@ def main() -> int:
 def _source_version() -> str:
     """The version the source reports, so the artifact name cannot disagree with the code."""
     text = (ROOT / "CMakeLists.txt").read_text(encoding="utf-8", errors="replace")
-    # `project(strata VERSION 0.1.44.1 LANGUAGES C CXX ...)` - the version is a dotted run of numbers and must be
+    # `project(nostroma VERSION 0.1.44.1 LANGUAGES C CXX ...)` - the version is a dotted run of numbers and must be
     # read as one. Taking "everything after VERSION" yields "0.1.44.1.LANGUAGES.CXX".
     m = re.search(r"^\s*project\([^)]*?VERSION\s+([0-9]+(?:\.[0-9]+)+)", text, re.MULTILINE)
     return m.group(1) if m else "0.0.0"
@@ -521,11 +521,11 @@ def _source_version() -> str:
 def _readme(version: str, target: str) -> str:
     win = target.startswith("windows")
     ext = "zip" if win else "tar.gz"
-    stem = f"strata-terminal-{version}-{target}"
+    stem = f"nostroma-terminal-{version}-{target}"
     if win:
         install = f"""    Expand-Archive {stem}.zip .
     cd {stem}
-    .\\bin\\strata.cmd --help
+    .\\bin\\nostroma.cmd --help
 
 Put `bin\\` on your PATH to get the `nostroma` command everywhere (cmd.exe and PowerShell):
 
@@ -534,7 +534,7 @@ Put `bin\\` on your PATH to get the `nostroma` command everywhere (cmd.exe and P
     else:
         install = f"""    tar xzf {stem}.tar.gz
     cd {stem}
-    ./bin/strata --help
+    ./bin/nostroma --help
 
 Put `bin/` on your PATH to get the `nostroma` command everywhere:
 
@@ -568,7 +568,7 @@ What it does NOT include
 ------------------------
 The **engine** is a separate, independently versioned component and is not bundled: the right engine package
 depends on your OS, CPU and GPU. `nostroma launch` (or `nostroma update`) fetches the one for your card from the signed
-release feed; or point Nostroma at one with STRATA_ENGINE. Model weights are likewise not included: `nostroma launch`
+release feed; or point Nostroma at one with NOSTROMA_ENGINE. Model weights are likewise not included: `nostroma launch`
 downloads the one you choose (the installer files setup.py and tools/ are in this archive for that).
 
 Useful commands
@@ -584,7 +584,7 @@ Useful commands
     nostroma serve --engine mock ...    a scripted engine for client tests (no GPU, no model)
     nostroma runtime start|status|stop  run a profile as a managed background instance
 
-Existing installs are found in place: the run configs (strata-<model>.json) and the data folder remembered in
+Existing installs are found in place: the run configs (nostroma-<model>.json) and the data folder remembered in
 settings.json are used where they are; nothing is copied or moved.
 
 Verification

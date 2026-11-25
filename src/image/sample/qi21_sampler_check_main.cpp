@@ -1,8 +1,8 @@
-// src/image/sample/qi21_sampler_check_main.cpp - test program strata-sampler-check (not shipped): Nostroma's Turbo
-// sampler (include/strata/image/qi21_sampler.hpp) against stable-diffusion.cpp's own stage dumps.
+// src/image/sample/qi21_sampler_check_main.cpp - test program nostroma-sampler-check (not shipped): Nostroma's Turbo
+// sampler (include/nostroma/image/qi21_sampler.hpp) against stable-diffusion.cpp's own stage dumps.
 //
-//   strata-sampler-check <dump dir> [<dump dir> ...] [--fixture OUT [--fixture-n N]]
-//   strata-sampler-check --fixture-check FILE
+//   nostroma-sampler-check <dump dir> [<dump dir> ...] [--fixture OUT [--fixture-n N]]
+//   nostroma-sampler-check --fixture-check FILE
 //
 // Dump mode: each dir holds one picture's dumps of all 8 model calls (tools/image/gate/stage_hooks.py: dit_x_<k>,
 // dit_t_<k>, vel_<k>; and latent, the final latent).  Starting from dit_x_0 and feeding sd.cpp's own vel_<k>, our
@@ -11,7 +11,7 @@
 // where not identical, the count of differing values and the largest difference in units in the last place.
 // --fixture OUT writes, from the first dir, N values per step (spread over the tensor) for the CPU test.
 // Fixture mode: the step on the stored values must give the stored results (tools/test_qi21_sampler.py).
-#include "strata/image/qi21_sampler.hpp"
+#include "nostroma/image/qi21_sampler.hpp"
 
 #include <algorithm>
 #include <cstdint>
@@ -24,7 +24,7 @@
 #include <vector>
 
 namespace fs = std::filesystem;
-using namespace strata::image;
+using namespace nostroma::image;
 
 namespace {
 
@@ -114,7 +114,7 @@ int main(int argc, char** argv) {
         else dirs.emplace_back(argv[i]);
     }
     if (dirs.empty()) {
-        std::fprintf(stderr, "usage: strata-sampler-check <dump dir> [...] [--fixture OUT [--fixture-n N]] | --fixture-check FILE\n");
+        std::fprintf(stderr, "usage: nostroma-sampler-check <dump dir> [...] [--fixture OUT [--fixture-n N]] | --fixture-check FILE\n");
         return 2;
     }
     const std::vector<float> sig = qi21_parse_sigmas(QI21_TURBO_SIGMAS);

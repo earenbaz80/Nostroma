@@ -1,6 +1,6 @@
 # Community benchmark: RTX 4090 24 GB with 32 GB of system RAM, 512K context (IQ2_XS)
 
-Measured on 2026-10-04 by [T-Crypt](https://github.com/T-Crypt) on a Linux desktop. This tests Strata
+Measured on 2026-10-04 by [T-Crypt](https://github.com/T-Crypt) on a Linux desktop. This tests Nostroma
 0.1.39 with the original Flash-Next IQ2_XS on one RTX 4090 at a 524,288-token context - past the model's trained
 262,144 - with `--rope-scaling yarn --rope-scale 2`, q4_0 KV streamed (`--kv-resident 32768`) and
 `--resident-experts`, on a box with 32 GB of RAM. 24 GB of VRAM plus 32 GB of system RAM, 56 GB of memory in
@@ -10,13 +10,13 @@ RAM, plus 3.38 GiB of streamed KV.
 **Headline:** a 476,820-token prompt read in **135.5 s (3,411 tok/s)** and decoded at **122.0 tok/s at depth**,
 with recall at all four sizes tested. The number that decides whether this is usable is not the speed but the
 RAM floor: with the engine's default headroom the same run left **1.41 GiB** of `MemAvailable`; with
-`STRATA_RESIDENT_HEADROOM_GIB=6` it left **3.53 GiB** and kept the speed. On a 32 GB box the headroom setting
+`NOSTROMA_RESIDENT_HEADROOM_GIB=6` it left **3.53 GiB** and kept the speed. On a 32 GB box the headroom setting
 is the difference between a working 512K config and one that has to swap.
 
 ## Hardware and software
 
 - **GPU:** NVIDIA GeForce RTX 4090, 24,564 MiB reported VRAM, live PCIe link Gen 4 x16, driver 615.71.09. One
-  card, dedicated to Strata during the runs.
+  card, dedicated to Nostroma during the runs.
 - **CPU:** Intel Core i9-14900K, 24 cores / 32 threads, **no AVX-512** - the engine's expert kernels run on
   AVX-2. It selected 23 expert-pool workers plus its host thread.
 - **RAM:** 32 GB installed, Linux reports 31 GiB usable. 4 GB zram swap (`free` reports 3 GB).
@@ -38,11 +38,11 @@ prepared `mtp/rt`.
 **Configuration** ([config-q4-512k-yarn-res-p.json](config-q4-512k-yarn-res-p.json)):
 
 ```text
---pack ~/Strata-data/packs/iq2_xs
-  --native ~/Strata-data/models/IQ2_XS/Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00001-of-00002.gguf
-  --ple-gguf ~/Strata-data/models/IQ2_XS/Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00002-of-00002.gguf
+--pack ~/Nostroma-data/packs/iq2_xs
+  --native ~/Nostroma-data/models/IQ2_XS/Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00001-of-00002.gguf
+  --ple-gguf ~/Nostroma-data/models/IQ2_XS/Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00002-of-00002.gguf
   --expert-profile data/expert-profile.bin --expert-cache auto --prefill auto
-  --spec 4 --spec-min-p 0.5 --mtp ~/Strata-data/mtp/rt --resident-experts
+  --spec 4 --spec-min-p 0.5 --mtp ~/Nostroma-data/mtp/rt --resident-experts
   --max-context 524288 --kv q4_0 --kv-resident 32768
   --rope-scaling yarn --rope-scale 2
 ```
@@ -73,7 +73,7 @@ planted line in the middle, asks for the planted number (48-token cap), then sen
 recall request; decode at depth is `predicted_per_second` on the summary request. `MemAvailable` and swap
 sampled every second. Three short follow-up prompts after the 480K run check stability.
 
-Two arms, each a fresh server start: `STRATA_RESIDENT_HEADROOM_GIB=6` and the default 4. Not interleaved. The
+Two arms, each a fresh server start: `NOSTROMA_RESIDENT_HEADROOM_GIB=6` and the default 4. Not interleaved. The
 0.1.38 baseline is the previous night's run on the same box and the same config, also not interleaved.
 
 ## Results
@@ -102,11 +102,11 @@ baseline for context:
 Read seconds / prefill tok/s / decode at depth tok/s.
 
 - **Why headroom 6 matters on 0.1.39.** 0.1.39 adds a page-locked RAM copy for the prompt path's lent slots,
-  sized to all but `STRATA_RESIDENT_HEADROOM_GIB` (default 4) of the RAM free at start. On a 32 GB box that is
+  sized to all but `NOSTROMA_RESIDENT_HEADROOM_GIB` (default 4) of the RAM free at start. On a 32 GB box that is
   19.20 GiB pinned, and a 477K prompt left 1.41 GiB of `MemAvailable` - with the desktop running, that is close
   enough to the wall to be a risk. Headroom 6 pins 17.28 GiB and leaves 3.53 GiB, and keeps most of the gain:
   -12% read time at 477K against the 0.1.38 baseline and +10% decode at depth.
-- Short-prompt decode (`strata bench`, code / reason / agent): headroom 6 132.2 / 154.5 / 138.1 t/s, headroom 4
+- Short-prompt decode (`nostroma bench`, code / reason / agent): headroom 6 132.2 / 154.5 / 138.1 t/s, headroom 4
   142.2 / 155.2 / 140.4, 0.1.38 131.8 / 157.9 / 133.1. Run-to-run spread inside each arm is +-20 t/s, so the
   short-prompt difference is a wash.
 - Follow-ups after the 477K prompt (a 17*23 arithmetic answer, a one-word answer, a Python one-liner) were
@@ -136,7 +136,7 @@ attends to about 2K selected positions however long the context is - decode at 2
 
 ## PR #783 on the same card (short context, 2026-10-04)
 
-`strata bench` on the live 262K q4_0 config, base and #783 alternated twice each
+`nostroma bench` on the live 262K q4_0 config, base and #783 alternated twice each
 ([pr783-raw.txt](pr783-raw.txt)). Base = 0.1.39 + #700, the same build as above.
 
 | Shape | Base run 1 | Base run 2 | #783 run 1 | #783 run 2 | Mean delta |

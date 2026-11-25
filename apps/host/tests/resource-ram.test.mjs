@@ -14,17 +14,17 @@ test('which engines know the setting: RAM_KEEP_MIN_ENGINE and newer; unknown or 
   assert.equal(RAM_KEEP_MIN_ENGINE, '0.1.56');
   for (const v of ['0.1.56', '0.1.56.1', '0.1.57', '0.2.0', 'v0.1.56', '1.0']) assert.equal(engineKnowsRamKeep(v), true, v);
   for (const v of ['0.1.52', '0.1.54', '0.1.55', '0.1.55.1', '0.1.55.2', '0.1.5', '0.1', null, undefined, '', 'local', 'dev']) assert.equal(engineKnowsRamKeep(v), false, String(v));
-  assert.equal(engineVersionOfExe('C:\\Users\\x\\AppData\\Local\\Strata\\components\\engine\\0.1.54-windows-x86_64-cuda-cuda13\\strata.exe'), '0.1.54');
-  assert.equal(engineVersionOfExe('/home/u/.strata/components/engine/0.1.56-linux-x86_64-cuda/strata'), '0.1.56');
-  assert.equal(engineVersionOfExe('component:strata-engine'), null);
+  assert.equal(engineVersionOfExe('C:\\Users\\x\\AppData\\Local\\Nostroma\\components\\engine\\0.1.54-windows-x86_64-cuda-cuda13\\nostroma.exe'), '0.1.54');
+  assert.equal(engineVersionOfExe('/home/u/.nostroma/components/engine/0.1.56-linux-x86_64-cuda/nostroma'), '0.1.56');
+  assert.equal(engineVersionOfExe('component:nostroma-engine'), null);
 });
 
-test('an engine that knows the setting: "leave 20% for my work" asks it to keep W GiB of RAM free (env STRATA_RAM_KEEP_GIB), not a budget of 80% of the RAM', () => {
+test('an engine that knows the setting: "leave 20% for my work" asks it to keep W GiB of RAM free (env NOSTROMA_RAM_KEEP_GIB), not a budget of 80% of the RAM', () => {
   const work = resourceSettings(config, pc64, 'work', iq3sNew);
-  assert.equal(work.env.STRATA_RAM_KEEP_GIB, '8', '63 GB: a fifth is 12.6, capped at 8');
+  assert.equal(work.env.NOSTROMA_RAM_KEEP_GIB, '8', '63 GB: a fifth is 12.6, capped at 8');
   assert.equal(work.args.includes('--ram-keep-gib'), false, 'in the env, not as a flag');
   assert.equal(work.args.includes('--resident-budget-gib'), false, 'the engine decides from the RAM free at its start, not from the total: no budget from the app');
-  assert.equal(work.env.STRATA_RESIDENT_HEADROOM_GIB, undefined, 'and no STRATA_RESIDENT_HEADROOM_GIB of 20%');
+  assert.equal(work.env.NOSTROMA_RESIDENT_HEADROOM_GIB, undefined, 'and no NOSTROMA_RESIDENT_HEADROOM_GIB of 20%');
   assert.deepEqual([work.ui_resource_baseline.ramKeep, work.ui_resource_baseline.ramBudget, work.ui_resource_baseline.ramHeadroom], [true, false, false]);
 });
 
@@ -32,21 +32,21 @@ test('an older engine (0.1.52, 0.1.54, 0.1.55 in the Engine tab) gets the 0.2.9 
   for (const v of ['0.1.52', '0.1.54', '0.1.55', '0.1.55.1']) {
     const w = resourceSettings(config, pc64, 'work', { arenaGb: 50.3, engineVersion: v });
     assert.equal(flag(w.args, '--resident-budget-gib'), String(old279(63)), `${v}: the 80% budget`);
-    assert.equal(w.env.STRATA_RESIDENT_HEADROOM_GIB, '13', `${v}: 20% of 63 GB, rounded up`);
-    assert.equal(w.env.STRATA_RAM_KEEP_GIB, undefined, `${v}: the setting it does not know is not sent`);
+    assert.equal(w.env.NOSTROMA_RESIDENT_HEADROOM_GIB, '13', `${v}: 20% of 63 GB, rounded up`);
+    assert.equal(w.env.NOSTROMA_RAM_KEEP_GIB, undefined, `${v}: the setting it does not know is not sent`);
     assert.equal(w.args.includes('--ram-keep-gib'), false);
     assert.deepEqual([w.ui_resource_baseline.ramKeep, w.ui_resource_baseline.ramBudget, w.ui_resource_baseline.ramHeadroom], [false, true, true]);
   }
   // no engine version at all (not readable): the rule every engine understands
   const unknown = resourceSettings(config, pc64, 'work', iq3s);
   assert.equal(flag(unknown.args, '--resident-budget-gib'), String(old279(63)));
-  assert.equal(unknown.env.STRATA_RAM_KEEP_GIB, undefined);
+  assert.equal(unknown.env.NOSTROMA_RAM_KEEP_GIB, undefined);
   // an engine named by the run config's exe wins over the active engine's version
-  const pinned = resourceSettings({ ...config, exe: 'C:\\x\\components\\engine\\0.1.54-windows-x86_64-cuda-cuda13\\strata.exe' }, pc64, 'work', iq3sNew);
-  assert.equal(pinned.env.STRATA_RAM_KEEP_GIB, undefined);
+  const pinned = resourceSettings({ ...config, exe: 'C:\\x\\components\\engine\\0.1.54-windows-x86_64-cuda-cuda13\\nostroma.exe' }, pc64, 'work', iq3sNew);
+  assert.equal(pinned.env.NOSTROMA_RAM_KEEP_GIB, undefined);
   assert.equal(flag(pinned.args, '--resident-budget-gib'), String(old279(63)));
-  const newer = resourceSettings({ ...config, exe: '/x/components/engine/0.1.57-linux-x86_64-cuda/strata' }, pc64, 'work', iq3sOld);
-  assert.equal(newer.env.STRATA_RAM_KEEP_GIB, '8');
+  const newer = resourceSettings({ ...config, exe: '/x/components/engine/0.1.57-linux-x86_64-cuda/nostroma' }, pc64, 'work', iq3sOld);
+  assert.equal(newer.env.NOSTROMA_RAM_KEEP_GIB, '8');
   assert.equal(newer.args.includes('--resident-budget-gib'), false);
 });
 
@@ -55,19 +55,19 @@ test('24, 32, 64 and 128 GB: a newer engine gets W in the env, an older one gets
   for (const [ram, w, budget, headroom] of cases) {
     const pc = { ...pc64, ram_gb: ram };
     const on = resourceSettings(config, pc, 'work', iq3sNew);
-    assert.equal(on.env.STRATA_RAM_KEEP_GIB, w, `${ram} GB, new engine, Leave 20% on`);
+    assert.equal(on.env.NOSTROMA_RAM_KEEP_GIB, w, `${ram} GB, new engine, Leave 20% on`);
     assert.equal(on.args.includes('--ram-keep-gib'), false, `${ram} GB: not a flag`);
     assert.equal(on.args.includes('--resident-budget-gib'), false, `${ram} GB: no budget from the app`);
-    assert.equal(on.env.STRATA_RESIDENT_HEADROOM_GIB, undefined, `${ram} GB: no env headroom`);
+    assert.equal(on.env.NOSTROMA_RESIDENT_HEADROOM_GIB, undefined, `${ram} GB: no env headroom`);
     const older = resourceSettings(config, pc, 'work', iq3sOld);
-    assert.equal(older.env?.STRATA_RAM_KEEP_GIB, undefined, `${ram} GB, old engine: no setting it does not know`);
+    assert.equal(older.env?.NOSTROMA_RAM_KEEP_GIB, undefined, `${ram} GB, old engine: no setting it does not know`);
     assert.equal(older.args.includes('--ram-keep-gib'), false);
     if (budget === null) {
       assert.equal(older.args.includes('--resident-budget-gib'), false, `${ram} GB, old engine: the experts fit 80% of the RAM with 10 to spare: left alone`);
       assert.equal(older.env, undefined);
     } else {
       assert.equal(flag(older.args, '--resident-budget-gib'), String(budget), `${ram} GB, old engine: the 0.2.9 budget`);
-      assert.equal(older.env.STRATA_RESIDENT_HEADROOM_GIB, headroom, `${ram} GB, old engine: 20% of the RAM rounded up`);
+      assert.equal(older.env.NOSTROMA_RESIDENT_HEADROOM_GIB, headroom, `${ram} GB, old engine: 20% of the RAM rounded up`);
     }
     for (const v of [iq3sNew, iq3sOld]) {
       const off = resourceSettings(config, pc, 'performance', v);
@@ -84,7 +84,7 @@ test('full performance takes the RAM settings of either engine out again and kee
   for (const model of [iq3sNew, iq3sOld]) {
     const work = resourceSettings(config, pc64, 'work', model);
     const back = resourceSettings({ ...config, args: work.args, env: work.env, ui_resource_profile: 'work', ui_resource_baseline: work.ui_resource_baseline }, pc64, 'performance', model);
-    for (const name of ['STRATA_RAM_KEEP_GIB', 'STRATA_RESIDENT_HEADROOM_GIB']) assert.equal(back.env?.[name], undefined, `${model.engineVersion}: ${name}`);
+    for (const name of ['NOSTROMA_RAM_KEEP_GIB', 'NOSTROMA_RESIDENT_HEADROOM_GIB']) assert.equal(back.env?.[name], undefined, `${model.engineVersion}: ${name}`);
     assert.equal(back.args.includes('--ram-keep-gib'), false);
     assert.equal(back.args.includes('--resident-budget-gib'), false);
     assert.deepEqual([back.ui_resource_baseline.ramKeep, back.ui_resource_baseline.ramBudget, back.ui_resource_baseline.ramHeadroom], [false, false, false]);
@@ -97,22 +97,22 @@ test('switching the engine in the Engine tab between loads swaps the rule: new -
   const asConfig = r => ({ ...config, args: r.args, env: r.env, ui_resource_profile: 'work', ui_resource_baseline: r.ui_resource_baseline });
   const onNew = resourceSettings(config, pc64, 'work', iq3sNew);
   const toOld = resourceSettings(asConfig(onNew), pc64, 'work', iq3sOld);
-  assert.equal(toOld.env.STRATA_RAM_KEEP_GIB, undefined, 'the setting is not left behind for the engine that ignores it');
+  assert.equal(toOld.env.NOSTROMA_RAM_KEEP_GIB, undefined, 'the setting is not left behind for the engine that ignores it');
   assert.equal(flag(toOld.args, '--resident-budget-gib'), String(old279(63)));
-  assert.equal(toOld.env.STRATA_RESIDENT_HEADROOM_GIB, '13');
+  assert.equal(toOld.env.NOSTROMA_RESIDENT_HEADROOM_GIB, '13');
   const backNew = resourceSettings(asConfig(toOld), pc64, 'work', iq3sNew);
   assert.equal(backNew.args.includes('--resident-budget-gib'), false, 'the old budget is gone again');
-  assert.equal(backNew.env.STRATA_RESIDENT_HEADROOM_GIB, undefined);
-  assert.equal(backNew.env.STRATA_RAM_KEEP_GIB, '8');
+  assert.equal(backNew.env.NOSTROMA_RESIDENT_HEADROOM_GIB, undefined);
+  assert.equal(backNew.env.NOSTROMA_RAM_KEEP_GIB, '8');
 });
 
 test('a model whose size is unknown, or one with a RAM mode of the person, is left alone (either engine)', () => {
   for (const model of [iq3sNew, iq3sOld]) {
     assert.equal(resourceSettings(config, { ...pc64, ram_gb: 0 }, 'work', model).env, undefined, 'no RAM figure, no change');
-    const ownEnv = resourceSettings({ ...config, env: { STRATA_RAM_KEEP_GIB: '3' } }, pc64, 'work', model);
-    if (model === iq3sNew) assert.equal(ownEnv.env, undefined, 'a STRATA_RAM_KEEP_GIB of the person is left in the run config as it is');
+    const ownEnv = resourceSettings({ ...config, env: { NOSTROMA_RAM_KEEP_GIB: '3' } }, pc64, 'work', model);
+    if (model === iq3sNew) assert.equal(ownEnv.env, undefined, 'a NOSTROMA_RAM_KEEP_GIB of the person is left in the run config as it is');
     else {   // an engine that ignores that variable: it keeps the person's value in the file and the 0.2.9 rule gives the room
-      assert.equal(ownEnv.env.STRATA_RAM_KEEP_GIB, '3');
+      assert.equal(ownEnv.env.NOSTROMA_RAM_KEEP_GIB, '3');
       assert.equal(flag(ownEnv.args, '--resident-budget-gib'), String(old279(63)));
     }
     for (const mine of [['--mmap-experts'], ['--resident-experts'], ['--resident-budget-gib', '30'], ['--ram-keep-gib', '3']]) {
@@ -128,20 +128,20 @@ test('a model whose size is unknown, or one with a RAM mode of the person, is le
 });
 
 test('a config written by the earlier version (an 80% budget and a 20% env headroom) is replaced by the rule of the engine in use, and full performance takes the old settings out', () => {
-  const old = { ...config, args: [...config.args, '--resident-budget-gib', '38'], env: { STRATA_RESIDENT_HEADROOM_GIB: '13' },
+  const old = { ...config, args: [...config.args, '--resident-budget-gib', '38'], env: { NOSTROMA_RESIDENT_HEADROOM_GIB: '13' },
     ui_resource_profile: 'work', ui_resource_baseline: { workers: 12, reserve: 0, ramBudget: true, ramHeadroom: true } };
   const work = resourceSettings(old, pc64, 'work', iq3sNew);
   assert.equal(work.args.includes('--resident-budget-gib'), false, 'the old budget is gone for an engine that knows the setting');
-  assert.equal(work.env.STRATA_RAM_KEEP_GIB, '8');
-  assert.equal(work.env.STRATA_RESIDENT_HEADROOM_GIB, undefined, 'and the old 20% env with it');
+  assert.equal(work.env.NOSTROMA_RAM_KEEP_GIB, '8');
+  assert.equal(work.env.NOSTROMA_RESIDENT_HEADROOM_GIB, undefined, 'and the old 20% env with it');
   const same = resourceSettings(old, pc64, 'work', iq3sOld);
   assert.equal(flag(same.args, '--resident-budget-gib'), String(old279(63)), 'an older engine keeps the 0.2.9 rule');
-  assert.equal(same.env.STRATA_RESIDENT_HEADROOM_GIB, '13');
+  assert.equal(same.env.NOSTROMA_RESIDENT_HEADROOM_GIB, '13');
   const perf = resourceSettings(old, pc64, 'performance', iq3sNew);
   assert.equal(perf.args.includes('--resident-budget-gib'), false);
   assert.equal(perf.args.includes('--ram-keep-gib'), false);
-  assert.equal(perf.env.STRATA_RESIDENT_HEADROOM_GIB, undefined);
-  assert.equal(perf.env.STRATA_RAM_KEEP_GIB, undefined);
+  assert.equal(perf.env.NOSTROMA_RESIDENT_HEADROOM_GIB, undefined);
+  assert.equal(perf.env.NOSTROMA_RAM_KEEP_GIB, undefined);
 });
 
 test('neither profile reserves less VRAM than the engine\'s safe floor (the driver pages GPU memory below it and decoding collapses)', () => {
@@ -158,25 +158,25 @@ test('neither profile reserves less VRAM than the engine\'s safe floor (the driv
   assert.equal(resourceSettings({ gpu: 0, args: [], vram_reserve_mib: 2437 }, card12, 'performance').vram_reserve_mib, 2437, 'a larger reserve of the installation is kept');
 });
 
-test('a STRATA_RESIDENT_HEADROOM_GIB of the person is left in the env (the engine reads it first); the app sets no env headroom of its own for an engine that knows the setting', () => {
-  const own = resourceSettings({ ...config, env: { STRATA_RESIDENT_HEADROOM_GIB: '6', OTHER: 'x' } }, pc64, 'work', iq3sNew);
-  assert.equal(own.env.STRATA_RESIDENT_HEADROOM_GIB, '6', 'a value the user set is not overwritten (the engine reads it before W)');
+test('a NOSTROMA_RESIDENT_HEADROOM_GIB of the person is left in the env (the engine reads it first); the app sets no env headroom of its own for an engine that knows the setting', () => {
+  const own = resourceSettings({ ...config, env: { NOSTROMA_RESIDENT_HEADROOM_GIB: '6', OTHER: 'x' } }, pc64, 'work', iq3sNew);
+  assert.equal(own.env.NOSTROMA_RESIDENT_HEADROOM_GIB, '6', 'a value the user set is not overwritten (the engine reads it before W)');
   assert.equal(own.env.OTHER, 'x');
-  assert.equal(own.env.STRATA_RAM_KEEP_GIB, '8');
-  for (const ram of [24, 32, 64, 128]) assert.equal(resourceSettings(config, { ...pc64, ram_gb: ram }, 'work', iq3sNew).env.STRATA_RESIDENT_HEADROOM_GIB, undefined, `${ram} GB: no env headroom`);
+  assert.equal(own.env.NOSTROMA_RAM_KEEP_GIB, '8');
+  for (const ram of [24, 32, 64, 128]) assert.equal(resourceSettings(config, { ...pc64, ram_gb: ram }, 'work', iq3sNew).env.NOSTROMA_RESIDENT_HEADROOM_GIB, undefined, `${ram} GB: no env headroom`);
   // an older engine: the 0.2.9 behaviour, a headroom of the person's is not overwritten either
-  const oldOwn = resourceSettings({ ...config, env: { STRATA_RESIDENT_HEADROOM_GIB: '6' } }, pc64, 'work', iq3sOld);
+  const oldOwn = resourceSettings({ ...config, env: { NOSTROMA_RESIDENT_HEADROOM_GIB: '6' } }, pc64, 'work', iq3sOld);
   assert.equal(oldOwn.env, undefined);
   assert.equal(flag(oldOwn.args, '--resident-budget-gib'), String(old279(63)));
 });
 
 test('a start that died gets ONE safer second try: pin less when the locked memory ran out, else a RAM budget with the rest on the SSD', () => {
-  const pinned = saferStart(config, pc64, iq3s, 'server_exited: mapped staging allocation failed [pinned-memory-exhausted] start again with STRATA_ARENA_PIN_GIB=26 (pin less)');
-  assert.equal(pinned.config.env.STRATA_ARENA_PIN_GIB, '26');
+  const pinned = saferStart(config, pc64, iq3s, 'server_exited: mapped staging allocation failed [pinned-memory-exhausted] start again with NOSTROMA_ARENA_PIN_GIB=26 (pin less)');
+  assert.equal(pinned.config.env.NOSTROMA_ARENA_PIN_GIB, '26');
   assert.match(pinned.words, /would not lock as much memory/);
   assert.equal(flag(saferStart(pinned.config, pc64, iq3s, 'server_exited: mapped staging allocation failed [pinned-memory-exhausted]').config.args, '--resident-budget-gib'), String(Math.floor(63 * .5) - 4), 'already pinned less: the next safer setting is the RAM budget');
   const noHint = saferStart(config, pc64, iq3s, 'mapped staging allocation failed');
-  assert.equal(noHint.config.env.STRATA_ARENA_PIN_GIB, String(Math.floor(63 / 2) - 8));
+  assert.equal(noHint.config.env.NOSTROMA_ARENA_PIN_GIB, String(Math.floor(63 / 2) - 8));
   const low = saferStart(config, pc64, iq3s, 'server_exited: memory guard: 1.9 GiB free');
   assert.equal(flag(low.config.args, '--resident-budget-gib'), String(Math.floor(63 * .5) - 4));
   assert.match(low.words, /low-memory mode/);
@@ -193,7 +193,7 @@ test('a start that died gets ONE safer second try: pin less when the locked memo
 test('an engine that stopped because the GPU expert cache got no room is started again with less VRAM kept free, then a shorter context (#3192)', () => {
   const tenGb = { cpu: { cores: 16 }, ram_gb: 64, gpus: [{ index: 0, name: 'NVIDIA GeForce RTX 3080', vram_gb: 10 }] };
   const cfg = { gpu: 0, args: ['--native', 'x.gguf', '--max-context', '131072', '--vision', '--vram-reserve-mib', '2048'] };
-  const log = "server_exited (exit code 1): strata generate: no VRAM is left for the expert cache: it needs at least 288 slots (639 MiB), about 727 MiB more than this card has free. To make room: a smaller --max-context (the session, mostly its KV cache, takes 1931 MiB at 131072 tokens), --kv q4_0 | strata serve: verify: needs the profile-filled VRAM expert tier";
+  const log = "server_exited (exit code 1): nostroma generate: no VRAM is left for the expert cache: it needs at least 288 slots (639 MiB), about 727 MiB more than this card has free. To make room: a smaller --max-context (the session, mostly its KV cache, takes 1931 MiB at 131072 tokens), --kv q4_0 | nostroma serve: verify: needs the profile-filled VRAM expert tier";
   const safer = saferStart(cfg, tenGb, iq3s, log);
   assert.equal(flag(safer.config.args, '--vram-reserve-mib'), '1065', '2048 - (727 + 256 margin)');
   assert.equal(flag(safer.config.args, '--max-context'), '131072', 'the reserve alone was enough: the context stays');
@@ -202,7 +202,7 @@ test('an engine that stopped because the GPU expert cache got no room is started
   assert.equal(flag(tight.config.args, '--vram-reserve-mib'), '1024', 'never below 1024 MiB (#2065)');
   assert.ok(Number(flag(tight.config.args, '--max-context')) < 131072, 'the rest comes from the context');
   assert.equal(saferStart({ ...cfg, args: ['--max-context', '16384', '--vram-reserve-mib', '1024'] }, tenGb, iq3s, log), null, 'nothing left to give');
-  assert.equal(flag(saferStart(cfg, tenGb, undefined, 'server_exited: strata serve: verify: needs the profile-filled VRAM expert tier').config.args, '--vram-reserve-mib'), '1092', 'without the numbers: a fixed step, no model size needed');
+  assert.equal(flag(saferStart(cfg, tenGb, undefined, 'server_exited: nostroma serve: verify: needs the profile-filled VRAM expert tier').config.args, '--vram-reserve-mib'), '1092', 'without the numbers: a fixed step, no model size needed');
   assert.equal(cfg.args[cfg.args.indexOf('--vram-reserve-mib') + 1], '2048', 'the input config is not changed');
 });
 
@@ -232,7 +232,7 @@ test('0.2.3 tuning: Work keeps a fifth of the card but no more than 1536 MiB on 
 });
 
 test('an engine that refused the prompt chunk at the start is not retried with a memory setting: the same chunk would fail again', () => {
-  const line = 'strata generate: a 32768-token prompt chunk does not fit beside the 52.1 GiB expert cache on this GPU (a stream could not be created): use --prefill auto:16384, or a smaller --expert-cache';
+  const line = 'nostroma generate: a 32768-token prompt chunk does not fit beside the 52.1 GiB expert cache on this GPU (a stream could not be created): use --prefill auto:16384, or a smaller --expert-cache';
   const withBudget = { ...config, args: [...config.args, '--resident-budget-gib', '40'] };
   assert.equal(saferStart(withBudget, pc64, iq3s, `server_exited (exit code 2): ${line}`), null);
   assert.equal(saferStart(config, pc64, iq3s, `Engine stopped (exit code 2): ${line}`), null);

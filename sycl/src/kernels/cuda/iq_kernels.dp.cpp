@@ -1,9 +1,9 @@
 #include "b60_weight_cache.hpp"
-#include "strata/env.hpp"
+#include "nostroma/env.hpp"
 #include "b60_layout_state.hpp"
 #include <sycl/ext/intel/esimd.hpp>
 #include <sycl/ext/intel/esimd/xmx/dpas.hpp>
-// src/kernels/cuda/iq_kernels.cu - see include/strata/kernels/iq_kernels.hpp.
+// src/kernels/cuda/iq_kernels.cu - see include/nostroma/kernels/iq_kernels.hpp.
 //
 // The dot products (vec_dot_*_q8_1), the dequantizers and the q8_1 quantizer are transcribed from llama.cpp
 // (ggml/src/ggml-cuda/vecdotq.cuh, dequantize.cuh, quantize.cu at the commit in third_party/ggml/VERSION.txt;
@@ -11,34 +11,34 @@
 // included unchanged.
 #define DPCT_PROFILING_ENABLED
 #include <sycl/sycl.hpp>
-#include "strata/kprof.hpp"
+#include "nostroma/kprof.hpp"
 #include <sycl/ext/oneapi/matrix/matrix-intel.hpp>
 #include <dpct/dpct.hpp>
-#include "strata/sycl_math.hpp"
-#include "strata/sycl_queue.hpp"
-#include "strata/workload_trace.hpp"
-#include "strata/kernels/iq_kernels.hpp"
-#include "strata/kernels/iq_dequant_expert.hpp"
-#include "strata/kernels/dp4a.hpp"
-#include "strata/kernels/q8_1_finite.hpp"
-#include "strata/kernels/iq4_lut.hpp"
+#include "nostroma/sycl_math.hpp"
+#include "nostroma/sycl_queue.hpp"
+#include "nostroma/workload_trace.hpp"
+#include "nostroma/kernels/iq_kernels.hpp"
+#include "nostroma/kernels/iq_dequant_expert.hpp"
+#include "nostroma/kernels/dp4a.hpp"
+#include "nostroma/kernels/q8_1_finite.hpp"
+#include "nostroma/kernels/iq4_lut.hpp"
 #include "s26_tsum.dp.hpp"
-#include "strata/kernels/iq_dequant.hpp"
-#include "strata/kernels/q2_0_decode.hpp"
-#include "strata/kernels/expert_staging.hpp"
-#include "strata/kernels/verify_kernels.hpp"
-#include "strata/kernels/iq_signed_grid.hpp"
+#include "nostroma/kernels/iq_dequant.hpp"
+#include "nostroma/kernels/q2_0_decode.hpp"
+#include "nostroma/kernels/expert_staging.hpp"
+#include "nostroma/kernels/verify_kernels.hpp"
+#include "nostroma/kernels/iq_signed_grid.hpp"
 
 #define GGML_COMMON_DECL_SYCL
 #define GGML_COMMON_IMPL_SYCL
 #include "ggml-common.h"
 #include "ggml-common-tq.h"                   // APR trellis types (agention llama.cpp fork)
-#include "strata/kernels/tq_lut_i8_sycl.hpp"   // int8 copy of the trellis codebook (one global scale) for the dp4a dot
+#include "nostroma/kernels/tq_lut_i8_sycl.hpp"   // int8 copy of the trellis codebook (one global scale) for the dp4a dot
 
 #include <sycl/ext/oneapi/matrix/matrix.hpp>
 #include <sycl/ext/intel/experimental/grf_size_properties.hpp>
 // BEGIN PRIVATE IQ3 XMX REUSE INCLUDES
-#include "strata/kernels/iq_signed_grid.hpp"
+#include "nostroma/kernels/iq_signed_grid.hpp"
 #include <stdexcept>
 // END PRIVATE IQ3 XMX REUSE INCLUDES
 #include <algorithm>
@@ -53,7 +53,7 @@
 #include <tuple>
 #include <cmath>
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 
 // Four adjacent two-bit codes become four signed bytes {-1,0,1,2}.
@@ -100,7 +100,7 @@ __dpct_inline__ uint32_t unpack_ksigns(const uint8_t v) {
 }
 __dpct_inline__ sycl::int2 get_int_from_table_16(const int &q4,
                                                  const int8_t *table) {
-#if defined(STRATA_HIP_GFX906)
+#if defined(NOSTROMA_HIP_GFX906)
     // AMD: llama.cpp's HIP lookup (vecdotq.cuh) - v_perm_b32 takes 3-bit byte indices, so the low and high halves
     // of the table are looked up and the index MSB picks between them: 4 perms per 8 values.
     const uint32_t* v32 = reinterpret_cast<const uint32_t*>(table);
@@ -129,14 +129,14 @@ __dpct_inline__ sycl::int2 get_int_from_table_16(const int &q4,
                       dpct::byte_level_permute(tmp[0], tmp[1], 0x7531));
 #endif
 }
-#define ggml_cuda_dp4a(a, b, c) strata::dp4a((a), (b), (c))   // SYCL port: the one dp4a (strata/sycl_math.hpp)
+#define ggml_cuda_dp4a(a, b, c) nostroma::dp4a((a), (b), (c))   // SYCL port: the one dp4a (nostroma/sycl_math.hpp)
 
 // ---------------------------------------------------------------- the dot products (vecdotq.cuh)
-#ifndef STRATA_Q2_WORD_FAST
-#define STRATA_Q2_WORD_FAST 0
+#ifndef NOSTROMA_Q2_WORD_FAST
+#define NOSTROMA_Q2_WORD_FAST 0
 #endif
 __dpct_inline__ sycl::int2 q2_decode8(uint16_t q) {
-#if STRATA_Q2_WORD_FAST
+#if NOSTROMA_Q2_WORD_FAST
     const auto decode4 = [](uint32_t c) {
         c &= 0xFFu;
         c = (c | (c << 12)) & 0x000F000Fu;
@@ -178,10 +178,10 @@ __dpct_inline__ float vec_dot_q2_0_q8_1(const void *__restrict__ vbq,
 //   swar_ne4(x): 0xFF in every byte of x that is non-zero (the sign masks: at most one bit per byte)
 //   swar_sub4(a, s) with s from swar_ne4: per byte a - s, i.e. a + 1 where the sign byte is set (two's complement
 //   of the grid value after the xor: the same bits as __vsub4(a, s) for s in {0x00, 0xFF})
-#ifndef STRATA_SWAR
-#define STRATA_SWAR 1   // 1: the SWAR forms; 0: dpct's per-byte loops (A/B 2026-09-30: both correct)
+#ifndef NOSTROMA_SWAR
+#define NOSTROMA_SWAR 1   // 1: the SWAR forms; 0: dpct's per-byte loops (A/B 2026-09-30: both correct)
 #endif
-#if STRATA_SWAR
+#if NOSTROMA_SWAR
 __dpct_inline__ int swar_ne4(unsigned x) {
     x = (x | (x >> 4)) & 0x0F0F0F0Fu;
     x = (x | (x >> 2)) & 0x03030303u;
@@ -196,14 +196,14 @@ __dpct_inline__ int swar_ne4(unsigned x) { return dpct::vectorized_binary<sycl::
 __dpct_inline__ int swar_sub4(unsigned a, unsigned s) { return dpct::vectorized_binary<sycl::uchar4>(a, s, std::minus<>()); }
 #endif
 
-#ifndef STRATA_IQ3S_SIGN_FAST
-#define STRATA_IQ3S_SIGN_FAST 0
+#ifndef NOSTROMA_IQ3S_SIGN_FAST
+#define NOSTROMA_IQ3S_SIGN_FAST 0
 #endif
-#ifndef STRATA_IQ3S_SIGN_APPLY_FAST
-#define STRATA_IQ3S_SIGN_APPLY_FAST 0
+#ifndef NOSTROMA_IQ3S_SIGN_APPLY_FAST
+#define NOSTROMA_IQ3S_SIGN_APPLY_FAST 0
 #endif
 __dpct_inline__ int iq3s_sign_mask(unsigned nibble) {
-#if STRATA_IQ3S_SIGN_FAST
+#if NOSTROMA_IQ3S_SIGN_FAST
     const unsigned bits = (nibble & 0x0Fu) * 0x00204081u & 0x01010101u;
     return (int) ((bits << 8) - bits);
 #else
@@ -212,7 +212,7 @@ __dpct_inline__ int iq3s_sign_mask(unsigned nibble) {
 #endif
 }
 __dpct_inline__ int iq3s_apply_sign(unsigned grid, unsigned sign) {
-#if STRATA_IQ3S_SIGN_APPLY_FAST
+#if NOSTROMA_IQ3S_SIGN_APPLY_FAST
     return (int) ((grid ^ sign) + (sign & 0x01010101u));
 #else
     return swar_sub4(grid ^ sign, sign);
@@ -267,14 +267,14 @@ __dpct_inline__ float vec_dot_iq2_xs_q8_1(const void *__restrict__ vbq,
         const sycl::uint2 grid_pos =
             ((const sycl::uint2 *)iq2xs_grid)[q2[l0 / 2] & 0x1FF];
         const uint32_t signs = unpack_ksigns(q2[l0 / 2] >> 9);
-#if STRATA_IQ3S_SIGN_FAST
+#if NOSTROMA_IQ3S_SIGN_FAST
         const int signs0 = iq3s_sign_mask(signs);
 #else
         const int signs0 = swar_ne4(signs & 0x08040201);
 #endif
         const int grid_l = iq3s_apply_sign(grid_pos.x(), signs0);
         const int u0 = get_int_b4(bq8_1[iqs / 2].qs, l0 + 0);
-#if STRATA_IQ3S_SIGN_FAST
+#if NOSTROMA_IQ3S_SIGN_FAST
         const int signs1 = iq3s_sign_mask(signs >> 4);
 #else
         const int signs1 = swar_ne4(signs & 0x80402010);
@@ -312,7 +312,7 @@ __dpct_inline__ float vec_dot_iq2_s_q8_1(const void *__restrict__ vbq,
 #pragma unroll
     for (int l0 = 0; l0 < 8; l0 += 2) {
         const int* grid_pos = (const int*) (iq2s_grid + (qs[l0 / 2] | ((qh << (8 - l0)) & 0x300)));
-#if STRATA_IQ3S_SIGN_FAST
+#if NOSTROMA_IQ3S_SIGN_FAST
         const int signs0 = iq3s_sign_mask(signs_packed_8[l0 / 2]);
         const int signs1 = iq3s_sign_mask(signs_packed_8[l0 / 2] >> 4);
 #else
@@ -445,11 +445,11 @@ __dpct_inline__ float vec_dot_iq1_m_q8_1(const void *__restrict__ vbq,
 // the codebook from global memory per lookup and each weight int as two 16-bit loads (block_iq4_nl is 18 bytes, its
 // qs 2-byte aligned); the expert down projection (IQ4_NL in 39 of 48 layers) was the largest expert kernel. Same ints
 // out, so the dots are bitwise unchanged.
-#ifndef STRATA_IQ4NL_LUT_SWAR
-#define STRATA_IQ4NL_LUT_SWAR 0
+#ifndef NOSTROMA_IQ4NL_LUT_SWAR
+#define NOSTROMA_IQ4NL_LUT_SWAR 0
 #endif
 __dpct_inline__ uint32_t iq4nl_lut4(uint32_t q4) {   // four nibbles -> four kvalues_iq4nl bytes
-#if STRATA_IQ4NL_LUT_SWAR
+#if NOSTROMA_IQ4NL_LUT_SWAR
     return iq4_lut4_swar(q4);
 #else
     constexpr uint32_t t0 = 0xBFAD9881u, t1 = 0xF6EADDCFu, t2 = 0x26190D01u, t3 = 0x71594535u;
@@ -481,14 +481,14 @@ __dpct_inline__ int load4_a2(const uint8_t* p) {   // 4 bytes at a 2-byte-aligne
     if (!(a & 2)) return (int) w0;
     return (int) ((w0 >> 16) | (q[1] << 16));   // the second word holds needed bytes: page-safe
 }
-// SYCL port: the gate/up kernels can stage their format's codebook grid in local memory (STRATA_GRID_SLM=1, compile
+// SYCL port: the gate/up kernels can stage their format's codebook grid in local memory (NOSTROMA_GRID_SLM=1, compile
 // time). Measured slower and off: copying the grid into each of ~1,200 work-groups per call costs more than the
 // lookups save (IQ2_S 52.5 -> 62.7 us, IQ3_S 60.8 -> 70.0, IQ3_XXS 60.3 -> 62.1 per call; unitrace 2026-10-01).
-#ifndef STRATA_GRID_SLM
-#define STRATA_GRID_SLM 0
+#ifndef NOSTROMA_GRID_SLM
+#define NOSTROMA_GRID_SLM 0
 #endif
-#ifndef STRATA_IQ4NL_FAST
-#define STRATA_IQ4NL_FAST 1   // compile-time: -DSTRATA_IQ4NL_FAST=0 for ggml's table/16-bit-load path
+#ifndef NOSTROMA_IQ4NL_FAST
+#define NOSTROMA_IQ4NL_FAST 1   // compile-time: -DNOSTROMA_IQ4NL_FAST=0 for ggml's table/16-bit-load path
 #endif
 
 __dpct_inline__ float vec_dot_iq4_nl_q8_1(const void *__restrict__ vbq,
@@ -497,12 +497,12 @@ __dpct_inline__ float vec_dot_iq4_nl_q8_1(const void *__restrict__ vbq,
     const block_iq4_nl* bq4 = (const block_iq4_nl*) vbq + kbx;
     const int* q8 = (const int*) bq8_1->qs + iqs;
     int sumi = 0;
-#if STRATA_IQ4NL_FAST
+#if NOSTROMA_IQ4NL_FAST
     const sycl::int2 qq = load8_a2(bq4->qs + 4 * iqs);
 #endif
 #pragma unroll
     for (int l = 0; l < 2; ++l) {
-#if STRATA_IQ4NL_FAST
+#if NOSTROMA_IQ4NL_FAST
         const sycl::int2 v = iq4nl_pair(l ? qq.y() : qq.x());
 #else
         const int aux_q4 = get_int_b2(bq4->qs, iqs + l);
@@ -517,8 +517,8 @@ __dpct_inline__ float vec_dot_iq4_nl_q8_1(const void *__restrict__ vbq,
     return d * sumi;
 }
 
-#ifndef STRATA_IQ4XS_LUT_SWAR
-#define STRATA_IQ4XS_LUT_SWAR 0
+#ifndef NOSTROMA_IQ4XS_LUT_SWAR
+#define NOSTROMA_IQ4XS_LUT_SWAR 0
 #endif
 // IQ4_XS: 256 values as 8 sub-blocks of 32 (6-bit scale each); one call covers one sub-block (iqs = 4 * sub-block),
 // and `bq8_1` is the super-block's first q8_1 block, so the call's activation is bq8_1[iqs / 4].  The GSQ-RCO IQ3_S
@@ -531,7 +531,7 @@ __dpct_inline__ float vec_dot_iq4_xs_q8_1(const void *__restrict__ vbq,
 #pragma unroll
     for (int j = 0; j < 4; ++j) {
         const int aux_q4 = get_int_b4(bq4->qs, iqs + j);
-#if STRATA_IQ4XS_LUT_SWAR
+#if NOSTROMA_IQ4XS_LUT_SWAR
         const sycl::int2 v = iq4nl_pair(aux_q4);
 #else
         const sycl::int2 v = get_int_from_table_16(aux_q4, kvalues_iq4nl);
@@ -551,7 +551,7 @@ __dpct_inline__ float vec_dot_iq4_xs_q8_1(const void *__restrict__ vbq,
 
 // ---------------------------------------------------------------- Unsloth's UD-Q4_K_XL experts
 // Q4_K / Q5_K gate/up and Q5_1 / Q8_0 down: llama.cpp's vec_dot_*_q8_1 (vecdotq.cuh, VDR 2 each), transcribed; the
-// Q5_1 min term is the one departure (below).  Via eddoursul/Strata 8029fa9 (iq_dot.cuh) and #255 (Q8_0,
+// Q5_1 min term is the one departure (below).  Via eddoursul/Nostroma 8029fa9 (iq_dot.cuh) and #255 (Q8_0,
 // gopinath87607), which agree with llama.cpp and with each other.
 constexpr int VDR_Q4_K = 2, VDR_Q5_K = 2, VDR_Q5_1 = 2, VDR_Q5_0 = 2, VDR_Q4_1 = 2, VDR_Q4_0 = 2, VDR_Q8_0 = 2, VDR_Q6_K = 1;
 
@@ -668,7 +668,7 @@ __dpct_inline__ float vec_dot_q5_K_q8_1(const void *__restrict__ vbq,
 // Q5_1: llama.cpp's integer chain, but the min term multiplies the sum of the QUANTIZED activations (dp4a with
 // 0x01010101, times d8) instead of the q8_1 block's `ds.y`, which our quantizer (like llama.cpp's) fills with the sum
 // of the ORIGINAL activations.  That is ggml-cpu's convention (its q8_1 `s` is d * sum(q)) and the one the K-quant
-// mins above use; the scaled and the min term then see the same activation (eddoursul/Strata measured 1.1-1.2%
+// mins above use; the scaled and the min term then see the same activation (eddoursul/Nostroma measured 1.1-1.2%
 // against 1.9% relative error per expert).  Result: sumi * (d5 * d8) + sumu * (m5 * d8).
 // Q5_0: llama.cpp's integer chain (vecdotq.cuh vec_dot_q5_0_q8_1_impl), but the constant -16 per-weight offset multiplies
 // the sum of the QUANTIZED activations (dp4a with 0x01010101, times d8), like the Q5_1 and Q4_0 paths and ggml-cpu's q8_0
@@ -713,7 +713,7 @@ __dpct_inline__ float vec_dot_q5_0_q8_1(const void *__restrict__ vbq,
 // centring is the same idea as the Q5_1 min term above: the offset is applied to the activations' own int8 codes.
 __dpct_inline__ int q4_0_centred(const int v) {
     // Unsigned: (b & 0x08080808) * 0x1E reaches 0xF0F0F0F0, which overflows a signed int - undefined behaviour the
-    // sm_60 build (no __dp4a, strata_dp4a fallback) optimised into a wrong value (native_expert_parity gpu rel 1.7e4).
+    // sm_60 build (no __dp4a, nostroma_dp4a fallback) optimised into a wrong value (native_expert_parity gpu rel 1.7e4).
     const uint32_t b = (uint32_t) v ^ 0x08080808u;   // per byte: 0..15 -> (q - 8) as a 4-bit two's complement value
     return (int) (b | ((b & 0x08080808u) * 0x1Eu));  // sign-extend each nibble into its byte (0x08 * 0x1E = 0xF0)
 }
@@ -797,7 +797,7 @@ vec_dot_q6_K_q8_1_impl_mmvq(const int vl, const int vh,
         const int vih = ((vh >> (4 * i)) << 4) & 0x30303030;
         const int vi = dpct::vectorized_binary<sycl::char4>(
             vil | vih, 0x20202020, dpct::sub_sat()); // vi = (vil | vih) - 32
-        sumf += d8[i] * (STRATA_DP4A(vi, u[i], 0) * sc);
+        sumf += d8[i] * (NOSTROMA_DP4A(vi, u[i], 0) * sc);
     }
     return d * sumf;
 }
@@ -1007,19 +1007,19 @@ template<> struct Fmt<146> { static constexpr int qk = 128, ipb = 8, step = 4;
 
 // The formats of each role, one list each so a type cannot be in one switch and missing from another.  Every
 // entry is a kernel template for each CUDA architecture of the build, hence two lists rather than one.
-#ifdef STRATA_Q6K_EXPERTS   // opt-in build (-DSTRATA_Q6K_EXPERTS=ON): one more instance per kernel, loaded at start
-#define STRATA_GU_FMTS(X) X(16) X(17) X(18) X(21) X(22) X(23) X(29) X(42) X(12) X(13) X(14) X(6) X(2) X(3) X(8) X(144) X(145)
+#ifdef NOSTROMA_Q6K_EXPERTS   // opt-in build (-DNOSTROMA_Q6K_EXPERTS=ON): one more instance per kernel, loaded at start
+#define NOSTROMA_GU_FMTS(X) X(16) X(17) X(18) X(21) X(22) X(23) X(29) X(42) X(12) X(13) X(14) X(6) X(2) X(3) X(8) X(144) X(145)
 #else
-#define STRATA_GU_FMTS(X) X(16) X(17) X(18) X(21) X(22) X(23) X(29) X(42) X(12) X(13) X(6) X(2) X(3) X(8) X(144) X(145)
+#define NOSTROMA_GU_FMTS(X) X(16) X(17) X(18) X(21) X(22) X(23) X(29) X(42) X(12) X(13) X(6) X(2) X(3) X(8) X(144) X(145)
 #endif
 // Q5_K (and Q6_K with the option) downs: what a UD file carries at an expert width divisible by 256 (512, 1024; Qwen3.6's UD-Q4_K_XL
 // has Q5_K / Q6_K downs), as the CUDA list has had them; the lane kernels are the gate/up's (Fmt / KqSplit of 13 and 14)
-#ifdef STRATA_Q6K_EXPERTS
-#define STRATA_D_FMTS(X) X(20) X(23) X(42) X(7) X(6) X(2) X(3) X(8) X(13) X(14) X(144) X(146)
+#ifdef NOSTROMA_Q6K_EXPERTS
+#define NOSTROMA_D_FMTS(X) X(20) X(23) X(42) X(7) X(6) X(2) X(3) X(8) X(13) X(14) X(144) X(146)
 #else
-#define STRATA_D_FMTS(X) X(20) X(23) X(42) X(7) X(6) X(2) X(3) X(8) X(13) X(144) X(146)
+#define NOSTROMA_D_FMTS(X) X(20) X(23) X(42) X(7) X(6) X(2) X(3) X(8) X(13) X(144) X(146)
 #endif
-#define STRATA_MMVQ_FMTS(X) X(16) X(17) X(18) X(20) X(21) X(22) X(23) X(29) X(42) X(12) X(13) X(7) X(6) X(2) X(3) X(8) X(144) X(145) X(146)
+#define NOSTROMA_MMVQ_FMTS(X) X(16) X(17) X(18) X(20) X(21) X(22) X(23) X(29) X(42) X(12) X(13) X(7) X(6) X(2) X(3) X(8) X(144) X(145) X(146)
 
 __dpct_inline__ float warp_sum(float v) {
 #pragma unroll
@@ -1121,11 +1121,11 @@ template<int KB>void iq3_xmx_register_T(int T,const uint8_t* w,const block_q8_1*
 
 // SYCL port: lanes per row for the grouped expert kernels. A 2560-wide row is 80 (block, part) calls; over 32
 // lanes that is 2.5 calls each and a 5-step reduction - the work per sub-group is too small for the fixed cost.
-// STRATA_EXPERT_LANES (compile time) lanes share a row; 256 / that many rows per work-group.
-#ifndef STRATA_EXPERT_LANES
-#define STRATA_EXPERT_LANES 8
+// NOSTROMA_EXPERT_LANES (compile time) lanes share a row; 256 / that many rows per work-group.
+#ifndef NOSTROMA_EXPERT_LANES
+#define NOSTROMA_EXPERT_LANES 8
 #endif
-constexpr int kExpertLanes = STRATA_EXPERT_LANES;
+constexpr int kExpertLanes = NOSTROMA_EXPERT_LANES;
 constexpr int kExpertRows = 256 / kExpertLanes;
 template <int LANES>
 __dpct_inline__ float lanes_sum(float v) {
@@ -1191,7 +1191,7 @@ mmvq_kernel(const uint8_t *__restrict__ w, size_t row_bytes,
 // scale as a float) and `apply` (the activation loads, the dp4a chain in the same order, the same integer scale
 // step and the same float expression).  `apply(load(...))` does the dot's integer and float operations in the same
 // order on the same values, so a column of the kernels below is BITWISE equal to the same column of mmvq_kernel /
-// native_gu_kernel / native_down_kernel (iq_multi_parity checks it; STRATA_OLD_IQ_MMVQ=1 keeps the old kernels).
+// native_gu_kernel / native_down_kernel (iq_multi_parity checks it; NOSTROMA_OLD_IQ_MMVQ=1 keeps the old kernels).
 template<int TY> struct Split;
 // Formats with a Split below take the decode-once kernels; the others (Q4_K, Q5_K, Q5_1, Q8_0: UD-Q4_K_XL) the
 // per-entry ones, which call Fmt<TY>::dot per column exactly as before #242 (the launchers test kSplit at compile
@@ -1271,7 +1271,7 @@ template<> struct Split<17> : SplitLs2 {   // IQ2_XS
         for (int l0 = 0; l0 < 8; l0 += 2) {
             const sycl::uint2 grid_pos = grid_lut[q2[l0 / 2] & 0x1FF];
             const uint32_t signs = unpack_ksigns(q2[l0 / 2] >> 9);
-#if STRATA_IQ3S_SIGN_FAST
+#if NOSTROMA_IQ3S_SIGN_FAST
             const int signs0 = iq3s_sign_mask(signs);
             const int signs1 = iq3s_sign_mask(signs >> 4);
 #else
@@ -1280,7 +1280,7 @@ template<> struct Split<17> : SplitLs2 {   // IQ2_XS
             const int signs1 = dpct::vectorized_binary<sycl::uchar4>(
                 signs & 0x80402010, 0, std::not_equal_to<>());
 #endif
-#if STRATA_IQ3S_SIGN_APPLY_FAST
+#if NOSTROMA_IQ3S_SIGN_APPLY_FAST
             r.g[l0 + 0] = iq3s_apply_sign(grid_pos.x(), signs0);
             r.g[l0 + 1] = iq3s_apply_sign(grid_pos.y(), signs1);
 #else
@@ -1314,7 +1314,7 @@ template<> struct Split<22> : SplitLs2 {   // IQ2_S
 #pragma unroll
         for (int l0 = 0; l0 < 8; l0 += 2) {
             const int* grid_pos = (const int*) (grid_lut + (qs[l0 / 2] | ((qh << (8 - l0)) & 0x300)));
-#if STRATA_IQ3S_SIGN_FAST
+#if NOSTROMA_IQ3S_SIGN_FAST
             const int signs0 = iq3s_sign_mask(signs_packed_8[l0 / 2]);
             const int signs1 = iq3s_sign_mask(signs_packed_8[l0 / 2] >> 4);
 #else
@@ -1327,7 +1327,7 @@ template<> struct Split<22> : SplitLs2 {   // IQ2_S
                     ((signs_packed_8[l0 / 2] & 0xC0) << 17),
                 0x00000000, std::not_equal_to<>());
 #endif
-#if STRATA_IQ3S_SIGN_APPLY_FAST
+#if NOSTROMA_IQ3S_SIGN_APPLY_FAST
             r.g[l0 + 0] = iq3s_apply_sign(grid_pos[0], signs0);
             r.g[l0 + 1] = iq3s_apply_sign(grid_pos[1], signs1);
 #else
@@ -1891,9 +1891,9 @@ struct IqGridWords {
 // #778: `__shared__ alignas(16)` does not compile for gfx1030 (HIP); the attribute after the declarator does, but nvcc
 // with MSVC as host does not take it.  Same layout either way.
 #if defined(__HIPCC__)
-#define STRATA_SHARED_ALIGN16_U32(name, ...) __shared__ uint32_t name[__VA_ARGS__] __attribute__((aligned(16)))
+#define NOSTROMA_SHARED_ALIGN16_U32(name, ...) __shared__ uint32_t name[__VA_ARGS__] __attribute__((aligned(16)))
 #else
-#define STRATA_SHARED_ALIGN16_U32(name, ...) alignas(16) uint32_t name[__VA_ARGS__]
+#define NOSTROMA_SHARED_ALIGN16_U32(name, ...) alignas(16) uint32_t name[__VA_ARGS__]
 #endif
 template <int TY, int NC, bool STAGE_GRID = kStageIqGrid<TY>,
           bool EXACT_N = false>
@@ -1984,7 +1984,7 @@ template <> struct Multi<18> {   // iq3_xxs
     static constexpr bool has = true; static constexpr int NW = 8;
     __dpct_inline__ static void prep(const void* vbq, int kbx, int iqs, MultiW& m, const void* grid = nullptr) {
         const block_iq3_xxs* bq3 = (const block_iq3_xxs*) vbq + kbx;
-#if STRATA_IQ4NL_FAST
+#if NOSTROMA_IQ4NL_FAST
         const sycl::int2 q3_packed = load8_a2(bq3->qs + 4 * iqs);
         const uint32_t aux32 = (uint32_t) load4_a2(bq3->qs + 4 * (QK_K / 16 + iqs / 2));
 #else
@@ -1998,7 +1998,7 @@ template <> struct Multi<18> {   // iq3_xxs
             const sycl::int2 grid_pos = G ? sycl::int2(G[q3[l0 + 0]], G[q3[l0 + 1]])
                                           : sycl::int2(iq3xxs_grid[q3[l0 + 0]], iq3xxs_grid[q3[l0 + 1]]);
             const uint32_t signs = unpack_ksigns(aux32 >> (7 * l0 / 2));
-#if STRATA_IQ3S_SIGN_FAST
+#if NOSTROMA_IQ3S_SIGN_FAST
             const int signs0 = iq3s_sign_mask(signs);
             const int signs1 = iq3s_sign_mask(signs >> 4);
 #else
@@ -2026,7 +2026,7 @@ template <bool PackedSigns> struct IQ2SMulti {   // iq2_s
     static constexpr bool has = true; static constexpr int NW = 8;
     __dpct_inline__ static void prep(const void* vbq, int kbx, int iqs, MultiW& m, const void* grid = nullptr) {
         const block_iq2_s* bq2 = PackedSigns ? iq_signed_grid::block_at<block_iq2_s>(vbq, uint32_t(kbx)) : (const block_iq2_s*) vbq + kbx;
-#if STRATA_IQ4NL_FAST
+#if NOSTROMA_IQ4NL_FAST
         const int qs_packed = load4_a2(bq2->qs + 4 * (iqs / 2));
         const int signs_packed_32 = load4_a2(bq2->qs + 4 * (QK_K / 32 + iqs / 2));
 #else
@@ -2041,7 +2041,7 @@ template <bool PackedSigns> struct IQ2SMulti {   // iq2_s
         for (int l0 = 0; l0 < 8; l0 += 2) {
             const int gi = qs[l0 / 2] | ((qh << (8 - l0)) & 0x300);
             const int* grid_pos = G ? (const int*) (G + gi) : (const int*) (iq2s_grid + gi);
-#if STRATA_IQ3S_SIGN_FAST
+#if NOSTROMA_IQ3S_SIGN_FAST
             const int signs0 = iq3s_sign_mask(sp[l0 / 2]);
             const int signs1 = iq3s_sign_mask(sp[l0 / 2] >> 4);
 #else
@@ -2072,7 +2072,7 @@ template <> struct Multi<21> {   // iq3_s
     static constexpr bool has = true; static constexpr int NW = 8;
     __dpct_inline__ static void prep(const void* vbq, int kbx, int iqs, MultiW& m, const void* grid = nullptr) {
         const block_iq3_s* bq3 = (const block_iq3_s*) vbq + kbx;
-#if STRATA_IQ4NL_FAST
+#if NOSTROMA_IQ4NL_FAST
         const sycl::int2 qs_packed = load8_a2(bq3->qs + 4 * iqs);
         const int signs_packed_32 = load4_a2(bq3->signs + 4 * (iqs / 2));
 #else
@@ -2087,14 +2087,14 @@ template <> struct Multi<21> {   // iq3_s
         for (int l0 = 0; l0 < 8; l0 += 2) {
             const int i0 = qs[l0 + 0] | ((qh << (8 - l0)) & 0x100), i1 = qs[l0 + 1] | ((qh << (7 - l0)) & 0x100);
             const sycl::int2 grid_pos = G ? sycl::int2(G[i0], G[i1]) : sycl::int2(iq3s_grid[i0], iq3s_grid[i1]);
-#if STRATA_IQ3S_SIGN_FAST
+#if NOSTROMA_IQ3S_SIGN_FAST
             const int signs0 = iq3s_sign_mask(sp[l0 / 2]);
             const int signs1 = iq3s_sign_mask(sp[l0 / 2] >> 4);
 #else
             const int signs0 = swar_ne4(((sp[l0 / 2] & 0x03) << 7) | ((sp[l0 / 2] & 0x0C) << 21));
             const int signs1 = swar_ne4(((sp[l0 / 2] & 0x30) << 3) | ((sp[l0 / 2] & 0xC0) << 17));
 #endif
-#if STRATA_IQ3S_SIGN_APPLY_FAST
+#if NOSTROMA_IQ3S_SIGN_APPLY_FAST
             m.w[l0 + 0] = iq3s_apply_sign(grid_pos.x(), signs0);
             m.w[l0 + 1] = iq3s_apply_sign(grid_pos.y(), signs1);
 #else
@@ -2119,12 +2119,12 @@ template <> struct Multi<20> {   // iq4_nl (down)
     static constexpr bool has = true; static constexpr int NW = 4;
     __dpct_inline__ static void prep(const void* vbq, int kbx, int iqs, MultiW& m, const void* = nullptr) {
         const block_iq4_nl* bq4 = (const block_iq4_nl*) vbq + kbx;
-#if STRATA_IQ4NL_FAST
+#if NOSTROMA_IQ4NL_FAST
         const sycl::int2 qq = load8_a2(bq4->qs + 4 * iqs);
 #endif
 #pragma unroll
         for (int l = 0; l < 2; ++l) {
-#if STRATA_IQ4NL_FAST
+#if NOSTROMA_IQ4NL_FAST
             const sycl::int2 v = iq4nl_pair(l ? qq.y() : qq.x());
 #else
             const int aux_q4 = get_int_b2(bq4->qs, iqs + l);
@@ -2195,7 +2195,7 @@ template<> struct Multi<10042> : Multi<42> {
 // (the activation reads and the rest of the dot), the same statements in the same order as vec_dot_*_q8_1 above, so
 // apply(load(...)) is the dot's value bit for bit; a group's 2-4 entries then read and decode each weight word once
 // instead of once per entry.  Every entry keeps its own lane-strided k order and lanes_sum: the outputs are bitwise
-// those of row_dot_lanes (native_grouped_parity --kq checks it).  STRATA_KQ_SPLIT=0: the per-entry kernels.
+// those of row_dot_lanes (native_grouped_parity --kq checks it).  NOSTROMA_KQ_SPLIT=0: the per-entry kernels.
 template <int TY> struct KqSplit { static constexpr bool has = false; };
 // APR trellis types: tq_load decodes the lane's 16 codebook values once, tq_apply is the activation side per entry (the same
 // operations as vec_dot_tq_q8_1, so the outputs are the per-entry kernels' bits)
@@ -2208,7 +2208,7 @@ template <int TY> struct KqSplitTq {
 template <> struct KqSplit<144> : KqSplitTq<144> {};
 template <> struct KqSplit<145> : KqSplitTq<145> {};
 template <> struct KqSplit<146> : KqSplitTq<146> {};
-#if STRATA_IQ4XS_LUT_SWAR
+#if NOSTROMA_IQ4XS_LUT_SWAR
 template <> struct KqSplit<23> : Split<23> { static constexpr bool has = true; };
 #endif
 template <> struct KqSplit<12> {   // Q4_K (vec_dot_q4_K_q8_1)
@@ -2474,7 +2474,7 @@ __dpct_inline__ void native_gu_kernel(
     const int ng = *n_groups;
     if ((int) item_ct1.get_group(1) >= ng) return;
     const void* grid = nullptr;
-#if STRATA_GRID_SLM
+#if NOSTROMA_GRID_SLM
     if constexpr (TG == 18 || TG == 21 || TG == 22) {
         using GT = std::conditional_t<TG == 22, uint64_t, uint32_t>;
         constexpr int GN = TG == 22 ? 1024 : TG == 21 ? 512 : 256;
@@ -2719,7 +2719,7 @@ template <typename T> class hadamard_rows_name;
 template <typename T>
 void launch_hadamard_rows(const T* x, T* y, int64_t rows, int64_t width, int block, const float* signs, dpct::queue_ptr s) {
     const float scale = 1.0f / std::sqrt((float) block);
-    strata::kprof::kp(s, __FILE__, __func__, __LINE__)->template parallel_for<hadamard_rows_name<T>>(
+    nostroma::kprof::kp(s, __FILE__, __func__, __LINE__)->template parallel_for<hadamard_rows_name<T>>(
         sycl::nd_range<3>(sycl::range<3>(1, (size_t) rows, (size_t) (width / block) * (size_t) block),
                           sycl::range<3>(1, 1, (size_t) block)),
         [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] { hadamard_rows_kernel<T>(x, y, width, signs, scale); });
@@ -3615,7 +3615,7 @@ dq_dispatch(int ty, const void *vx, int64_t ibs, dst_t *y, int tid) {
         case 42: dq_q2_0(vx, ibs, y, tid); break;
         case 12: dq_q4_k(vx, ibs, y, tid); break;
         case 13: dq_q5_k(vx, ibs, y, tid); break;
-#ifdef STRATA_Q6K_EXPERTS
+#ifdef NOSTROMA_Q6K_EXPERTS
         case 14: dq_q6_k(vx, ibs, y, tid); break;
 #endif
         case 7: dq_q5_1(vx, ibs, y, tid); break;
@@ -3655,7 +3655,7 @@ __dpct_inline__ void dequant_gu_kernel(
 // the types dq_dispatch dequantizes
 bool is_iq(int t) {
     return t == 144 || t == 145 || t == 146 || t == 16 || t == 17 || t == 18 || t == 20 || t == 21 || t == 22 || t == 23 || t == 29 || t == 42 || t == 11 ||
-#ifdef STRATA_Q6K_EXPERTS
+#ifdef NOSTROMA_Q6K_EXPERTS
            t == 12 || t == 13 || t == 14 || t == 7 || t == 6 || t == 2 || t == 3 || t == 8;
 #else
            t == 12 || t == 13 || t == 7 || t == 6 || t == 2 || t == 3 || t == 8;
@@ -3664,25 +3664,25 @@ bool is_iq(int t) {
 // values per block of the types the grouped expert kernels take (0 = none)
 int gu_qk(int t) {
     switch (t) {
-#define STRATA_QK(T) case T: return Fmt<T>::qk;
-        STRATA_GU_FMTS(STRATA_QK)
-#undef STRATA_QK
+#define NOSTROMA_QK(T) case T: return Fmt<T>::qk;
+        NOSTROMA_GU_FMTS(NOSTROMA_QK)
+#undef NOSTROMA_QK
         default: return 0;
     }
 }
 int d_qk(int t) {
     switch (t) {
-#define STRATA_QK(T) case T: return Fmt<T>::qk;
-        STRATA_D_FMTS(STRATA_QK)
-#undef STRATA_QK
+#define NOSTROMA_QK(T) case T: return Fmt<T>::qk;
+        NOSTROMA_D_FMTS(NOSTROMA_QK)
+#undef NOSTROMA_QK
         default: return 0;
     }
 }
 bool gu_split(int t) {
     switch (t) {
-#define STRATA_SP(T) case T: return kSplit<T>;
-        STRATA_GU_FMTS(STRATA_SP)
-#undef STRATA_SP
+#define NOSTROMA_SP(T) case T: return kSplit<T>;
+        NOSTROMA_GU_FMTS(NOSTROMA_SP)
+#undef NOSTROMA_SP
         default: return false;
     }
 }
@@ -3691,12 +3691,12 @@ bool env_on(const char* name) {
     const char* v = std::getenv(name);
     return v != nullptr && v[0] != '\0' && v[0] != '0';
 }
-// STRATA_OLD_IQ_MMVQ=1 keeps the per-column kernels (bitwise equal to the new ones; kept for A/B timing)
+// NOSTROMA_OLD_IQ_MMVQ=1 keeps the per-column kernels (bitwise equal to the new ones; kept for A/B timing)
 bool g_old_kernels = env_on("NOSTROMA_OLD_IQ_MMVQ");
 // SYCL port (0.1.31 merge): upstream sends the split formats (the i-quants) to native_gu/down_multi_kernel, one warp
 // per row, 8 rows a group. On the B70 the port's grouped kernels (8 lanes a row, 32 rows a group, the multi-entry
 // dots with aligned loads and the IQ4 codebook in registers) are the measured ones, so they stay the default for
-// every format; STRATA_EXPERT_SPLIT=1 takes upstream's multi kernels, launched with their own grid (GU_ROWS rows).
+// every format; NOSTROMA_EXPERT_SPLIT=1 takes upstream's multi kernels, launched with their own grid (GU_ROWS rows).
 bool g_split_multi = env_on("NOSTROMA_EXPERT_SPLIT");
 bool g_no_sub16_gu = env_on("NOSTROMA_NO_SUB16_GU");
 
@@ -3704,27 +3704,27 @@ bool g_no_sub16_gu = env_on("NOSTROMA_NO_SUB16_GU");
 // Cache by the actual SYCL device, not a process-wide first-device decision.
 bool q2_word_expand_enabled(const sycl::device& device) {
     static const bool enabled = [] {
-        const char* v = strata::env("NOSTROMA_SYCL_Q2_WORD_EXPAND");
+        const char* v = nostroma::env("NOSTROMA_SYCL_Q2_WORD_EXPAND");
         return !(v && v[0] == '0');
     }();
     if (!enabled) return false;
     thread_local std::optional<std::pair<sycl::device, bool>> cached;
     if (!cached || cached->first != device)
-        cached.emplace(device, strata::intel_gpu_gen(device) == strata::IntelGpuGen::Battlemage);
+        cached.emplace(device, nostroma::intel_gpu_gen(device) == nostroma::IntelGpuGen::Battlemage);
     return cached->second;
 }
 
-// PR #4185 controls: six are on by default for a Battlemage device (strata::bm_default_on), the rest are opt-in (measured neutral); =0 / =1 decides
-// STRATA_IQ_STAGE_GRID=0 disables staging 64-bit i-quant codebook tables into shared memory
+// PR #4185 controls: six are on by default for a Battlemage device (nostroma::bm_default_on), the rest are opt-in (measured neutral); =0 / =1 decides
+// NOSTROMA_IQ_STAGE_GRID=0 disables staging 64-bit i-quant codebook tables into shared memory
 bool g_stage_grid = [] {
-    const char* v = strata::env("NOSTROMA_IQ_STAGE_GRID");
+    const char* v = nostroma::env("NOSTROMA_IQ_STAGE_GRID");
     return v == nullptr || v[0] == '\0' || v[0] != '0';
 }();
 // The single-matrix mmvq (128-thread blocks, one per 4 rows) pays the 2-8 KB staging per block: on the RTX 5070 its
 // IQ2_XS / IQ2_S / IQ1_M calls were 10-20% slower staged at 3-8 columns (iq_multi_parity --bench), while the grouped
-// expert kernels gain.  So mmvq stages only with STRATA_IQ_STAGE_GRID_MMVQ=1 (bitwise the same either way).
+// expert kernels gain.  So mmvq stages only with NOSTROMA_IQ_STAGE_GRID_MMVQ=1 (bitwise the same either way).
 bool g_stage_grid_mmvq = g_stage_grid && [] {
-    const char* v = strata::env("NOSTROMA_IQ_STAGE_GRID_MMVQ");
+    const char* v = nostroma::env("NOSTROMA_IQ_STAGE_GRID_MMVQ");
     return v != nullptr && v[0] == '1';
 }();
 
@@ -3743,7 +3743,7 @@ void launch_mmvq_multi_nc(dpct::dim3 grid, dpct::dim3 block, dpct::queue_ptr s,
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+        nostroma::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
 
             cgh.parallel_for<dpct_kernel_name<
                 class mmvq_multi_kernel_8df6c9, dpct_kernel_scalar<TY>,
@@ -3767,7 +3767,7 @@ void launch_mmvq_multi_nc(dpct::dim3 grid, dpct::dim3 block, dpct::queue_ptr s,
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+        nostroma::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
 
             cgh.parallel_for<dpct_kernel_name<
                 class mmvq_multi_kernel_9c43f2, dpct_kernel_scalar<TY>,
@@ -3791,7 +3791,7 @@ void launch_mmvq_multi_nc(dpct::dim3 grid, dpct::dim3 block, dpct::queue_ptr s,
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+        nostroma::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
 
             cgh.parallel_for<dpct_kernel_name<
                 class mmvq_multi_kernel_f8d14a, dpct_kernel_scalar<TY>,
@@ -3815,7 +3815,7 @@ void launch_mmvq_multi_nc(dpct::dim3 grid, dpct::dim3 block, dpct::queue_ptr s,
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+        nostroma::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
 
             cgh.parallel_for<dpct_kernel_name<
                 class mmvq_multi_kernel_88cd9a, dpct_kernel_scalar<TY>,
@@ -3839,7 +3839,7 @@ void launch_mmvq_multi_nc(dpct::dim3 grid, dpct::dim3 block, dpct::queue_ptr s,
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+        nostroma::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
 
             cgh.parallel_for<dpct_kernel_name<
                 class mmvq_multi_kernel_d55b02, dpct_kernel_scalar<TY>,
@@ -3863,7 +3863,7 @@ void launch_mmvq_multi_nc(dpct::dim3 grid, dpct::dim3 block, dpct::queue_ptr s,
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+        nostroma::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
 
             cgh.parallel_for<dpct_kernel_name<
                 class mmvq_multi_kernel_3404b2, dpct_kernel_scalar<TY>,
@@ -3889,7 +3889,7 @@ void launch_mmvq_multi_nc(dpct::dim3 grid, dpct::dim3 block, dpct::queue_ptr s,
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
 
-            strata::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+            nostroma::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
 
                 cgh.parallel_for<dpct_kernel_name<
                     class mmvq_multi_kernel_1f7e16, dpct_kernel_scalar<TY>,
@@ -3914,7 +3914,7 @@ void launch_mmvq_multi_nc(dpct::dim3 grid, dpct::dim3 block, dpct::queue_ptr s,
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
 
-            strata::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+            nostroma::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
 
                 cgh.parallel_for<dpct_kernel_name<
                     class mmvq_multi_kernel_95b544, dpct_kernel_scalar<TY>,
@@ -3948,7 +3948,7 @@ void launch_mmvq(const uint8_t *W, size_t rb, const block_q8_1 *X, float *y,
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+        nostroma::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
 
             cgh.parallel_for<dpct_kernel_name<class mmvq_kernel_c04bb8,
                                               dpct_kernel_scalar<TY>>>(
@@ -3969,7 +3969,7 @@ void launch_mmvq(const uint8_t *W, size_t rb, const block_q8_1 *X, float *y,
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+        nostroma::kprof::kp(s, __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
 
             cgh.parallel_for<dpct_kernel_name<class mmvq_kernel_18057f,
                                               dpct_kernel_scalar<TY>>>(
@@ -4081,10 +4081,10 @@ template<int KB>void iq3_public_xmx_T(int T,const uint8_t* w,const block_q8_1* x
 }
 
 // END PRIVATE IQ3 XMX REUSE HELPER
-// SYCL port: upstream's opt-in AMD-tuned S26 (STRATA_EXPERT_V2) and S27 (STRATA_EXPERT_V2K) grouped-expert kernels are
+// SYCL port: upstream's opt-in AMD-tuned S26 (NOSTROMA_EXPERT_V2) and S27 (NOSTROMA_EXPERT_V2K) grouped-expert kernels are
 // not migrated: dpct cannot name their instantiations and they are tuned for gfx1151. The port's lane kernels below are
 // the measured ones for every format; the two switches only print a note.
-// (the S26/S27 kernels and their launchers are not here: the canonical code is src/kernels/cuda/iq_kernels.cu, STRATA_EXPERT_V2 / STRATA_EXPERT_V2K; sycl/tools/fixups.py keeps this block out)
+// (the S26/S27 kernels and their launchers are not here: the canonical code is src/kernels/cuda/iq_kernels.cu, NOSTROMA_EXPERT_V2 / NOSTROMA_EXPERT_V2K; sycl/tools/fixups.py keeps this block out)
 
 template<int TY, int E>
 __dpct_inline__ void rows_dot_reuse(const uintptr_t (&rows)[2],
@@ -4197,10 +4197,10 @@ void launch_gu_row_reuse(unsigned groups, dpct::queue_ptr s,
     const unsigned gx = (unsigned) ((2 * L.n_ff + 63) / 64);
     auto props = sycl::ext::oneapi::experimental::properties{
         sycl::ext::oneapi::experimental::use_root_sync};
-    static const bool e3 = TG == 21 || strata::bm_default_on("STRATA_EXPERT_ROW_E3", s->get_device(), false);
+    static const bool e3 = TG == 21 || nostroma::bm_default_on("NOSTROMA_EXPERT_ROW_E3", s->get_device(), false);
     if (e3) {
         static const bool logged = [] {
-            std::fprintf(stderr, "strata: %s exact three-entry row reuse enabled\n",
+            std::fprintf(stderr, "nostroma: %s exact three-entry row reuse enabled\n",
                          TG == 22 ? "IQ2_S" : TG == 21 ? "IQ3_S" : "IQ3_XXS");
             return true;
         }();
@@ -4225,31 +4225,31 @@ void launch_gu_row_reuse(unsigned groups, dpct::queue_ptr s,
 // Private, default OFF: GU22-only extraction from the frozen 51560d17 source.
 bool gu22_row_reuse_enabled(const sycl::device& device) {
     static const bool enabled = [] {
-        const char* v = strata::env("NOSTROMA_PRIVATE_GU_PREPARED");
+        const char* v = nostroma::env("NOSTROMA_PRIVATE_GU_PREPARED");
         return v && v[0] == '1';
     }();
     if (!enabled) return false;
     thread_local std::optional<std::pair<sycl::device, bool>> cached;
     if (!cached || cached->first != device)
-        cached.emplace(device, strata::intel_gpu_gen(device) == strata::IntelGpuGen::Battlemage);
+        cached.emplace(device, nostroma::intel_gpu_gen(device) == nostroma::IntelGpuGen::Battlemage);
     return cached->second;
 }
 // (the PR #3153 copy of rows_dot_reuse / native_gu_row_reuse_kernel / launch_gu_row_reuse for IQ2_S is the head's generalised
 // version above: same two-row reuse, same arithmetic; its enable switch above keeps its name)
 // END PRIVATE GU22 ROW REUSE ONLY
 
-// SYCL port: lanes per row of the port's grouped expert kernels at run time (STRATA_GU_LANES / STRATA_DOWN_LANES:
-// 4, 8, 16 or 32; default STRATA_EXPERT_LANES), 256 / lanes rows per work-group. Gate/up rows are 80 dot calls
+// SYCL port: lanes per row of the port's grouped expert kernels at run time (NOSTROMA_GU_LANES / NOSTROMA_DOWN_LANES:
+// 4, 8, 16 or 32; default NOSTROMA_EXPERT_LANES), 256 / lanes rows per work-group. Gate/up rows are 80 dot calls
 // (2560 wide), the IQ4_NL down rows 40 (640 wide), so the best split can differ by role.
 inline int lanes_env(const char* name) {
     const char* v = std::getenv(name);
     const int n = v ? std::atoi(v) : kExpertLanes;
     return n == 4 || n == 8 || n == 16 || n == 32 ? n : kExpertLanes;
 }
-inline int gu_lanes() { static const int v = lanes_env("STRATA_GU_LANES"); return v; }
-inline int down_lanes() { static const int v = lanes_env("STRATA_DOWN_LANES"); return v; }
+inline int gu_lanes() { static const int v = lanes_env("NOSTROMA_GU_LANES"); return v; }
+inline int down_lanes() { static const int v = lanes_env("NOSTROMA_DOWN_LANES"); return v; }
 bool g_iq2xxs_reuse = [] {
-    const char* value = strata::env("NOSTROMA_SYCL_EXPERT_MULTI16");
+    const char* value = nostroma::env("NOSTROMA_SYCL_EXPERT_MULTI16");
     return value && std::atoi(value) != 0;
 }();
 
@@ -4275,10 +4275,10 @@ void launch_gu_packed_fixed(unsigned groups, dpct::queue_ptr s, const unsigned l
         [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] { native_gu_kernel<TG,8,false,true>(pointers,starts,count,tokens,x,layout,gate,up); });
 }
 
-// STRATA_KQ_GU_LANES (opt-in): the lane split of the K-quant / Q8_0 gate/up rows alone (Unsloth's files), default STRATA_GU_LANES.
+// NOSTROMA_KQ_GU_LANES (opt-in): the lane split of the K-quant / Q8_0 gate/up rows alone (Unsloth's files), default NOSTROMA_GU_LANES.
 // B70, 4-token windows, split on: 16 lanes reads Q4_K/Q5_1 experts at 439 GB/s against 426 at 8; the reduction order differs
 // (other bits), so it stays opt-in.
-inline int kq_gu_lanes() { static const int v = strata::env("NOSTROMA_KQ_GU_LANES") ? lanes_env("STRATA_KQ_GU_LANES") : gu_lanes(); return v; }
+inline int kq_gu_lanes() { static const int v = nostroma::env("NOSTROMA_KQ_GU_LANES") ? lanes_env("NOSTROMA_KQ_GU_LANES") : gu_lanes(); return v; }
 // Single output row, weight preparation shared across entries; original LN8.
 // GU16 preparation is the already byte-tested IQ2_XXS preparation from R2,
 // with no paired output row and no whole-packet Q8 staging array.
@@ -4417,7 +4417,7 @@ __dpct_inline__ void gu_prepared_kernel(
     const int ng = *n_groups;
     if ((int) item_ct1.get_group(1) >= ng) return;
     const void* grid = nullptr;
-#if STRATA_GRID_SLM
+#if NOSTROMA_GRID_SLM
     if constexpr (TG == 18 || TG == 21 || TG == 22) {
         using GT = std::conditional_t<TG == 22, uint64_t, uint32_t>;
         constexpr int GN = TG == 22 ? 1024 : TG == 21 ? 512 : 256;
@@ -4449,8 +4449,8 @@ __dpct_inline__ void gu_prepared_kernel(
 
 
 inline bool gu_prepared_enabled(const sycl::device& dev) {
-    static const bool enabled=[] {const char* p=strata::env("NOSTROMA_PRIVATE_GU_PREPARED");return p&&std::atoi(p)!=0;}();
-    return enabled && strata::intel_gpu_gen(dev)==strata::IntelGpuGen::Battlemage;
+    static const bool enabled=[] {const char* p=nostroma::env("NOSTROMA_PRIVATE_GU_PREPARED");return p&&std::atoi(p)!=0;}();
+    return enabled && nostroma::intel_gpu_gen(dev)==nostroma::IntelGpuGen::Battlemage;
 }
 template<int TY> class GuPreparedKernel;
 template<int TY> void launch_gu_prepared(unsigned groups,dpct::queue_ptr s,const unsigned long long* ptr,const int32_t* start,
@@ -4465,8 +4465,8 @@ template<int TY> void launch_gu_prepared(unsigned groups,dpct::queue_ptr s,const
 // Each ESIMD item owns16rows; four independent items own64rows without SLM.
 namespace pvr=sycl::ext::intel::esimd;
 inline bool ps_enabled(const sycl::device& device){
- static const bool on=[] {const char* p=strata::env("NOSTROMA_PRIVATE_PACKED_REGISTER");return p&&p[0]=='1';}();
- return on&&b60_main_actor()&&b60_weights_packed()&&strata::intel_gpu_gen(device)==strata::IntelGpuGen::Battlemage;
+ static const bool on=[] {const char* p=nostroma::env("NOSTROMA_PRIVATE_PACKED_REGISTER");return p&&p[0]=='1';}();
+ return on&&b60_main_actor()&&b60_weights_packed()&&nostroma::intel_gpu_gen(device)==nostroma::IntelGpuGen::Battlemage;
 }
 SYCL_ESIMD_FUNCTION ESIMD_INLINE pvr::simd<int32_t,16>
 pvr_sign(pvr::simd<uint32_t,16> positive,pvr::simd<uint32_t,16> sign){
@@ -4621,8 +4621,8 @@ void launch_pvr(unsigned groups,dpct::queue_ptr queue,
 }
 // IQ2_XXS: one ESIMD item retains the original four rows x eight K lanes.
 inline bool p16_enabled(const sycl::device& dev){
- static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GU_XXS_PACKED");return p&&p[0]=='1';}();
- return on&&b60_main_actor()&&b60_weights_packed()&&strata::intel_gpu_gen(dev)==strata::IntelGpuGen::Battlemage;
+ static const bool on=[] {const char*p=nostroma::env("NOSTROMA_PRIVATE_GU_XXS_PACKED");return p&&p[0]=='1';}();
+ return on&&b60_main_actor()&&b60_weights_packed()&&nostroma::intel_gpu_gen(dev)==nostroma::IntelGpuGen::Battlemage;
 }
 SYCL_ESIMD_FUNCTION ESIMD_INLINE pvr::simd<int32_t,32>
 p16_sign(pvr::simd<uint32_t,32> positive,pvr::simd<uint32_t,32> sign){
@@ -4719,7 +4719,7 @@ void launch_gu_xxs(unsigned groups,dpct::queue_ptr queue,
 }
 
 
-inline bool p4_enabled(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_DOWN_S4");return p&&p[0]=='1';}();return on;}
+inline bool p4_enabled(){static const bool on=[] {const char*p=nostroma::env("NOSTROMA_PRIVATE_DOWN_S4");return p&&p[0]=='1';}();return on;}
 SYCL_ESIMD_FUNCTION ESIMD_INLINE pvr::simd<uint32_t,16> p4_q2_eight(pvr::simd<uint32_t,16> q){
  q&=65535u;q=(q|(q<<8))&0x00ff00ffu;
  q=(q|(q<<4))&0x0f0f0f0fu;q=(q|(q<<2))&0x33333333u;
@@ -4814,7 +4814,7 @@ void launch_pvr_s4(unsigned groups,dpct::queue_ptr queue,
   });
 }
 
-inline bool grid64_enabled(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GU_GRID64");return p&&p[0]=='1';}();return on;}
+inline bool grid64_enabled(){static const bool on=[] {const char*p=nostroma::env("NOSTROMA_PRIVATE_GU_GRID64");return p&&p[0]=='1';}();return on;}
 template<int E>
 SYCL_ESIMD_FUNCTION ESIMD_INLINE void grid64_gu_packet(
  const uint8_t* weights,int row,int first,const int32_t* tokens,
@@ -4911,7 +4911,7 @@ void launch_grid64(unsigned groups,dpct::queue_ptr queue,
   });
 }
 
-inline bool grid_s4_enabled(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GU_GRID_S4");return p&&p[0]=='1';}();return on;}
+inline bool grid_s4_enabled(){static const bool on=[] {const char*p=nostroma::env("NOSTROMA_PRIVATE_GU_GRID_S4");return p&&p[0]=='1';}();return on;}
 static const uint32_t b60_s4_grid[1024]={
  0x11111111,0x11111115,0x11111133,0x11111151,0x11111155,0x11111313,0x11111331,0x11111335,0x11111353,0x11111511,0x11111515,0x11111533,0x11111551,0x11113113,0x11113131,0x11113135,
  0x11113153,0x11113311,0x11113315,0x11113333,0x11113351,0x11113513,0x11113531,0x11113535,0x11113553,0x11115111,0x11115115,0x11115133,0x11115151,0x11115313,0x11115331,0x11115511,
@@ -5088,8 +5088,8 @@ void launch_grid_s4(unsigned groups,dpct::queue_ptr queue,
 
 // IQ1_M: one ESIMD item retains the original four rows x eight K lanes.
 inline bool i1_enabled(const sycl::device& dev){
- static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GU_IQ1_PACKED");return p&&p[0]=='1';}();
- return on&&b60_main_actor()&&b60_weights_packed()&&strata::intel_gpu_gen(dev)==strata::IntelGpuGen::Battlemage;
+ static const bool on=[] {const char*p=nostroma::env("NOSTROMA_PRIVATE_GU_IQ1_PACKED");return p&&p[0]=='1';}();
+ return on&&b60_main_actor()&&b60_weights_packed()&&nostroma::intel_gpu_gen(dev)==nostroma::IntelGpuGen::Battlemage;
 }
 template<int E>
 SYCL_ESIMD_FUNCTION ESIMD_INLINE void i1_packet(
@@ -5189,8 +5189,8 @@ void launch_gu_iq1(unsigned groups,dpct::queue_ptr queue,
   });
 }
 
-inline bool b60_next_iq_pool(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_B60_NEXT_POOL");return p&&p[0]=='1';}();return on;}
-inline bool grid_s4_slm_enabled(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GU_S4_SLM");return p&&p[0]=='1';}();return on;}
+inline bool b60_next_iq_pool(){static const bool on=[] {const char*p=nostroma::env("NOSTROMA_PRIVATE_B60_NEXT_POOL");return p&&p[0]=='1';}();return on;}
+inline bool grid_s4_slm_enabled(){static const bool on=[] {const char*p=nostroma::env("NOSTROMA_PRIVATE_GU_S4_SLM");return p&&p[0]=='1';}();return on;}
 template<int E>
 SYCL_ESIMD_FUNCTION ESIMD_INLINE void grid_s4_slm_packet(
  const uint8_t* weights,int row,int first,const int32_t* tokens,
@@ -5308,7 +5308,7 @@ void launch_grid_s4_slm(unsigned groups,dpct::queue_ptr queue,
   });
 }
 
-inline bool grid_s4_basis9_enabled(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GU_S4_BASIS9");return p&&p[0]=='1';}();return on;}
+inline bool grid_s4_basis9_enabled(){static const bool on=[] {const char*p=nostroma::env("NOSTROMA_PRIVATE_GU_S4_BASIS9");return p&&p[0]=='1';}();return on;}
 template<int E>
 SYCL_ESIMD_FUNCTION ESIMD_INLINE void grid_s4_basis9_packet(
  const uint8_t* weights,int row,int first,const int32_t* tokens,
@@ -5425,7 +5425,7 @@ void launch_grid_s4_basis9(unsigned groups,dpct::queue_ptr queue,
   });
 }
 
-inline bool grid_s4_wg16_enabled(){static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GU_S4_WG16");return p&&p[0]=='1';}();return on;}
+inline bool grid_s4_wg16_enabled(){static const bool on=[] {const char*p=nostroma::env("NOSTROMA_PRIVATE_GU_S4_WG16");return p&&p[0]=='1';}();return on;}
 class GuGridS4WG16Kernel;
 template<bool Down,class Kernel>
 void launch_grid_s4_wg16(unsigned groups,dpct::queue_ptr queue,
@@ -5478,7 +5478,7 @@ static const uint32_t b60_xxs_s4_grid[256]={
 };
 // Sixteen original rows; each retains its eight K leaves and original FP tree.
 inline bool xxs_s4_enabled(){
- static const bool on=[] {const char*p=strata::env("NOSTROMA_PRIVATE_GU_XXS_S4");return p&&p[0]=='1';}();
+ static const bool on=[] {const char*p=nostroma::env("NOSTROMA_PRIVATE_GU_XXS_S4");return p&&p[0]=='1';}();
  return on;
 }
 template<int E>
@@ -5607,7 +5607,7 @@ template <int TG, int LN, bool KM = true>
 void launch_gu_port(unsigned groups, dpct::queue_ptr s, const unsigned long long *grp_ptr, const int32_t *grp_start,
                     const int32_t *n_groups, const int32_t *ent_tok, const block_q8_1 *X,
                     const NativeExpertLayout &L, float *gate, float *up, bool bounded = false) {
-    // #3153's explicit opt-ins first (STRATA_PRIVATE_* / STRATA_SYCL_*, all off unless set), then the head's #4185 defaults
+    // #3153's explicit opt-ins first (NOSTROMA_PRIVATE_* / NOSTROMA_SYCL_*, all off unless set), then the head's #4185 defaults
     if constexpr(TG==16 && LN==8 && KM) {
         if(L.n_embd==2560 && L.n_ff==640 && !g_old_kernels && !g_split_multi && p16_enabled(s->get_device())) {
             launch_gu_xxs(groups,s,grp_ptr,grp_start,n_groups,ent_tok,X,L,gate,up);return;
@@ -5630,7 +5630,7 @@ void launch_gu_port(unsigned groups, dpct::queue_ptr s, const unsigned long long
     }
     // BEGIN PRIVATE GU22 ROW REUSE HOOK (#3153; launch_gu_row_reuse is the head's two-row reuse launcher, the same kernel)
     if constexpr (TG == 22 && LN == 8) {
-#if !STRATA_GRID_SLM
+#if !NOSTROMA_GRID_SLM
         if (!g_old_kernels && !g_split_multi && gu22_row_reuse_enabled(s->get_device())) {
             launch_gu_row_reuse<TG>(groups, s, grp_ptr, grp_start, n_groups, ent_tok, X, L, gate, up);
             return;
@@ -5655,13 +5655,13 @@ void launch_gu_port(unsigned groups, dpct::queue_ptr s, const unsigned long long
     if constexpr (TG == 16 && LN == 8) {
         if (g_iq2xxs_reuse) { launch_gu_iq2xxs_reuse(groups, s, grp_ptr, grp_start, n_groups, ent_tok, X, L, gate, up); return; }
     }
-#if !STRATA_GRID_SLM
+#if !NOSTROMA_GRID_SLM
     if constexpr ((TG == 22 || TG == 18) && LN == 8) {
-        static const bool reuse = strata::bm_default_on(TG == 22 ? "STRATA_IQ2S_GU_ROW_REUSE" : "STRATA_IQ3XXS_GU_ROW_REUSE", s->get_device());
+        static const bool reuse = nostroma::bm_default_on(TG == 22 ? "NOSTROMA_IQ2S_GU_ROW_REUSE" : "NOSTROMA_IQ3XXS_GU_ROW_REUSE", s->get_device());
         if (reuse && !g_old_kernels && !g_split_multi &&
-            strata::intel_gpu_gen(s->get_device()) == strata::IntelGpuGen::Battlemage) {
+            nostroma::intel_gpu_gen(s->get_device()) == nostroma::IntelGpuGen::Battlemage) {
             static const bool note = [] {
-                std::fprintf(stderr, "strata: %s raw two-row GU reuse enabled (8 lanes, SIMD16)\n",
+                std::fprintf(stderr, "nostroma: %s raw two-row GU reuse enabled (8 lanes, SIMD16)\n",
                              TG == 22 ? "IQ2_S" : "IQ3_XXS");
                 return true;
             }();
@@ -5674,15 +5674,15 @@ void launch_gu_port(unsigned groups, dpct::queue_ptr s, const unsigned long long
     constexpr int ROWS = 256 / LN;
     const unsigned gx = (unsigned) ((2 * L.n_ff + ROWS - 1) / ROWS);
     auto exp_props = sycl::ext::oneapi::experimental::properties{sycl::ext::oneapi::experimental::use_root_sync};
-    strata::kprof::kp(s, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class native_gu_port, dpct_kernel_scalar<TG>, dpct_kernel_scalar<LN>, dpct_kernel_scalar<KM>>>(
+    nostroma::kprof::kp(s, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class native_gu_port, dpct_kernel_scalar<TG>, dpct_kernel_scalar<LN>, dpct_kernel_scalar<KM>>>(
         sycl::nd_range<3>(sycl::range<3>(1, groups, (size_t) gx * 256), sycl::range<3>(1, 1, 256)), exp_props,
         [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] {
             native_gu_kernel<TG, LN, false, false, KM>(grp_ptr, grp_start, n_groups, ent_tok, X, L, gate, up);
         });
 }
-// STRATA_KQ_SPLIT=0 (or native_expert_set_kq_split(false)): the K-quant / Q5_1 / Q8_0 lane kernels without the
+// NOSTROMA_KQ_SPLIT=0 (or native_expert_set_kq_split(false)): the K-quant / Q5_1 / Q8_0 lane kernels without the
 // multi-entry split (one weight read per entry, as before); the outputs are the same bits either way
-bool g_kq_split = [] { const char* v = strata::env("NOSTROMA_KQ_SPLIT"); return !(v && v[0] == '0'); }();
+bool g_kq_split = [] { const char* v = nostroma::env("NOSTROMA_KQ_SPLIT"); return !(v && v[0] == '0'); }();
 template <int TG, int LN>
 void gu_port_km(unsigned groups, dpct::queue_ptr s, const unsigned long long *grp_ptr, const int32_t *grp_start,
                 const int32_t *n_groups, const int32_t *ent_tok, const block_q8_1 *X, const NativeExpertLayout &L,
@@ -5691,7 +5691,7 @@ void gu_port_km(unsigned groups, dpct::queue_ptr s, const unsigned long long *gr
         if (!g_kq_split) { launch_gu_port<TG, LN, false>(groups, s, grp_ptr, grp_start, n_groups, ent_tok, X, L, gate, up, bounded); return; }
         if constexpr (TG == 23) {
             static const bool logged = [] {
-                std::fprintf(stderr, "strata: IQ4_XS exact multi-entry decode reuse enabled\n");
+                std::fprintf(stderr, "nostroma: IQ4_XS exact multi-entry decode reuse enabled\n");
                 return true;
             }();
             (void) logged;
@@ -5718,7 +5718,7 @@ void launch_down_port(unsigned groups, dpct::queue_ptr s, const unsigned long lo
     constexpr int ROWS = 256 / LN;
     const unsigned gx = (unsigned) ((L.n_embd + ROWS - 1) / ROWS);
     auto exp_props = sycl::ext::oneapi::experimental::properties{sycl::ext::oneapi::experimental::use_root_sync};
-    strata::kprof::kp(s, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class native_down_port, dpct_kernel_scalar<TD>, dpct_kernel_scalar<LN>, dpct_kernel_scalar<KM>>>(
+    nostroma::kprof::kp(s, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class native_down_port, dpct_kernel_scalar<TD>, dpct_kernel_scalar<LN>, dpct_kernel_scalar<KM>>>(
         sycl::nd_range<3>(sycl::range<3>(1, groups, (size_t) gx * 256), sycl::range<3>(1, 1, 256)), exp_props,
         [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] {
             native_down_kernel<TD, LN, KM>(grp_ptr, grp_start, n_groups, ent_dst, hq, L, out);
@@ -5762,7 +5762,7 @@ void launch_down_lanes(dpct::dim3 grid, dpct::queue_ptr s, const unsigned long l
     }
 }
 
-// STRATA_EXPERT_SPLIT=1 (opt-in): upstream's multi-entry kernels, one warp per row, GU_ROWS rows a group, launched with
+// NOSTROMA_EXPERT_SPLIT=1 (opt-in): upstream's multi-entry kernels, one warp per row, GU_ROWS rows a group, launched with
 // their own grid.  The sub-warp variants (SUB16 / SUB_DOWN) are not launched here: they are bitwise equal to the
 // generic path and need their own row counts; the port's lane kernels are the default for every format.
 template <int TG, bool STAGE_GRID>
@@ -5771,7 +5771,7 @@ void launch_gu_multi(dpct::dim3 grid, dpct::queue_ptr s, const unsigned long lon
                      const NativeExpertLayout &L, float *gate, float *up) {
     auto exp_props = sycl::ext::oneapi::experimental::properties{sycl::ext::oneapi::experimental::use_root_sync};
     const sycl::range<3> g(1, grid.y, (size_t) ((2 * L.n_ff + GU_ROWS - 1) / GU_ROWS));
-    strata::kprof::kp(s, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class native_gu_multi_split, dpct_kernel_scalar<TG>,
+    nostroma::kprof::kp(s, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class native_gu_multi_split, dpct_kernel_scalar<TG>,
                                      dpct_kernel_scalar<STAGE_GRID>>>(
         sycl::nd_range<3>(sycl::range<3>(1, g[1], g[2] * 256), sycl::range<3>(1, 1, 256)), exp_props,
         [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] {
@@ -5786,13 +5786,13 @@ void launch_gu(dpct::dim3 grid, dpct::queue_ptr s,
                const block_q8_1 *X, const NativeExpertLayout &L, float *gate,
                float *up, bool bounded = false) {
     if constexpr (TG == 21) {
-#if !STRATA_GRID_SLM
-        static const bool reuse = strata::bm_default_on("STRATA_IQ3S_GU_ROW_REUSE", s->get_device());
+#if !NOSTROMA_GRID_SLM
+        static const bool reuse = nostroma::bm_default_on("NOSTROMA_IQ3S_GU_ROW_REUSE", s->get_device());
         if (reuse && !g_old_kernels && !g_split_multi && gu_lanes() == 8 &&
             L.n_embd == 2560 && L.n_ff == 640 &&
-            strata::intel_gpu_gen(s->get_device()) == strata::IntelGpuGen::Battlemage) {
+            nostroma::intel_gpu_gen(s->get_device()) == nostroma::IntelGpuGen::Battlemage) {
             static const bool logged = [] {
-                std::fprintf(stderr, "strata: IQ3_S two-row GU reuse enabled (8 lanes, SIMD16, direct activation reads)\n");
+                std::fprintf(stderr, "nostroma: IQ3_S two-row GU reuse enabled (8 lanes, SIMD16, direct activation reads)\n");
                 return true;
             }();
             (void) logged;
@@ -5800,7 +5800,7 @@ void launch_gu(dpct::dim3 grid, dpct::queue_ptr s,
             return;
         }
 #endif
-        static const bool iq3s_gu_slm = strata::bm_default_on("STRATA_IQ3S_GU_SLM", s->get_device(), false);
+        static const bool iq3s_gu_slm = nostroma::bm_default_on("NOSTROMA_IQ3S_GU_SLM", s->get_device(), false);
         if (!g_old_kernels && iq3s_gu_slm && L.n_embd == 2560 && L.n_ff == 640) {
             auto exp_props =
                 sycl::ext::oneapi::experimental::properties{sycl::ext::oneapi::experimental::use_root_sync};
@@ -5836,7 +5836,7 @@ void launch_down_multi(dpct::dim3 grid, dpct::queue_ptr s, const unsigned long l
                        const block_q8_1 *hq, const NativeExpertLayout &L, float *out) {
     auto exp_props = sycl::ext::oneapi::experimental::properties{sycl::ext::oneapi::experimental::use_root_sync};
     const size_t gx = (size_t) ((L.n_embd + GU_ROWS - 1) / GU_ROWS);
-    strata::kprof::kp(s, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class native_down_multi_split, dpct_kernel_scalar<TD>>>(
+    nostroma::kprof::kp(s, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class native_down_multi_split, dpct_kernel_scalar<TD>>>(
         sycl::nd_range<3>(sycl::range<3>(1, grid.y, gx * 256), sycl::range<3>(1, 1, 256)), exp_props,
         [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] {
             native_down_multi_kernel<TD, false>(grp_ptr, grp_start, n_groups, ent_dst, hq, L, out);
@@ -5869,7 +5869,7 @@ void launch_down(dpct::dim3 grid, dpct::queue_ptr s,
         }
     }
     if constexpr (TD == 20) {
-        static const bool iq4nl_down_slm = strata::bm_default_on("STRATA_IQ4NL_DOWN_SLM", s->get_device(), false);
+        static const bool iq4nl_down_slm = nostroma::bm_default_on("NOSTROMA_IQ4NL_DOWN_SLM", s->get_device(), false);
         if (!g_old_kernels && iq4nl_down_slm && L.n_embd == 2560 && L.n_ff == 640) {
             launch_down_iq4nl_slm(grid, s, grp_ptr, grp_start, n_groups, ent_dst, hq, L, out);
             return;
@@ -5907,7 +5907,7 @@ bool hadamard_block_ok(int block, int64_t width) {
 void hadamard_rows(const float* x, float* y, int64_t rows, int64_t width, int block, const float* signs, void* stream) {
     if (rows <= 0) return;
     if (!hadamard_block_ok(block, width)) hadamard_bad_block("hadamard_rows", block, width);
-    dpct::queue_ptr s = strata::q_of(stream);
+    dpct::queue_ptr s = nostroma::q_of(stream);
     for (int64_t r0 = 0; r0 < rows; r0 += kHadamardMaxRows) {
         const int64_t n = std::min<int64_t>(kHadamardMaxRows, rows - r0);
         launch_hadamard_rows<float>(x + r0 * width, y + r0 * width, n, width, block, signs, s);
@@ -5918,7 +5918,7 @@ void hadamard_rows(const float* x, float* y, int64_t rows, int64_t width, int bl
 void hadamard_rows_f16(uint16_t* x, int64_t rows, int64_t width, int block, const float* signs, void* stream) {
     if (rows <= 0) return;
     if (!hadamard_block_ok(block, width)) hadamard_bad_block("hadamard_rows_f16", block, width);
-    dpct::queue_ptr s = strata::q_of(stream);
+    dpct::queue_ptr s = nostroma::q_of(stream);
     for (int64_t r0 = 0; r0 < rows; r0 += kHadamardMaxRows) {
         const int64_t n = std::min<int64_t>(kHadamardMaxRows, rows - r0);
         launch_hadamard_rows<sycl::half>((const sycl::half*) x + r0 * width, (sycl::half*) x + r0 * width, n, width, block,
@@ -5936,7 +5936,7 @@ const float* hadamard_device_signs(const float* host, int width) {
     float*& d = table[std::make_tuple(dev, host, width)];
     if (d == nullptr) {
         sycl::queue& q = dpct::get_in_order_queue();
-        d = (float*) strata::malloc_device_guarded((size_t) width * sizeof(float), q, "Hadamard signs");
+        d = (float*) nostroma::malloc_device_guarded((size_t) width * sizeof(float), q, "Hadamard signs");
         q.memcpy(d, host, (size_t) width * sizeof(float)).wait();
     }
     return d;
@@ -5980,7 +5980,7 @@ void quantize_q8_1_rows(const float* x, int64_t n_rows, int64_t n_cols, void* y,
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->template parallel_for<dpct_kernel_name<class quantize_q8_1_kernel_422964>>(
                 sycl::nd_range<3>(
                     sycl::range(1, 1, (unsigned)((n + 255) / 256)) *
@@ -6197,7 +6197,7 @@ void iq3_paired_s4_launch(const uint8_t* weights,const block_q8_1* acts,float* y
 }
 void b60_iq3_s4_probe(bool candidate,const void* w,const void* x,float* y,int K,int N,int T,void* stream){
  if(!w||!x||!y||!stream||N<=0||N%16||!((K==2560&&N==6144)||(K==6144&&N==2560)))throw std::invalid_argument("IQ3 S4 component shape");
- auto*q=strata::q_of(stream);const auto*weights=static_cast<const uint8_t*>(w);const auto*acts=static_cast<const block_q8_1*>(x);
+ auto*q=nostroma::q_of(stream);const auto*weights=static_cast<const uint8_t*>(w);const auto*acts=static_cast<const block_q8_1*>(x);
  if(!candidate){if(K==2560)iq3_public_xmx_T<10>(T,weights,acts,y,N,q);else iq3_public_xmx_T<24>(T,weights,acts,y,N,q);return;}
 #define I3_CALL(E) case E: if(K==2560)iq3_paired_s4_launch<E,10>(weights,acts,y,N,q);else iq3_paired_s4_launch<E,24>(weights,acts,y,N,q);break;
  switch(T){I3_CALL(1) I3_CALL(2) I3_CALL(4) default:throw std::invalid_argument("IQ3 S4 component T");}
@@ -6261,16 +6261,16 @@ __dpct_inline__ void iq3s_wide_kernel(const uint8_t* __restrict__ w, size_t rb, 
         if (lane == 0) y[(size_t) c * n_out + row] = v;
     }
 }
-// STRATA_IQ3S_WIDE=1: the wide kernel; unset or 0: the multi kernel (default).
+// NOSTROMA_IQ3S_WIDE=1: the wide kernel; unset or 0: the multi kernel (default).
 bool iq3s_wide_on() {
-    static const bool v = [] { const char* e = strata::env("NOSTROMA_IQ3S_WIDE"); return e && std::atoi(e) != 0; }();
+    static const bool v = [] { const char* e = nostroma::env("NOSTROMA_IQ3S_WIDE"); return e && std::atoi(e) != 0; }();
     return v;
 }
 template <int NCOLS>
 void launch_iq3s_wide_t(const uint8_t* W, size_t rb, const block_q8_1* X, float* y, int n_in, int n_out, dpct::queue_ptr s) {
     constexpr int WPG = 4;   // sub-groups per work-group
     const unsigned groups = unsigned((n_out + WPG - 1) / WPG);
-    strata::kprof::kp(s, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class iq3s_wide_k, dpct_kernel_scalar<NCOLS>>>(
+    nostroma::kprof::kp(s, __FILE__, __func__, __LINE__)->template parallel_for<dpct_kernel_name<class iq3s_wide_k, dpct_kernel_scalar<NCOLS>>>(
         sycl::nd_range<3>(sycl::range(1, WPG, groups * 32), sycl::range(1, WPG, 32)),
         [=](sycl::nd_item<3>) [[sycl::reqd_sub_group_size(32)]] { iq3s_wide_kernel<NCOLS>(W, rb, X, y, n_in, n_out); });
 }
@@ -6291,13 +6291,13 @@ bool launch_iq3s_wide(const uint8_t* W, size_t rb, const block_q8_1* X, float* y
 
 void iq_mmvq(int t, const void* w, const void* x_q8_1, float* y, int n_in, int n_out, int ncols, void* stream) {
     const size_t rb = iq_row_bytes(t, n_in);
-    dpct::queue_ptr s = strata::q_of(stream);
+    dpct::queue_ptr s = nostroma::q_of(stream);
     const auto* W = (const uint8_t*) w;
     const auto* X = (const block_q8_1*) x_q8_1;
     if (t == 21 && launch_iq3s_wide(W, rb, X, y, n_in, n_out, ncols, s)) { check("iq_mmvq"); return; }
     if(t==21 && !g_old_kernels && b60_cache_requested(21) && b60_main_actor() && b60_weights_packed() &&
        ((n_in==2560&&n_out==6144)||(n_in==6144&&n_out==2560)) && (ncols==1||ncols==2||ncols==4) &&
-       strata::intel_gpu_gen(s->get_device())==strata::IntelGpuGen::Battlemage){
+       nostroma::intel_gpu_gen(s->get_device())==nostroma::IntelGpuGen::Battlemage){
         const auto* cached=static_cast<const uint8_t*>(b60_cached_weight(w,21));
         if(!cached)throw std::logic_error("B60 missing IQ3 decode cache");
         b60_iq3_s4_probe(true,cached,x_q8_1,y,n_in,n_out,ncols,stream);return;
@@ -6305,16 +6305,16 @@ void iq_mmvq(int t, const void* w, const void* x_q8_1, float* y, int n_in, int n
     // The previously byte-checked public XMX implementation, real format21 only.
     if (t == 21 && !g_old_kernels && ncols >= 1 && ncols <= 8 && n_out >= 1 &&
         ((n_in == 2560 && n_out <= 12288) || (n_in == 6144 && n_out <= 2560)) &&
-        strata::intel_gpu_gen(s->get_device()) == strata::IntelGpuGen::Battlemage) {
+        nostroma::intel_gpu_gen(s->get_device()) == nostroma::IntelGpuGen::Battlemage) {
         if (n_in == 2560) iq3_public_xmx_T<10>(ncols, W, X, y, n_out, s);
         else iq3_public_xmx_T<24>(ncols, W, X, y, n_out, s);
         check("iq_mmvq");
         return;
     }
     switch (t) {
-#define STRATA_MMVQ(T) case T: launch_mmvq<T>(W, rb, X, y, n_in, n_out, ncols, s); break;
-        STRATA_MMVQ_FMTS(STRATA_MMVQ)
-#undef STRATA_MMVQ
+#define NOSTROMA_MMVQ(T) case T: launch_mmvq<T>(W, rb, X, y, n_in, n_out, ncols, s); break;
+        NOSTROMA_MMVQ_FMTS(NOSTROMA_MMVQ)
+#undef NOSTROMA_MMVQ
         default: std::fprintf(stderr, "iq_mmvq: type %d is not supported\n", t); std::exit(1);
     }
     check("iq_mmvq");
@@ -6327,14 +6327,14 @@ void iq3_xmx_reuse_probe(int mode,const void* weights,const void* activations,fl
         throw std::invalid_argument("IQ3 XMX reuse diagnostic arguments");
     const auto* w=static_cast<const uint8_t*>(weights);
     const auto* x=static_cast<const block_q8_1*>(activations);
-    auto* q=strata::q_of(stream);
+    auto* q=nostroma::q_of(stream);
     if(mode==0){launch_mmvq<21>(w,iq_row_bytes(21,K),x,out,K,N,T,q);return;}
     if(K==2560)iq3_public_xmx_T<10>(T,w,x,out,N,q);
     else iq3_public_xmx_T<24>(T,w,x,out,N,q);
 }
 void iq3_codebook_audit(uint32_t* out,void* stream){
     if(!out||!stream)throw std::invalid_argument("IQ3 codebook diagnostic arguments");
-    strata::q_of(stream)->parallel_for(sycl::range<1>(512),[=](sycl::id<1> i){out[i]=iq3s_grid[i];});
+    nostroma::q_of(stream)->parallel_for(sycl::range<1>(512),[=](sycl::id<1> i){out[i]=iq3s_grid[i];});
 }
 // END PRIVATE IQ3 XMX REUSE ENTRY
 void iq_dequant_f16(int t, const void* src, int64_t n, uint16_t* dst, void* stream, const float* scale) {
@@ -6345,10 +6345,10 @@ void iq_dequant_f16(int t, const void* src, int64_t n, uint16_t* dst, void* stre
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
         dpct::has_capability_or_fail(
-            strata::q_of(stream)->get_device(),
+            nostroma::q_of(stream)->get_device(),
             {sycl::aspect::fp16});
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->submit([&](sycl::handler &cgh) {
 
                 cgh.parallel_for<dpct_kernel_name<
@@ -6372,10 +6372,10 @@ void iq_dequant_f16_plain_launch(int t, const void* src, int64_t n, uint16_t* ds
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             };
         dpct::has_capability_or_fail(
-            strata::q_of(stream)->get_device(),
+            nostroma::q_of(stream)->get_device(),
             {sycl::aspect::fp16});
 
-        strata::q_of(stream)
+        nostroma::q_of(stream)
             ->submit([&](sycl::handler &cgh) {
 
                 cgh.parallel_for<dpct_kernel_name<
@@ -6414,10 +6414,10 @@ void iq_embed_rows(int t, const void* table, size_t row_bytes, const int32_t* to
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
         dpct::has_capability_or_fail(
-            strata::q_of(stream)->get_device(),
+            nostroma::q_of(stream)->get_device(),
             {sycl::aspect::fp16});
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->submit([&](sycl::handler &cgh) {
 
                 cgh.parallel_for<
@@ -6443,10 +6443,10 @@ void iq_dequant_f32(int t, const void* src, int64_t n, float* dst, void* stream)
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
         dpct::has_capability_or_fail(
-            strata::q_of(stream)->get_device(),
+            nostroma::q_of(stream)->get_device(),
             {sycl::aspect::fp16});
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->submit([&](sycl::handler &cgh) {
 
                 cgh.parallel_for<
@@ -6475,7 +6475,7 @@ void launch_dequant_gu_bounded(const void* gate, const void* up, uint32_t n_ff,
     const size_t groups = (blocks + subgroups - 1) / subgroups;
     const auto properties = sycl::ext::oneapi::experimental::properties{
         sycl::ext::oneapi::experimental::use_root_sync};
-    strata::q_of(stream)->parallel_for<dpct_kernel_name<class dequant_gu_bounded,
+    nostroma::q_of(stream)->parallel_for<dpct_kernel_name<class dequant_gu_bounded,
                                                        dpct_kernel_scalar<Type>,
                                                        dpct_kernel_scalar<PerRow>>>(
         sycl::nd_range<3>(sycl::range<3>(1, 2, groups * subgroups * 32),
@@ -6511,7 +6511,7 @@ sycl::event launch_dequant_gu_metadata(const void* gate, const void* up, uint32_
     const size_t groups = (blocks + subgroups - 1) / subgroups;
     const auto properties = sycl::ext::oneapi::experimental::properties{
         sycl::ext::oneapi::experimental::use_root_sync};
-    return strata::q_of(stream)->parallel_for<dpct_kernel_name<class dequant_gu_metadata,
+    return nostroma::q_of(stream)->parallel_for<dpct_kernel_name<class dequant_gu_metadata,
                                                        dpct_kernel_scalar<Type>,
                                                        dpct_kernel_scalar<PerRow>>>(
         sycl::nd_range<3>(sycl::range<3>(1, 2, groups * subgroups * 32),
@@ -6540,23 +6540,23 @@ bool iq_dequant_gu_f16_bounded(int type, const void* gate, const void* up,
     if (n_ff <= 0 || n_embd <= 0 || n_embd % QK_K != 0 ||
         uint64_t(n_embd) > UINT32_MAX / 4u ||
         uint64_t(n_ff) > UINT32_MAX / (uint64_t(n_embd) * 4u)) return false;
-#define STRATA_DEQUANT_BOUNDED(TYPE) \
+#define NOSTROMA_DEQUANT_BOUNDED(TYPE) \
     case TYPE: \
         if (n_embd == 2560) launch_dequant_gu_bounded<TYPE, 10>(gate, up, n_ff, n_embd, dst, stream); \
         else launch_dequant_gu_bounded<TYPE>(gate, up, n_ff, n_embd, dst, stream); \
         return true;
-    static const bool metadata=[](){const char* e=strata::env("NOSTROMA_SYCL_GU16_METADATA_QUARTET");return e&&e[0]=='1';}();
+    static const bool metadata=[](){const char* e=nostroma::env("NOSTROMA_SYCL_GU16_METADATA_QUARTET");return e&&e[0]=='1';}();
     if(metadata&&type==16&&n_ff==640&&n_embd==2560){
         launch_dequant_gu_metadata<16,10>(gate,up,640,2560,dst,stream);
         return true;
     }
     switch (type) {
-        STRATA_DEQUANT_BOUNDED(16)
-        STRATA_DEQUANT_BOUNDED(22)
-        STRATA_DEQUANT_BOUNDED(29)
+        NOSTROMA_DEQUANT_BOUNDED(16)
+        NOSTROMA_DEQUANT_BOUNDED(22)
+        NOSTROMA_DEQUANT_BOUNDED(29)
         default: return false;
     }
-#undef STRATA_DEQUANT_BOUNDED
+#undef NOSTROMA_DEQUANT_BOUNDED
 }
 
 namespace {
@@ -6567,7 +6567,7 @@ void launch_dequant_gu_tiled(int type, const void* gate, const void* up,
     const int64_t per_row = PerRow ? PerRow : n_embd / 256;
     const int64_t blocks = n_ff * per_row;
     const size_t groups = (size_t) ((blocks + Subgroups - 1) / Subgroups);
-    auto* queue = strata::q_of(stream);
+    auto* queue = nostroma::q_of(stream);
     const auto properties = sycl::ext::oneapi::experimental::properties{
         sycl::ext::oneapi::experimental::use_root_sync};
     queue->parallel_for<dpct_kernel_name<class dequant_gu_tiled_kernel,
@@ -6611,7 +6611,7 @@ void dispatch_dequant_gu_tiled(int type, const void* gate, const void* up,
 }
 int dequant_gu_subgroups() {
     static const int value = [] {
-        const char* text = strata::env("NOSTROMA_SYCL_DEQUANT_GU_SG");
+        const char* text = nostroma::env("NOSTROMA_SYCL_DEQUANT_GU_SG");
         const int requested = text ? std::atoi(text) : 1;
         return requested == 2 || requested == 4 || requested == 8 ? requested : 1;
     }();
@@ -6626,7 +6626,7 @@ void iq_dequant_gu_f16_tiled(int type, const void* gate, const void* up,
         std::fprintf(stderr, "iq_dequant_gu_f16_tiled: invalid type or shape\n");
         std::exit(1);
     }
-    dpct::has_capability_or_fail(strata::q_of(stream)->get_device(), {sycl::aspect::fp16});
+    dpct::has_capability_or_fail(nostroma::q_of(stream)->get_device(), {sycl::aspect::fp16});
     switch (subgroups) {
         case 2: dispatch_dequant_gu_tiled<2>(type, gate, up, n_ff, n_embd, dst, stream, static_type, static_row); break;
         case 4: dispatch_dequant_gu_tiled<4>(type, gate, up, n_ff, n_embd, dst, stream, static_type, static_row); break;
@@ -6655,10 +6655,10 @@ void iq_dequant_gu_f16(int t, const void* gate, const void* up, int64_t n_ff, in
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
         dpct::has_capability_or_fail(
-            strata::q_of(stream)->get_device(),
+            nostroma::q_of(stream)->get_device(),
             {sycl::aspect::fp16});
 
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)
             ->submit([&](sycl::handler &cgh) {
 
                 cgh.parallel_for<
@@ -6707,8 +6707,8 @@ void iq_dequant_expert_f16(int gt, int dt, const void* gate, const void* up, con
     {
         auto exp_props = sycl::ext::oneapi::experimental::properties{
             sycl::ext::oneapi::experimental::use_root_sync};
-        dpct::has_capability_or_fail(strata::q_of(stream)->get_device(), {sycl::aspect::fp16});
-        strata::kprof::kp(strata::q_of(stream), __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
+        dpct::has_capability_or_fail(nostroma::q_of(stream)->get_device(), {sycl::aspect::fp16});
+        nostroma::kprof::kp(nostroma::q_of(stream), __FILE__, __func__, __LINE__)->submit([&](sycl::handler &cgh) {
             cgh.parallel_for<dpct_kernel_name<class dequant_expert_kernel_7d2c41>>(
                 sycl::nd_range<3>(sycl::range(1, 1, (unsigned) (gu_wgs + d_wgs)) * sycl::range(1, 1, 32),
                                   sycl::range(1, 1, 32)),
@@ -6747,8 +6747,8 @@ size_t native_expert_scratch_bytes(int64_t cap, int64_t n_ff) {
 }
 
 
-#if defined(STRATA_HIP_GFX906)
-// ---- AMD layouts for the grouped native experts (STRATA_EXP_MODE; 0 = the CUDA one above).
+#if defined(NOSTROMA_HIP_GFX906)
+// ---- AMD layouts for the grouped native experts (NOSTROMA_EXP_MODE; 0 = the CUDA one above).
 // 1 (W64): a row per 64-lane wavefront - 4x the wavefronts, ~1-2 calls per lane, a 64-lane butterfly.
 // 2 (R2):  a 32-lane logical warp computes TWO rows in one loop - two independent load chains in flight.
 // Either way a (row, entry) sum does not depend on the window size.
@@ -6918,7 +6918,7 @@ template<> struct GridOf<18> { using T = uint32_t; static constexpr int N = 256;
 template<> struct GridOf<21> { using T = uint32_t; static constexpr int N = 512; __device__ static const T* src() { return iq3s_grid; } };
 template<> struct GridOf<23> { using T = uint32_t; static constexpr int N = 1; __device__ static const T* src() { return iq3s_grid; } };   // IQ4_XS: no grid
 
-// SG = 1 (mode 6): the signs without byte-SIMD ops, which gfx906 lacks (strata_vcmpne4 / strata_vsub4 unpack to
+// SG = 1 (mode 6): the signs without byte-SIMD ops, which gfx906 lacks (nostroma_vcmpne4 / nostroma_vsub4 unpack to
 // ~12 word ops each).  m = the sign nibble as 0x00/0xff bytes; (g ^ m) is g or -g-1 per byte, so
 // dp4a(g ^ m, u) - dp4a(m, u) = sum(s g u) exactly - the same integers, the same floats.
 __device__ __forceinline__ int nib_mask(uint32_t n) {
@@ -7283,16 +7283,16 @@ __global__ void __launch_bounds__(256) native_gu_fused_kernel(const unsigned lon
     }
 }
 
-int g_exp_mode = -1;   // native_expert_set_mode (the bench); -1 = STRATA_EXP_MODE, default 7
+int g_exp_mode = -1;   // native_expert_set_mode (the bench); -1 = NOSTROMA_EXP_MODE, default 7
 int exp_mode() {
-    static const int m = [] { const char* v = strata::env("NOSTROMA_EXP_MODE"); return v ? std::atoi(v) : 7; }();
+    static const int m = [] { const char* v = nostroma::env("NOSTROMA_EXP_MODE"); return v ? std::atoi(v) : 7; }();
     return g_exp_mode >= 0 ? g_exp_mode : m;
 }
 #endif
 int g_exp_phase = 0;   // the bench: 0 all, 1 gate/up + swiglu + quantize only, 2 down only
 
 void native_expert_set_mode(int mode, int phase) {
-#if defined(STRATA_HIP_GFX906)
+#if defined(NOSTROMA_HIP_GFX906)
     g_exp_mode = mode;
 #else
     (void) mode;
@@ -7310,23 +7310,23 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
                            const int32_t* n_groups, const int32_t* ent_dst, const int32_t* ent_tok, int64_t cap_groups,
                            int64_t cap_entries, const void* x_q8_1, void* scratch, float* out, void* stream,
                            int64_t grid_groups) {
-    strata::workload_trace::Scope trace("decode.expert_grouped", stream, cap_entries, L.n_ff, L.n_embd,
+    nostroma::workload_trace::Scope trace("decode.expert_grouped", stream, cap_entries, L.n_ff, L.n_embd,
                                         L.gu_row, L.d_row, L.gu_type);
     if (cap_groups <= 0 || cap_entries <= 0) return;
     if (L.n_ff % 32 != 0) { std::fprintf(stderr, "native_expert_grouped: n_ff %lld\n", (long long) L.n_ff); std::exit(1); }
-    dpct::queue_ptr s = strata::q_of(stream);
+    dpct::queue_ptr s = nostroma::q_of(stream);
     const size_t f = (size_t) cap_entries * (size_t) L.n_ff * sizeof(float), fa = (f + 255) & ~(size_t) 255;
     float* gate = (float*) scratch;
     float* up = (float*) ((uint8_t*) scratch + fa);
     float* h = (float*) ((uint8_t*) scratch + 2 * fa);
     block_q8_1* hq = (block_q8_1*) ((uint8_t*) scratch + 3 * fa);
     const auto* X = (const block_q8_1*) x_q8_1;
-    // SYCL port: STRATA_EXPERT_V2 / STRATA_EXPERT_V2K (upstream's AMD-tuned S26 / S27 kernels) are not built here
+    // SYCL port: NOSTROMA_EXPERT_V2 / NOSTROMA_EXPERT_V2K (upstream's AMD-tuned S26 / S27 kernels) are not built here
     static const bool v2_note = [] {
-        const char* a = strata::env("NOSTROMA_EXPERT_V2");
-        const char* b = strata::env("NOSTROMA_EXPERT_V2K");
+        const char* a = nostroma::env("NOSTROMA_EXPERT_V2");
+        const char* b = nostroma::env("NOSTROMA_EXPERT_V2K");
         if ((a && a[0] == '1') || (b && b[0] == '1'))
-            std::fprintf(stderr, "note: STRATA_EXPERT_V2 / STRATA_EXPERT_V2K are AMD-only experiments, ignored on SYCL\n");
+            std::fprintf(stderr, "note: NOSTROMA_EXPERT_V2 / NOSTROMA_EXPERT_V2K are AMD-only experiments, ignored on SYCL\n");
         return true;
     }();
     (void) v2_note;
@@ -7336,10 +7336,10 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
     const int64_t gy = (v1 || grid_groups <= 0 || grid_groups > cap_groups) ? cap_groups : grid_groups;
     const dpct::dim3 ggu((unsigned)((2 * L.n_ff + kExpertRows - 1) / kExpertRows),
                          (unsigned)gy);
-#if defined(STRATA_HIP_GFX906)
+#if defined(NOSTROMA_HIP_GFX906)
     const int em0 = exp_mode();
 #endif
-#if defined(STRATA_HIP_GFX906)
+#if defined(NOSTROMA_HIP_GFX906)
     const bool fused_gu = em0 == 8 && (L.gu_type == 18 || L.gu_type == 21 || L.gu_type == 22 || L.gu_type == 23) &&
                           L.n_ff % 32 == 0;
     if (fused_gu && g_exp_phase != 2) {
@@ -7357,7 +7357,7 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
 #else
     if (g_exp_phase != 2) {
 #endif
-#if defined(STRATA_HIP_GFX906)
+#if defined(NOSTROMA_HIP_GFX906)
     const bool lds_gu = (em0 == 5 || em0 == 6 || em0 == 7 || em0 == 8) && (L.gu_type == 18 || L.gu_type == 21 || L.gu_type == 22 || L.gu_type == 23);
     if (lds_gu) {
         const dim3 gl((unsigned) ((2 * L.n_ff + LDS_RB - 1) / LDS_RB), (unsigned) cap_groups);
@@ -7371,7 +7371,7 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
     } else {
     const int em = exp_mode() >= 5 ? 2 : exp_mode();
     const dim3 ggu_amd((unsigned) ((2 * L.n_ff + (em == 1 ? 3 : em == 4 ? 31 : 15)) / (em == 1 ? 4 : em == 4 ? 32 : 16)), (unsigned) cap_groups);
-#define STRATA_GU_AMD(T) \
+#define NOSTROMA_GU_AMD(T) \
     case T: if (em == 1) native_gu_amd_kernel<T, 1><<<ggu_amd, 256, 0, s>>>(grp_ptr, grp_start, n_groups, ent_tok, X, L, gate, up); \
             else if (em == 4) native_gu_amd_kernel<T, 4><<<ggu_amd, 256, 0, s>>>(grp_ptr, grp_start, n_groups, ent_tok, X, L, gate, up); \
             else native_gu_amd_kernel<T, 2><<<ggu_amd, 256, 0, s>>>(grp_ptr, grp_start, n_groups, ent_tok, X, L, gate, up); break;
@@ -7380,11 +7380,11 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
                         L.gu_type == 23 || L.gu_type == 29 || L.gu_type == 42;
     if ((em == 1 || em == 2 || em == 4) && amd_gu) {
         switch (L.gu_type) {
-            STRATA_GU_AMD(16) STRATA_GU_AMD(17) STRATA_GU_AMD(18) STRATA_GU_AMD(21) STRATA_GU_AMD(22) STRATA_GU_AMD(23)
-            STRATA_GU_AMD(29) STRATA_GU_AMD(42)
+            NOSTROMA_GU_AMD(16) NOSTROMA_GU_AMD(17) NOSTROMA_GU_AMD(18) NOSTROMA_GU_AMD(21) NOSTROMA_GU_AMD(22) NOSTROMA_GU_AMD(23)
+            NOSTROMA_GU_AMD(29) NOSTROMA_GU_AMD(42)
         }
     } else
-#undef STRATA_GU_AMD
+#undef NOSTROMA_GU_AMD
 #endif
     if(L.gu_type==16 && L.n_embd==2560 && L.n_ff==640 && !v1 && !g_old_kernels && !g_split_multi &&
        gu_lanes()==8 && grid_groups==0 && cap_groups==cap_entries && p16_enabled(s->get_device()) &&
@@ -7412,19 +7412,19 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
         launch_grid64<false,GuGrid64Kernel>(unsigned(gy),s,grp_ptr,grp_start,n_groups,ent_tok,X,L,gate,up);
     } else
     switch (L.gu_type) {
-#define STRATA_GU(T) case T: launch_gu<T>(ggu, s, grp_ptr, grp_start, n_groups, ent_tok, X, L, gate, up, cap_entries <= 80); break;
-        STRATA_GU_FMTS(STRATA_GU)
-#undef STRATA_GU
+#define NOSTROMA_GU(T) case T: launch_gu<T>(ggu, s, grp_ptr, grp_start, n_groups, ent_tok, X, L, gate, up, cap_entries <= 80); break;
+        NOSTROMA_GU_FMTS(NOSTROMA_GU)
+#undef NOSTROMA_GU
         default: std::fprintf(stderr, "native_expert_grouped: gate/up type %d\n", L.gu_type); std::exit(1);
     }
-#if defined(STRATA_HIP_GFX906)
+#if defined(NOSTROMA_HIP_GFX906)
     }
 #endif
     check("native_expert_grouped/gu");
     const long long nh = (long long) cap_entries * L.n_ff;
-#if defined(STRATA_HIP_GFX906)
+#if defined(NOSTROMA_HIP_GFX906)
     // gfx906: the separate SwiGLU and q8_1 passes stay the default (the A/B baseline); the RDNA one-pass
-    // kernel (bitwise the same) with STRATA_HIP_SWIGLU_FUSED=1
+    // kernel (bitwise the same) with NOSTROMA_HIP_SWIGLU_FUSED=1
     static const bool sw_fused = env_on("NOSTROMA_HIP_SWIGLU_FUSED");
     const bool sw_v1 = v1 || !sw_fused;
 #else
@@ -7436,7 +7436,7 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
                 auto exp_props = sycl::ext::oneapi::experimental::properties{
                     sycl::ext::oneapi::experimental::use_root_sync};
 
-                strata::kprof::kp(s, __FILE__, __func__, __LINE__)->template parallel_for<
+                nostroma::kprof::kp(s, __FILE__, __func__, __LINE__)->template parallel_for<
                     dpct_kernel_name<class swiglu_entries_kernel_a4959c>>(
                     sycl::nd_range<3>(
                         sycl::range(1, 1, (unsigned)((nh + 255) / 256)) *
@@ -7454,7 +7454,7 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
                 dpct::has_capability_or_fail(s->get_device(),
                                              {sycl::aspect::fp16});
 
-                strata::kprof::kp(s, __FILE__, __func__, __LINE__)->template parallel_for<
+                nostroma::kprof::kp(s, __FILE__, __func__, __LINE__)->template parallel_for<
                     dpct_kernel_name<class quantize_q8_1_kernel_f68c59>>(
                     sycl::nd_range<3>(
                         sycl::range(1, 1, (unsigned)((nh + 255) / 256)) *
@@ -7470,7 +7470,7 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
             auto exp_props = sycl::ext::oneapi::experimental::properties{
                 sycl::ext::oneapi::experimental::use_root_sync};
 
-            strata::kprof::kp(s, __FILE__, __func__, __LINE__)->template parallel_for<
+            nostroma::kprof::kp(s, __FILE__, __func__, __LINE__)->template parallel_for<
                 dpct_kernel_name<class swiglu_q8_1_entries_kernel_115291>>(
                 sycl::nd_range<3>(
                     sycl::range(1, 1, (unsigned)((nh + 255) / 256)) *
@@ -7489,7 +7489,7 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
     const int d_rows = (!g_old_kernels && !g_no_sub16_gu && L.n_ff == 640) ? (L.d_type == 20 ? 32 : (L.d_type == 42 ? 16 : 8)) : 8;
     const dpct::dim3 gd((unsigned)((L.n_embd + d_rows - 1) / d_rows),
                         (unsigned)gy);
-#if defined(STRATA_HIP_GFX906)
+#if defined(NOSTROMA_HIP_GFX906)
     if ((em0 == 7 || em0 == 8) && (L.d_type == 20 || L.d_type == 42)) {
         const dim3 gl((unsigned) ((L.n_embd + LDS_RB - 1) / LDS_RB), (unsigned) cap_groups);
         const size_t sh = (size_t) LDS_NT * (size_t) (L.n_ff / 32) * sizeof(block_q8_1);
@@ -7500,7 +7500,7 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
     }
     const int em = exp_mode() >= 5 ? 2 : exp_mode();
     const dim3 gd_amd((unsigned) ((L.n_embd + (em == 1 ? 3 : em == 4 ? 31 : 15)) / (em == 1 ? 4 : em == 4 ? 32 : 16)), (unsigned) cap_groups);
-#define STRATA_D_AMD(T) \
+#define NOSTROMA_D_AMD(T) \
     case T: if (em == 1) native_down_amd_kernel<T, 1><<<gd_amd, 256, 0, s>>>(grp_ptr, grp_start, n_groups, ent_dst, hq, L, out); \
             else if (em == 4) native_down_amd_kernel<T, 4><<<gd_amd, 256, 0, s>>>(grp_ptr, grp_start, n_groups, ent_dst, hq, L, out); \
             else native_down_amd_kernel<T, 2><<<gd_amd, 256, 0, s>>>(grp_ptr, grp_start, n_groups, ent_dst, hq, L, out); break;
@@ -7508,28 +7508,28 @@ void native_expert_grouped(const NativeExpertLayout& L, const unsigned long long
     // CUDA layout below
     if ((em == 1 || em == 2 || em == 4) && (L.d_type == 20 || L.d_type == 23 || L.d_type == 42)) {
         switch (L.d_type) {
-            STRATA_D_AMD(20) STRATA_D_AMD(23) STRATA_D_AMD(42)
+            NOSTROMA_D_AMD(20) NOSTROMA_D_AMD(23) NOSTROMA_D_AMD(42)
         }
     } else
-#undef STRATA_D_AMD
+#undef NOSTROMA_D_AMD
 #endif
     switch (L.d_type) {
-#define STRATA_DOWN(T) case T: launch_down<T>(gd, s, grp_ptr, grp_start, n_groups, ent_dst, hq, L, out); break;
-        STRATA_D_FMTS(STRATA_DOWN)
-#undef STRATA_DOWN
+#define NOSTROMA_DOWN(T) case T: launch_down<T>(gd, s, grp_ptr, grp_start, n_groups, ent_dst, hq, L, out); break;
+        NOSTROMA_D_FMTS(NOSTROMA_DOWN)
+#undef NOSTROMA_DOWN
         default: std::fprintf(stderr, "native_expert_grouped: down type %d\n", L.d_type); std::exit(1);
     }
     check("native_expert_grouped/down");
 }
 
 
-// A770 port (STRATA_PF_XMX=2): a group of experts' products in ONE launch, the weight tiles decoded straight from
+// A770 port (NOSTROMA_PF_XMX=2): a group of experts' products in ONE launch, the weight tiles decoded straight from
 // the quantized blobs into local memory (no FP16 copy of the expert in global memory).  Sub-group 8, joint_matrix
 // 8x8x16 (DG2), 256 GRF.  Per expert i of the group: Y_i = X_i . W_i^T, rows back to back (cnt[i] each).
 // gate/up: up_i != nullptr, virtual row 2r = gate row r, 2r+1 = up row r (iq_dequant_gu_f16's interleave).
 namespace xmxg {
-// Sub-group width = the XMX tile N: 8 (DG2, 8x8x16) or 16 (Xe2, 8x16x16; CMake STRATA_XMX_SG16 for an AOT bmg / lnl build)
-#ifdef STRATA_XMX_SG16
+// Sub-group width = the XMX tile N: 8 (DG2, 8x8x16) or 16 (Xe2, 8x16x16; CMake NOSTROMA_XMX_SG16 for an AOT bmg / lnl build)
+#ifdef NOSTROMA_XMX_SG16
 constexpr int kSgW = 16;
 #else
 constexpr int kSgW = 8;
@@ -7552,9 +7552,9 @@ void launch(sycl::queue& q, int ty, bool gu, const sycl::half* X, float* Y, cons
     constexpr int BM = C::BM, BN = C::BN, KS = C::KS, WG = C::WG, SG = C::SG;
     constexpr int LDA = KS + 8, LDB = KS + 8;
     const int nb = N / BN;
-#ifndef STRATA_NO_DG2_XMX
+#ifndef NOSTROMA_NO_DG2_XMX
     constexpr int TN = kSgW;
-    strata::kprof::kp(&q, __FILE__, __func__, __LINE__)->submit([&](sycl::handler& h) {
+    nostroma::kprof::kp(&q, __FILE__, __func__, __LINE__)->submit([&](sycl::handler& h) {
         sycl::local_accessor<sycl::half, 1> sa(BM * LDA, h), sb(BN * LDB, h);
         auto props = sycl::ext::oneapi::experimental::properties{sycl::ext::intel::experimental::grf_size<256>};
         h.parallel_for<Name>(sycl::nd_range<2>({(size_t) ntiles, (size_t) nb * WG}, {1, (size_t) WG}), props,
@@ -7642,12 +7642,12 @@ void launch(sycl::queue& q, int ty, bool gu, const sycl::half* X, float* Y, cons
     });
 #else
     (void) q; (void) X; (void) Y; (void) gp; (void) ntiles; (void) N; (void) K;
-    std::fprintf(stderr, "grouped XMX: the 8x8x16 / sub-group 8 kernel is not built for this device (STRATA_NO_DG2_XMX)\n");
+    std::fprintf(stderr, "grouped XMX: the 8x8x16 / sub-group 8 kernel is not built for this device (NOSTROMA_NO_DG2_XMX)\n");
     std::exit(1);
 #endif
 }
 class k_xg_small; class k_xg_big;
-#ifdef STRATA_XMX_SG16
+#ifdef NOSTROMA_XMX_SG16
 using Small = Cfg<2, 4, 4, 2>;   // 64 x 128 (8 sub-groups of 16)
 using Big = Cfg<4, 2, 4, 4>;     // 128 x 128
 #else
@@ -7674,7 +7674,7 @@ void iq_xmx_grouped(int ty, const uint8_t* const* a, const uint8_t* const* b, co
     int64_t tot = 0;
     for (int i = 0; i < n; ++i) { gp.a[i] = a[i]; gp.b[i] = b ? b[i] : nullptr; tot += cnt[i]; }
     if (tot <= 0) return;
-    sycl::queue& q = *strata::q_of(stream);
+    sycl::queue& q = *nostroma::q_of(stream);
     const auto* Xh = reinterpret_cast<const sycl::half*>(X);
     const bool gu = b != nullptr;
     if (tot / n < 96) {
@@ -7824,10 +7824,10 @@ bool xmx_gemm_iq(int ty, const void* gate, const void* up, int64_t K, int n_out,
     const size_t bytes = stage_halves * 2 /*stage*/ + stage_halves * 2 /*packed*/ + (size_t) xmx::NSG * 16 * (16 + xmx::APAD) * 2 +
                          (size_t) xmx::NSG * 256 * 4;
     if (bytes > 96 * 1024) return false;
-    dpct::queue_ptr q = strata::q_of(stream);
+    dpct::queue_ptr q = nostroma::q_of(stream);
     xmx::Src src{(const uint8_t*) gate, (const uint8_t*) up, ty, by_block ? K / 256 : 0};
     const int groups = n_out / xmx::NT;
-    strata::kprof::kp(q, __FILE__, __func__, __LINE__)->submit([&](sycl::handler& cgh) {
+    nostroma::kprof::kp(q, __FILE__, __func__, __LINE__)->submit([&](sycl::handler& cgh) {
         sycl::local_accessor<uint8_t, 1> slm(sycl::range<1>(bytes), cgh);
         cgh.parallel_for(
             sycl::nd_range<3>(sycl::range<3>(1, 1, (size_t) groups * xmx::WG), sycl::range<3>(1, 1, xmx::WG)),
@@ -7843,9 +7843,9 @@ bool xmx_gemm_iq(int ty, const void* gate, const void* up, int64_t K, int n_out,
     });
     return true;
 }
-}  // namespace strata::kernels
+}  // namespace nostroma::kernels
 
-namespace strata::kernels {
+namespace nostroma::kernels {
 namespace {
 constexpr int kExpertStageMaxGroups = 16;
 class ExpertStagePlan;
@@ -7928,7 +7928,7 @@ void native_expert_grouped_staged(
     const int32_t* tokens, int64_t cap_groups, int64_t cap_entries,
     const void* x_q8_1, void* scratch, float* output, void* stream,
     void* workspace, size_t workspace_bytes, int max_batch_groups, int copy_mode) {
-    auto* q = strata::q_of(stream);
+    auto* q = nostroma::q_of(stream);
     if (!stage_layout(l) || g_grouped_v1 || cap_groups <= 0 || cap_groups > 80 ||
         cap_entries <= 0 || cap_entries > 80 || !workspace ||
         (reinterpret_cast<uintptr_t>(scratch) & 15) ||
@@ -7958,4 +7958,4 @@ void native_expert_grouped_staged(
                              x_q8_1,scratch,output,stream,std::min<int64_t>(batch,cap_groups));
     }
 }
-} // namespace strata::kernels
+} // namespace nostroma::kernels

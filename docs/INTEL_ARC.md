@@ -54,16 +54,16 @@ engine package. Otherwise [build the image yourself](DOCKER.md#build-it-yourself
   CPU kernel needs AVX-512. With that folder the engine stops with "this CPU cannot run the expert kernel", and `nostroma doctor`
   warns about it before the start. Building the model folder again with `nostroma setup` (or `tools/iq_pack.py`) fixes it.
 - For a source build without Docker: **Intel oneAPI** with the DPC++ compiler (`icpx`, **2026.1 or newer**; 2025.3 does not build the engine) and **oneMKL**
-  (about 5 GB), `cmake` 3.24+, `ninja`, `git`, Python 3. The build fetches ggml unless you point `STRATA_GGML_DIR` at a
+  (about 5 GB), `cmake` 3.24+, `ninja`, `git`, Python 3. The build fetches ggml unless you point `NOSTROMA_GGML_DIR` at a
   llama.cpp checkout.
 - For `./setup.sh --backend sycl`: **Docker** and the GPU driver, nothing else from the list above. `sycl/setup_intel.py`
-  builds and runs the engine in the `strata-sycl-dev` image from `sycl/tools/Dockerfile`, which starts from a community
+  builds and runs the engine in the `nostroma-sycl-dev` image from `sycl/tools/Dockerfile`, which starts from a community
   llama.cpp SYCL image (`ghcr.io/snailium/...`), not an Intel or Nostroma image. On Ubuntu:
   `sudo apt install docker.io git`, then `sudo usermod -aG docker,render $USER` and log in again.
 - VRAM: the port keeps the experts on the card (`--stream-experts`). A 32 GB card holds the Coder IQ1_M or IQ2_XS. Smaller
   cards mirror part of the experts in RAM and are slower.
-  Under the wrapper's `STRATA_VERIFY_NO_HOST=1` there is no SSD expert tier on `xe`: every expert must
-  be in VRAM or in the pinned RAM mirror (`STRATA_MIRROR_MIB`), and the engine refuses to start when
+  Under the wrapper's `NOSTROMA_VERIFY_NO_HOST=1` there is no SSD expert tier on `xe`: every expert must
+  be in VRAM or in the pinned RAM mirror (`NOSTROMA_MIRROR_MIB`), and the engine refuses to start when
   the two do not cover the model. Size the RAM accordingly, or lower `--max-context`.
 
 ## Build with Docker (what `setup --backend sycl` uses)
@@ -72,11 +72,11 @@ About 10 minutes the first time. From the checkout, called `Nostroma` here:
 
 ```sh
 cd Nostroma
-docker build --pull -t strata-sycl-dev sycl/tools     # once: about 6 minutes, a 13 GB image
+docker build --pull -t nostroma-sycl-dev sycl/tools     # once: about 6 minutes, a 13 GB image
 H=$(basename "$PWD")
 # Arc B-series: bmg-g31 (Pro B70), bmg-g21 (B580, B570, Pro B60). Arc A-series (Alchemist): leave out AOT (JIT) and use build-sycl
 docker run --rm -u $(id -u):$(id -g) -v "$PWD/..:/work" -e AOT=bmg-g31 -e REPO=/work/$H \
-    -e BUILD_DIR=/work/$H/build-sycl-aot strata-sycl-dev "cd /work/$H && bash sycl/tools/build.sh nostroma"
+    -e BUILD_DIR=/work/$H/build-sycl-aot nostroma-sycl-dev "cd /work/$H && bash sycl/tools/build.sh nostroma"
 ```
 
 `--pull` matters: [INTEL.md](INTEL.md#how-to-build-it) says why. Then run `./setup.sh --backend sycl`. Do not run
@@ -101,19 +101,19 @@ Build the engine through the top-level CMake option or by configuring the `sycl/
 
 ```sh
 source /opt/intel/oneapi/setvars.sh
-cmake -S . -B build-sycl -G Ninja -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx -DSTRATA_ENABLE_SYCL=ON
+cmake -S . -B build-sycl -G Ninja -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx -DNOSTROMA_ENABLE_SYCL=ON
 #   or: cmake -S sycl -B build-sycl -G Ninja -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx
 cmake --build build-sycl --target nostroma
 ```
 
 | Option | Effect |
 | --- | --- |
-| `-DSTRATA_SYCL_AOT=bmg-g31` | Compile ahead of time for Arc Pro B70. Needs `ocloc` (Intel's `intel-ocloc` package). Without it the first start JIT-compiles every kernel (about 47 s). |
-| `-DSTRATA_SYCL_AOT=bmg-g21` | The same for B580, B570 and Pro B60 |
-| `-DSTRATA_SYCL_PARITY=OFF` | Skip the kernel tests (on by default). Run them with `ctest --test-dir build-sycl` on the card. |
+| `-DNOSTROMA_SYCL_AOT=bmg-g31` | Compile ahead of time for Arc Pro B70. Needs `ocloc` (Intel's `intel-ocloc` package). Without it the first start JIT-compiles every kernel (about 47 s). |
+| `-DNOSTROMA_SYCL_AOT=bmg-g21` | The same for B580, B570 and Pro B60 |
+| `-DNOSTROMA_SYCL_PARITY=OFF` | Skip the kernel tests (on by default). Run them with `ctest --test-dir build-sycl` on the card. |
 
-`setup_intel.py` looks for `build-sycl-aot/strata` or `build-sycl/strata` in the checkout. With the top-level option the
-engine is at `build-sycl/sycl/strata`, so use `-S sycl` or set `STRATA_SYCL_BIN`.
+`setup_intel.py` looks for `build-sycl-aot/nostroma` or `build-sycl/nostroma` in the checkout. With the top-level option the
+engine is at `build-sycl/sycl/nostroma`, so use `-S sycl` or set `NOSTROMA_SYCL_BIN`.
 
 ## Setup and running
 
@@ -131,10 +131,10 @@ Things that matter on an Arc (details in [INTEL.md](INTEL.md)):
 - **Do not ask for more VRAM than the card has.** On the `xe` driver an allocation past VRAM can push buffers into RAM until
   the machine runs out of memory and stalls. Leave about 1.5 GB free.
 - `SYCL_CACHE_PERSISTENT=0`: the persistent JIT cache crashed on Xe2 during the first compile.
-- Two cards: `ONEAPI_DEVICE_SELECTOR=level_zero:*` (the image pins `level_zero:0`; `strata-sycl.sh` passes the variable
+- Two cards: `ONEAPI_DEVICE_SELECTOR=level_zero:*` (the image pins `level_zero:0`; `nostroma-sycl.sh` passes the variable
   through) and `--layer-split`.
 - `--layer-split auto` on two equal cards takes the split that leaves the fullest card the most VRAM to spare, within 0.2% of
-  the best predicted time (`STRATA_SPLIT_HEADROOM_TOL`). `STRATA_SPLIT_HEADROOM=0` turns that off. A full card under `xe` moves
+  the best predicted time (`NOSTROMA_SPLIT_HEADROOM_TOL`). `NOSTROMA_SPLIT_HEADROOM=0` turns that off. A full card under `xe` moves
   buffers to system memory instead of failing. The startup line names both splits when the choice moves.
 - **Two Arc B-series cards decode faster by default.** With exactly two B-series cards (B50, B60, B65, B70, B570, B580) in a layer
   split, the first card starts the next window while the second still checks this one (`--pipeline-windows 2`), and setup writes
@@ -144,18 +144,18 @@ Things that matter on an Arc (details in [INTEL.md](INTEL.md)):
   One card, an A-series card, a mixed pair and three or more cards run as before. `--pipeline-windows 0` turns it off, and a
   `--spec` of your own, put in the config's `user_args`, is kept.
 - **Arc Pro B60:** PCI id `8086:e211` (`lspci -nn`), `sycl-ls` prints `Intel(R) Arc(TM) Pro B60 Graphics 20.1.0`, so
-  `-DSTRATA_SYCL_AOT=bmg-g21` is the right target. `setup_intel.py` knows both B60 ids, `e211` and `e221`. On a `--layer-split`
+  `-DNOSTROMA_SYCL_AOT=bmg-g21` is the right target. `setup_intel.py` knows both B60 ids, `e211` and `e221`. On a `--layer-split`
   the startup line "N experts are neither in VRAM nor mirrored" counts the other card's layers; read the following
-  `100% of the experts resident` lines. Set `STRATA_MIRROR_MIB=0` there, or the pinned mirror is allocated and not used.
+  `100% of the experts resident` lines. Set `NOSTROMA_MIRROR_MIB=0` there, or the pinned mirror is allocated and not used.
 - **`setvars.sh` and `set -u`:** `source /opt/intel/oneapi/setvars.sh` in a shell with `set -u` stops at
   `OCL_ICD_FILENAMES: unbound variable` (oneAPI 2026.1.1). Source it before `set -u`.
-- **Without Docker:** `sycl/serve/strata-sycl.sh` needs Docker. Natively, `source setvars.sh`, export `SYCL_CACHE_PERSISTENT=0`,
-  `ZES_ENABLE_SYSMAN=1` and `STRATA_VERIFY_DEVICE_PLAN=1`, then run `build-sycl-aot/strata` or `sycl/serve/server_intel.py`
+- **Without Docker:** `sycl/serve/nostroma-sycl.sh` needs Docker. Natively, `source setvars.sh`, export `SYCL_CACHE_PERSISTENT=0`,
+  `ZES_ENABLE_SYSMAN=1` and `NOSTROMA_VERIFY_DEVICE_PLAN=1`, then run `build-sycl-aot/nostroma` or `sycl/serve/server_intel.py`
   with an `exe` that does this. A normal user is not in the `render` group on Ubuntu, and then `sycl-ls` shows only the CPU.
-- `STRATA_VERIFY_NO_HOST=1` (set by `strata-sycl.sh` unless the config's `"env"` says otherwise) is needed on `xe` cards when part
+- `NOSTROMA_VERIFY_NO_HOST=1` (set by `nostroma-sycl.sh` unless the config's `"env"` says otherwise) is needed on `xe` cards when part
   of the experts is not in VRAM, and is left off on the `i915` A-series ([INTEL.md](INTEL.md)). The config's `"env"` block and
-  any `STRATA_*`, `ONEAPI_*`, `UR_*`, `IGC_*`, `SYCL_*` or `ZES_*` variable of the server's environment reach the engine
-  through `strata-sycl.sh`.
+  any `NOSTROMA_*`, `ONEAPI_*`, `UR_*`, `IGC_*`, `SYCL_*` or `ZES_*` variable of the server's environment reach the engine
+  through `nostroma-sycl.sh`.
 
 ## Tested cards
 

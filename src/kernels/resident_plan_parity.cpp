@@ -9,7 +9,7 @@
 // then the plan is untouched) and without one (the all-resident graph: a non-resident expert gives an empty plan and
 // sets *plan_err).
 // Every word of the plan the host pool would read is compared with memcmp. GPU, synthetic, no model.
-#include "strata/kernels/verify_kernels.hpp"
+#include "nostroma/kernels/verify_kernels.hpp"
 
 #include <cuda_runtime.h>
 
@@ -20,7 +20,7 @@
 #include <random>
 #include <vector>
 
-namespace k = strata::kernels;
+namespace k = nostroma::kernels;
 
 namespace {
 void ck(cudaError_t e, const char* w) {

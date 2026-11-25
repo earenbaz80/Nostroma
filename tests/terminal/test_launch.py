@@ -70,7 +70,7 @@ class SettingsRules(unittest.TestCase):
     def test_split_setting(self):
         self.assertEqual(S.split_setting("prefill=65536"), ("--prefill", "65536"))
         self.assertEqual(S.split_setting("--kv-grow"), ("--kv-grow", ""))
-        self.assertEqual(S.split_setting("STRATA_PIN_BY_NEED=1"), ("STRATA_PIN_BY_NEED", "1"))
+        self.assertEqual(S.split_setting("NOSTROMA_PIN_BY_NEED=1"), ("NOSTROMA_PIN_BY_NEED", "1"))
         self.assertEqual(S.split_setting("expert_cache=auto"), ("--expert-cache", "auto"))
         self.assertEqual(S.split_setting("IGC_EnableDPEmulation=1"), ("IGC_EnableDPEmulation", "1"))        # environment names keep their case
         self.assertEqual(S.split_setting("ONEAPI_DEVICE_SELECTOR=level_zero:gpu"), ("ONEAPI_DEVICE_SELECTOR", "level_zero:gpu"))
@@ -80,10 +80,10 @@ class SettingsRules(unittest.TestCase):
 
     def test_flags_text_round_trips_to_the_same_choices(self):
         s = S.LaunchSettings(family="qwen", model="IQ3_XXS", context=131072, parallel=2, tune="quick", access="lan", port=9000,
-                             extra={"--prefill": "65536", "STRATA_PIN_BY_NEED": "1"})
+                             extra={"--prefill": "65536", "NOSTROMA_PIN_BY_NEED": "1"})
         text = S.flags_text(s)
         for part in ("--model iq3_xxs", "--context 128k", "--parallel 2", "--tune quick", "--access lan", "--port 9000",
-                     "--set prefill=65536", "--set STRATA_PIN_BY_NEED=1"):
+                     "--set prefill=65536", "--set NOSTROMA_PIN_BY_NEED=1"):
             self.assertIn(part, text)
         self.assertIn('--preset "Fast"', S.flags_text(s, preset="Fast"))
 
@@ -229,7 +229,7 @@ class PresetStore(unittest.TestCase):
 
 
 class Advanced(unittest.TestCase):
-    HELP = """strata generate --pack DIR [options]
+    HELP = """nostroma generate --pack DIR [options]
 
   --pack DIR           the pack directory (default pack/full)
   --kv fp16|int8       KV storage (plan v0.3 P7): int8 codes, half the
@@ -271,23 +271,23 @@ class Advanced(unittest.TestCase):
         self.assertIsNone(params.check_name("--prefil", None))        # no list to check against: no warning
 
     def test_extra_becomes_argv_and_env(self):
-        a, e = S.as_argv_changes({"--prefill": "65536", "--kv-grow": "", "--spec": "off", "STRATA_PIN_BY_NEED": "1"}, frozenset({"--kv-grow"}))
+        a, e = S.as_argv_changes({"--prefill": "65536", "--kv-grow": "", "--spec": "off", "NOSTROMA_PIN_BY_NEED": "1"}, frozenset({"--kv-grow"}))
         self.assertEqual(a, {"--prefill": "65536", "--kv-grow": True, "--spec": None})
-        self.assertEqual(e, {"STRATA_PIN_BY_NEED": "1"})
+        self.assertEqual(e, {"NOSTROMA_PIN_BY_NEED": "1"})
 
 
 class RunConfig(unittest.TestCase):
-    BASE = {"exe": "component:strata-engine", "args": ["--native", "x.gguf", "--max-context", "32768", "--kv", "int8", "--prefill", "auto"],
+    BASE = {"exe": "component:nostroma-engine", "args": ["--native", "x.gguf", "--max-context", "32768", "--kv", "int8", "--prefill", "auto"],
             "port": 8095, "model_name": "m", "env": {}}
 
     def test_derive_applies_access_key_and_advanced(self):
-        s = S.LaunchSettings(access="lan", port=9001, api_key="sk-k", extra={"--prefill": "65536", "--kv-grow": "", "STRATA_PIN_BY_NEED": "1"})
+        s = S.LaunchSettings(access="lan", port=9001, api_key="sk-k", extra={"--prefill": "65536", "--kv-grow": "", "NOSTROMA_PIN_BY_NEED": "1"})
         cfg = derive_config(self.BASE, s, bool_flags=frozenset({"--kv-grow"}))
         self.assertEqual((cfg["host"], cfg["port"], cfg["api_key"]), ("0.0.0.0", 9001, "sk-k"))
         args = cfg["args"]
         self.assertEqual(args[args.index("--prefill") + 1], "65536")
         self.assertIn("--kv-grow", args)
-        self.assertEqual(cfg["env"], {"STRATA_PIN_BY_NEED": "1"})
+        self.assertEqual(cfg["env"], {"NOSTROMA_PIN_BY_NEED": "1"})
         self.assertEqual(self.BASE["args"][-1], "auto")               # the installed config is never edited
 
     def test_mtp_off_leaves_the_draft_layer_out_of_this_launch_only(self):
@@ -498,7 +498,7 @@ class AdoptRules(unittest.TestCase):
         not_intel(self)
 
     def files(self, root: Path, shards=2, pack=True, tokenizer=True, mtp=True):
-        d = root / "Strata-data"
+        d = root / "Nostroma-data"
         m = d / "models" / "IQ3_XXS"
         m.mkdir(parents=True)
         for i in range(1, shards + 1):
@@ -540,7 +540,7 @@ class AdoptRules(unittest.TestCase):
             self.assertEqual(a[a.index("--kv") + 1], "int8")
             self.assertIn("--ple-gguf", a)
             self.assertIn("--mtp", a)
-            self.assertEqual((cfg["exe"], cfg["backend"]), ("component:strata-engine", "sycl"))
+            self.assertEqual((cfg["exe"], cfg["backend"]), ("component:nostroma-engine", "sycl"))
             self.assertTrue(cfg["tokenizer"].endswith("tokenizer"))
 
     def test_plan_intel_flags_follow_the_driver(self):
@@ -603,14 +603,14 @@ class AdoptRules(unittest.TestCase):
     def test_setup_control_mode_keeps_pictures_when_the_engine_carries_the_reader(self):
         from types import SimpleNamespace
         with Home() as h:
-            mod = catalog(HW_12).strata.setup_module()
+            mod = catalog(HW_12).nostroma.setup_module()
             if mod is None or not hasattr(mod, "control_engine_step"):
                 self.skipTest("no setup.py in this checkout")
             engine = h.base / "engine"
             engine.mkdir()
             found = SimpleNamespace(root=engine, version="0.1.45", backend="cuda", platform="linux-x86_64")
             with mock.patch.object(mod, "get_llama_cpp", return_value=engine), mock.patch("nostroma_control.engine_component.resolve", return_value=found):
-                self.assertEqual(mod.control_engine_step({}, "cpu")[5], "none")           # no strata-vision beside the engine: off, with a note
+                self.assertEqual(mod.control_engine_step({}, "cpu")[5], "none")           # no nostroma-vision beside the engine: off, with a note
                 (engine / mod.VEXE).write_text("x")
                 self.assertEqual(mod.control_engine_step({}, "cpu")[5], "cpu")            # the component carries it: the choice is kept
                 self.assertEqual(mod.control_engine_step({}, "none")[5], "none")
@@ -618,7 +618,7 @@ class AdoptRules(unittest.TestCase):
     def test_turning_pictures_on_for_an_installed_model_downloads_only_the_reader(self):
         with Home() as h:
             cat = catalog(HW_12)
-            cfgfile = h.base / "strata-x.json"
+            cfgfile = h.base / "nostroma-x.json"
             cfgfile.write_text("{}")
             for vision, images, ctx, want in (("on", "off", 32768, 0.9), ("on", "cpu", 32768, 0.0), ("off", "off", 32768, 0.0), ("off", "off", 65536, 0.0)):
                 r = Runner(S.LaunchSettings(family="qwen", model="IQ3_XXS", vision=vision, context=ctx), catalog=cat)
@@ -636,7 +636,7 @@ class AdoptRules(unittest.TestCase):
             self.assertEqual(files_present(cfg), [])
             mm.unlink()
             cat = catalog(HW_12)
-            cfgfile = h.base / "strata-x.json"
+            cfgfile = h.base / "nostroma-x.json"
             cfgfile.write_text(json.dumps(cfg))
             r = Runner(S.LaunchSettings(family="qwen", model="IQ3_XXS", vision="on", context=32768), catalog=cat)
             with mock.patch.object(r, "installed_state", return_value=(cfgfile, {"context": 32768, "kv": "int8", "images": "cpu"})):
@@ -646,7 +646,7 @@ class AdoptRules(unittest.TestCase):
         from tests.terminal.launch_support import HW_2X16
         from nostroma_cli.launch.runner import apply_cards, cards_for_launch
         from nostroma_control import tune_knobs
-        base = {"exe": "component:strata-engine", "args": ["--max-context", "32768"], "gpu": 0, "port": 8080}
+        base = {"exe": "component:nostroma-engine", "args": ["--max-context", "32768"], "gpu": 0, "port": 8080}
         with Home() as h:
             # an installed single-card config, then the split chosen now
             cfg = derive_config(base, S.LaunchSettings(), bool_flags=tune_knobs.BOOL_FLAGS, gpus=[0, 1])
@@ -672,7 +672,7 @@ class AdoptRules(unittest.TestCase):
             self.assertIsNone(cards_for_launch(S.LaunchSettings(family="qwen", model="IQ3_XXS"), one))
             # the launch's own config is written with them (Runner.build_config), the installed file is untouched
             import json
-            installed = h.base / "strata-iq3_xxs.json"
+            installed = h.base / "nostroma-iq3_xxs.json"
             installed.write_text(json.dumps(base))
             r = Runner(S.LaunchSettings(family="qwen", model="IQ3_XXS", name="cards", gpus=[1]), catalog=two)
             out = r.build_config(installed)
@@ -688,7 +688,7 @@ class AdoptRules(unittest.TestCase):
         with Home() as h:
             two = catalog(HW_2X16)
             plain = S.LaunchSettings(family="qwen", model="IQ3_XXS")
-            chosen = {"exe": "component:strata-engine", "args": ["--max-context", "32768"], "gpu": 1, "gpus_asked": True, "port": 8080}
+            chosen = {"exe": "component:nostroma-engine", "args": ["--max-context", "32768"], "gpu": 1, "gpus_asked": True, "port": 8080}
             self.assertEqual(installed_cards(chosen), [1])
             self.assertEqual(installed_cards({**chosen, "gpu": [1, 0], "gpu_order": "as_given"}), [1, 0])
             self.assertEqual(installed_cards({**chosen, "gpu": "1,0"}), [1, 0])
@@ -698,7 +698,7 @@ class AdoptRules(unittest.TestCase):
             self.assertEqual(cards_for_launch(plain, two, base={**chosen, "gpus_asked": False}), [0, 1])    # no choice recorded: the recommended roles
             self.assertEqual(cards_for_launch(S.LaunchSettings(family="qwen", model="IQ3_XXS", gpus=[0]), two, base=chosen), [0])   # --gpu 0 wins
             if True:
-                installed = h.base / "strata-iq3_xxs.json"
+                installed = h.base / "nostroma-iq3_xxs.json"
                 for gpu, extra in ((1, {}), ([1, 0], {"gpu_order": "as_given", "layer_split": "auto"})):
                     base = {**chosen, "gpu": gpu, **extra}
                     installed.write_text(json.dumps(base))
@@ -714,11 +714,11 @@ class AdoptRules(unittest.TestCase):
             r = Runner(S.LaunchSettings(family="qwen", model="IQ3_XXS", vision="on"), catalog=cat, emit=seen.append)
             path = h.base / "cfg.json"
             path.write_text("{}")
-            with mock.patch.object(cat.strata, "describe_config", return_value={"images": "off"}):
+            with mock.patch.object(cat.nostroma, "describe_config", return_value={"images": "off"}):
                 r.check_pictures(path)
             self.assertTrue(any("Pictures could not be switched on" in e.text and e.level == "warn" for e in seen))
             seen.clear()
-            with mock.patch.object(cat.strata, "describe_config", return_value={"images": "cpu"}):
+            with mock.patch.object(cat.nostroma, "describe_config", return_value={"images": "cpu"}):
                 r.check_pictures(path)
             self.assertEqual(seen, [])
 
@@ -760,7 +760,7 @@ class AccessRules(unittest.TestCase):
         self.assertEqual(access.host_for("local"), "127.0.0.1")
         self.assertEqual(access.host_for("cloudflare"), "127.0.0.1")
         self.assertEqual(access.host_for("lan"), "0.0.0.0")
-        self.assertTrue(access.new_key().startswith("sk-strata-"))
+        self.assertTrue(access.new_key().startswith("sk-nostroma-"))
         self.assertNotIn(access.new_key(), access.mask_key(access.new_key()))
         self.assertEqual(access.mask_key(None), "off")
 
@@ -811,8 +811,8 @@ class AccessRules(unittest.TestCase):
                          "https://calm-river-1234.trycloudflare.com")
 
 
-# a person at Git Bash: no CI variable (a CI runner sets one, and nostroma launch then never asks) and no STRATA_NO_PROMPT
-GIT_BASH_ENV = {"MSYSTEM": "MINGW64", "CI": "", "STRATA_NO_PROMPT": ""}
+# a person at Git Bash: no CI variable (a CI runner sets one, and nostroma launch then never asks) and no NOSTROMA_NO_PROMPT
+GIT_BASH_ENV = {"MSYSTEM": "MINGW64", "CI": "", "NOSTROMA_NO_PROMPT": ""}
 
 
 class FlagsCommand(unittest.TestCase):
@@ -875,10 +875,10 @@ class FlagsCommand(unittest.TestCase):
 
     def test_family_and_kv_and_gpu_and_data_dir_and_set(self):
         p = self.plan("--model", "iq3_xxs", "--family", "swift", "--kv", "q4_0", "--gpu", "0,1", "--data-dir", str(self.home.base / "data-x"),
-                      "--set", "prefill=65536", "--set", "STRATA_PIN_BY_NEED=1", "--tune-allow-small")
+                      "--set", "prefill=65536", "--set", "NOSTROMA_PIN_BY_NEED=1", "--tune-allow-small")
         s = p["settings"]
         self.assertEqual((s["family"], s["kv"], s["gpus"], s["data_dir"], s["tune_allow_small"]), ("swift", "q4_0", [0, 1], str(self.home.base / "data-x"), True))
-        self.assertEqual(s["extra"], {"--prefill": "65536", "STRATA_PIN_BY_NEED": "1"})
+        self.assertEqual(s["extra"], {"--prefill": "65536", "NOSTROMA_PIN_BY_NEED": "1"})
         self.assertIn("--set prefill=65536", p["flags"])
 
     def test_pool_cores_is_an_experimental_advanced_setting(self):
@@ -1036,7 +1036,7 @@ class FlagsCommand(unittest.TestCase):
         self.assertIn("nostroma logs --follow", out)
 
     def test_run_without_screens_prints_the_address_and_saves_the_preset(self):
-        fake = Result(profile="launch-office", urls=["http://127.0.0.1:8080", "http://192.168.1.5:8080"], key="sk-strata-abcdefghijkl",
+        fake = Result(profile="launch-office", urls=["http://127.0.0.1:8080", "http://192.168.1.5:8080"], key="sk-nostroma-abcdefghijkl",
                       tune_word=None, notices=[], config="/x")
         with mock.patch.object(Runner, "run", return_value=fake):
             code, out, err = run_cli(["launch", "--no-tui", "--model", "q2_0", "--access", "lan", "--save-preset", "Office"])
@@ -1044,14 +1044,14 @@ class FlagsCommand(unittest.TestCase):
         self.assertIn("Nostroma is serving.", out)
         self.assertIn("http://127.0.0.1:8080/v1", out)
         self.assertIn("http://192.168.1.5:8080/v1", out)
-        self.assertNotIn("sk-strata-abcdefghijkl", out)                      # the key is masked
+        self.assertNotIn("sk-nostroma-abcdefghijkl", out)                      # the key is masked
         self.assertIn("nostroma connect", out)
         self.assertEqual([p.name for p in store.list_presets()], ["Office"])
         code, out, err = run_cli(["launch", "--list-presets"])
         self.assertIn("Office", out)
         code, out, _ = run_cli(["launch", "--show-key", "--preset", "Office"])
         self.assertEqual(code, 0)                                              # the preset's own key
-        self.assertTrue(out.strip().startswith("sk-strata-"))
+        self.assertTrue(out.strip().startswith("sk-nostroma-"))
 
     def test_a_setup_line_joined_after_the_model_could_not_be_installed_starts_with_a_capital(self):
         from nostroma_cli.launch.runner import setup_failure
@@ -1131,14 +1131,14 @@ class ConnectCommand(unittest.TestCase):
         self.assertEqual(len(json.loads(out)["harnesses"]), 8)
 
     def test_prints_the_config_with_a_masked_key(self):
-        code, out, err = run_cli(["connect", "opencode", "--url", "http://127.0.0.1:8123", "--key", "sk-strata-abcdefghij1234", "--model", "m1"])
+        code, out, err = run_cli(["connect", "opencode", "--url", "http://127.0.0.1:8123", "--key", "sk-nostroma-abcdefghij1234", "--model", "m1"])
         self.assertEqual(code, 0, err)
         self.assertIn("http://127.0.0.1:8123/v1", out)
         self.assertIn("opencode.json", out)
         self.assertIn("limit", out)
         self.assertNotIn("abcdefghij1234", out)
-        code, out, _ = run_cli(["connect", "opencode", "--url", "http://127.0.0.1:8123", "--key", "sk-strata-abcdefghij1234", "--show-key"])
-        self.assertIn("sk-strata-abcdefghij1234", out)
+        code, out, _ = run_cli(["connect", "opencode", "--url", "http://127.0.0.1:8123", "--key", "sk-nostroma-abcdefghij1234", "--show-key"])
+        self.assertIn("sk-nostroma-abcdefghij1234", out)
 
     def test_claude_code_uses_the_anthropic_variables_without_a_login(self):
         code, out, _ = run_cli(["connect", "claude-code", "--url", "http://127.0.0.1:8080", "--key", "sk-x1234567890abc", "--show-key"])
@@ -1169,8 +1169,8 @@ class ConnectCommand(unittest.TestCase):
         data = json.loads(target.read_text())
         self.assertEqual(data["theme"], "dark")
         self.assertIn("other", data["provider"])
-        self.assertIn("strata", data["provider"])
-        backups = list(target.parent.glob("opencode.json.strata-bak-*"))
+        self.assertIn("nostroma", data["provider"])
+        backups = list(target.parent.glob("opencode.json.nostroma-bak-*"))
         self.assertEqual(len(backups), 1)
         self.assertEqual(json.loads(backups[0].read_text())["theme"], "dark")
         self.assertIn("backup", out)
@@ -1209,11 +1209,11 @@ class ConnectCommand(unittest.TestCase):
 
     def test_opencode_has_limit_input_and_the_15k_compaction_buffer(self):
         cfg = json.loads(self.render("opencode")["files"][0]["text"])
-        m = cfg["provider"]["strata"]["models"]["qwen3.8-flash-next-q2_0"]
+        m = cfg["provider"]["nostroma"]["models"]["qwen3.8-flash-next-q2_0"]
         self.assertEqual(m["limit"], {"context": 32768, "input": 28672, "output": 4096})
         self.assertEqual(cfg["compaction"]["buffer"], 13672)                  # 28672 - 15000
-        self.assertEqual(cfg["provider"]["strata"]["options"]["baseURL"], "http://127.0.0.1:18900/v1")
-        self.assertEqual(cfg["provider"]["strata"]["options"]["apiKey"], "strata-local")
+        self.assertEqual(cfg["provider"]["nostroma"]["options"]["baseURL"], "http://127.0.0.1:18900/v1")
+        self.assertEqual(cfg["provider"]["nostroma"]["options"]["apiKey"], "nostroma-local")
 
     def test_codex_uses_responses_and_the_key_variable(self):
         out = self.render("codex", key="sk-real")
@@ -1221,7 +1221,7 @@ class ConnectCommand(unittest.TestCase):
         self.assertIn('wire_api = "responses"', text)
         self.assertIn("model_auto_compact_token_limit = 15000", text)
         self.assertIn('base_url = "http://127.0.0.1:18900/v1"', text)
-        self.assertEqual(out["env"], {"STRATA_API_KEY": "sk-real"})
+        self.assertEqual(out["env"], {"NOSTROMA_API_KEY": "sk-real"})
 
     def test_claude_code_sets_window_and_output_cap_and_has_no_login(self):
         out = self.render("claude-code")
@@ -1239,7 +1239,7 @@ class ConnectCommand(unittest.TestCase):
     def test_pi_omp_hermes_openclaw_numbers(self):
         pi = self.render("pi")["files"]
         self.assertEqual(json.loads(pi[1]["text"])["compaction"]["reserveTokens"], 17768)       # 32768 - 15000
-        self.assertEqual(json.loads(pi[0]["text"])["providers"]["strata"]["models"][0]["contextWindow"], 32768)
+        self.assertEqual(json.loads(pi[0]["text"])["providers"]["nostroma"]["models"][0]["contextWindow"], 32768)
         omp = self.render("omp")["files"]
         self.assertIn("thresholdTokens: 15000", omp[1]["text"])
         self.assertIn("contextWindow: 32768", omp[0]["text"])
@@ -1249,7 +1249,7 @@ class ConnectCommand(unittest.TestCase):
         self.assertTrue(any("WARNING" in n and "64K" in n for n in hermes["limits"]))
         self.assertFalse(any("WARNING" in n for n in self.render("hermes", context=131072)["limits"]))
         oc = json.loads(self.render("openclaw")["files"][0]["text"])
-        self.assertEqual(oc["models"]["providers"]["strata"]["models"][0]["contextTokens"], 23192)
+        self.assertEqual(oc["models"]["providers"]["nostroma"]["models"][0]["contextTokens"], 23192)
         self.assertTrue(any("Node 24.16" in n for n in self.render("openclaw")["limits"]))
 
     def test_limits_are_in_plain_words_for_every_app(self):

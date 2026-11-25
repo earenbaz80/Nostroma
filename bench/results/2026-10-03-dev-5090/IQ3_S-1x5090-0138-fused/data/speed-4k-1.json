@@ -16,9 +16,9 @@
  "engine_prompt_tps": 4659.4,
  "engine_decode_tps": 189.2,
  "log_lines": [
-  "strata serve: conversation cache: parked 1234 tokens in 44.3 ms; parked=3 bytes=764231844 evictions=0 snapshot_bytes=255006616 reused_kv_bytes=0",
-  "strata serve: prompt 4162 tokens = 0 reused + 4162 read in 893 ms (4659.4 tok/s), 84 generated in 444 ms (189.2 tok/s), drafts accepted 54 of 61, 1 checkpoints",
-  "strata serve: decode expert cache hit rate: 95.5% (42647 hits / 44640 lookups)"
+  "nostroma serve: conversation cache: parked 1234 tokens in 44.3 ms; parked=3 bytes=764231844 evictions=0 snapshot_bytes=255006616 reused_kv_bytes=0",
+  "nostroma serve: prompt 4162 tokens = 0 reused + 4162 read in 893 ms (4659.4 tok/s), 84 generated in 444 ms (189.2 tok/s), drafts accepted 54 of 61, 1 checkpoints",
+  "nostroma serve: decode expert cache hit rate: 95.5% (42647 hits / 44640 lookups)"
  ],
  "answer_head": "I'll start by exploring the repository structure to understand the context better, particularly the CMakeLists.txt file and related files.",
  "metrics_after": {

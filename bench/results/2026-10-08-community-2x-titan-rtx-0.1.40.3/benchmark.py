@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 import json, os, subprocess, time, urllib.request, statistics
 
-# Set STRATA_API_KEY in the environment; nothing is committed.
+# Set NOSTROMA_API_KEY in the environment; nothing is committed.
 
 URL = "http://127.0.0.1:8080/v1/chat/completions"
-KEY = os.environ.get("STRATA_API_KEY", "")
-OUT = "/mnt/1TB/src/Strata/bench-titan"
+KEY = os.environ.get("NOSTROMA_API_KEY", "")
+OUT = "/mnt/1TB/src/Nostroma/bench-titan"
 os.makedirs(OUT, exist_ok=True)
 
 def pcie():
@@ -14,7 +14,7 @@ def pcie():
     return o.replace("\n","; ")
 
 def req(prompt, max_tokens=256):
-    body = json.dumps({"model":"strata","messages":[{"role":"user","content":prompt}],
+    body = json.dumps({"model":"nostroma","messages":[{"role":"user","content":prompt}],
                        "max_tokens":max_tokens,"temperature":0,"stream":False}).encode()
     r = urllib.request.Request(URL, data=body, headers={"Content-Type":"application/json",
         "Authorization":"Bearer "+KEY})
