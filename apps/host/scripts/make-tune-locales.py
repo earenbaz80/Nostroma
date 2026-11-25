@@ -214,6 +214,25 @@ for _v in T.values():
     del _v[_i]
 
 out = Path(__file__).resolve().parent.parent / "src" / "locales"
+def only_once(texts):
+    """Stops, writing nothing, if a new English string already lives in another English set: that would be the same sentence under a second id, and the
+    two then drift apart (that is how s1150/fx157 and s3273/fxpr1 happened). Texts this file already carries are its own and are not checked."""
+    own_path = out / "tune-en.json"
+    own = set(json.loads(own_path.read_text(encoding="utf-8")).values()) if own_path.exists() else set()
+    elsewhere = {}
+    main = out / "en.json"
+    for other in sorted({*out.glob("*-en.json"), *([main] if main.exists() else [])}):
+        if other.name == "tune-en.json":
+            continue
+        for key, value in json.loads(other.read_text(encoding="utf-8")).items():
+            elsewhere.setdefault(value, f"{other.name}:{key}")
+    for text in texts:
+        if text not in own and text in elsewhere:
+            raise SystemExit(f"tune-en.json: {text!r} already lives in {elsewhere[text]}. One id per text: use that id instead of a second one.")
+
+
+only_once(KEYS)
+
 ids = [f"tune{i + 1:02d}" for i in range(len(KEYS))]
 for lang, values in T.items():
     assert len(values) == len(KEYS), (lang, len(values), len(KEYS))

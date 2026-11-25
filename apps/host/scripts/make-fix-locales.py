@@ -391,11 +391,13 @@ def ids(values):
     path = here / "fix-en.json"
     existing = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
     taken = set(existing)
-    # The other English sets i18n.ts merges: a new string whose text already lives in one of them would be the same sentence under a second id
-    # (that is how s1150/fx157 and s3273/fxpr1 happened). This list only grows with strings it writes; anything already in fix-en.json is
-    # reused by `by_text` below, so the guard never fires on a re-run of today's file.
+    # The other English sets i18n.ts merges, en.json included: a new string whose text already lives in one of them would be the
+    # same sentence under a second id (that is how s1150/fx157 and s3273/fxpr1 happened). This list only grows with strings it
+    # writes; anything already in fix-en.json is reused by `by_text` below, so the guard never fires on a re-run of today's file.
     elsewhere = {}
-    for other in sorted(here.glob("*-en.json")):
+    main = here / "en.json"
+    english_sets = sorted({*here.glob("*-en.json"), *([main] if main.exists() else [])})
+    for other in english_sets:
         if other.name == "fix-en.json":
             continue
         for key, value in json.loads(other.read_text(encoding="utf-8")).items():
