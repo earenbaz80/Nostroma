@@ -38,6 +38,28 @@ test('a model that reads pictures cannot save lazy loading, and says why; a text
   assert.equal(f.control.save('iq3_s',{values:{...text.values,lazy_load:true}}).values.lazy_load,true,'a text model keeps the choice');
  }finally{await f.cleanup();}
 });
+test('a setting this PC cannot use is disabled with its reason and never saved (#P0-2)',async()=>{
+ const f=nativeFixture();try{await f.control.refresh(true);
+  f.setHardware({ram_gb:64,gpus:[{index:0,name:'NVIDIA RTX 4090',vendor:'nvidia',vram_gb:24}]});await f.control.refresh(true);
+  const one=f.control.settings('iq2_xs');
+  assert.deepEqual(Object.keys(one.notApplicable).sort(),['gpu_order','layer_split','split_skip_if_fits'],'one card: the three split rows, and the elastic cache still applies');
+  assert.match(one.notApplicable.layer_split,/^This needs two or more graphics cards\./,'the row says why in plain words');
+  assert.equal(one.notApplicable.vision_tokens,undefined,'this model reads pictures, so the image limits work');
+  assert.throws(()=>f.control.save('iq2_xs',{values:{...one.values,layer_split:'16,32'}}),/two or more graphics cards/,'a change that does nothing is refused');
+  assert.equal(f.control.settings('iq2_xs').values.layer_split??null,null,'and wrote nothing');
+  const same=f.control.save('iq2_xs',{values:one.values});
+  assert.deepEqual(same.notApplicable,one.notApplicable,'saving the rest of the form still works');
+  f.setHardware({ram_gb:64,gpus:[{index:0,name:'AMD Radeon RX 7900 XTX',vendor:'amd',vram_gb:24}]});await f.control.refresh(true);
+  const radeon=f.control.settings('iq2_xs');
+  assert.match(radeon.notApplicable.vram_elastic??'',/^This works on one NVIDIA graphics card/,'the elastic cache is NVIDIA\'s');
+  assert.throws(()=>f.control.save('iq2_xs',{values:{...radeon.values,vram_elastic:true}}),/one NVIDIA graphics card/);
+  f.setHardware({ram_gb:64,gpus:[{index:0,name:'NVIDIA RTX 4090',vendor:'nvidia',vram_gb:24},{index:1,name:'NVIDIA RTX 4090',vendor:'nvidia',vram_gb:24}]});await f.control.refresh(true);
+  const two=f.control.settings('iq2_xs');
+  assert.equal(two.notApplicable.layer_split,undefined,'two cards can split');
+  assert.deepEqual(Object.keys(two.notApplicable),['vram_elastic'],'and the elastic cache is the one left out');
+  assert.throws(()=>f.control.save('iq2_xs',{values:{...two.values,batchMtp:true,parallel:1}}),/draft layer/,'MTP per request with one slot is refused too');
+ }finally{await f.cleanup();}
+});
 test('benchmarks retain reported rates and cancellation aborts measurement',async()=>{
  const f=nativeFixture();try{await f.control.refresh();const loaded=await finishJob(f.control,f.control.operation('load',{model:'iq2_xs'}).id);assert.equal(loaded.state,'done');const measured=await finishJob(f.control,f.control.operation('benchmark',{instanceId:loaded.result.instanceId}).id);assert.equal(measured.result.outputTps,41);assert.equal(measured.result.promptTps,1000);assert.equal(f.control.benchmarkReport().source,'engine');
  f.setBenchmarkWait(true);const job=f.control.operation('benchmark',{instanceId:loaded.result.instanceId});await new Promise(r=>setTimeout(r,10));await f.control.cancel(job.id);assert.equal(f.control.state().jobs.find(j=>j.id===job.id).state,'cancelled');assert.equal(f.control.benchmarkReport().outputTps,41);
