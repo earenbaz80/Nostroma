@@ -9955,7 +9955,11 @@ def main() -> int:
                          bool(a.model), a.yes, f"{model} is NVIDIA-only so far", "choose one of the 2-3-bit models, "
                          f"or --model {model} --yes to try it on AMD anyway", "  Try it anyway?")
             warn(f"installing {model} on an AMD card, as you chose (please report how it runs)")
-        if ram < MODELS[model]["ram_gb"] and model_fit_label(model, ram, gpu) != "fits":
+        # This question asks whether the files fit this PC's memory at all, not what the model list says: the list's word follows the app's plan (0.5 GB
+        # from the SSD, the dense part and the system's room taken off), so it now says "may run slower" on PCs where the RAM and the card still hold every
+        # weight together (Q8_0 on 127.8 GB of RAM and a 12 GB card: 133.8 GB of files, 139.7 GB of memory).  Asked only below the all-in-RAM need AND when
+        # RAM + the card's own memory cannot hold the files - the same figure the list prints.
+        if ram < MODELS[model]["ram_gb"] and ram + (low_ram_vram(gpu) if gpu else 0.0) < model_files_gb(model):
             have = resident_budget_gib(model, ram)
             total = int(MODELS[model]["arena_gb"] / 1.073741824)
             confirm_risk(f"{model} needs {MODELS[model]['ram_gb']} GB of RAM or more; this PC has {ram:.0f} GB: "

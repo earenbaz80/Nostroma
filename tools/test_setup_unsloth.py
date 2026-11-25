@@ -81,29 +81,30 @@ class Sha256(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.f = Path(self.tmp.name) / "x-00002-of-00004.gguf"
         self.f.write_bytes(b"nostroma" * 1000)
+        self.size = self.f.stat().st_size          # the pinned size verify_sha256 checks: the file's own
         self.sha = hashlib.sha256(self.f.read_bytes()).hexdigest()
 
     def tearDown(self):
         self.tmp.cleanup()
 
     def test_good_file_marked_once(self):
-        code, out = quiet(setup.verify_sha256, self.f, 6000, self.sha)
+        code, out = quiet(setup.verify_sha256, self.f, self.size, self.sha)
         self.assertIsNone(code, out)
         self.assertIn(f"sha256 {self.sha}", self.f.with_name(self.f.name + ".done").read_text())
         with mock.patch("hashlib.sha256", side_effect=AssertionError("hashed again")):
-            code, out = quiet(setup.verify_sha256, self.f, 6000, self.sha)    # the mark says it was checked
+            code, out = quiet(setup.verify_sha256, self.f, self.size, self.sha)    # the mark says it was checked
         self.assertIsNone(code, out)
 
     def test_a_download_mark_alone_is_not_enough(self):
         setup.mark(self.f)                                             # the download's finish mark (a date)
         with mock.patch("hashlib.sha256", wraps=hashlib.sha256) as h:
-            code, out = quiet(setup.verify_sha256, self.f, 6000, self.sha)
+            code, out = quiet(setup.verify_sha256, self.f, self.size, self.sha)
         self.assertIsNone(code, out)
         self.assertTrue(h.called)
 
     def test_wrong_hash_keeps_it_as_bad(self):
         setup.mark(self.f)
-        code, out = quiet(setup.verify_sha256, self.f, 6000, "0" * 64)
+        code, out = quiet(setup.verify_sha256, self.f, self.size, "0" * 64)
         self.assertEqual(code, 1)
         self.assertIn("does not match the pinned SHA-256", out)
         self.assertFalse(self.f.exists())
@@ -111,9 +112,9 @@ class Sha256(unittest.TestCase):
         self.assertFalse(self.f.with_name(self.f.name + ".done").exists())   # downloaded again next time
 
     def test_wrong_size(self):
-        code, out = quiet(setup.verify_sha256, self.f, 6001, self.sha)
+        code, out = quiet(setup.verify_sha256, self.f, self.size + 1, self.sha)
         self.assertEqual(code, 1)
-        self.assertIn("6,000 bytes, not 6,001", out)
+        self.assertIn(f"{self.size:,} bytes, not {self.size + 1:,}", out)
         self.assertTrue(self.f.exists())
 
 
@@ -557,7 +558,7 @@ class IQ4XS(Base):
         code, out, _ = self.main(["--check"], m=X)
         self.assertEqual(code, 0, out)
         line = next(ln for ln in out.splitlines() if ln.strip().startswith(X))
-        self.assertRegex(line, r"needs ~65 GB of RAM \+ VRAM: fits$")           # 93.7 GB download minus the 28.8 GB table = 64.9 GB, against 63.7 GB of RAM + 11.9 GB of VRAM
+        self.assertRegex(line, r"needs ~65 GB of RAM \+ VRAM: may run slower$")   # 93.7 GB download minus the 28.8 GB table = 64.9 GB against 63.7 GB of RAM + 11.9 GB of VRAM; the plan's dense part and the system's room leave 4.7 GB from the SSD, over the 0.5 GB the list forgives
         self.assertNotIn("EXPERIMENTAL", line)
         self.assertNotIn("EXPERIMENTAL", next(ln for ln in out.splitlines() if ln.strip().startswith(M)))
 
@@ -868,9 +869,11 @@ class Resident(Base):
 
     def test_the_menu_and_check_say_so(self):
         code, out, _ = self.main(["--check"], ram=127.8)
-        for m in (X, M, Q5, Q8):                    # 127.8 GB of RAM and a 12 GB card: the weights (60 to 129 GB, no lookup table) fit together
+        for m in (X, M, Q5):                        # 127.8 GB of RAM and a 12 GB card hold these files (60 to 104 GB, no lookup table) whole
             line = next(ln for ln in out.splitlines() if ln.strip().startswith(m + " "))
             self.assertTrue(line.endswith(": fits"), line)
+        line = next(ln for ln in out.splitlines() if ln.strip().startswith(Q8 + " "))
+        self.assertTrue(line.endswith(": may run slower"), line)            # 133.8 GB of files against 127.8 + 11.9: 9.5 GB from the SSD by the plan
         code, out, _ = self.main(["--check"], ram=100.0)
         line = next(ln for ln in out.splitlines() if ln.strip().startswith(Q8 + " "))
         self.assertTrue(line.endswith(": may run slower"), line)            # 129 GB of weights against 100 GB + 12 GB
@@ -951,6 +954,16 @@ class BigFiles(Base):
         code, out, cfg = self.main(["--context", "8192"], ram=127.8, version="0.1.44", m=Q8)
         self.assertEqual(code, 0, out)
         self.assertNotIn("Q8_0 needs 136 GB of RAM or more", out)
+
+    def test_the_ram_question_does_not_hang_on_the_list_word(self):
+        """The model list's word follows the app's plan (0.5 GB from the SSD, the dense part and the system's room taken off), so Q8_0 on 127.8 GB
+        of RAM and a 12 GB card now says "may run slower" although together they hold its 133.8 GB of files.  This question is about memory against
+        the files, so it is not asked then - it used to be the label's own "fits" that decided."""
+        self.assertEqual(setup.model_fit_label(Q8, 127.8, {"vram_gb": 12.0}), "may run slower")
+        with mock.patch.object(setup, "model_fit_label", lambda *a, **k: "may run slower"):
+            code, out, cfg = self.main(["--context", "8192"], ram=127.8, version="0.1.44", m=Q8)
+        self.assertEqual(code, 0, out)
+        self.assertNotIn("Q8_0 needs 136 GB of RAM or more", out)                 # the weights fit: no question, whatever the list says
 
     def test_q5_q6_need_the_q6k_engine(self):
         for m in (Q5, Q6):
