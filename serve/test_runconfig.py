@@ -62,8 +62,13 @@ class Apply(unittest.TestCase):
                 runconfig.apply(CFG, changes)
         with self.assertRaises(ValueError):                              # one bad value: nothing is applied
             runconfig.apply(CFG, {"fit_max_tokens": True, "sampling.top_k": 0})
-        with self.assertRaises(ValueError):
-            runconfig.apply({**CFG, "vision": {"gpu": True}}, {"lazy_load": True})
+
+    def test_lazy_load_starts_the_vision_encoder_with_the_first_request(self):
+        new, changed = runconfig.apply({**CFG, "vision": {"gpu": True}}, {"lazy_load": True})
+        self.assertEqual(changed, ["lazy_load"])
+        self.assertIs(new["lazy_load"], True)
+        help_ = {k["key"]: k["help"] for k in runconfig.view(new, "x.json")["keys"]}["lazy_load"]
+        self.assertIn("vision encoder", help_)
 
     def test_view(self):
         v = runconfig.view({**CFG, "args": CFG["args"] + ["--vram-reserve-mib", "1500"]}, "x/nostroma-q2_0.json")

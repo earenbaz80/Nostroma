@@ -20,6 +20,24 @@ test('native save preserves unknown fields, credentials and a backup; null resto
  assert.equal(f.control.settings('iq2_xs').mcp.files.env.TOKEN,'••••••••');
  }finally{await f.cleanup();}
 });
+test('a model that reads pictures cannot save lazy loading, and says why; a text model still can (#P0-1)',async()=>{
+ const f=nativeFixture();try{await f.control.refresh(true);
+  const pictures=f.control.settings('iq2_xs');                                  // the fixture's config carries a vision section
+  assert.match(pictures.refused?.lazy_load??'',/^Lazy loading does not work with picture reading\./,'the settings response explains it');
+  assert.deepEqual(Object.keys(pictures.refused),['lazy_load'],'nothing else is refused');
+  assert.throws(()=>f.control.save('iq2_xs',{values:{...pictures.values,lazy_load:true}}),/Lazy loading does not work with picture reading\./);
+  assert.equal(f.control.settings('iq2_xs').values.lazy_load??null,null,'the refusal wrote nothing');
+  assert.throws(()=>f.control.save('iq2_xs',{values:{...pictures.values,lazy_load:'yes'}}),/choose on or off/,'the type is checked first');
+  const off=f.control.save('iq2_xs',{values:{...pictures.values,lazy_load:false}});
+  assert.equal(off.values.lazy_load,false,'turning it off is fine');
+  assert.ok(off.refused.lazy_load,'and the row still says why it cannot be turned on');
+  const path=join(f.repo,'nostroma-iq3_s.json'),config=JSON.parse(readFileSync(path,'utf8'));
+  delete config.vision;writeFileSync(path,JSON.stringify(config,null,2));await f.control.refresh(true);
+  const text=f.control.settings('iq3_s');
+  assert.deepEqual(text.refused,{},'a text model has no refusal');
+  assert.equal(f.control.save('iq3_s',{values:{...text.values,lazy_load:true}}).values.lazy_load,true,'a text model keeps the choice');
+ }finally{await f.cleanup();}
+});
 test('benchmarks retain reported rates and cancellation aborts measurement',async()=>{
  const f=nativeFixture();try{await f.control.refresh();const loaded=await finishJob(f.control,f.control.operation('load',{model:'iq2_xs'}).id);assert.equal(loaded.state,'done');const measured=await finishJob(f.control,f.control.operation('benchmark',{instanceId:loaded.result.instanceId}).id);assert.equal(measured.result.outputTps,41);assert.equal(measured.result.promptTps,1000);assert.equal(f.control.benchmarkReport().source,'engine');
  f.setBenchmarkWait(true);const job=f.control.operation('benchmark',{instanceId:loaded.result.instanceId});await new Promise(r=>setTimeout(r,10));await f.control.cancel(job.id);assert.equal(f.control.state().jobs.find(j=>j.id===job.id).state,'cancelled');assert.equal(f.control.benchmarkReport().outputTps,41);
