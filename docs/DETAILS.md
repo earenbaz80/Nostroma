@@ -10,6 +10,7 @@ New here? Start with the [README](../README.md). Installing is in [INSTALL.md](I
 
 > **On this page:** [Quick start](#quick-start) · [Speed](#speed-measured) · [Which model?](#which-model) ·
 > [Windows](#windows) · [Linux](#linux) · [Memory modes](#memory-modes) · [Sharing the GPU](#sharing-the-gpu-with-other-programs-optional) ·
+> [Defaults the app applies](#defaults-the-app-applies) ·
 > [API](#using-it) · [MCP tools](#tools-from-mcp-servers) · [MCP server](#manage-nostroma-from-your-ai-assistant-mcp-server) ·
 > [Images](#images-vision) · [Speed settings](#speed-settings) · [CPU workers](#cpu-workers-and-thread-placement) ·
 > [Per-card defaults](#rtx-30-series-sm_86-and-tesla-p100-sm_60-bitwise-decode-switches-on-by-default) ·
@@ -417,6 +418,21 @@ memory, the start looks normal, and only the speed collapses (see the history ta
   `--conversation-cache-mib`, or the pagefile on an SSD.
 
 ---
+
+## Defaults the app applies
+
+The Models page opens with these choices. They are the app's own defaults, not the engine's: `nostroma serve` and a
+run config keep the engine's defaults unless setup writes something else. They live in
+`apps/host/shared/app-defaults.mjs`, and `apps/host/tests/app-defaults-docs.test.mjs` fails when one of them changes
+without this table.
+
+| Choice | Default | What it means |
+| --- | --- | --- |
+| Conversation context | 128K (131,072 tokens) | Every configuration opens at 128K, or at the largest size the model offers below it. A size a person picked is kept. |
+| Requests at once | 4, or fewer that fit | The slots may take at most a fifth of the expert cache the card would have. At the 128K default that is 1 on 12 to 32 GB, 2 on 48 GB, 3 on 64 to 72 GB and 4 from 96 GB; at 32K it is 1 on 12 to 16 GB, 2 on 20 GB, 3 on 24 GB and 4 from 32 GB. A number a person set is kept. |
+| Conversation memory (KV) | `int8` | The 8-bit cache, the engine's default ([KV cache](#kv-cache)). |
+| Computer use (resource profile) | Work | Leaves room for other programs; Full performance gives the model priority. |
+| Graphics memory kept free (Work) | 1,536 MiB on a card of 16 GB or less, 2,048 MiB when that card also reads pictures; a fifth of a card above 16 GB (4,915 MiB on 24 GB); 512 MiB on a card that drives no display, 700 MiB with pictures | Taken before the expert cache is sized. Full performance keeps the safety floor only: 1,024 MiB above 16 GB, 1,536 MiB at 16 GB or less, 2,048 MiB with pictures. |
 
 ## Using it
 

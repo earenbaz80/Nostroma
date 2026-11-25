@@ -1,6 +1,7 @@
 import {localeTag} from './i18n';
 /** Shared, deterministic UI estimates. Demo curves are never benchmark evidence. */
 import type { Hardware, ModelVariant } from './types';
+import { DEFAULT_CONTEXT } from '../../shared/app-defaults.mjs';
 export type Profile = 'agentic' | 'balanced' | 'performance';
 export type Workload = 'short' | 'document' | 'agent';
 export const PROFILES = [
@@ -60,10 +61,12 @@ export interface Experience {
     fit: 'comfortable' | 'tight' | 'too-large' | 'unknown' | 'unsupported';
     fitsWorkload: boolean;
 }
-export const DEFAULT_EXECUTION: Execution = { context: 32768, batch: 2048, kv: 'INT8', placement: 'Automatic', threads: 8 };
-export const RECOMMENDED_CONTEXT_TOKENS = 128 * 1024;
+/* The app's own default (shared/app-defaults.mjs, docs/DETAILS.md "Defaults the app applies"): the estimator
+   opens at the same 128K the Models page does, not at the 32K this file kept before P0-5. */
+export const DEFAULT_EXECUTION: Execution = { context: DEFAULT_CONTEXT, batch: 2048, kv: 'INT8', placement: 'Automatic', threads: 8 };
+export const RECOMMENDED_CONTEXT_TOKENS = DEFAULT_CONTEXT;
 export function contextTokens(value: string) { return value === 'recommended' ? RECOMMENDED_CONTEXT_TOKENS : Number.parseInt(value, 10) * 1024; }
-export function execution(values: Record<string, unknown> = {}, context = 32768): Execution {
+export function execution(values: Record<string, unknown> = {}, context = DEFAULT_CONTEXT): Execution {
     return { context, batch: Number(values['perf.batch'] ?? 2048), kv: String(values['ctx.kvMode'] ?? 'INT8'), placement: String(values['gpu.layers'] ?? 'Automatic'), threads: Number(values['perf.threads'] ?? 8) };
 }
 export function hardwareKey(hw: Hardware | null) { return hw ? `${hw.cpu.model}|${hw.gpus.map(g => g.name).join('+')}|${hw.memory.totalGb}` : 'unknown'; }

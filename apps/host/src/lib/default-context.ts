@@ -1,11 +1,12 @@
 import { BASE_CONTEXT, cacheGb, DENSE_GB, MTP_VRAM_GB, ownPathFits, type ContextFit } from './native-fit';
+import { DEFAULT_CONTEXT } from '../../shared/app-defaults.mjs';
 
 /**
  * The conversation context a model opens with: 128K for every configuration, unless the person picks another (owner, 11-01). Where the
  * model's own largest choice is under 128K, that largest choice. The engine's own recommendation (catalog.recommendation.context, which the
- * Terminal still uses) is not what the app opens with.
+ * Terminal still uses) is not what the app opens with. The figure is shared/app-defaults.mjs, stated in docs/DETAILS.md.
  */
-export const DEFAULT_CONTEXT = 131072;
+export { DEFAULT_CONTEXT };
 /** What the Models page used to open with: a saved model that holds exactly this has never had a context chosen for it. */
 export const OLD_DEFAULT_CONTEXT = 32768;
 

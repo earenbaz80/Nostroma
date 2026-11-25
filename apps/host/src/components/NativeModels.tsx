@@ -5,6 +5,7 @@ import { VersionPicker } from './VersionPicker';
 import { FamilySwitch } from './FamilySwitch';
 import { PcComputer } from './PcComputer';
 import { cardRoomGb, contextCacheGb, fitOn, memoryNeeded, versionFit, type ContextFit } from '../lib/native-fit';
+import { DEFAULT_KV, DEFAULT_PROFILE } from '../../shared/app-defaults.mjs';
 import { contextIsTight, defaultContext, DEFAULT_CONTEXT, openingContext } from '../lib/default-context';
 import { GpuRoles } from './GpuRoles';
 import { fromLegacy, normalize as normalizeRoles, order as roleOrder, recommend as recommendRoles, rows as roleRows, sameRoles, vramOn, type RoleCard, type Roles } from '../lib/gpu-roles';
@@ -44,8 +45,8 @@ export function NativeModels({ onOtherModels, onReady, onImport, onConnectEngine
     // The choices are kept while the page is closed (Models -> Monitor -> Models used to start them over and a person lost track of what was downloading).
     const [family, setFamily] = useKept('models.family', ''), [size, setSize] = useKept('models.size', ''), [context, setContext] = useKept('models.context', DEFAULT_CONTEXT), [contextPicked, setContextPicked] = useKept('models.contextPicked', false), [vision, setVision] = useKept('models.vision', 'yes');
     const manual = useStore(s => s.setup?.choices?.onboarding?.manual ?? false);
-    const [expert, setExpert] = useKept('models.expert', manual), [multiple, setMultiple] = useKept('models.multiple', false), [roles, setRoles] = useKept<Roles | null>('models.roles', null), [kv, setKv] = useKept('models.kv', 'int8'), [lowRam, setLowRam] = useKept('models.lowRam', 'auto'), [split, setSplit] = useKept('models.split', 'auto');
-    const [resourceProfile, setResourceProfile] = useKept<'work' | 'performance'>('models.profile', 'work');
+    const [expert, setExpert] = useKept('models.expert', manual), [multiple, setMultiple] = useKept('models.multiple', false), [roles, setRoles] = useKept<Roles | null>('models.roles', null), [kv, setKv] = useKept('models.kv', DEFAULT_KV), [lowRam, setLowRam] = useKept('models.lowRam', 'auto'), [split, setSplit] = useKept('models.split', 'auto');
+    const [resourceProfile, setResourceProfile] = useKept<'work' | 'performance'>('models.profile', DEFAULT_PROFILE);
     const [measureSpeed, setMeasureSpeed] = useKept('models.measureSpeed', false);
     const [drafting, setDrafting] = useState('auto');
     const [pending, setPending] = useState(false), [error, setError] = useState(''), [plan, setPlan] = useState<Record<string, any> | null>(null), [drafterGb, setDrafterGb] = useState<number | null>(null), [loadedError, setLoadedError] = useState(''), [tuneOpen, setTuneOpen] = useState(false), [jobId, setJobId] = useKept('models.job', ''), [manage, setManage] = useState(false);
