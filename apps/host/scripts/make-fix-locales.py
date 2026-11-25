@@ -391,6 +391,15 @@ def ids(values):
     path = here / "fix-en.json"
     existing = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
     taken = set(existing)
+    # The other English sets i18n.ts merges: a new string whose text already lives in one of them would be the same sentence under a second id
+    # (that is how s1150/fx157 and s3273/fxpr1 happened). This list only grows with strings it writes; anything already in fix-en.json is
+    # reused by `by_text` below, so the guard never fires on a re-run of today's file.
+    elsewhere = {}
+    for other in sorted(here.glob("*-en.json")):
+        if other.name == "fix-en.json":
+            continue
+        for key, value in json.loads(other.read_text(encoding="utf-8")).items():
+            elsewhere.setdefault(value, f"{other.name}:{key}")
     free = max([int(key[2:]) for key in existing if key.startswith("fx") and key[2:].isdigit()] + [len(values)]) + 1
     by_text = {}
     for key, value in existing.items():
@@ -404,6 +413,11 @@ def ids(values):
         if by_text.get(text) and by_text[text] not in plan:
             plan.append(by_text[text])
             continue
+        if text in elsewhere:
+            raise SystemExit(
+                f"fix-en: {text!r} already lives in {elsewhere[text]}. One id per text: drop it from EN (its key stays in the file as it is), "
+                "or use the existing id instead of a second one."
+            )
         while f"fx{free:02d}" in taken:
             free += 1
         plan.append(f"fx{free:02d}")
