@@ -76,5 +76,6 @@
  "fxpr1": "Picture reader",
  "fxpr2": "Nostroma's own (recommended)",
  "fxpr3": "llama.cpp's",
- "fxpr4": "Which program turns pictures into something the model can read. Nostroma's own is faster on most computers and reads very large pictures correctly; on a few graphics cards where it is still slower, Nostroma uses llama.cpp's by itself. Choose llama.cpp's if pictures look misread."
+ "fxpr4": "Which program turns pictures into something the model can read. Nostroma's own is faster on most computers and reads very large pictures correctly; on a few graphics cards where it is still slower, Nostroma uses llama.cpp's by itself. Choose llama.cpp's if pictures look misread.",
+ "fx235": "{0} read from the SSD"
 }

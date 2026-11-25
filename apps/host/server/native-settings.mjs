@@ -1,5 +1,6 @@
 import { validMcpName, MCP_NAME_HELP } from './mcp-names.mjs';
 import { SPEED_SWITCH_TABLE, DRAFTING_FAMILIES as GENERATED_DRAFTING_FAMILIES, DFLASH2_MODEL_PATTERN } from './policy-generated.mjs';
+import { DEFAULT_SLOTS } from '../shared/memory-budget.mjs';
 /** Editable native keys. Unknown config keys and program paths stay intact. */
 /* The Drafting hint, word for word, with the size of the drafter this model would really fetch (the tuned one is 0.34 GB, 0.52 on an Arc card; the stock one 1.2). */
 export function draftingHint(gb=1.2){const size=Number.isFinite(Number(gb))&&Number(gb)>0?Number(gb):1.2;return `Which drafter guesses words ahead to make answers faster, one at a time. Auto (recommended) is DFlash2 for Qwen3.8-Flash-Next where the engine has it, the MTP otherwise; on two or more identical graphics cards that the all-cards split engine takes, it is that engine with the MTP draft layer. DFlash2 downloads a ${size} GB drafter once, the MTP its draft layer once. With Auto, several requests at once use the MTP. If you choose DFlash2 yourself, it runs with the number of requests you set. If DFlash2 cannot run, the MTP is used alone and Details says why. Off turns the drafter off.`;}
@@ -28,6 +29,65 @@ export const NATIVE_FIELDS=[
  {id:'mcp_max_rounds',label:'Maximum tool rounds',group:'Tools',type:'number',min:1,max:100},
  {id:'mcp_max_result_chars',label:'Maximum tool result characters',group:'Tools',type:'number',min:100,max:1000000},
 ];
+/**
+ * A field the model's own configuration rules out, with the sentence the screen shows instead of the hint (#P0-1).
+ * serve/runconfig.py refuses `lazy_load` for a model that reads pictures, so the app stops offering it: a saved choice
+ * that fails on the next load is a lie the person cannot see coming. The same sentence is thrown by save() and shown by
+ * the disabled row, so the two never disagree.
+ */
+export const LAZY_LOAD_VISION_REFUSAL='Lazy loading does not work with picture reading. Load the model normally, or turn picture reading off.';
+export function fieldRefusal(id,{vision=false}={}){
+ if(id==='lazy_load'&&vision)return LAZY_LOAD_VISION_REFUSAL;
+ return null;
+}
+/** The refusals of one model's configuration as the settings response carries them: id -> sentence, only the refused ones. */
+export function fieldRefusals(config){
+ const out={};
+ for(const field of NATIVE_FIELDS){const reason=fieldRefusal(field.id,{vision:!!config?.vision});if(reason)out[field.id]=reason;}
+ return out;
+}
+/**
+ * The settings this PC or this model has no use for (#P0-2), each with the sentence the screen shows in place of the hint. A control whose
+ * change does nothing is worse than no control: the person changes it, nothing happens, and the app looks unpredictable. The rules are the
+ * ones the audit wrote down, no more: the elastic expert cache is NVIDIA's and needs one card; the split choices need two or more cards; the
+ * image token limits need a picture reader; MTP per request needs the draft layer and more than one request at a time.
+ */
+export const NOT_APPLICABLE={
+ oneNvidia:'This works on one NVIDIA graphics card. With another card, or with several, Nostroma leaves it out.',
+ multiGpu:'This needs two or more graphics cards. With one, Nostroma ignores it.',
+ vision:'This works when the model reads pictures. Turn picture reading on to use it.',
+ draftLayer:'This needs the draft layer and more than one request at a time, so it changes nothing here.'
+};
+/* A discrete NVIDIA card: an integrated or unified-memory chip shares the system's RAM, so the engine's elastic cache is not the same thing there. */
+const nvidiaCard=g=>{
+ if(!g||g.usable===false||g.integrated||g.uma||(g.unified_gb??0)>0)return false;
+ const vendor=String(g?.vendor??'').toLowerCase();
+ if(vendor)return vendor==='nvidia';
+ return /nvidia|geforce|\brtx\b|\bgtx\b|quadro|tesla/i.test(String(g?.name??''));
+};
+/** Why this field does nothing here, or null when it does. `gpus` are the hardware probe's cards; `parallel` falls back to the app's default number of slots. */
+export function fieldApplicability(id,{gpus=[],vision=false,mtp=null,drafting=null,parallel=null}={}){
+ const cards=(gpus??[]).filter(g=>g&&g.usable!==false);
+ if(id==='vram_elastic')return cards.length===1&&nvidiaCard(cards[0])?null:NOT_APPLICABLE.oneNvidia;
+ if(id==='layer_split'||id==='gpu_order'||id==='split_skip_if_fits')return cards.length>1?null:NOT_APPLICABLE.multiGpu;
+ if(id==='vision_tokens'||id==='vision_min_tokens')return vision?null:NOT_APPLICABLE.vision;
+ if(id==='batchMtp'){
+  const choice=String(drafting??'auto').toLowerCase();
+  const draftLayer=mtp!==false&&choice!=='off'&&choice!=='dflash2';
+  const slots=Number(parallel??DEFAULT_SLOTS);
+  return draftLayer&&slots>1?null:NOT_APPLICABLE.draftLayer;
+ }
+ return null;
+}
+/** The fields that do nothing on this PC for this model's configuration, id -> sentence, as the settings response carries them. */
+export function fieldApplicabilityMap(config={}, {gpus=[]}={}){
+ const out={};
+ for(const field of NATIVE_FIELDS){
+  const reason=fieldApplicability(field.id,{gpus,vision:!!config?.vision,mtp:config?.mtp??null,drafting:config?.drafting??null,parallel:config?.parallel??null});
+  if(reason)out[field.id]=reason;
+ }
+ return out;
+}
 /** Engine environment names the app shows and edits: NOSTROMA_*. Any other name in a model's file is kept untouched and not shown. */
 export const ENV_FLAG=/^NOSTROMA_[A-Z0-9_]+$/;
 /**

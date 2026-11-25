@@ -8,7 +8,12 @@
  *
  * Units: the `*Gb` values are GiB (2**30), as the catalog and the engine report them, except `sessionGb`,
  * which keeps the measured GB (1e9) of the batch-slot formula for compatibility with the Terminal.
+ *
+ * The defaults a person never chose come from shared/app-defaults.mjs, so the app and docs/DETAILS.md
+ * state the same figures (tests/app-defaults-docs.test.mjs).
  */
+
+import { DEFAULT_KV, DEFAULT_PROFILE, DEFAULT_RESERVE_MIB, DEFAULT_SLOTS } from './app-defaults.mjs';
 
 export const DENSE_GB = 5;
 export const SYSTEM_ROOM_GB = 10;
@@ -34,8 +39,8 @@ export const VISION_CPU_RAM_GB = 1.1;
 /** The card room from which the reader runs on the graphics card by default (docs/DETAILS.md, Images). */
 export const VISION_GPU_FROM_GB = 24;
 
-/** Several requests at once: the default and the share of the solo expert cache their sessions may take. */
-export const DEFAULT_SLOTS = 4;
+/** Several requests at once: the default (shared/app-defaults.mjs) and the share of the solo expert cache their sessions may take. */
+export { DEFAULT_SLOTS };
 export const PARALLEL_POLICY = 'fit';
 export const CACHE_LOSS_SHARE = 0.2;
 export const FIRST_CARD_OTHER_GB = 6.9;
@@ -46,9 +51,9 @@ export const BATCH_MTP_DRAFTER_GB = 0.25;
 export const BATCH_MTP_MARGIN_GB = 2;
 
 /** The engine's own default reserve, and the one setup writes for pictures read on the GPU: neither is a choice of the person. */
-export const ENGINE_DEFAULT_RESERVE_MIB = 700;
+export const ENGINE_DEFAULT_RESERVE_MIB = DEFAULT_RESERVE_MIB.headlessPictures;
 /** A card that drives no display needs little beside the engine; the engine keeps the last few hundred MiB for allocations. */
-export const COMPUTE_ONLY_RESERVE_MIB = 512;
+export const COMPUTE_ONLY_RESERVE_MIB = DEFAULT_RESERVE_MIB.headless;
 
 const round1 = n => Math.round(n * 10) / 10;
 const wholeMib = v => v !== null && v !== undefined && v !== '' && Number.isFinite(Number(v)) && Number(v) >= 0 ? Math.trunc(Number(v)) : null;
@@ -61,18 +66,18 @@ export function memoryNeeded(v) {
 }
 
 /** One conversation's KV cache at `context` tokens, in GiB. */
-export function cacheGb(context, kv = 'int8') {
+export function cacheGb(context, kv = DEFAULT_KV) {
   return (121 + context * KV_LAYERS * (KV_BYTES[String(kv).toLowerCase()] ?? KV_BYTES.int8) * KV_FACTOR / 2 ** 20) / 1024;
 }
 
 /** Qwen3.6-35B-A3B's own cache rule (nostroma_control/own_path_fit.py), in GiB. */
 export function ownPathCacheGb(fit, context) { return context * fit.bytes_per_token / 2 ** 30; }
 export function ownPathFits(fit, vramGb, context) { return fit.fixed_gb + ownPathCacheGb(fit, context) <= vramGb; }
-export function contextCacheGb(context, kv = 'int8', fit) { return fit ? ownPathCacheGb(fit, context) : cacheGb(context, kv); }
+export function contextCacheGb(context, kv = DEFAULT_KV, fit) { return fit ? ownPathCacheGb(fit, context) : cacheGb(context, kv); }
 
 /** One request slot's whole session, in GB (1e9): the KV cache plus the recurrent state and work buffers.
  *  Measured 0.92 GiB at 32K on the 0.1.45 engine (docs/BATCHING.md); Qwen3.6's own path is 45 KB per token. */
-export function sessionGb(context, kv = 'int8', family = 'flash', fit = null) {
+export function sessionGb(context, kv = DEFAULT_KV, family = 'flash', fit = null) {
   const ctx = Number(context) > 0 ? Number(context) : BASE_CONTEXT;
   if (fit || family === 'q36') return (fit ? ownPathCacheGb(fit, ctx) * 2 ** 30 : ctx * 45_000) / 1e9 + 0.07;
   return (ctx * 12 * (kv === 'q4_0' ? 1150 : 2100)) / 1e9 + 0.17;
@@ -107,8 +112,8 @@ export function defaultReserves(config = {}, hardware = null, baselineReserve = 
   const headless = placed.length > 0 && placed.every(computeOnly);
   const pictures = config.vision ? (typeof config.vision === 'object' ? Boolean(config.vision.gpu) : true) : false;
   const floor = headless ? (pictures ? ENGINE_DEFAULT_RESERVE_MIB : COMPUTE_ONLY_RESERVE_MIB)
-    : gpuMemory.length && Math.min(...gpuMemory) > 16 ? 1024 : 1536;
-  const safety = headless ? floor : Math.max(pictures ? 2048 : floor, baselineReserve);
+    : gpuMemory.length && Math.min(...gpuMemory) > 16 ? DEFAULT_RESERVE_MIB.large : DEFAULT_RESERVE_MIB.display;
+  const safety = headless ? floor : Math.max(pictures ? DEFAULT_RESERVE_MIB.pictures : floor, baselineReserve);
   const shared = placed.length > 0 && placed.some(g => g.uma === true || g.unified === true);
   if (shared) {
     const own = baselineReserve > 0 ? baselineReserve
@@ -116,13 +121,13 @@ export function defaultReserves(config = {}, hardware = null, baselineReserve = 
         ? wholeMib(placed[0].setup_reserve_mib) : null;
     if (own !== null) return { work: own, performance: own };
   }
-  const fifth = gpuMemory.length ? Math.floor(Math.min(...gpuMemory) * 1024 * .2) : 0;
-  const cap = gpuMemory.length && Math.min(...gpuMemory) <= 16 ? 1536 : Infinity;
+  const fifth = gpuMemory.length ? Math.floor(Math.min(...gpuMemory) * 1024 * DEFAULT_RESERVE_MIB.share) : 0;
+  const cap = gpuMemory.length && Math.min(...gpuMemory) <= 16 ? DEFAULT_RESERVE_MIB.display : Infinity;
   return { work: gpuMemory.length && !headless && !shared ? Math.max(safety, Math.min(fifth, cap)) : safety, performance: safety };
 }
 
 /** The reserve for one profile, from a card list (the screen and the host use this). */
-export function reserveMibFor(cards = [], vision = 'no', profile = 'work', baselineReserveMib = 0) {
+export function reserveMibFor(cards = [], vision = 'no', profile = DEFAULT_PROFILE, baselineReserveMib = 0) {
   const gpus = cards.map((c, i) => ({ index: c.index ?? i, vram_gb: Number(c.vram_gb) || 0, drives_display: c.drives_display, uma: c.uma, unified: c.unified, setup_reserve_mib: c.setup_reserve_mib }));
   const pictures = vision && vision !== 'no';
   return defaultReserves({ gpu: gpus.map(g => g.index), vision: pictures ? { gpu: vision === 'gpu' || vision === 'yes' } : undefined }, { gpus }, baselineReserveMib)[profile];
@@ -136,8 +141,8 @@ export function reserveMibFor(cards = [], vision = 'no', profile = 'work', basel
  * beyond the system room, and whatever is left is `spillGb` (read from the SSD).
  */
 export function memoryBudget({
-  model = {}, hardware = null, cards = null, context = BASE_CONTEXT, kv = 'int8', slots = 1,
-  drafter = null, mtp = true, vision = 'no', reserveMib = null, profile = 'work', family = 'flash',
+  model = {}, hardware = null, cards = null, context = BASE_CONTEXT, kv = DEFAULT_KV, slots = 1,
+  drafter = null, mtp = true, vision = 'no', reserveMib = null, profile = DEFAULT_PROFILE, family = 'flash',
   contextFit = null, baselineReserveMib = 0,
 } = {}) {
   const modelFit = contextFit ?? model?.context_fit ?? null;
@@ -173,7 +178,7 @@ export function memoryBudget({
 }
 
 /** How many request slots the default aims for, with the measured session cost. Used by the host and the screen. */
-export function estimateSlots({ context = BASE_CONTEXT, kv = 'int8', family = 'flash', contextFit = null, cards = [], requested = DEFAULT_SLOTS, mtp = true } = {}) {
+export function estimateSlots({ context = BASE_CONTEXT, kv = DEFAULT_KV, family = 'flash', contextFit = null, cards = [], requested = DEFAULT_SLOTS, mtp = true } = {}) {
   const slot = sessionGb(context, kv, family, contextFit);
   if (!cards.length) return { slots: PARALLEL_POLICY === 'fixed' ? requested : 1, slotGb: slot, soloCacheGb: 0 };
   const total = cards.reduce((n, c) => n + (Number(c?.vram_gb) || 0), 0);

@@ -5,7 +5,7 @@ import { FloatingMenu } from './FloatingMenu';
 import { cx } from '../lib/format';
 import { versionNote, type CatalogVersion } from '../lib/native-catalog';
 import { nvfp4Version } from '../lib/native-names';
-import { fitOn, recommendedVersions, versionFit, versionGroups, type CacheChoice, type FitHardware, type PcPick } from '../lib/native-fit';
+import { fitOn, recommendedVersions, versionPlacement, versionGroups, type CacheChoice, type FitHardware, type PcPick } from '../lib/native-fit';
 
 /** The name a version goes by in the list: the quantization, with the maker only where the quantization alone would be ambiguous. */
 export function versionName(v: CatalogVersion): string {
@@ -26,8 +26,8 @@ const whole = (n: number) => `${Math.round(n)} GB`;
 
 /**
  * Where the versions of the chosen base model are listed, each exactly once. At the top: the versions we recommend (the pick for this PC first; no "Recommended" tag since 11-02, the order says it) and the versions already downloaded (tagged "Downloaded"). Below, folded under "More
- * versions": all the others. A row is the name, small tags, a word only where one is needed ("may run slower" for a version that does
- * not fit in memory; a version that fits says nothing: see `versionFit`) and the size. The maker and the
+ * versions": all the others. A row is the name, small tags, a word only where one is needed ("may run slower", with how much is read from the SSD, for a version the plan
+ * spills; a version that fits says nothing: see `versionPlacement`) and the size. The maker and the
  * memory it needs are behind "Show details" (open from the start in Expert mode). The other base models are not in this list: they
  * appear when picked at the top of the page.
  */
@@ -73,14 +73,15 @@ export function VersionPicker({ versions, selectedId, hardware, onSelect, onOwnG
   };
   const row = (v: CatalogVersion) => {
     const on = v.id === selectedId, have = !!downloaded?.has(v.id);
-    const state = versionFit(v, hardware, cache);
+    const { state, spillGb } = versionPlacement(v, hardware, cache);
+    const spill = Math.round(spillGb * 10) / 10;
     const technical = [MAKERS[v.sourceFamily], need(v, true)].filter(Boolean).join(' · ');
     const note = versionNote(v.model);
-    return <button key={v.id} role="menuitemradio" aria-checked={on} className={cx('version-row', on && 'is-on')} onClick={() => { onSelect(v.id); setOpen(false); }}>
+    return <button key={v.id} role="menuitemradio" data-version={v.id} aria-checked={on} className={cx('version-row', on && 'is-on')} onClick={() => { onSelect(v.id); setOpen(false); }}>
       <span className="version-row__check">{tr(on ? <Icon name="check" size={14}/> : null)}</span>
       <span className="version-row__body">
         <span className="version-row__title"><strong>{versionName(v)}</strong>{tr(have ? <span className="version-row__tags"><span className="version-tag version-tag--have">{tr("Downloaded")}</span></span> : null)}</span>
-        {tr(state === 'ssd' ? <span className="version-row__fit" data-fit={state}>{tr('may run slower')}</span> : null)}
+        {tr(state === 'ssd' ? <span className="version-row__fit" data-fit={state}>{tr('may run slower')}{spill >= 0.5 ? <> · {tr("{0} read from the SSD", [gb(spill)])}</> : null}</span> : null)}
         {tr(details ? <span className="version-row__tech">{technical}{tr(note ? <><br/>{note}</> : null)}</span> : null)}
       </span>
       <span className="version-row__size">{have ? gb(v.download_gb) : tr("{0} download", [gb(v.download_gb)])}</span>

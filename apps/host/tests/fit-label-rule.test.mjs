@@ -9,12 +9,11 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { transform } from 'esbuild';
+import { loadTs } from './helpers/load-ts.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const repo = resolve(root, '../..');
-const { code } = await transform(readFileSync(resolve(root, 'src/lib/native-fit.ts'), 'utf8'), { loader: 'ts', format: 'esm' });
-const { cardRoomGb, fitOn, versionFit } = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
+const { cardRoomGb, fitOn, versionFit, versionPlacement } = await loadTs(new URL('../src/lib/native-fit.ts', import.meta.url));
 
 const PCS = {
   // Strix Halo, Windows (QAGUI-STRIX 11-09): 63.6 GB RAM, a 64 GB BIOS carve-out + 31.8 GB shared = 95.8 GB the GPU can reach
@@ -38,20 +37,25 @@ function python() {
   return null;
 }
 
-test('the app\'s fit word is Control\'s (fit_label.py) on Strix Halo, an APU, a 12 GB card, two cards and no card', { skip: !python() && 'no python here' }, () => {
+test('the app\'s fit word and spill are Control\'s (fit_label.py) on Strix Halo, an APU, a 12 GB card, two cards and no card (#P0-4)', { skip: !python() && 'no python here' }, () => {
   const exe = python();
   const script = 'import json,sys; sys.path.insert(0, sys.argv[1]); from nostroma_control import fit_label as f; pcs=json.loads(sys.argv[2]); sizes=json.loads(sys.argv[3]); '
-    + 'print(json.dumps({k: [f.label(s, p["ram"], f.card_room_gb(p["cards"])) for s in sizes] for k, p in pcs.items()}))';
+    + 'print(json.dumps({k: [[f.label(s, p["ram"], f.card_room_gb(p["cards"])), f.spill_gb(s, p["ram"], f.card_room_gb(p["cards"]))] for s in sizes] for k, p in pcs.items()}))';
   const r = spawnSync(exe, ['-I', '-B', '-c', script, repo, JSON.stringify(PCS), JSON.stringify(SIZES)], { encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
   const control = JSON.parse(r.stdout);
   for (const [name, pc] of Object.entries(PCS)) {
     const hw = { ram_gb: pc.ram, vram_gb: cardRoomGb(pc.cards) };
-    const app = SIZES.map(size => versionFit({ fit_gb: size, memory_gb: size }, hw) === 'fits' ? 'fits' : 'may run slower');
-    assert.deepEqual(app, control[name], name);
+    SIZES.forEach((size, i) => {
+      const placement = versionPlacement({ fit_gb: size, memory_gb: size }, hw);
+      const word = placement.state === 'fits' ? 'fits' : 'may run slower';
+      assert.equal(word, control[name][i][0], `${name}, ${size} GB: the same word as the Terminal`);
+      assert.equal(placement.spillGb, control[name][i][1], `${name}, ${size} GB: the same spill figure`);
+    });
   }
-  assert.equal(control.strix[SIZES.indexOf(133.8)], 'may run slower', 'Strix Q8_0: may run slower');
-  assert.equal(control.strix[SIZES.indexOf(127.6)], 'fits', 'up to RAM + carve-out it fits');
+  assert.equal(control.strix[SIZES.indexOf(133.8)][0], 'may run slower', 'Strix Q8_0: may run slower');
+  assert.equal(control.strix[SIZES.indexOf(27.6)][0], 'fits', 'a small set fits on every one of these PCs');
+  assert.ok(control.strix[SIZES.indexOf(127.6)][1] > 0, 'a 127.6 GB set does read from the SSD, and both say so');
 });
 
 test('a unified-memory chip counts only its carve-out; a card its memory; the largest card counts', () => {

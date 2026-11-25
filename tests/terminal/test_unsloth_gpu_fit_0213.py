@@ -1,6 +1,7 @@
-"""0.2.13 (owner, 2026-11-08): one fit label for every family.  The model's files, download size MINUS the n-gram / PLE / Engram lookup table's file (the
-"Needs (RAM + VRAM)" column), against the graphics memory plus the RAM: "fits", else "may run slower".  Nothing else is said on those rows (no "SSD N GB", no
-"too big", no RAM floor), also with no card or a Mac with little memory.
+"""One fit label for every family, and the same word the app's version list gives (P0-4).  The model's files, download size MINUS the n-gram / PLE / Engram
+lookup table's file (the "Needs (RAM + VRAM)" column), go first to the graphics memory beyond the dense part and the draft layer, then to the RAM beyond the
+room the system keeps; what is left is read from the SSD, and more than 0.5 GB of it is "may run slower".  Nothing else is said on those rows (no "SSD N GB",
+no "too big", no RAM floor), also with no card or a Mac with little memory.
 
 The screenshot PC: a Tesla V100-PCIE-32GB with 31 GB of RAM (63 GB together): every set up to 63 GB of weights said "fits"; the Unsloth sets said "too big" while
 IQ3_S, with the same 50 GB of experts, said "fits, a bit slower".
@@ -30,10 +31,17 @@ class TheRule(unittest.TestCase):
         self.assertEqual(fit_label.files_gb("qwen36", "UD-Q6_K_XL", {"download_gb": 32.6, "ram_gb": 44}), 32.6)       # its own path: no table
         self.assertEqual(fit_label.files_gb("somefeedmodel", "X", {"download_gb": 10.0, "ram_gb": 8}), 10.0)          # a family this module does not know counts its whole download
 
-    def test_the_label_is_the_weights_against_ram_plus_card(self):
-        self.assertEqual(fit_label.label(63.0, 31.0, 32.0), "fits")                 # exactly as much as there is
-        self.assertEqual(fit_label.label(63.1, 31.0, 32.0), "may run slower")
-        self.assertEqual(fit_label.label(35.0, 31.0, 0.0), "may run slower")        # no card: the RAM alone
+    def test_the_label_is_the_plan_and_its_spill(self):
+        # V100 + 31 GB of RAM: the 32 GB card, beyond the dense part (5.37) and the drafter (1.08), plus 21 GB of RAM beyond the system's room, holds
+        # 46.55 GB of experts; the files carry the 1 GB dense part on top, so up to 47.55 GB of files read nothing from the SSD.
+        self.assertEqual(fit_label.spill_gb(47.0, 31.0, 32.0), 0.0)
+        self.assertEqual(fit_label.label(47.0, 31.0, 32.0), "fits")
+        self.assertEqual(fit_label.spill_gb(48.1, 31.0, 32.0), 0.5)                 # the last size that still fits: half a GB from the SSD
+        self.assertEqual(fit_label.label(48.1, 31.0, 32.0), "fits")
+        self.assertEqual(fit_label.spill_gb(48.2, 31.0, 32.0), 0.6)
+        self.assertEqual(fit_label.label(48.2, 31.0, 32.0), "may run slower")
+        self.assertEqual(fit_label.spill_gb(54.8, 31.0, 32.0), 7.2)
+        self.assertEqual(fit_label.label(35.0, 31.0, 0.0), "may run slower")        # no card: 21 GB of RAM room, 13 GB from the SSD
 
     def test_the_card_that_counts(self):
         self.assertEqual(fit_label.card_room_gb([{"vram_gb": 12.0}, {"vram_gb": 24.0}]), 24.0)         # the largest card
@@ -48,14 +56,16 @@ class TheTerminalMenu(unittest.TestCase):
 
     def test_the_v100_screenshot(self):
         rows = self.rows(HW_V100_31)
+        # The same plan the label uses: 46.55 GB of experts in the card and the RAM, +1 GB of dense part in the files, and up to 0.5 GB from the SSD is free.
         for (family, model), r in rows.items():
-            want = FITS if r.fit_gb <= 63.0 else SLOWER
-            self.assertEqual((r.verdict, r.words), (want, "fits" if want == FITS else "may run slower"), (family, model, r.fit_gb))
-        for m in ("UD-IQ1_M", "UD-Q2_0", "UD-IQ2_XS", "UD-Q2_K_XL", "UD-IQ3_XXS", "UD-Q3_K_XL"):         # the Unsloth sets that were "too big", 39 to 61 GB
+            spill = max(0.0, round(r.fit_gb - 1.0 - (32.0 - 5.368 - 1.08) - (31.0 - 10.0), 1))
+            want = FITS if spill <= 0.5 else SLOWER
+            self.assertEqual((r.verdict, r.words), (want, "fits" if want == FITS else "may run slower"), (family, model, r.fit_gb, spill))
+        for m in ("UD-IQ1_M", "UD-Q2_0", "UD-IQ2_XS"):                    # 39.2, 41.7 and 47.0 GB: the whole plan holds them
             self.assertEqual(rows[("unsloth", m)].words, "fits", m)
-        for m in ("UD-IQ4_XS", "UD-IQ4_XS-v31", "UD-Q4_K_XL", "UD-Q5_K_XL", "UD-Q6_K_XL", "Q8_0"):
-            self.assertEqual(rows[("unsloth", m)].words, "may run slower", m)
-        self.assertEqual(round(rows[("unsloth", "UD-IQ4_XS-v31")].fit_gb, 1), 64.9)                       # 93.7 - 28.8: over 63
+        for m in ("UD-Q2_K_XL", "UD-IQ3_XXS", "UD-Q3_K_XL", "UD-IQ4_XS", "UD-IQ4_XS-v31", "UD-Q4_K_XL", "UD-Q5_K_XL", "UD-Q6_K_XL", "Q8_0"):
+            self.assertEqual(rows[("unsloth", m)].words, "may run slower", m)     # 50.8 GB and up: from 3 GB to 86 GB read from the SSD
+        self.assertEqual(round(rows[("unsloth", "UD-IQ4_XS-v31")].fit_gb, 1), 64.9)                       # 93.7 - 28.8
         self.assertEqual(rows[("qwen", "IQ3_S")].words, rows[("unsloth", "UD-IQ3_XXS")].words)             # same size, same word
         self.assertEqual({rows[("nvfp4", m)].words for m in ("NVFP4", "NVFP4-NVIDIA", "NVFP4-QAD")}, {"may run slower"})      # QAD too: the pack that runs is 76.8 GB
         self.assertEqual({round(rows[("nvfp4", m)].fit_gb, 1) for m in ("NVFP4", "NVFP4-NVIDIA", "NVFP4-QAD")}, {76.8})
@@ -69,17 +79,19 @@ class TheTerminalMenu(unittest.TestCase):
                 self.assertIn(r.words, ("fits", "may run slower"), key)
 
     def test_a_64_gb_pc_with_a_12_gb_card(self):
-        rows = self.rows({**HW_12, "disk_free_gb": 5000.0})                # 76 GB together
-        self.assertEqual(rows[("unsloth", "UD-IQ4_XS-v31")].words, "fits")                    # 64.9 GB
+        rows = self.rows({**HW_12, "disk_free_gb": 5000.0})                # 64 GB of RAM, a 12 GB card: 59.5 GB of experts
+        self.assertEqual(rows[("unsloth", "UD-IQ3_XXS")].words, "fits")                     # 54.8 GB: the plan holds it
+        self.assertEqual(rows[("unsloth", "UD-IQ4_XS-v31")].words, "may run slower")        # 64.9 GB: 4.3 GB from the SSD
         self.assertEqual(rows[("unsloth", "UD-Q4_K_XL")].words, "may run slower")           # 82.5 GB
-        self.assertEqual(rows[("nvfp4", "NVFP4")].words, "may run slower")                    # 76.8 GB against 75.9
+        self.assertEqual(rows[("nvfp4", "NVFP4")].words, "may run slower")                    # 76.8 GB
 
     def test_the_catalog_words(self):
         with Home():
             row = next(x for x in catalog(HW_V100_31).nostroma.model_table(HW_V100_31) if x["family"] == "unsloth")
         by = {x["model"]: x["on_this_pc"] for x in row["sizes"]}
         self.assertEqual({v for k, v in by.items()}, {"fits", "may run slower"})
-        self.assertEqual(by["UD-IQ3_XXS"], "fits")
+        self.assertEqual(by["UD-IQ2_XS"], "fits")                      # 47.0 GB
+        self.assertEqual(by["UD-IQ3_XXS"], "may run slower")           # 54.8 GB: 7.2 GB from the SSD
         self.assertEqual(by["UD-Q4_K_XL"], "may run slower")
 
     def test_the_table_words_in_the_terminal(self):

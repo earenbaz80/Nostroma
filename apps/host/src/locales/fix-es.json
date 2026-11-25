@@ -76,5 +76,6 @@
  "fxpr1": "Lector de imágenes",
  "fxpr2": "El de Nostroma (recomendado)",
  "fxpr3": "El de llama.cpp",
- "fxpr4": "Qué programa convierte las imágenes en algo que el modelo puede leer. El de Nostroma es más rápido en la mayoría de los ordenadores y lee bien imágenes muy grandes; en algunas tarjetas gráficas donde todavía es más lento, Nostroma usa por sí solo el de llama.cpp. Elija el de llama.cpp si las imágenes se leen mal."
+ "fxpr4": "Qué programa convierte las imágenes en algo que el modelo puede leer. El de Nostroma es más rápido en la mayoría de los ordenadores y lee bien imágenes muy grandes; en algunas tarjetas gráficas donde todavía es más lento, Nostroma usa por sí solo el de llama.cpp. Elija el de llama.cpp si las imágenes se leen mal.",
+ "fx235": "{0} leídos del SSD"
 }

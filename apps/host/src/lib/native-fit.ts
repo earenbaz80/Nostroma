@@ -1,13 +1,20 @@
 /**
  * What a model version asks of this computer, from the catalog's own figures and the hardware report.
  *
- * The numbers are RAM + VRAM together WITHOUT the n-gram table (it stays on the SSD and is read when needed). The experts are held
- * where there is room: first in the graphics memory beyond about 5 GB (the dense weights, buffers and a 32K cache), then in RAM beyond
- * about 10 GB left for the system; whatever is left is read from the SSD. The same rules setup uses to choose its low-RAM mode
- * (setup.py: low_ram_gpu_gb, LOW_RAM_HEADROOM_GB), so the page and the engine agree.
+ * The accounting itself lives in shared/memory-budget.mjs: the host, the request-slot choice and this page all read
+ * the same constants and the same `memoryBudget` (context per slot, slots, drafter, vision, reserve and spill). The
+ * numbers are RAM + VRAM together WITHOUT the n-gram table (it stays on the SSD and is read when needed).
  */
-export interface FitInput { ram_needed_gb?: number; experts_gb?: number | null; memory_gb?: number; mem_total?: boolean; /** the weight files without the lookup table, when the catalog states them */ fit_gb?: number | null; /** Qwen3.6: its own context rule (below) */ context_fit?: ContextFit | null }
-export interface FitHardware { ram_gb?: number | null; vram_gb?: number | null }
+import {
+  BASE_CONTEXT, DENSE_GB, DFLASH2_SELQ4_VRAM_GB, DFLASH2_VRAM_GB, DRAFTER_VRAM_GB, MTP_VRAM_GB,
+  cacheGb as sharedCacheGb, contextCacheGb as sharedContextCacheGb, memoryBudget,
+  memoryNeeded as sharedMemoryNeeded, ownPathFits as sharedOwnPathFits,
+} from '../../shared/memory-budget.mjs';
+import type { ContextFit, FitHardware, FitInput, MemoryBudget } from '../../shared/memory-budget.mjs';
+
+export type { ContextFit, FitHardware, FitInput } from '../../shared/memory-budget.mjs';
+export { BASE_CONTEXT, DENSE_GB, DFLASH2_SELQ4_VRAM_GB, DFLASH2_VRAM_GB, DRAFTER_VRAM_GB, MTP_VRAM_GB };
+
 export interface Fit {
   /** RAM + VRAM the version needs (the n-gram table not counted). */
   memoryGb: number;
@@ -19,55 +26,38 @@ export interface Fit {
   known: boolean;
 }
 
-const DENSE_GB = 5, SYSTEM_ROOM_GB = 10, DENSE_EXTRA_GB = 1;
-export { DENSE_GB };
-/** The draft layer (MTP) takes about 1.08 GB of graphics memory (1082 MiB: the layer 840 + draft head 213 + the rest); it comes out of the expert cache while MTP is on. DFlash2 alone takes 0.89 GB (890 MiB, the MTP layer not loaded beside it): the fit uses the drafter that is chosen
- *  (phaseA-tests/blackwell/RESULTS-DF2MEM.md section 1; nostroma_control/drafting.py DRAFTER_GB). */
-export const MTP_VRAM_GB = 1.08;
-export const DFLASH2_VRAM_GB = 0.89;
-/** DFlash2 alone with the converted pack (the selector's codebooks as Q4_0 rows: 715 MiB; nostroma_control/drafting.py DRAFTER_MIB "dflash2_selq4"). The page passes `dflash2_selq4` when `capabilities.dflash2Selq4` is true. */
-export const DFLASH2_SELQ4_VRAM_GB = 0.72;
-export const DRAFTER_VRAM_GB: Record<string, number> = { mtp: MTP_VRAM_GB, dflash2: DFLASH2_VRAM_GB, dflash2_selq4: DFLASH2_SELQ4_VRAM_GB, off: 0 };
-const round1 = (n: number) => Math.round(n * 10) / 10;
-
-export function memoryNeeded(v: FitInput): number {
-  if (typeof v.memory_gb === 'number' && Number.isFinite(v.memory_gb)) return v.memory_gb;
-  if (v.mem_total && typeof v.ram_needed_gb === 'number') return v.ram_needed_gb;
-  return round1((v.experts_gb ?? v.ram_needed_gb ?? 0) + DENSE_EXTRA_GB);
-}
-
-/** The conversation cache of Flash-Next: 13 attention layers, bytes per token per layer by cache format, 5.4% over the bare cache
- *  (nostroma_control/vram_fit.py KV_BYTES, KV_MEASURED_FACTOR; setup.py UD_FIT_KV_BYTES). */
-const KV_BYTES: Record<string, number> = { fp16: 2112, int8: 1056, q4_0: 576, k8v4: 816 };
-const KV_LAYERS = 13, KV_FACTOR = 1.054;
-export const BASE_CONTEXT = 32768;
-export function cacheGb(context: number, kv = 'int8'): number {
-  return (121 + context * KV_LAYERS * (KV_BYTES[String(kv).toLowerCase()] ?? KV_BYTES.int8) * KV_FACTOR / 2 ** 20) / 1024;   // 121 MiB fixed per session
-}
-/** Qwen3.6-35B-A3B (its own engine path, #5715): the catalog's figures from nostroma_control/own_path_fit.py, the rule setup's context menu uses. Its cache
- *  is fp32 for 11 layers, about 2.6x the Flash-Next int8 figure above, and fits a card when the fixed part plus the cache is at most the card's memory.
- *  Pinned to the Python by tests/own-path-fit.test.mjs. */
-export interface ContextFit { bytes_per_token: number; fixed_gb: number }
-export function ownPathCacheGb(fit: ContextFit, context: number): number { return context * fit.bytes_per_token / 2 ** 30; }
-export function ownPathFits(fit: ContextFit, vramGb: number, context: number): boolean { return fit.fixed_gb + ownPathCacheGb(fit, context) <= vramGb; }
+export const memoryNeeded = (v: FitInput): number => sharedMemoryNeeded(v);
+/** One conversation's KV cache at `context` tokens, in GiB (the engine's figure; the budget adds the slot's own state). */
+export const cacheGb = (context: number, kv = 'int8'): number => sharedCacheGb(context, kv);
+export const ownPathFits = (fit: ContextFit, vramGb: number, context: number): boolean => sharedOwnPathFits(fit, vramGb, context);
 /** The conversation cache of this model at this context: its own rule where the catalog gives one, else the Flash-Next figure. */
-export function contextCacheGb(context: number, kv = 'int8', fit?: ContextFit | null): number { return fit ? ownPathCacheGb(fit, context) : cacheGb(context, kv); }
-export interface CacheChoice { context: number; kv?: string; /** the drafter this run loads (resolveDrafter in lib/drafting.ts); absent: the MTP, as the `mtp` argument says */ drafter?: string }
+export const contextCacheGb = (context: number, kv = 'int8', fit?: ContextFit | null): number => sharedContextCacheGb(context, kv, fit);
 
+export interface CacheChoice {
+  context: number;
+  kv?: string;
+  /** the drafter this run loads (resolveDrafter in lib/drafting.ts); absent: the MTP, as the `mtp` argument says */
+  drafter?: string;
+  /** request slots at once (native-parallel); absent: one */
+  slots?: number;
+  /** MiB kept free for other programs (native-resources); absent: none in this estimate */
+  reserveMib?: number;
+}
+
+/** The This computer card: the same placement `memoryBudget` uses, with one slot and no reserve unless the caller gives them. */
 export function fitOn(v: FitInput, hw: FitHardware | null | undefined, mtp = true, cache?: CacheChoice | null): Fit {
-  const memoryGb = memoryNeeded(v);
-  // DENSE_GB already holds a 32K cache in the default format; the person's context and format replace it (#3832).
-  const denseGb = cache && cache.context > 0 ? Math.max(DENSE_GB - cacheGb(BASE_CONTEXT), 0) + contextCacheGb(cache.context, cache.kv, v.context_fit) : DENSE_GB;
-  const ram = Number(hw?.ram_gb), vram = Number(hw?.vram_gb) || 0;
-  if (!Number.isFinite(ram) || ram <= 0) return { memoryGb, vramUseGb: 0, ramUseGb: 0, spillGb: 0, known: false };
-  const experts = Math.max(0, memoryNeeded(v) - DENSE_EXTRA_GB);
-  const drafterGb = cache?.drafter !== undefined ? (DRAFTER_VRAM_GB[cache.drafter] ?? 0) : mtp ? MTP_VRAM_GB : 0;
-  const onGpu = Math.max(0, Math.min(experts, vram - denseGb - (vram > 0 ? drafterGb : 0)));
-  const ramRoom = Math.max(0, ram - SYSTEM_ROOM_GB);
-  const spillGb = Math.max(0, experts - onGpu - ramRoom);
-  const inRam = Math.max(0, experts - onGpu - spillGb);
-  const vramUseGb = vram > 0 ? Math.min(vram, denseGb + drafterGb + onGpu) : 0;
-  return { memoryGb, vramUseGb: round1(vramUseGb), ramUseGb: round1(inRam + DENSE_EXTRA_GB * (vram > 0 ? 0 : 1)), spillGb: round1(spillGb), known: true };
+  const budget: MemoryBudget = memoryBudget({
+    model: v,
+    hardware: hw,
+    context: cache && cache.context > 0 ? cache.context : BASE_CONTEXT,
+    kv: cache?.kv,
+    slots: cache?.slots ?? 1,
+    drafter: cache?.drafter ?? (mtp ? 'mtp' : 'off'),
+    vision: 'no',
+    reserveMib: cache?.reserveMib ?? 0,
+    contextFit: v.context_fit,
+  });
+  return { memoryGb: budget.weightsGb, vramUseGb: budget.vramUseGb, ramUseGb: budget.ramUseGb, spillGb: budget.spillGb, known: budget.known };
 }
 
 /** The family groups of the version list, in the order shown. `family` is the engine's family id. */
@@ -135,19 +125,27 @@ export function versionGroups<V extends { id: string; download_gb: number }>(ver
 }
 
 /**
- * What a version is on this computer (owner's one rule, 2026-11-08): its files, WITHOUT the n-gram / PLE / Engram lookup table's file (the download size minus
- * that file: `fit_gb`, else `memory_gb`), against the graphics memory plus the RAM, nothing taken off either side. They fit: 'fits', and the list says nothing.
- * They do not: 'ssd', and the list says "may run slower" (part is read from the SSD while it answers). Nothing here refuses anything: no card, or a Mac with
- * little memory, gets the same two words. (Not enough free disk is a different question; the download says it.)
+ * What a version is on this computer: the verdict of `fitOn`, the plan the This computer card already shows, and the spill it knows about (#P0-4). The row
+ * prints `fit_gb` (the files without the lookup table), so the plan measures that same figure. Up to `FIT_SPILL_GB` from the SSD is not worth a warning (the
+ * plan reads it but the answer is not held back); more is 'ssd', and the list says "may run slower" with the figure. Nothing here refuses anything: no card,
+ * or little memory, gets the same two words. (Not enough free disk is a different question; the download says it.) `on_this_pc` decides nothing here.
  *
- * `fitOn` (above) still places the experts for the This computer card; `on_this_pc` no longer decides anything here.
+ * Control's fit_label.py uses this same rule (#P0-4: the same accounting, the same 0.5 GB spill, the same two words); tests/fit-label-rule.test.mjs
+ * runs both on the same computers and sizes and needs the word and the spill to come out identical.
  */
 export type VersionFit = 'fits' | 'ssd' | 'unknown';
+/** Spill under this is not worth a warning: the plan reads it from the SSD but the answer is not held back by it. */
+export const FIT_SPILL_GB = 0.5;
+/** The word and the figure behind it, so the row can say how much comes from the SSD. */
+export interface VersionPlacement { state: VersionFit; spillGb: number }
+export function versionPlacement(v: FitInput & { on_this_pc?: string | null }, hw: FitHardware | null | undefined, cache?: CacheChoice | null): VersionPlacement {
+  const size = typeof v.fit_gb === 'number' && Number.isFinite(v.fit_gb) ? v.fit_gb : undefined;
+  const fit = fitOn(size === undefined ? v : { ...v, memory_gb: size }, hw, true, cache);
+  if (!fit.known) return { state: 'unknown', spillGb: 0 };
+  return { state: fit.spillGb > FIT_SPILL_GB ? 'ssd' : 'fits', spillGb: fit.spillGb };
+}
 export function versionFit(v: FitInput & { on_this_pc?: string | null }, hw: FitHardware | null | undefined, cache?: CacheChoice | null): VersionFit {
-  const fit = fitOn(v, hw, true, cache);
-  if (!fit.known) return 'unknown';
-  const size = typeof v.fit_gb === 'number' && Number.isFinite(v.fit_gb) ? v.fit_gb : fit.memoryGb;
-  return size <= Number(hw?.ram_gb) + (Number(hw?.vram_gb) || 0) ? 'fits' : 'ssd';
+  return versionPlacement(v, hw, cache).state;
 }
 
 /** A card as the installer's hardware report lists it. */

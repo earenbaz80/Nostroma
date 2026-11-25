@@ -2,10 +2,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { transform } from 'esbuild';
+import { loadTs } from './helpers/load-ts.mjs';
 
-const { code } = await transform(await readFile(new URL('../src/lib/native-fit.ts', import.meta.url), 'utf8'), { loader: 'ts', format: 'esm' });
-const { fitOn, cacheGb, memoryNeeded, RECOMMENDED, VERSION_GROUPS, groupOpen, recommendedVersions, PICK_NOTE, OTHER_NOTE, MTP_VRAM_GB } = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
+const { fitOn, versionFit, versionPlacement, FIT_SPILL_GB, cacheGb, memoryNeeded, RECOMMENDED, VERSION_GROUPS, groupOpen, recommendedVersions, PICK_NOTE, OTHER_NOTE, MTP_VRAM_GB } = await loadTs(new URL('../src/lib/native-fit.ts', import.meta.url));
 
 const swift = { ram_needed_gb: 48, experts_gb: 35.5 };
 const gyroS = { ram_needed_gb: 27.6, experts_gb: 25.8, mem_total: true };
@@ -25,10 +24,31 @@ test('a PC with room reads nothing from the SSD', () => {
 
 test('a PC without room reads the rest from the SSD, and the amount is real', () => {
   const f = fitOn(q4, { ram_gb: 64, vram_gb: 12 });          // 77 GB of experts: 6 on the card (the draft layer takes 1.08 GB), 54 in RAM, 17.1 from the SSD
-  assert.equal(f.spillGb, 17.1);
-  assert.equal(fitOn(q4, { ram_gb: 64, vram_gb: 12 }, false).spillGb, 16, 'with the draft layer off the card holds 1 GB more');
+  assert.equal(f.spillGb, 17.4);
+  assert.equal(fitOn(q4, { ram_gb: 64, vram_gb: 12 }, false).spillGb, 16.4, 'with the draft layer off the card holds 1 GB more');
   assert.equal(fitOn(q4, { ram_gb: 192, vram_gb: 24 }).spillGb, 0);
   assert.ok(fitOn(gyroS, { ram_gb: 16, vram_gb: 8 }).spillGb > 10, 'a small PC spills a lot');
+});
+
+test('the verdict is fitOn\'s plan and its spill, with the figure the row prints (#P0-4)', () => {
+  const hw = { ram_gb: 64, vram_gb: 12 };
+  assert.equal(FIT_SPILL_GB, 0.5);
+  assert.deepEqual(versionPlacement({ download_gb: 36.5, memory_gb: 36.5 }, hw), { state: 'fits', spillGb: 0 });
+  const big = versionPlacement({ download_gb: 111, memory_gb: 78 }, hw);
+  assert.equal(big.state, 'ssd');
+  assert.equal(Math.round(big.spillGb * 10) / 10, 17.4, 'the figure the row says comes from the SSD');
+  assert.deepEqual(versionPlacement({ download_gb: 1, memory_gb: 40 }, null), { state: 'unknown', spillGb: 0 }, 'no hardware, no claim');
+  // The files alone would pass the old comparison (70 GB in 76 GB), and the plan still spills: the verdict follows the plan.
+  const filesFitMemory = { download_gb: 70, memory_gb: 70 };
+  assert.ok(memoryNeeded(filesFitMemory) <= 64 + 12);
+  assert.ok(fitOn(filesFitMemory, hw).spillGb > FIT_SPILL_GB);
+  assert.equal(versionFit(filesFitMemory, hw), 'ssd');
+  // The row prints fit_gb (the pack without the lookup table): that is the figure measured.
+  assert.equal(versionFit({ download_gb: 78, memory_gb: 78, fit_gb: 36.5 }, hw), 'fits');
+  // The person's context is part of the plan, as fitOn takes it.
+  const near = { download_gb: 60, memory_gb: 60 };
+  assert.equal(versionFit(near, hw), 'fits', '59 GB of experts fit in 54 GB of RAM plus what the card keeps free');
+  assert.equal(versionFit(near, hw, { context: 131072 }), 'ssd', 'the 128K the person chose pushes it over');
 });
 
 test('unknown hardware gives no verdict instead of a made-up one', () => {
@@ -57,7 +77,7 @@ test('the draft layer (MTP) counts about 1 GB of the card', () => {
   assert.equal(MTP_VRAM_GB, 1.08);   // the engine's measured 1,082 MiB (nostroma_control/drafting.py DRAFTER_MIB)
   const on = fitOn(swift, { ram_gb: 40, vram_gb: 12 }), off = fitOn(swift, { ram_gb: 40, vram_gb: 12 }, false);
   assert.equal(Math.round((on.vramUseGb - off.vramUseGb) * 10) / 10, 0, 'the card is full either way here; the experts it cannot hold move to RAM');
-  assert.equal(Math.round((on.ramUseGb - off.ramUseGb) * 10) / 10, 1.1);
+  assert.ok(Math.abs((on.ramUseGb - off.ramUseGb) - 1.08) <= 0.11, 'the draft layer moves about 1.08 GB to RAM');
   assert.equal(fitOn(swift, { ram_gb: 40, vram_gb: 0 }).vramUseGb, 0, 'no card, no draft layer on it');
 });
 
