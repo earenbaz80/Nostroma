@@ -11,6 +11,7 @@ export const NATIVE_FIELDS=[
  {id:'effort_position',label:'Reasoning effort position',group:'Responses',type:'enum',choices:['start','end']},
  {id:'aliases',label:'API model aliases',group:'Serving',type:'array',hint:'Comma-separated names clients may use for this model.'},
  {id:'idle_unload_s',label:'Unload after idle seconds',group:'Serving',type:'number',min:0,max:86400,hint:'Zero keeps the model loaded.'},
+ {id:'keep_loaded',label:'Keep this model loaded when preparing files',group:'Serving',type:'boolean',hint:'Preparing another model never stops this one. If the memory is needed, the Prepare stops and says which model to unload.'},
  {id:'lazy_load',label:'Load on first request',group:'Serving',type:'boolean'},
  {id:'mtp',label:'Draft layer (MTP)',group:'Serving',type:'boolean',hint:'The draft layer guesses several words ahead, which makes answers faster, and costs about 1 GB of graphics memory and some RAM. Turn it off if the model stops while it starts, or the card is small: the expert cache gets that memory back and answers are slower. Default is on.'},
  {id:'drafting',label:'Drafting',group:'Serving',type:'enum',choices:['auto','mtp','dflash2','off'],hint:draftingHint(1.2)},
@@ -135,6 +136,8 @@ export function setSpeedSwitch(env,id,on){
 export function speedSwitchRows(env,context){return SPEED_SWITCHES.filter(s=>speedSwitchApplies(s.id,context)).map(s=>({...s,on:speedSwitchIsOn(env,s.id)}));}
 /** Settings the app itself applies when it starts a model (they are not read from the engine's source, so the engine's text never says it supports them). */
 export const APP_OWNED_FIELDS=['mtp','batchMtp','drafting'];
+/** A mark the app keeps in a model's run config for itself (P0-3: the model is never stopped by a Prepare or a switch); the engine never reads it. */
+export const APP_MARK_FIELDS=['keep_loaded'];
 /** The families that have a Drafting choice and the model names the DFlash2 drafter was made for (nostroma_control/drafting.py SUPPORTED_FAMILIES, _SUPPORTED_NAME): Qwen3.8-Flash-Next, Gyro and Unsloth's quantizations of the same weights; not Swift, Coder or NVFP4. */
 export const DRAFTING_FAMILIES=GENERATED_DRAFTING_FAMILIES;
 const DFLASH2_MODEL=new RegExp(DFLASH2_MODEL_PATTERN,'i');

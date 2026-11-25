@@ -1,7 +1,7 @@
 /** One accounting for the fit card, the request slots and the reserve (shared/memory-budget.mjs). */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { defaultReserves, estimateSlots, memoryBudget, sessionGb, sessionGib } from '../shared/memory-budget.mjs';
+import { defaultReserves, estimateSlots, fitsAlongside, heldMemoryGb, memoryBudget, sessionGb, sessionGib } from '../shared/memory-budget.mjs';
 import { slotGb } from '../server/native-parallel.mjs';
 
 const model = { experts_gb: 77, memory_gb: 78 };
@@ -35,6 +35,27 @@ test('the default reserve is the same rule the host applies', () => {
   assert.deepEqual(defaultReserves({ gpu: [0] }, { gpus: [card(12)] }), { work: 1536, performance: 1536 });
   assert.deepEqual(defaultReserves({ gpu: [0] }, { gpus: [card(24)] }), { work: 4915, performance: 1024 });
   assert.deepEqual(defaultReserves({ gpu: [0], vision: { gpu: true } }, { gpus: [card(12)] }), { work: 2048, performance: 2048 });
+});
+
+test('a loaded model holds the total its own budget gave it, and an unmeasurable PC gives no figure', () => {
+  const one = memoryBudget({ model, hardware, context: 32768, kv: 'int8', slots: 1, drafter: 'mtp', reserveMib: 0 });
+  assert.equal(heldMemoryGb({ model, hardware, context: 32768, kv: 'int8', slots: 1, drafter: 'mtp', reserveMib: 0 }), one.totalGb,
+    'the same total the Models page shows for that Load');
+  assert.equal(heldMemoryGb({ model, hardware: null }), null, 'no RAM figure: no number to give');
+});
+
+test('a Prepare fits beside the loaded models only while their memory plus its budget is left (P0-3)', () => {
+  // 64 GB of RAM and a 24 GB card: the big model holds 78 GiB (24 of the card and 54 of RAM), 88 in all.
+  const card24 = { ram_gb: 64, vram_gb: 24 };
+  const start = { context: 32768, kv: 'int8', slots: 1, drafter: 'mtp', reserveMib: 0 };
+  const held = heldMemoryGb({ model, hardware: card24, ...start });
+  const small = { experts_gb: 3, memory_gb: 4 };                                  // a 9.4 GiB budget
+  assert.equal(fitsAlongside({ model: small, hardware: card24, ...start, held: [] }), true, 'nothing loaded: nothing to share');
+  assert.equal(fitsAlongside({ model: small, hardware: card24, ...start, held: [held] }), true, '78 + 9.4 of 88 GiB');
+  assert.equal(fitsAlongside({ model, hardware: card24, ...start, held: [held] }), false, '78 + 78 do not fit in 88');
+  assert.equal(fitsAlongside({ model: small, hardware: card24, ...start, held: [held, held] }), false, 'two loaded models count together');
+  assert.equal(fitsAlongside({ model: small, hardware: card24, ...start, held: [null] }), false, 'a config the app cannot read is not zero');
+  assert.equal(fitsAlongside({ model: small, hardware: { vram_gb: 24 }, ...start, held: [held] }), false, 'a PC with no RAM figure proves nothing');
 });
 
 test('the slot estimate uses the same session cost and the same policy', () => {

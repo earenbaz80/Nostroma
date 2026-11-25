@@ -168,6 +168,24 @@ test('no recognised engine: the app still downloads, warns in the card, and load
   assert.doesNotMatch(source.slice(source.indexOf('async function install(job,args)'), source.indexOf('function terminate')), /engine\.usable/);
 });
 
+test('preparing files never unloads a running model silently', () => {
+  const source = readSource(new URL('../server/native-control.mjs', import.meta.url), 'utf8');
+  const decide = source.slice(source.indexOf('function evictionFor'), source.indexOf('function installationEviction'));
+  const install = source.slice(source.indexOf('async function install(job,args)'), source.indexOf('function terminate'));
+  /* P0-3: the stop is decided by name (server/native-eviction.mjs) and always said; a model the person asked to keep in memory is never stopped. */
+  assert.match(decide, /installFitsAlongside\(args\.model,loaded,args\)/, 'the room is measured before anything stops');
+  assert.match(decide, /installPlan\(\{instances:loaded,target:args\.model/, 'which loaded models may stop is decided before anything stops');
+  assert.match(decide, /sharedWritePlan\(/, 'a file the preparation rewrites under a loaded engine stops it, whatever the memory says');
+  assert.match(decide, /keeps:instance=>\{try\{return keepsLoaded/, 'a model the person asked to keep is never stopped');
+  assert.match(decide, /why:writing\.some\(one=>one\.id===instance\.id\)\?'files':'memory'/, 'the stop says whether it was the memory or a file');
+  assert.match(install, /if\(plan\.kept\.length&&\(!plan\.fits\|\|plan\.keptWriting\.length\)\)throw new Error\(keptRefusal/, 'a kept model the preparation would write under is refused, with a way forward');
+  assert.match(install, /job\.summary=costs\.map\(stoppingSentence\)\.join\(' '\);emit\(\);\s*for\(const instance of plan\.evict\)\{await unload/, 'the stop is said in the present before the model leaves memory');
+  assert.match(install, /for\(const instance of plan\.evict\)\{await unload[\s\S]*?evictionNote=costs\.map\(evictionSentence\)\.join\(' '\)/, 'the past is written only after the unloads returned');
+  assert.doesNotMatch(install, /for\(const id of \[\.\.\.instances\.keys\(\)\]\)await unload\(id\)/, 'no silent unload');
+});
+
+
+
 test('the draft layer download of setup step 6 is a stage of its own and counts in the one figure (#3257)', () => {
   lib.setTranslationLanguage('en');
   const draft = { parts: [{ kind: 'model', name: 'Model files', state: 'done', done_gb: 60, total_gb: 60 }, { kind: 'draft', name: 'Draft layer', state: 'downloading', done_gb: 2, total_gb: 5 }] };

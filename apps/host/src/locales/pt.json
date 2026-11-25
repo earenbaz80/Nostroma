@@ -3576,5 +3576,7 @@
   "s9253": "Ela fica desativada até você ativá-la.",
   "s9254": "Habilidades recomendadas",
   "s9255": "Uma lista curta que verificamos. Adicione uma e ative-a quando precisar.",
-  "s9256": "Contexto e estado"
+  "s9256": "Contexto e estado",
+  "s9262": "Manter este modelo carregado ao preparar arquivos",
+  "s9263": "Preparar outro modelo nunca para este. Se a memória for necessária, a preparação para e diz qual modelo descarregar."
 }

@@ -3576,5 +3576,7 @@
   "s9253": "Elle reste désactivée jusqu’à ce que vous l’activiez.",
   "s9254": "Compétences recommandées",
   "s9255": "Une courte liste que nous avons vérifiée. Ajoutez-en une et activez-la quand vous en avez besoin.",
-  "s9256": "Contexte et état"
+  "s9256": "Contexte et état",
+  "s9262": "Garder ce modèle chargé pendant la préparation des fichiers",
+  "s9263": "La préparation d’un autre modèle n’arrête jamais celui-ci. Si la mémoire manque, la préparation s’arrête et indique quel modèle décharger."
 }

@@ -60,6 +60,18 @@ test('a setting this PC cannot use is disabled with its reason and never saved (
   assert.throws(()=>f.control.save('iq2_xs',{values:{...two.values,batchMtp:true,parallel:1}}),/draft layer/,'MTP per request with one slot is refused too');
  }finally{await f.cleanup();}
 });
+test('the keep-loaded mark is a saved setting of its own, not the idle unload (#P0-3)',async()=>{
+ const f=nativeFixture();try{await f.control.refresh(true);
+  const before=f.control.settings('iq2_xs');
+  assert.equal(f.control.state().fields.find(x=>x.id==='keep_loaded').supported,true,'the row is editable on any engine: the engine never reads it');
+  assert.equal(before.values.keep_loaded??null,null,'nothing saved yet');
+  const saved=f.control.save('iq2_xs',{values:{...before.values,keep_loaded:true}});
+  assert.equal(saved.values.keep_loaded,true,'the mark reads back');
+  const file=JSON.parse(readFileSync(join(f.repo,'nostroma-iq2_xs.json'),'utf8'));
+  assert.equal(file.keep_loaded,true,'written in the model’s own run config');
+  assert.equal(file.idle_unload_s??null,null,'the idle unload is a different setting and stays as it was');
+ }finally{await f.cleanup();}
+});
 test('benchmarks retain reported rates and cancellation aborts measurement',async()=>{
  const f=nativeFixture();try{await f.control.refresh();const loaded=await finishJob(f.control,f.control.operation('load',{model:'iq2_xs'}).id);assert.equal(loaded.state,'done');const measured=await finishJob(f.control,f.control.operation('benchmark',{instanceId:loaded.result.instanceId}).id);assert.equal(measured.result.outputTps,41);assert.equal(measured.result.promptTps,1000);assert.equal(f.control.benchmarkReport().source,'engine');
  f.setBenchmarkWait(true);const job=f.control.operation('benchmark',{instanceId:loaded.result.instanceId});await new Promise(r=>setTimeout(r,10));await f.control.cancel(job.id);assert.equal(f.control.state().jobs.find(j=>j.id===job.id).state,'cancelled');assert.equal(f.control.benchmarkReport().outputTps,41);

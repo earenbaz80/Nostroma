@@ -3576,5 +3576,7 @@
   "s9253": "It is off until you turn it on.",
   "s9254": "Recommended skills",
   "s9255": "A short list we checked. Add one and turn it on when you need it.",
-  "s9256": "Context and state"
+  "s9256": "Context and state",
+  "s9262": "Keep this model loaded when preparing files",
+  "s9263": "Preparing another model never stops this one. If the memory is needed, the Prepare stops and says which model to unload."
 }

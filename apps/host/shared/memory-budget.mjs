@@ -2,9 +2,9 @@
  * The one memory accounting of the app, the host and the engine options.
  *
  * Everything that asks "does this fit?" reads its numbers here: the fit label and the This computer card
- * (`src/lib/native-fit.ts`), the request-slot choice (`server/native-parallel.mjs`) and the reserve
- * (`server/native-resources.mjs`). The figures are RAM + VRAM together, without the n-gram table (it stays on
- * the SSD and is read when needed).
+ * (`src/lib/native-fit.ts`), the request-slot choice (`server/native-parallel.mjs`), the reserve
+ * (`server/native-resources.mjs`) and what a Prepare keeps for the models already loaded (`server/native-eviction.mjs`).
+ * The figures are RAM + VRAM together, without the n-gram table (it stays on the SSD and is read when needed).
  *
  * Units: the `*Gb` values are GiB (2**30), as the catalog and the engine report them, except `sessionGb`,
  * which keeps the measured GB (1e9) of the batch-slot formula for compatibility with the Terminal.
@@ -175,6 +175,36 @@ export function memoryBudget({
     drafterGb: drafterVramGb, visionGb: visionUse.vramGb, visionRamGb: visionUse.ramGb, visionWhere: visionUse.where,
     reserveGb: reserve, systemRoomGb: SYSTEM_ROOM_GB, vramUseGb: round1(vramUseGb), ramUseGb: round1(ramUseGb),
     spillGb: round1(spillGb), totalGb: round1(vramUseGb + ramUseGb), known: true };
+}
+
+/**
+ * The memory a loaded start holds, in GiB: the total its own budget gave that Load (the graphics memory and the RAM in
+ * use together), the same figure the Models page shows for it. Null when the budget cannot be known (no RAM figure), so
+ * a caller never invents one.
+ */
+export function heldMemoryGb(input = {}) {
+  const budget = memoryBudget(input);
+  return budget.known ? budget.totalGb : null;
+}
+
+/**
+ * Whether a start fits beside the models loaded now (P0-3): the memory they hold plus the new start's own budget,
+ * against this PC's RAM and graphics memory. Nothing loaded fits by definition. A figure that is unknown on either
+ * side (a config the app cannot read, a PC it cannot measure) counts as "does not fit", so a Prepare never stops a
+ * model on a guess.
+ */
+export function fitsAlongside({ held = [], ...start } = {}) {
+  if (!held.length) return true;
+  const budget = memoryBudget(start);
+  const ram = Number(start.hardware?.ram_gb) || 0;
+  if (!budget.known || !ram) return false;
+  let used = 0;
+  for (const gb of held) {
+    const value = gb === null || gb === undefined || gb === '' ? NaN : Number(gb);   // an empty field is not zero
+    if (!Number.isFinite(value) || value < 0) return false;
+    used += value;
+  }
+  return used + budget.totalGb <= ram + (Number(start.hardware?.vram_gb) || 0) + 0.05;
 }
 
 /** How many request slots the default aims for, with the measured session cost. Used by the host and the screen. */

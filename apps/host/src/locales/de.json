@@ -3576,5 +3576,7 @@
   "s9253": "Sie bleibt aus, bis du sie einschaltest.",
   "s9254": "Empfohlene Skills",
   "s9255": "Eine kurze Liste, die wir geprüft haben. Füge eine hinzu und schalte sie ein, wenn du sie brauchst.",
-  "s9256": "Kontext und Zustand"
+  "s9256": "Kontext und Zustand",
+  "s9262": "Dieses Modell beim Vorbereiten von Dateien geladen lassen",
+  "s9263": "Das Vorbereiten eines anderen Modells stoppt dieses nie. Wird der Speicher gebraucht, hält die Vorbereitung an und sagt, welches Modell entladen werden soll."
 }

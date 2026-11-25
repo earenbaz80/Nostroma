@@ -3576,5 +3576,7 @@
   "s9253": "Queda apagada hasta que la actives.",
   "s9254": "Habilidades recomendadas",
   "s9255": "Una lista corta que revisamos. Agrega una y actívala cuando la necesites.",
-  "s9256": "Contexto y estado"
+  "s9256": "Contexto y estado",
+  "s9262": "Mantener este modelo cargado al preparar archivos",
+  "s9263": "Preparar otro modelo nunca detiene este. Si hace falta la memoria, la preparación se detiene y dice qué modelo descargar."
 }
