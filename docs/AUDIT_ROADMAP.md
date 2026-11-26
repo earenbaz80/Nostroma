@@ -163,20 +163,33 @@ string nothing reads.
 
 - Done when: the floor is declared once and the audit row prints it.
 - Verify: `python tools/audit_pending.py` row 4, "mínimo de Python".
-- **Done 26 November 2026.** `setup.py:57` refuses an interpreter below 3.10 before importing anything of the project
-  (`raise SystemExit` with the documented wording, and where macOS gets its pinned 3.12), and the scan reads that guard
-  when a tree carries no packaging metadata. Row 4 now prints `declarado: 3.10+ (guarda en setup.py) (setup.py:57);
-  intérprete actual 3.15.2` and stays INFO. Limits: measured on 3.15.2 only, so the branch for an older interpreter was
-  not exercised here; `tests/terminal` keeps its own 3.11 floor from AGENTS.md, and `tools/test_setup_choices.py` (59
-  tests) runs green with the guard in place.
+- **Done 26 November 2026.** `setup.py:67` refuses an interpreter below 3.10 after the standard library imports and
+  before the first import of the project (`raise SystemExit` with the documented wording, and where macOS gets its
+  pinned 3.12), and the scan reads that guard when a tree carries no packaging metadata. Row 4 now prints
+  `declarado: 3.10+ (guarda en setup.py) (setup.py:67);
+  intérprete actual 3.15.2` and stays INFO. The refusal branch is exercised by
+  `tools/test_setup_python_floor.py`, which runs setup.py's body in a child whose `sys.version_info` is faked (a
+  named tuple, as CPython's is): 3.9 and 3.8 are refused with the message and no traceback, a project import that
+  happened before the guard would fail the test on its own, and 3.10 itself passes. Limits: that is a simulated
+  version, not a real old interpreter, and nothing else was measured on one; `tests/terminal` keeps its own 3.11
+  floor from AGENTS.md, and `tools/test_setup_choices.py` (59 tests) runs green with the guard in place.
 - **The 3.10 floor itself, checked 26 November 2026.** `nostroma_control`, `nostroma_cli`, `serve`, `setup.py` and
   `nostroma.py` (271 files) all parse with the 3.10 grammar; none of the 4,178 f-string literals uses a 3.12 form
   (same quote or a backslash inside the braces); and no 3.11+ API appears (`tomllib`, `TaskGroup`, `StrEnum`,
   `datetime.UTC`, `typing.Self`, atomic or possessive regex). The version-dependent spots are guarded:
   `tarfile.data_filter` behind `hasattr` (`setup.py:5329`), `sys.version_info < (3, 12)` in
   `nostroma_control/netpolicy.py:412`, and `fromisoformat` either with `Z` replaced by `+00:00`
-  (`nostroma_control/feed.py:310`) or inside `except ValueError`. This is static analysis: there is no 3.10
-  interpreter on this machine, so nothing ran on 3.10.
+  (`nostroma_control/feed.py:310`) or inside `except ValueError`. That part is static analysis.
+- **The same floor on real interpreters, 26 November 2026.** On CPython 3.10.11 (python.org embeddable) and 3.10.15
+  (python-build-standalone `20241016`, the same kind of build this repository pins for the terminal archive; the
+  latest release no longer carries 3.10) `setup.py`'s body imports the whole project, `--selftest` reports 15/15,
+  `tools/test_setup_choices.py` passes its 59 tests, and the full scan exits 0 with 26 checks and 0 FALLA. On CPython
+  3.9.13 the same file prints the refusal and exits 1 with no traceback, so the guarded branch is measured too. What
+  stays simulated is the unit test itself: `tools/test_setup_python_floor.py` fakes `sys.version_info` (a named
+  tuple, as CPython's is) so any interpreter can exercise that branch in CI. Two things only 3.10 shows: the scan's
+  selftest dies on `→` because a Windows console is not UTF-8 before 3.15 (`PYTHONUTF8=1` runs it), and `tarfile`'s
+  `filter=` raises `TypeError` up to 3.10.11 — it arrived in 3.10.12, which is why the code asks
+  `hasattr(tarfile, "data_filter")` first.
 
 ### A6 — the skill page links to files that are not here (low, done)
 
@@ -225,7 +238,10 @@ walk order. The updater settings, if they move, will live in `tauri.release.conf
   `apps/desktop/src-tauri/tauri.conf.json:19 activado; 4 configs y 3 overlay(s)`. In the self-test fixture, where an
   overlay sets `requireSignedVersion: false`, the same row moves to `tauri.update.conf.json:4` and turns into an
   AVISO — that is the file the row blames. Two overlays setting one key to different values get their own
-  `overlays en desacuerdo` row, because there no single file decides. `--selftest` covers both sides (15/15).
+  `overlays en desacuerdo` row, because there no single file decides. With more than one `src-tauri` directory it
+  walks each of them, labels the rows with the directory (`require_signed_version (apps/b/src-tauri)`) and the
+  `varios tauri.conf.json` row lists exactly the directories it went through, instead of claiming to read all of them
+  while using the first. `--selftest` covers both sides (15/15).
 
 ### T3 — the self-test assumes POSIX paths (low, done)
 
