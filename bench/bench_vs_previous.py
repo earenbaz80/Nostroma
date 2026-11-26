@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Nostroma vs Strata on one machine, one model, one context and one request slot.
+"""Nostroma vs the 0.2.13 release on one machine, one model, one context and one request slot.
 
 This is a head-to-head measurement, not the standard benchmark protocol. Both arms use their own
 installed server and engine, the same IQ3_S pack, the same expert profile and the same DFlash2
@@ -15,12 +15,12 @@ What one round does, per arm:
 
 Rounds alternate the arm order, so a slow drift on the machine does not favour one side.
 
-    python bench/bench_vs_strata.py --out bench/results/2026-11-24-vs-strata
-    python bench/bench_vs_strata.py --rounds 1 --cases 4k --max-tokens 16   # smoke test
+    python bench/bench_vs_previous.py --out bench/results/2026-11-24-vs-0.2.13
+    python bench/bench_vs_previous.py --rounds 1 --cases 4k --max-tokens 16   # smoke test
 
 The report writes README.md, results.json, summary.csv, configs/ and logs/ under --out. It never
 edits the model files. Run it with a Python that has psutil, jinja2 and the server's dependencies;
-on this machine that is Strata's bundled Python 3.12.
+on this machine that is the 0.2.13 release's bundled Python 3.12.
 """
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ from pathlib import Path
 try:
     import psutil
 except ImportError:  # pragma: no cover - a clear message beats an import traceback
-    sys.exit("bench_vs_strata needs psutil. Run it with the Python that serves Nostroma or Strata.")
+    sys.exit("bench_vs_previous needs psutil. Run it with the Python that serves Nostroma or the 0.2.13 release.")
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = {
@@ -56,12 +56,12 @@ def prompt_round_for(args, round_number: int) -> int:
     """The frozen prompt pair a round uses: the bundle carries three, and a longer run reuses them in rotation.
     Every arm still starts a fresh server, so a round that repeats a file does not repeat a warm cache."""
     return ((round_number - 1) % max(1, args.prompt_rounds)) + 1
-DEFAULT_STRATA_ROOT = Path(os.environ.get("STRATA_ROOT", r"C:\Users\Admin\AppData\Local\Strata\terminal\0.1.59"))
-DEFAULT_STRATA_ENGINE = Path(os.environ.get(
-    "STRATA_ENGINE",
-    r"C:\Users\Admin\AppData\Local\Strata\components\engine\0.1.59-windows-x86_64-cuda-cuda13\strata.exe",
+DEFAULT_PREVIOUS_ROOT = Path(os.environ.get("PREVIOUS_ROOT", r"C:\Users\Admin\AppData\Local\the 0.2.13 release\terminal\0.1.59"))
+DEFAULT_PREVIOUS_ENGINE = Path(os.environ.get(
+    "PREVIOUS_ENGINE",
+    r"C:\Users\Admin\AppData\Local\the 0.2.13 release\components\engine\0.1.59-windows-x86_64-cuda-cuda13\previous.exe",
 ))
-DEFAULT_MODEL_ROOT = Path(os.environ.get("STRATA_MODELS", r"G:\Strata Models"))
+DEFAULT_MODEL_ROOT = Path(os.environ.get("PREVIOUS_MODELS", r"G:\the 0.2.13 release Models"))
 
 
 def now_utc() -> str:
@@ -298,8 +298,8 @@ def chat_stream(port: int, messages: list, max_tokens: int, timeout: float) -> d
 
 
 def make_config(args, arm: str, round_number: int, out: Path) -> tuple[Path, Path, Path]:
-    root = args.nostroma_root if arm == "nostroma" else args.strata_root
-    engine = args.nostroma_engine if arm == "nostroma" else args.strata_engine
+    root = args.nostroma_root if arm == "nostroma" else args.previous_root
+    engine = args.nostroma_engine if arm == "nostroma" else args.previous_engine
     config_dir = out / "configs"
     log_dir = out / "logs"
     config_dir.mkdir(parents=True, exist_ok=True)
@@ -343,7 +343,7 @@ def make_config(args, arm: str, round_number: int, out: Path) -> tuple[Path, Pat
 
 
 def clean_env(root: Path, extra_path: Path | None = None) -> dict:
-    env = {k: v for k, v in os.environ.items() if not k.startswith(("NOSTROMA_", "STRATA_"))}
+    env = {k: v for k, v in os.environ.items() if not k.startswith(("NOSTROMA_", "PREVIOUS_"))}
     env["PYTHONPATH"] = str(root)
     env["PYTHONUNBUFFERED"] = "1"
     env["PYTHONIOENCODING"] = "utf-8"
@@ -355,8 +355,8 @@ def clean_env(root: Path, extra_path: Path | None = None) -> dict:
 def run_arm(args, arm: str, round_number: int, out: Path) -> dict:
     config_path, server_log, engine_log = make_config(args, arm, round_number, out)
     cfg = json.loads(config_path.read_text(encoding="utf-8"))
-    root = args.nostroma_root if arm == "nostroma" else args.strata_root
-    server_engine = "nostroma" if arm == "nostroma" else "strata"
+    root = args.nostroma_root if arm == "nostroma" else args.previous_root
+    server_engine = "nostroma" if arm == "nostroma" else "previous"
     command = [str(args.python), "-m", "serve.server", "--engine", server_engine,
                "--config", str(config_path), "--port", str(cfg["port"])]
     started = time.perf_counter()
@@ -458,7 +458,7 @@ def stats(values: list) -> dict:
 
 def build_summaries(rounds: list[dict], cases: list[str]) -> list[dict]:
     rows = []
-    for arm in ("nostroma", "strata"):
+    for arm in ("nostroma", "previous"):
         arm_rounds = [r for r in rounds if r["arm"] == arm]
         for metric in ("load_s",):
             rows.append({"metric": metric, "case": "load", "arm": arm, **stats([r[metric] for r in arm_rounds])})
@@ -568,11 +568,11 @@ def confirmation_lines(args, summaries: list[dict]) -> list[str]:
     lines += [line for _, line in sorted(rendered, key=lambda item: item[0])]
     lines += ["", f"The earlier run's report, raw results and logs are kept in `bench/results/{args.compare.name}/`."]
     for metric, case in sorted({(s["metric"], s["case"]) for s in summaries}):
-        halves = [(earlier.get((metric, case, arm)), current.get((metric, case, arm))) for arm in ("nostroma", "strata")]
+        halves = [(earlier.get((metric, case, arm)), current.get((metric, case, arm))) for arm in ("nostroma", "previous")]
         if not all(a and b and "median" in numeric(a) and "median" in numeric(b) for a, b in halves):
             continue
         def nostroma_ahead(source):
-            a, b = (numeric(source.get((metric, case, arm)))["median"] for arm in ("nostroma", "strata"))
+            a, b = (numeric(source.get((metric, case, arm)))["median"] for arm in ("nostroma", "previous"))
             return None if a == b else (a < b if metric in LOWER_IS_BETTER else a > b)
 
         before, after = nostroma_ahead(earlier), nostroma_ahead(current)
@@ -588,7 +588,7 @@ def confirmation_lines(args, summaries: list[dict]) -> list[str]:
     old_results = args.compare / "results.json"
     if old_results.exists():
         facts = []
-        for arm in ("nostroma", "strata"):
+        for arm in ("nostroma", "previous"):
             per_round = {r["round"]: q["ttft_s"] for r in json.loads(old_results.read_text(encoding="utf-8")).get("rounds", [])
                          if r.get("arm") == arm for q in r.get("requests", [])
                          if q.get("case") == "4k" and q.get("ttft_s") is not None}
@@ -609,31 +609,31 @@ def write_report(out: Path, args, hardware: dict, rounds: list[dict], summaries:
             ("decode_tps", "Decode tok/s", 1), ("total_s", "Total request (s)", 2),
         ):
             table[case].append((label, fmt(find(summaries, metric, case, "nostroma"), digits),
-                                fmt(find(summaries, metric, case, "strata"), digits)))
+                                fmt(find(summaries, metric, case, "previous"), digits)))
     memory = [
         ("Load to /health (s)", fmt(find(summaries, "load_s", "load", "nostroma"), 2),
-         fmt(find(summaries, "load_s", "load", "strata"), 2)),
+         fmt(find(summaries, "load_s", "load", "previous"), 2)),
         ("Expert spill (MB)", fmt(find(summaries, "expert_spill_mb", "memory", "nostroma"), 0),
-         fmt(find(summaries, "expert_spill_mb", "memory", "strata"), 0)),
+         fmt(find(summaries, "expert_spill_mb", "memory", "previous"), 0)),
         ("Process reads during requests (MB)", fmt(find(summaries, "ssd_read_request_mb", "memory", "nostroma"), 1),
-         fmt(find(summaries, "ssd_read_request_mb", "memory", "strata"), 1)),
+         fmt(find(summaries, "ssd_read_request_mb", "memory", "previous"), 1)),
         ("Process reads, whole run (MB)", fmt(find(summaries, "ssd_read_total_mb", "memory", "nostroma"), 1),
-         fmt(find(summaries, "ssd_read_total_mb", "memory", "strata"), 1)),
+         fmt(find(summaries, "ssd_read_total_mb", "memory", "previous"), 1)),
         ("VRAM peak (MiB)", fmt(find(summaries, "vram_peak_mib", "memory", "nostroma"), 0),
-         fmt(find(summaries, "vram_peak_mib", "memory", "strata"), 0)),
+         fmt(find(summaries, "vram_peak_mib", "memory", "previous"), 0)),
         ("VRAM above idle (MiB)", fmt(find(summaries, "vram_delta_mib", "memory", "nostroma"), 0),
-         fmt(find(summaries, "vram_delta_mib", "memory", "strata"), 0)),
+         fmt(find(summaries, "vram_delta_mib", "memory", "previous"), 0)),
         ("Process tree RSS peak (GiB)", fmt(find(summaries, "rss_peak_gib", "memory", "nostroma"), 2),
-         fmt(find(summaries, "rss_peak_gib", "memory", "strata"), 2)),
+         fmt(find(summaries, "rss_peak_gib", "memory", "previous"), 2)),
         ("System used above idle (GiB)", fmt(find(summaries, "sys_used_delta_gib", "memory", "nostroma"), 2),
-         fmt(find(summaries, "sys_used_delta_gib", "memory", "strata"), 2)),
+         fmt(find(summaries, "sys_used_delta_gib", "memory", "previous"), 2)),
     ]
-    modes = {arm: sorted({str(r["engine_log"].get("mode")) for r in rounds if r["arm"] == arm}) for arm in ("nostroma", "strata")}
-    loaded = {arm: sorted({r["engine_log"].get("loaded_gib") for r in rounds if r["arm"] == arm and r["engine_log"].get("loaded_gib") is not None}) for arm in ("nostroma", "strata")}
-    versions = {arm: sorted({str(r.get("engine_version")) for r in rounds if r["arm"] == arm and r.get("engine_version")}) for arm in ("nostroma", "strata")}
+    modes = {arm: sorted({str(r["engine_log"].get("mode")) for r in rounds if r["arm"] == arm}) for arm in ("nostroma", "previous")}
+    loaded = {arm: sorted({r["engine_log"].get("loaded_gib") for r in rounds if r["arm"] == arm and r["engine_log"].get("loaded_gib") is not None}) for arm in ("nostroma", "previous")}
+    versions = {arm: sorted({str(r.get("engine_version")) for r in rounds if r["arm"] == arm and r.get("engine_version")}) for arm in ("nostroma", "previous")}
     started_at = getattr(args, "started_at", None) or now_utc()
     lines = [
-        "# Nostroma vs Strata: same machine, same model, same context and slots",
+        "# Nostroma vs the 0.2.13 release: same machine, same model, same context and slots",
         "",
         f"Run: `{started_at}` · **head-to-head measurement, not the standard benchmark protocol**.",
         "",
@@ -647,7 +647,7 @@ def write_report(out: Path, args, hardware: dict, rounds: list[dict], summaries:
         f"- Drafter: DFlash2, `--spec 6`, `--draft-conf 0.7`, the same pack and draft vocabulary.",
         f"- Expert profile: `{args.expert_profile.name}`, the same file (SHA-256 identical in both installs).",
         f"- Each arm ran its own installed server: Nostroma 0.2.16 with engine {', '.join(versions['nostroma']) or 'unknown'}, "
-        f"Strata 0.2.13 with engine {', '.join(versions['strata']) or 'unknown'}.",
+        f"the 0.2.13 release 0.2.13 with engine {', '.join(versions['previous']) or 'unknown'}.",
         "",
         "## Method",
         "",
@@ -670,17 +670,17 @@ def write_report(out: Path, args, hardware: dict, rounds: list[dict], summaries:
         "",
     ]
     for case in args.cases:
-        lines += [f"### {case.upper()} prompt", "", "| Metric | Nostroma | Strata |", "| --- | ---: | ---: |"]
+        lines += [f"### {case.upper()} prompt", "", "| Metric | Nostroma | the 0.2.13 release |", "| --- | ---: | ---: |"]
         lines += [f"| {label} | {a} | {b} |" for label, a, b in table[case]]
         lines.append("")
-    lines += ["### Load, spill and memory", "", "| Metric | Nostroma | Strata |", "| --- | ---: | ---: |"]
+    lines += ["### Load, spill and memory", "", "| Metric | Nostroma | the 0.2.13 release |", "| --- | ---: | ---: |"]
     lines += [f"| {label} | {a} | {b} |" for label, a, b in memory]
     lines += [
         "",
         f"- Expert arena loaded at start: Nostroma `{', '.join(str(x) for x in loaded['nostroma']) or 'unknown'}` GiB; "
-        f"Strata `{', '.join(str(x) for x in loaded['strata']) or 'unknown'}` GiB.",
+        f"the 0.2.13 release `{', '.join(str(x) for x in loaded['previous']) or 'unknown'}` GiB.",
         f"- Startup mode: Nostroma `{', '.join(str(x) for x in modes['nostroma'])}`; "
-        f"Strata `{', '.join(str(x) for x in modes['strata'])}`.",
+        f"the 0.2.13 release `{', '.join(str(x) for x in modes['previous'])}`.",
         "- Expert spill: **0 in both arms** (arena mode: every expert was loaded into the arena). The process reads",
         "  during requests are PLE/table and other file reads, not experts read from the SSD.",
         "- Prompt cache: **0 reused tokens in every request**; the round's two frozen prompts differ from each other and each arm loads them cold.",
@@ -696,7 +696,7 @@ def write_report(out: Path, args, hardware: dict, rounds: list[dict], summaries:
         *([f"- Rounds {args.prompt_rounds + 1} and later reuse the first prompt pairs: {args.rounds} timing samples, but only "
            f"{args.prompt_rounds} distinct prompt texts."] if args.rounds > args.prompt_rounds else []),
         f"- The products are not the same version: Nostroma 0.2.16/engine {', '.join(versions['nostroma']) or 'unknown'} "
-        f"and Strata 0.2.13/engine {', '.join(versions['strata']) or 'unknown'}.",
+        f"and the 0.2.13 release 0.2.13/engine {', '.join(versions['previous']) or 'unknown'}.",
         "  The server code differs too, because each arm used its own installed server. That is the product comparison.",
         "- Windows process read bytes count logical reads served from the file cache as reads. They are comparable",
         "  between the two arms here but are not a physical SSD counter. Expert spill itself was zero in both arms.",
@@ -737,9 +737,9 @@ def main() -> int:
     parser.add_argument("--cool-down", type=float, default=5)
     parser.add_argument("--python", type=Path, default=Path(sys.executable))
     parser.add_argument("--nostroma-root", type=Path, default=ROOT)
-    parser.add_argument("--strata-root", type=Path, default=DEFAULT_STRATA_ROOT)
+    parser.add_argument("--previous-root", type=Path, default=DEFAULT_PREVIOUS_ROOT)
     parser.add_argument("--nostroma-engine", type=Path, default=ROOT / "engine" / "nostroma.exe")
-    parser.add_argument("--strata-engine", type=Path, default=DEFAULT_STRATA_ENGINE)
+    parser.add_argument("--previous-engine", type=Path, default=DEFAULT_PREVIOUS_ENGINE)
     parser.add_argument("--model-root", type=Path, default=DEFAULT_MODEL_ROOT)
     parser.add_argument("--cuda-bin", type=Path,
                         default=Path(r"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.5\bin\x64"))
@@ -749,22 +749,22 @@ def main() -> int:
     args = parser.parse_args()
     args.cases = [x.strip() for x in args.cases.split(",") if x.strip()]
     if not args.out:
-        args.out = ROOT / "bench" / "results" / f"{dt.date.today().isoformat()}-vs-strata"
+        args.out = ROOT / "bench" / "results" / f"{dt.date.today().isoformat()}-vs-previous"
     args.out = args.out.resolve()
     args.out.mkdir(parents=True, exist_ok=True)
-    for path in (args.nostroma_engine, args.strata_engine, args.expert_profile, args.draft_model, args.draft_vocab,
+    for path in (args.nostroma_engine, args.previous_engine, args.expert_profile, args.draft_model, args.draft_vocab,
                  args.model_root / "packs" / "iq3_s", args.model_root / "models" / "IQ3_S"):
         if not path.exists():
             sys.exit(f"missing: {path}")
-    if not (args.strata_root / "serve" / "server.py").exists():
-        sys.exit(f"missing Strata server: {args.strata_root / 'serve' / 'server.py'}")
+    if not (args.previous_root / "serve" / "server.py").exists():
+        sys.exit(f"missing the 0.2.13 release server: {args.previous_root / 'serve' / 'server.py'}")
     hardware = get_hardware()
     rounds: list[dict] = []
     started = now_utc()
     args.started_at = started
     try:
         for round_number in range(1, args.rounds + 1):
-            order = ("nostroma", "strata") if round_number % 2 else ("strata", "nostroma")
+            order = ("nostroma", "previous") if round_number % 2 else ("previous", "nostroma")
             for arm in order:
                 print(f"round {round_number}: {arm}", flush=True)
                 try:
@@ -774,7 +774,7 @@ def main() -> int:
                     rounds.append({"arm": arm, "round": round_number, "error": str(exc), "requests": [],
                                    "memory": {}, "engine_log": {}, "load_s": None})
                 (args.out / "results.json").write_text(json.dumps({
-                    "format": "nostroma-vs-strata-head-to-head", "schema_version": 1,
+                    "format": "nostroma-vs-previous-head-to-head", "schema_version": 1,
                     "started_at": started, "updated_at": now_utc(),
                     "status": "running", "hardware": hardware, "settings": vars(args) | {"out": str(args.out)},
                     "rounds": rounds,
@@ -784,7 +784,7 @@ def main() -> int:
     summaries = build_summaries(rounds, args.cases)
     write_report(args.out, args, hardware, rounds, summaries)
     (args.out / "results.json").write_text(json.dumps({
-        "format": "nostroma-vs-strata-head-to-head", "schema_version": 1,
+        "format": "nostroma-vs-previous-head-to-head", "schema_version": 1,
         "started_at": started, "finished_at": now_utc(),
         "status": "complete" if sum(1 for r in rounds if not r.get("error")) == args.rounds * 2 else "partial",
         "hardware": hardware, "settings": vars(args) | {"out": str(args.out)},

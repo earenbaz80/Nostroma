@@ -1,5 +1,5 @@
 {
- "format": "nostroma-vs-strata-head-to-head",
+ "format": "nostroma-vs-previous-head-to-head",
  "schema_version": 1,
  "started_at": "2026-11-24T11:34:13Z",
  "finished_at": "2026-11-24T11:41:33Z",
@@ -15,7 +15,7 @@
   "python": "3.12.15"
  },
  "settings": {
-  "out": "G:\\Proyectos AI\\Nostroma_Ai\\bench\\results\\2026-11-24-vs-strata",
+  "out": "G:\\Proyectos AI\\Nostroma_Ai\\bench\\results\\2026-11-24-vs-0.2.13",
   "rounds": 3,
   "cases": [
    "4k",
@@ -30,16 +30,16 @@
   "load_timeout": 600.0,
   "request_timeout": 600.0,
   "cool_down": 5,
-  "python": "C:\\Users\\Admin\\AppData\\Local\\Strata\\terminal\\current\\python\\python.exe",
+  "python": "C:\\Users\\Admin\\AppData\\Local\\0.2.13\\terminal\\current\\python\\python.exe",
   "nostroma_root": "G:\\Proyectos AI\\Nostroma_Ai",
-  "strata_root": "C:\\Users\\Admin\\AppData\\Local\\Strata\\terminal\\0.1.59",
+  "previous_root": "C:\\Users\\Admin\\AppData\\Local\\0.2.13\\terminal\\0.1.59",
   "nostroma_engine": "G:\\Proyectos AI\\Nostroma_Ai\\engine\\nostroma.exe",
-  "strata_engine": "C:\\Users\\Admin\\AppData\\Local\\Strata\\components\\engine\\0.1.59-windows-x86_64-cuda-cuda13\\strata.exe",
-  "model_root": "G:\\Strata Models",
+  "previous_engine": "C:\\Users\\Admin\\AppData\\Local\\0.2.13\\components\\engine\\0.1.59-windows-x86_64-cuda-cuda13\\previous.exe",
+  "model_root": "G:\\0.2.13 Models",
   "cuda_bin": "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v13.5\\bin\\x64",
   "expert_profile": "G:\\Proyectos AI\\Nostroma_Ai\\data\\expert-profile.bin",
-  "draft_model": "G:\\Strata Models\\dflash2\\qwen3.8-flash-next-dflash2.q4_0-selq4.pack",
-  "draft_vocab": "G:\\Strata Models\\dflash2\\draft_vocab.bin"
+  "draft_model": "G:\\0.2.13 Models\\dflash2\\qwen3.8-flash-next-dflash2.q4_0-selq4.pack",
+  "draft_vocab": "G:\\0.2.13 Models\\dflash2\\draft_vocab.bin"
  },
  "rounds": [
   {
@@ -120,12 +120,12 @@
    "engine_version": "0.1.61",
    "props": {
     "build_info": "Nostroma 0.1.61",
-    "model_path": "G:\\Strata Models\\models\\IQ3_S\\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf"
+    "model_path": "G:\\0.2.13 Models\\models\\IQ3_S\\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf"
    },
-   "command": "C:\\Users\\Admin\\AppData\\Local\\Strata\\terminal\\current\\python\\python.exe -m serve.server --engine nostroma --config G:\\Proyectos AI\\Nostroma_Ai\\bench\\results\\2026-11-24-vs-strata\\configs\\nostroma-r1.json --port 8192"
+   "command": "C:\\Users\\Admin\\AppData\\Local\\0.2.13\\terminal\\current\\python\\python.exe -m serve.server --engine nostroma --config G:\\Proyectos AI\\Nostroma_Ai\\bench\\results\\2026-11-24-vs-0.2.13\\configs\\nostroma-r1.json --port 8192"
   },
   {
-   "arm": "strata",
+   "arm": "previous",
    "round": 1,
    "port": 8193,
    "load_s": 43.54,
@@ -149,7 +149,7 @@
      "decode_tokens": 256,
      "prompt_tps": 837.3,
      "decode_tps": 48.4,
-     "arm": "strata",
+     "arm": "previous",
      "round": 1,
      "case": "4k",
      "fixture": "performance-prompt-4k-r1",
@@ -170,7 +170,7 @@
      "decode_tokens": 256,
      "prompt_tps": 1808.2,
      "decode_tps": 55.0,
-     "arm": "strata",
+     "arm": "previous",
      "round": 1,
      "case": "16k",
      "fixture": "performance-prompt-16k-r1",
@@ -201,13 +201,13 @@
    "server_version": "0.2.13",
    "engine_version": "0.1.59",
    "props": {
-    "build_info": "Strata 0.1.59",
-    "model_path": "G:\\Strata Models\\models\\IQ3_S\\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf"
+    "build_info": "0.2.13 0.1.59",
+    "model_path": "G:\\0.2.13 Models\\models\\IQ3_S\\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf"
    },
-   "command": "C:\\Users\\Admin\\AppData\\Local\\Strata\\terminal\\current\\python\\python.exe -m serve.server --engine strata --config G:\\Proyectos AI\\Nostroma_Ai\\bench\\results\\2026-11-24-vs-strata\\configs\\strata-r1.json --port 8193"
+   "command": "C:\\Users\\Admin\\AppData\\Local\\0.2.13\\terminal\\current\\python\\python.exe -m serve.server --engine previous --config G:\\Proyectos AI\\Nostroma_Ai\\bench\\results\\2026-11-24-vs-0.2.13\\configs\\previous-r1.json --port 8193"
   },
   {
-   "arm": "strata",
+   "arm": "previous",
    "round": 2,
    "port": 8195,
    "load_s": 41.55,
@@ -231,7 +231,7 @@
      "decode_tokens": 256,
      "prompt_tps": 871.0,
      "decode_tps": 50.5,
-     "arm": "strata",
+     "arm": "previous",
      "round": 2,
      "case": "4k",
      "fixture": "performance-prompt-4k-r2",
@@ -252,7 +252,7 @@
      "decode_tokens": 256,
      "prompt_tps": 1817.4,
      "decode_tps": 59.0,
-     "arm": "strata",
+     "arm": "previous",
      "round": 2,
      "case": "16k",
      "fixture": "performance-prompt-16k-r2",
@@ -283,10 +283,10 @@
    "server_version": "0.2.13",
    "engine_version": "0.1.59",
    "props": {
-    "build_info": "Strata 0.1.59",
-    "model_path": "G:\\Strata Models\\models\\IQ3_S\\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf"
+    "build_info": "0.2.13 0.1.59",
+    "model_path": "G:\\0.2.13 Models\\models\\IQ3_S\\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf"
    },
-   "command": "C:\\Users\\Admin\\AppData\\Local\\Strata\\terminal\\current\\python\\python.exe -m serve.server --engine strata --config G:\\Proyectos AI\\Nostroma_Ai\\bench\\results\\2026-11-24-vs-strata\\configs\\strata-r2.json --port 8195"
+   "command": "C:\\Users\\Admin\\AppData\\Local\\0.2.13\\terminal\\current\\python\\python.exe -m serve.server --engine previous --config G:\\Proyectos AI\\Nostroma_Ai\\bench\\results\\2026-11-24-vs-0.2.13\\configs\\previous-r2.json --port 8195"
   },
   {
    "arm": "nostroma",
@@ -366,9 +366,9 @@
    "engine_version": "0.1.61",
    "props": {
     "build_info": "Nostroma 0.1.61",
-    "model_path": "G:\\Strata Models\\models\\IQ3_S\\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf"
+    "model_path": "G:\\0.2.13 Models\\models\\IQ3_S\\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf"
    },
-   "command": "C:\\Users\\Admin\\AppData\\Local\\Strata\\terminal\\current\\python\\python.exe -m serve.server --engine nostroma --config G:\\Proyectos AI\\Nostroma_Ai\\bench\\results\\2026-11-24-vs-strata\\configs\\nostroma-r2.json --port 8194"
+   "command": "C:\\Users\\Admin\\AppData\\Local\\0.2.13\\terminal\\current\\python\\python.exe -m serve.server --engine nostroma --config G:\\Proyectos AI\\Nostroma_Ai\\bench\\results\\2026-11-24-vs-0.2.13\\configs\\nostroma-r2.json --port 8194"
   },
   {
    "arm": "nostroma",
@@ -448,12 +448,12 @@
    "engine_version": "0.1.61",
    "props": {
     "build_info": "Nostroma 0.1.61",
-    "model_path": "G:\\Strata Models\\models\\IQ3_S\\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf"
+    "model_path": "G:\\0.2.13 Models\\models\\IQ3_S\\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf"
    },
-   "command": "C:\\Users\\Admin\\AppData\\Local\\Strata\\terminal\\current\\python\\python.exe -m serve.server --engine nostroma --config G:\\Proyectos AI\\Nostroma_Ai\\bench\\results\\2026-11-24-vs-strata\\configs\\nostroma-r3.json --port 8196"
+   "command": "C:\\Users\\Admin\\AppData\\Local\\0.2.13\\terminal\\current\\python\\python.exe -m serve.server --engine nostroma --config G:\\Proyectos AI\\Nostroma_Ai\\bench\\results\\2026-11-24-vs-0.2.13\\configs\\nostroma-r3.json --port 8196"
   },
   {
-   "arm": "strata",
+   "arm": "previous",
    "round": 3,
    "port": 8197,
    "load_s": 43.05,
@@ -477,7 +477,7 @@
      "decode_tokens": 256,
      "prompt_tps": 878.9,
      "decode_tps": 47.7,
-     "arm": "strata",
+     "arm": "previous",
      "round": 3,
      "case": "4k",
      "fixture": "performance-prompt-4k-r3",
@@ -498,7 +498,7 @@
      "decode_tokens": 256,
      "prompt_tps": 1825.2,
      "decode_tps": 59.8,
-     "arm": "strata",
+     "arm": "previous",
      "round": 3,
      "case": "16k",
      "fixture": "performance-prompt-16k-r3",
@@ -529,10 +529,10 @@
    "server_version": "0.2.13",
    "engine_version": "0.1.59",
    "props": {
-    "build_info": "Strata 0.1.59",
-    "model_path": "G:\\Strata Models\\models\\IQ3_S\\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf"
+    "build_info": "0.2.13 0.1.59",
+    "model_path": "G:\\0.2.13 Models\\models\\IQ3_S\\Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-00001-of-00002.gguf"
    },
-   "command": "C:\\Users\\Admin\\AppData\\Local\\Strata\\terminal\\current\\python\\python.exe -m serve.server --engine strata --config G:\\Proyectos AI\\Nostroma_Ai\\bench\\results\\2026-11-24-vs-strata\\configs\\strata-r3.json --port 8197"
+   "command": "C:\\Users\\Admin\\AppData\\Local\\0.2.13\\terminal\\current\\python\\python.exe -m serve.server --engine previous --config G:\\Proyectos AI\\Nostroma_Ai\\bench\\results\\2026-11-24-vs-0.2.13\\configs\\previous-r3.json --port 8197"
   }
  ],
  "summaries": [
@@ -731,7 +731,7 @@
   {
    "metric": "load_s",
    "case": "load",
-   "arm": "strata",
+   "arm": "previous",
    "n": 3,
    "median": 43.05,
    "min": 41.55,
@@ -743,7 +743,7 @@
   {
    "metric": "expert_spill_mb",
    "case": "memory",
-   "arm": "strata",
+   "arm": "previous",
    "n": 3,
    "median": 0.0,
    "min": 0.0,
@@ -755,7 +755,7 @@
   {
    "metric": "ssd_read_request_mb",
    "case": "memory",
-   "arm": "strata",
+   "arm": "previous",
    "n": 3,
    "median": 137.4,
    "min": 136.2,
@@ -767,7 +767,7 @@
   {
    "metric": "ssd_read_total_mb",
    "case": "memory",
-   "arm": "strata",
+   "arm": "previous",
    "n": 3,
    "median": 52767.1,
    "min": 52766.5,
@@ -779,7 +779,7 @@
   {
    "metric": "vram_peak_mib",
    "case": "memory",
-   "arm": "strata",
+   "arm": "previous",
    "n": 3,
    "median": 14519.0,
    "min": 14517.0,
@@ -791,7 +791,7 @@
   {
    "metric": "vram_delta_mib",
    "case": "memory",
-   "arm": "strata",
+   "arm": "previous",
    "n": 3,
    "median": 13789.0,
    "min": 13787.0,
@@ -803,7 +803,7 @@
   {
    "metric": "rss_peak_gib",
    "case": "memory",
-   "arm": "strata",
+   "arm": "previous",
    "n": 3,
    "median": 48.94,
    "min": 48.94,
@@ -815,7 +815,7 @@
   {
    "metric": "sys_used_delta_gib",
    "case": "memory",
-   "arm": "strata",
+   "arm": "previous",
    "n": 3,
    "median": 49.61,
    "min": 49.61,
@@ -827,7 +827,7 @@
   {
    "metric": "ttft_s",
    "case": "4k",
-   "arm": "strata",
+   "arm": "previous",
    "n": 3,
    "median": 4.694,
    "min": 4.649,
@@ -839,7 +839,7 @@
   {
    "metric": "prompt_tps",
    "case": "4k",
-   "arm": "strata",
+   "arm": "previous",
    "n": 3,
    "median": 871.0,
    "min": 837.3,
@@ -851,7 +851,7 @@
   {
    "metric": "decode_tps",
    "case": "4k",
-   "arm": "strata",
+   "arm": "previous",
    "n": 3,
    "median": 48.4,
    "min": 47.7,
@@ -863,7 +863,7 @@
   {
    "metric": "total_s",
    "case": "4k",
-   "arm": "strata",
+   "arm": "previous",
    "n": 3,
    "median": 9.993,
    "min": 9.736,
@@ -875,7 +875,7 @@
   {
    "metric": "ttft_s",
    "case": "16k",
-   "arm": "strata",
+   "arm": "previous",
    "n": 3,
    "median": 9.038,
    "min": 9.009,
@@ -887,7 +887,7 @@
   {
    "metric": "prompt_tps",
    "case": "16k",
-   "arm": "strata",
+   "arm": "previous",
    "n": 3,
    "median": 1817.4,
    "min": 1808.2,
@@ -899,7 +899,7 @@
   {
    "metric": "decode_tps",
    "case": "16k",
-   "arm": "strata",
+   "arm": "previous",
    "n": 3,
    "median": 59.0,
    "min": 55.0,
@@ -911,7 +911,7 @@
   {
    "metric": "total_s",
    "case": "16k",
-   "arm": "strata",
+   "arm": "previous",
    "n": 3,
    "median": 13.351,
    "min": 13.261,

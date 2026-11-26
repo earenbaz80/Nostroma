@@ -15,7 +15,7 @@
     "required_duration_s": 195.417,
     "optional_duration_s": null,
     "optional_concurrency": false,
-    "command": "nostroma bench run --url http://127.0.0.1:8080 --out <nostroma>/bench/results/2026-11-24-0161-vs-0162/run-0162 --skip-model-hash --track custom --track-notes 0.1.61 built from HEAD (strata tree) and 0.1.62 from the working tree; both CUDA 120-real, NOSTROMA_PORTABLE=ON, tests OFF; same pack, config, serve wrapper and corpus --build-options CUDA 120-real,PORTABLE=ON,tests=OFF"
+    "command": "nostroma bench run --url http://127.0.0.1:8080 --out <nostroma>/bench/results/2026-11-24-0161-vs-0162/run-0162 --skip-model-hash --track custom --track-notes 0.1.61 built from HEAD (the tree before the rename) and 0.1.62 from the working tree; both CUDA 120-real, NOSTROMA_PORTABLE=ON, tests OFF; same pack, config, serve wrapper and corpus --build-options CUDA 120-real,PORTABLE=ON,tests=OFF"
   },
   "hardware": {
     "gpus": [
@@ -70,7 +70,7 @@
   },
   "configuration": {
     "track": "custom",
-    "track_notes": "0.1.61 built from HEAD (strata tree) and 0.1.62 from the working tree; both CUDA 120-real, NOSTROMA_PORTABLE=ON, tests OFF; same pack, config, serve wrapper and corpus",
+    "track_notes": "0.1.61 built from HEAD (the tree before the rename) and 0.1.62 from the working tree; both CUDA 120-real, NOSTROMA_PORTABLE=ON, tests OFF; same pack, config, serve wrapper and corpus",
     "context_tokens": 32768,
     "server_capacity": 1,
     "kv_cache": null,
