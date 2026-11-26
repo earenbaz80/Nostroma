@@ -401,8 +401,9 @@ class StageControlEmptyTests(unittest.TestCase):
     def test_the_probe_reads_a_denied_write_as_the_interpreter_in_use(self):
         """Windows renames a running interpreter's folder, and even the exe, so the probe is the write the image locks."""
         out = Path(self.tmp.name) / "control"
-        (out / "python").mkdir(parents=True)
-        exe = out / "python" / "python.exe"
+        # the bundle's own layout: Windows ships python/python.exe, POSIX python/bin/python3 (see bundle_python)
+        exe = out / "python" / ("python.exe" if os.name == "nt" else "bin/python3")
+        exe.parent.mkdir(parents=True)
         exe.write_bytes(b"old")
         self.assertIsNone(self.stage.interpreter_in_use(out), "a free interpreter is not in use")
         self.assertIsNone(self.stage.interpreter_in_use(out.parent), "no interpreter: nothing to probe")

@@ -55,6 +55,23 @@ class TheNameItWasTypedAs(unittest.TestCase):
             self.assertTrue(cli.parser().format_usage().startswith("usage: nostroma"))
 
 
+def _symlinks_work() -> bool:
+    """This machine can create a symbolic link: Windows needs Developer Mode or an elevated shell for it, and both tests
+    here are about the link a person really has in their data folder."""
+    with tempfile.TemporaryDirectory() as d:
+        try:
+            os.symlink(os.path.join(d, "target"), os.path.join(d, "link"))
+        except (OSError, NotImplementedError, AttributeError):
+            return False
+    return True
+
+
+SYMLINKS = unittest.skipUnless(_symlinks_work(), "this account cannot create a symbolic link (Windows: Developer Mode or an elevated shell)")
+# These two run bin/nostroma and packaging/install.sh with a POSIX shell.  Windows can hold the link and still not run
+# the script: CreateProcess answers [WinError 193], which is what the Windows CI job reports.
+POSIX = unittest.skipUnless(os.name == "posix", "runs a POSIX shell script, which Windows cannot execute")
+
+
 class TheLaunchers(unittest.TestCase):
     def test_the_posix_launcher(self):
         text = (ROOT / "bin" / "nostroma").read_text(encoding="utf-8")
@@ -84,6 +101,8 @@ class TheLaunchers(unittest.TestCase):
             elif (found := re.search(r"<<'([A-Za-z_]+)'", line)):
                 quoted = found.group(1)
 
+    @POSIX
+    @SYMLINKS
     def test_a_person_with_no_python_reads_their_own_name(self):
         # the one message that cannot be checked by reading: run the launcher through a link called nostroma
         with tempfile.TemporaryDirectory() as tmp:
@@ -124,6 +143,8 @@ class TheInstallers(unittest.TestCase):
             self.assertFalse((home / ".local" / "share" / "nostroma").exists(), "the install downloaded before refusing")
             self.assertEqual((home / ".local" / "bin" / "nostroma").read_text(), "someone else's command\n")
 
+    @POSIX
+    @SYMLINKS
     def test_an_old_link_stays_ours_however_the_data_folder_is_spelled_or_moved(self):
         # the install that made the link may have used another spelling of the same folder, or a data folder the user
         # has since left behind: either way the name is the installer's to replace, not someone's file

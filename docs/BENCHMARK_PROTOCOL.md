@@ -11,7 +11,7 @@ excluded; so is the hashing of the model files that the runner does first (about
 Report their duration separately if measured.
 
 `nostroma bench run` implements this protocol from Nostroma 0.2.1. It sends the frozen fixtures in
-`bench/prompts/standard-v1` (corpus SHA-256 `e75eff8b9feea04f745520b392c4c17d97aefc1ba185e222aa6740efa8f68407`)
+`bench/prompts/standard-v1` (corpus SHA-256 `74c07c5ec7e03f2462ca70d936a465653329fd46969cd572aa94c7ecce48d38a`)
 and writes the result format below. `BENCH.bat`, `./bench.sh`, and `tools/nostroma_bench.py` do not implement it.
 They stay the quick speed check described in the [community guide](COMMUNITY_BENCHMARKS.md). Do not rename their
 output or add a protocol ID to make it appear standard. The draft becomes final only after the measured pilot in the
