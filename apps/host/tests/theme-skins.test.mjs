@@ -44,10 +44,13 @@ test('themeScheme maps system, light, dark and every skin to the right base', ()
   for (const skin of ['matrix', 'solarized', 'commander']) {
     assert.equal(store.themeScheme(skin, false), 'dark', `${skin} rides on the dark CRT`);
   }
+  /* E-ink is printed on paper, so it takes the light base whoever the OS is. */
+  assert.equal(store.themeScheme('eink', false), 'light');
+  assert.equal(store.themeScheme('eink', true), 'light');
 });
 
-test('themeSkin returns the three skins and null for the base themes', () => {
-  for (const skin of ['matrix', 'solarized', 'commander']) assert.equal(store.themeSkin(skin), skin);
+test('themeSkin returns the four skins and null for the base themes', () => {
+  for (const skin of ['matrix', 'solarized', 'commander', 'eink']) assert.equal(store.themeSkin(skin), skin);
   for (const base of ['system', 'light', 'dark']) assert.equal(store.themeSkin(base), null);
 });
 
@@ -63,6 +66,10 @@ test('setTheme writes data-theme and removes data-skin when leaving a skin', () 
   store.setTheme('commander');
   assert.equal(root.dataset.theme, 'dark');
   assert.equal(root.dataset.skin, 'commander');
+
+  store.setTheme('eink');
+  assert.equal(root.dataset.theme, 'light');
+  assert.equal(root.dataset.skin, 'eink');
 
   store.setTheme('light');
   assert.equal(root.dataset.theme, 'light');

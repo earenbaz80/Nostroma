@@ -75,7 +75,7 @@ export interface Toast {
   action?: { label: string; run: () => void };
 }
 
-export type Theme = 'dark' | 'light' | 'system' | 'matrix' | 'solarized' | 'commander';
+export type Theme = 'dark' | 'light' | 'system' | 'matrix' | 'solarized' | 'commander' | 'eink';
 export type ThemeSkin = Exclude<Theme, 'dark' | 'light' | 'system'>;
 
 export interface AppState {
@@ -306,15 +306,16 @@ function loadPrefs(): Prefs {
   return { ...PREFS_DEFAULTS, language: detectLanguage(tags) ?? 'en' };
 }
 
-/** The base a theme paints on: skins always sit on the dark CRT. */
+/** The base a theme paints on. Matrix, Solarized and Commander sit on the dark CRT; e-ink is
+    printed on paper, so it takes the light base instead. */
 export function themeScheme(theme: Theme, systemDark: boolean): 'light' | 'dark' {
   if (theme === 'system') return systemDark ? 'dark' : 'light';
-  return theme === 'light' ? 'light' : 'dark';
+  return theme === 'light' || theme === 'eink' ? 'light' : 'dark';
 }
 
 /** The palette skin a theme asks for, or null for the amber base themes. */
 export function themeSkin(theme: Theme): ThemeSkin | null {
-  return theme === 'matrix' || theme === 'solarized' || theme === 'commander' ? theme : null;
+  return theme === 'matrix' || theme === 'solarized' || theme === 'commander' || theme === 'eink' ? theme : null;
 }
 
 const prefs = loadPrefs();
@@ -596,7 +597,7 @@ function applyPrefs() {
   root.dataset.theme = scheme;
   if (skin) root.dataset.skin = skin;
   else delete root.dataset.skin;
-  const themeColor = skin === 'matrix' ? '#000600' : skin === 'solarized' ? '#002b36' : skin === 'commander' ? '#0000aa' : scheme === 'dark' ? '#0e1113' : '#f9fafb';
+  const themeColor = skin === 'matrix' ? '#000600' : skin === 'solarized' ? '#002b36' : skin === 'commander' ? '#0000aa' : skin === 'eink' ? '#f4f4ef' : scheme === 'dark' ? '#0e1113' : '#f9fafb';
   document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute('content', themeColor);
   root.dataset.contrast = state.contrast;
   root.dataset.density = state.density;

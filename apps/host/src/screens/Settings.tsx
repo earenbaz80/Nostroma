@@ -26,6 +26,7 @@ const THEME_OPTIONS: { value: Theme; label: string }[] = [
     { value: 'matrix', label: 'Matrix' },
     { value: 'solarized', label: 'Solarized' },
     { value: 'commander', label: 'Norton Commander' },
+    { value: 'eink', label: 'E-ink' },
 ];
 
 export function SettingsScreen() {
@@ -50,7 +51,7 @@ export function SettingsScreen() {
         { section: 'General', label: 'Electricity price', hint: 'Price of one kilowatt-hour. The Monitor then shows what your graphics card has cost since Nostroma started. Leave it empty to hide the cost.', aliases: 'cost power energy kwh currency money', control: <ElectricityPrice /> },
         { section: 'Reading & focus', label: 'Font', hint: 'Choose an installed font for the interface and conversations.', control: <FontChoice /> },
         { section: 'General', label: 'Keyboard shortcuts', hint: 'Set the key combinations that feel natural to you.', aliases: 'command keys hotkeys', control: <Btn size="sm" onClick={() => setShortcuts(true)}>{tr("Edit shortcuts")}</Btn> },
-        { section: 'Reading & focus', label: 'Appearance', hint: 'System follows your computer by default.', aliases: 'theme light dark system automatic amber matrix solarized norton commander ms-dos dos', control: <Select value={prefs.theme} ariaLabel={tr("Appearance")} options={THEME_OPTIONS} onChange={setTheme}/> },
+        { section: 'Reading & focus', label: 'Appearance', hint: 'System follows your computer by default.', aliases: 'theme light dark system automatic amber matrix solarized norton commander ms-dos dos eink ink paper kindle mono grayscale black white', control: <Select value={prefs.theme} ariaLabel={tr("Appearance")} options={THEME_OPTIONS} onChange={setTheme}/> },
         { section: 'Reading & focus', label: 'Background', hint: 'The app’s own background, a picture from the wallpapers folder, or one you choose.', aliases: 'wallpaper fondo image picture background', wide: true, control: <WallpaperSetting/> },
         { section: 'Reading & focus', label: 'Reading size', hint: 'Conversation text size. Interface controls stay separate.', aliases: 'font text zoom', control: <label className="row"><input aria-label={tr("Reading text size")} type="range" className="st-slider" min={CONTENT_FONT_RANGE.min} max={CONTENT_FONT_RANGE.max} value={prefs.contentFontSize} onChange={e => setContentFontSize(Number(e.target.value))}/><output>{tr(prefs.contentFontSize)}{tr(" px")}</output></label> },
         { section: 'Reading & focus', label: 'Interface size', hint: 'Makes all text, buttons and menus in Nostroma larger or smaller.', aliases: 'zoom scale font text size bigger smaller 4k 90% 100% 110% 125% 150% 175% 200%', control: <Select value={String(prefs.uiScale)} ariaLabel={tr("Interface size")} options={UI_SCALES.map(v => ({ value: String(v), label: `${Math.round(v * 100)}%` }))} onChange={v => setUiScale(Number(v))}/> },
