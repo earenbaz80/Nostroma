@@ -402,8 +402,8 @@ def _default_app_pubkey() -> str:
     key = json.loads(conf.read_text(encoding="utf-8")).get("plugins", {}).get("updater", {}).get("pubkey", "")
     if key:
         return key
-    # App updates are off in this build: tauri.conf.json names no updater, so the key an app update would be verified
-    # with is the one Control ships in update_keys.json.
+    # App updates are off in this build (no endpoint), but tauri.conf.json names the key and update_keys.json carries the
+    # same one; the fallback covers a tree from before the key was in the config.
     try:
         return json.loads(signing.BUILTIN_KEYS.read_text(encoding="utf-8-sig")).get("app_minisign_public") or ""
     except (OSError, ValueError):

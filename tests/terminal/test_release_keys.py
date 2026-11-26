@@ -27,7 +27,7 @@ class ShippedKeys(unittest.TestCase):
     def test_the_app_key_is_the_one_in_the_tauri_config(self):
         shipped = json.loads((ROOT / "nostroma_control" / "update_keys.json").read_text(encoding="utf-8-sig"))["app_minisign_public"]
         conf = json.loads(TAURI_CONF.read_text(encoding="utf-8-sig"))
-        self.assertNotIn("updater", conf.get("plugins", {}))      # app updates are off: no key in the bundle to compare against
+        self.assertEqual(conf["plugins"]["updater"]["pubkey"], shipped)   # the app verifies an installer with the key Control carries
         key_id, public = signing.minisign_public(shipped)         # parses as a real Ed25519 minisign key, not the placeholder
         self.assertEqual(len(public), 32)
 

@@ -39,8 +39,8 @@ Every name below is flat in the release: GitHub release assets have no folders.
 | `install.sh`, `install.ps1` | Copies of `packaging/install.sh` and `packaging/install.ps1`, unchanged | Their built-in address is the release folder |
 | `nostroma-control-<control version>-<platform>.tar.gz` | `apps/desktop/scripts/stage-control.py` stages the folder, `feed_tool.py pack-control` packs it | `--format zip` for `windows-x86_64`; the archive must hold `bin/nostroma`. The folder is the same bundle `packaging/package_terminal.py` writes as `nostroma-terminal-<version>-<platform>.tar.gz`, which is not uploaded |
 | `nostroma-engine-<engine version>-<platform>-<backend>[-<variant>].tar.gz` | The build script for the box, then `packaging/package_engine.py`, `feed_tool.py sign-package`, `feed_tool.py pack-engine --url-prefix=` | See the per-platform list below. 0.2.16 rebuilds all 13 at 0.1.62: the engine's settings are now read as `NOSTROMA_*` |
-| `Nostroma-<product version>-windows-x64-setup.exe` (+ `.sig`) | `npx tauri build --bundles nsis --config src-tauri/tauri.update.conf.json`, then `npx tauri signer sign` | No engine inside |
-| `Nostroma-<product version>-linux-x86_64.AppImage` (+ `.sig`) | `npx tauri build --bundles appimage --config src-tauri/tauri.update.conf.json`, then `npx tauri signer sign` | No engine inside |
+| `Nostroma-<product version>-windows-x64-setup.exe` (+ `.sig`) | `npx tauri build --bundles nsis --config src-tauri/tauri.update.conf.json`, then `npx tauri signer sign --app-version <product version>` | No engine inside; the version must be in the signature (see below) |
+| `Nostroma-<product version>-linux-x86_64.AppImage` (+ `.sig`) | `npx tauri build --bundles appimage --config src-tauri/tauri.update.conf.json`, then `npx tauri signer sign --app-version <product version>` | No engine inside; the version must be in the signature (see below) |
 | `qwen3.8-flash-next-dflash2.nostroma1.q4_0-selq4.pack` | `tools/dflash2_pack.py --q4_0 --q4_0-selector`, then `feed_tool.py pack-drafter` | 339,694,592 bytes; `--backends metal,cuda,hip` |
 | `qwen3.8-flash-next-dflash2.nostroma1.q4_0-bf16sel.pack` | `tools/dflash2_pack.py --q4_0`, then `pack-drafter` | 522,458,112 bytes; `--backends sycl` |
 | `nostroma-dsv41-<version>-<platform>-<backend>[-<variant>].tar.gz` | Nothing: `build-feed --carry-dsv41 <previous feed> --carry-dsv41-base <URL of the release that holds them>` | Only for 0.2.13 and earlier clients |
@@ -93,8 +93,10 @@ then package and sign the folder:
    python packaging/feed_tool.py set-app-platform --app-json RELEASE/tauri-latest.json --target <target> --version <product version> --archive <installer> --sig <installer>.sig
    ```
 
-   `tauri.conf.json` names no updater key in this build, so the command checks against `app_minisign_public` from
-   `nostroma_control/update_keys.json`; pass `--pubkey` only to check against another key.
+   `tauri.conf.json` names the key (`plugins.updater.pubkey`, the same value as `app_minisign_public` in
+   `nostroma_control/update_keys.json`), so the command checks against it; pass `--pubkey` only to check against
+   another key. Sign with `--app-version <product version>`: the app sets `requireSignedVersion`, which refuses a
+   signature that does not carry the version it was signed for, and the CLI only warns when the flag is left out.
 
 4. **Drafters.** Convert the pinned Hugging Face file, then pack it:
 

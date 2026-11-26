@@ -34,11 +34,23 @@ class ReleaseConfig(unittest.TestCase):
         self.assertIs(load("tauri.release.conf.json")["bundle"]["createUpdaterArtifacts"], True)
         self.assertIs(load("tauri.conf.json")["bundle"]["createUpdaterArtifacts"], False)       # a development build needs no private key
 
-    def test_the_app_updater_is_off_so_no_other_product_is_installed(self):
-        """This build publishes no app feed of its own, so there is no endpoint and no key: a check cannot install another product."""
+    def test_the_app_updater_names_our_key_and_no_endpoint(self):
+        """This build publishes no app feed of its own: no endpoint, so a check has nothing to install. The key it does name is
+        ours, so an endpoint set by hand can only serve artifacts signed by Nostroma."""
         conf = load("tauri.conf.json")
-        self.assertNotIn("updater", conf.get("plugins", {}))
+        upd = conf["plugins"]["updater"]
+        self.assertNotIn("endpoints", upd)
         self.assertNotIn("latest.json", json.dumps(conf))
+        shipped = json.loads((TAURI.parents[2] / "nostroma_control" / "update_keys.json").read_text(encoding="utf-8-sig"))
+        self.assertEqual(upd["pubkey"], shipped["app_minisign_public"])
+
+    def test_the_app_update_requires_the_version_the_artifact_was_signed_for(self):
+        """CVE-2026-95625: the endpoint's response is not signed, so without this flag a crafted one pairs a newer version with an
+        older, validly signed installer. The key is `requireSignedVersion`: the plugin deserialises `rename_all = camelCase`."""
+        upd = load("tauri.conf.json")["plugins"]["updater"]
+        self.assertIs(upd["requireSignedVersion"], True)
+        self.assertNotIn("require_signed_version", upd, "the snake_case key is not the one the plugin reads")
+        self.assertFalse(load("tauri.conf.json").get("plugins", {}).get("updater", {}).get("allowDowngrades"))
 
     def test_the_update_overlay_drops_only_the_engine(self):
         """The app update (latest.json) is built with tauri.update.conf.json: the same app without engine-bundle, so one update

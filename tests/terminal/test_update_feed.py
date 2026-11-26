@@ -391,21 +391,28 @@ class AppPlatform(unittest.TestCase):
         self.assertIn("root", str(caught.exception))
 
     def test_the_app_key_defaults_to_the_one_this_build_ships(self):
-        """App updates are off, so the key a release checks against is the one Control carries in update_keys.json."""
+        """The key a release checks against is the one this build ships: tauri.conf.json names it and Control carries the same."""
         from feed_tool import _default_app_pubkey
         conf = json.loads((fx.ROOT / "apps/desktop/src-tauri/tauri.conf.json").read_text())
         shipped = json.loads((fx.ROOT / "nostroma_control/update_keys.json").read_text())["app_minisign_public"]
-        self.assertNotIn("updater", conf.get("plugins", {}))
+        self.assertEqual(conf.get("plugins", {}).get("updater", {}).get("pubkey"), shipped)
         self.assertEqual(_default_app_pubkey(), shipped)
 
-    def test_a_missing_or_broken_shipped_keys_file_gives_no_key(self):
-        """A tree with no update_keys.json, or one that is not JSON, gives no key instead of an error."""
-        from feed_tool import _default_app_pubkey
+    def test_a_tree_that_names_no_key_falls_back_to_the_shipped_keys_file(self):
+        """The config is the first source; a tree from before it named one falls back to update_keys.json, and a missing or
+        broken keys file gives no key instead of an error."""
+        import feed_tool
+        tree = self.root / "tree"
+        (tree / "apps" / "desktop" / "src-tauri").mkdir(parents=True)
+        (tree / "apps" / "desktop" / "src-tauri" / "tauri.conf.json").write_text('{"productName": "Nostroma"}', encoding="utf-8")
+        shipped = json.loads((fx.ROOT / "nostroma_control/update_keys.json").read_text())["app_minisign_public"]
         broken = self.root / "update_keys.json"
         broken.write_text("{not json", encoding="utf-8")
-        for keys in (self.root / "no-update-keys.json", broken):
-            with mock.patch.object(signing, "BUILTIN_KEYS", keys):
-                self.assertEqual(_default_app_pubkey(), "")
+        with mock.patch.object(feed_tool, "ROOT", tree):
+            self.assertEqual(feed_tool._default_app_pubkey(), shipped)
+            for keys in (self.root / "no-update-keys.json", broken):
+                with mock.patch.object(signing, "BUILTIN_KEYS", keys):
+                    self.assertEqual(feed_tool._default_app_pubkey(), "")
 
     def test_without_the_flag_the_shipped_key_is_checked(self):
         """The .sig here is made by another key, so the failure names that key, not a missing one."""

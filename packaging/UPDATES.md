@@ -205,8 +205,10 @@ All signing happens on the release PC, on the finished files.
     # Pack Linux packages on Linux or on Windows with this tool: it sets the execute bit from the file header either way.
     cd apps/desktop && npx tauri build --bundles nsis --config src-tauri/tauri.update.conf.json    # Windows installer (no engine inside)
     # Linux: tauri build --bundles appimage (no engine inside) is the AppImage
+    # --app-version is required in practice: the app config sets requireSignedVersion, so a signature without the
+    # version (the CLI only warns) is refused by every updater that reads it. `tauri build` fills it in by itself.
     # on the release PC, per updater artifact (Windows setup .exe, Linux .AppImage):
-    npx tauri signer sign -f <path to tauri-updater.key> <artifact>                                 # writes <artifact>.sig
+    npx tauri signer sign -f <path to tauri-updater.key> --app-version <product version> <artifact>  # writes <artifact>.sig
     python packaging/feed_tool.py set-app-platform --app-json RELEASE/tauri-latest.json --target windows-x86_64 --version 0.2.16 --archive Nostroma-0.2.16-windows-x64-setup.exe --sig Nostroma-0.2.16-windows-x64-setup.exe.sig --notes "..."
     python packaging/feed_tool.py set-app-platform --app-json RELEASE/tauri-latest.json --target linux-x86_64   --version 0.2.16 --archive Nostroma-0.2.16-linux-x86_64.AppImage --sig Nostroma-0.2.16-linux-x86_64.AppImage.sig
     python packaging/feed_tool.py build-feed --out RELEASE --sequence N --key <feed-key.json> --engine RELEASE/engine --control RELEASE/control --app-json RELEASE/tauri-latest.json (--carry-dsv41 <the last nostroma-feed.json> --carry-dsv41-base https://github.com/earenbaz80/Nostroma/releases/download/<DSV41-TAG>/ | --no-dsv41-carry) [--shapes RELEASE/shapes] [--drafters RELEASE/drafters]
