@@ -1,11 +1,12 @@
-"""Move the engine's runtime settings from NOSTROMA_* to NOSTROMA_*, keeping the old name as the fallback.
+"""Move the engine's runtime settings to NOSTROMA_*.
 
-Every setting the engine reads at run time was read as ``std::getenv("NOSTROMA_<SETTING>")``. The product is Nostroma, so
-the name to write is ``NOSTROMA_<SETTING>``, and ``include/nostroma/env.hpp`` reads the old one when the new one is not
-set. This script does the two mechanical steps and nothing else:
+Every setting the engine reads at run time is ``NOSTROMA_<SETTING>``. This script does the two mechanical steps and
+nothing else:
 
   * ``std::getenv("NOSTROMA_X")``  ->  ``nostroma::env("NOSTROMA_X")``
   * adds ``#include "nostroma/env.hpp"`` to a file it changed, when the include is not already there
+
+There is no second name and no fallback: a setting that is not set under NOSTROMA_ is unset.
 
 Compile-time switches (``#ifdef NOSTROMA_METAL``, ``NOSTROMA_USE_HIP``, ...) are left alone: the build defines them, so
 they have no runtime fallback.
@@ -27,12 +28,12 @@ ROOT = Path(__file__).resolve().parent.parent
 DIRECTORIES = ("src", "include", "metal", "sycl")
 #: The extensions the engine compiles. `.metal` is the shading language and cannot include a C++ header, but it has no
 #: std::getenv either, so it is only scanned.
-SUFFIXES = {".cpp", ".cc", ".cu", ".cuh", ".h", ".hpp", ".mm", ".metal"}
+SUFFIXES = {".cpp", ".cc", ".cu", ".cuh", ".h", ".hpp", ".inc", ".mm", ".metal"}
+#: `.inc` files are included inside a namespace (metal's window.cpp), so they cannot include the header themselves;
+#: their includer does. Only their reads are renamed.
+NO_INCLUDE_SUFFIXES = {".inc"}
 
 READ_RE = re.compile(r'std::getenv\s*\(\s*"(NOSTROMA_[A-Z0-9_]+)"\s*\)')
-#: Two helpers take the setting's name and read it themselves (`src/core/verify.cpp`, `src/program/generate.cpp`). Their
-#: bodies go through nostroma::env, so only the name they are handed has to change.
-WRAPPED_RE = re.compile(r'((?:env_on|pipe_dbg_env)\s*\(\s*)"(NOSTROMA_[A-Z0-9_]+)"')
 INCLUDE_LINE = '#include "nostroma/env.hpp"'
 INCLUDE_RE = re.compile(r'^\s*#\s*include\b')
 
@@ -58,13 +59,7 @@ def rewrite(text: str) -> tuple[str, int]:
         changed += 1
         return 'nostroma::env("NOSTROMA_%s")' % match.group(1)[len("NOSTROMA_"):]
 
-    def wrapped(match: re.Match[str]) -> str:
-        nonlocal changed
-        changed += 1
-        return '%s"NOSTROMA_%s"' % (match.group(1), match.group(2)[len("NOSTROMA_"):])
-
-    text = READ_RE.sub(one, text)
-    return WRAPPED_RE.sub(wrapped, text), changed
+    return READ_RE.sub(one, text), changed
 
 
 def with_include(text: str) -> str:
@@ -89,7 +84,7 @@ def main(argv: list[str] | None = None) -> int:
         left = []
         for path in sources():
             text = path.read_text(encoding="utf-8", errors="replace")
-            count = len(READ_RE.findall(text)) + len(WRAPPED_RE.findall(text))
+            count = len(READ_RE.findall(text))
             if count:
                 left.append((path, count))
         if not left:
@@ -112,7 +107,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.dry_run:
             print("%s: %d" % (path.relative_to(ROOT), count))
             continue
-        path.write_text(with_include(text), encoding="utf-8", errors="surrogateescape")
+        path.write_text(text if path.suffix in NO_INCLUDE_SUFFIXES else with_include(text), encoding="utf-8", errors="surrogateescape")
 
     verb = "would change" if args.dry_run else "changed"
     print("%s %d file(s), %d read(s)" % (verb, files, reads))

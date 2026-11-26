@@ -1,7 +1,6 @@
 """One models folder for the Terminal and the desktop app: the folder changed last wins, the other settings file is updated, nothing moves.
 
-The folder the app proposes in Documents is ``Nostroma`` now; ``Nostroma`` is the name installs made before the rename keep their models in.
-Discovery takes either, prefers the new one when both hold models, and creates neither.
+The folder the app proposes in Documents is ``Nostroma``. Discovery uses it when it holds models and creates nothing.
 """
 from __future__ import annotations
 
@@ -98,43 +97,34 @@ class SharedModelsFolder(GuiLayout):
 
 
 class DocumentsModelFolder(unittest.TestCase):
-    """The model folder the app proposes in Documents: ``Nostroma`` now, ``Nostroma`` for installs made before the rename.
+    """The model folder the app proposes in Documents: ``Nostroma``.
 
-    Discovery takes either, prefers the new name when both hold models, and creates neither: making
-    ``Documents/Nostroma/Models`` is the host's job (apps/host/server/store.mjs). The fixture already built a
-    ``Documents/Nostroma`` with models in it, which is the install this rename has to keep working.
+    Discovery uses it when it holds models and creates nothing: making ``Documents/Nostroma/Models`` is the host's job
+    (apps/host/server/store.mjs).
     """
 
     def setUp(self):
         GuiLayout.setUp(self)                                     # the app's layout, without its tests of the settings files
-        # No data folder in either settings file, so only the Documents folders are left to look at.
+        # No data folder in the settings files, so only the Documents folder is left to look at.
         (self.install.parent / "app-settings.json").write_text(json.dumps({"installs": [str(self.install)]}))
         self.documents = self.base / "home" / "Documents"
 
-    def new_folder(self, *, drop_legacy: bool = True) -> Path:
-        """A models folder under the new name, with the legacy one out of the way unless asked for both."""
-        if drop_legacy:
-            shutil.rmtree(self.docs)
+    def new_folder(self) -> Path:
+        """The models folder under Documents/Nostroma, with a model in it."""
+        shutil.rmtree(self.docs)
         new = self.documents / "Nostroma"
         (new / "Models").mkdir(parents=True)
         (new / "Models" / "qwen.gguf").write_bytes(b"x")
         return new
 
-    def test_the_apps_new_folder_is_found(self):
+    def test_the_apps_folder_is_found(self):
         new = self.new_folder()
         self.assertEqual(discovery.data_dir(self.base / "default"), (new, "documents"))
 
-    def test_an_install_made_before_the_rename_still_counts(self):
-        self.assertTrue((self.docs / "Models").is_dir())
-        self.assertEqual(discovery.data_dir(self.base / "default"), (self.docs, "documents"))
-
-    def test_the_new_folder_wins_when_both_hold_models(self):
-        new = self.new_folder(drop_legacy=False)
-        self.assertEqual(discovery.data_dir(self.base / "default"), (new, "documents"))
-
-    def test_both_names_are_listed_for_each_documents_folder(self):
-        choices = [(p.name, source) for p, source in discovery.data_dir_choices() if source == "documents"]
-        self.assertEqual(choices, [("Nostroma", "documents"), ("Nostroma", "documents")])
+    def test_the_documents_folder_is_listed(self):
+        choices = [(p.name, source) for p, source in discovery.data_dir_choices()
+                   if source == "documents" and p.parent == self.documents]
+        self.assertEqual(choices, [("Nostroma", "documents")])
 
     def test_a_documents_folder_without_models_is_not_the_data_folder(self):
         shutil.rmtree(self.docs)
@@ -142,9 +132,8 @@ class DocumentsModelFolder(unittest.TestCase):
         default = self.base / "default"
         self.assertEqual(discovery.data_dir(default), (default, "default"))
 
-    def test_discovery_creates_neither_folder(self):
+    def test_discovery_does_not_create_the_folder(self):
         shutil.rmtree(self.docs)
         default = self.base / "default"
         self.assertEqual(discovery.data_dir(default), (default, "default"))
-        self.assertFalse((self.documents / "Nostroma").exists())
         self.assertFalse((self.documents / "Nostroma").exists())

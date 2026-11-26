@@ -1126,7 +1126,7 @@ spec_verify_merge_kernel(const int2* __restrict__ cand, int n_blocks, int n_voca
 enum class SampledPath { Split, OneBlock, Old };
 
 bool env_flag(const char* name) {
-    const char* e = std::getenv(name);
+    const char* e = nostroma::env(name);
     return e != nullptr && *e != '\0' && std::strcmp(e, "0") != 0;
 }
 

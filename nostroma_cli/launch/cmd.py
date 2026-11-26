@@ -548,7 +548,7 @@ def _can_ask() -> bool:
     through the environment. A pipe from a script or CI does not."""
     if sys.stdin is None or sys.stdin.closed:
         return False
-    if os.environ.get("CI") or os.environ.get("NOSTROMA_NO_PROMPT", os.environ.get("NOSTROMA_NO_PROMPT")):
+    if os.environ.get("CI") or os.environ.get("NOSTROMA_NO_PROMPT"):
         return False
     return bool(os.environ.get("MSYSTEM") or os.environ.get("TERM_PROGRAM") or os.environ.get("TERM") or os.environ.get("WT_SESSION"))
 

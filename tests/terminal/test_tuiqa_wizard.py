@@ -146,8 +146,8 @@ class StoragePath(Base):
         p = "C:\\Users\\Ana\\Documents\\Nostroma\\a-very-long-folder-name-for-models\\Nostroma-data"
         s = middle_shorten(p, 40)
         self.assertEqual(len(s), 40)
-        self.assertEqual(s, "C:\\Users\\Ana\\Do\u2026e-for-models\\Nostroma-data")          # 2/5 of the room for the start, the rest for the end
-        self.assertEqual(middle_shorten(p, 40, "..."), "C:\\Users\\Ana\\D...-for-models\\Nostroma-data")
+        self.assertEqual(s, "C:\\Users\\Ana\\Do\u2026for-models\\Nostroma-data")          # 2/5 of the room for the start, the rest for the end
+        self.assertEqual(middle_shorten(p, 40, "..."), "C:\\Users\\Ana\\D...or-models\\Nostroma-data")
         self.assertEqual(middle_shorten(p, 3), p[0] + "\u2026" + p[-1])            # the smallest: one character on each side
         self.assertEqual(middle_shorten("/home/\u6a21\u578b\u6a21\u578b\u6a21\u578b/data", 12), "/hom\u2026\u578b/data")   # wide characters count as two cells
 

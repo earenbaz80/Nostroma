@@ -33,7 +33,7 @@ OFF_VALUES = ("0", "off", "no", "false")
 
 def disabled(cfg: dict | None = None) -> bool:
     """The person turned the profile off: NOSTROMA_FOUR_CARD_PROFILE=0 in the environment, or "four_card_profile": false in the config."""
-    if str(os.environ.get("NOSTROMA_FOUR_CARD_PROFILE", os.environ.get("NOSTROMA_FOUR_CARD_PROFILE", ""))).strip().lower() in OFF_VALUES:
+    if str(os.environ.get("NOSTROMA_FOUR_CARD_PROFILE", "")).strip().lower() in OFF_VALUES:
         return True
     return bool(cfg) and cfg.get("four_card_profile") is False
 

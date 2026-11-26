@@ -120,15 +120,11 @@ class Feed(unittest.TestCase):
                 self.assertIn("Signature ok", r.stdout)
                 self.assertIn("Installed. Run:", r.stdout)
                 self.assertTrue((home / ".local" / "bin" / "nostroma").exists())
-                # both names on the PATH, the same link, and each says the name it was called by
                 nostroma = home / ".local" / "bin" / "nostroma"
                 self.assertTrue(nostroma.is_symlink(), nostroma)
-                self.assertEqual(os.readlink(nostroma), os.readlink(home / ".local" / "bin" / "nostroma"))
-                self.assertIn("the old name, 'nostroma'", r.stdout)          # the install says both names work
-                for name in ("nostroma", "nostroma"):
-                    h = subprocess.run([str(home / ".local" / "bin" / name), "--help"], capture_output=True, text=True, env=env, timeout=60)
-                    self.assertEqual(h.returncode, 0, h.stderr)
-                    self.assertIn(f"usage: {name}", h.stdout, name)
+                h = subprocess.run([str(nostroma), "--help"], capture_output=True, text=True, env=env, timeout=60)
+                self.assertEqual(h.returncode, 0, h.stderr)
+                self.assertIn("usage: nostroma", h.stdout)
                 v = subprocess.run([str(home / ".local" / "bin" / "nostroma"), "--version"], capture_output=True, text=True, env=env, timeout=60)
                 self.assertEqual(v.returncode, 0, v.stderr)
                 self.assertTrue(v.stdout.startswith("nostroma "), v.stdout)      # the product's name, not the link's

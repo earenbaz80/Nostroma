@@ -14,10 +14,9 @@ The desktop app itself (it sets NOSTROMA_SETTINGS_FILE) never adopts an older co
 own install folder and its own settings file count. Everything here is read-only: nothing is created, copied or moved.
 
 The data folder (models, packs, mtp) is found the same way: the person's own setting first, then the app's data folder, then a
-``Documents/Nostroma`` folder that holds models (a ``Documents/Nostroma`` written before the rename counts as the same, and the new name
-wins when both have models), then the default beside the install. Nothing creates either folder: making ``Documents/Nostroma/Models``
-is the host's job (apps/host/server/store.mjs), and this module only reads. A model that is installed tells where it really is (its run
-config names its files), which beats all of these.
+``Documents/Nostroma`` folder that holds models, then the default beside the install. Nothing creates that folder: making
+``Documents/Nostroma/Models`` is the host's job (apps/host/server/store.mjs), and this module only reads. A model that is installed
+tells where it really is (its run config names its files), which beats all of these.
 """
 
 from __future__ import annotations
@@ -62,7 +61,7 @@ def app_settings_file(environ=None, *, windows: bool | None = None, home: Path |
 def in_app_mode(environ=None) -> bool:
     """True inside the desktop app's own processes: they set NOSTROMA_SETTINGS_FILE and never adopt an older install."""
     environ = os.environ if environ is None else environ
-    return bool(environ.get("NOSTROMA_SETTINGS_FILE", environ.get("NOSTROMA_SETTINGS_FILE")))
+    return bool(environ.get("NOSTROMA_SETTINGS_FILE"))
 
 
 def documents_dirs(environ=None, *, windows: bool | None = None, home: Path | None = None) -> list[Path]:
@@ -70,7 +69,7 @@ def documents_dirs(environ=None, *, windows: bool | None = None, home: Path | No
     environ = os.environ if environ is None else environ
     home = _home(home)
     out: list[Path] = []
-    explicit = environ.get("NOSTROMA_DOCUMENTS_DIR", environ.get("NOSTROMA_DOCUMENTS_DIR"))
+    explicit = environ.get("NOSTROMA_DOCUMENTS_DIR")
     if explicit:
         out.append(Path(explicit))
     if _windows(windows):
@@ -127,8 +126,9 @@ def _installs_in(settings: dict) -> list[Path]:
 def own_settings_file(environ=None, *, windows: bool | None = None, home: Path | None = None) -> Path:
     """The settings file this process uses: the app's (NOSTROMA_SETTINGS_FILE), else the command-line Nostroma's (%APPDATA% / ~/.config)."""
     environ = os.environ if environ is None else environ
-    if environ.get("NOSTROMA_SETTINGS_FILE", environ.get("NOSTROMA_SETTINGS_FILE")):
-        return Path(environ.get("NOSTROMA_SETTINGS_FILE", environ["NOSTROMA_SETTINGS_FILE"]))
+    settings = environ.get("NOSTROMA_SETTINGS_FILE")
+    if settings:
+        return Path(settings)
     home = _home(home)
     if _windows(windows):
         return Path(environ.get("APPDATA") or str(home / "AppData" / "Roaming")) / "Nostroma" / "settings.json"
@@ -165,12 +165,12 @@ def places(*, here: Path | None = None, explicit: str | os.PathLike | None = Non
            home: Path | None = None) -> list[Place]:
     """Every folder that holds run configs, in the order described above. An explicit folder is the only one."""
     environ = os.environ if environ is None else environ
-    raw = explicit if explicit is not None else environ.get("NOSTROMA_INSTALL_DIR", environ.get("NOSTROMA_INSTALL_DIR"))
+    raw = explicit if explicit is not None else environ.get("NOSTROMA_INSTALL_DIR")
     if raw is not None:
         p = Path(raw).expanduser()
         return [Place(p, "explicit", len(config_files(p)))]
     cands: list[tuple[Path, str]] = []
-    data_root = environ.get("NOSTROMA_DATA_DIR", environ.get("NOSTROMA_DATA_DIR"))
+    data_root = environ.get("NOSTROMA_DATA_DIR")
     if data_root:                                    # the installer's own folder (install.sh / install.ps1): an install kept inside it comes first
         cands.append((Path(data_root).expanduser() / "install", "datadir"))
     if here is not None:
@@ -274,15 +274,13 @@ def data_dir_choices(*, environ=None, windows: bool | None = None, home: Path | 
     out.extend((p, src) for p, src, _ in entries)
     if not in_app_mode(environ):
         for d in documents_dirs(environ, windows=windows, home=home):
-            # The app's folder now, and the name installs made before the rename keep their models in.
-            for name in ("Nostroma", "Nostroma"):
-                out.append((d / name, "documents"))
+            out.append((d / "Nostroma", "documents"))
     return out
 
 
 def data_dir(default: Path, *, environ=None, windows: bool | None = None, home: Path | None = None) -> tuple[Path, str]:
     """(the data folder, source). Of the Terminal's own setting and the app's folder the one changed last wins (the other file is brought up
-    to date); then a ``Documents/Nostroma`` (or a ``Documents/Nostroma`` from before the rename) that holds models; else `default`."""
+    to date); then a ``Documents/Nostroma`` that holds models; else `default`."""
     sync_data_dir(environ=environ, windows=windows, home=home)
     choices = data_dir_choices(environ=environ, windows=windows, home=home)
     for path, source in choices:

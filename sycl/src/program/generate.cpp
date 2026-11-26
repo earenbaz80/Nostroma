@@ -326,7 +326,7 @@ static void print_start_refusal(const char* who, const std::string& err) {
 
 static const char* pipe_dbg_env(const char* name) {
     static const bool on = [] { const char* v = nostroma::env("NOSTROMA_PIPELINE_DEBUG"); return v != nullptr && v[0] != 0 && v[0] != '0'; }();
-    return on ? std::getenv(name) : nullptr;
+    return on ? nostroma::env(name) : nullptr;
 }
 
 // The resident RAM mode and the adaptive tier.  A swap copies `in` (held in RAM) into the slot of `out` (held only

@@ -254,7 +254,7 @@ std::vector<std::pair<std::string, std::string>> parallel_default_env_cuda(bool 
 std::vector<std::string> apply_parallel_defaults_cuda(bool linux_cuda, int batch_slots) {
     std::vector<std::string> set;
     for (const auto& kv : parallel_default_env_cuda(linux_cuda, batch_slots)) {
-        if (std::getenv(kv.first.c_str()) != nullptr) continue;   // the user's setting wins, =0 included
+        if (nostroma::env(kv.first.c_str()) != nullptr) continue;   // the user's setting wins, =0 included
         set_default(kv);
         set.push_back(kv.first);
     }
@@ -269,7 +269,7 @@ std::vector<std::pair<std::string, std::string>> gdn_default_env_cuda(bool linux
 std::vector<std::string> apply_gdn_defaults_cuda(bool linux_cuda) {
     std::vector<std::string> set;
     for (const auto& kv : gdn_default_env_cuda(linux_cuda)) {
-        if (std::getenv(kv.first.c_str()) != nullptr) continue;   // the user's setting wins, =0 included
+        if (nostroma::env(kv.first.c_str()) != nullptr) continue;   // the user's setting wins, =0 included
         set_default(kv);
         set.push_back(kv.first);
     }
@@ -284,7 +284,7 @@ std::vector<std::pair<std::string, std::string>> gdn_chunked_default_env(bool li
 std::vector<std::string> apply_gdn_chunked_default(bool linux_host, bool all_gfx12) {
     std::vector<std::string> set;
     for (const auto& kv : gdn_chunked_default_env(linux_host, all_gfx12)) {
-        if (std::getenv(kv.first.c_str()) != nullptr) continue;   // the user's setting wins, =0 included
+        if (nostroma::env(kv.first.c_str()) != nullptr) continue;   // the user's setting wins, =0 included
         set_default(kv);
         set.push_back(kv.first);
     }
@@ -306,14 +306,14 @@ std::vector<std::string> apply_arch_defaults(const char* gcn_arch, bool integrat
     if (const std::string note = nostroma::amd_community::startup_line(gcn_arch); !note.empty())
         std::fprintf(stderr, "%s\n", note.c_str());
     for (const auto& kv : arch_default_env(gcn_arch)) {
-        if (std::getenv(kv.first.c_str()) != nullptr) continue;   // the user's setting wins, whatever it is
+        if (nostroma::env(kv.first.c_str()) != nullptr) continue;   // the user's setting wins, whatever it is
         set_default(kv);
         set.push_back(kv.first);
     }
     {   // gfx12 extras kept apart from the table (gfx12_extra.hpp); not counted in the returned list
         std::vector<std::string> extra;
         for (const auto& kv : gfx12_exact_extra_env(gcn_arch)) {
-            if (std::getenv(kv.first.c_str()) != nullptr) continue;
+            if (nostroma::env(kv.first.c_str()) != nullptr) continue;
             set_default(kv);
             extra.push_back(kv.first);
         }
@@ -327,7 +327,7 @@ std::vector<std::string> apply_arch_defaults(const char* gcn_arch, bool integrat
         const auto vc = gfx12_value_changing_env(gcn_arch);
         bool any = false, kq = false;
         for (const auto& kv : vc) {
-            if (std::getenv(kv.first.c_str()) != nullptr) continue;
+            if (nostroma::env(kv.first.c_str()) != nullptr) continue;
             set_default(kv);
             if (kv.first == "NOSTROMA_MMQ_KQ") kq = true; else any = true;
         }
@@ -358,7 +358,7 @@ std::vector<std::string> apply_arch_defaults(const char* gcn_arch, bool integrat
     }
     std::vector<std::string> igpu;
     for (const auto& kv : igpu_default_env(gcn_arch, integrated)) {
-        if (std::getenv(kv.first.c_str()) != nullptr) continue;
+        if (nostroma::env(kv.first.c_str()) != nullptr) continue;
         set_default(kv);
         igpu.push_back(kv.first);
     }
@@ -384,7 +384,7 @@ std::vector<std::string> apply_arch_defaults(const char* gcn_arch, bool integrat
     if (igpu_fused_prompt_default(gcn_arch, integrated, win_host) && nostroma::env("NOSTROMA_PF_FUSED") == nullptr)
         set_default({"NOSTROMA_PF_FUSED", "1"});
     for (const auto& kv : parallel_default_env(gcn_arch, win_host, batch_slots)) {
-        if (std::getenv(kv.first.c_str()) != nullptr) continue;
+        if (nostroma::env(kv.first.c_str()) != nullptr) continue;
         set_default(kv);
         par.push_back(kv.first);
     }
@@ -396,7 +396,7 @@ std::vector<std::string> apply_arch_defaults(const char* gcn_arch, bool integrat
     }
     std::vector<std::string> lau;
     for (const auto& kv : launch_default_env(gcn_arch, win_host)) {
-        if (std::getenv(kv.first.c_str()) != nullptr) continue;
+        if (nostroma::env(kv.first.c_str()) != nullptr) continue;
         set_default(kv);
         lau.push_back(kv.first);
     }

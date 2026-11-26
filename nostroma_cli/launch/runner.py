@@ -42,7 +42,7 @@ def install_isolation_words(catalog, data_dir: str | os.PathLike | None = None) 
     """Round 8, N5: a clean test (a scratch data folder) silently ran an OLDER install found elsewhere (its run config and engine 0.1.41).
     When a data folder was chosen (--data-dir, or NOSTROMA_DATA_DIR from the installer) and the install in use is outside it, say which one is used
     and why. Nothing is moved or switched."""
-    chosen = data_dir or os.environ.get("NOSTROMA_DATA_DIR", os.environ.get("NOSTROMA_DATA_DIR"))
+    chosen = data_dir or os.environ.get("NOSTROMA_DATA_DIR")
     places = getattr(catalog, "places", None) or []
     if not chosen or not places or places[0].source == "explicit":
         return []
@@ -701,7 +701,7 @@ class Runner:
             if not stale:
                 self.emit("engine", f"Engine {eng['version']} ({eng['backend']}) is installed.", 100)
                 return
-        feed = self.feed or os.environ.get("NOSTROMA_UPDATE_FEED", os.environ.get("NOSTROMA_UPDATE_FEED"))
+        feed = self.feed or os.environ.get("NOSTROMA_UPDATE_FEED")
         if stale:
             blocked = self.stale_update_blocked(stale)
             if blocked:                                      # an engine update is the person's choice, and never beside a loaded model
@@ -822,7 +822,7 @@ class Runner:
         title = self.model_title()
         name = shape_engine.shown(shape, title)
         self.emit("engine", shape_engine.WORDS["checking"].format(model=name))
-        source = update_cmd._feed_source(argparse.Namespace(feed=self.feed or os.environ.get("NOSTROMA_UPDATE_FEED", os.environ.get("NOSTROMA_UPDATE_FEED"))), root or ec.components_dir())
+        source = update_cmd._feed_source(argparse.Namespace(feed=self.feed or os.environ.get("NOSTROMA_UPDATE_FEED")), root or ec.components_dir())
         said: list[str] = []
         exe = shape_engine.ensure(shape, source, components=root, emit=lambda m: (said.append(m), self.emit("engine", m, 0)), title=title,
                                   automatic=True)     # with an engine installed, a check nobody asked for (netpolicy rule 4b)
@@ -1576,7 +1576,7 @@ class Runner:
                     cards = [int(g) for g in s.gpus] if s.gpus else None
                     got = SE.expected(base, indexes=cards, native=native, context=int(s.context or SE.TESTED_CONTEXT),
                                       kv=next((str(a2) for a1, a2 in zip(base.get("args") or [], (base.get("args") or [])[1:]) if a1 == "--kv"), None),
-                                      allow_untested=os.environ.get("NOSTROMA_SPLIT_ALLOW_UNTESTED", os.environ.get("NOSTROMA_SPLIT_ALLOW_UNTESTED")) == "1", probe=self.card_probe())
+                                      allow_untested=os.environ.get("NOSTROMA_SPLIT_ALLOW_UNTESTED") == "1", probe=self.card_probe())
         except Exception:                                    # noqa: BLE001 - a question asked early is never a reason to stop a launch
             got = False
         self._split_expected = got
@@ -1743,7 +1743,7 @@ class Runner:
         if lanes_added:
             cfg["parallel"] = int(self.s.parallel)
         try:
-            decision = SE.apply_to_config(cfg, exe_for_cards=exe_for, allow_untested=os.environ.get("NOSTROMA_SPLIT_ALLOW_UNTESTED", os.environ.get("NOSTROMA_SPLIT_ALLOW_UNTESTED")) == "1", probe=self.card_probe())
+            decision = SE.apply_to_config(cfg, exe_for_cards=exe_for, allow_untested=os.environ.get("NOSTROMA_SPLIT_ALLOW_UNTESTED") == "1", probe=self.card_probe())
         except Exception as e:                               # noqa: BLE001 - never stop a launch over an option
             if lanes_added:
                 cfg.pop("parallel", None)

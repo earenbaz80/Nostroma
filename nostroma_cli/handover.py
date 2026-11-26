@@ -34,8 +34,8 @@ _VERSION = re.compile(r"^[0-9]+(\.[0-9]+){1,3}(-[0-9A-Za-z][0-9A-Za-z.]*)?$")   
 def components_dir(environ=None) -> Path:
     """The per-user component folder (same rule as nostroma_control/engine_component.py components_dir)."""
     environ = os.environ if environ is None else environ
-    if environ.get("NOSTROMA_COMPONENTS_DIR", environ.get("NOSTROMA_COMPONENTS_DIR")):
-        return Path(environ.get("NOSTROMA_COMPONENTS_DIR", environ["NOSTROMA_COMPONENTS_DIR"]))
+    if environ.get("NOSTROMA_COMPONENTS_DIR"):
+        return Path(environ["NOSTROMA_COMPONENTS_DIR"])
     home = Path.home()
     if os.name == "nt":
         return Path(environ.get("LOCALAPPDATA") or str(home / "AppData" / "Local")) / "Nostroma" / "components"
@@ -178,7 +178,7 @@ def refuse_old_updater(argv, environ=None, tree=None) -> int | None:
     way from the updater's staging folder, says in one plain sentence what to do and exits non-zero, so the old updater keeps the old
     Control and shows the sentence instead of 'updated'. Returns the exit code to use, or None for any other start."""
     environ = os.environ if environ is None else environ
-    if list(argv) != ["--version"] or environ.get("NOSTROMA_NO_ACQUIRE", environ.get("NOSTROMA_NO_ACQUIRE")) != "1" or environ.get(ENV_GUARD):
+    if list(argv) != ["--version"] or environ.get("NOSTROMA_NO_ACQUIRE") != "1" or environ.get(ENV_GUARD):
         return None
     tree = Path(__file__).resolve().parents[1] if tree is None else Path(tree)
     if tree.parent.name != _STAGE_FOLDER:

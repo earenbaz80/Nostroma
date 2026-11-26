@@ -62,8 +62,8 @@ export function sendNotification(message, { run = execFile, env = externalEnviro
 }
 
 export function createAppUi({ env = process.env, shutdown = () => {}, open = openInBrowser, notify = sendNotification, createUpdater = createAppUpdater } = {}) {
-  let mode = MODES.has((env.NOSTROMA_UI_MODE ?? env.NOSTROMA_UI_MODE)) ? (env.NOSTROMA_UI_MODE ?? env.NOSTROMA_UI_MODE) : null;
-  let reason = mode === 'browser' ? ((env.NOSTROMA_UI_REASON ?? env.NOSTROMA_UI_REASON) || 'chosen') : null;
+  let mode = MODES.has((env.NOSTROMA_UI_MODE)) ? (env.NOSTROMA_UI_MODE) : null;
+  let reason = mode === 'browser' ? ((env.NOSTROMA_UI_REASON) || 'chosen') : null;
   let bridge = null;
   const originalBridge = createUpdater({ env });   // the older way: the shell passed the bridge in the environment
 

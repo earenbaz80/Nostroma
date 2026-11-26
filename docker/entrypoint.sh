@@ -3,7 +3,7 @@
 # variables, then stay up and stop cleanly on SIGTERM (`docker stop`).
 #
 #   docker run ... nostroma              start the server (default)
-#   docker run ... nostroma nostroma ... run any nostroma command instead (e.g. `nostroma launch --plan --model q2_0`)
+#   docker run ... nostroma ...        run any nostroma command instead (e.g. `nostroma launch --plan --model q2_0`)
 #   docker run ... nostroma sh           a shell
 #
 # Settings (all optional; names match the screens of `nostroma launch`):
@@ -54,7 +54,7 @@ legacy_models_guard() {
 
 # ---- other commands: `docker run image nostroma ...`, `docker run image sh`
 if [ "$#" -gt 0 ] && [ "$1" != "run" ] && [ "$1" != "serve" ]; then
-  case "$1" in nostroma|nostroma) shift; exec "$NOSTROMA" "$@" ;; *) exec "$@" ;; esac
+  case "$1" in nostroma) shift; exec "$NOSTROMA" "$@" ;; *) exec "$@" ;; esac
 fi
 
 mkdir -p /data/state /data/home /data/install /data/config /data/Nostroma-data /run 2>/dev/null || die "/data is not writable by uid $(id -u):$(id -g). Mount a volume there: -v nostroma-data:/data. A volume made by an image that ran as root belongs to root: give it to this account once with: docker run --rm -u 0 -v nostroma-data:/data <image> chown -R $(id -u):$(id -g) /data"

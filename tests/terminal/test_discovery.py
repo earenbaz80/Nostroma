@@ -108,7 +108,7 @@ class GuiLayout(unittest.TestCase):
         (self.install.parent / "app-settings.json").write_text(json.dumps({"data_dir": str(self.docs), "installs": [str(self.install)]}))
 
     def catalog(self) -> Catalog:
-        return Catalog(hardware=HW_12)
+        return Catalog(root=self.install, hardware=HW_12)
 
     # ---- T04: one answer for list and the wizard
     def test_models_list_finds_the_app_install_by_default(self):

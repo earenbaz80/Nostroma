@@ -136,13 +136,13 @@ struct KvaConfig {
 };
 
 inline int64_t kva_env_i64(const char* name, int64_t dflt) {
-    const char* v = std::getenv(name);
+    const char* v = nostroma::env(name);
     if (v == nullptr || *v == '\0') return dflt;
     return (int64_t) std::atoll(v);
 }
 
 inline bool kva_env_flag(const char* name, bool dflt) {
-    const char* v = std::getenv(name);
+    const char* v = nostroma::env(name);
     if (v == nullptr || *v == '\0') return dflt;
     return v[0] != '0';
 }

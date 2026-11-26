@@ -46,7 +46,7 @@ def requested(cfg: dict | None = None, environ=None) -> bool:
     environ = os.environ if environ is None else environ
     if cfg and cfg.get("replica_profile") is not None:
         return cfg.get("replica_profile") is True
-    return str(environ.get("NOSTROMA_REPLICA_PROFILE", environ.get("NOSTROMA_REPLICA_PROFILE", ""))).strip().lower() in ON_VALUES
+    return str(environ.get("NOSTROMA_REPLICA_PROFILE", "")).strip().lower() in ON_VALUES
 
 
 def quant_of(cfg: dict) -> str | None:

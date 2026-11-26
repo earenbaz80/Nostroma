@@ -3,7 +3,7 @@
 <!-- Generated from data/settings-register.json by tools/settings_register.py --docs. Do not edit by hand; change the register. -->
 
 The engine reads its settings from environment variables. The product's name is Nostroma, so the name to write is
-`NOSTROMA_<setting>`: the older `NOSTROMA_<setting>` is still read and still works, and `NOSTROMA_` wins when both are set.
+`NOSTROMA_<setting>`: the one name every runtime setting is read by. There is no second name and no fallback.
 The Terminal and the app choose what your hardware needs, so most people never set one. This page lists the ones meant for people:
 switches that are off until you turn them on, and switches that take a newer default back to the earlier behaviour. The other
 settings are for measuring and debugging and are kept in `data/settings-register.json`.

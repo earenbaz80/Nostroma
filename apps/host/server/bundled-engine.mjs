@@ -105,7 +105,7 @@ const BACKEND_OF_VENDOR = [['10de', 'cuda'], ['1002', 'hip'], ['8086', 'sycl']];
  * makes lists both, so a build for either make is accepted (recommend, never force).
  */
 export function gpuBackendsHere(env = process.env, { vendors = windowsDisplayVendors() } = {}) {
-  const forced = String((env.NOSTROMA_ENGINE_BACKEND ?? env.NOSTROMA_ENGINE_BACKEND) ?? '').trim().toLowerCase();
+  const forced = String((env.NOSTROMA_ENGINE_BACKEND) ?? '').trim().toLowerCase();
   if (forced) return ['cuda', 'hip', 'sycl'].includes(forced) ? [forced] : [];
   if (vendors.size) {
     const list = BACKEND_OF_VENDOR.filter(([vendor]) => vendors.has(vendor)).map(([, backend]) => backend);

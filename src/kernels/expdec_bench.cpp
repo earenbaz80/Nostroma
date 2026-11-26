@@ -28,6 +28,7 @@
 // bytes / all_us; pct = of the peak DRAM bandwidth 2 x memory clock x bus width / 8).  Lines starting with '#' are
 // context.  Exit code 1 if any choice differs or a CUDA error occurred.  GPU time only.
 #include "nostroma/kernels/iq_kernels.hpp"
+#include "nostroma/env.hpp"
 
 #include <cuda_runtime.h>
 
@@ -441,7 +442,7 @@ int main(int argc, char** argv) {
                                       !gu ? "gate/up" : "down", p.gu, p.d);
     }
     for (const char* name : {"NOSTROMA_NO_SUB16_GU", "NOSTROMA_EXPERT_V2", "NOSTROMA_OLD_IQ_MMVQ", "NOSTROMA_EXP_MODE"}) {
-        const char* v = std::getenv(name);
+        const char* v = nostroma::env(name);
         if (v != nullptr && v[0] != '\0' && v[0] != '0') std::printf("# warning: %s is set, the kernel choice is bypassed\n", name);
     }
     K::iq_set_old_kernels(false);

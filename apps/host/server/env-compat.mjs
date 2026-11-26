@@ -1,39 +1,20 @@
-/**
- * The environment variables moved from NOSTROMA_* to NOSTROMA_*. This build reads and writes the new names; the old ones are
- * still accepted, so a launcher, a script, an engine child or a component that was set up before the rename keeps working.
- */
+/** The environment variables are NOSTROMA_*: one prefix, read and written everywhere. */
 
-/** The value of NOSTROMA_<name>, or the older NOSTROMA_<name> when only that one is set. */
-export const envVar = name => process.env[`NOSTROMA_${name}`] ?? process.env[`NOSTROMA_${name}`];
+/** The value of NOSTROMA_<name>. */
+export const envVar = name => process.env[`NOSTROMA_${name}`];
 
-/** True when either name is set to anything. */
+/** True when NOSTROMA_<name> is set to anything. */
 export const hasEnvVar = name => envVar(name) !== undefined;
 
-/** One value under both names, for a child that may still read the old name. */
+/** Set one value per name under the Nostroma prefix. */
 export function setEnvVars(target, values) {
   for (const [name, value] of Object.entries(values)) {
-    target[`NOSTROMA_${name}`] = value;
     target[`NOSTROMA_${name}`] = value;
   }
   return target;
 }
 
-/**
- * An environment for a child process: every NOSTROMA_* value is also under NOSTROMA_* and the other way round, so the engine
- * and the Python packages (which read the old names) and the host (which reads the new ones) see the same settings. When
- * both are set, the new name wins in both: the engine cannot read a value the host ignores.
- */
+/** A copy of the environment for a child process. */
 export function childEnv(values = process.env) {
-  const out = { ...values };
-  for (const [name, value] of Object.entries(values)) {
-    if (name.startsWith('NOSTROMA_')) out[`NOSTROMA_${name.slice('NOSTROMA_'.length)}`] = value;
-    else if (name.startsWith('NOSTROMA_') && out[`NOSTROMA_${name.slice('NOSTROMA_'.length)}`] === undefined) out[`NOSTROMA_${name.slice('NOSTROMA_'.length)}`] = value;
-  }
-  return out;
-}
-
-/** Fill in the missing name for every variable in this process, once at startup, so anything inherited carries both. */
-export function aliasOldNames(env = process.env) {
-  Object.assign(env, childEnv(env));
-  return env;
+  return { ...values };
 }

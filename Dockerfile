@@ -100,10 +100,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends tini ca-certifi
 COPY --chown=${APP_UID}:${APP_GID} --from=terminal /opt/nostroma/terminal /opt/nostroma/terminal
 COPY --chown=${APP_UID}:${APP_GID} --from=engine-build /engine/ /opt/nostroma/components/engine/
 COPY docker/entrypoint.sh docker/healthcheck.sh /opt/nostroma/
-# Both names, one wrapper: `nostroma` is the command, and `nostroma` is the name it had before (install.sh links both too).
+# One wrapper puts the command on the PATH.
 COPY docker/nostroma-wrapper.sh /usr/local/bin/nostroma
-COPY docker/nostroma-wrapper.sh /usr/local/bin/nostroma
-RUN chmod 0755 /opt/nostroma/entrypoint.sh /opt/nostroma/healthcheck.sh /usr/local/bin/nostroma /usr/local/bin/nostroma
+RUN chmod 0755 /opt/nostroma/entrypoint.sh /opt/nostroma/healthcheck.sh /usr/local/bin/nostroma
 # The account the container runs as, and the folders it writes. /data is created here and belongs to that account, so a NEW named
 # volume mounted there inherits the ownership (Docker fills an empty volume from the image's folder). This runs before VOLUME:
 # the builder discards any change made to a folder after it has been declared a volume. The components folder belongs to the

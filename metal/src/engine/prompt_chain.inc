@@ -67,8 +67,8 @@ bool Window::pc_setup(int C) {
     // NOSTROMA_PROMPT_GU / NOSTROMA_PROMPT_DN = TM,TN,TK,SG override them (test tooling; TM = the plan's tile height, the same for both)
     b.gu3[0] = 16; b.gu3[1] = 32; b.gu3[2] = 32; b.gu3[3] = 4;
     b.dn3[0] = 16; b.dn3[1] = 64; b.dn3[2] = 32; b.dn3[3] = 2;
-    if (const char* e = std::getenv("NOSTROMA_PROMPT_GU")) std::sscanf(e, "%d,%d,%d,%d", &b.gu3[0], &b.gu3[1], &b.gu3[2], &b.gu3[3]);
-    if (const char* e = std::getenv("NOSTROMA_PROMPT_DN")) std::sscanf(e, "%d,%d,%d,%d", &b.dn3[0], &b.dn3[1], &b.dn3[2], &b.dn3[3]);
+    if (const char* e = nostroma::env("NOSTROMA_PROMPT_GU")) std::sscanf(e, "%d,%d,%d,%d", &b.gu3[0], &b.gu3[1], &b.gu3[2], &b.gu3[3]);
+    if (const char* e = nostroma::env("NOSTROMA_PROMPT_DN")) std::sscanf(e, "%d,%d,%d,%d", &b.dn3[0], &b.dn3[1], &b.dn3[2], &b.dn3[3]);
     if (!b.v3e) { b.gu3[0] = b.dn3[0] = PC_TM; }
     b.tm = b.gu3[0];
     if (b.v3e) {   // NOSTROMA_PROMPT_V6=MS (default 4, 0 = off): ragged tiles, groups of MS (2..4) 16-row subtiles of one expert share the weight decode
@@ -82,12 +82,12 @@ bool Window::pc_setup(int C) {
             const std::string bl = "blk." + std::to_string(l) + ".";
             types_ok = gu_ok(T(bl + "ffn_gate_exps.weight").type) && gu_ok(T(bl + "ffn_up_exps.weight").type) && dn_ok(T(bl + "ffn_down_exps.weight").type);
         }
-        const char* e6 = std::getenv("NOSTROMA_PROMPT_V6");
+        const char* e6 = nostroma::env("NOSTROMA_PROMPT_V6");
         const int ms = types_ok ? (e6 ? std::atoi(e6) : 4) : 0;   // on by default (NOSTROMA_PROMPT_V6=0 off, 2..4 = the group size)
         if (ms >= 2) {
             b.v6 = true; b.ms = std::min(ms, 4); b.tm = 16; b.gu3[0] = b.dn3[0] = 16;
-            if (!std::getenv("NOSTROMA_PROMPT_GU")) { b.gu3[1] = 16; b.gu3[2] = 32; b.gu3[3] = 4; }   // measured (moe_mm_parity, T 2048): the accumulators of MS subtiles x gate/up need the narrow tile
-            if (!std::getenv("NOSTROMA_PROMPT_DN")) { b.dn3[1] = 32; b.dn3[2] = 32; b.dn3[3] = 4; }
+            if (!nostroma::env("NOSTROMA_PROMPT_GU")) { b.gu3[1] = 16; b.gu3[2] = 32; b.gu3[3] = 4; }   // measured (moe_mm_parity, T 2048): the accumulators of MS subtiles x gate/up need the narrow tile
+            if (!nostroma::env("NOSTROMA_PROMPT_DN")) { b.dn3[1] = 32; b.dn3[2] = 32; b.dn3[3] = 4; }
         }
     }
     if (b.dn3[0] != b.tm) { std::fprintf(stderr, "nostroma metal: NOSTROMA_PROMPT_GU/DN tile heights differ: using %d for both\n", b.tm); b.dn3[0] = b.tm; }
@@ -174,7 +174,7 @@ void Window::pc_kprof(const std::vector<mtl::Dispatch>& ds, int nT, int64_t pos0
     }
     const double g0 = now_ms();
     const double gg = cx_->run(ds);
-    const char* path = std::getenv("NOSTROMA_PROMPT_KPROF");
+    const char* path = nostroma::env("NOSTROMA_PROMPT_KPROF");
     FILE* f = path != nullptr && path[0] == '/' ? std::fopen(path, "w") : stderr;
     if (f == nullptr) f = stderr;
     double tot = 0;
@@ -401,7 +401,7 @@ bool Window::pc_chunk(const int64_t* tokens, int nT, int64_t pos0, std::string& 
                                           mtl::Arg::B(b.part), mtl::Arg::V(a)},
                   PC_QCHUNKS, G_QKV, 256, nT);
             }
-            static const bool mergeh = [] { const char* e = std::getenv("NOSTROMA_PROMPT_MERGEH"); return !(e && std::string(e) == "0"); }();
+            static const bool mergeh = [] { const char* e = nostroma::env("NOSTROMA_PROMPT_MERGEH"); return !(e && std::string(e) == "0"); }();
             if (mergeh) {   // the merge writes the fp16 operand directly (bitwise the same halves)
                 D(P_(b.lqsa, "qsa_merge_h"), {mtl::Arg::B(b.part), mtl::Arg::B(b.qfull), mtl::Arg::B(b.xqh), mtl::Arg::V(a)}, G_QH, nT, 256);
             } else {
@@ -523,9 +523,9 @@ bool Window::pc_chunk(const int64_t* tokens, int nT, int64_t pos0, std::string& 
     }
     // NOSTROMA_PROMPT_KPROF=1 (test tooling): every dispatch alone in its own command buffer, its GPU time kept per kernel and
     // shape, a table at exit.  The chunk then runs once more as a whole, so the GDN state is advanced twice: profiling only.
-    static const bool kprof = std::getenv("NOSTROMA_PROMPT_KPROF") != nullptr;
+    static const bool kprof = nostroma::env("NOSTROMA_PROMPT_KPROF") != nullptr;
     if (kprof && nT >= 1024) pc_kprof(ds, nT, pos0);
-    static const bool hostpipe = [] { const char* e = std::getenv("NOSTROMA_METAL_PROMPT_HOSTPIPE"); return !(e && std::string(e) == "0"); }();
+    static const bool hostpipe = [] { const char* e = nostroma::env("NOSTROMA_METAL_PROMPT_HOSTPIPE"); return !(e && std::string(e) == "0"); }();
     if (hostpipe && next_tokens != nullptr && next_nT > 0 && g_embd_rows == nullptr) {
         const int32_t pv[2] = {nT >= 2 ? (int32_t) tokens[nT - 2] : ss.ple_prev[1], (int32_t) tokens[nT - 1]};
         const int64_t npos = pos0 + nT;
@@ -566,7 +566,7 @@ bool Window::pc_chunk(const int64_t* tokens, int nT, int64_t pos0, std::string& 
 bool Window::prompt(const int64_t* tokens, int64_t n, int64_t pos0,
                     const std::function<bool(const float*, int64_t, int64_t, std::string&)>& on_chunk, std::string& err) {
     static const int C = [] {
-        const char* e = std::getenv("NOSTROMA_METAL_PROMPT_CHUNK");
+        const char* e = nostroma::env("NOSTROMA_METAL_PROMPT_CHUNK");
         return std::max(64, std::min(8192, e ? std::atoi(e) : 2048));
     }();
     if (!pc_setup((int) std::min<int64_t>(C, std::max<int64_t>(n, 64)))) { err = "metal prompt: setup failed"; return false; }
@@ -588,7 +588,7 @@ bool Window::prompt(const int64_t* tokens, int64_t n, int64_t pos0,
             if (!ok) return false;
         }
     }
-    if (std::getenv("NOSTROMA_METAL_TRACE") || std::getenv("NOSTROMA_METAL_PROFILE"))
+    if (nostroma::env("NOSTROMA_METAL_TRACE") || nostroma::env("NOSTROMA_METAL_PROFILE"))
         std::fprintf(stderr, "nostroma metal: prompt %lld tokens in %.1f ms (GPU %.1f ms, host rows %.1f ms [+%.1f ms beside the GPU; embeddings %.1f, PLE %.1f], drafter rows %.1f ms) "
                              "-> %.1f tok/s\n", (long long) n, now_ms() - t0, pb_.gpu_ms, pb_.host_ms, pb_.hidden_ms, pb_.emb_ms, pb_.ple_ms, pb_.mtp_ms,
                      1000.0 * (double) n / (now_ms() - t0));

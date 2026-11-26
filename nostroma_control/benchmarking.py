@@ -212,9 +212,9 @@ def _settings(profile: str, params: dict) -> tuple[dict, dict, Endpoint, Endpoin
     host = "127.0.0.1" if host in ("0.0.0.0", "::") else host
     authority = f"[{host}]" if ":" in host and not host.startswith("[") else host
     url = f"http://{authority}:{launch['effective']['port']}"
-    key = os.environ.get("NOSTROMA_API_KEY", os.environ.get("NOSTROMA_API_KEY"))
+    key = os.environ.get("NOSTROMA_API_KEY")
     endpoint = Endpoint(url, key, timeout=10)
-    telemetry = Endpoint(url, os.environ.get("NOSTROMA_TELEMETRY_KEY", os.environ.get("NOSTROMA_TELEMETRY_KEY")) or key, timeout=3)
+    telemetry = Endpoint(url, os.environ.get("NOSTROMA_TELEMETRY_KEY") or key, timeout=3)
     identity = {"profile": profile, "revision": revision, "source_config": str(source),
                 "source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
                 "model_name": cfg.get("model_name"), "gpu": cfg.get("gpu")}

@@ -28,7 +28,6 @@ class Text(unittest.TestCase):
         self.assertIn("no engine for ARM", self.ps1)
         self.assertNotIn("has no Nostroma Terminal yet", self.ps1)
         self.assertIn("NVIDIA DGX Spark", self.sh)      # 0.2.7.1: Linux ARM64 installs the Terminal (the engine is for the Spark only)
-        self.assertIn("Apple silicon", self.sh)
 
     def test_tls12_proxy_sign_in_and_the_real_error_text(self):
         self.assertIn("Tls12", self.ps1)

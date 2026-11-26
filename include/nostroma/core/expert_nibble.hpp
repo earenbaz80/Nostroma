@@ -277,7 +277,7 @@ inline const Config& config() {
 /// path's own (MMQ on every converted layer) is Prefill::nibble_prompt_check.
 inline std::string env_conflicts() {
     auto set = [](const char* n) -> const char* {
-        const char* v = std::getenv(n);
+        const char* v = nostroma::env(n);
         return v != nullptr && v[0] != '\0' ? v : nullptr;
     };
     const char* v = set("NOSTROMA_MMQ_DIRECT");

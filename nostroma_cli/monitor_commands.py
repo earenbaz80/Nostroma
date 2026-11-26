@@ -36,7 +36,7 @@ def add_status(sp: argparse._SubParsersAction) -> None:
 def running_launch() -> dict | None:
     """The server a `nostroma launch` has running (address and its key), when no address was given: so `nostroma monitor` needs no --url.
     Nothing is read when a connection, NOSTROMA_URL or NOSTROMA_CONNECTION names the server, and a thin monitor bundle has no launch code."""
-    if os.environ.get("NOSTROMA_URL", os.environ.get("NOSTROMA_URL")) or os.environ.get("NOSTROMA_CONNECTION", os.environ.get("NOSTROMA_CONNECTION")):
+    if os.environ.get("NOSTROMA_URL") or os.environ.get("NOSTROMA_CONNECTION"):
         return None
     try:
         from nostroma_cli.launch.cmd import launch_info

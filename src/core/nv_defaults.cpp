@@ -14,7 +14,7 @@ namespace nostroma::core {
 
 namespace {
 bool off(const char* name) {
-    const char* v = std::getenv(name);
+    const char* v = nostroma::env(name);
     return v != nullptr && v[0] == '0';
 }
 }  // namespace
@@ -101,7 +101,7 @@ std::vector<std::string> apply_nv_defaults(int major, int minor) {
     const int mj = nostroma::cc_major_of(major), mn = nostroma::cc_minor_of(minor);
     std::vector<std::string> set;
     for (const auto& kv : nv_default_env(major, minor)) {
-        if (std::getenv(kv.first.c_str()) != nullptr) continue;   // the user's setting wins, whatever it is
+        if (nostroma::env(kv.first.c_str()) != nullptr) continue;   // the user's setting wins, whatever it is
 #if defined(_WIN32)
         _putenv_s(kv.first.c_str(), kv.second.c_str());
 #else
@@ -179,7 +179,7 @@ bool nv_kq_line_wanted(const std::vector<std::pair<int, int>>& layer_gate_up_dow
 std::vector<std::string> apply_nv_kq_default(int min_major, int min_minor, bool fused_here, bool say) {
     std::vector<std::string> set;
     for (const auto& kv : nv_kq_default_env(min_major, min_minor)) {
-        if (std::getenv(kv.first.c_str()) != nullptr) continue;   // the user's setting wins, whatever it is
+        if (nostroma::env(kv.first.c_str()) != nullptr) continue;   // the user's setting wins, whatever it is
 #if defined(_WIN32)
         _putenv_s(kv.first.c_str(), kv.second.c_str());
 #else

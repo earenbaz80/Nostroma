@@ -12,8 +12,8 @@
  */
 
 export function createAppUpdater({ env = process.env, fetcher = fetch, sleep = ms => new Promise(r => setTimeout(r, ms)) } = {}) {
-  const base = (env.NOSTROMA_SHELL_BRIDGE ?? env.NOSTROMA_SHELL_BRIDGE);
-  const token = (env.NOSTROMA_SHELL_TOKEN ?? env.NOSTROMA_SHELL_TOKEN);
+  const base = (env.NOSTROMA_SHELL_BRIDGE);
+  const token = (env.NOSTROMA_SHELL_TOKEN);
   if (!base || !token || !/^http:\/\/127\.0\.0\.1:\d+$/.test(base)) return null;
   async function call(path, method = 'GET', timeoutMs = 120_000) {
     const response = await fetcher(`${base}${path}`, { method, headers: { authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(timeoutMs) });

@@ -66,7 +66,7 @@ export function readDataFolder(file) {
 
 /** The settings file the Terminal (command-line Nostroma) keeps: the same place setup.py and nostroma_control/discovery.py use. */
 export function terminalSettingsFile(env = process.env, platform = process.platform) {
-  if ((env.NOSTROMA_TERMINAL_SETTINGS_FILE ?? env.NOSTROMA_TERMINAL_SETTINGS_FILE)) return (env.NOSTROMA_TERMINAL_SETTINGS_FILE ?? env.NOSTROMA_TERMINAL_SETTINGS_FILE);
+  if ((env.NOSTROMA_TERMINAL_SETTINGS_FILE)) return (env.NOSTROMA_TERMINAL_SETTINGS_FILE);
   if (platform === 'win32') return join(env.APPDATA || join(homedir(), 'AppData', 'Roaming'), 'Nostroma', 'settings.json');
   return join(env.XDG_CONFIG_HOME || join(homedir(), '.config'), 'nostroma', 'settings.json');
 }

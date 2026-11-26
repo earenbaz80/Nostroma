@@ -305,7 +305,7 @@ bool Window::df2_bind(const std::string& vocab_file, std::string& err) {
     }
     if (vocab.empty() && vocab_file != "full") vocab = dvocab_;   // the MTP's list (may be empty: the whole head)
     if (vocab.empty() && vocab_file != "full") {   // no MTP loaded (--draft-fallback none) and no <mtp>/rt/draft_vocab.bin: the repository's list, as the MTP's loader falls back to
-        std::string vp = std::getenv("NOSTROMA_METAL_DRAFT_VOCAB") ? std::getenv("NOSTROMA_METAL_DRAFT_VOCAB")
+        std::string vp = nostroma::env("NOSTROMA_METAL_DRAFT_VOCAB") ? nostroma::env("NOSTROMA_METAL_DRAFT_VOCAB")
                                                                   : nostroma_metal::resource(nullptr, "data", NOSTROMA_METAL_DATA_DEFAULT) + "/draft_vocab.bin";
         if (vp != "full")
             if (std::FILE* vf = std::fopen(vp.c_str(), "rb")) {
@@ -316,7 +316,7 @@ bool Window::df2_bind(const std::string& vocab_file, std::string& err) {
     }
     const gguf::Tensor& out_t = T("output.weight");
     {
-        const char* hm = std::getenv("NOSTROMA_DF2_HEAD");
+        const char* hm = nostroma::env("NOSTROMA_DF2_HEAD");
         d.head_q8 = !(hm && std::string(hm) == "native");
         // NOSTROMA_DF2_HEAD=native: the target's own head, whole (the community drafter's): no draft vocabulary, no gathered copy, the engine's GEMV on the target's rows
         if (!d.head_q8) vocab.clear();
@@ -404,10 +404,10 @@ bool Window::df2_bind(const std::string& vocab_file, std::string& err) {
     d.outbuf = A(4 * 32);
     auto act = [&](int n) { Act x; x.n = n; x.b = A(4 * ((size_t) 4 * MAXT * n + (size_t) MAXT * n / 16)); return x; };
     d.A_fn = act(N);
-    if (const char* e = std::getenv("NOSTROMA_DF2_DUMP")) { d.dump_path = e; if (const char* r = std::getenv("NOSTROMA_DF2_DUMP_ROUND")) d.dump_round = std::atoi(r); }
-    if (const char* lm = std::getenv("NOSTROMA_DF2_LOG_MIB")) d.stash_max = std::atoi(lm) / 10; else d.stash_max = 4;   // ~10.6 MiB a lineage
+    if (const char* e = nostroma::env("NOSTROMA_DF2_DUMP")) { d.dump_path = e; if (const char* r = nostroma::env("NOSTROMA_DF2_DUMP_ROUND")) d.dump_round = std::atoi(r); }
+    if (const char* lm = nostroma::env("NOSTROMA_DF2_LOG_MIB")) d.stash_max = std::atoi(lm) / 10; else d.stash_max = 4;   // ~10.6 MiB a lineage
     d.rowlog = A((size_t) DF2_RING * N * 2);
-    { const char* fe = std::getenv("NOSTROMA_DF2_FUSE_H"); d.fuse_h = !(fe && fe[0] == '0'); }
+    { const char* fe = nostroma::env("NOSTROMA_DF2_FUSE_H"); d.fuse_h = !(fe && fe[0] == '0'); }
     d.bound = true;
     std::fprintf(stderr, "nostroma metal: DFlash2 drafter ready (%.0f MiB: pack %.0f, %lld-token draft head %s), in %.0f ms\n", d.bytes / 1048576.0,
                  (d.wq.bytes + d.pack.bytes) / 1048576.0, (long long) d.nd, d.head_q8 ? (d.use_map ? "as Q8_0" : "as Q8_0, the whole head") : "native", now_ms() - t0);
@@ -436,7 +436,7 @@ void Window::df2_mm(std::vector<mtl::Dispatch>& ds, const mtl::Buffer& qs, size_
     mtl::Dispatch dd;
     static const std::pair<int, int> RS = [] {
         int r = 2, s = 8;
-        if (const char* e = std::getenv("NOSTROMA_DF2_MM")) std::sscanf(e, "%d,%d", &r, &s);   // rows per simdgroup, simdgroups per threadgroup
+        if (const char* e = nostroma::env("NOSTROMA_DF2_MM")) std::sscanf(e, "%d,%d", &r, &s);   // rows per simdgroup, simdgroups per threadgroup
         return std::make_pair(r, s);
     }();
     const int R = RS.first, SGN = RS.second;
@@ -701,7 +701,7 @@ bool Window::df2_context(const mtl::Buffer& taps, size_t taps_off, int64_t n, in
         }
         const double tg0 = now_ms();
         cx_->run_graph(ds);
-        static const bool st2 = std::getenv("NOSTROMA_DF2_STATS") != nullptr;
+        static const bool st2 = nostroma::env("NOSTROMA_DF2_STATS") != nullptr;
         if (st2 && nb > 16) std::fprintf(stderr, "nostroma metal: DFlash2 context graph of %d rows: %zu dispatches, built in %.1f ms, run %.1f ms\n", nb, ds.size(), tg0 - tc0, now_ms() - tg0);
     }
     if (!d.dump_path.empty()) df2_dump_rows(taps, taps_off, n, pos0);
@@ -783,8 +783,8 @@ bool Window::df2_draft(int n_new, int64_t pos0, int32_t anchor, int32_t* drafts,
     const double wall = now_ms() - tr;
     d.gpu_ms += 1000.0 * g;
     if (d.rounds >= 1 && d.last_build_ms == 0) { d.run_ms += wall; d.host_ms += now_ms() - t0 - wall; ++d.steady; }
-    static const bool prof = std::getenv("NOSTROMA_DF2_PROF") != nullptr;
-    static const bool stats = std::getenv("NOSTROMA_DF2_STATS") != nullptr;   // serve leaves through exit(): a periodic line instead of the destructor's
+    static const bool prof = nostroma::env("NOSTROMA_DF2_PROF") != nullptr;
+    static const bool stats = nostroma::env("NOSTROMA_DF2_STATS") != nullptr;   // serve leaves through exit(): a periodic line instead of the destructor's
     if (stats && d.steady > 0 && d.steady % 150 == 0)
         std::fprintf(stderr, "nostroma metal: DFlash2 stats after %lld rounds: GPU %.2f ms/round, run_graph %.2f ms, host before the graph %.2f ms\n", (long long) d.steady,
                      d.gpu_ms / (double) d.rounds, d.run_ms / (double) d.steady, d.host_ms / (double) d.steady);
@@ -884,7 +884,7 @@ int64_t Window::df2_restore_lineage(const std::vector<int32_t>& cur_hist, int64_
     if (cur_hi > 0 && !cur_hist.empty()) {
         Df2::Stash s;
         s.hist = cur_hist; s.hi = cur_hi; s.floor = d.floor; s.log = d.rowlog; s.used = ++d.stash_tick;
-        static const bool chk = std::getenv("NOSTROMA_DF2_CHECK_REBUILD") != nullptr;
+        static const bool chk = nostroma::env("NOSTROMA_DF2_CHECK_REBUILD") != nullptr;
         if (chk) {   // test: a copy of the ring (all layers, K then V) to compare the rebuilt rows against
             const size_t one = (size_t) DF2_RING * 1024 * 4;
             s.chk.resize(one * 2 * (size_t) d.L);
@@ -902,7 +902,7 @@ int64_t Window::df2_restore_lineage(const std::vector<int32_t>& cur_hist, int64_
     for (size_t i = 0; i < d.stash.size(); ++i) {
         const Df2::Stash& s = d.stash[i];
         int64_t k0 = 0;
-        { static const bool stv = std::getenv("NOSTROMA_DF2_STATS") != nullptr;
+        { static const bool stv = nostroma::env("NOSTROMA_DF2_STATS") != nullptr;
           if (stv) { while (k0 < resume && k0 < (int64_t) s.hist.size() && s.hist[(size_t) k0] == ids[k0]) ++k0;
                      std::fprintf(stderr, "nostroma metal: DFlash2 stash %zu: hi %lld, history %zu tokens, floor %lld, common prefix with the request %lld of %lld (window start %lld)%s", i, (long long) s.hi, s.hist.size(), (long long) s.floor, (long long) k0, (long long) resume, (long long) lo, "\n"); } }
         if (s.hi + 256 < resume || (int64_t) s.hist.size() < resume || s.hi - DF2_RING > lo) continue;   // (the last few committed rows of a finished request never got a context row: a gap of up to 256 at the end is accepted)   // not covered / rows overwritten
@@ -981,7 +981,7 @@ int64_t Window::df2_restore_lineage(const std::vector<int32_t>& cur_hist, int64_
     d.floor = from;
     d.rebuilt_rows += r_end - from;
     ++d.rebuilds;
-    static const bool st = std::getenv("NOSTROMA_DF2_STATS") != nullptr;
+    static const bool st = nostroma::env("NOSTROMA_DF2_STATS") != nullptr;
     if (st) std::fprintf(stderr, "nostroma metal: DFlash2 lineage restored from the row log: %lld rows [%lld, %lld) rebuilt in %.1f ms (%zu lineages stashed)\n",
                          (long long) (r_end - from), (long long) from, (long long) r_end, now_ms() - t0, d.stash.size());
     (void) err;

@@ -16,8 +16,7 @@
 # <feed> is where the release folder is hosted: GitHub Releases of earenbaz80/Nostroma (the "latest" release's files), built in as the default.
 # Set $env:NOSTROMA_FEED to another folder (a URL) to use that instead, for example a local test feed:  $env:NOSTROMA_FEED='http://127.0.0.1:8099'; irm http://127.0.0.1:8099/install.ps1 | iex
 # Optional: $env:NOSTROMA_DATA_DIR (default %LOCALAPPDATA%\Nostroma), $env:NOSTROMA_INSTALL_TEST_TRUST='1' (a test feed: trust only
-# its test-trust.json for step 4), $env:NOSTROMA_NO_PATH='1' (do not change the user PATH). The older NOSTROMA_* names of the same
-# settings are still read, and win only when the NOSTROMA_* one is not set. Both names go on the PATH: nostroma, and the old nostroma.
+# its test-trust.json for step 4), $env:NOSTROMA_NO_PATH='1' (do not change the user PATH).
 & {   # a child scope: `irm | iex` runs in the caller's scope, and this script's variables must not overwrite the caller's
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
@@ -27,7 +26,7 @@ function Die([string]$msg) { [Console]::Error.WriteLine("nostroma installer: $ms
 try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 } catch { }
 try { if ([Net.WebRequest]::DefaultWebProxy) { [Net.WebRequest]::DefaultWebProxy.Credentials = [Net.CredentialCache]::DefaultNetworkCredentials } } catch { }
 
-$feed = if ($env:NOSTROMA_FEED) { $env:NOSTROMA_FEED } elseif ($env:NOSTROMA_FEED) { $env:NOSTROMA_FEED } else { 'https://github.com/earenbaz80/Nostroma/releases/latest/download' }
+$feed = if ($env:NOSTROMA_FEED) { $env:NOSTROMA_FEED } else { 'https://github.com/earenbaz80/Nostroma/releases/latest/download' }
 $feed = $feed.TrimEnd('/')
 $feedHost = try { ([Uri]$feed).Host } catch { '' }
 if (-not $feedHost) { $feedHost = $feed }
@@ -85,7 +84,7 @@ Write-Host 'Nostroma Terminal installer'
 Write-Host "  This computer: Windows $arch ($platform)$(if ($gpu) { ", graphics: $gpu" })"
 Write-Host "  Release folder: $feed"
 
-$wantData = if ($env:NOSTROMA_DATA_DIR) { $env:NOSTROMA_DATA_DIR } else { $env:NOSTROMA_DATA_DIR }
+$wantData = $env:NOSTROMA_DATA_DIR
 if (-not $wantData -and -not $env:LOCALAPPDATA) { Die 'Windows did not say where your user folder is. Set $env:NOSTROMA_DATA_DIR to a folder you own, for example $env:NOSTROMA_DATA_DIR=''C:\Nostroma'', and run this again.' }
 $data = if ($wantData) { $wantData } else { Join-Path $env:LOCALAPPDATA 'Nostroma' }
 $work = Join-Path ([IO.Path]::GetTempPath()) ("nostroma-install-" + [Guid]::NewGuid().ToString('N').Substring(0, 8))
@@ -151,7 +150,7 @@ try {
         $moved = "$dest.moved"; Move-Item $inner.FullName $moved; Remove-Item -Recurse -Force $incoming; Move-Item $moved $incoming
     }
 
-    if ($env:NOSTROMA_INSTALL_TEST_TRUST -eq '1' -or $env:NOSTROMA_INSTALL_TEST_TRUST -eq '1') {
+    if ($env:NOSTROMA_INSTALL_TEST_TRUST -eq '1') {
         $trust = Join-Path $work 'test-trust.json'
         try { Fetch "$feed/test-trust.json" $trust } catch { Remove-Item -Recurse -Force $incoming; Die 'the test feed has no test-trust.json' }
         $env:NOSTROMA_UPDATE_TRUSTED_KEYS = $trust
@@ -169,10 +168,6 @@ try {
     }
     Write-Host '  Signature ok.'
 
-    # an archive from before the command had two names carries only nostroma.cmd: the second name is the same launcher
-    $launcher = Join-Path $incoming 'bin\nostroma.cmd'
-    $alias = Join-Path $incoming 'bin\nostroma.cmd'
-    if ((Test-Path $launcher) -and -not (Test-Path $alias)) { Copy-Item -LiteralPath $launcher -Destination $alias }
     if (Test-Path $dest) {
         try { Remove-Item -Recurse -Force $dest }
         catch { Remove-Item -Recurse -Force $incoming -ErrorAction SilentlyContinue; Die "Nostroma $version is already installed and a program is using it (a Nostroma window or server is running). Close it (run: nostroma launch --stop), then run this again. Nothing was changed." }
@@ -186,16 +181,14 @@ try {
         try {
             if (Test-Path $current) { Remove-Item -Recurse -Force $current -ErrorAction SilentlyContinue }
             New-Item -ItemType Directory -Force -Path (Join-Path $current 'bin') | Out-Null
-            foreach ($name in @('nostroma', 'nostroma')) {        # both names, the same launcher behind them
-                Set-Content -Encoding Ascii -Path (Join-Path $current "bin\$name.cmd") -Value @('@echo off', ('"' + (Join-Path $dest 'bin\nostroma.cmd') + '" %*'))
-            }
+            Set-Content -Encoding Ascii -Path (Join-Path $current 'bin\nostroma.cmd') -Value @('@echo off', ('"' + (Join-Path $dest 'bin\nostroma.cmd') + '" %*'))
             Set-Content -Encoding Ascii -Path (Join-Path $current 'current.txt') -Value $dest
             Write-Host '  (this drive could not make a link, so a small launcher was used instead)'
         }
         catch { Die "Nostroma was unpacked but its start command could not be set up ($($_.Exception.Message)). Run it directly: $dest\bin\nostroma.cmd" }
     }
     $bin = Join-Path $current 'bin'
-    $noPath = ($env:NOSTROMA_NO_PATH -eq '1' -or $env:NOSTROMA_NO_PATH -eq '1')
+    $noPath = ($env:NOSTROMA_NO_PATH -eq '1')
     if (-not $noPath) {
         $user = [Environment]::GetEnvironmentVariable('Path', 'User')
         if (-not $user) { $user = '' }
@@ -205,7 +198,6 @@ try {
         $env:Path = "$env:Path;$bin"
     }
     Write-Host 'Installed. Run: nostroma launch'
-    Write-Host "  (the old name, 'nostroma', still works)"
     if ($noPath) { Write-Host "  (the program is $bin\nostroma.cmd)" }
     else { Write-Host '  (open a new terminal window if the command is not found yet)' }
 }

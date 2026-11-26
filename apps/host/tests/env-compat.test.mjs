@@ -1,47 +1,31 @@
-// The settings moved from NOSTROMA_* to NOSTROMA_*: the new name is read, the old one still works, and a child (the
-// engine, which reads only the old name) must never see a value the host ignores.
+// The settings use one prefix, NOSTROMA_*: the host reads it, writes it, and passes the environment to a child unchanged.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { envVar, hasEnvVar, setEnvVars, childEnv, aliasOldNames } from '../server/env-compat.mjs';
+import { envVar, hasEnvVar, setEnvVars, childEnv } from '../server/env-compat.mjs';
 
-test('the new name wins, and the old one is still read on its own', () => {
-  const had = { new: 'NOSTROMA_ADAPT_FETCH' in process.env, old: 'NOSTROMA_ADAPT_FETCH' in process.env };
-  const saved = { new: process.env.NOSTROMA_ADAPT_FETCH, old: process.env.NOSTROMA_ADAPT_FETCH };
+test('the NOSTROMA_ name is read, and an unset one is not', () => {
+  const had = 'NOSTROMA_ADAPT_FETCH' in process.env;
+  const saved = process.env.NOSTROMA_ADAPT_FETCH;
   try {
     process.env.NOSTROMA_ADAPT_FETCH = '8';
-    process.env.NOSTROMA_ADAPT_FETCH = '2';
     assert.equal(envVar('ADAPT_FETCH'), '8');
-    delete process.env.NOSTROMA_ADAPT_FETCH;
-    assert.equal(envVar('ADAPT_FETCH'), '2');
     assert.equal(hasEnvVar('ADAPT_FETCH'), true);
     delete process.env.NOSTROMA_ADAPT_FETCH;
     assert.equal(envVar('ADAPT_FETCH'), undefined);
     assert.equal(hasEnvVar('ADAPT_FETCH'), false);
   } finally {
-    if (had.new) process.env.NOSTROMA_ADAPT_FETCH = saved.new; else delete process.env.NOSTROMA_ADAPT_FETCH;
-    if (had.old) process.env.NOSTROMA_ADAPT_FETCH = saved.old; else delete process.env.NOSTROMA_ADAPT_FETCH;
+    if (had) process.env.NOSTROMA_ADAPT_FETCH = saved; else delete process.env.NOSTROMA_ADAPT_FETCH;
   }
 });
 
-test('one value goes under both names for a child', () => {
-  assert.deepEqual(setEnvVars({}, { ADAPT_FETCH: '8' }), { NOSTROMA_ADAPT_FETCH: '8', NOSTROMA_ADAPT_FETCH: '8' });
+test('one value is set under the NOSTROMA_ name', () => {
+  assert.deepEqual(setEnvVars({}, { ADAPT_FETCH: '8' }), { NOSTROMA_ADAPT_FETCH: '8' });
 });
 
-test('a child gets both spellings, and the new name wins in both', () => {
-  assert.equal(childEnv({ NOSTROMA_ADAPT_FETCH: '8' }).NOSTROMA_ADAPT_FETCH, '8');
-  assert.equal(childEnv({ NOSTROMA_ADAPT_FETCH: '8' }).NOSTROMA_ADAPT_FETCH, '8');
-  const both = childEnv({ NOSTROMA_ADAPT_FETCH: '8', NOSTROMA_ADAPT_FETCH: '2' });
-  assert.equal(both.NOSTROMA_ADAPT_FETCH, '8');
-  assert.equal(both.NOSTROMA_ADAPT_FETCH, '8');
+test('a child gets a copy of the environment', () => {
+  const source = { NOSTROMA_ADAPT_FETCH: '8', PATH: '/bin' };
+  assert.deepEqual(childEnv(source), source);
+  assert.notEqual(childEnv(source), source);
   assert.deepEqual(childEnv({ PATH: '/bin' }), { PATH: '/bin' });
-});
-
-test('the host fills in the missing name once at startup', () => {
-  const env = { NOSTROMA_TUNE_DIR: '/t' };
-  aliasOldNames(env);
-  assert.equal(env.NOSTROMA_TUNE_DIR, '/t');
-  const before = { ...env };
-  aliasOldNames(env);
-  assert.deepEqual(env, before);
 });

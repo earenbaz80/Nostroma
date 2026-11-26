@@ -1293,7 +1293,7 @@ __dpct_inline__ void coupled_merge_kernel(
 enum class SampledPath { Split, OneBlock, Old };
 
 bool env_flag(const char* name) {
-    const char* e = std::getenv(name);
+    const char* e = nostroma::env(name);
     return e != nullptr && *e != '\0' && std::strcmp(e, "0") != 0;
 }
 

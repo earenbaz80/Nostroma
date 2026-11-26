@@ -1,9 +1,8 @@
-"""The Windows archive carries both names of the command.
+"""The Windows archive carries the Nostroma launchers.
 
-`packaging/package_terminal.py` copies each Windows launcher to its `nostroma.*` twin, because a Windows PATH lists
-files and the installer puts no link of its own there: without the twin, the PATH it sets has no `nostroma`. Until now
-that copy was only checked by reading the code; this builds the archive for real (the layout build, `--skip-deps`, so
-nothing is downloaded: a small fake stands in for the pinned interpreter) and looks inside it.
+`packaging/package_terminal.py` copies `nostroma.cmd` and `nostroma.ps1` into the archive: a Windows PATH lists files,
+so both have to be there for `nostroma` to be found. This builds the archive for real (the layout build, `--skip-deps`,
+so nothing is downloaded: a small fake stands in for the pinned interpreter) and looks inside it.
 """
 
 from __future__ import annotations
@@ -42,7 +41,7 @@ def _fake_interpreter(where: Path) -> Path:
 
 
 class WindowsArchive(unittest.TestCase):
-    def test_bin_carries_the_launchers_under_both_names(self):
+    def test_bin_carries_the_launchers(self):
         with tempfile.TemporaryDirectory() as tmp:
             work = Path(tmp)
             out = work / "out"
@@ -58,12 +57,9 @@ class WindowsArchive(unittest.TestCase):
 
             with zipfile.ZipFile(archive) as zf:
                 names = set(zf.namelist())
-                for launcher in ("nostroma.cmd", "nostroma.ps1", "nostroma.cmd", "nostroma.ps1"):
-                    self.assertIn(f"{STEM}/bin/{launcher}", names, launcher)
-                # the twin is the same launcher, byte for byte: one program, two names
-                for launcher in ("cmd", "ps1"):
-                    self.assertEqual(zf.read(f"{STEM}/bin/nostroma.{launcher}"),
-                                     zf.read(f"{STEM}/bin/nostroma.{launcher}"), launcher)
+                launchers = sorted(Path(name).name for name in names
+                                   if name.startswith(f"{STEM}/bin/") and name.endswith((".cmd", ".ps1")))
+                self.assertEqual(launchers, ["nostroma.cmd", "nostroma.ps1"])
 
 
 if __name__ == "__main__":

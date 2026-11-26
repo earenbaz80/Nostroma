@@ -183,7 +183,7 @@ def install_root(explicit: str | os.PathLike | None = None, src: str | os.PathLi
     from nostroma_control import discovery
     if explicit:
         return Path(explicit)
-    env = os.environ.get("NOSTROMA_INSTALL_DIR", os.environ.get("NOSTROMA_INSTALL_DIR"))
+    env = os.environ.get("NOSTROMA_INSTALL_DIR")
     if env:
         return Path(env)
     return discovery.find_install(here=installer_folder(src))[0]

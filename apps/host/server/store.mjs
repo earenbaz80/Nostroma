@@ -8,29 +8,14 @@ import { defaultModelDirectory } from './model-directory-default.mjs';
 import { envVar } from './env-compat.mjs';
 
 /**
- * Prefer ~/.nostroma, the way the packaged app stores its data. A folder from the Nostroma days is moved once so chats and
- * settings survive the rename; when it cannot be moved (another volume, no permission) it is used where it is, and nothing
- * is lost. NOSTROMA_HOME names another folder (the older NOSTROMA_HOME still works), and sandboxes or locked-down accounts
- * that cannot write to the home directory fall back to a folder next to the checkout rather than failing to boot.
+ * Prefer ~/.nostroma, the way the packaged app stores its data. NOSTROMA_HOME names another folder, and sandboxes or
+ * locked-down accounts that cannot write to the home directory fall back to a folder next to the checkout rather than
+ * failing to boot.
  */
-export function migrateOldHome(home = homedir()) {
-  if (process.env.NOSTROMA_HOME || envVar('HOME')) return false;
-  const from = join(home, '.nostroma');
-  const to = join(home, '.nostroma');
-  try {
-    if (!existsSync(from) || existsSync(to)) return false;
-    renameSync(from, to);
-    return true;
-  } catch {
-    return false; /* the old folder is still a candidate below */
-  }
-}
-migrateOldHome();
 function resolveHome() {
   const candidates = [
     process.env.NOSTROMA_HOME, envVar('HOME'),
-    join(homedir(), '.nostroma'), join(homedir(), '.nostroma'),
-    join(process.cwd(), '.nostroma'), join(process.cwd(), '.nostroma'),
+    join(homedir(), '.nostroma'), join(process.cwd(), '.nostroma'),
   ].filter(Boolean);
   for (const dir of candidates) {
     try {

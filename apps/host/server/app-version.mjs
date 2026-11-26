@@ -8,7 +8,7 @@ import { join } from 'node:path';
 const VERSION = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.+-]+)?$/;
 
 export function appVersionFrom({ env = process.env, here }) {
-  const given = String((env.NOSTROMA_APP_VERSION ?? env.NOSTROMA_APP_VERSION) ?? '').trim();
+  const given = String((env.NOSTROMA_APP_VERSION) ?? '').trim();
   if (VERSION.test(given)) return given;
   try {
     const toml = readFileSync(join(here, '..', '..', 'desktop', 'src-tauri', 'Cargo.toml'), 'utf8');

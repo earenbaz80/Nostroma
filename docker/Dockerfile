@@ -100,10 +100,9 @@ RUN set -e; \
 COPY --chown=${APP_UID}:${APP_GID} --from=terminal /opt/nostroma/terminal /opt/nostroma/terminal
 COPY --chown=${APP_UID}:${APP_GID} --from=verify /engine/ /opt/nostroma/components/engine/
 COPY docker/entrypoint.sh docker/healthcheck.sh /opt/nostroma/
-# Both names, one wrapper: `nostroma` is the command, and `nostroma` is the name it had before (install.sh links both too).
+# One wrapper puts the command on the PATH.
 COPY docker/nostroma-wrapper.sh /usr/local/bin/nostroma
-COPY docker/nostroma-wrapper.sh /usr/local/bin/nostroma
-RUN chmod 0755 /opt/nostroma/entrypoint.sh /opt/nostroma/healthcheck.sh /usr/local/bin/nostroma /usr/local/bin/nostroma
+RUN chmod 0755 /opt/nostroma/entrypoint.sh /opt/nostroma/healthcheck.sh /usr/local/bin/nostroma
 
 # Does the dynamic linker find every library of the package inside this image? (the GPU driver's libcuda / libnvidia-* come from the host)
 RUN set -e; \

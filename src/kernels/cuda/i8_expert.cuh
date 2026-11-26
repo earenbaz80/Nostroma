@@ -1206,6 +1206,6 @@ void i8_launch(int tm, const I8Args& a, cudaStream_t s) {
 }
 
 int i8_env_int(const char* name, int dflt) {
-    const char* v = std::getenv(name);
+    const char* v = nostroma::env(name);
     return v != nullptr && v[0] != '\0' ? std::atoi(v) : dflt;
 }

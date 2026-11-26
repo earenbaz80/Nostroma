@@ -43,17 +43,15 @@ SKIP_PARTS = ("node_modules", "/tests/", "/test/", "__pycache__")
 STATUSES = ("default", "rollback", "opt-in", "research", "retire-candidate", "unsure", "retired")
 HAND_FIELDS = ("status", "owner", "note", "retire_after", "retired_in")
 
-# The product is Nostroma, so a setting is written NOSTROMA_<SETTING>; every name used to be NOSTROMA_<SETTING> and the
-# engine still reads that one as the fallback (include/nostroma/env.hpp). The register keeps the old prefix as its key, so
-# data/settings-register.json, the settings page and the app do not move in the same change as the sources.
-NAME_RE = re.compile(r"(?:NOSTROMA|NOSTROMA)_[A-Z0-9_]+")
+# The product is Nostroma, so a setting is written NOSTROMA_<SETTING>. There is one prefix and no fallback.
+NAME_RE = re.compile(r"NOSTROMA_[A-Z0-9_]+")
 # a call whose first argument is the name literal: getenv, nostroma::env, env_on, env_int, pipe_dbg_env, kva_env_flag ...
-CALL_RE = re.compile(r'([\w:]*(?:getenv|env\w*|\w*_env\w*)\s*\(\s*)"((?:NOSTROMA|NOSTROMA)_[A-Z0-9_]+)"')
+CALL_RE = re.compile(r'([\w:]*(?:getenv|env\w*|\w*_env\w*)\s*\(\s*)"(NOSTROMA_[A-Z0-9_]+)"')
 
 
 def _key(name: str) -> str:
-    """The register key of a name the engine reads: NOSTROMA_X and NOSTROMA_X are the same setting."""
-    return "NOSTROMA_" + name[len("NOSTROMA_"):] if name.startswith("NOSTROMA_") else name
+    """The register key of a name the engine reads."""
+    return name
 WRITE_FN_RE = re.compile(r"put|set_env|unset|setenv")
 
 FLAG_FNS = {"env_on", "env_flag", "il_env_on", "kva_env_flag", "env_tri"}
@@ -551,7 +549,7 @@ def render_page(entries):
         "<!-- Generated from data/settings-register.json by tools/settings_register.py --docs. Do not edit by hand; change the register. -->",
         "",
         "The engine reads its settings from environment variables. The product's name is Nostroma, so the name to write is",
-        "`NOSTROMA_<setting>`: the older `NOSTROMA_<setting>` is still read and still works, and `NOSTROMA_` wins when both are set.",
+        "`NOSTROMA_<setting>`: the one name every runtime setting is read by. There is no second name and no fallback.",
         "The Terminal and the app choose what your hardware needs, so most people never set one. This page lists the ones meant for people:",
         "switches that are off until you turn them on, and switches that take a newer default back to the earlier behaviour. The other",
         "settings are for measuring and debugging and are kept in `data/settings-register.json`.",

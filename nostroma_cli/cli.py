@@ -38,11 +38,9 @@ class _VersionAction(argparse.Action):
 
 
 def prog() -> str:
-    """The name this command was typed as: `nostroma`, or the `nostroma` it was called before. The launchers hand over to
-    nostroma.py, so argv[0] cannot tell the two apart: they pass the name they were called by in NOSTROMA_PROG. Anything
-    else (an interpreter path, nostroma.py itself) presents as nostroma."""
-    name = os.environ.get("NOSTROMA_PROG") or os.path.basename(sys.argv[0] or "")
-    return "nostroma" if name == "nostroma" else "nostroma"
+    """The one command name: `nostroma`. The launchers hand over to nostroma.py, so the program is always presented as
+    nostroma, whatever path or link the interpreter was started through."""
+    return "nostroma"
 
 
 def parser() -> argparse.ArgumentParser:
@@ -767,8 +765,8 @@ def _effective(cfg: dict, saved: dict | None, cli: argparse.Namespace | None = N
             value, origin = overrides[key], "saved_profile"
         elif key in cfg:
             value, origin = cfg[key], "run_config"
-        elif key == "batch_telemetry" and ("NOSTROMA_BATCH_TELEMETRY" in os.environ or "NOSTROMA_BATCH_TELEMETRY" in os.environ):
-            value, origin = os.environ.get("NOSTROMA_BATCH_TELEMETRY", os.environ["NOSTROMA_BATCH_TELEMETRY"]) == "1", "environment"
+        elif key == "batch_telemetry" and "NOSTROMA_BATCH_TELEMETRY" in os.environ:
+            value, origin = os.environ.get("NOSTROMA_BATCH_TELEMETRY", "") == "1", "environment"
         else:
             value, origin = default, "default"
         values[key], origins[key] = value, origin
@@ -794,7 +792,7 @@ def _launch_plan(ref: str, cli: argparse.Namespace | None = None) -> tuple[dict,
     values, origins = _effective(cfg, saved, cli)
     host = values["host"]
     from serve.server import api_key_of, explicit_no_key, key_list
-    raw_key = os.environ.get("NOSTROMA_API_KEY", os.environ.get("NOSTROMA_API_KEY")) or cfg.get("api_key", "")
+    raw_key = os.environ.get("NOSTROMA_API_KEY") or cfg.get("api_key", "")
     if not explicit_no_key(raw_key):
         try:
             key_list(api_key_of(raw_key))
@@ -1492,7 +1490,7 @@ def _timeskip(a: argparse.Namespace) -> int:
     def state_root() -> Path:
         if getattr(a, "state_dir", None):
             return Path(a.state_dir)
-        env = os.environ.get("NOSTROMA_TIMESKIP_DIR", os.environ.get("NOSTROMA_TIMESKIP_DIR"))
+        env = os.environ.get("NOSTROMA_TIMESKIP_DIR")
         if env:
             return Path(env)
         from nostroma_control.paths import state_base
@@ -1659,7 +1657,7 @@ def _tune(a: argparse.Namespace) -> int:
     def state_root() -> Path:
         if getattr(a, "state_dir", None):
             return Path(a.state_dir)
-        env = os.environ.get("NOSTROMA_TUNE_DIR", os.environ.get("NOSTROMA_TUNE_DIR"))
+        env = os.environ.get("NOSTROMA_TUNE_DIR")
         if env:
             return Path(env)
         from nostroma_control.paths import state_base
@@ -2083,7 +2081,7 @@ def _install(a: argparse.Namespace) -> int:
     """The one place the terminal acquires anything: it hands over to the installer (setup.py) of a full Nostroma
     folder, which is where pip, the engine and the models are fetched. A folder without it (the terminal archive)
     says so and names what to do instead."""
-    installer = Path(os.environ.get("NOSTROMA_INSTALL_DIR", os.environ.get("NOSTROMA_INSTALL_DIR")) or ROOT) / "setup.py"
+    installer = Path(os.environ.get("NOSTROMA_INSTALL_DIR") or ROOT) / "setup.py"
     if not installer.is_file():
         return _error("this folder has no installer (setup.py). Engines, models and updates are installed from a "
                       "full Nostroma folder with SETUP.bat / ./setup.sh and UPDATE.bat / ./update.sh; "

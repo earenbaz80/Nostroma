@@ -870,7 +870,7 @@ def slots_draft_nothing(args: list[Any], slots: int | float | None = 0) -> bool:
     items = [str(a) for a in args or []]
     if request_count(items, slots) < 2 or "--batch-mtp" in items or "--pipeline-windows" in items:
         return False
-    return os.environ.get("NOSTROMA_BATCH_MTP", os.environ.get("NOSTROMA_BATCH_MTP", "0")) in ("", "0")
+    return os.environ.get("NOSTROMA_BATCH_MTP", "0") in ("", "0")
 
 
 def slot_drafts_run(args: list[Any], slots: int | float | None = 0, split: bool = False) -> bool:
@@ -879,7 +879,7 @@ def slot_drafts_run(args: list[Any], slots: int | float | None = 0, split: bool 
     items = [str(a) for a in args or []]
     if split or request_count(items, slots) < 2 or "--layer-split" in items or "--pipeline-windows" in items:
         return False
-    return os.environ.get("NOSTROMA_BATCH_DF2", os.environ.get("NOSTROMA_BATCH_DF2", "")) != "0"
+    return os.environ.get("NOSTROMA_BATCH_DF2", "") != "0"
 
 
 def mtp_line(reason: str) -> str:
@@ -1035,7 +1035,7 @@ def slot_drafts_by_default(mode: Any, *, backend: str | None, archs: Any = None,
     items = [str(a) for a in args or []]
     if any(a in items for a in ("--layer-split", "--batch-mtp", "--pipeline-windows")):
         return False
-    if os.environ.get("NOSTROMA_BATCH_MTP", os.environ.get("NOSTROMA_BATCH_MTP", "0")) not in ("", "0") or os.environ.get("NOSTROMA_BATCH_DF2", os.environ.get("NOSTROMA_BATCH_DF2", "")) == "0":
+    if os.environ.get("NOSTROMA_BATCH_MTP", "0") not in ("", "0") or os.environ.get("NOSTROMA_BATCH_DF2", "") == "0":
         return False
     if request_count(items, slots) not in SLOT_DRAFT_REQUESTS:
         return False

@@ -54,10 +54,10 @@ namespace nostroma::core {
 namespace {
 
 constexpr uint64_t kSharedArenaHeaderBytes = 4096;
-constexpr char kSharedArenaMagic[16] = "NOSTROMA-ARENA-V1";
+constexpr char kSharedArenaMagic[18] = "NOSTROMA-ARENA-V1";
 
 struct SharedArenaHeader {
-    char magic[16];
+    char magic[18];
     uint32_t version;
     uint32_t header_bytes;
     uint64_t arena_bytes;

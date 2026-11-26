@@ -70,7 +70,7 @@ def credential_name(value: str) -> str:
 
 
 def connection_dir(*, create: bool = False) -> Path:
-    explicit = os.environ.get("NOSTROMA_CONNECTION_DIR", os.environ.get("NOSTROMA_CONNECTION_DIR"))
+    explicit = os.environ.get("NOSTROMA_CONNECTION_DIR")
     if explicit:
         directory = Path(explicit).expanduser()
         if not directory.is_absolute():
@@ -287,7 +287,7 @@ def resolve(*, url: str | None = None, connection: str | None = None,
         root = url if url is not None else env.get("NOSTROMA_URL", DEFAULT_URL)
         prefix = ""
         key_ref = "NOSTROMA_API_KEY"
-        origins = {"url": "flag" if url is not None else "environment" if ("NOSTROMA_URL" in env or "NOSTROMA_URL" in env) else "default",
+        origins = {"url": "flag" if url is not None else "environment" if "NOSTROMA_URL" in env else "default",
                    "prefix": "default", "credential_env": "default"}
     if credential_env is not None:
         key_ref = credential_env

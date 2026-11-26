@@ -1,4 +1,4 @@
-"""The Windows installer, run for real: it installs both names and each one says its own.
+"""The Windows installer, run for real: it installs the command and the launcher says its name.
 
 It needs Windows, so it skips everywhere else; `.github/workflows/windows-install.yml` runs it on
 windows-latest on every change to the installer, the launchers or the Terminal. Everything else here is like the POSIX
@@ -79,7 +79,7 @@ def _set_user_path(value: str) -> None:
 
 @unittest.skipUnless(sys.platform == "win32", "runs install.ps1, which needs Windows")
 class WindowsInstaller(unittest.TestCase):
-    def test_both_names_are_on_the_path_and_say_their_own_name(self):
+    def test_the_command_is_on_the_path_and_says_its_name(self):
         with tempfile.TemporaryDirectory(prefix="nostroma-install-") as tmp:
             work = Path(tmp)
             archive = _terminal_zip(work)
@@ -98,30 +98,21 @@ class WindowsInstaller(unittest.TestCase):
                 env = {**os.environ, "NOSTROMA_FEED": url, "NOSTROMA_DATA_DIR": str(data),
                        "NOSTROMA_INSTALL_TEST_TRUST": "1", "NOSTROMA_PYTHON": sys.executable,
                        "PATH": os.environ["PATH"]}
-                for stale in ("NOSTROMA_FEED", "NOSTROMA_DATA_DIR", "NOSTROMA_NO_PATH", "NOSTROMA_NO_PATH",
-                              "NOSTROMA_UPDATE_TRUSTED_KEYS", "PYTHONPATH"):
+                for stale in ("NOSTROMA_NO_PATH", "NOSTROMA_UPDATE_TRUSTED_KEYS", "PYTHONPATH"):
                     env.pop(stale, None)
                 done = subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",
                                        "-File", str(feed / "install.ps1")],
                                       capture_output=True, text=True, env=env, timeout=600)
                 self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
                 self.assertIn("Installed. Run: nostroma launch", done.stdout)
-                self.assertIn("the old name, 'nostroma', still works", done.stdout)
 
-                # both names, in the folder the installer put on the PATH, byte for byte the same launcher
                 bin_dir = data / "terminal" / "current" / "bin"
-                nostroma, nostroma = bin_dir / "nostroma.cmd", bin_dir / "nostroma.cmd"
-                for name, path in (("nostroma", nostroma), ("nostroma", nostroma)):
-                    self.assertTrue(path.is_file(), f"{name}.cmd is missing from {bin_dir}")
-                self.assertEqual(nostroma.read_bytes(), nostroma.read_bytes())
+                nostroma = bin_dir / "nostroma.cmd"
+                self.assertTrue(nostroma.is_file(), f"nostroma.cmd is missing from {bin_dir}")
                 self.assertIn(str(bin_dir).lower(), _user_path().lower(), "the installer did not put bin on the PATH")
-
-                # and each one, typed by its own name, says that name in its usage line
-                for name in ("nostroma", "nostroma"):
-                    ran = subprocess.run(["cmd", "/c", f'"{bin_dir / f"{name}.cmd"}" --help'],
-                                         capture_output=True, text=True, env=env, timeout=180)
-                    self.assertEqual(ran.returncode, 0, ran.stdout + ran.stderr)
-                    self.assertIn(f"usage: {name}", ran.stdout, name)
+                ran = subprocess.run(["cmd", "/c", str(nostroma), "--help"], capture_output=True, text=True, env=env, timeout=180)
+                self.assertEqual(ran.returncode, 0, ran.stdout + ran.stderr)
+                self.assertIn("usage: nostroma", ran.stdout)
             finally:
                 _set_user_path(before)                                     # leave this PC's PATH as it was
                 server.shutdown()

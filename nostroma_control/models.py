@@ -68,7 +68,7 @@ def resolve_install(override: str | None = None) -> tuple[Path, str]:
     """(the main install folder, how it was found): explicit (an argument or NOSTROMA_INSTALL_DIR), here (this folder has run
     configs), remembered (an earlier install from the settings file), app (the desktop app's install folder, shared with the
     Terminal) or default (the app's folder, with no model in it yet)."""
-    raw = override or os.environ.get("NOSTROMA_INSTALL_DIR", os.environ.get("NOSTROMA_INSTALL_DIR"))
+    raw = override or os.environ.get("NOSTROMA_INSTALL_DIR")
     if raw is not None:
         path = Path(raw).expanduser()
         if not path.is_absolute() or not path.is_dir():

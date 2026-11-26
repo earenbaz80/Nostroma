@@ -9,25 +9,24 @@
 #   3. unpacks it into  ${XDG_DATA_HOME:-~/.local/share}/nostroma/terminal/<version>  (no administrator rights, nothing outside your home);
 #   4. checks the release's signed feed with the Terminal it just unpacked (`nostroma update --check`); if that check fails, it removes
 #      what it unpacked and stops;
-#   5. puts `nostroma` and the older `nostroma` links in ~/.local/bin and prints:  Installed. Run: nostroma launch
+#   5. puts `nostroma` in ~/.local/bin and prints:  Installed. Run: nostroma launch
 #
 # The engine (the part that talks to your graphics card) and the model are NOT part of this: `nostroma launch` fetches the engine for
 # your card the first time you choose a model, from the same release folder, signed.
 #
 # <feed> is where the release folder is hosted: GitHub Releases of earenbaz80/Nostroma (the "latest" release's files), built in as the default.
-# Set NOSTROMA_FEED (the older NOSTROMA_FEED still works) to another folder (a URL) to use that instead, for example a local test feed:
+# Set NOSTROMA_FEED to another folder (a URL) to use that instead, for example a local test feed:
 # NOSTROMA_FEED=http://127.0.0.1:8099 sh install.sh
 #
 # Settings (all optional): NOSTROMA_FEED, NOSTROMA_DATA_DIR (default ~/.local/share/nostroma), NOSTROMA_BIN_DIR (default ~/.local/bin),
 # NOSTROMA_INSTALL_TEST_TRUST=1 (a test feed: also fetch <feed>/test-trust.json and trust only that key for the check in step 4).
-# The older NOSTROMA_* names of the same settings are still read, and win only when the NOSTROMA_* one is not set.
 set -eu
 
-FEED="${NOSTROMA_FEED:-${NOSTROMA_FEED:-https://github.com/earenbaz80/Nostroma/releases/latest/download}}"
+FEED="${NOSTROMA_FEED:-https://github.com/earenbaz80/Nostroma/releases/latest/download}"
 FEED="${FEED%/}"
-DATA_DIR="${NOSTROMA_DATA_DIR:-${NOSTROMA_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/nostroma}}"
-BIN_DIR="${NOSTROMA_BIN_DIR:-${NOSTROMA_BIN_DIR:-$HOME/.local/bin}}"
-TEST_TRUST="${NOSTROMA_INSTALL_TEST_TRUST:-${NOSTROMA_INSTALL_TEST_TRUST:-}}"
+DATA_DIR="${NOSTROMA_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/nostroma}"
+BIN_DIR="${NOSTROMA_BIN_DIR:-$HOME/.local/bin}"
+TEST_TRUST="${NOSTROMA_INSTALL_TEST_TRUST:-}"
 
 say() { printf '%s\n' "$*"; }
 die() { printf 'nostroma installer: %s\n' "$*" >&2; exit 1; }
@@ -51,7 +50,7 @@ real_path() {
 # terminal/<version>/bin/nostroma where the version starts with a digit. The target is resolved first, so the same
 # folder spelled another way counts (a home reached through a link, `current` instead of the version it names, a
 # trailing slash), and so does a link into a data folder the user has moved away from since: changing
-# NOSTROMA_DATA_DIR does not turn the old name into someone else's file. A terminal of some other kind, one folder
+# NOSTROMA_DATA_DIR does not turn the link into someone else's file. A terminal of some other kind, one folder
 # over, is not ours and is left alone.
 is_our_name() {
   target=$(readlink "$1")
@@ -70,9 +69,9 @@ is_our_name() {
   esac
 }
 
-# One of the product's two names may already be on the PATH. It is replaced only when it is a link this installer
-# made: anything else is someone's file, and it is left alone. Checked before anything is downloaded, so a refusal
-# costs nothing and the message that says nothing was changed is true.
+# The command may already be on the PATH. It is replaced only when it is a link this installer made: anything else
+# is someone's file, and it is left alone. Checked before anything is downloaded, so a refusal costs nothing and the
+# message that says nothing was changed is true.
 check_name() {
   if [ -L "$1" ]; then
     is_our_name "$1" || die "$1 is a link to $(readlink "$1"), which this installer did not make. Move it and run this again. Nothing was changed."
@@ -80,7 +79,6 @@ check_name() {
     die "$1 already exists and is not a link this installer made. Move it and run this again. Nothing was changed."
   fi
 }
-check_name "$BIN_DIR/nostroma"
 check_name "$BIN_DIR/nostroma"
 
 [ -n "$FEED" ] || die "this installer does not know where the Nostroma release folder is. Set NOSTROMA_FEED to its address and run it again, for example: NOSTROMA_FEED=https://example.org/nostroma sh install.sh"
@@ -193,13 +191,10 @@ main() {
   mv "$dest.incoming" "$dest"
   ln -sfn "$dest" "$DATA_DIR/terminal/current"
   ln -sf "$DATA_DIR/terminal/current/bin/nostroma" "$BIN_DIR/nostroma"
-  ln -sf "$DATA_DIR/terminal/current/bin/nostroma" "$BIN_DIR/nostroma"     # the name this command had before, the same program
   case ":$PATH:" in
-    *":$BIN_DIR:"*) say "Installed. Run: nostroma launch"
-                    say "  (the old name, 'nostroma', still works)" ;;
+    *":$BIN_DIR:"*) say "Installed. Run: nostroma launch" ;;
     *) say "Installed. Run: $BIN_DIR/nostroma launch"
-       say "  (To type just 'nostroma', add this line to your shell profile: export PATH=\"$BIN_DIR:\$PATH\")"
-       say "  (the old name, 'nostroma', is put there too)" ;;
+       say "  (To type just 'nostroma', add this line to your shell profile: export PATH=\"$BIN_DIR:\$PATH\")" ;;
   esac
 }
 

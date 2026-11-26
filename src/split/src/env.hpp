@@ -30,9 +30,12 @@ inline bool parse_number(const char* s, double& x) {
     return *end == '\0' && end != s && errno != ERANGE && std::isfinite(x);
 }
 
+// The variable `name`, always under the NOSTROMA_ prefix.
+inline const char* env_value(const char* name) { return std::getenv(name); }
+
 // the variable as a whole number (parse_whole); def when it is not set
 inline long long env_int(const char* name, long long def) {
-    const char* v = std::getenv(name);
+    const char* v = env_value(name);
     if (!v) return def;
     long long x = 0;
     if (!parse_whole(v, x)) throw std::runtime_error(std::string(name) + ": '" + v + "' is not a whole number");
@@ -41,7 +44,7 @@ inline long long env_int(const char* name, long long def) {
 
 // the variable as a finite decimal number (parse_number); def when it is not set
 inline double env_num(const char* name, double def) {
-    const char* v = std::getenv(name);
+    const char* v = env_value(name);
     if (!v) return def;
     double x = 0;
     if (!parse_number(v, x)) throw std::runtime_error(std::string(name) + ": '" + v + "' is not a number");

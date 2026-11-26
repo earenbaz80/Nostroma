@@ -22,7 +22,7 @@ export class AcquisitionRefused extends Error {
 }
 
 export function forbidden(env = process.env) {
-  return TRUE.has(String((env.NOSTROMA_NO_ACQUIRE ?? env.NOSTROMA_NO_ACQUIRE) ?? '').trim().toLowerCase()) || (env.NOSTROMA_PACKAGED ?? env.NOSTROMA_PACKAGED) === '1';
+  return TRUE.has(String((env.NOSTROMA_NO_ACQUIRE) ?? '').trim().toLowerCase()) || (env.NOSTROMA_PACKAGED) === '1';
 }
 
 /** Call before any download or install. Throws AcquisitionRefused where acquiring is forbidden. */

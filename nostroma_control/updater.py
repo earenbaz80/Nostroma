@@ -1602,7 +1602,7 @@ def update_control(ctx: Context, feed: feedmod.Feed, state: State) -> dict:
 
 def app_public_key(environ=None) -> str | None:
     environ = os.environ if environ is None else environ
-    explicit = environ.get("NOSTROMA_APP_UPDATE_PUBKEY", environ.get("NOSTROMA_APP_UPDATE_PUBKEY"))
+    explicit = environ.get("NOSTROMA_APP_UPDATE_PUBKEY")
     if explicit:
         return explicit
     try:

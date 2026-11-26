@@ -490,8 +490,8 @@ fn host_command(res: &Path, port: u16, shutdown_token: &str) -> Result<Command, 
     }
     // A user with the Nostroma API worker on a different port sets this; unset means the worker's
     // documented loopback default.
-    if let Ok(url) = std::env::var("NOSTROMA_SERVER_URL").or_else(|_| std::env::var("NOSTROMA_SERVER_URL")) {
-        cmd.env("NOSTROMA_SERVER_URL", &url).env("NOSTROMA_SERVER_URL", url);
+    if let Ok(url) = std::env::var("NOSTROMA_SERVER_URL") {
+        cmd.env("NOSTROMA_SERVER_URL", &url);
     }
     Ok(cmd)
 }
@@ -870,7 +870,8 @@ fn main() {
     // window process (`--window-child`) only shows the page. See supervisor.rs.
     #[cfg(target_os = "linux")]
     {
-        let options = supervisor::parse_args(&args, std::env::var("NOSTROMA_UI").ok().as_deref());
+        let ui = std::env::var("NOSTROMA_UI").ok();
+        let options = supervisor::parse_args(&args, ui.as_deref());
         if !options.window_child {
             std::process::exit(supervisor::run(&options));
         }

@@ -664,7 +664,7 @@ using Clock = std::chrono::steady_clock;
 // defaults apply.
 static const char* pipe_dbg_env(const char* name) {
     static const bool on = [] { const char* v = nostroma::env("NOSTROMA_PIPELINE_DEBUG"); return v != nullptr && v[0] != 0 && v[0] != '0'; }();
-    return on ? nostroma::env(name) : nullptr;     // NOSTROMA_* wins, the old NOSTROMA_* name still works (nostroma/env.hpp)
+    return on ? nostroma::env(name) : nullptr;     // the one NOSTROMA_* name (nostroma/env.hpp)
 }
 
 // The resident RAM mode and the adaptive tier.  A swap copies `in` (held in RAM) into the slot of `out` (held only
@@ -10536,7 +10536,7 @@ int main(int argc, char** argv) {
     // ran with ~6.4) the default stays at 8192.
     // NOSTROMA_GFX12_CHUNK=1 keeps the default ceiling anyway.  The ceiling is 32768 now: the guard steps it down 32768 -> 16384 -> 8192 until the loan fits.
     for (int64_t cand = auto_ceiling; o.prefill_gfx12_16k && cand > 8192;) {
-        static const char* force16 = std::getenv(std::strcmp(o.prefill_raise_who, "NVIDIA") == 0 ? "NOSTROMA_NV_CHUNK" : "NOSTROMA_GFX12_CHUNK");
+        static const char* force16 = nostroma::env(std::strcmp(o.prefill_raise_who, "NVIDIA") == 0 ? "NOSTROMA_NV_CHUNK" : "NOSTROMA_GFX12_CHUNK");
         const int64_t extra_slots = std::max<int64_t>(0, lend_slots(cand) - lend_slots(8192));
         const uint64_t extra_mib = ((uint64_t) extra_slots * nostroma::kernels::cpu::expert_layout().max_blob) >> 20;
         const auto hm = nostroma::core::sample_host_memory();   // the cgroup / --memory-limit-mib cap counts too
@@ -14439,7 +14439,7 @@ int main(int argc, char** argv) {
         // as the blocking tier's exchange buffers; the arena has none, so its rounds are as large as the blocking tier's
         const int64_t a_cap = a_arena ? o.adapt_swaps : std::min<int64_t>(o.adapt_swaps, 96);
         const auto a_env = [](const char* name, int def) {
-            const char* v = std::getenv(name);
+            const char* v = nostroma::env(name);
             return v != nullptr && *v != 0 ? std::atoi(v) : def;
         };
         // arena only (the other modes keep their steps as they were): the choice on this thread (NOSTROMA_ADAPT_PICK_INLINE),

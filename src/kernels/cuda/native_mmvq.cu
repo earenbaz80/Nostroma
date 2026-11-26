@@ -3793,7 +3793,7 @@ constexpr Il1Arch kIl1Arch[] = {
     {89, kIl1Rows_89, sizeof(kIl1Rows_89) / sizeof(Il1Rows)},   // Ada: the RTX 4070 and 4080 agree
 };
 bool il_env_on(const char* name) {
-    const char* v = std::getenv(name);
+    const char* v = nostroma::env(name);
     return v == nullptr || v[0] != '0';
 }
 bool il_t1_on() { static const bool on = il_env_on("NOSTROMA_MMVQ_IL_T1"); return on; }

@@ -3688,7 +3688,7 @@ bool gu_split(int t) {
 }
 
 bool env_on(const char* name) {
-    const char* v = std::getenv(name);
+    const char* v = nostroma::env(name);
     return v != nullptr && v[0] != '\0' && v[0] != '0';
 }
 // NOSTROMA_OLD_IQ_MMVQ=1 keeps the per-column kernels (bitwise equal to the new ones; kept for A/B timing)
@@ -4242,7 +4242,7 @@ bool gu22_row_reuse_enabled(const sycl::device& device) {
 // 4, 8, 16 or 32; default NOSTROMA_EXPERT_LANES), 256 / lanes rows per work-group. Gate/up rows are 80 dot calls
 // (2560 wide), the IQ4_NL down rows 40 (640 wide), so the best split can differ by role.
 inline int lanes_env(const char* name) {
-    const char* v = std::getenv(name);
+    const char* v = nostroma::env(name);
     const int n = v ? std::atoi(v) : kExpertLanes;
     return n == 4 || n == 8 || n == 16 || n == 32 ? n : kExpertLanes;
 }

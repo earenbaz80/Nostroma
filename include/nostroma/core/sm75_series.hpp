@@ -40,7 +40,7 @@ inline bool sm75_default(int major, int minor) { return is_sm75(major, minor) &&
 /// a Turing switch with its own variable: `name` set means 0 off / anything else on (Turing only); unset follows the series
 inline bool sm75_switch(const char* name, int major, int minor) {
     if (!is_sm75(major, minor)) return false;
-    const char* v = std::getenv(name);
+    const char* v = nostroma::env(name);
     return v != nullptr ? std::atoi(v) != 0 : sm75_series();
 }
 

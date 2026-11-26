@@ -69,7 +69,7 @@ _cf_seen: dict[tuple[str, float], str | None] = {}
 
 def _cloudflared_places() -> list[str]:
     """Where a cloudflared might be: NOSTROMA_CLOUDFLARED if set, then PATH, then the usual install places."""
-    explicit = os.environ.get("NOSTROMA_CLOUDFLARED", os.environ.get("NOSTROMA_CLOUDFLARED", "")).strip()
+    explicit = os.environ.get("NOSTROMA_CLOUDFLARED", "").strip()
     if explicit:
         return [explicit]
     name = "cloudflared.exe" if WINDOWS else "cloudflared"

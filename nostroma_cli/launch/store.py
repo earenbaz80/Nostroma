@@ -25,7 +25,7 @@ class PresetError(ValueError):
 
 
 def preset_dir() -> Path:
-    explicit = os.environ.get("NOSTROMA_LAUNCH_PRESET_DIR", os.environ.get("NOSTROMA_LAUNCH_PRESET_DIR"))
+    explicit = os.environ.get("NOSTROMA_LAUNCH_PRESET_DIR")
     if explicit:
         return Path(explicit).expanduser()
     from nostroma_control import profiles

@@ -63,7 +63,7 @@ export function parsePortNotice(value) {
 
 /** The notification route of the shell's bridge (loopback, token). Null outside the desktop app. */
 export function createShellNotifier({ env = process.env, fetcher = fetch } = {}) {
-  const base = (env.NOSTROMA_SHELL_BRIDGE ?? env.NOSTROMA_SHELL_BRIDGE), token = (env.NOSTROMA_SHELL_TOKEN ?? env.NOSTROMA_SHELL_TOKEN);
+  const base = (env.NOSTROMA_SHELL_BRIDGE), token = (env.NOSTROMA_SHELL_TOKEN);
   if (!base || !token || !/^http:\/\/127\.0\.0\.1:\d+$/.test(base)) return null;
   return {
     async notify({ title, body }) {

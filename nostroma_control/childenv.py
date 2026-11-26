@@ -11,8 +11,6 @@ from __future__ import annotations
 
 import os
 
-from nostroma_control import envnames
-
 NO_BACKTRACE = "GGML_NO_BACKTRACE"
 DEVELOPER_SWITCH = "NOSTROMA_BACKTRACE"
 
@@ -32,6 +30,4 @@ def quiet_crash_env(env: dict | None = None) -> dict:
     target = os.environ if env is None else env
     if NO_BACKTRACE not in target and not developer_wants_backtrace(target):
         target[NO_BACKTRACE] = "1"
-    # the engine still reads NOSTROMA_*: give it the setting whatever name it was written with (nostroma_control/envnames.py)
-    envnames.alias_old_names(target)
     return target

@@ -90,5 +90,5 @@ WHERE THINGS ARE (to remove Nostroma completely, delete the files and these fold
 ---------------------------------------------------------------------------------
   ~/.nostroma                      settings, chats, prepared model files
   ~/.local/share/nostroma          the unpacked engine and the terminal app, and logs/ (what the app printed, and a crash log if the window ever crashes)
-  ~/.local/bin/nostroma          the terminal app's command (nostroma is the older name)
+  ~/.local/bin/nostroma          the terminal app's command
   ~/Documents/Nostroma             downloaded models (Models) and your work folder (Workspace)

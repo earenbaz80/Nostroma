@@ -6788,7 +6788,7 @@ ForesightSwap* foresight_swap_from_env(int64_t layers, int64_t experts, const st
         return nullptr;
     }
     auto* f = new ForesightSwap();
-    auto env_int = [](const char* name, int def, int lo) { const char* e = std::getenv(name); const int x = e ? std::atoi(e) : def; return x < lo ? lo : x; };
+    auto env_int = [](const char* name, int def, int lo) { const char* e = nostroma::env(name); const int x = e ? std::atoi(e) : def; return x < lo ? lo : x; };
     f->budget = env_int("NOSTROMA_FS_BUDGET", 32, 1);
     f->admit = env_int("NOSTROMA_FS_ADMIT", 1, 1);
     f->depth = env_int("NOSTROMA_FS_DEPTH", 4, 2);

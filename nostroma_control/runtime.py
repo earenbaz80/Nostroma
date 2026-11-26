@@ -101,7 +101,7 @@ def _name(value: str) -> str:
 
 def runtime_dir() -> Path:
     _supported()
-    override = os.environ.get("NOSTROMA_RUNTIME_DIR", os.environ.get("NOSTROMA_RUNTIME_DIR"))
+    override = os.environ.get("NOSTROMA_RUNTIME_DIR")
     if override:
         base = Path(override).expanduser()
     else:

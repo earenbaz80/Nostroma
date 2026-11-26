@@ -48,7 +48,7 @@ def _full_folder(name: str):
         return importlib.import_module(name)
     except ImportError:
         pass
-    raw = os.environ.get("NOSTROMA_INSTALL_DIR", os.environ.get("NOSTROMA_INSTALL_DIR"))
+    raw = os.environ.get("NOSTROMA_INSTALL_DIR")
     if raw:
         folder = Path(raw).expanduser()
         if (folder / "setup.py").is_file() and (folder / "tools" / "calibrate.py").is_file():
@@ -72,7 +72,7 @@ def _tools_available() -> bool:
             return True
     except (ImportError, ValueError):
         pass
-    raw = os.environ.get("NOSTROMA_INSTALL_DIR", os.environ.get("NOSTROMA_INSTALL_DIR"))
+    raw = os.environ.get("NOSTROMA_INSTALL_DIR")
     if raw:
         folder = Path(raw).expanduser()
         return (folder / "setup.py").is_file() and (folder / "tools" / "calibrate.py").is_file()

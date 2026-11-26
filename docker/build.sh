@@ -74,7 +74,7 @@ cd "$repo"
 paths="packaging bin nostroma.py nostroma_control nostroma_cli serve requirements.txt requirements-monitor.txt docs/MANAGEMENT_PROTOCOL.md docs/TERMINAL_LAUNCH.md data bench/prompts/standard-v1 setup.py ref/load.py CMakeLists.txt metal/tools/metal_repack.py metal/tools/stream_experts.py"
 if git rev-parse --git-dir >/dev/null 2>&1; then
   # shellcheck disable=SC2086
-  { git ls-files -z -- $paths ':(glob)tools/**/*.py'; } | tar --null -T - -cf - | tar -xf - -C "$ctx/terminal-src"
+  { git ls-files -z -- $paths; find tools -name '*.py' -print0; } | tar --null -T - -cf - | tar -xf - -C "$ctx/terminal-src"
 else
   tools_py=$(find tools -name '*.py')          # nested too
   # shellcheck disable=SC2086

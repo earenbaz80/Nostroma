@@ -77,13 +77,12 @@ class Scripts(unittest.TestCase):
         for name in ("entrypoint.sh", "nostroma-wrapper.sh", "healthcheck.sh", "build.sh", "publish.sh"):
             self.assertNotIn(b"\r", (DOCKER / name).read_bytes(), name)       # build.sh strips CR for a CRLF checkout, the files themselves stay LF
 
-    def test_the_entry_point_accepts_the_new_command_name(self):
-        """`docker run ... <image> nostroma ...` runs the Terminal, as the older `nostroma` word does: the alias the image
-        installs (see Dockerfiles.test_the_wrapper_is_installed_under_both_names) is useless without this dispatch."""
+    def test_the_entry_point_accepts_the_command_name(self):
+        """`docker run ... <image> nostroma ...` runs the Terminal."""
         entry = (DOCKER / "entrypoint.sh").read_text(encoding="utf-8")
         dispatch = next(line for line in entry.splitlines() if 'case "$1" in' in line)
-        self.assertIn("nostroma", dispatch)
-        self.assertIn("nostroma", dispatch)
+        self.assertIn("nostroma)", dispatch)
+        self.assertNotIn("nostroma|nostroma", dispatch)
 
 
 class Dockerfiles(unittest.TestCase):
@@ -105,16 +104,14 @@ class Dockerfiles(unittest.TestCase):
             self.assertIn("VOLUME [\"/data\"]", text, f.name)
             self.assertIn("NOSTROMA_COMPONENTS_DIR=/opt/nostroma/components", text, f.name)
 
-    def test_the_wrapper_is_installed_under_both_names(self):
-        """`nostroma` is the command; `nostroma` stays as the name it had before (install.sh links both too). The image
-        carries both names as the same wrapper, executable, or a page that says `docker exec ... nostroma` fails."""
+    def test_the_wrapper_is_installed(self):
+        """The image carries the command as an executable wrapper, or `docker exec ... nostroma` fails."""
         for f in self.FILES:
             text = f.read_text(encoding="utf-8")
-            for name in ("nostroma", "nostroma"):
-                self.assertIn(f"COPY docker/nostroma-wrapper.sh /usr/local/bin/{name}", text, f.name)
+            self.assertIn("COPY docker/nostroma-wrapper.sh /usr/local/bin/nostroma", text, f.name)
+            self.assertEqual(text.count("COPY docker/nostroma-wrapper.sh /usr/local/bin/nostroma"), 1, f.name)
             chmod = next(line for line in text.splitlines() if line.startswith("RUN chmod 0755 "))
-            for name in ("nostroma", "nostroma"):
-                self.assertIn(f"/usr/local/bin/{name}", chmod, f.name)
+            self.assertIn("/usr/local/bin/nostroma", chmod, f.name)
 
     def test_every_image_runs_as_an_unprivileged_user(self):
         """A container runs as the image's USER. The server, the engine and the Terminal need no privilege, so both images (the published

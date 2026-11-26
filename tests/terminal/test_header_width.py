@@ -42,11 +42,9 @@ class MonitorHeader(unittest.TestCase):
             self.assertIn("Overview", head)
             self.assertTrue(head.endswith("[LIVE]"), f"{width}: the state marker was cut: {head!r}")
 
-    def test_the_room_holds_the_header_and_moves_with_the_name(self):
-        # The room is the name, the view's title and the marker before the address gets a single column. A longer
-        # name has to move it: 0.2.15 reserved 42 for its six letters, and NOSTROMA is two letters longer. This is
-        # the one number the test knows, and it knows it as a difference from the old name, not as the room itself.
-        OLD_NAME, OLD_ROOM = "NOSTROMA", 42
+    def test_the_room_holds_the_header(self):
+        # The room is the name, the view's title and the marker before the address gets a single column.
+        NAME, ROOM = "NOSTROMA", 44
         room = render.HEADER_ROOM
 
         base = self.head(room, state="telemetry_unavailable")
@@ -54,9 +52,8 @@ class MonitorHeader(unittest.TestCase):
         self.assertTrue(base.endswith(MARKER), f"the longest marker is cut inside the room: {base!r}")
         self.assertNotIn("http", base, f"the room left columns for the address: {base!r}")
         name = base.split()[0]
-        self.assertEqual(room, OLD_ROOM + (len(name) - len(OLD_NAME)),
-                         f"the header draws {name!r} ({len(name)} letters), so its room is "
-                         f"{OLD_ROOM + len(name) - len(OLD_NAME)}, not {room}")
+        self.assertEqual(name, NAME, f"the header draws {name!r}")
+        self.assertEqual(room, ROOM, f"the header room is {room}, not {ROOM}")
 
         for width in (room, 60, 80, 120):        # from the room on, the marker is whole at every width
             line = self.head(width, state="telemetry_unavailable")

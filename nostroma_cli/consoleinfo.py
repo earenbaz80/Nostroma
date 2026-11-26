@@ -23,7 +23,7 @@ TIP = "For the full look, use Windows Terminal (built into Windows 11)"
 
 def legacy_console() -> bool:
     """True for the classic Windows console (no Windows Terminal, no VS Code, no ConEmu, no ssh session into it)."""
-    forced = os.environ.get("NOSTROMA_GLYPHS", os.environ.get("NOSTROMA_GLYPHS", "")).strip().lower()
+    forced = os.environ.get("NOSTROMA_GLYPHS", "").strip().lower()
     if forced in ("ascii", "legacy", "solid"):
         return True
     if forced == "unicode":
@@ -164,7 +164,7 @@ def classic_style() -> dict:
     if _cached is not None:
         return _cached
     legacy = legacy_console()
-    forced = os.environ.get("NOSTROMA_GLYPHS", os.environ.get("NOSTROMA_GLYPHS", "")).strip().lower() in ("ascii", "legacy", "solid")
+    forced = os.environ.get("NOSTROMA_GLYPHS", "").strip().lower() in ("ascii", "legacy", "solid")
     switched = False
     font = console_font() if (legacy and forced) else None
     if legacy and not forced and os.name == "nt":

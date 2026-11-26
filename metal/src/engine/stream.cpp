@@ -27,7 +27,7 @@ constexpr int NL = nostroma_metal::geo::NL, NE = 512;   // layers of the compile
 constexpr uint64_t PAGE = 16384;
 double now_ms() { return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now().time_since_epoch()).count(); }
 int env_int(const char* n, int d) {
-    const char* e = std::getenv(n);
+    const char* e = nostroma::env(n);
     return e && *e ? std::atoi(e) : d;
 }
 }  // namespace

@@ -26,7 +26,7 @@ export function bundledPython(dir, platform = process.platform) {
 
 /** The per-user component folder, the same rule as nostroma_control/engine_component.py components_dir(). */
 export function componentsDirectory({ env = process.env, platform = process.platform, home = homedir() } = {}) {
-  if ((env.NOSTROMA_COMPONENTS_DIR ?? env.NOSTROMA_COMPONENTS_DIR)) return (env.NOSTROMA_COMPONENTS_DIR ?? env.NOSTROMA_COMPONENTS_DIR);
+  if ((env.NOSTROMA_COMPONENTS_DIR)) return (env.NOSTROMA_COMPONENTS_DIR);
   if (platform === 'win32') return join(env.LOCALAPPDATA || join(home, 'AppData', 'Local'), 'Nostroma', 'components');
   return join(env.XDG_DATA_HOME || join(home, '.local', 'share'), 'nostroma', 'components');
 }
@@ -59,7 +59,7 @@ function newer(a, b) {
  */
 export function findControl({ env = process.env, platform = process.platform, exists = existsSync, hostDir = resolve(HERE, '..'), components = null } = {}) {
   const updated = updatedControlDirectory({ env, platform, components });
-  const candidates = [{ dir: (env.NOSTROMA_CONTROL_DIR ?? env.NOSTROMA_CONTROL_DIR) }, { dir: join(hostDir, '..', 'control') }, ...(updated ? [updated] : [])]
+  const candidates = [{ dir: (env.NOSTROMA_CONTROL_DIR) }, { dir: join(hostDir, '..', 'control') }, ...(updated ? [updated] : [])]
     .filter(c => c.dir).map(c => ({ ...c, dir: resolve(c.dir) }));
   let best = null;
   for (const candidate of candidates) {
@@ -89,19 +89,19 @@ export function sourceServerEnvironment(env = process.env) {
 /** The environment Control runs in: nothing from the user's Python, and acquiring forbidden. */
 export function controlEnvironment(control, { env = process.env, components = componentsDirectory({ env }), acquire = false } = {}) {
   const next = { ...env };
-  for (const key of ['PYTHONHOME', 'PYTHONPATH', 'PYTHONSTARTUP', 'VIRTUAL_ENV', 'NOSTROMA_PYTHON', 'NOSTROMA_PYTHON', 'NOSTROMA_NATIVE_PYTHON', 'NOSTROMA_NATIVE_PYTHON', 'NOSTROMA_API_KEY', 'NOSTROMA_API_KEY']) delete next[key];
+  for (const key of ['PYTHONHOME', 'PYTHONPATH', 'PYTHONSTARTUP', 'VIRTUAL_ENV', 'NOSTROMA_PYTHON', 'NOSTROMA_NATIVE_PYTHON', 'NOSTROMA_API_KEY']) delete next[key];
   const result = {
     ...next,
     PYTHONNOUSERSITE: '1', PYTHONUTF8: '1', PYTHONUNBUFFERED: '1', PYTHONIOENCODING: 'utf-8',
     NOSTROMA_NO_ACQUIRE: '1', NOSTROMA_COMPONENTS_DIR: components,
     // The app's own settings file, beside its components: Control and the installer never read or write the file an older
     // command-line Nostroma keeps in %APPDATA% / ~/.config (its list of Nostroma folders), so an old install is never adopted.
-    ...(components ? { NOSTROMA_SETTINGS_FILE: (env.NOSTROMA_SETTINGS_FILE ?? env.NOSTROMA_SETTINGS_FILE) || join(dirname(components), 'app-settings.json') } : {}),
+    ...(components ? { NOSTROMA_SETTINGS_FILE: (env.NOSTROMA_SETTINGS_FILE) || join(dirname(components), 'app-settings.json') } : {}),
     ...(control?.dir ? { NOSTROMA_CONTROL_DIR: control.dir } : {}),
   };
   // Only the explicit update step (`nostroma update`) may acquire; every other Control process keeps the switch on.
   if (acquire) delete result.NOSTROMA_NO_ACQUIRE;
-  return childEnv(result);   // Control reads the older NOSTROMA_* names; both names go to it
+  return childEnv(result);   // Control reads the NOSTROMA_* names
 }
 
 /**
@@ -204,12 +204,12 @@ export function createControl({ control = findControl(), env = process.env, run 
      * The explicit update step. These are the only calls that let Control reach the network: `acquire` removes
      * NOSTROMA_NO_ACQUIRE for that one process. Starting, serving, listing and rolling back never do.
      */
-    async updateCheck({ feed = (env.NOSTROMA_UPDATE_FEED ?? env.NOSTROMA_UPDATE_FEED) ?? null, appVersion = (env.NOSTROMA_APP_VERSION ?? env.NOSTROMA_APP_VERSION) ?? null } = {}) {
+    async updateCheck({ feed = (env.NOSTROMA_UPDATE_FEED) ?? null, appVersion = (env.NOSTROMA_APP_VERSION) ?? null } = {}) {
       const result = await call(['update', '--check', '--output', 'json', ...feedArgs(feed), ...(appVersion ? ['--app-version', appVersion] : [])], { timeoutMs: 90_000, acquire: true });
       if (result.json?.ok) return result.json;
       throw failure(result, 'The update check failed.');
     },
-    async update({ feed = (env.NOSTROMA_UPDATE_FEED ?? env.NOSTROMA_UPDATE_FEED) ?? null, engine = true, control: withControl = true, appVersion = (env.NOSTROMA_APP_VERSION ?? env.NOSTROMA_APP_VERSION) ?? null, force = false, stopModel = false, onEvent = null, signal = null } = {}) {
+    async update({ feed = (env.NOSTROMA_UPDATE_FEED) ?? null, engine = true, control: withControl = true, appVersion = (env.NOSTROMA_APP_VERSION) ?? null, force = false, stopModel = false, onEvent = null, signal = null } = {}) {
       const args = ['update', '--output', 'jsonl', ...feedArgs(feed), ...(engine ? [] : ['--no-engine']), ...(withControl ? [] : ['--no-control']),
         ...(appVersion ? ['--app-version', appVersion] : []), ...(force ? ['--force'] : []), ...(stopModel ? ['--stop-model'] : [])];
       const result = await call(args, { timeoutMs: 3 * 3600_000, acquire: true, onLine: onEvent ?? (() => {}), signal });

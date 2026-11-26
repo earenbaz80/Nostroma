@@ -1,8 +1,7 @@
-"""One command, two names: `nostroma`, and the `nostroma` it was called before.
+"""One command: `nostroma`.
 
 The launchers hand over to nostroma.py, so the program cannot see which link was used; they pass the name they were
-called by in NOSTROMA_PROG, the installers put both names on the PATH, and the Windows archive carries both. Nothing
-here is a second program: it is the same one, presenting under the name it was typed as.
+called by in NOSTROMA_PROG. Nothing here is a second program: it is the same one, presenting under the name it was typed as.
 """
 
 from __future__ import annotations
@@ -39,9 +38,8 @@ def _env(**names: str):
 
 class TheNameItWasTypedAs(unittest.TestCase):
     def test_the_launcher_says_which_name_it_was(self):
-        for name in ("nostroma", "nostroma"):
-            with _env(NOSTROMA_PROG=name):
-                self.assertEqual(cli.prog(), name)
+        with _env(NOSTROMA_PROG="nostroma"):
+            self.assertEqual(cli.prog(), "nostroma")
 
     def test_a_name_nobody_knows_is_nostroma(self):
         for argv0 in ("/usr/bin/python3", str(ROOT / "nostroma.py"), ""):
@@ -53,9 +51,8 @@ class TheNameItWasTypedAs(unittest.TestCase):
             self.assertEqual(cli.prog(), "nostroma")
 
     def test_the_usage_line_carries_the_name(self):
-        for name in ("nostroma", "nostroma"):
-            with _env(NOSTROMA_PROG=name):
-                self.assertTrue(cli.parser().format_usage().startswith(f"usage: {name}"), name)
+        with _env(NOSTROMA_PROG="nostroma"):
+            self.assertTrue(cli.parser().format_usage().startswith("usage: nostroma"))
 
 
 class TheLaunchers(unittest.TestCase):
@@ -100,19 +97,17 @@ class TheLaunchers(unittest.TestCase):
 
 
 class TheInstallers(unittest.TestCase):
-    def test_both_names_go_on_the_path(self):
+    def test_the_command_goes_on_the_path(self):
         sh = (ROOT / "packaging" / "install.sh").read_text(encoding="utf-8")
-        self.assertIn('check_name "$BIN_DIR/nostroma"', sh)
-        self.assertIn('check_name "$BIN_DIR/nostroma"', sh)
-        self.assertIn('ln -sf "$DATA_DIR/terminal/current/bin/nostroma" "$BIN_DIR/nostroma"', sh)
-        self.assertIn('ln -sf "$DATA_DIR/terminal/current/bin/nostroma" "$BIN_DIR/nostroma"', sh)
-        self.assertIn("${NOSTROMA_FEED:-${NOSTROMA_FEED:-", sh)          # the new setting wins, the old one still works
-        self.assertIn("the old name, 'nostroma', still works", sh)
+        self.assertEqual(sh.count('check_name "$BIN_DIR/nostroma"'), 1)
+        self.assertEqual(sh.count('ln -sf "$DATA_DIR/terminal/current/bin/nostroma" "$BIN_DIR/nostroma"'), 1)
+        self.assertIn("${NOSTROMA_FEED:-https://github.com/earenbaz80/Nostroma/releases/latest/download}", sh)
+        self.assertNotIn("the old name", sh)
         ps1 = (ROOT / "packaging" / "install.ps1").read_text(encoding="utf-8")
-        self.assertIn("@('nostroma', 'nostroma')", ps1)
         self.assertIn("$env:NOSTROMA_NO_PATH", ps1)
         self.assertIn("$env:NOSTROMA_FEED", ps1)
-        self.assertIn(r"bin\nostroma.cmd", ps1)                   # an older archive gets the second name too
+        self.assertIn(r"bin\nostroma.cmd", ps1)
+        self.assertNotIn("@('nostroma', 'nostroma')", ps1)
 
     def test_a_name_someone_else_owns_is_not_replaced(self):
         # a plain file called nostroma in the bin folder is its owner's; the install stops instead of overwriting it,
@@ -167,7 +162,7 @@ class TheInstallers(unittest.TestCase):
                 self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
                 self.assertIn(f".local/bin/nostroma is a link to {target}", r.stderr, r.stderr)
 
-    def test_the_windows_archive_carries_both_names(self):
+    def test_the_windows_archive_carries_the_launchers(self):
         # a Windows PATH lists files, and the installer puts no link of its own there
         text = (ROOT / "packaging" / "package_terminal.py").read_text(encoding="utf-8")
-        self.assertIn('launcher.replace("nostroma", "nostroma")', text)
+        self.assertIn('launchers = ["nostroma.cmd", "nostroma.ps1"]', text)

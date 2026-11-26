@@ -3416,7 +3416,7 @@ bool gu_split(int t) {
 }
 
 bool env_on(const char* name) {
-    const char* v = std::getenv(name);
+    const char* v = nostroma::env(name);
     return v != nullptr && v[0] != '\0' && v[0] != '0';
 }
 // NOSTROMA_OLD_IQ_MMVQ=1 keeps the per-column kernels (bitwise equal to the new ones; kept for A/B timing)
@@ -4077,7 +4077,7 @@ void s27_launch_ts(bool ts, const NativeExpertLayout& L, int64_t cap_groups, cud
 
 // ---- EXPDEC launch: knobs, shapes, rows per block
 int env_int_or(const char* name, int dflt) {
-    const char* v = std::getenv(name);
+    const char* v = nostroma::env(name);
     return v != nullptr && v[0] != '\0' ? std::atoi(v) : dflt;
 }
 // read at first use (not at load), so a per-architecture default set at start (nv_defaults.hpp) is seen; native_expert_set_expdec overrides

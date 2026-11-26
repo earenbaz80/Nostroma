@@ -11,7 +11,7 @@ export function refusalLine(id) {
 
 /** The model id to start, or null. Reads `state` only; `log` gets the refusal line for a DeepSeek id. */
 export function autostartModel(state, env = process.env, log = (line) => console.error(line)) {
-  const id = (env.NOSTROMA_REAL_ENGINE ?? env.NOSTROMA_REAL_ENGINE) === '1' ? (state?.loaded ?? state?.current ?? null) : null;
+  const id = (env.NOSTROMA_REAL_ENGINE) === '1' ? (state?.loaded ?? state?.current ?? null) : null;
   if (id && DEEPSEEK_ID.test(String(id))) {
     log(refusalLine(id));
     return null;

@@ -148,7 +148,7 @@ struct Bump {
 //   NOSTROMA_VERIFY_COHERENT=1  the handshake words and rows in explicitly coherent (fine-grained) host memory
 //   NOSTROMA_DOORBELL_STORE=1   the GPU stores each step's ring instead of read-modify-writing it over PCIe
 bool env_on(const char* name) {
-    const char* e = std::getenv(name);
+    const char* e = nostroma::env(name);
     return e != nullptr && e[0] != 0 && e[0] != '0';
 }
 

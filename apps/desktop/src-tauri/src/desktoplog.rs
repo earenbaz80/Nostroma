@@ -30,9 +30,7 @@ const RING_LINES: usize = 300;
 
 /// `<data>/` : where Nostroma keeps its engine, runtime and logs on this system.
 pub fn data_dir() -> PathBuf {
-    if let Some(dir) = std::env::var_os("NOSTROMA_DESKTOP_DATA_DIR")
-        .or_else(|| std::env::var_os("NOSTROMA_DESKTOP_DATA_DIR"))
-    {
+    if let Some(dir) = std::env::var_os("NOSTROMA_DESKTOP_DATA_DIR") {
         return PathBuf::from(dir);
     }
     platform_data_dir()
@@ -366,7 +364,6 @@ pub fn run_log() -> Option<Log> {
 /// the self-test (no person to read a message box); `NOSTROMA_NO_DIALOG` does the same for scripted runs.
 pub fn init_startup(dialog: bool) {
     let dialog = dialog
-        && std::env::var_os("NOSTROMA_NO_DIALOG").is_none()
         && std::env::var_os("NOSTROMA_NO_DIALOG").is_none();
     let log = Log::open();
     log.line("shell", &system_line());

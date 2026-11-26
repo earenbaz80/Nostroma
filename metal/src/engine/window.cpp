@@ -1261,7 +1261,7 @@ void Window::layer(std::vector<mtl::Dispatch>& ds, int l, int ntok, int64_t pos0
             dr = dq2 || (m4 && (td.type == ref::Q8_0 || td.type == ref::Q5_1 || td.type == ref::Q5_0)) ? 1 : 2;
         {   // NOSTROMA_METAL_MOE_GU=L,R,S / NOSTROMA_METAL_MOE_DN=L,R,S (tile screens: lanes per row, rows per lane, simdgroups; an instantiated moe_gu_ / moe_down_ combination)
             static const auto parse = [](const char* name, int* o) {
-                const char* e = std::getenv(name);
+                const char* e = nostroma::env(name);
                 return e && std::sscanf(e, "%d,%d,%d", &o[0], &o[1], &o[2]) == 3;
             };
             static int gu_o[3], dn_o[3];

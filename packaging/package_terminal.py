@@ -448,13 +448,6 @@ def main() -> int:
             shutil.copy2(ROOT / "bin" / launcher, bin_dir / launcher)
             if launcher == "nostroma":
                 (bin_dir / launcher).chmod(0o755)
-            # the other name of the same launcher, on every system: `nostroma` is the command and `nostroma` the name it had.
-            # A Windows PATH entry lists files, and the installer puts neither name in a link of its own, so both have to
-            # be in the archive for `nostroma` to be found on the PATH; shipping both everywhere keeps the two archives alike.
-            twin = bin_dir / launcher.replace("nostroma", "nostroma")
-            shutil.copy2(bin_dir / launcher, twin)
-            if launcher == "nostroma":
-                twin.chmod(0o755)
 
         installed: dict[str, str] = {}
         removed: list[str] = []

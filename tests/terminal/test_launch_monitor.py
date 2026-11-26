@@ -43,7 +43,7 @@ class Connect(unittest.TestCase):
             self.assertIn("Connect an app", t)
             self.assertIn("URL http://127.0.0.1:8080/v1", t)
             self.assertIn("also reachable at http://192.168.1.5:8080/v1", t)
-            self.assertIn("key sk-nostroma-", t)
+            self.assertIn("key sk-nostrom", t)          # the mask keeps the first 10 characters of the longer NOSTROMA prefix
             self.assertNotIn("abcdefghijklmnop", t)                      # masked until k
             for name in ("OpenCode", "Codex CLI", "Claude Code", "oh-my-pi", "pi (pi.dev)", "Hermes Agent", "OpenClaw", "DeepSeek Harness"):
                 self.assertIn(name, t)

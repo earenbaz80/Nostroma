@@ -9,6 +9,7 @@
 // DIFFER - then requires the kernel to agree with the specified one.  Without the first half, the test would
 // pass against either order.
 #include "nostroma/kernels/sampler.hpp"
+#include "nostroma/env.hpp"
 
 #include <cuda_runtime.h>
 
@@ -472,7 +473,7 @@ int main(int argc, char** argv) {
     }
     {
         // the sampled path under test; ctest runs this binary once per path
-        auto on = [](const char* n) { const char* e = std::getenv(n); return e && *e && std::strcmp(e, "0") != 0; };
+        auto on = [](const char* n) { const char* e = nostroma::env(n); return e && *e && std::strcmp(e, "0") != 0; };
         std::printf("  sampled path: %s\n", on("NOSTROMA_OLD_SAMPLER")         ? "sampler_kernel (NOSTROMA_OLD_SAMPLER)"
                                             : on("NOSTROMA_SAMPLER_ONE_BLOCK") ? "one block (NOSTROMA_SAMPLER_ONE_BLOCK)"
                                                                              : "split top_k (default)");

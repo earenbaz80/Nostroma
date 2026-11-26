@@ -44,8 +44,8 @@ export function connectorCandidates({ directory, componentDirectory = null, plat
   // NOSTROMA_CLOUDFLARED=<file> uses exactly that connector; NOSTROMA_CLOUDFLARED_SEARCH=own keeps the search to Nostroma's own folders.
   const windows = platform === 'win32', p = windows ? win32 : posix;
   const name = windows ? 'cloudflared.exe' : 'cloudflared';
-  if ((env.NOSTROMA_CLOUDFLARED ?? env.NOSTROMA_CLOUDFLARED)) return [{ path: (env.NOSTROMA_CLOUDFLARED ?? env.NOSTROMA_CLOUDFLARED), source: 'setting' }];
-  if ((env.NOSTROMA_CLOUDFLARED_SEARCH ?? env.NOSTROMA_CLOUDFLARED_SEARCH) === 'own') search = false;
+  if ((env.NOSTROMA_CLOUDFLARED)) return [{ path: (env.NOSTROMA_CLOUDFLARED), source: 'setting' }];
+  if ((env.NOSTROMA_CLOUDFLARED_SEARCH) === 'own') search = false;
   const out = [], seen = new Set();
   const add = (dir, source) => {
     if (!dir) return;

@@ -22,6 +22,8 @@
 #include <cstdlib>
 #include <string>
 
+#include "nostroma/env.hpp"
+
 namespace nostroma_metal {
 
 inline std::string exe_dir() {
@@ -43,7 +45,7 @@ inline bool exists(const std::string& path) {
 // `sub` is relative to <exe dir>/metal/, `compiled` is the path compiled into this build.
 inline std::string resource(const char* env, const char* sub, const char* compiled) {
     if (env) {
-        if (const char* e = std::getenv(env)) return e;
+        if (const char* e = nostroma::env(env)) return e;
     }
     const std::string dir = exe_dir();
     if (!dir.empty()) {
@@ -57,7 +59,7 @@ inline std::string resource(const char* env, const char* sub, const char* compil
 // beside the executable, then the old name beside the executable (a package of an earlier release), then the compiled-in path.
 inline std::string resource2(const char* env, const char* sub, const char* old_sub, const char* compiled) {
     if (env) {
-        if (const char* e = std::getenv(env)) return e;
+        if (const char* e = nostroma::env(env)) return e;
     }
     const std::string dir = exe_dir();
     if (!dir.empty()) {

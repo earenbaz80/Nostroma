@@ -1,5 +1,5 @@
 #!/bin/sh
-# `nostroma` inside the container (the older `nostroma` is the same wrapper): the Terminal, with the address and the API key of the
+# `nostroma` inside the container: the Terminal, with the address and the API key of the
 # server this container runs, so that `docker exec <name> nostroma monitor --once`, `nostroma status` and `nostroma connect
 # opencode` work without typing either.
 # A key or address you set yourself (NOSTROMA_API_KEY, NOSTROMA_URL, --url) always wins.

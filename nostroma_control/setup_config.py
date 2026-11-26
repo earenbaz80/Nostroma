@@ -474,7 +474,7 @@ def config_for(inp: SetupInputs, lib) -> SetupConfig:
         recommend_remote_expert_opt(cfg, off=a.no_remote_expert_opt)
         replica_done = False
         if a.replicas is None and a.layer_split in (None, "auto") and (getattr(a, "replica_profile", False) or
-                                                                       os.environ.get("NOSTROMA_REPLICA_PROFILE", os.environ.get("NOSTROMA_REPLICA_PROFILE"))):
+                                                                       os.environ.get("NOSTROMA_REPLICA_PROFILE")):
             try:                                       # the opt-in replica profile (nostroma_control/replica_profile.py)
                 from nostroma_control import replica_profile
                 if getattr(a, "replica_profile", False):
