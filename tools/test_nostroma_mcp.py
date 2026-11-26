@@ -407,6 +407,9 @@ class Install(FakeRoot):
         self.assertFalse(err)
         self.assertIn("Nothing was done yet", res["summary"])
         self.assertEqual((res["plan"]["family"], res["plan"]["model"], res["plan"]["context"]), ("qwen", "IQ3_S", 131072))
+        self.assertEqual(res["plan"]["older_models"], [])
+        self.assertEqual(res["plan"]["frees_gb"], 0)
+        self.assertIsNone(res["plan"]["space_warning"])
         self.assertFalse((self.root / "setup-args.json").exists())
         self.assertIsNone(self.nostroma.install_job())
 
@@ -425,6 +428,75 @@ class Install(FakeRoot):
         self.assertEqual(res["next"], "nostroma_start")
         st, _ = self.call("nostroma_status", {"hardware": False})
         self.assertEqual([m["model"] for m in st["installed"]["models"]], ["q2_0"])
+
+    def test_plan_says_what_deleting_older_models_would_free(self):
+        """P0-3: the plan names the older downloaded models, the GB deleting them frees, and the install time, before
+        anything is downloaded. The plan itself deletes nothing."""
+        self.write_config("old")
+        self.write_config("q2_0")
+        with mock.patch.object(self.nostroma, "removal_plan",
+                               side_effect=lambda cfg, keep_by=None: {
+                                   "gb": 42.5 if cfg.stem == "nostroma-old" else 1.0,
+                                   "remove": [{"path": f"{cfg.stem}.gguf",
+                                               "bytes": 42_500_000_000 if cfg.stem == "nostroma-old" else 1_000_000_000}]}):
+            res, err = self.call("nostroma_install", {"model": "Q2_0", "family": "qwen"})
+        self.assertFalse(err, res)
+        self.assertEqual(res["plan"]["older_models"], [{"model": "old", "gb": 42.5}])
+        self.assertEqual(res["plan"]["frees_gb"], 42.5)
+        self.assertEqual(res["plan"]["space_warning"],
+                         "Another downloaded model uses 42.5 GB. Deleting it in Manage models frees that space.")
+        self.assertIn("Another downloaded model uses 42.5 GB", res["summary"])
+        self.assertIn("It takes about 20-90 minutes", res["summary"])
+        self.assertFalse((self.root / "setup-args.json").exists(), "nothing was installed yet")
+        self.assertTrue((self.root / "nostroma-old.json").exists(), "the older model is still there")
+
+    def write_model_files(self, tag: str, shared: Path | None = None) -> Path:
+        """An installed model whose run config names a GGUF of its own (and the file it shares with the others)."""
+        own = self.root / f"{tag}.gguf"
+        own.write_bytes(b"x")
+        args = ["--max-context", "32768", "--native", str(own)]
+        if shared is not None:
+            args += ["--ple-gguf", str(shared)]
+        self.write_config(tag, args=args)
+        return own
+
+    def test_deleting_all_older_models_counts_a_shared_file_once(self):
+        """Two older models that share a file (the picture reader, a shared PLE shard): deleting both frees it too, and the
+        plan gives that as the real minimum — the union, never the per-model figures added up with the shared file twice."""
+        shared = self.root / "shared.gguf"
+        shared.write_bytes(b"x")
+        a = self.write_model_files("old-a", shared)
+        b = self.write_model_files("old-b", shared)
+        sizes = {str(a): 40_000_000_000, str(b): 20_000_000_000, str(shared): 5_000_000_000}
+        with mock.patch.object(M.Nostroma, "tree_bytes", side_effect=lambda p: sizes.get(str(p), 0)):
+            res, err = self.call("nostroma_install", {"model": "Q2_0", "family": "qwen"})
+        self.assertFalse(err, res)
+        plan = res["plan"]
+        self.assertEqual(plan["older_models"], [{"model": "old-a", "gb": 40.0}, {"model": "old-b", "gb": 20.0}],
+                         'one model alone keeps the file the other still names, largest first')
+        self.assertEqual(plan["frees_gb"], 65.0, 'the shared file is freed once, not twice')
+        self.assertEqual(plan["space_warning"],
+                         "The 2 other downloaded models use 60.0 GB together. Deleting all of them in Manage models "
+                         "frees at least 65.0 GB.")
+        self.assertIn("frees at least 65.0 GB", res["summary"])
+        self.assertTrue(shared.exists(), 'the plan deletes nothing')
+
+    def test_reinstalling_a_model_keeps_the_files_it_shares_in_the_freed_figure(self):
+        """The model being prepared again stays: a file it shares with an older model is not freed by deleting that one."""
+        shared = self.root / "reader.gguf"
+        shared.write_bytes(b"x")
+        a = self.write_model_files("old", shared)
+        target = self.write_model_files("q2_0", shared)
+        sizes = {str(a): 30_000_000_000, str(target): 50_000_000_000, str(shared): 4_000_000_000}
+        with mock.patch.object(M.Nostroma, "tree_bytes", side_effect=lambda p: sizes.get(str(p), 0)):
+            res, err = self.call("nostroma_install", {"model": "Q2_0", "family": "qwen"})
+        self.assertFalse(err, res)
+        plan = res["plan"]
+        self.assertEqual(plan["older_models"], [{"model": "old", "gb": 30.0}],
+                         'the model being prepared again is not one of the older ones')
+        self.assertEqual(plan["frees_gb"], 30.0, 'the reader it shares with the model being prepared stays')
+        self.assertEqual(plan["space_warning"],
+                         "Another downloaded model uses 30.0 GB. Deleting it in Manage models frees that space.")
 
     def test_progress_while_running_and_cancel(self):
         (self.root / "slow").write_text("")

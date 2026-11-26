@@ -843,16 +843,18 @@ class Nostroma:
         except OSError:
             return False
 
-    def removal_plan(self, config: Path) -> dict:
+    def removal_plan(self, config: Path, keep_by: list[Path] | None = None) -> dict:
         """What deleting this model removes and what it keeps. A file or folder another installed model's config still names
-        (the shared MTP draft, a shared PLE shard) is kept; so is anything outside Nostroma's own folders."""
+        (the shared MTP draft, a shared PLE shard) is kept; so is anything outside Nostroma's own folders. `keep_by` are the
+        configs that stay after the delete (every other installed model when it is not given): deleting several models
+        together passes the ones that remain, so a file only the deleted ones share is freed too."""
         cfg = self.read_config(config)
         files, dirs = self.model_paths(cfg)
         files = self.with_shards(files)
         used_files, used_dirs = set(), set()
-        for other in self.configs():
-            if norm(other) == norm(config):
-                continue
+        others = [c for c in self.configs() if norm(c) != norm(config)] if keep_by is None \
+            else [c for c in keep_by if norm(c) != norm(config)]
+        for other in others:
             f, d = self.model_paths(self.read_config(other))
             f = self.with_shards(f)
             used_files |= {norm(x) for x in f}
@@ -1323,8 +1325,9 @@ class Nostroma:
                 own = self.own_size(f, m)
                 d = own or models[m]
                 tag = (fd.get("tag", "") + m).lower()
-                # the model's files without the lookup table's file (download size minus the table) against the card's memory plus the RAM: "fits" or "may run slower"
-                # (nostroma_control/fit_label.py, the owner's one rule)
+                # the model's files without the lookup table's file (download size minus the table) placed by the plan: the card beyond the dense part and the
+                # drafter, then the RAM beyond the system's room; more than 0.5 GB read from the SSD is "may run slower" (nostroma_control/fit_label.py; the
+                # app's version list says the same word)
                 memory_gb = round(float(d["ram_gb"]) if d.get("mem_total") else float(d.get("arena_gb") or d["ram_gb"]) + 1.0, 1)      # the placement estimate (experts + dense)
                 fit_gb = fit_label.files_gb(f, m, d)          # what the label and the Terminal's "Needs" column use
                 verdict = None
@@ -2206,10 +2209,12 @@ class Tools:
                 raise ToolError("Nostroma is running (started by nostroma_start): stop it first with nostroma_stop - setup "
                                 "may update the engine files it uses")
             if not confirm:
+                space = (f" {plan['space_warning']} It takes {plan['takes']}."
+                         if plan.get("space_warning") else "")
                 return {"summary": f"Plan: install {plan['title']} ({plan['download_gb']:.0f} GB download"
-                                   f"{' at most; part of it is already here' if plan['partly_downloaded'] else ''}). "
-                                   "Nothing was done yet: ask the user, then call nostroma_install again with the "
-                                   "same arguments and confirm=true.", "plan": plan}
+                                   f"{' at most; part of it is already here' if plan['partly_downloaded'] else ''})."
+                                   f"{space} Nothing was done yet: ask the user, then call nostroma_install again "
+                                   "with the same arguments and confirm=true.", "plan": plan}
             if plan["disk_short"]:
                 raise ToolError(plan["disk_short"])
             return self.launch_install(plan, args)
@@ -2313,6 +2318,44 @@ class Tools:
             from nostroma_control import fit_label
             fit = fit_label.label(fit_label.files_gb(family, model, md), ram, fit_label.card_room_gb(s.engine_gpus(hw)))
         installed = (s.root / f"nostroma-{tag.lower()}.json").exists()
+        # Older downloaded models stay where they are; the plan says how much deleting them would free, so a person
+        # running out of disk sees the choice before the download starts. A broken config is skipped: it must not
+        # stop the plan for the model being installed.
+        target_config = s.root / f"nostroma-{tag.lower()}.json"
+        older_configs = [cfg for cfg in s.configs() if norm(cfg) != norm(target_config)]
+        older = []
+        for cfg in older_configs:
+            try:
+                gb = round(float(s.removal_plan(cfg)["gb"]), 1)       # its own files: one another model still names stays
+            except (OSError, ValueError, KeyError, TypeError):
+                continue
+            if gb > 0:
+                older.append({"model": cfg.stem[len("nostroma-"):], "gb": gb})
+        older.sort(key=lambda m: -m["gb"])
+        # What deleting them ALL frees is the union, not the sum: a file two older models share (the picture reader, the
+        # draft layer) is counted once, and a file one of them shares with a model that stays is kept. That union is the
+        # real minimum, so the warning says "at least" beside it.
+        deleted = {norm(c) for c in older_configs}
+        staying = [c for c in s.configs() if norm(c) not in deleted]
+        freed, seen = 0, set()
+        for cfg in older_configs:
+            try:
+                removed = s.removal_plan(cfg, keep_by=staying)["remove"]
+            except (OSError, ValueError, KeyError, TypeError):
+                continue
+            for item in removed:
+                key = norm(Path(item["path"]))
+                if key not in seen:
+                    seen.add(key)
+                    freed += int(item.get("bytes") or 0)
+        frees_gb = round(freed / 1e9, 1)
+        space_warning = None
+        if len(older) == 1:
+            space_warning = (f"Another downloaded model uses {older[0]['gb']:.1f} GB. Deleting it in Manage models "
+                             "frees that space.")
+        elif older:
+            space_warning = (f"The {len(older)} other downloaded models use {sum(m['gb'] for m in older):.1f} GB together. "
+                             f"Deleting all of them in Manage models frees at least {frees_gb:.1f} GB.")
         plan = {"title": f"{families[family]['title']} {model}", "family": family, "model": model,
                 "context": context, "images": vision or "no", "download_gb": md["download_gb"],
                 "partly_downloaded": partly, "ram": fit, "data_folder": str(target), "model_folder": str(have_dir),
@@ -2320,6 +2363,7 @@ class Tools:
                 "disk_needed_gb": round(need), "disk_short": short, "already_installed": installed,
                 "setup_command": ("START-HERE.bat " if WIN else "./setup.sh ") + " ".join(args),
                 "takes": "about 20-90 minutes, mostly the download; the PC stays usable",
+                "older_models": older, "frees_gb": frees_gb, "space_warning": space_warning,
                 "recommended_for_this_pc": rec if rec.get("model") else None}
         if installed:
             plan["note"] = ("this model is already installed: running setup again updates the engine and applies "
