@@ -3,6 +3,7 @@
 When the dated UI documents moved to [history/apps/host](../../../history/apps/host/docs), the requirements in them that were not done, or not shown to be done, were copied here.
 Each row names its source in `history/`. "Open" means a search of `src/` and `server/` on 7 November 2026 found nothing for it. "Check" means related
 code exists but nothing shows the requirement was met or tested. This is a list to triage, not a promise.
+The security scan and its own pending items live in the [audit roadmap](../../../docs/AUDIT_ROADMAP.md); this page is the UI half.
 
 ## Open
 
