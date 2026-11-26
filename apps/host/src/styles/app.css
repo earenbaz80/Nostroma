@@ -4779,35 +4779,6 @@ textarea.st-input {
 .settings-section {
   scroll-margin-top: 90px;
 }
-@media (max-width: 1279px) {
-  .app {
-  grid-template-columns: 64px minmax(0, 1fr);
-}
-.app[data-nav-open='true'] {
-  grid-template-columns: 64px minmax(0, 1fr);
-}
-.app[data-nav-open='true'] > .nav {
-  position: fixed;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 280px;
-  z-index: 20;
-  background: var(--st-surface);
-  box-shadow: var(--st-sh-pop);
-}
-.nav[data-overlay='true'] {
-  position: fixed;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 280px;
-  z-index: 20;
-}
-/* A drawer, not a column: its width is the window's, so there is no edge to drag. */
-.nav__resize { display: none; }
-
-}
 @media (max-width: 900px) {
   .tuning-grid {
   grid-template-columns: minmax(0, 1fr);
@@ -4827,6 +4798,20 @@ textarea.st-input {
 }
 .app:not([data-nav-open='true']) > .nav {
   display: none;
+}
+/* Phones only. There is no room for a column beside the conversation, so the
+   sidebar comes over it with the scrim behind it. Every wider window keeps the
+   sidebar in the grid's first column (or its 64px rail), at any width: the
+   conversation is never covered. */
+.app[data-nav-open='true'] > .nav {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 280px;
+  z-index: 20;
+  background: var(--st-surface);
+  box-shadow: var(--st-sh-pop);
 }
 .mobile-bar {
   display: flex;

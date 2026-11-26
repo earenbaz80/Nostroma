@@ -40,7 +40,7 @@ export const DESTINATIONS: { route: Route; label: string; icon: IconName; keywor
 export const APP_COMMANDS: AppCommand[] = [
   { id: 'new', label: 'New chat', hint: 'Start a new conversation; keep this one', group: 'Session', key: 'n', icon: 'new-chat', slash: ['new'], run: () => { const s = newSession(); go('chat', s.id); } },
   { id: 'palette', label: 'Command palette', group: 'Session', key: 'k', icon: 'search', palette: false, run: () => setPalette(!getState().paletteOpen) },
-  { id: 'sidebar', label: 'Show or hide sidebar', group: 'Session', key: 'b', icon: 'panel', run: () => window.innerWidth < 1280 ? setNavOpen(!getState().navOpen) : toggleRail() },
+  { id: 'sidebar', label: 'Show or hide sidebar', group: 'Session', key: 'b', icon: 'panel', run: () => window.innerWidth < 768 ? setNavOpen(!getState().navOpen) : toggleRail() },
   { id: 'settings', label: 'Settings', group: 'Session', key: ',', icon: 'settings', palette: false, run: () => go('settings') },
   { id: 'shortcuts', label: 'Keyboard shortcuts', keywords: 'keys bindings help', group: 'Session', key: '/', icon: 'bolt', run: () => setShortcuts(!getState().shortcutsOpen) },
   { id: 'dictation', label: 'Start or stop dictation', hint: 'Speak into the message box without sending', keywords: 'speech microphone voice transcribe', group: 'Session', key: 'd', shift: true, icon: 'mic', available: () => window.location.hash.startsWith('#/chat') && !getState().streaming, unavailable: 'Open a chat and wait for the current response to finish.', run: () => window.dispatchEvent(new Event('nostroma:dictation')) },

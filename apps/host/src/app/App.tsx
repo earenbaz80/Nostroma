@@ -40,12 +40,15 @@ function AppShell() {
         window.addEventListener('keydown', handleAppShortcut);
         return () => window.removeEventListener('keydown', handleAppShortcut);
     }, []);
-    const compact = useMedia('(max-width: 1279px)');
+    /* The only layout the CSS names is the phone's: from 768px up the sidebar is
+       the grid's first column at every width, so there is no compact mode. */
     const mobile = useMedia('(max-width: 767px)');
     const navOpen = useStore(s => s.navOpen);
     const navRef = useRef<HTMLElement>(null);
-    useSurfaceFocus(navOpen && compact, navRef);
-    useEffect(() => { setNavOpen(false); }, [location.route, location.param, compact]);
+    // Only a phone has a drawer to close: above 767px the sidebar is a column, so
+    // its state is `rail`, and walking to another page leaves it alone.
+    useSurfaceFocus(navOpen && mobile, navRef);
+    useEffect(() => { setNavOpen(false); }, [location.route, location.param, mobile]);
     // First run is a modal over the working shell rather than a takeover: the app
     // is visibly there behind it, which is far less daunting than a blank window
     // demanding five steps before anything appears.
@@ -63,9 +66,9 @@ function AppShell() {
         if (settingsSection) setSettingsSection(settingsSection as Parameters<typeof setSettingsSection>[0]);
     }, [settingsSection]);
     const routeShown = useDeferredValue(location.route);
-    return (<div className="app" data-rail={compact ? !navOpen : rail} data-layout={mobile ? 'mobile' : compact ? 'compact' : 'desktop'} data-nav-open={navOpen || undefined} data-focus={focus && location.route === 'chat' || undefined}>
+    return (<div className="app" data-rail={mobile ? !navOpen : rail} data-layout={mobile ? 'mobile' : undefined} data-nav-open={navOpen || undefined} data-focus={focus && location.route === 'chat' || undefined}>
       <Sidebar containerRef={navRef}/>
-      {tr(navOpen && compact ? <button className="nav-scrim" tabIndex={-1} aria-hidden="true" aria-label={tr("Close navigation")} onClick={() => setNavOpen(false)}/> : null)}
+      {tr(navOpen && mobile ? <button className="nav-scrim" tabIndex={-1} aria-hidden="true" aria-label={tr("Close navigation")} onClick={() => setNavOpen(false)}/> : null)}
       <main className="main">
         <div className="mobile-bar">
           <IconBtn name="panel" title={tr("Open navigation")} onClick={() => setNavOpen(true)}/>

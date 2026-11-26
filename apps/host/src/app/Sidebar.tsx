@@ -44,10 +44,12 @@ export function Sidebar({ containerRef }: {
 }) {
     useBindings();
     const location = useLocation();
-    const compact = useMedia('(max-width: 1279px)');
+    /* Phones are the only windows where the sidebar covers the page: from 768px
+       up it is the grid's column, and the conversation keeps the rest. */
+    const drawer = useMedia('(max-width: 767px)');
     const rail = useStore(s => s.rail);
     const navOpen = useStore(s => s.navOpen);
-    const collapsed = compact ? !navOpen : rail;
+    const collapsed = drawer ? !navOpen : rail;
     /* The sidebar is the grid's first column, so the width the person drags is
        published as the token the grid reads: the panel keeps no inline width, and
        the rail and the narrow-window drawer stay exactly as they were. */
@@ -164,8 +166,8 @@ export function Sidebar({ containerRef }: {
     function openMenu(id: string, trigger: HTMLElement) { menuTrigger.current = trigger; setMenuId(id); }
     function closeMenu() { setMenuId(null); menuTrigger.current?.focus(); }
     return <>
-    <aside className="nav" ref={containerRef} aria-label={tr("Main navigation")} aria-modal={navOpen && compact ? true : undefined} role={navOpen && compact ? 'dialog' : undefined} tabIndex={-1}>
-      <div className="nav__top">{tr(!collapsed ? <a className="nav__brand" href={href('chat')} aria-label={tr("Nostroma — open chat")}><Brand variant="lockup" height={28} decorative className="nav__brand-lockup"/></a> : null)}<button type="button" className="nav__collapse" aria-label={tr(collapsed ? 'Show sidebar' : 'Hide sidebar')} title={tr(collapsed ? 'Show sidebar' : 'Hide sidebar')} onClick={() => compact ? setNavOpen(!navOpen) : toggleRail()}><Icon name="panel" size={20}/></button></div>
+    <aside className="nav" ref={containerRef} aria-label={tr("Main navigation")} aria-modal={navOpen && drawer ? true : undefined} role={navOpen && drawer ? 'dialog' : undefined} tabIndex={-1}>
+      <div className="nav__top">{tr(!collapsed ? <a className="nav__brand" href={href('chat')} aria-label={tr("Nostroma — open chat")}><Brand variant="lockup" height={28} decorative className="nav__brand-lockup"/></a> : null)}<button type="button" className="nav__collapse" aria-label={tr(collapsed ? 'Show sidebar' : 'Hide sidebar')} title={tr(collapsed ? 'Show sidebar' : 'Hide sidebar')} onClick={() => drawer ? setNavOpen(!navOpen) : toggleRail()}><Icon name="panel" size={20}/></button></div>
       <div className="nav__scroll">
         <button className="st-btn st-btn--primary nav-new" aria-label={tr("New chat")} title={tr("New chat")} onClick={() => runCommand('new')}><Icon name="new-chat" size={18}/><span className="nav__rail-hide">{tr("New chat")}</span></button>
         <TaskTree collapsed={collapsed}/>
@@ -210,7 +212,7 @@ export function Sidebar({ containerRef }: {
       </div>
       {/* The sidebar's own edge: dragging it widens the column. Not drawn in the
           rail or on the narrow layout, where the sidebar is a drawer. */}
-      {!compact && !collapsed ? <div
+      {!drawer && !collapsed ? <div
         className="nav__resize"
         role="separator"
         tabIndex={0}
