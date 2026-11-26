@@ -1,6 +1,6 @@
 # Nostroma media and video guide
 
-For people and AI tools creating an article, overview or video. Last reviewed: 7 November 2026, for Nostroma 0.2.15.
+For people and AI tools creating an article, overview or video. Last reviewed: 23 November 2026, for Nostroma 0.2.16.
 Use [AI_REFERENCE.md](AI_REFERENCE.md) for product facts and [README.md](../README.md) for the public introduction.
 
 ## Short description

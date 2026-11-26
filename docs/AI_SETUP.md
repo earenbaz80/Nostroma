@@ -1,11 +1,11 @@
 # Set up Nostroma for a user
 
-Use this guide when a user asks an AI agent to install Nostroma (version 0.2.15). There are two release routes. Pick
+Use this guide when a user asks an AI agent to install Nostroma (version 0.2.16). There are two release routes. Pick
 one; do not start from a source checkout.
 
 - **The Terminal and `nostroma launch`** (below). This is the route for an agent that has a shell.
-- **The desktop app.** One installer per system: `Nostroma-0.2.15-windows-x64-setup.exe`,
-  `Nostroma-0.2.15-linux-x86_64.AppImage`, from the
+- **The desktop app.** One installer per system: `Nostroma-0.2.16-windows-x64-setup.exe`,
+  `Nostroma-0.2.16-linux-x86_64.AppImage`, from the
   [latest release](https://github.com/earenbaz80/Nostroma/releases/latest). The installers carry no
   engine: on first start the app shows the engine for the user's graphics card and downloads it, or installs a file the
   user already has ("I already have the file"). Details: [INSTALL.md](INSTALL.md).

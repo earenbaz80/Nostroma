@@ -1,4 +1,4 @@
-"""0.2.3 RC stress test, #3 (H01): the version bump is complete and consistent, and a 0.2.2 install sees the update."""
+"""The version bump is complete and consistent, and an older install sees the update."""
 
 import json
 import os
@@ -20,7 +20,8 @@ def first(path, pattern):
 
 
 class VersionBump(unittest.TestCase):
-    def test_the_terminal_is_0_2_4_2_and_control_is_0_1_49_2_while_the_app_stays_0_2_3(self):
+    def test_the_terminal_is_0_2_16_and_control_is_0_1_62(self):
+        # 0.2.16 (the rename release): the app and the Terminal are 0.2.16; Control and every Linux/Windows engine package are 0.1.62.
         # 0.2.13 (owner 2026-11-08, release of main before Qwen4): Terminal and app are 0.2.13; Control and every engine package (Qwen, DeepSeek, Metal, SYCL, aarch64) are 0.1.59 (the CMake project version).
         # 0.2.12 (owner 2026-11-06, release of rounds 0215/0216/0217): Terminal and app are 0.2.12; Control and every engine package (Qwen, DeepSeek, Metal, SYCL, aarch64) are 0.1.58 (the CMake project version).
         # 0.2.11 (coordinator 2026-11-04; the owner can still rename it 0.2.10.1): Terminal and app are 0.2.11; Control and every engine package (Qwen, DeepSeek, Metal, SYCL, aarch64) are 0.1.57 (the CMake project version).
@@ -34,23 +35,24 @@ class VersionBump(unittest.TestCase):
         # 0.2.13.1 (Control-only, Linux x86_64: the app on an Intel Arc card, ARCFIX): the Terminal is 0.2.13.1 and Control 0.1.59.1 (the CMake project version); the app stays 0.2.13 and every engine package 0.1.59 (as 0.2.8.1 and 0.2.3.1 did).
         # 0.2.14.1 (Control-only: the drafter fixes of the Terminal and Control): the Terminal is 0.2.14.1 and Control 0.1.60.1; the app stays 0.2.14 and every engine package 0.1.60.
         # 0.2.15 (an app + Control fix release): the app and the Terminal are 0.2.15 and Control 0.1.61; every engine package stays 0.1.60 (the v0.2.14 files).
-        self.assertEqual(nostroma_cli.PRODUCT_VERSION, "0.2.15")
-        self.assertEqual(nostroma_cli.version(), "0.1.61")              # the CMake project version: Control
-        self.assertEqual(first("CMakeLists.txt", r"^project\(nostroma VERSION ([0-9.]+) "), "0.1.61")
+        self.assertEqual(nostroma_cli.PRODUCT_VERSION, "0.2.16")
+        self.assertEqual(nostroma_cli.version(), "0.1.62")              # the CMake project version: Control
+        self.assertEqual(first("CMakeLists.txt", r"^project\(nostroma VERSION ([0-9.]+) "), "0.1.62")
+        # Metal is not part of the 13 Linux/Windows engine packages rebuilt for 0.2.16, so its own build stays at 0.1.60.
         self.assertIn('NOSTROMA_VERSION="0.1.60-metal"', (ROOT / "metal" / "CMakeLists.txt").read_text(encoding="utf-8"))
 
-    def test_every_place_the_app_version_lives_says_0_2_3(self):
-        self.assertEqual(first("apps/desktop/src-tauri/Cargo.toml", r'^version = "([^"]+)"'), "0.2.15")
+    def test_every_place_the_app_version_lives_says_0_2_16(self):
+        self.assertEqual(first("apps/desktop/src-tauri/Cargo.toml", r'^version = "([^"]+)"'), "0.2.16")
         lock = (ROOT / "apps/desktop/src-tauri/Cargo.lock").read_text(encoding="utf-8")
-        self.assertRegex(lock, r'name = "nostroma-desktop"\r?\nversion = "0.2.15"')
-        self.assertEqual(json.loads((ROOT / "apps/desktop/package.json").read_text(encoding="utf-8"))["version"], "0.2.15")
+        self.assertRegex(lock, r'name = "nostroma-desktop"\r?\nversion = "0.2.16"')
+        self.assertEqual(json.loads((ROOT / "apps/desktop/package.json").read_text(encoding="utf-8"))["version"], "0.2.16")
         host = json.loads((ROOT / "apps/host/package.json").read_text(encoding="utf-8"))
-        self.assertEqual(host["version"], "0.2.15")
+        self.assertEqual(host["version"], "0.2.16")
         locked = json.loads((ROOT / "apps/host/package-lock.json").read_text(encoding="utf-8"))
-        self.assertEqual((locked["version"], locked["packages"][""]["version"]), ("0.2.15", "0.2.15"))
+        self.assertEqual((locked["version"], locked["packages"][""]["version"]), ("0.2.16", "0.2.16"))
 
     def test_the_documents_that_state_the_current_version_agree(self):
-        self.assertIn("Version 0.2.15, engine 0.1.60.", (ROOT / "AGENTS.md").read_text(encoding="utf-8"))
+        self.assertIn("Version 0.2.16, engine 0.1.62.", (ROOT / "AGENTS.md").read_text(encoding="utf-8"))
         for name in ("README.md", "README.de.md", "README.es.md", "README.fr.md", "README.ja.md", "README.pl.md", "README.pt-BR.md", "README.zh-CN.md"):
             text = (ROOT / name).read_text(encoding="utf-8")
             self.assertRegex(text, r"Nostroma-0[.]2[.][0-9]+-", name)     # (the restyled READMEs state the app version through the download buttons; their owner moves them to the release)
@@ -59,7 +61,7 @@ class VersionBump(unittest.TestCase):
     def test_version_prints_the_product_and_the_build(self):
         done = subprocess.run([sys.executable, str(ROOT / "nostroma.py"), "--version"], capture_output=True, text=True, cwd=str(ROOT),
                               env={**os.environ, "NOSTROMA_NO_HANDOVER": "1"})
-        self.assertTrue(done.stdout.startswith("nostroma 0.2.15 (build 0.1.61;"), done.stdout)
+        self.assertTrue(done.stdout.startswith("nostroma 0.2.16 (build 0.1.62;"), done.stdout)
 
 
 class UpdateFromTheLastRelease(test_updater.UpdaterCase):

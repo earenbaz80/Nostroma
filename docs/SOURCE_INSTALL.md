@@ -1,7 +1,7 @@
 # Install and build from a source checkout
 
 Use this guide to work on Nostroma's code or maintain a source-based installation. It is for developers.
-To just use Nostroma (version 0.2.15), install the [desktop app or the Terminal](INSTALL.md). Installed apps do not use `START-HERE.bat`.
+To just use Nostroma (version 0.2.16), install the [desktop app or the Terminal](INSTALL.md). Installed apps do not use `START-HERE.bat`.
 
 The repository includes `START-HERE.bat`, `SETUP.bat`, `UPDATE.bat`, `setup.sh` and `update.sh`.
 Run them from a cloned or extracted **source folder**. They may install dependencies, prepare model files and

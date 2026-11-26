@@ -11,7 +11,7 @@ const bugForm = (over = {}) => {
     'What happened': 'Decode stops after two minutes with "CUDA error 700". I expected it to continue.',
     'Smallest steps or command that reproduce it': '_No response_',
     'Reproduction status': 'Reproduced locally',
-    'Nostroma version': 'Nostroma 0.2.15 · engine 0.1.60',
+    'Nostroma version': 'Nostroma 0.2.16 · engine 0.1.62',
     'Graphics card, memory and system': 'RTX 5070 12 GB · 64 GB RAM · Windows 11',
     ...over,
   };
@@ -68,10 +68,10 @@ test('feature and question forms', () => {
 });
 
 test('free-form issue', () => {
-  const good = 'Nostroma 0.2.15 on an RTX 3060 12 GB with 32 GB RAM on Linux: the server hangs when I send two requests at once. Expected both to finish.';
+  const good = 'Nostroma 0.2.16 on an RTX 3060 12 GB with 32 GB RAM on Linux: the server hangs when I send two requests at once. Expected both to finish.';
   assert.ok(c.checkIssue({ title: '[Engine] hang on two requests', body: good, mode: 'reopen' }).ok);
   assert.ok(!c.checkIssue({ title: '[Engine] hang', body: 'it crashes', mode: 'intake' }).ok);
-  const old = good.replace('0.2.15', '0.1.40');
+  const old = good.replace('0.2.16', '0.1.40');
   assert.ok(c.checkIssue({ title: '[Engine] hang', body: old, mode: 'intake' }).ok);
   assert.ok(!c.checkIssue({ title: '[Engine] hang', body: old, mode: 'reopen' }).ok);
   assert.ok(c.checkIssue({ title: '[Other] idea', body: 'It would help if the app remembered my last model between runs, today I pick it again.', labels: ['enhancement'], mode: 'reopen' }).ok);

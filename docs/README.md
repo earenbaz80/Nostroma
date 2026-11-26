@@ -1,6 +1,6 @@
 # Nostroma guides
 
-**New here? Start with [Install Nostroma](INSTALL.md).** Download the one installer for your system (Windows, Linux or Mac), or install the Terminal with one line. Both use released engine packages. This documentation is for version 0.2.15.
+**New here? Start with [Install Nostroma](INSTALL.md).** Download the one installer for your system (Windows, Linux or Mac), or install the Terminal with one line. Both use released engine packages. This documentation is for version 0.2.16.
 
 ## Use Nostroma
 

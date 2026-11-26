@@ -1,7 +1,7 @@
 {
   "name": "nostroma-desktop",
   "productName": "Nostroma",
-  "version": "0.2.15",
+  "version": "0.2.16",
   "private": true,
   "description": "Nostroma Desktop - local AI, tuned to one model.",
   "scripts": {

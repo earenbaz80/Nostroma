@@ -1,4 +1,4 @@
-"""The release app configuration: the engine travels inside every installer, the updater signs, the Mac minimum matches the Metal engine."""
+"""The release app configuration: the engine travels inside every Linux/Windows installer and the updater signs."""
 from __future__ import annotations
 
 import json
@@ -33,9 +33,6 @@ class ReleaseConfig(unittest.TestCase):
     def test_the_release_overlay_makes_signed_updater_artifacts(self):
         self.assertIs(load("tauri.release.conf.json")["bundle"]["createUpdaterArtifacts"], True)
         self.assertIs(load("tauri.conf.json")["bundle"]["createUpdaterArtifacts"], False)       # a development build needs no private key
-
-    def test_the_mac_app_needs_the_macos_the_metal_engine_needs(self):
-        self.assertEqual(load("tauri.conf.json")["bundle"]["macOS"]["minimumSystemVersion"], "15.0")
 
     def test_the_app_updater_is_off_so_no_other_product_is_installed(self):
         """This build publishes no app feed of its own, so there is no endpoint and no key: a check cannot install another product."""

@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Version 0.2.15, engine 0.1.60. The public model families are
+Version 0.2.16, engine 0.1.62. The public model families are
 Qwen3.8-Flash-Next and Qwen3.6-35B-A3B. Read **[docs/AI_REFERENCE.md](docs/AI_REFERENCE.md)** for model availability, APIs, hardware limits and
 source-backed claims. Articles and videos should use **[docs/MEDIA_KIT.md](docs/MEDIA_KIT.md)**.
 
@@ -13,10 +13,10 @@ Nostroma has three parts:
 
 - **The app** (`apps/desktop`, the Tauri shell; `apps/host`, the Node host and the web UI). It is for people who do
   not want a terminal. One installer per system ([latest release](https://github.com/earenbaz80/Nostroma/releases/latest)):
-  `Nostroma-0.2.15-windows-x64-setup.exe`, `Nostroma-0.2.15-linux-x86_64.AppImage`, `Nostroma-0.2.15-macos-arm64.dmg`.
-  The Windows and Linux installers carry no engine: the app downloads the engine for the graphics card on first
-  start, or installs a file the user already has. The Mac dmg keeps its small Metal engine inside.
-- **The Terminal** (`nostroma.py`, `nostroma_cli/`, `nostroma_control/`; `nostroma.py` is the same entry point under its old name): the `nostroma` command. It sets up a model, serves
+  `Nostroma-0.2.16-windows-x64-setup.exe` and `Nostroma-0.2.16-linux-x86_64.AppImage`.
+  The installers carry no engine: the app downloads the engine for the graphics card on first
+  start, or installs a file the user already has.
+- **The Terminal** (`nostroma.py`, `nostroma_cli/`, `nostroma_control/`): the `nostroma` command. It sets up a model, serves
   it and watches it. Agents use this part.
 - **The engine and the server** (`src/`, `include/`, `metal/`, `sycl/` for the C++/CUDA/HIP/SYCL/Metal engine;
   `serve/` for the Python server with an OpenAI- and Anthropic-compatible API and a web page). `setup.py`, started by
@@ -32,7 +32,7 @@ short version is:
 1. Install the Terminal. It needs no administrator rights.
 
    ```sh
-   curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh -o install.sh && sh install.sh                  # Linux, Mac
+   curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh -o install.sh && sh install.sh                  # Linux
    irm -TimeoutSec 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.ps1 | iex                         # Windows PowerShell
    ```
 
@@ -70,7 +70,7 @@ Source setup does not make an unsupported model or backend compatible. Nostroma'
 - The Terminal: [docs/TERMINAL.md](docs/TERMINAL.md) and [docs/TERMINAL_LAUNCH.md](docs/TERMINAL_LAUNCH.md). The app,
   the packages and the update feed: [packaging/README.md](packaging/README.md) and [packaging/UPDATES.md](packaging/UPDATES.md).
 - AMD (HIP) build and validation: [docs/AMD_HIP.md](docs/AMD_HIP.md); multi-GPU: [docs/MULTI_GPU.md](docs/MULTI_GPU.md);
-  Mac (Metal): [docs/MAC.md](docs/MAC.md).
+  Mac source build (Metal): [docs/MAC.md](docs/MAC.md).
 - Tests: the Terminal and Control tests are in `tests/terminal` (`python -m pytest tests/terminal`). The app's UI
   tests run with `npm test` in `apps/host`. Setup's own tests run without a GPU or downloads:
   `python tools/test_setup_<name>.py` (for example `tools/test_setup_amd.py`, `tools/test_setup_choices.py`).

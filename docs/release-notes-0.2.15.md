@@ -9,19 +9,16 @@ DeepSeek (`dsv41`) packages are carried as they were.
 - **The product is called Nostroma.** The window and page titles, the tray, the About row, the quit dialog, the
   installer, the app bundle, the macOS menu, the Terminal's header, the guides and the eight READMEs. The
   repository is now `earenbaz80/Nostroma`, and the sponsorship links and their contact address are gone.
-- **The command is `nostroma`, and `nostroma` still works.** The installer puts both names on the PATH — two links
-  on Linux and macOS, two launchers on Windows — and each one says the name it was called by. A name that
-  already exists and is not a link the installer made is left alone, and the install stops instead of
-  overwriting it.
-- **Your settings and data keep their place.** The host reads `NOSTROMA_*` first and still honours every
-  `NOSTROMA_*` variable as the fallback, so a launch script or a preset you already have keeps working. The
-  Python packages are now `nostroma_cli` and `nostroma_control`; `nostroma.py` still runs the program, and it is
-  still the file the Control archive ships.
+- **The command is `nostroma`.** The installer puts it on the PATH — one link on Linux and macOS, one launcher on
+  Windows. A name that already exists and is not a link the installer made is left alone, and the install stops
+  instead of overwriting it.
+- **Your settings and data keep their place.** The host and the Terminal use `NOSTROMA_*` variables. The Python
+  packages are now `nostroma_cli` and `nostroma_control`; `nostroma.py` runs the program, and it is still the file
+  the Control archive ships.
 - **The app moves an existing install.** A `~/.nostroma` folder, a `Documents/Nostroma/Models` library and a
   `Documents/Nostroma/Workspace` are renamed to the new names with their contents, and the app identifies itself as
   `ai.nostroma.desktop`. When a folder cannot be moved (another volume, no permission) it is read where it is.
-  The Terminal offers `Documents/Nostroma` first and still counts `Documents/Nostroma`, so models an older install
-  put there are found.
+  The Terminal uses `Documents/Nostroma`, so existing models there are found.
 - **A new look: amber phosphor.** Square corners, amber accents and one typeface across the app (Korean and
   Chinese still come from the system fonts), in both themes; text keeps WCAG AA contrast. The tab icon and the
   header mark are a new N monogram on an amber tile, and the header sets the rest of the name beside it, so the
@@ -43,7 +40,7 @@ DeepSeek (`dsv41`) packages are carried as they were.
 - The model files, the engine packages and the signed feed. No engine package was rebuilt for 0.2.15: the engine
   sources changed only in comments and messages, and its targets, `NOSTROMA_*` macros and output names are
   untouched, so a PC that already has its engine downloads nothing new.
-- `nostroma launch`, its flags and the run presets; `nostroma` as the second name of the command.
+- `nostroma launch`, its flags and the run presets.
 - The `NOSTROMA_*` variables, `~/.nostroma`, `Documents/Nostroma` and `nostroma.py`, for installs and scripts made
   before the rename.
 
@@ -56,7 +53,7 @@ DeepSeek (`dsv41`) packages are carried as they were.
   `packaging/check_assets.py` fails when the folder and the manifest's 41 assets disagree.
 - `docs/RELEASE_CHECKLIST.md` is the runbook: every asset, the script that builds it, and the order up to
   publishing as Latest.
-- The release guards now fail on an old name instead of accepting it: the page check rewrites
+- The release guards now fail on a stale name instead of accepting it: the page check rewrites
   `Nostroma-<version>-<platform>-…` and `Nostroma.app`, and the tests pin that.
 
 ## What we did not test

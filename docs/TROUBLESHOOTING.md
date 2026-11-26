@@ -18,7 +18,7 @@ nostroma launch --status
 **I cannot find `START-HERE.bat` or `SETUP.bat`.**
 Open the installed Nostroma app, or run `nostroma launch`. Those wrappers are in the source repository and are not the
 startup path for the app. For a fresh desktop install, download the one installer for your system
-(`Nostroma-0.2.15-windows-x64-setup.exe` or `Nostroma-0.2.15-linux-x86_64.AppImage`), not a
+(`Nostroma-0.2.16-windows-x64-setup.exe` or `Nostroma-0.2.16-linux-x86_64.AppImage`), not a
 `nostroma-engine-…` archive.
 
 **`nostroma` is not found.**

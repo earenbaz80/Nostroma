@@ -1,6 +1,6 @@
 # Install Nostroma
 
-This page is for anyone installing or updating Nostroma (version 0.2.15). Use the **desktop app** for a graphical
+This page is for anyone installing or updating Nostroma (version 0.2.16). Use the **desktop app** for a graphical
 interface, or the **Terminal** for `nostroma launch` and coding tools. Both use released engine packages. A normal
 install does not need a source checkout or a startup `.bat` file.
 
@@ -36,8 +36,8 @@ hardware drivers. Models and updates need an internet connection to download.
 
 1. Open the [latest release](https://github.com/earenbaz80/Nostroma/releases/latest).
 2. Download the one installer for your system. There is one per system, not one per graphics card:
-   - **Windows:** run `Nostroma-0.2.15-windows-x64-setup.exe`. It installs for your user and needs no administrator rights.
-   - **Linux:** make `Nostroma-0.2.15-linux-x86_64.AppImage` executable, then open it. If FUSE is unavailable, run the
+   - **Windows:** run `Nostroma-0.2.16-windows-x64-setup.exe`. It installs for your user and needs no administrator rights.
+   - **Linux:** make `Nostroma-0.2.16-linux-x86_64.AppImage` executable, then open it. If FUSE is unavailable, run the
      downloaded file with `--appimage-extract-and-run`. [Linux help](TROUBLESHOOTING.md).
 3. The installer has no engine inside. On first start the app shows the engine for your graphics card with its size
    and one **Download** button, with progress and resume. If you already downloaded the engine file, choose **I
