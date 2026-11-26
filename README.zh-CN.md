@@ -60,11 +60,11 @@
 
 ### 桌面应用
 
-**[下载适用于 Windows、Linux 或 Mac 的 Nostroma →](https://github.com/earenbaz80/Nostroma/releases/latest)**
+**[下载适用于 Windows、Linux 的 Nostroma →](https://github.com/earenbaz80/Nostroma/releases/latest)**
 
 安装应用，选择模型，就可以开始聊天。每个系统只有一个安装程序。首次启动时，应用会下载适合你显卡的引擎。[安装程序帮助](docs/INSTALL.md#the-app)。
 
-<sub>文件: `Nostroma-0.2.15-windows-x64-setup.exe` · `Nostroma-0.2.15-linux-x86_64.AppImage` · `Nostroma-0.2.15-macos-arm64.dmg`</sub>
+<sub>文件: `Nostroma-0.2.15-windows-x64-setup.exe` · `Nostroma-0.2.15-linux-x86_64.AppImage`</sub>
 
 <p align="center">
   <img src="docs/media/app-chat.png" width="900" alt="Nostroma 桌面应用，聊天和实时代码预览并排显示">
@@ -80,7 +80,7 @@
 <details open>
 <summary><b>安装命令</b></summary>
 
-**Linux / Mac**
+**Linux**
 
 ```sh
 curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh -o install.sh && sh install.sh
@@ -121,7 +121,6 @@ nostroma launch
 | **AMD Radeon RX 7700 / 7800 / 7900、RX 9060 / 9070、AI PRO R9700** | [AMD 安装](docs/AMD_HIP.md) |
 | **AMD Radeon RX 6800 / 6900 · 实验性** | [RX 6000 安装](docs/AMD_HIP.md#rdna2-gfx1030) |
 | **Intel Arc · Linux** | [Intel 安装](docs/INTEL_ARC.md) |
-| **Apple Silicon · M1 或更新** | [Mac 安装](docs/MAC.md) |
 | **AMD Ryzen AI Max · Strix Halo** | [Strix Halo 安装](docs/STRIX_HALO.md) |
 
 <a id="using-it"></a>

@@ -131,6 +131,8 @@ class ReleaseManifest(unittest.TestCase):
         m = copy.deepcopy(rm.load())
         m["engines_from"] = "v0.2.14"
         m["control_version"], m["engine_version"] = "0.1.61", "0.1.60"
+        # this scenario carries v0.2.14's packages; the current manifest no longer lists any 0.1.60 archive
+        m["assets"] = list(m["assets"]) + ["nostroma-engine-0.1.60-linux-x86_64-cuda-cuda13.tar.gz"]
         cmake = {"CMakeLists.txt (engine)": ("0.1.61", "engine_version"), "CMakeLists.txt (Control)": ("0.1.61", "control_version")}
         real = rm.code_versions
         try:

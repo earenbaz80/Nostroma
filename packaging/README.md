@@ -24,8 +24,6 @@ Each row is an OS, CPU ABI and backend. A row is `qualified` only after the acce
 
 | Target | App artifact | Engine package recipe | Status |
 | --- | --- | --- | --- |
-| `macos-arm64-metal` | `.app` and `.dmg` (Tauri) | Metal `nostroma`, bundled with `nostroma-vision` (`packaging/build_vision_mac.sh`) | Built. Self-test passes from the mounted DMG. Inference measurements are in [MAC.md](../docs/MAC.md). Signing: `packaging/mac/sign-and-notarize.sh` ([mac/README.md](mac/README.md)). |
-| `darwin-arm64` Terminal | self-contained `.tar.gz` | any | Built and verified. Runs from a moved directory with no system Python. |
 | `windows-x86_64-cuda` | NSIS `.exe` (Tauri) | `cuda13` and `cuda12` | Built and tested on a Windows PC with an NVIDIA card: silent install with a System32-only PATH, a real model, an agent chat. |
 | `windows-x86_64-hip` | NSIS `.exe` (Tauri) | `tools/hip/build_windows.bat` | Published. Strix Halo inference is recorded in [STRIX_HALO.md](../docs/STRIX_HALO.md). This does not qualify every discrete Radeon card ([AMD_HIP.md](../docs/AMD_HIP.md)). |
 | `linux-x86_64-cuda` | AppImage (Tauri) | `packaging/build_cuda_linux.sh`, built in a glibc 2.35 chroot | `cuda13` built and tested on RTX 3060 and RTX A4000 (app in the browser, a real model, a picture). `cuda12` built. |
@@ -33,7 +31,6 @@ Each row is an OS, CPU ABI and backend. A row is `qualified` only after the acce
 | `linux-aarch64-cuda` | none (no AppImage for arm64) | `packaging/build_cuda_linux_aarch64.sh`, built on the DGX Spark (`cuda13`, `sm_121`) | The engine package and the Terminal archive built and tested on one DGX Spark ([DGX_SPARK_LINUX.md](../docs/DGX_SPARK_LINUX.md)). Not tried on any other arm64 machine. |
 | `linux-x86_64-sycl` | none | `packaging/build_sycl_linux.sh` (one JIT package for Alchemist and Battlemage) | Engine package built and tested on an Arc A750. Battlemage is supported and untested by us. |
 | `windows-x86_64-sycl` | none | none | Gated. No native Windows SYCL path exists upstream. |
-| `macos-x86_64-*` | none | none | Unsupported. The macOS engine is Apple Silicon only. |
 
 Cross-compilation is not attempted for the desktop app. Tauri bundles are per OS, and the Windows installer is built on Windows.
 The Python contracts, the owner transport, the checks and the engine build recipes are portable.
@@ -59,8 +56,6 @@ The script refuses an archive whose SHA-256 differs from the digest recorded for
 cd apps/desktop
 ./scripts/fetch-node.sh                                                      # the sidecar (once)
 npm install --prefix ../host && npm --prefix ../host run build                # the UI
-cargo tauri build --bundles app                                              # macOS: Nostroma.app
-./scripts/make-dmg.sh                                                        # macOS DMG (headless; Tauri's default step needs a Finder session)
 cargo tauri build --bundles nsis                                             # Windows, on Windows: per-user NSIS installer
 cargo tauri build --bundles appimage deb                                     # Linux, on Linux
 ```
@@ -73,7 +68,7 @@ release PC ([UPDATES.md](UPDATES.md#releasing)).
 
 ## Nostroma Control and the engine in the installed app
 
-The installer carries Control, and on a Mac the Metal engine too. Neither fetches anything when it runs.
+The installer carries Control. It does not fetch anything when it runs.
 
 **Control** (`<install>/control`, built by `apps/desktop/scripts/stage-control.py`) is the same bundle as the Terminal archive:
 the pinned CPython 3.12.15, the hash-locked wheels, `nostroma_control`, `nostroma_cli` and `serve`, plus a `BUNDLE.json` with the
@@ -88,7 +83,7 @@ the open window. One app can run several engines (profiles `app-1`, `app-2`, ...
 
 **The engine.** The Windows and Linux installers carry no engine. On the first start the app shows the engine for the card with its size
 and one Download button (with progress and resume), or installs an engine file the person already has ("I already have the file").
-The Mac dmg keeps its small Metal engine in `<install>/engine-bundle/<package folder>`. Either way the engine ends up in the per-user
+The engine ends up in the per-user
 component folder, after the package is checked against its manifest (`%LOCALAPPDATA%\Nostroma\components`, `$XDG_DATA_HOME/nostroma/components`, or `NOSTROMA_COMPONENTS_DIR`),
 where Control finds it like any engine that `nostroma update` installed:
 
@@ -113,7 +108,7 @@ separate, explicit action. `apps/host/tests/no-acquire.test.mjs` fails on any ou
 
 ## The Terminal archive
 
-The Terminal bundles a private Python and its dependencies for `windows-x86_64`, `linux-x86_64`, `linux-aarch64` (DGX Spark) and `darwin-arm64`
+The Terminal bundles a private Python and its dependencies for `windows-x86_64`, `linux-x86_64` and `linux-aarch64` (DGX Spark)
 (`package_terminal.py --target ...`, built on the target OS).
 
 - The interpreter is python-build-standalone CPython 3.12.15, digest-checked at build time.
@@ -130,15 +125,15 @@ The Terminal bundles a private Python and its dependencies for `windows-x86_64`,
 1. The app launches and the window serves the supplied UI from the host's origin.
 2. The owner transport works: one owner per installation, a second client attaches, a stale owner can be recovered, and no client can stop a process it does not own.
 3. Real inference on a supported pack, with the engine build hash and the model hashes recorded.
-4. A qualification run on that platform, with raw evidence kept. The Mac-first run in October 2026 is the earlier example: [history/docs/work/QUALIFICATION-KIT.md](../history/docs/work/QUALIFICATION-KIT.md).
+4. A qualification run on that platform, with raw evidence kept. The first qualification run in October 2026 is the earlier example: [history/docs/work/QUALIFICATION-KIT.md](../history/docs/work/QUALIFICATION-KIT.md).
 
 ## Release checks and gaps
 
 - CI covers scripts, Terminal checks, Metal builds and Docker images ([.github/workflows](../.github/workflows)). It does not replace native desktop
   packaging, signing or real-GPU acceptance on every target. Some recipes still run by hand.
 - Signing needs the owner's credentials, which are never in this tree. The feed and every engine package are signed with the feed key
-  (`feed_tool.py`); the app installers with the Tauri updater key ([UPDATES.md](UPDATES.md)). The Mac app and Terminal archive are signed and
-  notarised on a Mac that holds the Developer ID certificate. No Windows code-signing certificate is configured, so Windows may warn about the installer.
+  (`feed_tool.py`); the app installers with the Tauri updater key ([UPDATES.md](UPDATES.md)). No Windows code-signing certificate is configured,
+  so Windows may warn about the installer.
 - Check the licenses and provenance of bundled fonts and assets when packaging. The early D05 checklist lacked redistribution evidence;
   treat that as an open checklist finding, not an audit of every release asset.
 
@@ -148,6 +143,4 @@ The Terminal bundles a private Python and its dependencies for `windows-x86_64`,
   current config uses `installMode: currentUser`.
 - **Repository size:** `apps/desktop/src-tauri/target` and the Node sidecar were briefly committed, which left about 324 MB in the git object
   store. They are untracked and ignored now. History was not rewritten.
-- **Mac packaging tests:** the first DMG self-test (8/8) and the engine's 17 kernel-parity suites ran on an Apple M4 GPU in a 16 GiB Mac, with service stand-ins for signing.
-  Later inference measurements on larger Macs are in [MAC.md](../docs/MAC.md).
 - **Intel Arc:** official since 0.1.40.2. The 2026-10 B70 tests used the source build, not the engine package. `sycl/setup_intel.py` (Docker) remains the source-build route.

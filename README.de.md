@@ -60,11 +60,11 @@ Unsicher, was passt? [Wähle ein Modell für deinen Computer](docs/MODELS.md#pic
 
 ### Desktop-App
 
-**[Nostroma für Windows, Linux oder Mac herunterladen →](https://github.com/earenbaz80/Nostroma/releases/latest)**
+**[Nostroma für Windows oder Linux herunterladen →](https://github.com/earenbaz80/Nostroma/releases/latest)**
 
 Installiere die App, wähle ein Modell und leg mit dem Chat los. Es gibt einen Installer pro System. Beim ersten Start lädt die App die Engine für deine Grafikkarte herunter. [Hilfe zum Installer](docs/INSTALL.md#the-app).
 
-<sub>Dateien: `Nostroma-0.2.15-windows-x64-setup.exe` · `Nostroma-0.2.15-linux-x86_64.AppImage` · `Nostroma-0.2.15-macos-arm64.dmg`</sub>
+<sub>Dateien: `Nostroma-0.2.15-windows-x64-setup.exe` · `Nostroma-0.2.15-linux-x86_64.AppImage`</sub>
 
 <p align="center">
   <img src="docs/media/app-chat.png" width="900" alt="Nostroma-Desktop-App mit Chat und Live-Codevorschau nebeneinander">
@@ -80,7 +80,7 @@ Lieber im Terminal? Installiere Nostroma und starte dann **`nostroma launch`**.
 <details open>
 <summary><b>Installationsbefehle</b></summary>
 
-**Linux / Mac**
+**Linux**
 
 ```sh
 curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh -o install.sh && sh install.sh
@@ -121,7 +121,6 @@ Folge den Anweisungen, um ein Modell herunterzuladen und zu starten. [Terminal-A
 | **AMD Radeon RX 7700 / 7800 / 7900, RX 9060 / 9070, AI PRO R9700** | [AMD-Setup](docs/AMD_HIP.md) |
 | **AMD Radeon RX 6800 / 6900 · experimentell** | [RX-6000-Setup](docs/AMD_HIP.md#rdna2-gfx1030) |
 | **Intel Arc · Linux** | [Intel-Setup](docs/INTEL_ARC.md) |
-| **Apple Silicon · M1 oder neuer** | [Mac-Setup](docs/MAC.md) |
 | **AMD Ryzen AI Max · Strix Halo** | [Strix-Halo-Setup](docs/STRIX_HALO.md) |
 
 <a id="using-it"></a>

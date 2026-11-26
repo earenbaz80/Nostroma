@@ -5,8 +5,8 @@ one; do not start from a source checkout.
 
 - **The Terminal and `nostroma launch`** (below). This is the route for an agent that has a shell.
 - **The desktop app.** One installer per system: `Nostroma-0.2.15-windows-x64-setup.exe`,
-  `Nostroma-0.2.15-linux-x86_64.AppImage`, `Nostroma-0.2.15-macos-arm64.dmg`, from the
-  [latest release](https://github.com/earenbaz80/Nostroma/releases/latest). The Windows and Linux installers carry no
+  `Nostroma-0.2.15-linux-x86_64.AppImage`, from the
+  [latest release](https://github.com/earenbaz80/Nostroma/releases/latest). The installers carry no
   engine: on first start the app shows the engine for the user's graphics card and downloads it, or installs a file the
   user already has ("I already have the file"). Details: [INSTALL.md](INSTALL.md).
 
@@ -15,8 +15,7 @@ Model availability, provider preference and API details are in [AI_REFERENCE.md]
 ## 1. Check the computer and the requested model
 
 - Check OS, CPU architecture, graphics cards, driver, available RAM/VRAM and free disk space.
-- Use the [hardware guides](INSTALL.md#what-you-need). Linux and Windows packages are x86-64; Mac packages are
-  Apple Silicon and need macOS 15 or newer. Older GPUs, Intel Arc and low-memory machines have specific limits.
+- Use the [hardware guides](INSTALL.md#what-you-need). Linux and Windows packages are x86-64. Older GPUs, Intel Arc and low-memory machines have specific limits.
 - Model support is separate from hardware support. <!-- cap:summary:qwen36 -->Qwen3.6-35B-A3B runs in the desktop app and in the Terminal. Hardware: NVIDIA on Windows; NVIDIA on Linux; AMD on Windows; AMD on Linux. Package present but not tested: NVIDIA DGX Spark. Does not run on: Intel Arc on Linux, Apple silicon. Per-hardware limits and measurements: [CAPABILITIES.md](CAPABILITIES.md#qwen36).<!-- /cap -->
 - Check the **chosen pack's** memory and disk needs. Do not reuse a Flash-Next estimate for every family.
   Unified memory is one pool, not RAM plus VRAM. A completed download does not establish that a model can run.
@@ -30,7 +29,7 @@ Model availability, provider preference and API details are in [AI_REFERENCE.md]
 The installer downloads a private Python runtime and Control, verifies the release checksums and signed feed, and
 installs into the user's home folder. The engine and model are acquired during launch.
 
-**Linux / Mac:**
+**Linux:**
 
 ```sh
 curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh -o install.sh && sh install.sh
@@ -42,7 +41,7 @@ curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/earenbaz80/Nos
 irm -TimeoutSec 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.ps1 | iex
 ```
 
-Open a new terminal on Windows. On Linux and Mac, use the full executable path printed by the installer if
+Open a new terminal on Windows. On Linux, use the full executable path printed by the installer if
 `~/.local/bin` is not on PATH. Confirm with `nostroma --version` and `nostroma launch --help`.
 Do not search for `START-HERE.bat` in the installed app or Terminal: it is not part of them.
 
@@ -108,7 +107,7 @@ nostroma doctor --live
 
 Check the printed address and model, then query `/health` and `/v1/models` at that address. With the default port:
 
-**Linux / Mac:**
+**Linux:**
 
 ```sh
 curl -fsS http://127.0.0.1:8080/health

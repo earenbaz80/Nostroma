@@ -5,7 +5,7 @@ name: Backend compile checks
 #   CUDA 12.9 and 13.0   nvidia/cuda devel container   target nostroma (no MMQ, the default) (CMake preset cuda-compile)
 #   HIP (ROCm 7.2)       rocm/dev container            target nostroma                      (CMake preset hip-compile)
 #   SYCL (oneAPI 2026.1) ubuntu + Intel's apt repo     target nostroma of sycl/             (the commands of packaging/build_sycl_linux.sh)
-#   Metal                macOS runner                  target nostroma                      (metal/; metal-build.yml keeps its own nostroma build)
+#   Metal                macOS runner                  target nostroma                      (metal/)
 # ggml comes from the vendored third_party/nostroma-ggml (frozen at llama.cpp's pin), the same tree the release builds use: nothing is downloaded.
 # Architectures are fewer than the release package's (compile time); the flags that decide which sources and defines are built are the release's.
 
@@ -166,7 +166,7 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 60
     env:
-      # metal/setup_mac.py's metal-cpp pin (the same as metal-build.yml)
+      # metal/setup_mac.py's metal-cpp pin
       METAL_CPP_URL: https://developer.apple.com/metal/cpp/files/metal-cpp_26.zip
       METAL_CPP_SHA256: 4df3c078b9aadcb516212e9cb03004cbc5ce9a3e9c068fa3144d021db585a3a4
     steps:

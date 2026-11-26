@@ -21,10 +21,10 @@ import test_qwen4_intake as T  # noqa: E402
 import qwen4_intake as Q  # noqa: E402
 
 PREV = {"nostroma-engine-0.1.57-linux-x86_64-cuda-cuda13.tar.gz": 720_000_000, "nostroma-engine-0.1.57-linux-x86_64-sycl.tar.gz": 187_000_000,
-        "nostroma-engine-0.1.57-windows-x86_64-cuda-cuda13.zip": 900_000_000, "nostroma-engine-0.1.57-macos-arm64-metal.tar.gz": 150_000_000,
+        "nostroma-engine-0.1.57-windows-x86_64-cuda-cuda13.zip": 900_000_000,
         "nostroma-control-0.1.57-linux-x86_64.tar.gz": 99_000_000,
         "Nostroma-0.2.11-windows-x64-setup.exe": 80_000_000, "Nostroma-0.2.11-windows-x64-setup.exe.sig": 400,
-        "Nostroma-0.2.11-linux-x86_64.AppImage": 90_000_000, "Nostroma-0.2.11-macos-arm64.dmg": 160_000_000, "Nostroma.app.tar.gz": 70_000_000,
+        "Nostroma-0.2.11-linux-x86_64.AppImage": 90_000_000,
         "nostroma-feed.json": 9000, "nostroma-feed.json.sig": 200, "SHA256SUMS.txt": 5000, "latest.json": 1500, "install.sh": 9000}
 
 
@@ -95,7 +95,7 @@ class Plan(unittest.TestCase):
     def test_the_plan_names_the_boxes_of_the_rehearsal(self):
         code, out, err = run(self.base(self.a, "--case", "B", "--engine-version", "0.1.58", "--shape", "q4_lite"))
         self.assertEqual(code, 0, err)
-        for good in ("l620", "p1006", "owner PC", "m1002"):
+        for good in ("l620", "p1006", "owner PC"):
             self.assertIn(good, out)
         for stale in ("z440", "p1004", "m1001"):
             self.assertNotIn(stale, out)
@@ -114,8 +114,8 @@ class Plan(unittest.TestCase):
         kept = {k["name"] for k in p["kept"]}
         self.assertTrue({n for n in PREV if n.startswith(("nostroma-engine-", "nostroma-control-", "Nostroma-"))} <= kept)
         self.assertFalse(any("Controls: pack" in s["what"] or "App text" in s["what"] for s in p["steps"]))
-        self.assertIn("nostroma-q4-lite-0.1.58-macos-arm64-metal.tar.gz", names)
-        self.assertTrue(any("Mac" in s["what"] and s["owner_only"] for s in p["steps"]), "the owner signs the Mac shape engine")
+        self.assertFalse(any("macos" in n.lower() for n in names))
+        self.assertFalse(any("Mac" in s["what"] for s in p["steps"]))
         self.assertTrue(any("--shape q4_lite" in c for s in p["steps"] for c in s["commands"]))
         self.assertTrue(any("--shapes <shape-entries>" in c for s in p["steps"] for c in s["commands"]))
         self.assertEqual(p["entry"]["family"], "qwen35moe", "the family changes only for a qwen4exp model")
@@ -256,7 +256,8 @@ class Plan(unittest.TestCase):
             self.assertRegex(text.splitlines()[0], "DRAFT")                 # drafts for the owner's approval
             self.assertNotIn("{{", text, name)                          # every key the templates use is one the script fills
         notes = (out / "RELEASE-NOTES.md").read_text(encoding="utf-8")
-        self.assertTrue(notes.rstrip().endswith('height="50"></a>'))      # the coffee button is last
+        self.assertTrue(notes.rstrip().endswith("- **[FILL: model authors and quantizers]:** [FILL: what they made]."))  # ends with thanks, no sponsorship footer
+        self.assertNotIn("buymeacoffee.com", notes)                     # the sponsorship links were removed deliberately
         self.assertIn("[FILL", notes)
         self.assertFalse((out / "CHECKLIST.md").exists())
 

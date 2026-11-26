@@ -21,7 +21,6 @@ install does not need a source checkout or a startup `.bat` file.
 | Windows 10/11 or Linux x86-64 with an NVIDIA RTX GPU | Use the app or the Terminal. The engine for your card is downloaded for you. [Older NVIDIA cards](OLDER_GPUS.md) use the CUDA 12 engine. |
 | Windows or Linux x86-64 with a supported AMD Radeon | [AMD guide](AMD_HIP.md), including the card-to-package table. |
 | Linux x86-64 with Intel Arc | [Intel Arc guide](INTEL_ARC.md); install the driver/compute runtime and check model preparation requirements |
-| Apple Silicon Mac, macOS 15 or newer | [Mac guide](MAC.md). Intel Macs are not supported by the Mac package. |
 | AMD Ryzen AI Max / Strix Halo | [Strix Halo guide](STRIX_HALO.md) |
 | NVIDIA DGX Spark (Linux ARM64) | [DGX Spark guide](DGX_SPARK_LINUX.md). Use the Terminal; there is no desktop app for ARM64 Linux. |
 
@@ -40,11 +39,9 @@ hardware drivers. Models and updates need an internet connection to download.
    - **Windows:** run `Nostroma-0.2.15-windows-x64-setup.exe`. It installs for your user and needs no administrator rights.
    - **Linux:** make `Nostroma-0.2.15-linux-x86_64.AppImage` executable, then open it. If FUSE is unavailable, run the
      downloaded file with `--appimage-extract-and-run`. [Linux help](TROUBLESHOOTING.md).
-   - **Mac:** open `Nostroma-0.2.15-macos-arm64.dmg`, drag Nostroma into Applications, then open it. [Mac help](MAC.md).
-3. On Windows and Linux the installer has no engine inside. On first start the app shows the engine for your
-   graphics card with its size and one **Download** button, with progress and resume. If you already downloaded the
-   engine file, choose **I already have the file** and it installs without internet. The Mac file keeps its small
-   Metal engine inside.
+3. The installer has no engine inside. On first start the app shows the engine for your graphics card with its size
+   and one **Download** button, with progress and resume. If you already downloaded the engine file, choose **I
+   already have the file** and it installs without internet.
 4. Choose a model and its storage folder, let it download, then chat.
 
 The `nostroma-engine-…` and `nostroma-control-…` archives on the release page are components, not installers. The
@@ -61,7 +58,7 @@ Current app recommendations can differ; choose the model explicitly when you wan
 
 Install once, then use `nostroma launch`. The Terminal includes Python and downloads the engine for your computer.
 
-**Linux / Mac**
+**Linux**
 
 ```sh
 curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh -o install.sh && sh install.sh
@@ -73,7 +70,7 @@ curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/earenbaz80/Nos
 irm -TimeoutSec 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.ps1 | iex
 ```
 
-On Windows, open a **new terminal** afterwards. On Linux and Mac, if `nostroma` is not found, use the full path printed
+On Windows, open a **new terminal** afterwards. On Linux, if `nostroma` is not found, use the full path printed
 by the installer (normally `~/.local/bin/nostroma`) or add that folder to your shell's PATH.
 
 ```sh
@@ -133,7 +130,7 @@ Source checkouts have a [separate update workflow](SOURCE_INSTALL.md#updating).
 | --- | --- |
 | Desktop chats and host state | `~/.nostroma` (or `NOSTROMA_HOME`) |
 | Engine components, Windows | `%LOCALAPPDATA%\Nostroma\components` |
-| Engine components, Linux / Mac | `$XDG_DATA_HOME/nostroma/components`, normally `~/.local/share/nostroma/components` |
+| Engine components, Linux | `$XDG_DATA_HOME/nostroma/components`, normally `~/.local/share/nostroma/components` |
 | Terminal files | The `terminal` folder beside `components`; the installer prints the exact path |
 | Models | The folder chosen in the app or launch screens; an existing model library is reused |
 

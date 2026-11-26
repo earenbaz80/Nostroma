@@ -1,7 +1,7 @@
 # Engine component manifest (schema 2)
 
 This page is for developers who build or check engine packages. It defines the manifest that every engine package carries:
-Windows CUDA 13 and 12, Windows HIP, Linux CUDA, Linux HIP, Linux SYCL and macOS Metal. Control (`nostroma_control/engine_component.py`) reads it, checks it, and only then starts the engine.
+Windows CUDA 13 and 12, Windows HIP, Linux CUDA, Linux HIP and Linux SYCL. Control (`nostroma_control/engine_component.py`) reads it, checks it, and only then starts the engine.
 `packaging/package_engine.py` writes it. A package you make locally is unsigned and loads. A package in the release feed is signed with the
 feed key (an Ed25519 key the owner keeps offline), and `nostroma update` / "Update engine" install it only when that signature verifies
 ([UPDATES.md](UPDATES.md)). The installers carry an engine of their own, so a new install needs no download to start a model.
@@ -11,7 +11,7 @@ feed key (an Ed25519 key the owner keeps offline), and `nostroma update` / "Upda
     <components>/engine/<version>-<platform>-<backend>[-<variant>]/
         engine-component.json
         nostroma | nostroma.exe              the entrypoint
-        lib*.so* | *.dll | *.dylib       the GPU runtime libraries it loads from beside itself
+        lib*.so* | *.dll                 the GPU runtime libraries it loads from beside itself
         BUILD.json  LICENSE*             optional records
         rocm/**  nostroma-vision.exe  ...  anything else the build needs, listed in the manifest like the rest
 
@@ -25,9 +25,9 @@ A package folder is immutable: a new build is a new folder.
 | `schema_version` | 2 | schema 1 packages (no `archs`, `min_driver`, `build_id`, `signature`; `cuda_archs` instead of `archs`) still load |
 | `id`, `name` | `"nostroma-engine"` | the component name; anything else is refused |
 | `version` | string | the engine release, e.g. `0.1.50`; the newest compatible version wins |
-| `platform` | string | `windows-x86_64`, `linux-x86_64`, `linux-aarch64` (the NVIDIA DGX Spark), `macos-arm64` (must match this PC) |
-| `backend` | string | `cuda`, `hip`, `sycl`, `metal`, `cpu`; must be a combination `BACKEND_MATRIX` commits to, and the one this PC's GPU needs |
-| `archs` | list of strings | what the build contains. CUDA: `sm_86` (machine code for that card), `compute_89` (PTX, runs on that generation or newer). HIP: `gfx1201`. SYCL and Metal: a descriptive tag (`intel-arc`, `apple-gpu`). Required for every non-`cpu` backend. Enforced for CUDA against `nvidia-smi` compute capability; recorded for the others |
+| `platform` | string | `windows-x86_64`, `linux-x86_64`, `linux-aarch64` (the NVIDIA DGX Spark) |
+| `backend` | string | `cuda`, `hip`, `sycl`, `cpu`; must be a combination `BACKEND_MATRIX` commits to, and the one this PC's GPU needs |
+| `archs` | list of strings | what the build contains. CUDA: `sm_86` (machine code for that card), `compute_89` (PTX, runs on that generation or newer). HIP: `gfx1201`. SYCL: a descriptive tag (`intel-arc`). Required for every non-`cpu` backend. Enforced for CUDA against `nvidia-smi` compute capability; recorded for the others |
 | `min_driver` | `{vendor: version}` | the oldest driver the build runs on, e.g. `{"nvidia": "580.65"}`. Enforced for NVIDIA where `nvidia-smi` answers; an unreadable driver is not a refusal |
 | `build_id` | string | which engine build this is: source commit and toolkit, e.g. `be885026f96a-cuda13.0`. Required |
 | `variant` | string, optional | tag when one backend has several builds on a platform (`cuda13`, `cuda12`); goes in the folder name. With equal versions the build that needs the newer driver is preferred (CUDA 13 over CUDA 12) when both fit the card |
@@ -99,7 +99,7 @@ the manifest file (which holds every file's hash), used as the package's digest 
 ## What each target's package holds
 
 Variants in the release: Windows `cuda13`, `cuda12`, `rx9070`, `rdna3`, `rdna2`; Linux `cuda13`, `cuda12`, `rx9070`, `rx7900`, `halo`, `rx6000`, plus
-the SYCL and Metal packages, and (0.2.7.1) Linux ARM64 `cuda13` for the NVIDIA DGX Spark.
+the SYCL packages, and (0.2.7.1) Linux ARM64 `cuda13` for the NVIDIA DGX Spark.
 
 | Package | Built on | Contents | Notes |
 |---|---|---|---|
@@ -113,7 +113,6 @@ the SYCL and Metal packages, and (0.2.7.1) Linux ARM64 `cuda13` for the NVIDIA D
 | `linux-x86_64` hip, variant `rx6000` (RX 6000, gfx1030 / gfx1031) | `VARIANT=rx6000 packaging/build_hip_linux.sh` in the jammy chroot, ROCm 7.13.0a20260515 `gfx103X-all` wheels | the same set as the other HIP packages, with `rocblas/library` for gfx1030 / gfx1031; no `hipblaslt/library` kernels exist for them and no `tuning/` table | built, not tested on a real RX 6000 card (the manifest notes say so). `windows-x86_64` hip, variant `rdna2`: the same archs from `tools/hip/build_windows.bat` with `NOSTROMA_HIP_ARCHS=gfx1030;gfx1031`, packaged with `--variant rdna2`. A PC with an RX 7000 / 9000 card beside an RX 6000 one never takes it (`engine_component.hip_preference`) |
 | `linux-x86_64` hip, gfx1103 (Radeon 780M / Phoenix iGPU) | `packaging/build_hip_gfx1103.sh` on the mini PC (TheRock gfx110X-all SDK) | the same set as the gfx1200/1201 package, with `rocblas/library` and `hipblaslt/library` for gfx1103 (600 MiB) | experimental, unvalidated: the iGPU resets now and then (MES REMOVE_QUEUE); never kill the engine mid-request; run configs set `NOSTROMA_NO_ARENA_THP=1`. `engine_component.resolve` picks a HIP package only when its `archs` list a gfx target the Linux kfd topology reports |
 | `linux-x86_64` sycl, `archs` `intel-arc` | a Linux box with oneAPI DPC++ 2026.1 and `patchelf`, `packaging/build_sycl_linux.sh` (JIT from SPIR-V; ocloc cannot build the Alchemist FP64 kernels ahead of time, so one JIT package serves A-series and B-series) | `nostroma`, libsycl, the Unified Runtime adapters, the oneMKL SYCL libraries, libimf / libsvml / libirng / libintlc (about 650 MiB); every ELF file has RUNPATH `$ORIGIN` (Intel's libraries ship without it), so `env -i ./nostroma --version` runs | the Level Zero loader and compute runtime are the PC's driver; the user must be in the `render` group (`nostroma doctor` warns). No Windows package: `BACKEND_MATRIX` allows sycl on `linux-x86_64` only |
-| `macos-arm64` metal | an Apple Silicon Mac | `nostroma`, `nostroma-vision` (`packaging/build_vision_mac.sh`; `package_engine.py` refuses a macOS package without it), `metal/kernels/*.metal`, `metal/engine-msl/*.metal`, `metal/nostroma-quant-common.h` (the quant header's text; the same text also as `metal/ggml-common.h` for two releases), `metal/data/*.bin` | the Metal engine compiles its kernel sources when it starts; it finds them beside the executable (`metal/src/resource_path.h`: environment variable, then `<exe dir>/metal/`, then the compiled-in source path) |
 
 `packaging/collect_libs.py` gathers the Linux libraries (an `ldd` closure with the dlopen'd extras named, kernel data filtered by
 GPU architecture) into the folder `package_engine.py` packages; libraries the distribution provides are listed in
@@ -135,7 +134,6 @@ with the package). `packaging/stage_tuning.py` does it for the Linux build scrip
 
 * a CUDA package with `nostroma-vision` needs `vision_archs` in BUILD.json, and every `sm_NN` of the package must be in it. A reader reused from an
   older build fails on cards it was not built for. `--allow-stale-vision` packages it anyway and prints which archs are missing;
-* a macOS package without `nostroma-vision` is refused (`--no-picture-reader` ships a text-only Mac package on purpose);
 * a CUDA package with no reader is allowed: it answers text only, the app says "the engine installed here does not include the picture reader
   yet" and keeps Read pictures off.
 
@@ -158,4 +156,3 @@ holds the choice; `tools/test_vision_reader.py` the tests.
 - **Stale picture reader (#3669):** a cuda12 package reused a reader built for newer cards. On a Pascal card the engine ran and the reader stopped with
   "device kernel image is invalid". `package_engine.py` now checks `vision_archs`.
 - **Missing sm_60 / 61 / 70 (#3503):** the first cuda12 package lacked Pascal and Volta code. `package_engine.py` now refuses a cuda12 package without them.
-- **Mac without a reader (#3697):** a macOS package once shipped without `nostroma-vision`. It is refused unless `--no-picture-reader` is given.

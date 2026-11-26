@@ -60,11 +60,11 @@ Recomendamos **primero ISTA-DASLab**, después **Unsloth** y otros proveedores, 
 
 ### Aplicación de escritorio
 
-**[Descargar Nostroma para Windows, Linux o Mac →](https://github.com/earenbaz80/Nostroma/releases/latest)**
+**[Descargar Nostroma para Windows o Linux →](https://github.com/earenbaz80/Nostroma/releases/latest)**
 
 Instala la aplicación, elige un modelo y empieza a chatear. Hay un instalador por sistema. En el primer arranque, la aplicación descarga el motor para tu tarjeta gráfica. [Ayuda con el instalador](docs/INSTALL.md#the-app).
 
-<sub>Archivos: `Nostroma-0.2.15-windows-x64-setup.exe` · `Nostroma-0.2.15-linux-x86_64.AppImage` · `Nostroma-0.2.15-macos-arm64.dmg`</sub>
+<sub>Archivos: `Nostroma-0.2.15-windows-x64-setup.exe` · `Nostroma-0.2.15-linux-x86_64.AppImage`</sub>
 
 <p align="center">
   <img src="docs/media/app-chat.png" width="900" alt="Aplicación de escritorio de Nostroma con un chat y una vista previa del código en vivo, una junto a otra">
@@ -80,7 +80,7 @@ Instala la aplicación, elige un modelo y empieza a chatear. Hay un instalador p
 <details open>
 <summary><b>Comandos de instalación</b></summary>
 
-**Linux / Mac**
+**Linux**
 
 ```sh
 curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh -o install.sh && sh install.sh
@@ -121,7 +121,6 @@ Sigue las indicaciones para descargar e iniciar un modelo. [Guía del Terminal](
 | **AMD Radeon RX 7700 / 7800 / 7900, RX 9060 / 9070, AI PRO R9700** | [Instalación en AMD](docs/AMD_HIP.md) |
 | **AMD Radeon RX 6800 / 6900 · experimental** | [Instalación en RX 6000](docs/AMD_HIP.md#rdna2-gfx1030) |
 | **Intel Arc · Linux** | [Instalación en Intel](docs/INTEL_ARC.md) |
-| **Apple Silicon · M1 o posterior** | [Instalación en Mac](docs/MAC.md) |
 | **AMD Ryzen AI Max · Strix Halo** | [Instalación en Strix Halo](docs/STRIX_HALO.md) |
 
 <a id="using-it"></a>

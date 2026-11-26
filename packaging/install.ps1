@@ -73,7 +73,7 @@ function Fetch([string]$url, [string]$out) {
 if (-not $feed) {
     Die 'this installer does not know where the Nostroma release folder is. Set $env:NOSTROMA_FEED to its address and run it again, for example: $env:NOSTROMA_FEED=''https://example.org/nostroma'''
 }
-if ([Environment]::OSVersion.Platform -ne 'Win32NT') { Die 'this is the Windows installer; on Linux or macOS use install.sh.' }
+if ([Environment]::OSVersion.Platform -ne 'Win32NT') { Die 'this is the Windows installer; on Linux use install.sh, and on macOS build from source (docs/MAC.md).' }
 $arch = $env:PROCESSOR_ARCHITEW6432; if (-not $arch) { $arch = $env:PROCESSOR_ARCHITECTURE }
 if ($arch -ne 'AMD64') { Die "this computer ($arch) is a Windows on ARM PC. Nostroma needs an NVIDIA or AMD graphics card and has no engine for ARM processors, so it could not run a model here. Run this installer on a Windows PC with an Intel or AMD processor (x64) and one of those cards." }
 $platform = 'windows-x86_64'

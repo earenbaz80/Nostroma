@@ -1,5 +1,5 @@
 #!/bin/sh
-# Nostroma Terminal: one-line installer for Linux (x86_64, and ARM64 on the NVIDIA DGX Spark) and macOS (Apple silicon).
+# Nostroma Terminal: one-line installer for Linux (x86_64, and ARM64 on the NVIDIA DGX Spark).
 #
 #     curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh -o install.sh && sh install.sh
 #
@@ -31,7 +31,7 @@ TEST_TRUST="${NOSTROMA_INSTALL_TEST_TRUST:-}"
 say() { printf '%s\n' "$*"; }
 die() { printf 'nostroma installer: %s\n' "$*" >&2; exit 1; }
 
-# Every symlink in a path resolved. `readlink -f` is not on macOS, so the chain is walked by hand; a target that no
+# Every symlink in a path resolved. `readlink -f` is not portable, so the chain is walked by hand; a target that no
 # longer exists (an old data folder the user deleted) comes back as its own path instead of failing.
 real_path() {
   path=$1
@@ -112,10 +112,9 @@ main() {
   os=$(uname -s); arch=$(uname -m)
   case "$os-$arch" in
     Linux-x86_64|Linux-amd64) platform=linux-x86_64 ;;
-    Darwin-arm64|Darwin-aarch64) platform=macos-arm64 ;;
     Linux-aarch64|Linux-arm64) platform=linux-aarch64 ;;      # the NVIDIA DGX Spark (GB10); the note below says so for any other ARM computer
-    Darwin-x86_64) die "this Mac has an Intel processor. Nostroma for Mac needs Apple silicon (M1 or newer), so it could not run a model here." ;;
-    *) die "this computer ($os $arch) has no Nostroma Terminal. Supported: Linux x86_64 with an NVIDIA or AMD card, Linux ARM64 on an NVIDIA DGX Spark, macOS on Apple silicon (Windows: use install.ps1)." ;;
+    Darwin-*) die "macOS has no packaged Nostroma Terminal. Build from source instead (docs/MAC.md)." ;;
+    *) die "this computer ($os $arch) has no Nostroma Terminal package. Supported: Linux x86_64 with an NVIDIA or AMD card, Linux ARM64 on an NVIDIA DGX Spark (Windows: use install.ps1)." ;;
   esac
   gpu=""
   if command -v nvidia-smi >/dev/null 2>&1; then
@@ -128,9 +127,6 @@ main() {
   if [ -z "$gpu" ] && [ "$os" = Linux ] && command -v lspci >/dev/null 2>&1; then
     # the PCI class decides, not a word anywhere in the line (an SSD sold as "3D NAND" is not a graphics card)
     gpu=$(lspci 2>/dev/null | grep -iE '^[^ ]+ (vga compatible controller|3d controller|display controller)[^:]*:' | head -1 | sed 's/^[^ ]* [^:]*: *//' || true)
-  fi
-  if [ -z "$gpu" ] && [ "$os" = Darwin ]; then
-    gpu=$(system_profiler SPDisplaysDataType 2>/dev/null | sed -n 's/^ *Chipset Model: //p' | head -1 || true)
   fi
   say "Nostroma Terminal installer"
   say "  This computer: $os $arch ($platform)${gpu:+, graphics: $gpu}"

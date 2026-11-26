@@ -60,11 +60,11 @@ Vous ne savez pas ce qui tient ? [Choisir un modèle pour votre ordinateur](docs
 
 ### Application de bureau
 
-**[Télécharger Nostroma pour Windows, Linux ou Mac →](https://github.com/earenbaz80/Nostroma/releases/latest)**
+**[Télécharger Nostroma pour Windows ou Linux →](https://github.com/earenbaz80/Nostroma/releases/latest)**
 
 Installez l'application, choisissez un modèle et commencez à discuter. Il y a un seul installateur par système. Au premier lancement, l'application télécharge le moteur de votre carte graphique. [Aide pour l'installateur](docs/INSTALL.md#the-app).
 
-<sub>Fichiers: `Nostroma-0.2.15-windows-x64-setup.exe` · `Nostroma-0.2.15-linux-x86_64.AppImage` · `Nostroma-0.2.15-macos-arm64.dmg`</sub>
+<sub>Fichiers: `Nostroma-0.2.15-windows-x64-setup.exe` · `Nostroma-0.2.15-linux-x86_64.AppImage`</sub>
 
 <p align="center">
   <img src="docs/media/app-chat.png" width="900" alt="Application de bureau Nostroma avec une discussion et un aperçu du code en direct côte à côte">
@@ -80,7 +80,7 @@ Vous préférez le terminal ? Installez Nostroma, puis lancez **`nostroma launch
 <details open>
 <summary><b>Commandes d'installation</b></summary>
 
-**Linux / Mac**
+**Linux**
 
 ```sh
 curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh -o install.sh && sh install.sh
@@ -121,7 +121,6 @@ Suivez les invites pour télécharger et démarrer un modèle. [Guide du Termina
 | **AMD Radeon RX 7700 / 7800 / 7900, RX 9060 / 9070, AI PRO R9700** | [Installation AMD](docs/AMD_HIP.md) |
 | **AMD Radeon RX 6800 / 6900 · expérimental** | [Installation RX 6000](docs/AMD_HIP.md#rdna2-gfx1030) |
 | **Intel Arc · Linux** | [Installation Intel](docs/INTEL_ARC.md) |
-| **Apple Silicon · M1 ou plus récent** | [Installation sur Mac](docs/MAC.md) |
 | **AMD Ryzen AI Max · Strix Halo** | [Installation Strix Halo](docs/STRIX_HALO.md) |
 
 <a id="using-it"></a>

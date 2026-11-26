@@ -147,9 +147,8 @@ HTTPS and the `earenbaz80/Nostroma` release itself. What that means, and how to 
 [SECURITY.md](../SECURITY.md#how-far-to-trust-curl--sh-and-irm--iex). Later updates are checked against the key already on
 your PC.
 
-**Code signing.** The Windows installer is not code-signed yet, so Windows shows "Windows protected your PC". The signing and
-Apple notarisation of the Mac builds is set up in `packaging/mac/` and runs on the maintainer's Mac. A Mac build that has not
-been notarised shows macOS's "damaged" warning ([MAC.md](MAC.md)).
+**Code signing.** The Windows installer is not code-signed yet, so Windows shows "Windows protected your PC". There is no
+macOS package to sign or notarise.
 
 **What the checks do not cover.** They catch a damaged or swapped download and a feed nobody signed with the release key. They
 cannot protect you if someone who can publish a release (or who holds the signing key) publishes something harmful.

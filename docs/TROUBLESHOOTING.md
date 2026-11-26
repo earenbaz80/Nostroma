@@ -18,11 +18,11 @@ nostroma launch --status
 **I cannot find `START-HERE.bat` or `SETUP.bat`.**
 Open the installed Nostroma app, or run `nostroma launch`. Those wrappers are in the source repository and are not the
 startup path for the app. For a fresh desktop install, download the one installer for your system
-(`Nostroma-0.2.15-windows-x64-setup.exe`, `Nostroma-0.2.15-linux-x86_64.AppImage` or `Nostroma-0.2.15-macos-arm64.dmg`), not a
+(`Nostroma-0.2.15-windows-x64-setup.exe` or `Nostroma-0.2.15-linux-x86_64.AppImage`), not a
 `nostroma-engine-…` archive.
 
 **`nostroma` is not found.**
-On Windows, open a new PowerShell window after installing. On Linux or Mac, use the full path the installer printed,
+On Windows, open a new PowerShell window after installing. On Linux, use the full path the installer printed,
 normally `~/.local/bin/nostroma`, and add `~/.local/bin` to PATH if needed. Check `nostroma --version`.
 
 **A warning says Nostroma "couldn't find an engine for this computer".**
@@ -31,8 +31,8 @@ files stay on your computer, but the model may not run until the right engine is
 no engine is installed yet and the update source has none for your card, that the engine found is for another make of
 card, or that the graphics driver is too old. In the app, open Settings, then Engine. In the Terminal, the message names
 the next step: run `nostroma update` and start again. Run `nostroma doctor --live` and `nostroma update --check` to see the
-selected GPU and driver, and check the [backend guide](INSTALL.md#what-you-need). Supported paths include Apple Silicon and
-Intel Arc on Linux, so do not assume every machine without an NVIDIA or AMD discrete card is unsupported. If the computer
+selected GPU and driver, and check the [backend guide](INSTALL.md#what-you-need). Intel Arc on Linux is supported, so do not assume
+every machine without an NVIDIA or AMD discrete card is unsupported. If the computer
 has no graphics card Nostroma can use (only an Intel UHD or Iris chip, a virtual machine, or Windows on ARM), Nostroma says so
 and there is nothing to install. Verify `nostroma launch --status` and `/health` before calling the installation successful.
 
@@ -55,25 +55,6 @@ Stop the model, then use the app's rollback control or `nostroma components roll
 replaced (one generation, about 210 MiB). Source-checkout engines use a separate rollback workflow, in `engine\.previous`:
 `python setup.py --rollback-engine` puts the old one back and keeps the newer one there, so run it again to go forward
 (#670). It is described in [source setup](SOURCE_INSTALL.md).
-
-**On a Mac: "Nostroma is damaged and can't be opened", "cannot be opened", or "unidentified developer".**
-Check first that the download is for Apple Silicon and that macOS is 15 or newer ([Mac installation](MAC.md#the-desktop-app-and-nostroma-launch-on-a-mac)).
-Nothing is wrong with the file if the message is only about the developer: macOS marks everything a browser downloads, and
-only lets a marked program run if Apple has checked it. Nostroma's release builds are checked by Apple ("notarised"): drag
-Nostroma onto Applications and open it; the first time, macOS asks "Are you sure you want to open it?" and you press Open. A
-test build that is not notarised says "damaged". Do not move it to the Trash. Open the Terminal app and remove the mark,
-with the line that matches what you have (drag the file from Finder into the Terminal window to type its path):
-
-    xattr -dr com.apple.quarantine ~/Downloads/<the .dmg file>        # the .dmg, before opening it
-    xattr -dr com.apple.quarantine /Applications/Nostroma.app           # the app, after dragging it over
-    xattr -dr com.apple.quarantine <the folder you unzipped>          # an unzipped Terminal folder
-
-Then open it again. If macOS says only "the developer cannot be verified", you can instead try to open it once, then open
-System Settings > Privacy & Security and press "Open Anyway" next to the message about Nostroma. Only remove the mark from a
-file you downloaded from the official release; a warning alone does not show that a file is safe or intact. Installs made
-with `curl ... | sh` carry no mark and need none of this. To see which kind you have: `spctl -a -vv /Applications/Nostroma.app`
-answers "accepted" and "Notarized Developer ID" for a notarised build. How the builds are signed is in
-[Mac packaging](../packaging/mac/README.md).
 
 **The Linux AppImage does not open.**
 Make the downloaded file executable. It may need FUSE 2 (`libfuse2` on Ubuntu 22.04, `libfuse2t64` on newer Ubuntu;

@@ -106,7 +106,7 @@ class ReleaseTools(unittest.TestCase):
         self.assertNotIn("has no engine for ARM Linux", text)
         self.assertIn("GB10", text)
         self.assertIn("Linux-x86_64|Linux-amd64) platform=linux-x86_64", text)        # unchanged
-        self.assertIn("Darwin-x86_64) die", text)
+        self.assertIn("macOS has no packaged Nostroma Terminal", text)
 
     def test_the_spark_build_script_is_lf_and_names_the_platform(self):
         raw = (ROOT / "spark" / "build_engine.sh").read_bytes()

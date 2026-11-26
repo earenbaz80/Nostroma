@@ -9,16 +9,12 @@ are replaced by Metal ones (`metal/`), and the host code and the server are the 
 
 ## Quick start
 
-There are two ways in:
+There is no macOS release package. This page covers the source build only:
 
-- **The Nostroma app (`.dmg`) and the Terminal (`nostroma launch`).** The Metal engine comes ready-made: the `.dmg` has it inside and
-  the Terminal fetches it as an engine component. Nothing is built on your Mac and you need no Command Line Tools. If macOS says
-  the app is "damaged", see [Troubleshooting](TROUBLESHOOTING.md#the-desktop-app-and-the-terminal). How the builds are signed:
-  [packaging/mac/README.md](../packaging/mac/README.md).
 - **From source: `./setup.sh`.** It sets things up the way `START-HERE.bat` does on Windows and builds the engine on your Mac
   (about 1 to 15 minutes).
 
-Pictures are on by default in the app, the Terminal and the source build ([Limits](#limits-this-version)). The NVIDIA, AMD and
+Pictures are on by default in the source build ([Limits](#limits-this-version)). The NVIDIA, AMD and
 Intel engines are unchanged.
 
 **Status:** new. It was measured on three Macs: an M5 Max with 128 GB, where the model stays in memory, and an M4 Mac mini with
@@ -75,8 +71,8 @@ The engine streams the experts from the SSD. It decides this itself when the exp
 
 ## Install
 
-For everyday use follow [the app or Terminal installation](INSTALL.md). The commands below are the source installation, which
-builds the Metal engine locally.
+There is no macOS app or Terminal package. The commands below are the source installation, which builds the Metal engine
+locally.
 
 ```sh
 git clone https://github.com/earenbaz80/Nostroma && cd Nostroma
@@ -113,20 +109,13 @@ API on `http://127.0.0.1:8080/v1`, the Anthropic API on `/v1/messages`, and the 
 | `--data-dir`, `--models-dir`, `--gguf-dir` | Where files go, or where yours are. |
 | `--setup`, `--no-start`, `--check`, `--build` | Choose another model or settings; install only; only check the Mac; build the engine again. |
 
-### The desktop app and `nostroma launch` on a Mac
+### The Terminal and `nostroma launch` on a Mac
 
-The app and `nostroma launch` build nothing. The Metal engine comes ready-made as an engine component, from the update feed or
-inside the app's installer. The model install is `setup.py` in its Control mode (`NOSTROMA_CONTROL_INSTALL=1`). It downloads, or
-uses with `--gguf-dir`, and prepares the model files, and writes a run config whose engine is `component:nostroma-engine`. It does
-not run `metal/setup_mac.py`, needs no Command Line Tools, and writes the same Metal flags.
-
-The model list and the recommendation judge a Mac by its unified memory with the rules of `nostroma_control/mac_fit.py`, the module
-`setup_mac.py` uses too. Q2_0, IQ3_XXS, IQ3_S and the Gyro packs are offered. Unsloth's many-shard files need the source
-installer's repack for now. A pack that does not stay in memory is listed as "read from the SSD", and a Mac under 16 GB of unified
-memory is told the model does not fit.
-
-The ready-made Mac engine is in the app and in the Terminal's engine component, not in the release zips. The zips (for
-`START-HERE.bat` and `setup.sh`) have no Mac engine: `./setup.sh` builds it.
+There is no desktop app or engine component package for macOS. `./setup.sh` builds the Metal engine from source; that is the
+supported route on a Mac. The model list and the recommendation judge a Mac by its unified memory with the rules of
+`nostroma_control/mac_fit.py`, the module `setup_mac.py` uses too. Q2_0, IQ3_XXS, IQ3_S and the Gyro packs are offered. Unsloth's
+many-shard files need the source installer's repack for now. A pack that does not stay in memory is listed as "read from the SSD",
+and a Mac under 16 GB of unified memory is told the model does not fit.
 
 ## Defaults and options
 

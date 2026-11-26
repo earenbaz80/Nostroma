@@ -1,5 +1,5 @@
 """OWN-1B: the quant header's text lives in third_party/nostroma-ggml/nostroma-quant-common.h; third_party/ggml/ggml-common.h (and the SYCL-mode copy's old name)
-only forward to it. The Metal runtime reads the text under the new name, the Mac package ships both names (the old one for two releases).
+only forward to it. The Metal runtime reads the text under the new name.
 
     python -m unittest tools.test_quant_header_names -v
 """
@@ -35,17 +35,6 @@ class QuantHeaderNames(unittest.TestCase):
         self.assertIn('resource2("NOSTROMA_GGML_COMMON", "nostroma-quant-common.h", "ggml-common.h", NOSTROMA_GGML_COMMON_DEFAULT)', rt)
         cm = (ROOT / "metal" / "CMakeLists.txt").read_text(encoding="utf-8")
         self.assertIn("third_party/nostroma-ggml/nostroma-quant-common.h", cm)
-
-    def test_the_repo_mac_qwen_package_script_stages_the_real_header_under_both_names(self):
-        """packaging/mac/build_engine.sh is the repo version of the release scripts' Mac stage (rel213/scripts/mac_rel213.sh copied third_party/ggml/ggml-common.h,
-        which is only a forwarder now: staged like that the Metal kernels would have no block layouts)."""
-        sh = (ROOT / "packaging" / "mac" / "build_engine.sh").read_text(encoding="utf-8")
-        self.assertIn('QUANT=third_party/nostroma-ggml/nostroma-quant-common.h', sh)
-        self.assertIn('cp "$QUANT" "$STAGE/metal/nostroma-quant-common.h"', sh)
-        self.assertIn('cp "$QUANT" "$STAGE/metal/ggml-common.h"', sh)
-        self.assertNotIn("cp third_party/ggml/ggml-common.h", sh)
-        self.assertIn('cmp "$PKG/metal/$n" "$QUANT"', sh)
-        self.assertNotIn("NOSTROMA_GGML_DIR=$LL", sh)
 
     @unittest.skipUnless(shutil.which("c++") or shutil.which("g++") or shutil.which("clang++"), "no C++ compiler")
     def test_an_include_of_the_old_name_still_compiles(self):

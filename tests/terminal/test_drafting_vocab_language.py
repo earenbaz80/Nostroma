@@ -262,8 +262,8 @@ class TheShippedFiles(unittest.TestCase):
 
 
 class ThePackagingLists(unittest.TestCase):
-    """data/ goes into every package whole (packaging/package_terminal.py INSTALLER_DATA is the folder, not a list of files), so a choice's file is in the Terminal's installer bundle, the app's Control
-    component (apps/desktop/scripts/stage-control.py takes the same name) and the Mac's Control. The Mac ENGINE folder (metal/data) carries only the default file, by design: the other choices are read from Control's data/."""
+    """data/ goes into every package whole (packaging/package_terminal.py INSTALLER_DATA is the folder, not a list of files), so a choice's file is in the Terminal's installer bundle
+    and the app's Control component (apps/desktop/scripts/stage-control.py takes the same name). The other choices are read from Control's data/."""
 
     def test_the_installer_data_is_the_whole_folder_and_leaves_no_registered_file_out(self):
         sys.path.insert(0, str(ROOT / "packaging"))
@@ -277,10 +277,6 @@ class ThePackagingLists(unittest.TestCase):
         for name in drafting.VOCAB_FILES.values():
             self.assertTrue((ROOT / pt.INSTALLER_DATA / name).is_file(), name)
 
-    def test_the_mac_engine_folder_carries_the_default_only(self):
-        mac = (ROOT / "packaging" / "mac" / "build_engine.sh").read_text(encoding="utf-8")
-        self.assertIn("data/draft_vocab.bin", mac)
-        self.assertEqual(drafting.VOCAB_FILES["cjk"], "draft_vocab.bin")
 
 
 if __name__ == "__main__":

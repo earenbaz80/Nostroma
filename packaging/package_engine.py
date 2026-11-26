@@ -13,7 +13,7 @@ list, the oldest driver, the engine build id, and an empty `signature` for S6). 
 checks and starts; it is not signed, not published, and nothing here uploads it. Signing is stream S6
 (`engine_component.register_signature_verifier`); `--sign-with` is deliberately absent until then.
 
-Files taken from --src, by default: the entrypoint, every `*.dll` / `*.so` / `*.so.*` / `*.dylib` / `*.metallib`
+Files taken from --src, by default: the entrypoint, every `*.dll` / `*.so` / `*.so.*`
 beside it, `BUILD.json`, `LICENSE*`, the picture reader `nostroma-vision[.exe]` when the build has one (without it the
 engine answers text only: setup.py Control mode keeps the person's picture choice only when it is there). `--include GLOB` (repeatable, relative to --src, `**` allowed) adds more, for
 example `nostroma-vision.exe`, `nostroma-device.exe` or `rocm/**`. `--tree` takes every regular file under --src (the HIP
@@ -55,7 +55,7 @@ def sha256(path: Path) -> str:
 
 def wanted(path: Path) -> bool:
     name = path.name.lower()
-    return (name.endswith((".dll", ".so", ".dylib", ".metallib")) or ".so." in name or name == "build.json"
+    return (name.endswith((".dll", ".so")) or ".so." in name or name == "build.json"
             or name.startswith("license") or name in ("nostroma-vision", "nostroma-vision.exe", "nostroma-vision-hip", "nostroma-vision-hip.exe"))   # the picture readers (CPU, AMD GPU) beside the engine
 
 
@@ -75,25 +75,16 @@ def _arch_numbers(value) -> set[int]:
 
 
 def check_picture_reader(src: Path, backend: str, target: str, archs: tuple[str, ...], *, variant: str = "",
-                         allow_stale: bool = False, allow_none: bool = False) -> list[str]:
-    """The picture reader of a package must run on every card and Mac the package does (tools tests: I1, I2, #3669, #3697).
+                         allow_stale: bool = False) -> list[str]:
+    """The picture reader of a package must run on every card the package does (tools tests: I1, I2, #3669).
 
     * CUDA package with a reader: BUILD.json (beside the engine) must list `vision_archs`, and every `sm_NN` the package carries
       code for must be there. A reader reused from an older build (the Windows zips' nostroma-vision.exe, unchanged since 0.1.44, had no
       sm_60) stops with "device kernel image is invalid" on a Pascal card while the engine runs. Refused, unless allow_stale.
-    * macOS package without a reader: refused (a Mac with this package cannot read a picture), unless allow_none.
     * CUDA package without a reader: allowed (text-only), reported in the returned notes so the build log says it.
     Returns notes to print."""
     reader = next((n for n in READER_NAMES if (src / n).is_file()), None)
     notes: list[str] = []
-    if target.startswith("macos"):
-        if reader is None and not allow_none:
-            raise SystemExit("refusing to package the macOS engine without its picture reader: a Mac with this package could not read "
-                             "a picture (#3697). Build it with packaging/build_vision_mac.sh and copy nostroma-vision beside nostroma "
-                             "(or give --no-picture-reader to ship a text-only package on purpose).")
-        if reader is None:
-            notes.append("no picture reader in this macOS package: pictures are off for it")
-        return notes
     if backend != "cuda":
         return notes
     if reader is None:
@@ -162,12 +153,19 @@ def select(src: Path, entrypoint: str, *, tree: bool, include: list[str]) -> lis
     return [entrypoint] + sorted(chosen)
 
 
+def package_folder_name(version: str, target: str, backend: str, variant: str = "") -> str:
+    """The folder a package lands in: <version>-<target>-<backend>[-<variant>], the name pack-engine archives."""
+    return f"{version}-{target}-{backend}" + (f"-{variant}" if variant else "")
+
+
 def build(src: Path, backend: str, version: str, target: str, out: Path, *, entry: str | None = None,
           archs: tuple[str, ...] = (), min_driver: dict | None = None, build_id: str | None = None,
           min_runtime: str | None = None, notes: str = "", tree: bool = False, include: list[str] | None = None,
           variant: str = "", search: list[Path] | None = None, allow_libs: list[str] | None = None,
-          check_reader: bool = False, allow_stale_vision: bool = False, allow_no_reader: bool = False,
+          check_reader: bool = False, allow_stale_vision: bool = False,
           shape: str = "") -> Path:
+    if target.startswith("macos"):
+        raise SystemExit("macOS has no packaged engine: build from source instead (docs/MAC.md).")
     if shape:
         if not shape_engine.valid(shape):
             raise SystemExit(f"--shape {shape!r} is not a model shape name (the compiled geometry's name, like q4_lite: lower case, digits and _)")
@@ -189,10 +187,9 @@ def build(src: Path, backend: str, version: str, target: str, out: Path, *, entr
     if not (src / entrypoint).is_file():
         raise SystemExit(f"{src / entrypoint} does not exist")
     if check_reader:                       # the release recipes and the CLI ask for it; the library call keeps its old behaviour
-        for note in check_picture_reader(src, backend, target, archs, variant=variant, allow_stale=allow_stale_vision,
-                                         allow_none=allow_no_reader):
+        for note in check_picture_reader(src, backend, target, archs, variant=variant, allow_stale=allow_stale_vision):
             print("note: " + note)
-    folder = out / (f"{version}-{target}-{backend}" + (f"-{variant}" if variant else ""))
+    folder = out / package_folder_name(version, target, backend, variant)
     if folder.exists():
         raise SystemExit(f"{folder} already exists; remove it first (packages are immutable)")
     staging = out / f".{folder.name}.partial"
@@ -314,7 +311,6 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--vision-archs", default="", help="with --stamp-vision: the architectures the reader was built for, e.g. '60;61;70;75;80;86;89'")
     ap.add_argument("--allow-stale-vision", action="store_true",
                     help="package a CUDA picture reader whose BUILD.json vision_archs do not cover the package's archs (it will fail on those cards)")
-    ap.add_argument("--no-picture-reader", action="store_true", help="ship a macOS package without nostroma-vision on purpose (pictures stay off)")
     a = ap.parse_args(argv)
     if a.verify:
         try:
@@ -350,7 +346,7 @@ def main(argv: list[str] | None = None) -> int:
                    archs=tuple(a.arch), min_driver=drivers, build_id=a.build_id, min_runtime=a.min_runtime,
                    notes=a.notes, tree=a.tree, include=a.include, variant=a.variant,
                    search=a.search, allow_libs=a.allow_lib, check_reader=True, allow_stale_vision=a.allow_stale_vision,
-                   allow_no_reader=a.no_picture_reader, shape=a.shape)
+                   shape=a.shape)
     entries = [p for p in folder.rglob("*") if p.is_file()]
     total = sum(p.stat().st_size for p in entries)
     print(f"{folder}  ({total / (1 << 20):.1f} MiB, {len(entries)} files, manifest sha256 {package_sha256(folder)})")

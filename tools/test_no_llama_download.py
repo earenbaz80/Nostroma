@@ -16,10 +16,10 @@ sys.path.insert(0, str(ROOT))
 
 SCRIPTS = ["packaging/build_cuda_linux.sh", "packaging/build_cuda_linux_aarch64.sh", "packaging/build_cuda_windows.py", "packaging/build_hip_linux.sh", "packaging/build_hip_gfx1103.sh",
            "packaging/build_sycl_linux.sh", "packaging/build_split_cuda.sh", "packaging/build_split_hip.sh",
-           "packaging/build_vision_windows.bat", "packaging/build_vision_mac.sh",
-           "packaging/mac/build_engine.sh", "spark/build_engine.sh",
+           "packaging/build_vision_windows.bat",
+           "spark/build_engine.sh",
            "tools/hip/build_windows.bat", "Dockerfile", "docker/Dockerfile", "docker/entrypoint.sh", ".github/workflows/backends.yml",
-           ".github/workflows/metal-build.yml", "metal/setup_mac.py", "sycl/setup_intel.py"]
+           "metal/setup_mac.py", "sycl/setup_intel.py"]
 # a download of llama.cpp: its git remote or archive URL, setup's fetch function, the downloaded folder as a requirement
 FETCH = [r"ggml-org/llama\.cpp(\.git|/archive)", r"get_llama_cpp\s*\(", r"LLAMA_CPP_ZIP", r"FETCHCONTENT_SOURCE_DIR_NOSTROMA_LLAMACPP"]
 REQUIRED = [r"third_party[/\\]llama\.cpp", r":\?[^}]*llama\.cpp", r"set NOSTROMA_GGML_DIR to"]

@@ -222,7 +222,7 @@ sidecar host listening on loopback, and quitting removed **both** processes with
 
 **Headless DMG builds.** Tauri's default DMG step runs an AppleScript that asks Finder to arrange
 the window; Finder AppleEvents time out outside a GUI session (`AppleEvent timed out. (-1712)`).
-`apps/desktop/scripts/make-dmg.sh` therefore calls the vendored `create-dmg` with
+The former DMG script therefore called the vendored `create-dmg` with
 `--skip-jenkins`, which is upstream's supported path for exactly this case and produces a plain,
 correct image. Use it rather than `cargo tauri build --bundles dmg` in automation.
 

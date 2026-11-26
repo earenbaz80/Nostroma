@@ -23,9 +23,9 @@ class CapabilityTable(unittest.TestCase):
 
     def test_a_package_contradicts_a_no(self):
         cap = copy.deepcopy(self.cap)
-        {f["id"]: f for f in cap["families"]}["qwen38"]["cells"]["mac"]["supported"] = "no"
+        {f["id"]: f for f in cap["families"]}["qwen38"]["cells"]["nvidia_win"]["supported"] = "no"
         problems = ct.validate(cap, self.release)
-        self.assertTrue(any("qwen38 on mac is marked 'no'" in p for p in problems), problems)
+        self.assertTrue(any("qwen38 on nvidia_win is marked 'no'" in p for p in problems), problems)
 
     def test_a_yes_without_a_package_is_reported(self):
         cap = copy.deepcopy(self.cap)

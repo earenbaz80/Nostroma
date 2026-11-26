@@ -214,6 +214,16 @@ def _tree(folder: Path, *, links: bool = False) -> list[tuple[str, Path]]:
     return found
 
 
+def engine_archive_name(folder: Path, fmt: str = "tar.gz", prefix: str = "nostroma-engine") -> str:
+    """The archive name for an engine package folder: <prefix>-<folder name>.<fmt>."""
+    return f"{prefix}-{Path(folder).name}.{fmt}"
+
+
+def control_archive_name(version: str, platform: str, fmt: str = "tar.gz") -> str:
+    """The archive name for a Control bundle: nostroma-control-<version>-<platform>.<fmt>."""
+    return f"nostroma-control-{version}-{platform}.{fmt}"
+
+
 def pack_engine(folder: Path, out: Path, fmt: str = "tar.gz", *, url_prefix: str = "engine/", prefix: str = "nostroma-engine") -> dict:
     """Archive a (signed) engine package folder and return its feed entry. The archive holds the folder's files at its root. The package of a model shape (package_engine.py --shape)
     gets its component's name as the archive prefix (nostroma-q4-lite-<version>-...) and its entry names the ``shape``: it goes into the feed member ``shape_engines``."""
@@ -223,7 +233,7 @@ def pack_engine(folder: Path, out: Path, fmt: str = "tar.gz", *, url_prefix: str
         prefix = component.id
     files = _tree(folder)
     installed = sum(p.stat().st_size for _, p in files)
-    name = f"{prefix}-{folder.name}.{fmt}"
+    name = engine_archive_name(folder, fmt, prefix)
     archive = Path(out) / name
     _write_archive(files, archive, fmt, component.entrypoint)
     entry = {"version": component.version, "platform": component.platform, "backend": component.backend,
@@ -242,7 +252,7 @@ def pack_control(folder: Path, out: Path, *, version: str, platform: str, fmt: s
     folder = Path(folder)
     files = _tree(folder, links=True)
     installed = sum(p.stat().st_size for _, p in files if not p.is_symlink())
-    name = f"nostroma-control-{version}-{platform}.{fmt}"
+    name = control_archive_name(version, platform, fmt)
     archive = Path(out) / name
     _write_archive(files, archive, fmt, entry_file)
     entry = {"platform": platform, "format": fmt, "url": f"{url_prefix}{name}", "size": archive.stat().st_size,

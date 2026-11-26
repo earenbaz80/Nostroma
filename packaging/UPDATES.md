@@ -18,7 +18,7 @@ without the engine. An engine update downloads only the package for that PC's GP
 | Control (Python runtime, `nostroma_control`, CLI, server) | the same updater: staged beside the running one, run once, then `components/control/active.json` points at it | the feed key |
 | The desktop app | Tauri's signed updater in the shell, reached by the host through a token-protected loopback bridge | the Tauri updater key (minisign) |
 
-Two separate private keys, both kept by the owner, neither in git, neither the same as Apple/Windows code signing:
+Two separate private keys, both kept by the owner, neither in git, neither the same as Windows code signing:
 
 * **feed key**: Ed25519, signs `nostroma-feed.json` and every engine package manifest.
 * **Tauri updater key**: minisign (what `tauri signer generate` makes), signs the app installers.
@@ -71,7 +71,6 @@ separate component, picked by the model, and never in place of the Nostroma engi
 * Package: `package_engine.py --shape q4_lite ...` (the build made with `-DNOSTROMA_GEOMETRY=q4_lite`, or `-DNOSTROMA_GEOMETRY_FILE=` for a header that is not in the tree: use that header's name). The manifest's id is the shape's component (`nostroma-q4-lite`) and it carries `"shape"`; both are in the signed manifest. `sign-package`, then `pack-engine` (the archive is `nostroma-q4-lite-<version>-<platform>-<backend>[-<variant>]`, the entry names the shape), one folder of entries, `build-feed --shapes FOLDER`. `build-feed` refuses a model whose family is `qwen4exp_<shape>` when the feed has no engine for that shape; `verify-feed` lists the shape engines. Give the package `--min-runtime` of the Control that knows shape engines.
 * A PC: the model's family (`qwen4exp_q4_lite`) makes setup (the app's Download and the Terminal's launch) fetch the engine of that shape through the signed feed when the model is chosen (resumable download, the archive's SHA-256, the manifest hash the feed names, the package signature, every file's hash, the shape in the manifest, then `nostroma --version` once and `nostroma --geometry`, which must print that shape: an engine compiled for another geometry is refused at install, and so is one that cannot answer the flag ("it does not say which model shape it was built for"; the Intel engine answers it since 0.2.14). Build the engine with `-DNOSTROMA_GEOMETRY_FILE=` of a header whose label is the shape name: `q4geo_synth.py --from-gguf ... --label q4_lite`), into `<components>/shapes/q4_lite/engine/<version>-<platform>-<backend>/`. The Nostroma engine's folder is not read or written. The model's run config says `"exe": "component:nostroma-q4-lite"`; every start looks it up there and checks every file. `nostroma update` brings an installed shape engine up to date beside the older one (the newest two are kept) and never installs one by itself. Starting never downloads.
 * Older Controls: they ignore the member (no `engine` entry, no `dsv41` entry), they read only `nostroma-engine` manifests (a shape package copied into their engine folder is refused: its id is another component), and the model's family is one they do not know, so they list it as "needs a newer Nostroma" and never offer it.
-* A Mac does not offer a model of its own shape yet (that install path has no shape step).
 
 The `models` member (optional) is the model list: a new model can ship as a signed feed update, with no Control package. Each entry is one model:
 
@@ -101,10 +100,10 @@ turns the whole thing off. Build it with `feed_tool.py model-files FILE... [--re
 `<id>.entry.json` files; a malformed one stops the build); `verify-feed` lists the models and exits 3 if Control would drop one. Older Controls (0.2.11 and before) ignore the member.
 
 The `drafters` member lists the tuned DFlash2 drafter (`nostroma_control/drafting.py` TUNED_NAME: Nostroma's fine-tuned copy of incoai/Qwen3.8-Flash-Next-DFlash2, Apache-2.0,
-modified by Nostroma). Control fetches it for the Mac sets that have a measured entry (`SET_DEFAULTS`: UD-Q4_K_XL and UD-IQ4_XS-v31) during setup, `nostroma launch` and
-`nostroma drafting fetch`: it reads this signed feed, takes the entry named TUNED_NAME that lists `metal`, and downloads `url` (resumable) into `<data>/dflash2/`. The size and SHA-256
+modified by Nostroma). Control fetches it for the desktop sets that have a measured entry (`SET_DEFAULTS`: UD-Q4_K_XL and UD-IQ4_XS-v31) during setup, `nostroma launch` and
+`nostroma drafting fetch`: it reads this signed feed, takes the entry named TUNED_NAME, and downloads `url` (resumable) into `<data>/dflash2/`. The size and SHA-256
 are pinned in the code too, so the feed can move the file but a feed that lists other bytes is ignored. No feed answer (offline, host down) or no such entry: nothing is said and the
-model keeps the MTP. Make the entry with `feed_tool.py pack-drafter PACK --out RELEASE/drafters --version 1 --backends metal [--url-prefix ""]` (copies the file flat and writes
+model keeps the MTP. Make the entry with `feed_tool.py pack-drafter PACK --out RELEASE/drafters --version 1 --backends cuda,hip [--url-prefix ""]` (copies the file flat and writes
 `<name>.entry.json`) and pass the folder to `build-feed --drafters RELEASE/drafters`; upload the pack beside the feed in the same release. Older Controls ignore the member.
 
 The member holds two entries (one `pack-drafter` call each, both folders' `.entry.json` files in the same `--drafters` folder): `qwen3.8-flash-next-dflash2.nostroma1.q4_0-selq4.pack` (339,694,592 bytes) with
@@ -190,55 +189,38 @@ All signing happens on the release PC, on the finished files.
 
 **What is built (per OS)**
 
-* *The installer*, one per OS (0.2.15). The Windows and Linux ones have no engine inside: built with `--config src-tauri/tauri.update.conf.json`, which drops `engine-bundle`. The Mac dmg keeps its small Metal engine (one Mac variant).
-  Windows: `Nostroma-0.2.15-windows-x64-setup.exe`; Linux: `Nostroma-0.2.15-linux-x86_64.AppImage`; Mac: `Nostroma-0.2.15-macos-arm64.dmg` for people and
-  `Nostroma.app.tar.gz` as the updater archive (the updater cannot install from a dmg). The Windows and Linux files are both the first download and the
+* *The installer*, one per OS (0.2.15). The Windows and Linux ones have no engine inside: built with `--config src-tauri/tauri.update.conf.json`, which drops `engine-bundle`.
+  Windows: `Nostroma-0.2.15-windows-x64-setup.exe`; Linux: `Nostroma-0.2.15-linux-x86_64.AppImage`. Both are the first download and the
   file the feed's app member names; the first start of the app downloads the engine for the card (the first-run card), or installs a file the person already has.
   Why: an app update must not carry an engine, and the right engine depends on the card. Engines come per card from the signed feed
   (`feed.select_engine`: platform, backend, CUDA `archs` and `min_driver`, HIP `archs`; `tests/terminal/test_release_matrix.py`).
 
 **Steps**
 
-    python packaging/feed_tool.py sign-package <engine package folder> --key <feed-key.json>        # every engine package (the Mac app bundles its UNSIGNED copy)
+    python packaging/feed_tool.py sign-package <engine package folder> --key <feed-key.json>        # every engine package
     python packaging/feed_tool.py pack-engine  <engine package folder> --out RELEASE/engine --url-prefix=
     python packaging/feed_tool.py pack-control <control folder> --version 0.1.61 --platform P --out RELEASE/control --url-prefix=   # --format zip for windows-x86_64
     # --url-prefix= (not --url-prefix "") because PowerShell 5.1 drops an empty argument. The Control version is the VERSION file
     # (0.1.61), not the app version: a Control package newer than the installed one is installed by `nostroma update`.
-    # Pack Linux and Mac packages on Linux / the Mac or on Windows with this tool: it sets the execute bit from the file header either way.
+    # Pack Linux packages on Linux or on Windows with this tool: it sets the execute bit from the file header either way.
     cd apps/desktop && npx tauri build --bundles nsis --config src-tauri/tauri.update.conf.json    # Windows installer (no engine inside)
     # Linux: tauri build --bundles appimage (no engine inside) is the AppImage
-    # on the release PC, per updater artifact (Windows setup .exe, Linux .AppImage, Mac Nostroma.app.tar.gz):
+    # on the release PC, per updater artifact (Windows setup .exe, Linux .AppImage):
     npx tauri signer sign -f <path to tauri-updater.key> <artifact>                                 # writes <artifact>.sig
     python packaging/feed_tool.py set-app-platform --app-json RELEASE/tauri-latest.json --target windows-x86_64 --version 0.2.15 --archive Nostroma-0.2.15-windows-x64-setup.exe --sig Nostroma-0.2.15-windows-x64-setup.exe.sig --notes "..."
     python packaging/feed_tool.py set-app-platform --app-json RELEASE/tauri-latest.json --target linux-x86_64   --version 0.2.15 --archive Nostroma-0.2.15-linux-x86_64.AppImage --sig Nostroma-0.2.15-linux-x86_64.AppImage.sig
-    python packaging/feed_tool.py set-app-platform --app-json RELEASE/tauri-latest.json --target darwin-aarch64 --version 0.2.15 --archive Nostroma.app.tar.gz --sig Nostroma.app.tar.gz.sig
     python packaging/feed_tool.py build-feed --out RELEASE --sequence N --key <feed-key.json> --engine RELEASE/engine --control RELEASE/control --app-json RELEASE/tauri-latest.json (--carry-dsv41 <the last nostroma-feed.json> --carry-dsv41-base https://github.com/earenbaz80/Nostroma/releases/download/<DSV41-TAG>/ | --no-dsv41-carry) [--shapes RELEASE/shapes] [--drafters RELEASE/drafters]
     python packaging/feed_tool.py verify-feed RELEASE --pub <feed-key.pub.json>
 
 `set-app-platform` checks each `.sig` against the public key in `tauri.conf.json`, or `app_minisign_public` from `nostroma_control/update_keys.json` when it names none (`--pubkey` checks against another key), over the exact bytes, so a file signed with another key, or changed after
-signing, stops the release. The Mac dmg is not in the feed's app member (it uses `Nostroma.app.tar.gz`) and needs no Tauri signature; it is downloaded by hand.
+signing, stops the release.
 
-### The Mac app
-
-`tauri build` signs its installers with the Tauri key before anything else touches them. On a Mac that is too early: `sign-and-notarize.sh` then re-signs every
-Mach-O in the app with the Developer ID and notarises and staples it, which changes the bytes. The `Nostroma.app.tar.gz` and `.sig` that `tauri build` wrote hold the
-**unsigned, un-notarised** app, and the updater would install exactly that on a user's Mac. So the in-app Mac update is built from the finished app instead:
-
-1. `sign-and-notarize.sh <dmg> --updater-archive` (on the Mac) packs the signed, notarised, stapled `.app` into `Nostroma.app.tar.gz` (the app folder at the root, the layout
-   Tauri's bundler makes), unpacks it again and checks `codesign`, the staple and `spctl`. It never reads the Tauri key.
-2. Move the `.tar.gz` to the release PC and sign it there with `npx tauri signer sign -f <key> Nostroma.app.tar.gz` (or `TAURI_SIGNING_PRIVATE_KEY_PATH` and the password variable).
-   The key stays on the PC and in the owner's safe storage; nothing in this tree reads or stores it, and the Mac needs no node and no key.
-3. `feed_tool.py set-app-platform` checks that signature against the public key in `tauri.conf.json`, or `app_minisign_public` from `nostroma_control/update_keys.json` when it names none, over the exact archive bytes, checks the archive holds `<Name>.app` at its root,
-   and writes `url`, `signature`, `sha256` and `size` of the darwin entry. A signature that was made for the pre-notarisation file does not verify, so it cannot be published by mistake.
-4. `build-feed --app-json` and `verify-feed` as above. Upload the notarised `Nostroma.dmg` and `Nostroma.app.tar.gz`; `app/latest.json` is the feed's app member, not an asset, so it stays out of the upload.
-
-The Windows installer and the Linux AppImage need no extra step: their `.sig` files from `tauri build` are the ones to pass to `set-app-platform`. Re-signing the Mac app after the archive
-was made (a second `sign-and-notarize.sh` run) makes a new archive: sign and add it again.
+The Windows installer and the Linux AppImage need no extra step: their `.sig` files from `tauri build` are the ones to pass to `set-app-platform`.
 
 `build-feed` also writes `RELEASE/install-manifest.txt`, the file the one-line installers read: one line per Control package,
 `platform version url sha256 size`, taken from the `*.entry.json` files in `RELEASE/control`. The Control package is the Terminal that `install.sh` unpacks (it must hold `bin/nostroma`).
 `install.sh` unpacks with `tar -xzf` and `install.ps1` with `Expand-Archive`, so `windows-x86_64` must be packed with `--format zip` and the other platforms as `tar.gz`;
-`build-feed` leaves a pack in the wrong format out of the manifest and says so. Pack Control for every platform you want the one-line install to cover (`install.sh` knows `linux-x86_64`, `linux-aarch64` and `macos-arm64`, `install.ps1` `windows-x86_64`);
+`build-feed` leaves a pack in the wrong format out of the manifest and says so. Pack Control for every platform you want the one-line install to cover (`install.sh` knows `linux-x86_64` and `linux-aarch64`, `install.ps1` `windows-x86_64`);
 a platform with no line gets "this release has no Terminal for <platform>". Upload `install.sh` and `install.ps1` from `packaging/` unchanged: their built-in address is the release folder.
 
 **Linux ARM64 (DGX Spark) has its own feed file.** A Control up to 0.1.52 refuses a feed that names a platform it does not know (`the feed's control entry names an unknown platform`), so the `linux-aarch64` entries are not in `nostroma-feed.json`, which every released client reads. They are in `nostroma-feed-linux-aarch64.json` (+ `.sig`, same format, same key, its own `sequence`, aarch64 entries only), uploaded to the same release. A Linux ARM64 Terminal reads that file by default, from a folder or a release address (`nostroma_control.feed.feed_name()`); a source that names its own `.json` file is used as given. Until every client skips unknown platforms, each release must publish both files, and the aarch64 file's sequence must never go down.
