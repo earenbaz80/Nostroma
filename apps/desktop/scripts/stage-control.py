@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -144,9 +145,14 @@ def write_bundle_record(folder: Path, archive: Path) -> dict:
 
 def check(folder: Path) -> int:
     target = pt.host_target()
-    python = folder / pt.PYTHON_PINS[target]["python"]
+    # The interpreter is looked up by the names the bundle really carries (bundle_python, the same lookup the probe uses), not by the
+    # pinned `python3` alone: a POSIX bundle repacked from python-build-standalone can hold only `python/bin/python3.12`, which was
+    # then reported as missing although the run itself would have worked.
+    python = bundle_python(folder)
     problems = []
-    for need in (python, folder / "nostroma.py", folder / "nostroma_control", folder / "serve" / "server.py", folder / "BUNDLE.json",
+    if python is None:
+        problems.append(f"missing {folder / pt.PYTHON_PINS[target]['python']} (no interpreter under {folder / 'python'})")
+    for need in (folder / "nostroma.py", folder / "nostroma_control", folder / "serve" / "server.py", folder / "BUNDLE.json",
                  folder / "setup.py", folder / "tools" / "nostroma_mcp.py", folder / "tools" / "iq_pack.py", folder / "data" / "draft_vocab.bin"):
         if not need.exists():
             problems.append(f"missing {need}")
@@ -169,6 +175,123 @@ def check(folder: Path) -> int:
     return again.returncode
 
 
+def bundle_python(folder: Path, windows: bool | None = None) -> Path | None:
+    """The bundle's interpreter, by the names the archive really carries. Windows ships `python/python.exe`. On POSIX
+    `python/bin/python3` is the pinned name (packaging/package_terminal.py), but a python-build-standalone install also
+    carries the versioned name (`python/bin/python3.12`), and a bundle repacked from one can have only that: looking for
+    `python3` alone made the probe below blind, which read as "free" and let a running interpreter be emptied. The plain
+    name wins, then the newest versioned one, then `python`. Null when the folder holds no interpreter: there is then
+    nothing to probe, and the move itself still says what it finds."""
+    windows = os.name == "nt" if windows is None else windows
+    if windows:
+        candidates = [folder / "python" / "python.exe"]
+    else:
+        binaries = folder / "python" / "bin"
+        versioned: list[tuple[int, Path]] = []
+        try:
+            for entry in binaries.iterdir():
+                minor = entry.name.removeprefix("python3.")
+                if minor.isdigit() and entry.name.startswith("python3."):
+                    versioned.append((int(minor), entry))
+        except OSError:
+            versioned = []
+        candidates = [binaries / "python3"] + [path for _, path in sorted(versioned, reverse=True)] + [binaries / "python"]
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def interpreter_in_use(folder: Path, windows: bool | None = None) -> Path | None:
+    """The bundled interpreter, when a process is running it. On Windows a folder whose file is open still renames, and so does
+    the running image itself (measured on 0.2.16 with the bundle's Python 3.12.15 open: `python/` -> `python-aside/` and
+    `python.exe` -> `python.exe.probe` both succeeded, while `shutil.rmtree` and `os.unlink` failed with [WinError 5]). What the
+    running interpreter locks is a write to its own file, so opening it for writing is the probe: it fails with "Permission
+    denied" while it runs and writes nothing. Null when there is no interpreter to check or it is free."""
+    python = bundle_python(folder, windows)
+    if python is None:
+        return None
+    try:
+        if not python.is_file() or not os.access(python, os.W_OK):        # a read-only bundle cannot be probed this way; the move below still says what it finds
+            return None
+        with python.open("r+b"):
+            pass
+    except OSError:
+        return python
+    return None
+
+
+def empty_output(folder: Path) -> None:
+    """Take the staged folder's children aside before extracting the new bundle, and delete them only once every one of them moved.
+    A file still open elsewhere cannot be renamed (on Windows, the host's MCP helper runs the bundled python): the children already
+    set aside are then put back and the run stops, so the old Control is left whole instead of half emptied.
+
+    The rename alone does not catch a running interpreter, though: Windows lets the python folder, and even python.exe, be renamed
+    while it runs. So the interpreter is probed first (interpreter_in_use above), before anything moves, and the run stops with the
+    old copy whole."""
+    if not folder.exists():
+        return
+    busy = interpreter_in_use(folder)
+    if busy is not None:
+        raise SystemExit(
+            f"cannot empty {folder} before extracting Control: {busy} is running, so a process has the bundled Python open.\n"
+            "Close Nostroma and its MCP helper (a running process may be using the bundled Python), then run this again. "
+            "Nothing was deleted: the old copy is as it was. Extracting over it would mix two interpreters and leave Control broken."
+        )
+    try:
+        children = sorted((child for child in folder.iterdir() if child.name != ".gitignore"), key=lambda child: child.name)
+    except OSError as error:
+        raise SystemExit(f"cannot read {folder} before extracting Control: {error}. Close Nostroma and its MCP helper, then run this again.") from error
+    if not children:
+        return
+    aside = folder.with_name(f"{folder.name}.old")
+    if aside.exists():
+        try:
+            shutil.rmtree(aside) if aside.is_dir() else aside.unlink()
+        except OSError as error:
+            raise SystemExit(f"cannot clear {aside}, left by an earlier run, before extracting Control: {error}. Close Nostroma and its MCP helper, then run this again.") from error
+    try:
+        aside.mkdir()
+    except OSError as error:
+        raise SystemExit(f"cannot set the old copy of {folder} aside before extracting Control: {error}. Close Nostroma and its MCP helper, then run this again.") from error
+    moved: list[Path] = []
+    failure: tuple[Path, OSError] | None = None
+    for child in children:
+        try:
+            child.rename(aside / child.name)
+            moved.append(child)
+        except OSError as error:
+            failure = (child, error)
+            break
+    if failure is not None:
+        stuck: list[Path] = []
+        for child in moved:
+            try:
+                (aside / child.name).rename(child)
+            except OSError:
+                stuck.append(child)
+        if not stuck:
+            try:
+                aside.rmdir()
+            except OSError:
+                pass
+        left = [child for child in children if child.exists()]
+        lines = [f"  {child}" + (f" ({failure[1]})" if child == failure[0] else "") for child in left[:5]]
+        if len(left) > 5:
+            lines.append(f"  ... and {len(left) - 5} more")
+        raise SystemExit(
+            f"cannot empty {folder} before extracting Control: {len(left)} item(s) are still there.\n"
+            + "\n".join(lines)
+            + "\nClose Nostroma and its MCP helper (a running process may be using the bundled Python), then run this again. "
+              "Nothing was deleted: the old copy is as it was. Extracting over it would mix two interpreters and leave Control broken."
+            + (f" Part of it could not be put back and is in {aside}." if stuck else "")
+        )
+    try:
+        shutil.rmtree(aside)
+    except OSError as error:
+        print(f"warning: the old copy is left in {aside}: {error}", file=sys.stderr)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--archive", type=Path, help="stage this terminal archive instead of building one")
@@ -180,11 +303,7 @@ def main() -> int:
         return check(a.out)
     with tempfile.TemporaryDirectory(prefix="nostroma-stage-control-") as work:
         archive = a.archive.resolve() if a.archive else build_archive(Path(work), a.wheelhouse)
-        keep = [p for p in a.out.iterdir() if p.name == ".gitignore"] if a.out.exists() else []
-        if a.out.exists():
-            for child in a.out.iterdir():
-                if child.name != ".gitignore":
-                    shutil.rmtree(child, ignore_errors=True) if child.is_dir() else child.unlink()
+        empty_output(a.out)
         a.out.mkdir(parents=True, exist_ok=True)
         inner = extract(archive, a.out)
         record = write_bundle_record(inner, archive)

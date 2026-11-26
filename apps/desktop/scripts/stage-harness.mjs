@@ -40,7 +40,9 @@ const keepIgnore = existsSync(join(out, '.gitignore')) ? readFileSync(join(out, 
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 const pnpm = platform === 'win32' ? ['corepack.cmd', ['pnpm']] : ['corepack', ['pnpm']];
-run(pnpm[0], [...pnpm[1], 'deploy', '--legacy', '--prod', '--filter', '@deepseek-ai/dsh', out], src, { shell: platform === 'win32' });
+// With shell:true on Windows Node joins the args with spaces without quoting them; this workspace's path contains one.
+const deployOut = platform === 'win32' ? `"${out}"` : out;
+run(pnpm[0], [...pnpm[1], 'deploy', '--legacy', '--prod', '--filter', '@deepseek-ai/dsh', deployOut], src, { shell: platform === 'win32' });
 
 // --- peers -------------------------------------------------------------------------------------------------------------
 // `pnpm deploy --prod` leaves out peer dependencies, but the Harness loads some of them by name at run time (for example the

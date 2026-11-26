@@ -7,7 +7,9 @@ itself downloads model files only - no pip, no git, no compiler, no engine fetch
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
+import io
 import json
 import os
 import subprocess
@@ -370,6 +372,159 @@ class InstallerServerTests(unittest.TestCase):
         self.assertIn("Step 5: downloading", out)
         self.assertIn("Qwen3.8-Flash-Next-GSQ-RCO-Q2_0-00001-of-00002.gguf", out)
         self.assertFalse(log.exists(), "something ran pip, git, cmake or a package manager: " + (log.read_text() if log.exists() else ""))
+
+
+class StageControlEmptyTests(unittest.TestCase):
+    """Staging must stop before extracting when the old Control cannot be emptied: the host's MCP helper can hold the bundled Python open."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        sys.path.insert(0, str(ROOT / "apps" / "desktop" / "scripts"))
+        try:
+            spec = importlib.util.spec_from_file_location("stage_control_for_empty", ROOT / "apps" / "desktop" / "scripts" / "stage-control.py")
+            self.stage = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(self.stage)
+        finally:
+            sys.path.pop(0)
+
+    def test_it_empties_the_old_stage_and_keeps_the_gitignore(self):
+        out = Path(self.tmp.name) / "control"
+        (out / "python").mkdir(parents=True)
+        (out / "python" / "python.exe").write_bytes(b"old")
+        (out / "nostroma.py").write_text("old", encoding="utf-8")
+        (out / ".gitignore").write_text("built here\n", encoding="utf-8")
+        self.stage.empty_output(out)
+        self.assertEqual([p.name for p in out.iterdir()], [".gitignore"])
+        self.assertFalse((out.parent / f"{out.name}.old").exists(), "the old copy is deleted once it is set aside, not left beside the new one")
+
+    def test_the_probe_reads_a_denied_write_as_the_interpreter_in_use(self):
+        """Windows renames a running interpreter's folder, and even the exe, so the probe is the write the image locks."""
+        out = Path(self.tmp.name) / "control"
+        (out / "python").mkdir(parents=True)
+        exe = out / "python" / "python.exe"
+        exe.write_bytes(b"old")
+        self.assertIsNone(self.stage.interpreter_in_use(out), "a free interpreter is not in use")
+        self.assertIsNone(self.stage.interpreter_in_use(out.parent), "no interpreter: nothing to probe")
+        with mock.patch.object(Path, "open", side_effect=PermissionError(13, "Permission denied")):
+            self.assertEqual(self.stage.interpreter_in_use(out), exe, "the file that cannot be opened for writing is the one in use")
+        self.assertEqual(exe.read_bytes(), b"old", "the probe writes nothing")
+
+    def test_the_probe_finds_the_versioned_name_a_posix_bundle_ships(self):
+        """A POSIX bundle carries `python/bin/python3` and also the versioned `python/bin/python3.12`, and a repacked one can carry
+        only the versioned name. Looking for `python3` alone made the probe blind there (measured on 0.2.16: a bundle with only
+        `bin/python3.12`, its file denied for writing, answered None), which read as free. The plain name wins, then the newest
+        versioned one, then `python`; a folder with no interpreter answers None instead of failing."""
+        out = Path(self.tmp.name) / "control"
+        binaries = out / "python" / "bin"
+        binaries.mkdir(parents=True)
+        self.assertIsNone(self.stage.bundle_python(out, windows=False), "no interpreter: nothing to probe, not an error")
+        only_versioned = binaries / "python3.12"
+        only_versioned.write_bytes(b"#!")
+        self.assertEqual(self.stage.bundle_python(out, windows=False), only_versioned, "the name python-build-standalone also ships")
+        self.assertIsNone(self.stage.interpreter_in_use(out), "on Windows those names are not its own, and it answers null instead of failing")
+        with mock.patch.object(Path, "open", side_effect=PermissionError(13, "Permission denied")):
+            self.assertEqual(self.stage.interpreter_in_use(out, windows=False), only_versioned,
+                             "the versioned name is the one the running process locks, and the probe names it")
+        (binaries / "python3").write_bytes(b"#!")
+        self.assertEqual(self.stage.bundle_python(out, windows=False), binaries / "python3", "the pinned name wins over the versioned one")
+        (binaries / "python3.13").write_bytes(b"#!")
+        (binaries / "python3").unlink()
+        self.assertEqual(self.stage.bundle_python(out, windows=False), binaries / "python3.13", "with no plain name, the newest version")
+        (binaries / "python3.13").unlink()
+        (binaries / "python3.12").unlink()
+        (binaries / "python").write_bytes(b"#!")
+        self.assertEqual(self.stage.bundle_python(out, windows=False), binaries / "python", "the bare name is the last resort")
+        exe = out / "python" / "python.exe"
+        exe.write_bytes(b"old")
+        self.assertEqual(self.stage.bundle_python(out, windows=True), exe)
+
+    def test_check_resolves_the_interpreter_with_the_names_the_probe_reads(self):
+        """`--check` asked for the pinned `python/bin/python3` alone, so a bundle repacked from python-build-standalone carrying only
+        `python/bin/python3.12` was reported as missing before it ran anything. It now looks the interpreter up with bundle_python, the
+        same names the probe reads, and the versioned name is the one it runs; a folder with no interpreter at all is still reported."""
+        out = Path(self.tmp.name) / "control"
+        (out / "nostroma_control").mkdir(parents=True)
+        for need in ("nostroma.py", "serve/server.py", "BUNDLE.json", "setup.py", "tools/nostroma_mcp.py", "tools/iq_pack.py",
+                     "data/draft_vocab.bin"):
+            path = out / need
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("", encoding="utf-8")
+        bindir = out / "python" / "bin"
+        bindir.mkdir(parents=True)
+        only_versioned = bindir / "python3.12"
+        only_versioned.write_bytes(b"#!")
+        lookup = self.stage.bundle_python
+        done = subprocess.CompletedProcess([], 0, "nostroma 0.2.16" + chr(10), "")
+        with mock.patch.object(self.stage, "bundle_python", lambda folder, windows=None: lookup(folder, False)), \
+                mock.patch.object(self.stage.subprocess, "run", return_value=done) as runner, \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(self.stage.check(out), 0, "the versioned interpreter is the one the bundle carries, so nothing is missing")
+            self.assertEqual([call.args[0][0] for call in runner.call_args_list], [str(only_versioned)] * 2,
+                             "the versioned name is what runs, in both the --version and the installer check")
+        only_versioned.unlink()
+        said = io.StringIO()
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(said):
+            self.assertEqual(self.stage.check(out), 1, "a bundle with no interpreter is still reported")
+        pinned = out / self.stage.pt.PYTHON_PINS[self.stage.pt.host_target()]["python"]
+        self.assertIn(str(pinned), said.getvalue(), "and the message still names the pinned interpreter")
+
+    def test_a_running_interpreter_stops_it_before_anything_moves(self):
+        """The old bundle stays whole: the probe runs before the first child is renamed aside."""
+        out = Path(self.tmp.name) / "control"
+        (out / "python").mkdir(parents=True)
+        locked = out / "python" / "python.exe"
+        locked.write_bytes(b"old")
+        (out / "nostroma.py").write_text("old", encoding="utf-8")
+        (out / ".gitignore").write_text("built here\n", encoding="utf-8")
+        with mock.patch.object(self.stage, "interpreter_in_use", return_value=locked), \
+                mock.patch.object(self.stage, "extract") as extract:
+            with mock.patch.object(sys, "argv", ["stage-control.py", "--archive", "nostroma-terminal-x.zip", "--out", str(out)]):
+                with self.assertRaises(SystemExit) as caught:
+                    self.stage.main()
+        extract.assert_not_called()
+        message = str(caught.exception)
+        self.assertIn("is running", message)
+        self.assertIn("MCP helper", message)
+        self.assertIn("Nothing was deleted", message)
+        self.assertEqual(sorted(child.name for child in out.iterdir()), [".gitignore", "nostroma.py", "python"], "the old copy is whole")
+        self.assertTrue(locked.is_file())
+        self.assertFalse((out.parent / f"{out.name}.old").exists(), "nothing was set aside")
+
+    def test_it_puts_the_old_copy_back_when_one_child_cannot_be_set_aside(self):
+        """The children are renamed aside first and deleted only once every one of them moved. Here `nostroma.py` is set aside and the
+        python folder cannot be (a running process holds its interpreter), so the file has to come back: the old code deleted it before
+        it found out it could not finish, which left Control half emptied."""
+        out = Path(self.tmp.name) / "control"
+        out.mkdir()
+        old_file = out / "nostroma.py"          # written before the python folder: the old loop deleted it, then failed on the folder
+        old_file.write_text("old", encoding="utf-8")
+        (out / "python").mkdir()
+        locked = out / "python" / "python.exe"
+        locked.write_bytes(b"old")
+        (out / ".gitignore").write_text("built here\n", encoding="utf-8")
+
+        real_rename = os.rename
+
+        def in_use(src, dst, *args, **kwargs):
+            if Path(src).resolve() == (out / "python").resolve():
+                raise PermissionError(32, "The process cannot access the file because it is being used by another process", str(src))
+            return real_rename(src, dst, *args, **kwargs)
+
+        with mock.patch.object(os, "rename", side_effect=in_use),                 mock.patch.object(self.stage, "extract") as extract:
+            with mock.patch.object(sys, "argv", ["stage-control.py", "--archive", "nostroma-terminal-x.zip", "--out", str(out)]):
+                with self.assertRaises(SystemExit) as caught:
+                    self.stage.main()
+        extract.assert_not_called()
+        message = str(caught.exception)
+        self.assertIn(str(out), message)
+        self.assertIn("MCP helper", message)
+        self.assertIn("python", message)
+        self.assertIn("Nothing was deleted", message)
+        self.assertTrue(locked.is_file(), "the old bundle is left as it was, not half merged")
+        self.assertEqual(old_file.read_text(encoding="utf-8"), "old", "the file moved aside first is put back, not lost")
+        self.assertEqual(sorted(child.name for child in out.iterdir()), [".gitignore", "nostroma.py", "python"], "the old copy is whole")
+        self.assertFalse((out.parent / f"{out.name}.old").exists(), "and nothing is left aside")
 
 
 if __name__ == "__main__":
