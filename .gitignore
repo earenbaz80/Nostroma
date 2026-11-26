@@ -98,3 +98,28 @@ node_modules/
 
 # local backups of this checkout (a bundle, not source)
 /backups/
+
+# Local work from a session: screenshots taken to check a page, the log an engine
+# run wrote, the throwaway configs and build helpers of one engine build, and the
+# scratch trees the test scripts make. None of it is source. bench/results/ is
+# left alone on purpose: a published measurement is the source of its page.
+/.freebuff-tmp/
+/.shots/
+/.tmp-tests/
+/.worktree-*/
+/*.png
+/*.out
+/*.obj
+/config-*.json
+/req*.json
+/resp*.json
+/build-*.bat
+/configure-*.bat
+/apps/host/.tmp-*
+
+# The pictures a person puts behind the app: the app fills this folder.
+/wallpapers/
+
+# Sheets served from public/ while an icon or a family size was being chosen.
+/apps/host/public/family-qwen-*.html
+/apps/host/public/icon-*.html
