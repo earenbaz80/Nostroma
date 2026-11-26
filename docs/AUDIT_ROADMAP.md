@@ -177,7 +177,7 @@ string nothing reads.
   `nostroma.py` (271 files) all parse with the 3.10 grammar; none of the 4,178 f-string literals uses a 3.12 form
   (same quote or a backslash inside the braces); and no 3.11+ API appears (`tomllib`, `TaskGroup`, `StrEnum`,
   `datetime.UTC`, `typing.Self`, atomic or possessive regex). The version-dependent spots are guarded:
-  `tarfile.data_filter` behind `hasattr` (`setup.py:5329`), `sys.version_info < (3, 12)` in
+  `tarfile.data_filter` behind `hasattr` (`setup.py:5330`), `sys.version_info < (3, 12)` in
   `nostroma_control/netpolicy.py:412`, and `fromisoformat` either with `Z` replaced by `+00:00`
   (`nostroma_control/feed.py:310`) or inside `except ValueError`. That part is static analysis.
 - **The same floor on real interpreters, 26 November 2026.** On CPython 3.10.11 (python.org embeddable) and 3.10.15
