@@ -1309,7 +1309,19 @@ def root_problem(root: Path):
     return None
 
 
+def safe_console() -> None:
+    """Una consola de Windows no es UTF-8 antes de 3.15, así que un `→` o un `—` en una fila mata la corrida con
+    UnicodeEncodeError (3.10-3.14). Reemplazar el carácter que no puede codificar mantiene la salida legible y la
+    corrida viva; el veredicto y el código de salida no cambian."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")
+        except (AttributeError, ValueError):   # no es un TextIOWrapper, o ya está cerrado
+            pass
+
+
 def main():
+    safe_console()
     ap = argparse.ArgumentParser(description="Comprobaciones pendientes de la auditoría de Nostroma")
     ap.add_argument("--root", default=str(ROOT), help="raíz del proyecto (por defecto, este repositorio)")
     ap.add_argument("--json", help="volcar filas a JSON")
