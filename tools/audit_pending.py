@@ -265,6 +265,55 @@ def updater_value(decided, keys):
     return None, None, None, None
 
 
+def updater_rows(root: Path, base: Path, overlays, suffix: str = ""):
+    """Las filas del updater de un directorio: el base y los overlays que `tauri build --config` apila encima.
+
+    `suffix` distingue el directorio cuando hay más de uno, para que dos `src-tauri` no se pisen en la tabla.
+    """
+    rows = []
+    layers = updater_layers(base, overlays)
+    decided, clashes = resolve_updater(layers)
+    read = f"{len(layers)} configs y {len(overlays)} overlay(s)"
+
+    rsv, rsv_conf, rsv_raw, rsv_key = updater_value(decided, RSV_KEYS)
+    # La ubicación que se informa es la de la capa que fija el valor: el base, o el overlay que lo pisa.
+    if rsv:
+        rows.append(("1", f"require_signed_version{suffix}", OK,
+                     f"{ev(rsv_conf, root, line_of(rsv_raw, rsv_key))} activado; {read}"))
+    else:
+        rows.append(("1", f"require_signed_version{suffix}", f"{WARN} · alta",
+                     f"{(ev(rsv_conf, root, line_of(rsv_raw, rsv_key)) if rsv_conf else ev(base, root, 1))} "
+                     f"ausente/false — la mitigación de {CVE_ID} NO está activa aunque el plugin esté al día; "
+                     f"{read}"))
+
+    t_val, t_conf, t_raw, t_key = updater_value(decided, ("dangerousInsecureTransportProtocol",))
+    if t_val:
+        rows.append(("1", f"transporte{suffix}", f"{FAIL} · alta",
+                     f"{ev(t_conf, root, line_of(t_raw, t_key))} permite endpoints no-HTTPS"))
+    else:
+        rows.append(("1", f"transporte{suffix}", OK, "solo HTTPS"))
+
+    d_val, d_conf, d_raw, d_key = updater_value(decided, ("allowDowngrades",))
+    if d_val:
+        rows.append(("1", f"allowDowngrades{suffix}", f"{FAIL} · media",
+                     f"{ev(d_conf, root, line_of(d_raw, d_key))} true"))
+
+    for key, first, second in clashes:
+        rows.append(("1", f"overlays en desacuerdo{suffix}", f"{WARN} · media",
+                     f"{key}: {rel(first, root)} y {rel(second, root)} lo fijan con valores distintos — "
+                     "decide el último que se apila"))
+
+    pk_val, pk_conf, pk_raw, pk_key = updater_value(decided, ("pubkey",))
+    pk = str(pk_val or "")
+    if pk:
+        looks_path = ("/" in pk) or pk.endswith((".pub", ".key"))
+        rows.append(("1", f"pubkey{suffix}", f"{FAIL}" if looks_path else OK,
+                     f"{ev(pk_conf, root, line_of(pk_raw, pk_key))} "
+                     f"{'parece ruta de archivo' if looks_path else f'{len(pk)} chars'}: "
+                     f"{'debe ser el CONTENIDO en base64' if looks_path else 'contenido en config'}"))
+    return rows
+
+
 def check_updater(root: Path):
     rows = []
     locks = walk(root, names=["Cargo.lock"])
@@ -299,56 +348,18 @@ def check_updater(root: Path):
         rows.append(("1", "minisign-verify", OK if (mv and mv >= (0, 3, 0)) else INFO,
                      f"{ev(lock, root, mline)} {mver} — {note}"))
 
-    # configuración del plugin: el base y TODOS sus overlays (`tauri build --config` los apila con RFC 7396)
+    # configuración del plugin: cada directorio `src-tauri` con su base y TODOS sus overlays
     sets = tauri_config_sets(root)
     if not sets:
         rows.append(("1", "tauri.conf.json", f"N/D", "no encontrado"))
         return rows
-    base, overlays = sets[0]
     if len(sets) > 1:
         rows.append(("1", "varios tauri.conf.json", OK,
-                     f"se leen todos: {', '.join(rel(b, root) for b, _ in sets)}; "
-                     f"las filas de abajo usan {rel(base, root)}"))
-    layers = updater_layers(base, overlays)
-    decided, clashes = resolve_updater(layers)
-    read = f"{len(layers)} configs y {len(overlays)} overlay(s)"
-
-    rsv, rsv_conf, rsv_raw, rsv_key = updater_value(decided, RSV_KEYS)
-    # La ubicación que se informa es la de la capa que fija el valor: el base, o el overlay que lo pisa.
-    if rsv:
-        rows.append(("1", "require_signed_version", OK,
-                     f"{ev(rsv_conf, root, line_of(rsv_raw, rsv_key))} activado; {read}"))
-    else:
-        rows.append(("1", "require_signed_version", f"{WARN} · alta",
-                     f"{(ev(rsv_conf, root, line_of(rsv_raw, rsv_key)) if rsv_conf else ev(base, root, 1))} "
-                     f"ausente/false — la mitigación de {CVE_ID} NO está activa aunque el plugin esté al día; "
-                     f"{read}"))
-
-    t_val, t_conf, t_raw, t_key = updater_value(decided, ("dangerousInsecureTransportProtocol",))
-    if t_val:
-        rows.append(("1", "transporte", f"{FAIL} · alta",
-                     f"{ev(t_conf, root, line_of(t_raw, t_key))} permite endpoints no-HTTPS"))
-    else:
-        rows.append(("1", "transporte", OK, "solo HTTPS"))
-
-    d_val, d_conf, d_raw, d_key = updater_value(decided, ("allowDowngrades",))
-    if d_val:
-        rows.append(("1", "allowDowngrades", f"{FAIL} · media",
-                     f"{ev(d_conf, root, line_of(d_raw, d_key))} true"))
-
-    for key, first, second in clashes:
-        rows.append(("1", "overlays en desacuerdo", f"{WARN} · media",
-                     f"{key}: {rel(first, root)} y {rel(second, root)} lo fijan con valores distintos — "
-                     "decide el último que se apila"))
-
-    pk_val, pk_conf, pk_raw, pk_key = updater_value(decided, ("pubkey",))
-    pk = str(pk_val or "")
-    if pk:
-        looks_path = ("/" in pk) or pk.endswith((".pub", ".key"))
-        rows.append(("1", "pubkey", f"{FAIL}" if looks_path else OK,
-                     f"{ev(pk_conf, root, line_of(pk_raw, pk_key))} "
-                     f"{'parece ruta de archivo' if looks_path else f'{len(pk)} chars'}: "
-                     f"{'debe ser el CONTENIDO en base64' if looks_path else 'contenido en config'}"))
+                     f"se analizan los {len(sets)} directorios: "
+                     f"{', '.join(rel(b.parent, root) for b, _ in sets)}"))
+    for base, overlays in sets:
+        suffix = f" ({rel(base.parent, root)})" if len(sets) > 1 else ""
+        rows.extend(updater_rows(root, base, overlays, suffix))
     return rows
 
 
