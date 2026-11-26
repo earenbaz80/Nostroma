@@ -270,7 +270,10 @@ def review_apply(*, job: dict[str, Any], config_path: Path,
         reasons.append("the sweep report changed after review; review it again")
 
     # And it has to have been measured on what is installed now.
-    if current_identity is not None:
+    if current_identity is None:
+        reasons.append("the current artifact identity could not be read, so the sweep cannot be matched "
+                       "to what is installed now")
+    else:
         from nostroma_control import tune_history
         recorded = report.get("identity") or {}
         if not recorded:

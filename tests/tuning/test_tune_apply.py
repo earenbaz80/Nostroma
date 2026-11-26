@@ -180,6 +180,12 @@ class TestReview(ApplyCase):
         self.assertFalse(plan.applicable)
         self.assertTrue(any("changed after review" in r for r in plan.reasons), plan.reasons)
 
+    def test_a_missing_current_identity_cannot_be_applied(self):
+        plan = ta.review_apply(job=self.job_with_identity(), config_path=self.config,
+                               current_identity=None)
+        self.assertFalse(plan.applicable)
+        self.assertTrue(any("current artifact identity" in r for r in plan.reasons), plan.reasons)
+
     def test_a_missing_configuration_is_refused_with_its_path(self):
         plan = ta.review_apply(job=self.job_with_identity(), config_path=self.tmp / "gone.json",
                                current_identity=self.identity())
