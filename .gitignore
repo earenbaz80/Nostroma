@@ -119,7 +119,3 @@ node_modules/
 
 # The pictures a person puts behind the app: the app fills this folder.
 /wallpapers/
-
-# Sheets served from public/ while an icon or a family size was being chosen.
-/apps/host/public/family-qwen-*.html
-/apps/host/public/icon-*.html
