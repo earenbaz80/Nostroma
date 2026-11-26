@@ -12,15 +12,16 @@ campaign** is a separate list of interface requirements from October 2026, kept 
 
 ```sh
 python tools/audit_pending.py                  # the scan; exit 1 when any check is FALLA
-python tools/audit_pending.py --selftest       # the scan's own test; 14/14 on Windows, see T3
+python tools/audit_pending.py --selftest       # the scan's own test; 15/15 on Windows, see T3
 python tools/audit_pending.py --json audit.json  # the same rows, to compare two runs
 ```
 
-The scan's own test, `--selftest`, builds a fake project and checks the verdicts. It reports **14 of 14** on this
+The scan's own test, `--selftest`, builds a fake project and checks the verdicts. It reports **15 of 15** on this
 Windows machine since 26 November 2026: two sub-checks compared `devimg/Dockerfile` and `docker/Dockerfile` against
 the `devimg\Dockerfile` that `rel()` prints here, so the development-image row and the unpinned `ARG BASE=ubuntu` were
 never found. The controls normalise separators before comparing now (T3); what they assert is unchanged, so a
-published image carrying the same `# audit: root-ok` line is still a FALLA.
+published image carrying the same `# audit: root-ok` line is still a FALLA. The fifteenth control is T2's: an overlay
+that turns the signing flag off has to be the file the row blames.
 
 `--json` is the way to compare two runs. Worktrees of git checked out inside the repository (`.worktree-0161` and the
 like) are skipped now, so the rows are no longer doubled (T1).
@@ -32,8 +33,7 @@ like) are skipped now, so the rows are no longer doubled (T1).
 > the app.
 
 **26 checks: 22 OK, 0 FALLA, 2 AVISO, 2 INFO. Exit code 0.** The two avisos are the SYCL toolboxes that declare why
-they run as root (A4) — by design, so the row stays visible; the informational ones are the WebSocket row (no
-`WebSocketServer` in the host) and the Python floor, and both are declared in A5.
+they run as root (A4) — by design, so the row stays visible; the informational ones are the WebSocket row (no `WebSocketServer` in the host) and the Python floor, which now declares 3.10 (A5).
 
 What is already fine, so it is not re-litigated: `tauri-plugin-updater` 2.14.0 is outside the affected range
 (2.0.0–2.12.0), `minisign-verify` 0.3.0 rejects non-canonical signatures, update endpoints are HTTPS-only, the
@@ -53,10 +53,10 @@ Status values: **open** (nobody has started), **decision** (needs a choice befor
 | A2 | high (signal) | The one FALLA is two `extractall()` calls in vendored code inside the bundled Python | done 26 Nov 2026 |
 | A3 | high (signal) | "Manual member loops" reports the project's own path checks as suspicious | done 26 Nov 2026 |
 | A4 | medium | Two development Dockerfiles pull their base image without a digest | done 26 Nov 2026 |
-| A5 | low | The Python floor is not declared anywhere | open |
+| A5 | low | The Python floor is not declared anywhere | done 26 Nov 2026 |
 | A6 | low | A bundled skill page links to six `references/*.md` pages the repository does not carry | done 26 Nov 2026 |
 | T1 | medium | The scan reads worktrees inside the checkout and duplicates rows | done 26 Nov 2026 |
-| T2 | medium | The scan reads only the first `tauri.conf.json` it finds | tool |
+| T2 | medium | The scan reads only the first `tauri.conf.json` it finds | done 26 Nov 2026 |
 | T3 | low | The scan's self-test fails on Windows on path separators | done 26 Nov 2026 |
 | B1 | — | The UI backlog is a second, larger list | see its page |
 
@@ -121,7 +121,7 @@ The dynamic rows ("dyn: …") measured Python 3.15, which refuses traversal by d
 
 - Done when: the scan recognises an `extraction_filter` assignment (and the project's `safe_extract`) and the audit
   exits 0, or the bundled `site-packages` is excluded with the reason recorded in the tool.
-- Verify: `python tools/audit_pending.py` exit 0; `python tools/audit_pending.py --selftest` no worse than the 14/14
+- Verify: `python tools/audit_pending.py` exit 0; `python tools/audit_pending.py --selftest` no worse than the 15/15
   in T3.
 - **Done 26 November 2026.** The scan now counts a tar call as protected when the object has `extraction_filter`
   assigned before the call (distlib) or when the `hasattr(..., 'extraction_filter')` guard sits within the seven lines
@@ -154,13 +154,21 @@ digest is: without `@sha256:` the same tag can pull different bits tomorrow.
   through `ARG SYCL_BASE` and repeats the dev image's `RUN`, which leaves the profiling image's content unchanged.
   Both digest rows read OK; the two rows still shown are the declared root, and they stay on purpose.
 
-### A5 — no declared Python floor (low, open)
+### A5 — no declared Python floor (low, done)
 
-Neither `setup.py` (`python_requires`) nor `pyproject.toml` (`requires-python`) declares one, while the app bundles
-3.12 and this machine runs 3.15. This is an INFO row, not a failure.
+Neither `setup.py` (`python_requires`) nor a root `pyproject.toml` (`requires-python`) declared one, while the app
+bundles 3.12 and this machine runs 3.15: the 3.10 floor lived only in prose (`docs/MAC.md`, `docs/MCP_SERVER.md`).
+`setup.py` is not a setuptools script — it is the one-click installer — so `python_requires=` there would have been a
+string nothing reads.
 
 - Done when: the floor is declared once and the audit row prints it.
 - Verify: `python tools/audit_pending.py` row 4, "mínimo de Python".
+- **Done 26 November 2026.** `setup.py:57` refuses an interpreter below 3.10 before importing anything of the project
+  (`raise SystemExit` with the documented wording, and where macOS gets its pinned 3.12), and the scan reads that guard
+  when a tree carries no packaging metadata. Row 4 now prints `declarado: 3.10+ (guarda en setup.py) (setup.py:57);
+  intérprete actual 3.15.2` and stays INFO. Limits: measured on 3.15.2 only, so the branch for an older interpreter was
+  not exercised here; `tests/terminal` keeps its own 3.11 floor from AGENTS.md, and `tools/test_setup_choices.py` (59
+  tests) runs green with the guard in place.
 
 ### A6 — the skill page links to files that are not here (low, done)
 
@@ -197,12 +205,19 @@ name the copy instead of the working tree.
   `__pycache__` folders, and its commit `7ace127d` is already in `nostroma-env-names` — so `git worktree list` now
   prints one line. The guard stays for the next worktree.
 
-### T2 — only the first `tauri.conf.json` is read (medium, tool)
+### T2 — only the first `tauri.conf.json` is read (medium, done)
 
-`check_updater` takes `confs[0]` from a walk, so with four configs in `apps/desktop/src-tauri/` the verdict depends on
+`check_updater` took `confs[0]` from a walk, so with four configs in `apps/desktop/src-tauri/` the verdict depended on
 walk order. The updater settings, if they move, will live in `tauri.release.conf.json` or `tauri.update.conf.json`.
 
 - Done when: every config under `src-tauri/` is read and the row names the file that decides the value.
+- **Done 26 November 2026.** The scan collects the base and every `tauri.*.conf.json` beside it, resolves each updater
+  key the way `tauri build --config` stacks the files (RFC 7396: the later layer wins, a `null` removes the key) and
+  reports the location of the layer that decided. Row 1 now reads
+  `apps/desktop/src-tauri/tauri.conf.json:19 activado; 4 configs y 3 overlay(s)`. In the self-test fixture, where an
+  overlay sets `requireSignedVersion: false`, the same row moves to `tauri.update.conf.json:4` and turns into an
+  AVISO — that is the file the row blames. Two overlays setting one key to different values get their own
+  `overlays en desacuerdo` row, because there no single file decides. `--selftest` covers both sides (15/15).
 
 ### T3 — the self-test assumes POSIX paths (low, done)
 
