@@ -5,8 +5,8 @@
   </picture>
 </p>
 
-<h3 align="center">あなた自身のパソコンで、高性能な AI を。</h3>
-<p align="center">チャット、コーディング、画像の処理を、すべてローカルで。</p>
+<h3 align="center">手持ちのグラフィックカード1枚で動く Qwen3.8-Flash-Next。</h3>
+<p align="center">重みに 37.6 GB を必要とする Mixture-of-Experts モデルを、アプリとコーディングツールに。</p>
 
 <p align="center">
   <a href="#モデル">モデル</a> · <a href="#インストール"><b>インストール</b></a> ·
@@ -25,7 +25,7 @@
 
 ## モデル
 
-まず **ISTA-DASLab** をおすすめします。次に **Unsloth** などの提供元です。メモリに収まる互換モデルがある場合に選べます。
+モデルは2つ、エンジンは1つ。どちらも Qwen で、提供元は下にあります。まず ISTA-DASLab、次に Unsloth。
 
 <details>
 <summary><img src="docs/media/models/qwen.svg" width="22" alt="" align="middle"> &nbsp;<b>Qwen3.8-Flash-Next</b></summary>
@@ -50,13 +50,9 @@
 
 </details>
 
-<a id="the-other-sizes"></a>
-
 どれが動くかわからない場合は、[お使いのパソコンに合うモデルを選ぶ](docs/MODELS.md#pick-by-memory)。
 
 ## インストール
-
-<a id="option-a-the-nostroma-app"></a>
 
 ### デスクトップアプリ
 
@@ -65,13 +61,6 @@
 アプリをインストールし、モデルを選んで、チャットを始めましょう。インストーラーはシステムごとに1つです。初回起動時に、アプリがお使いのグラフィックスカード用のエンジンをダウンロードします。[インストーラーのヘルプ](docs/INSTALL.md#the-app)。
 
 <sub>ファイル: `Nostroma-0.2.16-windows-x64-setup.exe` · `Nostroma-0.2.16-linux-x86_64.AppImage`</sub>
-
-<p align="center">
-  <img src="docs/media/app-chat.png" width="900" alt="チャットとライブのコードプレビューを並べて表示した Nostroma デスクトップアプリ">
-  <br><sub>チャット、ファイル、ライブプレビューを1つのウィンドウで。</sub>
-</p>
-
-<a id="option-b-the-terminal-one-line"></a>
 
 ### ターミナルアプリ
 
@@ -102,13 +91,6 @@ nostroma launch
 
 </details>
 
-<p align="center">
-  <img src="docs/media/terminal-monitor.png" width="900" alt="モデルの動作、速度、メモリ、最近のリクエストを表示する Nostroma ターミナルアプリ">
-  <br><sub>動作中のモデルとハードウェアの状態を確認できます。</sub>
-</p>
-
-<a id="build-from-source"></a>
-
 [ソースからビルド](docs/SOURCE_INSTALL.md) · [Docker](docs/DOCKER.md) · [インストールガイド（全文）](docs/INSTALL.md)
 
 <a id="what-you-need"></a>
@@ -131,18 +113,16 @@ nostroma launch
 
 **`nostroma connect`** を実行すると、お使いのツールの設定方法が表示されます。[接続ガイド](docs/TERMINAL_LAUNCH.md#connect-your-apps-nostroma-connect)。
 
-<a id="guides"></a>
-<a id="how-fast-is-it"></a>
 <a id="how-does-it-work"></a>
-<a id="something-went-wrong"></a>
 
 ## ヘルプ
 
-[すべてのガイド](docs) · [トラブルシューティング](docs/TROUBLESHOOTING.md) · [不具合を報告](https://github.com/earenbaz80/Nostroma/issues/new/choose) ·
-[ベンチマーク](docs/COMMUNITY_BENCHMARKS.md) · [仕組み](docs/HOW_IT_WORKS.md) · [貢献する](CONTRIBUTING.md)
+**うまく動かないとき:** [トラブルシューティング](docs/TROUBLESHOOTING.md) · [不具合を報告](https://github.com/earenbaz80/Nostroma/issues/new/choose)
 
-[MIT ライセンス](LICENSE) · [クレジットとモデルのライセンス](docs/HOW_IT_WORKS.md#credits) · [プライバシー](docs/SAFETY.md)
+**数値について:** [実測の速度](docs/DETAILS.md#speed-measured) · [コミュニティのベンチマーク](docs/COMMUNITY_BENCHMARKS.md) · [仕組み](docs/HOW_IT_WORKS.md)
 
-<a id="option-c-let-your-ai-set-it-up"></a>
+**参加する:** [CONTRIBUTING.md](CONTRIBUTING.md) · [クレジットとモデルのライセンス](docs/HOW_IT_WORKS.md#credits) · [プライバシー](docs/SAFETY.md) · [MIT ライセンス](LICENSE)
+
+<sub>すべてのガイド: [docs](docs) · AI ツールと自動読み取り向け: <a href="AGENTS.md">技術リファレンス</a> · <a href="docs/AI_SETUP.md">セットアップ手順</a>.</sub>
 
 <sub>AI ツールと自動リーダー向け: <a href="AGENTS.md">技術リファレンス</a> · <a href="docs/AI_SETUP.md">セットアップ手順</a></sub>

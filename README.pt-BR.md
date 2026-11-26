@@ -5,8 +5,8 @@
   </picture>
 </p>
 
-<h3 align="center">IA poderosa no seu próprio computador.</h3>
-<p align="center">Converse, programe e trabalhe com imagens, localmente.</p>
+<h3 align="center">Qwen3.8-Flash-Next em uma placa de vídeo que você já tem.</h3>
+<p align="center">Um modelo de mistura de especialistas cujos pesos precisam de 37,6 GB, a serviço do app e das suas ferramentas de código.</p>
 
 <p align="center">
   <a href="#modelos">Modelos</a> · <a href="#instalação"><b>Instalação</b></a> ·
@@ -25,7 +25,7 @@
 
 ## Modelos
 
-Recomendamos **primeiro a ISTA-DASLab**, depois a **Unsloth** e outros provedores, quando um modelo compatível cabe na memória.
+Dois modelos, um motor. Os dois são Qwen; os provedores estão abaixo, primeiro a ISTA-DASLab, depois a Unsloth.
 
 <details>
 <summary><img src="docs/media/models/qwen.svg" width="22" alt="" align="middle"> &nbsp;<b>Qwen3.8-Flash-Next</b></summary>
@@ -50,13 +50,9 @@ Recomendamos **primeiro a ISTA-DASLab**, depois a **Unsloth** e outros provedore
 
 </details>
 
-<a id="the-other-sizes"></a>
-
 Não sabe o que cabe? [Escolha um modelo para o seu computador](docs/MODELS.md#pick-by-memory).
 
 ## Instalação
-
-<a id="option-a-the-nostroma-app"></a>
 
 ### Aplicativo de desktop
 
@@ -65,13 +61,6 @@ Não sabe o que cabe? [Escolha um modelo para o seu computador](docs/MODELS.md#p
 Instale o aplicativo, escolha um modelo e comece a conversar. Há um instalador por sistema. Na primeira vez que abre, o aplicativo baixa o motor da sua placa de vídeo. [Ajuda com o instalador](docs/INSTALL.md#the-app).
 
 <sub>Arquivos: `Nostroma-0.2.16-windows-x64-setup.exe` · `Nostroma-0.2.16-linux-x86_64.AppImage`</sub>
-
-<p align="center">
-  <img src="docs/media/app-chat.png" width="900" alt="Aplicativo de desktop do Nostroma com um chat e uma prévia do código ao vivo lado a lado">
-  <br><sub>Chat, arquivos e prévia ao vivo em uma só janela.</sub>
-</p>
-
-<a id="option-b-the-terminal-one-line"></a>
 
 ### Aplicativo de Terminal
 
@@ -102,13 +91,6 @@ Siga as instruções para baixar e iniciar um modelo. [Guia do Terminal](docs/TE
 
 </details>
 
-<p align="center">
-  <img src="docs/media/terminal-monitor.png" width="900" alt="Aplicativo de Terminal do Nostroma mostrando a atividade do modelo, a velocidade, a memória e as solicitações recentes">
-  <br><sub>Acompanhe seu modelo e seu hardware enquanto ele roda.</sub>
-</p>
-
-<a id="build-from-source"></a>
-
 [Compilar a partir do código-fonte](docs/SOURCE_INSTALL.md) · [Docker](docs/DOCKER.md) · [Guia de instalação completo](docs/INSTALL.md)
 
 <a id="what-you-need"></a>
@@ -131,18 +113,16 @@ Siga as instruções para baixar e iniciar um modelo. [Guia do Terminal](docs/TE
 
 Execute **`nostroma connect`** para ver as instruções da sua ferramenta. [Guia de conexão](docs/TERMINAL_LAUNCH.md#connect-your-apps-nostroma-connect).
 
-<a id="guides"></a>
-<a id="how-fast-is-it"></a>
 <a id="how-does-it-work"></a>
-<a id="something-went-wrong"></a>
 
 ## Ajuda
 
-[Todos os guias](docs) · [Solução de problemas](docs/TROUBLESHOOTING.md) · [Relatar um bug](https://github.com/earenbaz80/Nostroma/issues/new/choose) ·
-[Benchmarks](docs/COMMUNITY_BENCHMARKS.md) · [Como funciona](docs/HOW_IT_WORKS.md) · [Contribuir](CONTRIBUTING.md)
+**Algo não funciona:** [Solução de problemas](docs/TROUBLESHOOTING.md) · [Relatar um bug](https://github.com/earenbaz80/Nostroma/issues/new/choose)
 
-[Licença MIT](LICENSE) · [Créditos e licenças dos modelos](docs/HOW_IT_WORKS.md#credits) · [Privacidade](docs/SAFETY.md)
+**Os números:** [velocidade medida](docs/DETAILS.md#speed-measured) · [benchmarks da comunidade](docs/COMMUNITY_BENCHMARKS.md) · [como funciona](docs/HOW_IT_WORKS.md)
 
-<a id="option-c-let-your-ai-set-it-up"></a>
+**Participar:** [CONTRIBUTING.md](CONTRIBUTING.md) · [créditos e licenças dos modelos](docs/HOW_IT_WORKS.md#credits) · [privacidade](docs/SAFETY.md) · [licença MIT](LICENSE)
+
+<sub>Todos os guias: [docs](docs) · Para ferramentas de IA e leitores automáticos: <a href="AGENTS.md">referência técnica</a> · <a href="docs/AI_SETUP.md">instruções de instalação</a>.</sub>
 
 <sub>Para ferramentas de IA e leitores automáticos: <a href="AGENTS.md">referência técnica</a> · <a href="docs/AI_SETUP.md">instruções de instalação</a>.</sub>

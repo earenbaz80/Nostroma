@@ -5,8 +5,8 @@
   </picture>
 </p>
 
-<h3 align="center">Uruchom potężną sztuczną inteligencję na własnym komputerze.</h3>
-<p align="center">Rozmawiaj, programuj i pracuj z obrazami — lokalnie.</p>
+<h3 align="center">Qwen3.8-Flash-Next na jednej karcie graficznej, którą już masz.</h3>
+<p align="center">Model mieszaniny ekspertów, którego wagi potrzebują 37,6 GB — dla aplikacji i Twoich narzędzi do kodu.</p>
 
 <p align="center">
   <a href="#modele">Modele</a> · <a href="#instalacja"><b>Instalacja</b></a> ·
@@ -25,7 +25,7 @@
 
 ## Modele
 
-Najpierw polecamy **ISTA-DASLab**, potem **Unsloth** i innych dostawców — o ile zgodny model mieści się w pamięci.
+Dwa modele, jeden silnik. Oba to Qwen; dostawcy są poniżej — najpierw ISTA-DASLab, potem Unsloth.
 
 <details>
 <summary><img src="docs/media/models/qwen.svg" width="22" alt="" align="middle"> &nbsp;<b>Qwen3.8-Flash-Next</b></summary>
@@ -50,13 +50,9 @@ Najpierw polecamy **ISTA-DASLab**, potem **Unsloth** i innych dostawców — o i
 
 </details>
 
-<a id="the-other-sizes"></a>
-
 Nie wiesz, co się zmieści? [Wybierz model do swojego komputera](docs/MODELS.md#pick-by-memory).
 
 ## Instalacja
-
-<a id="option-a-the-nostroma-app"></a>
 
 ### Aplikacja na komputer
 
@@ -66,13 +62,6 @@ Zainstaluj aplikację, wybierz model i zacznij rozmawiać. Dla każdego systemu 
 uruchomieniu aplikacja pobiera silnik dla twojej karty graficznej. [Pomoc z instalatorem](docs/INSTALL.md#the-app).
 
 <sub>Pliki: `Nostroma-0.2.16-windows-x64-setup.exe` · `Nostroma-0.2.16-linux-x86_64.AppImage`</sub>
-
-<p align="center">
-  <img src="docs/media/app-chat.png" width="900" alt="Aplikacja Nostroma na komputer: czat i podgląd kodu na żywo obok siebie">
-  <br><sub>Czat, pliki i podgląd na żywo w jednym oknie.</sub>
-</p>
-
-<a id="option-b-the-terminal-one-line"></a>
 
 ### Aplikacja Terminal
 
@@ -103,13 +92,6 @@ Postępuj zgodnie z podpowiedziami, aby pobrać i uruchomić model. [Przewodnik 
 
 </details>
 
-<p align="center">
-  <img src="docs/media/terminal-monitor.png" width="900" alt="Aplikacja Terminal Straty pokazująca aktywność modelu, szybkość, pamięć i ostatnie zapytania">
-  <br><sub>Obserwuj model i sprzęt w trakcie pracy.</sub>
-</p>
-
-<a id="build-from-source"></a>
-
 [Budowanie ze źródeł](docs/SOURCE_INSTALL.md) · [Docker](docs/DOCKER.md) · [Pełny przewodnik instalacji](docs/INSTALL.md)
 
 <a id="what-you-need"></a>
@@ -132,18 +114,16 @@ Postępuj zgodnie z podpowiedziami, aby pobrać i uruchomić model. [Przewodnik 
 
 Uruchom **`nostroma connect`**, aby zobaczyć instrukcję konfiguracji dla swojego narzędzia. [Przewodnik po połączeniach](docs/TERMINAL_LAUNCH.md#connect-your-apps-nostroma-connect).
 
-<a id="guides"></a>
-<a id="how-fast-is-it"></a>
 <a id="how-does-it-work"></a>
-<a id="something-went-wrong"></a>
 
 ## Pomoc
 
-[Wszystkie przewodniki](docs) · [Rozwiązywanie problemów](docs/TROUBLESHOOTING.md) · [Zgłoś błąd](https://github.com/earenbaz80/Nostroma/issues/new/choose) ·
-[Testy wydajności](docs/COMMUNITY_BENCHMARKS.md) · [Jak to działa](docs/HOW_IT_WORKS.md) · [Współtworzenie](CONTRIBUTING.md)
+**Coś nie działa:** [Rozwiązywanie problemów](docs/TROUBLESHOOTING.md) · [Zgłoś błąd](https://github.com/earenbaz80/Nostroma/issues/new/choose)
 
-[Licencja MIT](LICENSE) · [Podziękowania i licencje modeli](docs/HOW_IT_WORKS.md#credits) · [Prywatność](docs/SAFETY.md)
+**Liczby:** [zmierzona szybkość](docs/DETAILS.md#speed-measured) · [testy społeczności](docs/COMMUNITY_BENCHMARKS.md) · [jak to działa](docs/HOW_IT_WORKS.md)
 
-<a id="option-c-let-your-ai-set-it-up"></a>
+**Współtworzenie:** [CONTRIBUTING.md](CONTRIBUTING.md) · [podziękowania i licencje modeli](docs/HOW_IT_WORKS.md#credits) · [prywatność](docs/SAFETY.md) · [licencja MIT](LICENSE)
+
+<sub>Wszystkie przewodniki: [docs](docs) · Dla narzędzi AI i czytników automatycznych: <a href="AGENTS.md">dokumentacja techniczna</a> · <a href="docs/AI_SETUP.md">instrukcja instalacji</a>.</sub>
 
 <sub>Dla narzędzi AI i automatycznych czytników: <a href="AGENTS.md">dokumentacja techniczna</a> · <a href="docs/AI_SETUP.md">instrukcja instalacji</a>.</sub>

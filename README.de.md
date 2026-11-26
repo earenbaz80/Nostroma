@@ -5,8 +5,8 @@
   </picture>
 </p>
 
-<h3 align="center">Leistungsstarke KI auf deinem eigenen Computer.</h3>
-<p align="center">Chatten, programmieren und mit Bildern arbeiten, lokal.</p>
+<h3 align="center">Qwen3.8-Flash-Next auf einer Grafikkarte, die du schon hast.</h3>
+<p align="center">Ein Mixture-of-Experts-Modell, dessen Gewichte 37,6 GB brauchen — für die App und für deine Coding-Tools.</p>
 
 <p align="center">
   <a href="#modelle">Modelle</a> · <a href="#installation"><b>Installation</b></a> ·
@@ -25,7 +25,7 @@
 
 ## Modelle
 
-Wir empfehlen **zuerst ISTA-DASLab**, danach **Unsloth** und andere Anbieter, soweit ein passendes Modell in deinen Speicher passt.
+Zwei Modelle, eine Engine. Beide sind Qwen; unten stehen die Anbieter, zuerst ISTA-DASLab, dann Unsloth.
 
 <details>
 <summary><img src="docs/media/models/qwen.svg" width="22" alt="" align="middle"> &nbsp;<b>Qwen3.8-Flash-Next</b></summary>
@@ -50,13 +50,9 @@ Wir empfehlen **zuerst ISTA-DASLab**, danach **Unsloth** und andere Anbieter, so
 
 </details>
 
-<a id="the-other-sizes"></a>
-
 Unsicher, was passt? [Wähle ein Modell für deinen Computer](docs/MODELS.md#pick-by-memory).
 
 ## Installation
-
-<a id="option-a-the-nostroma-app"></a>
 
 ### Desktop-App
 
@@ -65,13 +61,6 @@ Unsicher, was passt? [Wähle ein Modell für deinen Computer](docs/MODELS.md#pic
 Installiere die App, wähle ein Modell und leg mit dem Chat los. Es gibt einen Installer pro System. Beim ersten Start lädt die App die Engine für deine Grafikkarte herunter. [Hilfe zum Installer](docs/INSTALL.md#the-app).
 
 <sub>Dateien: `Nostroma-0.2.16-windows-x64-setup.exe` · `Nostroma-0.2.16-linux-x86_64.AppImage`</sub>
-
-<p align="center">
-  <img src="docs/media/app-chat.png" width="900" alt="Nostroma-Desktop-App mit Chat und Live-Codevorschau nebeneinander">
-  <br><sub>Chat, Dateien und Live-Vorschau in einem Fenster.</sub>
-</p>
-
-<a id="option-b-the-terminal-one-line"></a>
 
 ### Terminal-App
 
@@ -102,13 +91,6 @@ Folge den Anweisungen, um ein Modell herunterzuladen und zu starten. [Terminal-A
 
 </details>
 
-<p align="center">
-  <img src="docs/media/terminal-monitor.png" width="900" alt="Nostroma-Terminal-App mit Modellaktivität, Tempo, Speicher und letzten Anfragen">
-  <br><sub>Behalte Modell und Hardware im Blick, während es läuft.</sub>
-</p>
-
-<a id="build-from-source"></a>
-
 [Aus dem Quellcode bauen](docs/SOURCE_INSTALL.md) · [Docker](docs/DOCKER.md) · [Vollständige Installationsanleitung](docs/INSTALL.md)
 
 <a id="what-you-need"></a>
@@ -131,18 +113,16 @@ Folge den Anweisungen, um ein Modell herunterzuladen und zu starten. [Terminal-A
 
 Führe **`nostroma connect`** aus, um die Einrichtung für dein Tool zu sehen. [Verbindungsanleitung](docs/TERMINAL_LAUNCH.md#connect-your-apps-nostroma-connect).
 
-<a id="guides"></a>
-<a id="how-fast-is-it"></a>
 <a id="how-does-it-work"></a>
-<a id="something-went-wrong"></a>
 
 ## Hilfe
 
-[Alle Anleitungen](docs) · [Fehlerbehebung](docs/TROUBLESHOOTING.md) · [Fehler melden](https://github.com/earenbaz80/Nostroma/issues/new/choose) ·
-[Benchmarks](docs/COMMUNITY_BENCHMARKS.md) · [So funktioniert es](docs/HOW_IT_WORKS.md) · [Mitmachen](CONTRIBUTING.md)
+**Etwas funktioniert nicht:** [Fehlerbehebung](docs/TROUBLESHOOTING.md) · [Fehler melden](https://github.com/earenbaz80/Nostroma/issues/new/choose)
 
-[MIT-Lizenz](LICENSE) · [Danksagung und Modelllizenzen](docs/HOW_IT_WORKS.md#credits) · [Datenschutz](docs/SAFETY.md)
+**Die Zahlen:** [gemessene Geschwindigkeit](docs/DETAILS.md#speed-measured) · [Community-Benchmarks](docs/COMMUNITY_BENCHMARKS.md) · [wie es funktioniert](docs/HOW_IT_WORKS.md)
 
-<a id="option-c-let-your-ai-set-it-up"></a>
+**Mitmachen:** [CONTRIBUTING.md](CONTRIBUTING.md) · [Danksagungen und Modelllizenzen](docs/HOW_IT_WORKS.md#credits) · [Datenschutz](docs/SAFETY.md) · [MIT-Lizenz](LICENSE)
+
+<sub>Alle Anleitungen: [docs](docs) · Für KI-Werkzeuge und automatisierte Leser: <a href="AGENTS.md">technische Referenz</a> · <a href="docs/AI_SETUP.md">Einrichtung</a>.</sub>
 
 <sub>Für KI-Tools und automatische Leser: <a href="AGENTS.md">technische Referenz</a> · <a href="docs/AI_SETUP.md">Setup-Anleitung</a>.</sub>

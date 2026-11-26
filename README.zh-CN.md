@@ -5,8 +5,8 @@
   </picture>
 </p>
 
-<h3 align="center">在你自己的电脑上运行强大的 AI。</h3>
-<p align="center">本地聊天、写代码、处理图片。</p>
+<h3 align="center">在你已有的显卡上运行 Qwen3.8-Flash-Next。</h3>
+<p align="center">权重需要 37.6 GB 的混合专家模型，为应用和你的编程工具服务。</p>
 
 <p align="center">
   <a href="#模型">模型</a> · <a href="#安装"><b>安装</b></a> ·
@@ -25,7 +25,7 @@
 
 ## 模型
 
-我们**首先推荐 ISTA-DASLab**，其次是 **Unsloth** 和其他提供方，前提是有内存放得下的兼容模型。
+两个模型，一个引擎。两者都是 Qwen；提供方见下方，先 ISTA-DASLab，后 Unsloth。
 
 <details>
 <summary><img src="docs/media/models/qwen.svg" width="22" alt="" align="middle"> &nbsp;<b>Qwen3.8-Flash-Next</b></summary>
@@ -50,13 +50,9 @@
 
 </details>
 
-<a id="the-other-sizes"></a>
-
 不确定哪个放得下？[为你的电脑选择模型](docs/MODELS.md#pick-by-memory)。
 
 ## 安装
-
-<a id="option-a-the-nostroma-app"></a>
 
 ### 桌面应用
 
@@ -65,13 +61,6 @@
 安装应用，选择模型，就可以开始聊天。每个系统只有一个安装程序。首次启动时，应用会下载适合你显卡的引擎。[安装程序帮助](docs/INSTALL.md#the-app)。
 
 <sub>文件: `Nostroma-0.2.16-windows-x64-setup.exe` · `Nostroma-0.2.16-linux-x86_64.AppImage`</sub>
-
-<p align="center">
-  <img src="docs/media/app-chat.png" width="900" alt="Nostroma 桌面应用，聊天和实时代码预览并排显示">
-  <br><sub>聊天、文件和实时预览都在一个窗口里。</sub>
-</p>
-
-<a id="option-b-the-terminal-one-line"></a>
 
 ### 终端应用
 
@@ -102,13 +91,6 @@ nostroma launch
 
 </details>
 
-<p align="center">
-  <img src="docs/media/terminal-monitor.png" width="900" alt="Nostroma 终端应用，显示模型活动、速度、内存和最近的请求">
-  <br><sub>模型运行时，随时查看模型和硬件状态。</sub>
-</p>
-
-<a id="build-from-source"></a>
-
 [从源码构建](docs/SOURCE_INSTALL.md) · [Docker](docs/DOCKER.md) · [完整安装指南](docs/INSTALL.md)
 
 <a id="what-you-need"></a>
@@ -131,18 +113,16 @@ nostroma launch
 
 运行 **`nostroma connect`**，查看你所用工具的设置方法。[连接指南](docs/TERMINAL_LAUNCH.md#connect-your-apps-nostroma-connect)。
 
-<a id="guides"></a>
-<a id="how-fast-is-it"></a>
 <a id="how-does-it-work"></a>
-<a id="something-went-wrong"></a>
 
 ## 帮助
 
-[全部指南](docs) · [故障排查](docs/TROUBLESHOOTING.md) · [报告问题](https://github.com/earenbaz80/Nostroma/issues/new/choose) ·
-[基准测试](docs/COMMUNITY_BENCHMARKS.md) · [工作原理](docs/HOW_IT_WORKS.md) · [参与贡献](CONTRIBUTING.md)
+**出问题时：** [故障排查](docs/TROUBLESHOOTING.md) · [报告问题](https://github.com/earenbaz80/Nostroma/issues/new/choose)
 
-[MIT 许可证](LICENSE) · [致谢和模型许可证](docs/HOW_IT_WORKS.md#credits) · [隐私](docs/SAFETY.md)
+**数字：** [实测速度](docs/DETAILS.md#speed-measured) · [社区基准测试](docs/COMMUNITY_BENCHMARKS.md) · [工作原理](docs/HOW_IT_WORKS.md)
 
-<a id="option-c-let-your-ai-set-it-up"></a>
+**参与：** [CONTRIBUTING.md](CONTRIBUTING.md) · [致谢和模型许可证](docs/HOW_IT_WORKS.md#credits) · [隐私](docs/SAFETY.md) · [MIT 许可证](LICENSE)
+
+<sub>全部指南：[docs](docs) · 供 AI 工具和自动读取使用：<a href="AGENTS.md">技术参考</a> · <a href="docs/AI_SETUP.md">安装说明</a>。</sub>
 
 <sub>面向 AI 工具和自动阅读器： <a href="AGENTS.md">技术参考</a> · <a href="docs/AI_SETUP.md">安装说明</a></sub>
