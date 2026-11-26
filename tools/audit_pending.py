@@ -77,6 +77,12 @@ def rel(path: Path, root: Path) -> str:
         return str(path)
 
 
+def posix(text: str) -> str:
+    """La misma ruta con `/`. Los detalles llevan el separador de la máquina (`devimg\\Dockerfile` en Windows) y los
+    controles del selftest los comparan contra rutas escritas con `/`, así que normalizan antes de mirar."""
+    return str(text).replace("\\", "/")
+
+
 def is_git_worktree(path: Path) -> bool:
     """¿Es un worktree de git? Un worktree enlazado tiene `.git` como ARCHIVO (`gitdir: ...`)."""
     try:
@@ -1097,9 +1103,9 @@ def run_selftest() -> int:
             failures += 1
         else:
             priv = [(str(r[3]), str(r[2])) for r in rows if r[1] == "privilegios"]
-            dev = next(((d, v) for d, v in priv if "devimg/Dockerfile" in d), ("", ""))
+            dev = next(((d, v) for d, v in priv if "devimg/Dockerfile" in posix(d)), ("", ""))
             pub = next(((d, v) for d, v in priv if d.startswith("Dockerfile ")), ("", ""))
-            pubdir = next(((d, v) for d, v in priv if d.startswith("docker/Dockerfile")), ("", ""))
+            pubdir = next(((d, v) for d, v in priv if posix(d).startswith("docker/Dockerfile")), ("", ""))
             declared_ok = dev[1].startswith(WARN) and "-u $(id -u)" in dev[0]
             # las dos publicadas llevan la misma línea y aun así son FALLA, y docker/Dockerfile se examina (antes quedaba afuera)
             published_ok = pub[1].startswith(FAIL) and pubdir[1].startswith(FAIL)
@@ -1111,7 +1117,7 @@ def run_selftest() -> int:
             # control: `ARG BASE=ubuntu` sin pin se ve; el sabor, la lista de arquitecturas, la versión y DATABASE (que contiene
             # "base") no son imágenes
             argrows = [str(r[3]) for r in rows if r[1] == "ARG de imagen"]
-            seen_base = any("devimg/Dockerfile" in d and "ARG BASE=ubuntu" in d for d in argrows)
+            seen_base = any("devimg/Dockerfile" in posix(d) and "ARG BASE=ubuntu" in d for d in argrows)
             noise = [d for d in argrows if re.search(r"FLAVOR|ARCHITECTURES|PYTHON_VERSION|DATABASE", d)]
             args_ok = seen_base and not noise
             print(f"  {'ok    ' if args_ok else 'FALLO '}[2] ARG de imagen: BASE sin pin visto={seen_base}, "

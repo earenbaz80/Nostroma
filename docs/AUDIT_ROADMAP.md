@@ -54,6 +54,7 @@ Status values: **open** (nobody has started), **decision** (needs a choice befor
 | A3 | high (signal) | "Manual member loops" reports the project's own path checks as suspicious | done 26 Nov 2026 |
 | A4 | medium | Two development Dockerfiles pull their base image without a digest | done 26 Nov 2026 |
 | A5 | low | The Python floor is not declared anywhere | open |
+| A6 | low | A bundled skill page links to six `references/*.md` pages the repository does not carry | open |
 | T1 | medium | The scan reads worktrees inside the checkout and duplicates rows | done 26 Nov 2026 |
 | T2 | medium | The scan reads only the first `tauri.conf.json` it finds | tool |
 | T3 | low | The scan's self-test fails on Windows on path separators | done 26 Nov 2026 |
@@ -148,6 +149,21 @@ Neither `setup.py` (`python_requires`) nor `pyproject.toml` (`requires-python`) 
 
 - Done when: the floor is declared once and the audit row prints it.
 - Verify: `python tools/audit_pending.py` row 4, "mínimo de Python".
+
+### A6 — the skill page links to files that are not here (low, open)
+
+`apps/host/src/assets/skills/reverse-engineer-anything.md` is the only file under `apps/host/src/assets/skills/`, and
+it points at six pages under `references/` that the repository does not carry anywhere: the skill ships as one file
+here. `tools/check_links.py --anchors` reports 7 broken local links and all of them are in this page — line 24
+(`references/connection-and-recovery.md`), 147 and 202 (`references/javascript-applications.md`), 200
+(`references/native-and-artifacts.md`), 204 (`references/android-applications.md`), 206
+(`references/runtime-observation.md`) and 208 (`references/evidence-workflows.md`). Two of them are "read this first"
+pointers (lines 24 and 147) and the rest are the reference list at the end (lines 200–208), so the page reads on its
+own; the reader simply has nowhere to go. The other 114 pages check out.
+
+- Done when: `python tools/check_links.py --anchors` reports 0 broken local links, either by adding the six pages or by
+  turning those pointers into text that does not link.
+- Verify: `python tools/check_links.py --anchors` — 121 pages, 7 broken today, all in this file.
 
 ### T1 — worktrees inside the checkout (medium, tool)
 
