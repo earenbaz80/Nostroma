@@ -49,18 +49,18 @@ Status values: **open** (nobody has started), **decision** (needs a choice befor
 
 | Id | Severity | Item | Status |
 | --- | --- | --- | --- |
-| A1 | high | The update mitigation `requireSignedVersion` was not configured, and no config file carried the updater block at all | config done 26 Nov 2026; app feed still off |
+| A1 | high | The update mitigation `requireSignedVersion` was not configured, and no config file carried the updater block at all | done 26 Nov 2026: flag on, no endpoint by decision |
 | A2 | high (signal) | The one FALLA is two `extractall()` calls in vendored code inside the bundled Python | done 26 Nov 2026 |
 | A3 | high (signal) | "Manual member loops" reports the project's own path checks as suspicious | done 26 Nov 2026 |
 | A4 | medium | Two development Dockerfiles pull their base image without a digest | done 26 Nov 2026 |
 | A5 | low | The Python floor is not declared anywhere | open |
-| A6 | low | A bundled skill page links to six `references/*.md` pages the repository does not carry | open |
+| A6 | low | A bundled skill page links to six `references/*.md` pages the repository does not carry | done 26 Nov 2026 |
 | T1 | medium | The scan reads worktrees inside the checkout and duplicates rows | done 26 Nov 2026 |
 | T2 | medium | The scan reads only the first `tauri.conf.json` it finds | tool |
 | T3 | low | The scan's self-test fails on Windows on path separators | done 26 Nov 2026 |
 | B1 | — | The UI backlog is a second, larger list | see its page |
 
-### A1 — `requireSignedVersion` (high, config done, feed still off)
+### A1 — `requireSignedVersion` (high, config done, self-update stays off)
 
 The flag closes a downgrade: the update endpoint's response is fetched over TLS but is not itself signed, so without
 it a crafted response pairs a higher version with the URL and signature of an older, genuinely signed build.
@@ -82,14 +82,26 @@ endpoint was another product's `latest.json`. With no endpoint, `app.updater()` 
 Nostroma. The scan reads the camelCase key now, and `tests/terminal/test_release_config.py` asserts both the flag and
 that no endpoint appears.
 
-**Still missing before the app can update itself again** (a product decision, not a config edit):
+**Decision, 26 November 2026: the app keeps no self-update.** `endpoints` stays unnamed on purpose.
 
-1. A published endpoint. `build-feed` writes `RELEASE/app/latest.json`, and `docs/RELEASE_CHECKLIST.md` says it is
-   not an asset, so there is no URL to name in `endpoints`.
-2. Version-carrying signatures. `requireSignedVersion` rejects a signature whose trusted comment has no version, and
-   `tauri signer sign` only records one with `--app-version` (the CLI warns when it is omitted). The flag exists from
-   tauri-cli 2.12.0; this repo pins `@tauri-apps/cli` 2.12.3. Every installer users can still update from must be
-   re-signed with `--app-version <version>` and its `.sig` replaced in the feed.
+- **What the app cannot do: update itself.** Both paths refuse. Tauri's updater has no endpoint (`APP_UPDATES_OFF` in
+  `src/updater.rs` answers "off") and Settings' Update Nostroma is refused in
+  `apps/host/server/native-control.mjs:896` with the same message, so the step cannot fetch another product's app
+  installer or Control package — the defect 0.2.15 closed.
+- **What a user does instead:** download the installer from the release page, or run `nostroma update --app` in the
+  Terminal. That path is the trusted one: it reads the `app` member of the signed feed and checks the installer's
+  minisign signature itself against `app_minisign_public` (`nostroma_control/updater.py:1605`).
+- **Why not publish an endpoint:** a Tauri feed's response is fetched over TLS but is not signed, so
+  `requireSignedVersion` constrains which artifact a version resolves to, it does not authenticate the URL list.
+  The signed feed already carries the same two installers, and Control verifies them by signature. A `latest.json`
+  would add a second channel for the same bytes with a weaker story.
+- **The price, stated plainly:** a person who never opens a Terminal updates by hand.
+- **`--app-version` is kept anyway.** Installers are still signed with `--app-version <version>`
+  (`docs/RELEASE_CHECKLIST.md`, `packaging/UPDATES.md`), because this build refuses a signature that does not carry the
+  version. Signing that way now means turning the endpoint on later is one `endpoints` array plus a published
+  `latest.json`, with nothing to re-sign: the installers released from here on are already bound to their version.
+- The decision is enforced, not just written: `tests/terminal/test_release_config.py` asserts that `endpoints` is
+  absent while `requireSignedVersion` is true.
 
 - Verify: `python tools/audit_pending.py` row 1 reads OK; `python -m pytest tests/terminal/test_release_config.py
   tests/terminal/test_update_feed.py`.
@@ -150,20 +162,25 @@ Neither `setup.py` (`python_requires`) nor `pyproject.toml` (`requires-python`) 
 - Done when: the floor is declared once and the audit row prints it.
 - Verify: `python tools/audit_pending.py` row 4, "mínimo de Python".
 
-### A6 — the skill page links to files that are not here (low, open)
+### A6 — the skill page links to files that are not here (low, done)
 
 `apps/host/src/assets/skills/reverse-engineer-anything.md` is the only file under `apps/host/src/assets/skills/`, and
-it points at six pages under `references/` that the repository does not carry anywhere: the skill ships as one file
-here. `tools/check_links.py --anchors` reports 7 broken local links and all of them are in this page — line 24
-(`references/connection-and-recovery.md`), 147 and 202 (`references/javascript-applications.md`), 200
-(`references/native-and-artifacts.md`), 204 (`references/android-applications.md`), 206
-(`references/runtime-observation.md`) and 208 (`references/evidence-workflows.md`). Two of them are "read this first"
-pointers (lines 24 and 147) and the rest are the reference list at the end (lines 200–208), so the page reads on its
-own; the reader simply has nowhere to go. The other 114 pages check out.
+it pointed at six pages under `references/` that the repository does not carry anywhere: the skill ships as one file
+here. `tools/check_links.py --anchors` reported 7 broken local links, all of them in this page, at the lines it had
+before the fix: 24 (`references/connection-and-recovery.md`), 147 and 202
+(`references/javascript-applications.md`), 200 (`references/native-and-artifacts.md`), 204
+(`references/android-applications.md`), 206 (`references/runtime-observation.md`) and 208
+(`references/evidence-workflows.md`). Two were "read this first" pointers (24 and 147) and the rest the reference list
+at the end (200–208), so the page read on its own; the reader simply had nowhere to go. The other 114 pages checked
+out.
 
 - Done when: `python tools/check_links.py --anchors` reports 0 broken local links, either by adding the six pages or by
   turning those pointers into text that does not link.
-- Verify: `python tools/check_links.py --anchors` — 121 pages, 7 broken today, all in this file.
+- Verify: `python tools/check_links.py --anchors` — 121 pages, all local links resolve.
+- **Done 26 November 2026**, by naming instead of linking. The six pages are upstream REA text that this tree never
+  carried, so writing them here would be inventing a third party's document; the two inline pointers now read "the
+  connection and recovery notes (upstream `references/…`, not shipped in this bundle)" and the closing list says that
+  once, above the five names as code spans. The page reads the same and the command prints "all local links resolve".
 
 ### T1 — worktrees inside the checkout (medium, tool)
 
