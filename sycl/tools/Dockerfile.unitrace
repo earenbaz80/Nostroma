@@ -5,7 +5,13 @@
 # audit: root-ok — herramienta de perfilado sobre la imagen de desarrollo, no se publica; puede necesitar contadores que una cuenta común no abre
 # Build:
 #   docker build -t nostroma-sycl-dev:unitrace -f sycl/tools/Dockerfile.unitrace sycl/tools
-FROM nostroma-sycl-dev
+# Base: the same image and the same packages as sycl/tools/Dockerfile, repeated here so this file pins its own
+# digest (a locally built `nostroma-sycl-dev` tag has no digest to cite). Change the two files together.
+ARG SYCL_BASE=ghcr.io/snailium/llama.cpp-sycl-intel-b70/llama-sycl-b70:stable@sha256:f040fa361d70e8d8b07c8cebdd0b59dc22062aa01b14c016c5fc94cd70a598ce
+FROM ${SYCL_BASE}
+RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \r
+      intel-oneapi-dpcpp-ct ninja-build unzip python3-pip python3-venv rsync \r
+    && rm -rf /var/lib/apt/lists/*
 RUN . /opt/intel/oneapi/setvars.sh --force >/dev/null 2>&1; \
     git clone --depth 1 https://github.com/intel/pti-gpu.git /opt/pti-gpu && \
     cd /opt/pti-gpu/tools/unitrace && mkdir build && cd build && \
