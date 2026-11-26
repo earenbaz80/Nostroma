@@ -186,10 +186,11 @@ string nothing reads.
   `tools/test_setup_choices.py` passes its 59 tests, and the full scan exits 0 with 26 checks and 0 FALLA. On CPython
   3.9.13 the same file prints the refusal and exits 1 with no traceback, so the guarded branch is measured too. What
   stays simulated is the unit test itself: `tools/test_setup_python_floor.py` fakes `sys.version_info` (a named
-  tuple, as CPython's is) so any interpreter can exercise that branch in CI. Two things only 3.10 shows: the scan's
-  selftest dies on `→` because a Windows console is not UTF-8 before 3.15 (`PYTHONUTF8=1` runs it), and `tarfile`'s
-  `filter=` raises `TypeError` up to 3.10.11 — it arrived in 3.10.12, which is why the code asks
-  `hasattr(tarfile, "data_filter")` first.
+  tuple, as CPython's is) so any interpreter can exercise that branch in CI. Two things only 3.10 showed: the scan's
+  selftest died on `→` because a Windows console is not UTF-8 before 3.15, fixed 26 November 2026 by reconfiguring the
+  streams with `errors="replace"` and measured again on 3.10.11 without `PYTHONUTF8=1` (15/15, the arrow printed as
+  `?`); and `tarfile`'s `filter=` raises `TypeError` up to 3.10.11, since it arrived in 3.10.12 — which is why the code
+  asks `hasattr(tarfile, "data_filter")` first.
 
 ### A6 — the skill page links to files that are not here (low, done)
 
