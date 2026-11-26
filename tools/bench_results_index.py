@@ -10,6 +10,7 @@ Markdown file), and how many files it holds.  The results themselves stay where 
 import argparse
 import os
 import re
+import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -40,11 +41,43 @@ def count_files(folder):
     return sum(len(files) for _, _, files in os.walk(folder))
 
 
+def tracked():
+    """The files git tracks under bench/results, relative to it; None when git is not there (a tarball).
+
+    A run writes its logs beside the results and .gitignore keeps them out of the repository, so walking the folder
+    counts files that a clean checkout does not have: the index then differs between the machine that ran the
+    benchmark and CI, and --check fails on a page nobody changed. The repository is the list that matters.
+    """
+    try:
+        out = subprocess.run(["git", "-C", ROOT, "ls-files", "-z", "--", "bench/results"],
+                             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=True).stdout
+    except (OSError, subprocess.SubprocessError):
+        return None
+    prefix = "bench/results/"
+    names = set()
+    for raw in out.split(b"\0"):
+        if raw:
+            path = raw.decode("utf-8", "surrogateescape")
+            if path.startswith(prefix):
+                names.add(path[len(prefix):])
+    return names
+
+
 def build():
-    entries = sorted(e for e in os.listdir(RESULTS) if e != "README.md")
-    folders = [e for e in entries if os.path.isdir(os.path.join(RESULTS, e))]
-    loose = [e for e in entries if not os.path.isdir(os.path.join(RESULTS, e))]
-    total = sum(count_files(os.path.join(RESULTS, f)) for f in folders) + len(loose)
+    names = tracked()
+    if names is None:                              # no git: fall back to what is on disk
+        entries = sorted(e for e in os.listdir(RESULTS) if e != "README.md")
+        dirs = {e for e in entries if os.path.isdir(os.path.join(RESULTS, e))}
+        loose = [e for e in entries if e not in dirs]
+        counts = {f: count_files(os.path.join(RESULTS, f)) for f in dirs}
+        total = sum(counts.values()) + len(loose)
+    else:
+        names.discard("README.md")
+        dirs = {n.split("/", 1)[0] for n in names if "/" in n}
+        loose = sorted(n for n in names if "/" not in n)
+        counts = {f: sum(1 for n in names if n.startswith(f + "/")) for f in dirs}
+        total = len(names)
+    folders = sorted(dirs)
     lines = ["# Benchmark results", "",
              "Raw results and short reports from measurement runs, one folder per run, named by date. They stay here as they were written: each states",
              "the Nostroma version, hardware and method of its own day, and none is a statement about a later release. Current numbers are in the",
@@ -58,7 +91,7 @@ def build():
         if key != month:
             month = key
             lines += ["", "## " + key, "", "| Folder | What | Files |", "| --- | --- | ---: |"]
-        lines.append("| [%s](%s/) | %s | %d |" % (f, f, title_of(os.path.join(RESULTS, f)), count_files(os.path.join(RESULTS, f))))
+        lines.append("| [%s](%s/) | %s | %d |" % (f, f, title_of(os.path.join(RESULTS, f)), counts[f]))
     if loose:
         lines += ["", "## Loose files", "", "| File |", "| --- |"] + ["| [%s](%s) |" % (n, n) for n in loose]
     return "\n".join(lines) + "\n"
