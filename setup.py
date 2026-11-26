@@ -53,6 +53,11 @@ import shutil
 import struct
 import subprocess
 import sys
+
+if sys.version_info < (3, 10):      # the floor docs/MAC.md and docs/MCP_SERVER.md promise; refused here, before any import of ours
+    raise SystemExit(f"Nostroma needs Python 3.10 or newer; this is {sys.version_info.major}.{sys.version_info.minor}. "
+                     "On macOS, setup.sh downloads a pinned 3.12 for you.")
+
 import textwrap
 import threading
 import time

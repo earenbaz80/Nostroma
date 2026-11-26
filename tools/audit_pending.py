@@ -618,16 +618,21 @@ def dynamic_extraction():
 
 
 def python_floor(root: Path):
+    # El metadato de empaquetado primero (`python_requires`, `requires-python`) y, si no hay, la guarda de arranque: este
+    # árbol no usa setuptools (setup.py es el instalador de un clic), así que su declaración de verdad es la que rechaza
+    # un intérprete viejo antes de importar nada del proyecto.
     pats = [
-        (["setup.py"], r"python_requires\s*=\s*[\"']([^\"']+)"),
-        (["pyproject.toml"], r"requires-python\s*=\s*[\"']([^\"']+)"),
+        (["setup.py"], r"python_requires\s*=\s*[\"']([^\"']+)", lambda m: m.group(1)),
+        (["pyproject.toml"], r"requires-python\s*=\s*[\"']([^\"']+)", lambda m: m.group(1)),
+        (["setup.py"], r"sys\.version_info\s*<\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)",
+         lambda m: f"{m.group(1)}.{m.group(2)}+ (guarda en setup.py)"),
     ]
-    for names, pat in pats:
+    for names, pat, label in pats:
         for p in walk(root, names=names):
             text = read_text(p)
             m = re.search(pat, text)
             if m:
-                return m.group(1), ev(p, root, line_of(text, m.group(1)))
+                return label(m), ev(p, root, line_of(text, m.group(0)))
     return None, None
 
 
