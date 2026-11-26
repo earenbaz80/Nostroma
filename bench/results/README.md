@@ -4,7 +4,7 @@ Raw results and short reports from measurement runs, one folder per run, named b
 the Nostroma version, hardware and method of its own day, and none is a statement about a later release. Current numbers are in the
 [docs](../../docs/README.md) and the [README](../../README.md); how to measure is in [BENCHMARK_PROTOCOL.md](../../docs/BENCHMARK_PROTOCOL.md).
 
-This page is built by `python tools/bench_results_index.py` (`--check` fails when a folder is missing from it). 145 folders and 5 loose files, 2247 files in all.
+This page is built by `python tools/bench_results_index.py` (`--check` fails when a folder is missing from it). 145 folders and 3 loose files, 2212 files in all.
 
 
 ## 2026-09
@@ -164,15 +164,13 @@ This page is built by `python tools/bench_results_index.py` (`--check` fails whe
 | Folder | What | Files |
 | --- | --- | ---: |
 | [2026-11-24-0161-vs-0162](2026-11-24-0161-vs-0162/) | (no Markdown page) | 35 |
-| [2026-11-24-vs-0.2.13](2026-11-24-vs-0.2.13/) | Nostroma vs 0.2.13: same machine, same model, same context and slots | 33 |
-| [2026-11-24-vs-0.2.13-r3](2026-11-24-vs-0.2.13-r3/) | Nostroma vs 0.2.13: same machine, same model, same context and slots | 22 |
+| [2026-11-24-vs-0.2.13](2026-11-24-vs-0.2.13/) | Nostroma vs 0.2.13: same machine, same model, same context and slots | 13 |
+| [2026-11-24-vs-0.2.13-r3](2026-11-24-vs-0.2.13-r3/) | Nostroma vs 0.2.13: same machine, same model, same context and slots | 9 |
 
 ## Loose files
 
 | File |
 | --- |
-| [2026-11-24-vs-0.2.13-r5.run.log](2026-11-24-vs-0.2.13-r5.run.log) |
-| [2026-11-24-vs-0.2.13.run.log](2026-11-24-vs-0.2.13.run.log) |
 | [COMMUNITY.md](COMMUNITY.md) |
 | [exchange-rotation-ab.json](exchange-rotation-ab.json) |
 | [exchange-rotation-token-ids.json](exchange-rotation-token-ids.json) |
