@@ -169,6 +169,14 @@ string nothing reads.
   intérprete actual 3.15.2` and stays INFO. Limits: measured on 3.15.2 only, so the branch for an older interpreter was
   not exercised here; `tests/terminal` keeps its own 3.11 floor from AGENTS.md, and `tools/test_setup_choices.py` (59
   tests) runs green with the guard in place.
+- **The 3.10 floor itself, checked 26 November 2026.** `nostroma_control`, `nostroma_cli`, `serve`, `setup.py` and
+  `nostroma.py` (271 files) all parse with the 3.10 grammar; none of the 4,178 f-string literals uses a 3.12 form
+  (same quote or a backslash inside the braces); and no 3.11+ API appears (`tomllib`, `TaskGroup`, `StrEnum`,
+  `datetime.UTC`, `typing.Self`, atomic or possessive regex). The version-dependent spots are guarded:
+  `tarfile.data_filter` behind `hasattr` (`setup.py:5329`), `sys.version_info < (3, 12)` in
+  `nostroma_control/netpolicy.py:412`, and `fromisoformat` either with `Z` replaced by `+00:00`
+  (`nostroma_control/feed.py:310`) or inside `except ValueError`. This is static analysis: there is no 3.10
+  interpreter on this machine, so nothing ran on 3.10.
 
 ### A6 — the skill page links to files that are not here (low, done)
 
