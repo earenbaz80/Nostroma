@@ -1,4 +1,4 @@
-# Nostroma vs Strata: same machine, same model, same context and slots
+# Nostroma vs 0.2.13: same machine, same model, same context and slots
 
 Run: `2026-11-24T11:34:13Z` · **head-to-head measurement, not the standard benchmark protocol**.
 
@@ -10,7 +10,7 @@ Run: `2026-11-24T11:34:13Z` · **head-to-head measurement, not the standard benc
 - Expert cache: auto. VRAM reserve: 1536 MiB. Vision: off.
 - Drafter: DFlash2, `--spec 6`, `--draft-conf 0.7`, the same pack and draft vocabulary.
 - Expert profile: `expert-profile.bin`, the same file (SHA-256 identical in both installs).
-- Each arm ran its own installed server: Nostroma 0.2.16 with engine 0.1.61, Strata 0.2.13 with engine 0.1.59.
+- Each arm ran its own installed server: Nostroma 0.2.16 with engine 0.1.61, 0.2.13 with engine 0.1.59.
 
 ## Method
 
@@ -30,7 +30,7 @@ Every cell is **median [min–max]** over the rounds. `n` is in `results.json`; 
 
 ### 4K prompt
 
-| Metric | Nostroma | Strata |
+| Metric | Nostroma | 0.2.13 |
 | --- | ---: | ---: |
 | TTFT (s) | 4.268 [4.208–5.385] | 4.694 [4.649–4.883] |
 | Prompt tok/s | 958.0 [758.7–970.9] | 871.0 [837.3–878.9] |
@@ -39,7 +39,7 @@ Every cell is **median [min–max]** over the rounds. `n` is in `results.json`; 
 
 ### 16K prompt
 
-| Metric | Nostroma | Strata |
+| Metric | Nostroma | 0.2.13 |
 | --- | ---: | ---: |
 | TTFT (s) | 8.249 [8.233–8.474] | 9.038 [9.009–9.087] |
 | Prompt tok/s | 1995.8 [1938.4–1996.2] | 1817.4 [1808.2–1825.2] |
@@ -48,7 +48,7 @@ Every cell is **median [min–max]** over the rounds. `n` is in `results.json`; 
 
 ### Load, spill and memory
 
-| Metric | Nostroma | Strata |
+| Metric | Nostroma | 0.2.13 |
 | --- | ---: | ---: |
 | Load to /health (s) | 38.47 [37.48–39.60] | 43.05 [41.55–43.54] |
 | Expert spill (MB) | 0 [0–0] | 0 [0–0] |
@@ -59,8 +59,8 @@ Every cell is **median [min–max]** over the rounds. `n` is in `results.json`; 
 | Process tree RSS peak (GiB) | 49.11 [49.11–49.12] | 48.94 [48.94–48.96] |
 | System used above idle (GiB) | 49.84 [49.82–50.02] | 49.61 [49.61–49.64] |
 
-- Expert arena loaded at start: Nostroma `46.84` GiB; Strata `46.84` GiB.
-- Startup mode: Nostroma `arena`; Strata `arena`.
+- Expert arena loaded at start: Nostroma `46.84` GiB; 0.2.13 `46.84` GiB.
+- Startup mode: Nostroma `arena`; 0.2.13 `arena`.
 - Expert spill: **0 in both arms** (arena mode: every expert was loaded into the arena). The process reads
   during requests are PLE/table and other file reads, not experts read from the SSD.
 - Prompt cache: **0 reused tokens in every request**; the two frozen prompts are fresh each time.
@@ -69,7 +69,7 @@ Every cell is **median [min–max]** over the rounds. `n` is in `results.json`; 
 
 - One machine, one GPU, one model, one quantization, one context, one slot, three rounds. This is not a
   statistically strong result and says nothing about quality, other GPUs, other contexts or concurrency.
-- The products are not the same version: Nostroma 0.2.16/engine 0.1.61 and Strata 0.2.13/engine 0.1.59.
+- The products are not the same version: Nostroma 0.2.16/engine 0.1.61 and 0.2.13/engine 0.1.59.
   The server code differs too, because each arm used its own installed server. That is the product comparison.
 - Windows process read bytes count logical reads served from the file cache as reads. They are comparable
   between the two arms here but are not a physical SSD counter. Expert spill itself was zero in both arms.
