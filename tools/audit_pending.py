@@ -204,6 +204,67 @@ def parse_cargo_lock(text: str):
     return pkgs
 
 
+#: Las claves del flag: el plugin deserializa con `rename_all = "camelCase"` y alias `require-signed-version`,
+#: así que se aceptan las tres formas para no volver a declarar ausente algo que está escrito.
+RSV_KEYS = ("requireSignedVersion", "require-signed-version", "require_signed_version")
+
+
+def tauri_config_sets(root: Path):
+    """[(base, [overlays])] por directorio: el `tauri.conf.json` y cada `tauri.*.conf.json` que `tauri build --config` apila.
+
+    Leer sólo el primero dejaba afuera a `tauri.release.conf.json`, `tauri.update.conf.json` y compañía: un overlay
+    apaga el flag en el archivo que usa el build de release pasaba inadvertido.
+    """
+    by_dir = {}
+    for p in walk(root, names=["tauri."], suffixes=[".conf.json"]):
+        by_dir.setdefault(p.parent, []).append(p)
+    out = []
+    for _parent, files in sorted(by_dir.items()):
+        bases = sorted(f for f in files if f.name == "tauri.conf.json")
+        if bases:
+            out.append((bases[0], sorted(f for f in files if f.name != "tauri.conf.json")))
+    return out
+
+
+def updater_layers(base: Path, overlays):
+    """[(archivo, texto, dict del updater)]: el base primero y los overlays en el orden en que los apila `tauri build`."""
+    layers = []
+    for path in [base] + list(overlays):
+        raw = read_text(path)
+        try:
+            upd = (json.loads(raw).get("plugins") or {}).get("updater") or {}
+        except (ValueError, AttributeError, TypeError):
+            upd = {}
+        layers.append((path, raw, upd if isinstance(upd, dict) else {}))
+    return layers
+
+
+def resolve_updater(layers):
+    """{(clave): (valor, archivo, texto)} de la última capa que la fija, y los overlays que se contradicen.
+
+    RFC 7396: la capa posterior pisa la clave y un `null` la borra, así que "quién decide" es la última capa
+    que la nombra.
+    """
+    decided, last, clashes = {}, {}, []
+    base = layers[0][0]
+    for path, raw, upd in layers:
+        for key, value in upd.items():
+            if (path != base and key in last and last[key][0] is not None
+                    and value is not None and last[key][0] != value):
+                clashes.append((key, last[key][1], path))
+            last[key] = (value, path)
+            decided[key] = (value, path, raw)
+    return decided, clashes
+
+
+def updater_value(decided, keys):
+    """(valor, archivo, texto, clave encontrada) de la primera clave presente, o (None, None, None, None)."""
+    for key in keys:
+        if key in decided:
+            return (*decided[key], key)
+    return None, None, None, None
+
+
 def check_updater(root: Path):
     rows = []
     locks = walk(root, names=["Cargo.lock"])
@@ -238,53 +299,54 @@ def check_updater(root: Path):
         rows.append(("1", "minisign-verify", OK if (mv and mv >= (0, 3, 0)) else INFO,
                      f"{ev(lock, root, mline)} {mver} — {note}"))
 
-    # configuración del plugin
-    confs = walk(root, names=["tauri.conf.json"])
-    if not confs:
+    # configuración del plugin: el base y TODOS sus overlays (`tauri build --config` los apila con RFC 7396)
+    sets = tauri_config_sets(root)
+    if not sets:
         rows.append(("1", "tauri.conf.json", f"N/D", "no encontrado"))
         return rows
-    conf = confs[0]
-    raw = read_text(conf)
-    try:
-        cfg = json.loads(raw)
-    except Exception:
-        cfg = {}
+    base, overlays = sets[0]
+    if len(sets) > 1:
+        rows.append(("1", "varios tauri.conf.json", OK,
+                     f"se leen todos: {', '.join(rel(b, root) for b, _ in sets)}; "
+                     f"las filas de abajo usan {rel(base, root)}"))
+    layers = updater_layers(base, overlays)
+    decided, clashes = resolve_updater(layers)
+    read = f"{len(layers)} configs y {len(overlays)} overlay(s)"
 
-    upd = {}
-    try:
-        upd = (cfg.get("plugins") or {}).get("updater") or {}
-    except AttributeError:
-        upd = {}
-
-    # El plugin deserializa con `rename_all = "camelCase"` y alias `require-signed-version`: la clave del JSON es
-    # `requireSignedVersion`. Se aceptan las tres formas para no volver a declarar ausente algo que está escrito.
-    RSV_KEYS = ("requireSignedVersion", "require-signed-version", "require_signed_version")
-    rsv_key = next((k for k in RSV_KEYS if k in upd), None)
-    rsv = upd.get(rsv_key, False) if rsv_key else False
+    rsv, rsv_conf, rsv_raw, rsv_key = updater_value(decided, RSV_KEYS)
+    # La ubicación que se informa es la de la capa que fija el valor: el base, o el overlay que lo pisa.
     if rsv:
         rows.append(("1", "require_signed_version", OK,
-                     f"{ev(conf, root, line_of(raw, rsv_key))} activado"))
+                     f"{ev(rsv_conf, root, line_of(rsv_raw, rsv_key))} activado; {read}"))
     else:
         rows.append(("1", "require_signed_version", f"{WARN} · alta",
-                     f"{ev(conf, root, line_of(raw, rsv_key or 'requireSignedVersion'))} ausente/false — "
-                     f"la mitigación de {CVE_ID} NO está activa aunque el plugin esté al día"))
+                     f"{(ev(rsv_conf, root, line_of(rsv_raw, rsv_key)) if rsv_conf else ev(base, root, 1))} "
+                     f"ausente/false — la mitigación de {CVE_ID} NO está activa aunque el plugin esté al día; "
+                     f"{read}"))
 
-    if upd.get("dangerousInsecureTransportProtocol"):
+    t_val, t_conf, t_raw, t_key = updater_value(decided, ("dangerousInsecureTransportProtocol",))
+    if t_val:
         rows.append(("1", "transporte", f"{FAIL} · alta",
-                     f"{ev(conf, root, line_of(raw, 'dangerousInsecureTransportProtocol'))} "
-                     "permite endpoints no-HTTPS"))
+                     f"{ev(t_conf, root, line_of(t_raw, t_key))} permite endpoints no-HTTPS"))
     else:
         rows.append(("1", "transporte", OK, "solo HTTPS"))
 
-    if upd.get("allowDowngrades"):
+    d_val, d_conf, d_raw, d_key = updater_value(decided, ("allowDowngrades",))
+    if d_val:
         rows.append(("1", "allowDowngrades", f"{FAIL} · media",
-                     f"{ev(conf, root, line_of(raw, 'allowDowngrades'))} true"))
+                     f"{ev(d_conf, root, line_of(d_raw, d_key))} true"))
 
-    pk = str(upd.get("pubkey") or "")
+    for key, first, second in clashes:
+        rows.append(("1", "overlays en desacuerdo", f"{WARN} · media",
+                     f"{key}: {rel(first, root)} y {rel(second, root)} lo fijan con valores distintos — "
+                     "decide el último que se apila"))
+
+    pk_val, pk_conf, pk_raw, pk_key = updater_value(decided, ("pubkey",))
+    pk = str(pk_val or "")
     if pk:
         looks_path = ("/" in pk) or pk.endswith((".pub", ".key"))
         rows.append(("1", "pubkey", f"{FAIL}" if looks_path else OK,
-                     f"{ev(conf, root, line_of(raw, 'pubkey'))} "
+                     f"{ev(pk_conf, root, line_of(pk_raw, pk_key))} "
                      f"{'parece ruta de archivo' if looks_path else f'{len(pk)} chars'}: "
                      f"{'debe ser el CONTENIDO en base64' if looks_path else 'contenido en config'}"))
     return rows
@@ -839,6 +901,21 @@ def build_fixture(root: Path) -> None:
         'source = "registry+https://github.com/rust-lang/crates.io-index"\n',
         encoding="utf-8",
     )
+    # el base y un overlay de release que no toca el updater: los dos tienen que leerse, y la fila tiene que decir
+    # que el flag lo decide el base
+    (st / "tauri.conf.json").write_text(
+        '{\n'
+        '  "plugins": {\n'
+        '    "updater": {\n'
+        '      "pubkey": "unR3bGFBY2Nlc28=",\n'
+        '      "requireSignedVersion": true\n'
+        '    }\n'
+        '  }\n'
+        '}\n',
+        encoding="utf-8",
+    )
+    (st / "tauri.release.conf.json").write_text(
+        '{\n  "bundle": {\n    "createUpdaterArtifacts": true\n  }\n}\n', encoding="utf-8")
 
     # la imagen publicada lleva la misma línea de excepción que una de desarrollo, y aun así tiene que ser FALLA
     (root / "Dockerfile").write_text(
@@ -986,9 +1063,9 @@ def run_selftest() -> int:
         except Exception as exc:  # noqa: BLE001
             print(f"  FALLO  [4] controles de extracción: excepción {type(exc).__name__}: {exc}")
             failures += 2
-            extras = 10
+            extras = 11
         else:
-            extras = 10
+            extras = 11
             ctl = [r for r in rows if "fully_trusted" in r[1]]
             ctl_ok = bool(ctl) and str(ctl[0][2]).startswith(OK)
             print(f"  {'ok    ' if ctl_ok else 'FALLO '}[4] control fully_trusted no cuenta como FALLA"
@@ -1001,6 +1078,35 @@ def run_selftest() -> int:
             pf_ok = det.startswith("declarado: no declarado (n/d);")
             print(f"  {'ok    ' if pf_ok else 'FALLO '}[4] formato del mínimo de Python → {det!r}")
             if not pf_ok:
+                failures += 1
+
+        # control: se leen el base y TODOS los overlays, y la fila nombra el archivo que decide el flag
+        try:
+            rows = check_updater(base)
+            row = next((r for r in rows if r[1] == "require_signed_version"), None)
+            detail = posix(str(row[3])) if row else ""
+            base_ok = bool(row) and str(row[2]).startswith(OK) and "tauri.conf.json:" in detail \
+                and "2 configs y 1 overlay(s)" in detail
+            overlay = base / "apps" / "desktop" / "src-tauri" / "tauri.update.conf.json"
+            overlay.write_text(
+                '{\n  "plugins": {\n    "updater": {\n      "requireSignedVersion": false\n    }\n  }\n}\n',
+                encoding="utf-8",
+            )
+            try:
+                rows = check_updater(base)
+            finally:
+                overlay.unlink()
+            row = next((r for r in rows if r[1] == "require_signed_version"), None)
+            detail = posix(str(row[3])) if row else ""
+            overlay_ok = (bool(row) and str(row[2]).startswith(WARN) and "tauri.update.conf.json:" in detail
+                          and "3 configs y 2 overlay(s)" in detail)
+        except Exception as exc:  # noqa: BLE001
+            print(f"  FALLO  [1] configs de tauri: excepción {type(exc).__name__}: {exc}")
+            failures += 1
+        else:
+            print(f"  {'ok    ' if base_ok and overlay_ok else 'FALLO '}[1] configs de tauri: "
+                  f"el base decide={base_ok}, el overlay decide={overlay_ok}")
+            if not (base_ok and overlay_ok):
                 failures += 1
 
         # control: la comparación de api_key ve la real y deja fuera las de forma y de tipo
