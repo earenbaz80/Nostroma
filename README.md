@@ -76,6 +76,11 @@ UD-Q4_K_XL, UD-Q6_K_XL and Q8_0, the documented packs for this model. [Model gui
 Install the app, choose a model, start chatting. The installer carries no engine: on first start the app downloads the one
 for your graphics card. [Help with the installer](docs/INSTALL.md#the-app)
 
+<p align="center">
+  <img src="docs/media/app-chat.png" width="900" alt="Nostroma app after installing: the chat list on the left, a new conversation with its first steps in the middle, and the message box at the bottom">
+  <br><sub>The app on first start, before a model is chosen.</sub>
+</p>
+
 ### Terminal app
 
 Prefer a terminal? Install Nostroma, then run **`nostroma launch`**. **`nostroma launch --plan`** prints what it would do
