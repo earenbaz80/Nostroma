@@ -21,7 +21,7 @@ This run is not a complete standard result:
 
 - Model: qwen3.8-flash-next-iq3_s; quantization IQ3_S; revision not measured; source revision not measured
 - Files: not measured
-- Track: **custom** (0.1.61 built from HEAD (strata tree) and 0.1.62 from the working tree; both CUDA 120-real, NOSTROMA_PORTABLE=ON, tests OFF; same pack, config, serve wrapper and corpus)
+- Track: **custom** (0.1.61 built from HEAD (the tree before the rename) and 0.1.62 from the working tree; both CUDA 120-real, NOSTROMA_PORTABLE=ON, tests OFF; same pack, config, serve wrapper and corpus)
 - Context 32768 tokens; server capacity 1 slot(s)
 - Sampling: temperature 1.0, top_p 0.95, top_k 20, min_p 0.0, presence_penalty 0.0, repetition_penalty 1.0, reasoning_effort xhigh; thinking on, preserved
 - Engine options: `config.json`; chat template: `provenance/chat_template.jinja`
