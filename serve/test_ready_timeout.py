@@ -35,6 +35,26 @@ for line in sys.stdin:
         print('T 90\nDONE 1 1 0 1 stop', flush=True)
 '''
 
+# the engine's own line for a model whose download never finished, then it leaves: no retry can fix that
+MISSING_SHARD = r'''
+import sys
+from pathlib import Path
+Path(sys.argv[sys.argv.index('--starts') + 1]).open('a').write('started\n')
+print('nostroma generate: --native /models/model-00001-of-00002.gguf: missing model shard '
+      '/models/model-00001-of-00002.gguf (shard 1 of 2; is the download complete?)', file=sys.stderr, flush=True)
+sys.exit(1)
+'''
+
+
+def write_script(root: Path, name: str, code: str) -> str:
+    py = root / (name + '.py')
+    if os.name == 'nt':
+        py.write_text(code); script = root / (name + '.cmd')
+        script.write_text(f'@"{sys.executable}" "{py}" %*\r\n')
+    else:
+        script = py; py.write_text('#!' + sys.executable + '\n' + code); py.chmod(0o700)
+    return str(script)
+
 
 @unittest.skipIf(os.name == "nt", "the .cmd wrapper keeps the pipe open after the kill (only the wrapper dies), so the "
                                   "close of its stdout waits for the sleeping child; a real engine is one process")
@@ -48,13 +68,7 @@ class ReadyTimeout(unittest.TestCase):
             p.start(); self.addCleanup(p.stop)
 
     def make_script(self, name, code):
-        py = self.root / (name + '.py')
-        if os.name == 'nt':
-            py.write_text(code); script = self.root / (name + '.cmd')
-            script.write_text(f'@"{sys.executable}" "{py}" %*\r\n')
-        else:
-            script = py; py.write_text('#!' + sys.executable + '\n' + code); py.chmod(0o700)
-        return str(script)
+        return write_script(self.root, name, code)
 
     def service(self, script, extra_args=()):
         eng = NostromaEngine(script, list(extra_args), lazy=True)
@@ -102,6 +116,40 @@ class ReadyTimeout(unittest.TestCase):
         hang.touch()                                             # and its restart never reports READY
         self.assert503(base)
         self.assertFalse(svc.engine.starting)
+
+
+class MissingModelFiles(unittest.TestCase):
+    """A model whose files are incomplete cannot start however often it is tried: the request answers at once with
+    the engine's own line and what to do, instead of waiting through restart()'s three tries (a client saw no bytes
+    for half a minute and gave up)."""
+
+    def test_a_missing_shard_answers_at_once_and_says_what_to_do(self):
+        tmp = tempfile.TemporaryDirectory(); self.addCleanup(tmp.cleanup)
+        root = Path(tmp.name)
+        starts = root / 'starts'
+        eng = NostromaEngine(write_script(root, 'missing_shard', MISSING_SHARD), ['--starts', str(starts)],
+                             log=str(root / 'engine.log'), lazy=True)
+        self.addCleanup(eng.close)
+        svc = Service(eng, ByteTokenizer(), ChatTemplate(Path(__file__).parent / 'chat_template.jinja'))
+        httpd = serve(svc, port=0)
+        self.addCleanup(httpd.shutdown); self.addCleanup(httpd.server_close)
+        base = f'http://127.0.0.1:{httpd.server_address[1]}'
+        req = urllib.request.Request(base + '/v1/chat/completions',
+                                     data=json.dumps({'messages': [{'role': 'user', 'content': 'hi'}],
+                                                      'max_tokens': 8}).encode(),
+                                     headers={'Content-Type': 'application/json'})
+        with mock.patch.object(NostromaEngine, 'RESTART_RETRY_S', 10.0):   # a retry would be slow enough to see
+            started = time.monotonic()
+            with self.assertRaises(urllib.error.HTTPError) as cm:
+                urllib.request.urlopen(req, timeout=30)
+            elapsed = time.monotonic() - started
+        self.assertEqual(cm.exception.code, 503)
+        said = cm.exception.read().decode()
+        self.assertIn('missing model shard', said)
+        self.assertIn('Download the model again', said)
+        self.assertNotIn('the next request restarts it', said, 'the files will not be there on the next try')
+        self.assertLess(elapsed, 5, 'the request waited through restart() retries')
+        self.assertEqual(starts.read_text().count('started'), 1, 'the engine was started more than once')
 
 
 class SpawnFailure(unittest.TestCase):

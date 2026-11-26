@@ -550,12 +550,30 @@ DRAFT_HEAD_HINT = ("a smaller draft vocabulary needs less VRAM: --draft-vocab cy
                    "keeps it; or a smaller --context in setup.")
 
 
+MISSING_MODEL_MARKS = ("missing model shard", "is the download complete")
+
+
+def missing_model_files(log: str | None, offset: int) -> str:
+    """The engine's own line when the model's files are missing or incomplete (a shard that was never downloaded),
+    or "".  No retry brings those files back, so the request answers at once instead of waiting through
+    restart()'s tries (three starts 15 s apart with no bytes to the client)."""
+    for line in start_log_text(log, offset).splitlines():
+        line = line.strip()
+        if any(mark in line for mark in MISSING_MODEL_MARKS):
+            return line[len("nostroma generate: "):] if line.startswith("nostroma generate: ") else line
+    return ""
+
+
 def start_failure_hint(log: str | None, offset: int) -> str:
     """#474: what to change when the engine stopped at the start because the MTP draft head did not fit the VRAM
     left: the engine's own `nostroma mtp:` lines after that failure (0.1.36+: what it needs, what is free, the smaller
     subsets), else the same advice in words for an older engine.  "" for any other failure: the log says why."""
     if not log:
         return ""
+    missing = missing_model_files(log, offset)
+    if missing:                     # a download that never finished: the file, and what to do about it
+        return (". The model's files are incomplete, so it cannot start: " + missing
+                + ". Download the model again in Models, then start it")
     try:
         with open(log, "rb") as f:
             f.seek(offset)
@@ -1512,11 +1530,17 @@ class NostromaEngine:
                 try:
                     self.__init__(*self.spawn)
                     break
-                except RuntimeError:
+                except RuntimeError as e:
                     try:
                         self.proc.wait(timeout=60)
                     except (subprocess.TimeoutExpired, OSError):
                         pass
+                    # A model whose files are missing or incomplete cannot start however often it is tried: the
+                    # request answers now, with the engine's own line and what to do, not 15 s per try of silence.
+                    if isinstance(e, EngineDied) and \
+                            missing_model_files(getattr(self, "log_path", None), getattr(self, "log_start", 0)):
+                        e.restarts = False           # the next request finds the same files: say only the cause
+                        raise
                     if i == tries - 1:
                         raise
                     print(f"[nostroma] the engine did not start (try {i + 1} of {tries}); again in "
