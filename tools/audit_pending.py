@@ -77,12 +77,26 @@ def rel(path: Path, root: Path) -> str:
         return str(path)
 
 
+def is_git_worktree(path: Path) -> bool:
+    """¿Es un worktree de git? Un worktree enlazado tiene `.git` como ARCHIVO (`gitdir: ...`)."""
+    try:
+        return (path / ".git").is_file()
+    except OSError:
+        return False
+
+
 def walk(root: Path, suffixes=None, names=None, skip=None):
-    """Recorre el árbol podando directorios irrelevantes."""
+    """Recorre el árbol podando directorios irrelevantes.
+
+    Los worktrees de git que viven dentro del repositorio (`.worktree-0161` y compaía) se saltean: son una
+    segunda copia del mismo árbol, duplicaban cada fila y hacían que la evidencia apuntara a la copia en
+    lugar del árbol de trabajo.
+    """
     skip = skip or SKIP_DIRS
     out = []
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in skip]
+        dirnames[:] = [d for d in dirnames
+                       if d not in skip and not is_git_worktree(Path(dirpath) / d)]
         for fn in filenames:
             if names and fn not in names and not any(fn.startswith(n) for n in names):
                 continue
@@ -236,15 +250,17 @@ def check_updater(root: Path):
     except AttributeError:
         upd = {}
 
-    rsv = upd.get("require_signed_version", None)
-    if rsv is None and upd:
-        rsv = False
+    # El plugin deserializa con `rename_all = "camelCase"` y alias `require-signed-version`: la clave del JSON es
+    # `requireSignedVersion`. Se aceptan las tres formas para no volver a declarar ausente algo que está escrito.
+    RSV_KEYS = ("requireSignedVersion", "require-signed-version", "require_signed_version")
+    rsv_key = next((k for k in RSV_KEYS if k in upd), None)
+    rsv = upd.get(rsv_key, False) if rsv_key else False
     if rsv:
         rows.append(("1", "require_signed_version", OK,
-                     f"{ev(conf, root, line_of(raw, 'require_signed_version'))} activado"))
+                     f"{ev(conf, root, line_of(raw, rsv_key))} activado"))
     else:
         rows.append(("1", "require_signed_version", f"{WARN} · alta",
-                     f"{ev(conf, root, line_of(raw, 'require_signed_version'))} ausente/false — "
+                     f"{ev(conf, root, line_of(raw, rsv_key or 'requireSignedVersion'))} ausente/false — "
                      f"la mitigación de {CVE_ID} NO está activa aunque el plugin esté al día"))
 
     if upd.get("dangerousInsecureTransportProtocol"):
@@ -635,8 +651,70 @@ def call_args(text: str, open_paren: int, max_scan: int = 6000) -> str:
     return text[open_paren + 1:j]
 
 
+#: Un tar que instala el filtro como ATRIBUTO antes de extraer (`archive.extraction_filter = ...` y luego
+#: `extractall(dest)` sin argumento): distlib lo hace así para correr también en intérpretes viejos, y es igual
+#: de seguro que pasarlo en la llamada.
+FILTER_ATTR = re.compile(r"(\w+)\s*\.\s*extraction_filter\s*=")
+#: La guarda de compatibilidad: una rama pasa `filter=` cuando el intérprete lo tiene y la otra es la llamada
+#: vieja — `if hasattr(tarfile.TarFile, 'extraction_filter'): tar.extractall(filter='data') else: tar.extractall()`.
+FILTER_GUARD = re.compile(r"hasattr\s*\(\s*[\w.]*\s*,\s*['\"]extraction_filter['\"]")
+
+
+#: Un bucle que valida cada miembro antes de escribir, llamando a un ayudante que lo comprueba
+#: (`_check_member_within(destination, member.name)` en components.py).
+VALIDATES_HELPER = re.compile(r"\b\w*(?:check|safe|verify|guard|validat|within)\w*\s*\(")
+#: La misma validación escrita en el bucle: resolver la ruta y compararla con el destino (stage-control.py).
+VALIDATES_INLINE = re.compile(r"\bresolve\s*\(\s*\)")
+CONTAINED = re.compile(r"\bin\s+[\w.()]+\.parents\b|\.relative_to\s*\(|\bstartswith\s*\(")
+#: Un bucle que materializa archivos. Sin una escritura en el cuerpo el bucle sólo mira los miembros (los
+#: clasifica, los cuenta para un informe) y no extrae nada, así que no es un "bucle manual".
+WRITES = re.compile(r"\.open\s*\(\s*['\"][wax]|\.write_bytes\s*\(|\.write_text\s*\("
+                    r"|copyfileobj\s*\(|\.extract\s*\(|\.extractall\s*\(|\.mkdir\s*\(")
+
+
+def filter_installed(text: str, receiver: str, at_line: int) -> str:
+    """Cómo protege el archivo a esta llamada: 'atributo', 'guarda' o '' cuando no la protege."""
+    for m in FILTER_ATTR.finditer(text):
+        if m.group(1) == receiver and text.count("\n", 0, m.start()) + 1 < at_line:
+            return "atributo"
+    # La guarda tiene que estar pegada a la llamada: una en otra parte del archivo no la cubre (si no,
+    # un `hasattr` suelto convertiría en seguro a cualquier `extractall()` del mismo módulo).
+    lines = text.splitlines()
+    window = "\n".join(lines[max(0, at_line - 7):at_line])
+    return "guarda" if FILTER_GUARD.search(window) else ""
+
+
+def is_test_file(path: Path) -> bool:
+    """¿Es un test? Arman archivos a propósito (un zip de un release propio, un tar de prueba), así que sus bucles no
+    cuentan como extracción manual en producto."""
+    return path.name.startswith("test_") or "tests" in path.parts[:-1]
+
+
+def member_loops(text: str):
+    """(líneas de bucles que validan, líneas de bucles que no) sobre miembros de un archivo."""
+    validated, bare = [], []
+    for m in re.finditer(r"^([ \t]*)for\s+\w+\s+in\s+\w+\.(getmembers|infolist|namelist)\s*\(\s*\)",
+                         text, re.M):
+        indent = len(m.group(1))
+        # el cuerpo empieza en la línea SIGUIENTE: el `:` que cierra el `for` tiene sangría cero y cortaría el bucle
+        after = text.find("\n", m.end())
+        body = []
+        for line in text[after + 1 if after >= 0 else len(text):].splitlines():
+            if line.strip() and len(line) - len(line.lstrip()) <= indent:
+                break
+            body.append(line)
+        joined = "\n".join(body)
+        if not WRITES.search(joined):
+            continue
+        checks = bool(VALIDATES_HELPER.search(joined)) or (
+            VALIDATES_INLINE.search(joined) and CONTAINED.search(joined))
+        line = text.count("\n", 0, m.start()) + 1
+        (validated if checks else bare).append(line)
+    return validated, bare
+
+
 def extraction_sites(files):
-    """[(archivo, línea, clase, tiene_filter)] de cada extracción de archivo en las fuentes Python.
+    """[(archivo, línea, clase, protegida, cómo)] de cada extracción de archivo en las fuentes Python.
 
     Clases: `tar` (un objeto que el archivo abre con `tarfile.open`: el único caso donde `filter="data"` existe y hace falta),
     `zip` y `unpack` (`ZipFile`, `shutil.unpack_archive`: no tienen parámetro `filter`, y zipfile sanea los nombres y nunca crea
@@ -644,6 +722,10 @@ def extraction_sites(files):
     miembros antes de escribir). Sólo `tar` cuenta como fallo: es lo único que el filtro puede arreglar.
 
     Heurístico: un objeto de tar que llegue como parámetro de otra función no se reconoce y cae en `indirect`.
+
+    `protegida` es True cuando la llamada pasa `filter=`, cuando el objeto tiene `extraction_filter` asignado antes
+    de extraer, o cuando la guarda `hasattr(..., 'extraction_filter')` está pegada a la llamada; `cómo` dice cuál
+    de las tres.
     """
     out = []
     for f in files:
@@ -657,7 +739,13 @@ def extraction_sites(files):
             kind = ("unpack" if m.group(2) == "unpack_archive" else
                     "tar" if m.group(1) in tar else
                     "zip" if m.group(1) in zipped else "indirect")
-            out.append((f, text.count("\n", 0, m.start()) + 1, kind, "filter" in args))
+            line = text.count("\n", 0, m.start()) + 1
+            protected = "filter" in args
+            how = "argumento" if protected else ""
+            if kind == "tar" and not protected:
+                how = filter_installed(text, m.group(1) or "", line)
+                protected = bool(how)
+            out.append((f, line, kind, protected, how))
     return out
 
 
@@ -665,10 +753,11 @@ def check_extraction(root: Path, dynamic: bool):
     rows = []
     py = [p for p in walk(root, suffixes=[".py"]) if p.name != "audit_pending.py"]
     sites = extraction_sites(py)
-    no_filter = [(f, l) for f, l, kind, ok in sites if kind == "tar" and not ok]
-    with_filter = [(f, l) for f, l, kind, ok in sites if kind == "tar" and ok]
-    zips = sum(1 for _f, _l, kind, _ok in sites if kind == "zip")
-    indirect = sum(1 for _f, _l, kind, _ok in sites if kind in ("unpack", "indirect"))
+    no_filter = [(f, l) for f, l, kind, ok, _how in sites if kind == "tar" and not ok]
+    with_filter = [(f, l) for f, l, kind, ok, _how in sites if kind == "tar" and ok]
+    by_attr = sum(1 for _f, _l, kind, ok, how in sites if kind == "tar" and ok and how != "argumento")
+    zips = sum(1 for _f, _l, kind, _ok, _how in sites if kind == "zip")
+    indirect = sum(1 for _f, _l, kind, _ok, _how in sites if kind in ("unpack", "indirect"))
 
     floor, floor_ev = python_floor(root)
     cur = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
@@ -682,18 +771,24 @@ def check_extraction(root: Path, dynamic: bool):
                      (f"{WARN} · media" if no_filter else OK),
                      f"{len(no_filter)} tar sin filter: "
                      f"{', '.join(ev(f, root, l) for f, l in no_filter[:4]) or 'ninguna'}; "
-                     f"{len(with_filter)} tar con filter; {zips} zip y {indirect} indirectas (sin parámetro filter)"))
+                     f"{len(with_filter) - by_attr} con filter= y {by_attr} con extraction_filter o guarda hasattr; "
+                     f"{zips} zip y {indirect} indirectas (sin parámetro filter)"))
         rows.append(("4", "llamadas con filter", OK if with_filter else INFO,
                      ", ".join(ev(f, root, l) for f, l in with_filter[:4]) or "ninguna"))
 
-    loops = []
+    checked_loops, bare_loops = [], []
     for f in py:
+        if is_test_file(f):
+            continue
         text = read_text(f)
-        for pat in (r"namelist\s*\(", r"getmembers\s*\(", r"infolist\s*\("):
-            for line, _ in find_calls(text, pat.replace("\\(", "\\(")):
-                loops.append(ev(f, root, line))
-    rows.append(("4", "bucles manuales", f"{WARN} · alta" if loops else OK,
-                 f"{', '.join(loops[:4]) or 'sin namelist/getmembers/infolist'}"))
+        if not text:
+            continue
+        validated, bare = member_loops(text)
+        checked_loops += [ev(f, root, line) for line in validated]
+        bare_loops += [ev(f, root, line) for line in bare]
+    rows.append(("4", "bucles manuales", f"{WARN} · alta" if bare_loops else OK,
+                 f"{', '.join(bare_loops[:4]) or 'sin bucles sin validar'}; "
+                 f"{len(checked_loops)} validan cada miembro antes de escribir"))
 
     declared = f"{floor} ({floor_ev})" if floor else f"no declarado ({floor_ev or 'n/d'})"
     rows.append(("4", "mínimo de Python", INFO,
@@ -767,6 +862,12 @@ def build_fixture(root: Path) -> None:
         'ENTRYPOINT ["/bin/bash", "-lc"]\n',
         encoding="utf-8",
     )
+    # Un worktree de git dentro del repositorio: `.git` es un ARCHIVO. Su Dockerfile no tiene USER, así que si el
+    # escaneo no lo saltea aparece como FALLA y la fila nombra la copia en vez del árbol de trabajo.
+    old = root / "wt-old"
+    old.mkdir(parents=True, exist_ok=True)
+    (old / ".git").write_text("gitdir: /nowhere/.git/worktrees/wt-old\n", encoding="utf-8")
+    (old / "Dockerfile").write_text("FROM ubuntu:24.04\n", encoding="utf-8")
 
     host = root / "apps" / "host"
     host.mkdir(parents=True, exist_ok=True)
@@ -807,7 +908,28 @@ def build_fixture(root: Path) -> None:
         "        zf.extractall(dest)\n\n\n"
         "def unpack_safe(archive, dest):\n"
         "    from nostroma_control import components\n"
-        "    components.safe_extract(archive, dest)\n",
+        "    components.safe_extract(archive, dest)\n\n\n"
+        "def unpack_attribute(path, dest):\n"
+        "    with tarfile.open(path) as tf:\n"
+        "        tf.extraction_filter = getattr(tarfile, 'data_filter', None)\n"
+        "        tf.extractall(dest)\n\n\n"
+        "def unpack_guarded(path, dest):\n"
+        "    with tarfile.open(path) as tf:\n"
+        "        if hasattr(tarfile.TarFile, 'extraction_filter'):\n"
+        "            tf.extractall(dest, filter='data')\n"
+        "        else:\n"
+        "            tf.extractall(dest)\n\n\n"
+        "def unpack_loop_validated(path, dest):\n"
+        "    with tarfile.open(path) as tf:\n"
+        "        for member in tf.getmembers():\n"
+        "            target = _checked_member(dest, member.name)\n"
+        "            target.parent.mkdir(parents=True, exist_ok=True)\n"
+        "            with target.open('wb') as out:\n"
+        "                out.write(tf.extractfile(member).read())\n\n\n"
+        "def unpack_loop_bare(path, dest):\n"
+        "    with zipfile.ZipFile(path) as zf:\n"
+        "        for info in zf.infolist():\n"
+        "            (dest / info.filename).write_bytes(zf.read(info))\n",
         encoding="utf-8",
     )
 
@@ -853,9 +975,9 @@ def run_selftest() -> int:
         except Exception as exc:  # noqa: BLE001
             print(f"  FALLO  [4] controles de extracción: excepción {type(exc).__name__}: {exc}")
             failures += 2
-            extras = 7
+            extras = 10
         else:
-            extras = 7
+            extras = 10
             ctl = [r for r in rows if "fully_trusted" in r[1]]
             ctl_ok = bool(ctl) and str(ctl[0][2]).startswith(OK)
             print(f"  {'ok    ' if ctl_ok else 'FALLO '}[4] control fully_trusted no cuenta como FALLA"
@@ -909,6 +1031,54 @@ def run_selftest() -> int:
             only_tar = det.startswith("1 tar sin filter") and bare and f"unpacker.py:{bare}" in det and not others
             print(f"  {'ok    ' if only_tar else 'FALLO '}[4] extracción: sólo el tar sin filter cuenta → {det[:110]!r}")
             if not only_tar:
+                failures += 1
+
+        # control: un `extraction_filter` asignado y una guarda `hasattr` no cuentan como fallo
+        try:
+            rows = check_extraction(base, False)
+        except Exception as exc:  # noqa: BLE001
+            print(f"  FALLO  [4] extraction_filter: excepción {type(exc).__name__}: {exc}")
+            failures += 1
+        else:
+            det = next((str(r[3]) for r in rows if r[1] == "extracción sin filter"), "")
+            lines = (base / "tools" / "unpacker.py").read_text(encoding="utf-8").splitlines()
+            bare = [i for i, text in enumerate(lines, 1) if "tf.extractall(dest)" in text]
+            seen = [n for n in bare if f"unpacker.py:{n}" in det]
+            attr_ok = bool(bare) and seen == [bare[0]]
+            print(f"  {'ok    ' if attr_ok else 'FALLO '}[4] extraction_filter y guarda hasattr no cuentan: "
+                  f"informadas {seen} de {bare}")
+            if not attr_ok:
+                failures += 1
+
+        # control: un bucle que valida cada miembro no es un "bucle manual"
+        try:
+            rows = check_extraction(base, False)
+        except Exception as exc:  # noqa: BLE001
+            print(f"  FALLO  [4] bucles: excepción {type(exc).__name__}: {exc}")
+            failures += 1
+        else:
+            det = next((str(r[3]) for r in rows if r[1] == "bucles manuales"), "")
+            lines = (base / "tools" / "unpacker.py").read_text(encoding="utf-8").splitlines()
+            validated, bare_loops = member_loops("\n".join(lines))
+            checked = next((i for i, text in enumerate(lines, 1) if "_checked_member(" in text), None)
+            loose = next((i for i, text in enumerate(lines, 1) if "write_bytes(" in text), None)
+            # el bucle se informa por la línea del `for`, que es la anterior al primer cuerpo
+            loops_ok = (bool(checked) and bool(loose)
+                        and validated == [checked - 1] and bare_loops == [loose - 1])
+            print(f"  {'ok    ' if loops_ok else 'FALLO '}[4] bucles: el que valida no cuenta, el que no valida sí → {det[:100]!r}")
+            if not loops_ok:
+                failures += 1
+
+        # control: un worktree de git dentro del repo queda fuera del escaneo
+        try:
+            rows = check_docker(base)
+        except Exception as exc:  # noqa: BLE001
+            print(f"  FALLO  [5] worktree: excepción {type(exc).__name__}: {exc}")
+            failures += 1
+        else:
+            leaked = [str(r[3]) for r in rows if "wt-old" in str(r[3])]
+            print(f"  {'ok    ' if not leaked else 'FALLO '}[5] worktree: ninguna fila lo menciona ({len(leaked)} sí)")
+            if leaked:
                 failures += 1
 
         # control: una raíz que no es un checkout se rechaza (raíz del sistema, carpeta cualquiera) y la del fixture pasa
@@ -1056,6 +1226,10 @@ def main():
     print("  · Sin git disponible: no hay historial ni autores.")
     print("  · third_party/, node_modules/ y target/ excluidos del escaneo.")
     print("  · Escaneo estático heurístico: indica dónde mirar, no prueba el flujo.")
+    print("  · Los worktrees de git dentro del repositorio (`.git` como archivo) quedan fuera del escaneo.")
+    print("  · Una extracción cuenta como protegida si pasa `filter=`, si el objeto tiene `extraction_filter` asignado antes,")
+    print("    o si la guarda `hasattr(..., 'extraction_filter')` está pegada a la llamada. Un bucle sobre miembros cuenta como")
+    print("    validación cuando comprueba cada nombre antes de escribir, y los tests no cuentan como extracción manual.")
     print("  · Las filas 'dyn:' miden el INTÉRPRETE, no el código del proyecto.")
     print("  · Se examinan todos los Dockerfiles del proyecto (third_party/ queda fuera, como el resto del escaneo).")
     print("  · Un Dockerfile de desarrollo declara por qué corre como root con `# audit: root-ok — motivo`: AVISO con el motivo, y la")
