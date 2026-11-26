@@ -38,6 +38,8 @@ Use the guide for your GPU and operating system. Model and feature support can d
 - [How the engine works](HOW_IT_WORKS.md), [technical reference](DETAILS.md) and [Terminal reference](TERMINAL.md)
 - [KVA: approximate prompt processing for the late layers (experimental, opt-in)](KVA.md)
 - [App development](../apps/host/README.md) and [packaging](../packaging/README.md)
+- [Audit roadmap](AUDIT_ROADMAP.md): what the security scan and the UI backlog still have open, and the command that
+  proves each item
 - [Releasing a version](RELEASE_CHECKLIST.md): the assets, the script that builds each one and the order
 
 ## AI tools and media

@@ -12,13 +12,15 @@ campaign** is a separate list of interface requirements from October 2026, kept 
 
 ```sh
 python tools/audit_pending.py                  # the scan; exit 1 when any check is FALLA
-python tools/audit_pending.py --selftest       # the scan's own test; 12/14 on Windows today, see T3
+python tools/audit_pending.py --selftest       # the scan's own test; 14/14 on Windows, see T3
 python tools/audit_pending.py --json audit.json  # the same rows, to compare two runs
 ```
 
-The scan's own test, `--selftest`, builds a fake project and checks the verdicts. On this Windows machine it reports
-**12 of 14** today: two sub-checks look for `devimg/Dockerfile` and `docker/Dockerfile` while the scan prints the
-Windows separators (`devimg\Dockerfile`). The scan itself is fine there; the test is not (item T3).
+The scan's own test, `--selftest`, builds a fake project and checks the verdicts. It reports **14 of 14** on this
+Windows machine since 26 November 2026: two sub-checks compared `devimg/Dockerfile` and `docker/Dockerfile` against
+the `devimg\Dockerfile` that `rel()` prints here, so the development-image row and the unpinned `ARG BASE=ubuntu` were
+never found. The controls normalise separators before comparing now (T3); what they assert is unchanged, so a
+published image carrying the same `# audit: root-ok` line is still a FALLA.
 
 `--json` is the way to compare two runs. Worktrees of git checked out inside the repository (`.worktree-0161` and the
 like) are skipped now, so the rows are no longer doubled (T1).
@@ -54,7 +56,7 @@ Status values: **open** (nobody has started), **decision** (needs a choice befor
 | A5 | low | The Python floor is not declared anywhere | open |
 | T1 | medium | The scan reads worktrees inside the checkout and duplicates rows | done 26 Nov 2026 |
 | T2 | medium | The scan reads only the first `tauri.conf.json` it finds | tool |
-| T3 | low | The scan's self-test fails on Windows on path separators | tool |
+| T3 | low | The scan's self-test fails on Windows on path separators | done 26 Nov 2026 |
 | B1 | — | The UI backlog is a second, larger list | see its page |
 
 ### A1 — `requireSignedVersion` (high, config done, feed still off)
@@ -106,7 +108,7 @@ The dynamic rows ("dyn: …") measured Python 3.15, which refuses traversal by d
 
 - Done when: the scan recognises an `extraction_filter` assignment (and the project's `safe_extract`) and the audit
   exits 0, or the bundled `site-packages` is excluded with the reason recorded in the tool.
-- Verify: `python tools/audit_pending.py` exit 0; `python tools/audit_pending.py --selftest` no worse than the 12/14
+- Verify: `python tools/audit_pending.py` exit 0; `python tools/audit_pending.py --selftest` no worse than the 14/14
   in T3.
 - **Done 26 November 2026.** The scan now counts a tar call as protected when the object has `extraction_filter`
   assigned before the call (distlib) or when the `hasattr(..., 'extraction_filter')` guard sits within the seven lines
@@ -169,16 +171,21 @@ walk order. The updater settings, if they move, will live in `tauri.release.conf
 
 - Done when: every config under `src-tauri/` is read and the row names the file that decides the value.
 
-### T3 — the self-test assumes POSIX paths (low, tool)
+### T3 — the self-test assumes POSIX paths (low, done)
 
-`--selftest` reports 12 of 14 on Windows. The two that fail are the Dockerfile sub-checks: they search the row details
-for `devimg/Dockerfile` and `docker/Dockerfile`, and `rel()` in the tool prints `devimg\Dockerfile` there, so the
-development-image row and the unpinned `ARG BASE=ubuntu` are never found. The scan's verdicts for the real repository
-are unaffected.
+`--selftest` reported 12 of 14 on Windows. The two that failed were the Dockerfile sub-checks: they searched the row
+details for `devimg/Dockerfile` and `docker/Dockerfile`, and `rel()` printed `devimg\Dockerfile` there, so the
+development-image row and the unpinned `ARG BASE=ubuntu` were never found. The scan's verdicts for the real repository
+were unaffected.
 
 - Done when: the self-test compares separators portably (normalise with `os.sep` or replace `\\` with `/`) and prints
   **14/14 on Windows**.
 - Verify: `python tools/audit_pending.py --selftest` exit 0.
+- **Done 26 November 2026.** `posix()` in the tool turns a detail's separators into `/`, and the three comparisons that
+  read a path (`devimg/Dockerfile`, `docker/Dockerfile` and the `ARG BASE=ubuntu` row) go through it. What they assert
+  is unchanged: the development image must still read `AVISO · media` with its `-u $(id -u)` reason, and both published
+  images must still read `FALLA · alta` with the same `root-ok` line. The self-test prints **14/14** here and the
+  repository scan is unchanged (26 checks, 0 FALLA, 2 AVISO, exit 0).
 
 ## Second track: the UI backlog
 
