@@ -21,7 +21,8 @@ an older npm release. Keep complete inline Evidence when that server does not
 advertise retained references.
 
 If tools are absent, a call is blocked by the client, or a required provider is
-unavailable, read [connection and recovery](references/connection-and-recovery.md).
+unavailable, read the connection and recovery notes (upstream
+`references/connection-and-recovery.md`, not shipped in this bundle).
 Diagnose the observed blocker, continue useful supported work, and resume the
 original task after repair. Client approval, shell PATH, registration and engine
 availability have different remedies; avoid repeating setup for all of them.
@@ -143,8 +144,8 @@ validating its full contents within the local memory budget.
 A client can also truncate a successful tool result without a REA transport
 error. Treat that preview as incomplete; use the retained parent ID for smaller
 views or export when the full record is needed. Do not parse the preview as
-canonical JSON or repeat the producer. For JavaScript, read the
-[module-view and trace recipes](references/javascript-applications.md) before
+canonical JSON or repeat the producer. For JavaScript, read the module-view and
+trace recipes (upstream `references/javascript-applications.md`) before
 drilling into a large graph; a broad bidirectional trace can expand unrelated
 containment relationships even after summary analysis.
 
@@ -196,16 +197,20 @@ as complete while required questions remain open.
 
 ## Read only the relevant guide
 
+The pages these names point at belong to the upstream REA skill and are not part
+of this bundle, so they are named rather than linked: fetch them from REA if you
+need the full recipes.
+
 - Native binaries, managed assemblies, archives, and extraction:
-  [references/native-and-artifacts.md](references/native-and-artifacts.md)
+  `references/native-and-artifacts.md`
 - ASARs, extracted JavaScript, feature tracing, and version comparison:
-  [references/javascript-applications.md](references/javascript-applications.md)
+  `references/javascript-applications.md`
 - Android APK declarations, classes, methods, and static references:
-  [references/android-applications.md](references/android-applications.md)
+  `references/android-applications.md`
 - Passive browser/Electron observation and static/runtime reconciliation:
-  [references/runtime-observation.md](references/runtime-observation.md)
+  `references/runtime-observation.md`
 - Evidence paging, comparisons, residual unknowns, and verification:
-  [references/evidence-workflows.md](references/evidence-workflows.md)
+  `references/evidence-workflows.md`
 
 ## Finish the task
 
