@@ -39,5 +39,11 @@
  "ui38": "Escribe tu propia respuesta",
  "ui39": "Enviar respuesta",
  "ui40": "Preguntas para ti",
- "ui41": "Permite que el asistente se detenga y te haga una pregunta, con respuestas para elegir, cuando necesita tu decisión."
+ "ui41": "Permite que el asistente se detenga y te haga una pregunta, con respuestas para elegir, cuando necesita tu decisión.",
+ "ui42": "Leyendo los pesos del modelo…",
+ "ui43": "Leyendo los expertos en la memoria…",
+ "ui44": "Llenando la caché de expertos de la GPU…",
+ "ui45": "Esperando al servidor…",
+ "ui46": "La prueba de velocidad no terminó.",
+ "ui47": "Estimando el tiempo…"
 }

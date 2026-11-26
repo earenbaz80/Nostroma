@@ -10,7 +10,7 @@ import type { Workload } from '../lib/experience';
 import { ActionError, Btn, Dialog, ErrorNotice, Icon, Select } from '../components/ui';
 import { Screen, SectionHead } from '../components/layout';
 import { configDocument, configPatch, draftParams, readConfig, type ConfigDocument } from '../lib/config';
-import { useStore, setConfigDraft, saveEngine, restartEngine, validateEngine, pushToast, lifecycleAvailable, useLifecycle } from '../lib/store';
+import { useStore, setConfigDraft, saveEngine, restartEngine, validateEngine, pushToast, lifecycleAvailable, useLifecycle, openServerSettings } from '../lib/store';
 import type { BeginnerConfig, EngineConfig, ExpertParam } from '../lib/types';
 type Issue = {
     level: 'warn' | 'error';
@@ -189,7 +189,7 @@ export function TuningScreen() {
           <SectionHead title={tr("Configuration draft")} right={<div className="row"><Btn size="sm" onClick={() => setDiscardOpen(true)}>{tr("Reload saved")}</Btn><Btn size="sm" onClick={download} disabled={!doc}>{tr("Export")}</Btn><Btn size="sm" onClick={() => importRef.current?.click()}>{tr("Import")}</Btn></div>}/>
           {tr(parsed.error ? <ErrorNotice message={parsed.error} next={tr("Correct the JSON before saving or applying.")}/> : null)}<textarea className="st-input config-editor" aria-label={tr("Configuration draft")} aria-invalid={!!parsed.error} aria-describedby={visibleIssues.length ? 'config-errors' : undefined} spellCheck={false} value={text} onChange={e => setConfigDraft(e.target.value)}/>
         </section> : <>
-          <div className="row small muted"><a href="#/serving">{tr("Server access is managed in Serving")}</a><label className="check-label"><input type="checkbox" checked={unsupported} onChange={e => setUnsupported(e.target.checked)}/>{tr("Show unsupported")}</label></div><div className="parameter-toolbar">
+          <div className="row small muted"><a href="#/chat?settings=1" onClick={e => { e.preventDefault(); openServerSettings(); }}>{tr("Server access is managed in Settings")}</a><label className="check-label"><input type="checkbox" checked={unsupported} onChange={e => setUnsupported(e.target.checked)}/>{tr("Show unsupported")}</label></div><div className="parameter-toolbar">
             <input className="st-input" type="search" aria-label={tr("Search parameters")} placeholder={tr("Search name or technical key…")} value={query} onChange={e => setQuery(e.target.value)}/>
             <Select value={group} ariaLabel={tr("Parameter group")} options={[{ value: 'all', label: 'All groups' }, ...groups.map(g => ({ value: g, label: g }))]} onChange={setGroup}/>
             <label className="check-label"><input type="checkbox" checked={changedOnly} onChange={e => setChangedOnly(e.target.checked)}/>{tr("Changed only (")}{tr(changed.length)})</label><label className="check-label"><input type="checkbox" checked={descriptions} onChange={e => setDescriptions(e.target.checked)}/>{tr("Show descriptions")}</label>

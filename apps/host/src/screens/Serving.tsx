@@ -7,12 +7,13 @@ import { nativeRouting, useNative } from '../lib/native';
 import { CloudflareDialog } from '../components/CloudflareDialog';
 import { useEffect, useRef, useState } from 'react';
 import { Btn, Dialog, Empty, Icon, IconBtn, Seg, Select, ErrorNotice } from '../components/ui';
-import { Screen, SectionHead } from '../components/layout';
+import { SectionHead } from '../components/layout';
 import { clockTime, duration, tokens } from '../lib/format';
 /** The engine's own decode speed, one decimal (a whole number when it is one): "34" or "34.5", never "34.0". */
 const tokPerSecond = (n: number | null | undefined) => typeof n === 'number' && Number.isFinite(n) ? String(Math.round(n * 10) / 10) : '—';
 import { cancelRequest, setLocalSharing, setServingAccess, useStore } from '../lib/store';
-export function ServingScreen() {
+/** The server's own page: a Settings section ("Server"), not a screen of its own. */
+export function ServerPanel() {
     const serving = useStore(s => s.serving);
     const storedRuntime = useStore(s => s.runtime), hardware = useStore(s => s.hardware);
     const native = useNative();
@@ -54,7 +55,7 @@ export function ServingScreen() {
         }
     }, [selected?.id, selected?.cancellable]);
     if (!serving)
-        return <Screen title={tr("Serving")}><p className="muted">{tr("Waiting for API status\u2026")}</p></Screen>;
+        return <p className="muted">{tr("Waiting for API status\u2026")}</p>;
     const multipleModels = (runtime?.instances.length ?? 0) > 1;
     const filterId = multipleModels && runtime?.instances.some(i => i.id === modelFilter) ? modelFilter : 'all';
     const loaded = runtime?.instances.find(i => i.apiModelId === guideModel) ?? runtime?.instances.find(i => i.id === runtime.defaultId);
@@ -78,7 +79,8 @@ export function ServingScreen() {
     // While sharing is on there are two addresses: the app's own, and the one other devices use on its own port (#4798).
     const twoAddresses = !!serving.sharing?.active && !!serving.sharing.url && !!serving.localUrl && serving.localUrl !== serving.sharing.url;
     const code = `curl ${serving.baseUrl}${protocol === 'responses' ? '/responses' : protocol === 'openai' ? serving.endpoints.openai : serving.endpoints.anthropic} \\\n  -H 'Content-Type: application/json'${serving.access.apiKeySet ? " \\\n  -H 'Authorization: Bearer YOUR_API_KEY'" : ''} \\\n  -d '${JSON.stringify({ model: loaded?.apiModelId ?? 'YOUR_MODEL_ID', ...(protocol === 'responses' ? { input: 'Hello', store: false } : { ...(protocol === 'anthropic' ? { max_tokens: 256 } : {}), messages: [{ role: 'user', content: 'Hello' }] }) }, null, 2)}'`;
-    return <Screen title={tr("Serving")} actions={<><Btn icon="link" onClick={() => setCloudflareOpen(true)}>{tr("Cloudflare tunnel")}</Btn><IconBtn name="info" title={tr("Connection guide")} onClick={() => setGuide(true)}/></>}><div className="stack stack--lg">
+    return <><div className="stack stack--lg">
+    <div className="section-toolbar"><span/><div className="row"><Btn icon="link" onClick={() => setCloudflareOpen(true)}>{tr("Cloudflare tunnel")}</Btn><IconBtn name="info" title={tr("Connection guide")} onClick={() => setGuide(true)}/></div></div>
     <section className="st-card serving-overview"><dl className="summary-list"><div><dt>{tr(twoAddresses ? "API base URL on this computer" : "API base URL")}</dt><dd className="row"><code style={{ overflowWrap: 'anywhere' }}>{twoAddresses ? serving.localUrl : serving.baseUrl}</code><CopyBtn text={(twoAddresses ? serving.localUrl : serving.baseUrl) ?? ''} label="API base URL" title="Copy API base URL"/></dd></div>{tr(twoAddresses ? <div><dt>{tr("Address for other devices")}</dt><dd><div className="row"><code style={{ overflowWrap: 'anywhere' }}>{serving.sharing!.url}</code><CopyBtn text={serving.sharing!.url!} label="Local network URL" title="Copy local network URL"/></div><p className="xs muted serving-two-addresses">{tr("Other devices use this address. It has its own port, separate from the one Nostroma's window uses, because only the model's API is shared on the network, not the app.")}</p></dd></div> : null)}{tr(!multipleModels ? <div><dt>{tr("Model ID")}</dt><dd className="row"><code>{loaded?.apiModelId ?? 'No model loaded'}</code><CopyBtn text={loaded?.apiModelId ?? ''} label="Model ID" title="Copy Model ID" disabled={!loaded}/></dd></div> : null)}<div><dt>{tr("Status")}</dt><dd><span className="api-status" data-active={serving.running}><span className="api-status__dot"/>{tr(serving.running ? 'API listening' : 'API stopped')} · {tr(multipleModels ? `${runtime?.instances.length} models loaded` : loaded ? 'Model ready' : 'Model not ready')}</span></dd></div><div><dt>{tr("Local network")}</dt><dd className="row"><span className="request-status" data-state={serving.sharing?.active ? "shared" : "queued"}>{tr(serving.sharing?.active ? "Shared on local network" : "Off")}</span><Btn size="sm" onClick={() => { setError(''); setSharingOpen(true); }}>{tr(serving.sharing?.active ? "Manage / stop" : "Share")}</Btn></dd></div>{tr(serving.tunnel?.status === "connected" && serving.tunnel.url ? <div><dt>{tr("Cloudflare tunnel")}</dt><dd className="row"><code style={{ overflowWrap: "anywhere" }}>{serving.tunnel.url}</code><CopyBtn text={serving.tunnel.url} label="Cloudflare tunnel URL" title="Copy Cloudflare tunnel URL"/><IconBtn name="settings" title={tr("Manage Cloudflare tunnel")} onClick={() => setCloudflareOpen(true)}/></dd></div> : serving.tunnel?.status === "starting" ? <div><dt>{tr("Cloudflare tunnel")}</dt><dd role="status">{tr("Connecting\u2026")}</dd></div> : null)}<div className="serving-access-row"><dt>{tr("API key")}</dt><dd><div className="serving-access-status">{tr(serving.access.apiKeySet ? <span className="small muted">{tr("Required \u00B7 ")}{tr(serving.access.apiKeyHint)}</span> : null)}<div className="row"><Btn size="sm" onClick={() => { setError(''); generateKey(); setKeyOpen(true); }}>{tr(serving.access.apiKeySet ? 'Change key' : 'Set key')}</Btn>{tr(serving.access.apiKeySet ? <Btn size="sm" onClick={() => { setError(''); setRemoveKeyOpen(true); }}>{tr("Remove key")}</Btn> : null)}</div></div>{tr(serving.access.otherDevices ? <span className="xs muted">{tr("Keep a key while the API is available to other devices.")}</span> : null)}</dd></div></dl></section>
     {tr(multipleModels ? <section className="st-card serving-models" aria-label={tr("Available API models")}><div className="section-toolbar"><h2 className="h4">{tr("Available models")}</h2><span className="xs muted">{tr("One API URL \u00B7 route by model ID")}</span></div>
       {tr(runtime?.instances.length ? <div className="serving-models__list">{tr(runtime.instances.map(i => <div key={i.id} className="serving-model"><div><strong>{tr(i.family)}</strong><small>{tr(i.name)} · {tr(i.memory.context / 1024)}{tr("K \u00B7 ")}{tr(deviceLabel(i.gpuIds, hardware))}</small></div><code>{i.apiModelId}</code><CopyBtn text={i.apiModelId} label="Model ID" title={tr("Copy model ID {0}", [i.apiModelId])}/></div>))}</div> : <p className="small muted">{tr("Load a model in Models to make it available here.")}</p>)}
@@ -111,5 +113,5 @@ export function ServingScreen() {
     </Dialog>
     <Dialog open={removeKeyOpen} compact title={tr("Remove API key?")} onClose={() => !pending && setRemoveKeyOpen(false)} actions={<><Btn disabled={pending} onClick={() => setRemoveKeyOpen(false)}>{tr("Keep key")}</Btn><Btn variant="danger" disabled={pending} onClick={() => void operation(async () => { await setServingAccess({ apiKey: null }); setRemoveKeyOpen(false); })}>{tr(pending ? 'Removing…' : 'Remove key')}</Btn></>}><p>{tr("Apps on this computer will be able to send requests without a key. Existing clients can keep their current key field.")}</p>{tr(serving.access.otherDevices ? <p className="small muted"><Icon name="warning" size={16}/>{tr(" Without an API key, anyone who can reach this address can use your model.")}</p> : null)}{tr(error ? <ErrorNotice message={error}/> : null)}</Dialog>
     <CloudflareDialog open={cloudflareOpen} onClose={() => setCloudflareOpen(false)} onCreateKey={() => { setReturnToTunnel(true); setCloudflareOpen(false); generateKey(); setKeyOpen(true); }}/>
-  </Screen>;
+  </>;
 }

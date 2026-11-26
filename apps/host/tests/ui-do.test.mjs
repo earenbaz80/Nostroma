@@ -342,7 +342,7 @@ test('#4749 the bridge uses the Harness own subagents/prompt with the documented
   const row = src('components/SubagentRow.tsx');
   assert.match(row, /delivery: a\.status === 'working' \? 'steer' : 'queue'/);
   assert.match(row, /sessionId && a\.status !== 'queued' && a\.status !== 'cancelled'/);
-  assert.match(src('components/ChatToolbar.tsx'), /sessionId=\{session && !session\.showcase \? session\.id : undefined\}/, 'the example chat has no real helpers to write to');
+  assert.match(src('components/SubagentsButton.tsx'), /sessionId=\{session && !session\.showcase \? session\.id : undefined\}/, 'the example chat has no real helpers to write to');
 });
 
 test('#4749 the helper strings are translated', async () => {

@@ -22,9 +22,10 @@ const note = (what, args) => { try { fs.appendFileSync(${JSON.stringify(log)}, J
 const l = net.Server.prototype.listen; net.Server.prototype.listen = function (...a) { note('listen', a); return l.apply(this, a); };
 const b = dgram.Socket.prototype.bind; dgram.Socket.prototype.bind = function (...a) { note('bind', a); return b.apply(this, a); };\n`);
   const port = await freePort();
-  const env = { ...process.env, NOSTROMA_HOME: home, NOSTROMA_PORT: String(port), NOSTROMA_MODELS_DIR: join(home, 'm'), NODE_OPTIONS: `--require ${hook}` };
+  const env = { ...process.env, NOSTROMA_HOME: home, NOSTROMA_PORT: String(port), NOSTROMA_MODELS_DIR: join(home, 'm') };
+  /* The preload goes in argv, not in NODE_OPTIONS: a temporary folder with a space in its path cannot survive that string being split. */
   delete env.NOSTROMA_SHARE_PORT; delete env.NOSTROMA_TUNNEL_PORT; delete env.NOSTROMA_BIND;
-  const child = spawn(process.execPath, ['server/index.mjs'], { cwd, env });
+  const child = spawn(process.execPath, ['--require', hook, 'server/index.mjs'], { cwd, env });
   let err = ''; child.stderr.on('data', d => { err += d; });
   t.after(() => { child.kill(); });
   let up = false;

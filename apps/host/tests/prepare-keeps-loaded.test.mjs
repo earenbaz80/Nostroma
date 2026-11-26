@@ -328,7 +328,9 @@ test('the model whose files are being prepared always stops, even when the room 
     const done = await waitJob(f.control, f.control.operation('install', { model: 'iq2_xs', family: 'qwen' }).id);
     assert.equal(done.state, 'done', done.error);
     assert.equal(f.control.state().instances.length, 0, 'its own files are being rewritten');
-    assert.match(done.summary, /^Stopped .+ to make room and freed \d+\.\d GB of memory\. It takes about .+ to load it again\./);
+    assert.match(done.summary, /^Stopped .+ to replace its engine and freed \d+\.\d GB of memory\. It takes about .+ to load it again\./,
+      'the same model prepared again stops for its own engine, not "to make room"');
+    assert.doesNotMatch(done.summary, /to make room/, 'its own files are rewritten: this is not a lack of memory');
   } finally {
     await f.cleanup();
   }

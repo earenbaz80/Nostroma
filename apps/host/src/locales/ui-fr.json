@@ -39,5 +39,11 @@
  "ui38": "Saisissez votre propre réponse",
  "ui39": "Envoyer la réponse",
  "ui40": "Questions pour vous",
- "ui41": "Permet à l’assistant de s’arrêter et de vous poser une question, avec des réponses à choisir, quand il a besoin de votre décision."
+ "ui41": "Permet à l’assistant de s’arrêter et de vous poser une question, avec des réponses à choisir, quand il a besoin de votre décision.",
+ "ui42": "Lecture des poids du modèle…",
+ "ui43": "Lecture des experts en mémoire…",
+ "ui44": "Remplissage du cache d’experts du GPU…",
+ "ui45": "En attente du serveur…",
+ "ui46": "Le test de vitesse ne s’est pas terminé.",
+ "ui47": "Estimation du temps…"
 }

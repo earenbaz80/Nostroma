@@ -228,6 +228,32 @@ add(en="Lets the assistant stop and ask you a question, with answers to pick fro
     ko="어시스턴트가 결정이 필요할 때 멈추고 고를 수 있는 답과 함께 질문할 수 있게 합니다.",
     fr="Permet à l'assistant de s'arrêter et de vous poser une question, avec des réponses à choisir, quand il a besoin de votre décision.")
 
+# The stages of a model load (the host's engine log and Control's runtime phases)
+add(en="Reading the model's weights…",
+    zh="正在读取模型权重…", ja="モデルの重みを読み込んでいます…", de="Die Gewichte des Modells werden gelesen…",
+    es="Leyendo los pesos del modelo…", ru="Чтение весов модели…", pt="Lendo os pesos do modelo…",
+    ko="모델 가중치를 읽는 중…", fr="Lecture des poids du modèle…")
+add(en="Reading the experts into memory…",
+    zh="正在将专家读入内存…", ja="エキスパートをメモリに読み込んでいます…", de="Die Experten werden in den Arbeitsspeicher gelesen…",
+    es="Leyendo los expertos en la memoria…", ru="Чтение экспертов в память…", pt="Lendo os especialistas na memória…",
+    ko="전문가를 메모리로 읽는 중…", fr="Lecture des experts en mémoire…")
+add(en="Filling the GPU's expert cache…",
+    zh="正在填充 GPU 的专家缓存…", ja="GPU のエキスパートキャッシュを埋めています…", de="Der Experten-Cache der GPU wird gefüllt…",
+    es="Llenando la caché de expertos de la GPU…", ru="Заполнение кэша экспертов GPU…", pt="Preenchendo o cache de especialistas da GPU…",
+    ko="GPU 전문가 캐시를 채우는 중…", fr="Remplissage du cache d’experts du GPU…")
+add(en="Waiting for the server…",
+    zh="正在等待服务器…", ja="サーバーを待っています…", de="Warten auf den Server…",
+    es="Esperando al servidor…", ru="Ожидание сервера…", pt="Aguardando o servidor…",
+    ko="서버를 기다리는 중…", fr="En attente du serveur…")
+add(en="The speed test did not finish.",
+    zh="速度测试未完成。", ja="速度テストは完了しませんでした。", de="Der Geschwindigkeitstest wurde nicht abgeschlossen.",
+    es="La prueba de velocidad no terminó.", ru="Тест скорости не завершился.", pt="O teste de velocidade não terminou.",
+    ko="속도 테스트가 완료되지 않았습니다.", fr="Le test de vitesse ne s’est pas terminé.")
+add(en="Estimating time…",
+    zh="正在估算时间…", ja="所要時間を見積もっています…", de="Zeit wird geschätzt…",
+    es="Estimando el tiempo…", ru="Оцениваем время…", pt="Estimando o tempo…",
+    ko="시간을 예상하는 중…", fr="Estimation du temps…")
+
 here = Path(__file__).resolve().parent.parent / "src" / "locales"
 NBSP = " "
 

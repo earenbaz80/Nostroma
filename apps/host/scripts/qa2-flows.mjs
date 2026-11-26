@@ -9,6 +9,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { chromium } from 'playwright-core';
 import { envVar } from '../server/env-compat.mjs';
+import { anchors } from './ui-anchors.mjs';
 
 const HOST = resolve(import.meta.dirname, '..');
 const SHOTS = resolve(process.argv[2] ?? join(tmpdir(), 'nostroma-qa2-shots'));
@@ -39,13 +40,13 @@ try {
   // dismiss a first-run setup modal if one is up
   await p.keyboard.press('Escape');
   if (false) await p.evaluate(() => { window.requestAnimationFrame = () => 0; });
-  await p.getByRole('button', { name: 'Open navigation' }).click();
+  await p.locator(anchors.navigation.compactOpen).click();
   await p.waitForTimeout(600);
   if (false) { await p.getByRole('button', { name: 'Add a task' }).focus(); await p.keyboard.press('Enter'); } else await p.getByRole('button', { name: 'Add a task' }).click();
   await p.waitForTimeout(900);
   const state = () => p.evaluate(() => ({
     active: document.activeElement?.tagName + ':' + (document.activeElement?.getAttribute('aria-label') || document.activeElement?.id || document.activeElement?.textContent?.slice(0, 20)),
-    navOpen: !!document.querySelector('aside.nav[role=dialog]'),
+    navOpen: !!document.querySelector('.nav[role=dialog]'),
     dialogs: [...document.querySelectorAll('[role=dialog]')].map(d => d.getAttribute('aria-label') || d.querySelector('h2')?.textContent || d.className).filter(Boolean),
     insideTask: !!document.activeElement?.closest('.dialog-surface'),
   }));
@@ -60,7 +61,7 @@ try {
   const name = p.getByLabel('Name').first();
   await name.click().catch(() => {});
   await p.keyboard.type('Weekly check');
-  check(await p.evaluate(() => document.querySelector('.dialog-surface input')?.value === 'Weekly check') || true, 'typing reaches the task form');
+  check(await p.evaluate(() => document.querySelector('.dialog-surface input')?.value === 'Weekly check'), 'typing reaches the task form');
   await p.screenshot({ path: `${SHOTS}/f03-${tag}-3.png` });
 } finally { await b?.close(); host.stop(); }
 
@@ -110,17 +111,17 @@ try {
     await p.goto(host.url, { waitUntil: 'domcontentloaded' });
     await p.waitForTimeout(2500);
     await p.keyboard.press('Escape');
-    const box = p.locator('.composer textarea').first();
+    const box = p.locator(anchors.composer.textarea).first();
     await box.waitFor({ timeout: 8000 });
     await box.click();
     const long = Array.from({ length: 60 }, (_, i) => `Line ${i + 1} of a long draft with Unicode ČŠŽ`).join('\n');
     await box.fill(long);
     await p.waitForTimeout(500);
-    const m = await p.evaluate(() => {
+    const m = await p.evaluate(sel => {
       const r = el => { const b = el?.getBoundingClientRect(); return b ? { top: Math.round(b.top), bottom: Math.round(b.bottom), height: Math.round(b.height) } : null; };
       const send = [...document.querySelectorAll('.composer button')].find(x => /send/i.test(x.getAttribute('aria-label') || x.title || x.textContent || ''));
-      return { vh: innerHeight, ta: r(document.querySelector('.composer textarea')), send: r(send), bar: r(document.querySelector('.composer .st-composer__bar')), composer: r(document.querySelector('.composer')), taScroll: document.querySelector('.composer textarea').scrollHeight };
-    });
+      return { vh: innerHeight, ta: r(document.querySelector(sel)), send: r(send), bar: r(document.querySelector('.composer .st-composer__bar')), composer: r(document.querySelector('.composer')), taScroll: document.querySelector(sel).scrollHeight };
+    }, anchors.composer.textarea);
     console.log(w + 'x' + h, JSON.stringify(m));
     check(m.composer.bottom <= m.vh && m.bar.top >= 0, `${w}x${h}: the composer toolbar is inside the window`);
     check(m.send ? m.send.bottom <= m.vh : true, `${w}x${h}: the Send button is inside the window`);
@@ -142,7 +143,7 @@ try {
   await p.goto(host.url, { waitUntil: 'domcontentloaded' });
   await p.waitForTimeout(2500);
   await p.keyboard.press('Escape');
-  await p.locator('.composer textarea').first().waitFor({ timeout: 8000 });
+  await p.locator(anchors.composer.textarea).first().waitFor({ timeout: 8000 });
   const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
   const fire = (selector, type) => p.evaluate(([sel, type, png]) => {
     const target = document.querySelector(sel);
@@ -153,13 +154,13 @@ try {
   }, [selector, type, PNG]);
   const listened = await p.evaluate(() => { window.__dropped = []; window.addEventListener('nostroma:drop-files', e => window.__dropped.push(e.detail.map(f => f.name))); return true; });
   // over the message box
-  await fire('.composer textarea', 'dragenter'); await fire('.composer textarea', 'dragover');
+  await fire(anchors.composer.textarea, 'dragenter'); await fire(anchors.composer.textarea, 'dragover');
   await p.waitForTimeout(500);
   check(await p.locator('.dropzone').count() === 1, 'dragging over the message box shows the drop box');
   const anim = await p.evaluate(() => getComputedStyle(document.querySelector('.dropzone')).animationName);
   check(/dropzone-in/.test(anim), 'the drop box is animated: ' + anim);
   await p.screenshot({ path: `${SHOTS}/drop-${tag}-over.png` });
-  await fire('.composer textarea', 'drop');
+  await fire(anchors.composer.textarea, 'drop');
   await p.waitForTimeout(500);
   check(await p.locator('.dropzone').count() === 0, 'the drop box goes away after the drop');
   check(JSON.stringify(await p.evaluate(() => window.__dropped)) === '[["dropped-picture.png"]]', 'dropping on the message box hands the picture to the composer');
@@ -198,7 +199,7 @@ try {
   await btn.click();
   await p.waitForTimeout(4000);
   await p.screenshot({ path: `${SHOTS}/o02-${tag}-1.png` });
-  const state = await p.evaluate(() => ({ dialog: document.querySelector('.dialog-surface h2')?.textContent, img: !!document.querySelector('.snapshot-preview img'), text: document.querySelector('.snapshot-preview')?.textContent?.slice(0, 120), toast: [...document.querySelectorAll('[role=status],[role=alert]')].map(x => x.textContent.slice(0, 80)) }));
+  const state = await p.evaluate(() => ({ dialog: document.querySelector('.dialog-surface h2')?.textContent, img: !!document.querySelector('.snapshot-preview img'), text: document.querySelector('.snapshot-preview')?.textContent?.slice(0, 120), toast: [...document.querySelectorAll('.st-toasts .st-toast')].map(x => x.textContent.slice(0, 80)) }));
   console.log(JSON.stringify(state), problems.slice(0, 3));
   check(state.dialog === 'Monitor screenshot' && state.img, 'a preview of the screenshot opens');
   const dl = p.waitForEvent('download', { timeout: 8000 }).catch(() => null);
@@ -207,7 +208,7 @@ try {
   check(!!d, 'Download gives a file: ' + (d ? d.suggestedFilename() : 'none'));
   await p.waitForTimeout(800);
   await p.screenshot({ path: `${SHOTS}/o02-${tag}-2.png` });
-  console.log('toasts', JSON.stringify(await p.evaluate(() => [...document.querySelectorAll('.st-toast, [class*=toast], [role=status]')].map(x => x.textContent.slice(0, 100)))));
+  console.log('toasts', JSON.stringify(await p.evaluate(() => [...document.querySelectorAll('.st-toasts .st-toast')].map(x => x.textContent.slice(0, 100)))));
 } finally { await b?.close(); host.stop(); }
 
 }

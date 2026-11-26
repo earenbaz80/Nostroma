@@ -22,7 +22,7 @@ const finish = async (native, id) => { for (let i = 0; i < 800; i++) { const job
  * engine log this test appends to. `phases` is what Control's status answers, one per call; `health` says whether
  * /health answers at once ('ready') or only after `release()`.
  */
-function fixture({ phases = [], log = true, health = 'gated', warmup = 'ok', hardware, failStart = false } = {}) {
+function fixture({ phases = [], log = true, health = 'gated', warmup = 'ok', hardware, failStart = false, installMode } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'nostroma-watch-test-'));
   const install = join(root, 'install'), data = join(root, 'data');
   mkdirSync(install, { recursive: true }); mkdirSync(data, { recursive: true });
@@ -49,12 +49,21 @@ function fixture({ phases = [], log = true, health = 'gated', warmup = 'ok', har
       else if (message.method === 'tools/list') result = { tools: ['nostroma_models', 'nostroma_status', 'nostroma_install', 'nostroma_remove'].map(name => ({ name })) };
       else if (message.params.name === 'nostroma_models') result = { structuredContent: catalog };
       else if (message.params.name === 'nostroma_status') result = { structuredContent: { hardware: board, recommendation: catalog.recommendation, install: null, running: [], summary: 'x' } };
+      else if (message.params.name === 'nostroma_install') {
+        // The download under way: setup's own step and the figures the card shows beside it.
+        installCalls += 1;
+        const live = { running: true, step: '5/9', label: 'Downloading your model…',
+          download: { file: 'model-00001-of-00004.gguf', done_gb: 12, total_gb: 39, remaining_gb: 27, percent: 31 },
+          parts: [{ kind: 'model', name: 'Model files', state: 'downloading', done_gb: 12, total_gb: 39 }] };
+        if (installMode === 'fail' && installCalls > 1) result = { structuredContent: { summary: 'failed', install: { ...live, running: false, exit_code: 1, error: 'The download did not finish.' } } };
+        else result = { structuredContent: { summary: 'Downloading your model…', install: live } };
+      }
       else result = { structuredContent: { summary: 'Ready', install: { running: false, exit_code: 0 } } };
       queueMicrotask(() => child.stdout.emit('data', Buffer.from(JSON.stringify({ jsonrpc: '2.0', id: message.id, result }) + String.fromCharCode(10))));
     } };
     return child;
   };
-  let ready = health === 'ready', asked = 0;
+  let ready = health === 'ready', asked = 0, installCalls = 0;
   const control = {
     control: { dir: join(root, 'control'), python: join(root, 'control', 'python', 'python') }, version: '0.2.9',
     async installedModels() { return { install_dir: install, models: [{ id: 'iq3_s', name: 'Qwen iq3_s', source_config: configPath, context_tokens: 32768, backend: 'cuda', component_status: 'present', missing: [], issue_codes: [] }] }; },
@@ -158,6 +167,25 @@ test('the engine log moves the stage forward with its own ETA, and no line takes
   } finally { await f.native.close(); f.cleanup(); }
 });
 
+test('between stages the host keeps the ETA fresh, so the card does not run out while the stage continues', async () => {
+  const f = fixture({ phases: ['preparing'] });
+  try {
+    await f.native.refresh(true);
+    const id = f.native.operation('load', { model: 'iq3_s' }).id;
+    await until(() => jobOf(f, id)?.progress?.stage === 'preflight', 'the preflight stage');
+    const first = jobOf(f, id).progress, firstSince = first.since, firstEta = first.etaSeconds;
+    await sleep(2600);
+    const later = jobOf(f, id).progress;
+    assert.equal(later.stage, 'preflight', 'no log line moved the stage in between');
+    assert.ok(Date.parse(later.since) > Date.parse(firstSince), 'the figure is re-anchored while the stage runs');
+    assert.ok(later.etaSeconds <= firstEta, `${later.etaSeconds} should not grow from ${firstEta}`);
+    assert.ok(later.etaSeconds < 5, 'the stage fallback is being used up, not frozen');
+    f.release();
+    const done = await finish(f.native, id);
+    assert.equal(done.state, 'done', done.error);
+  } finally { await f.native.close(); f.cleanup(); }
+});
+
 test('with nothing in the log, the states Control reports are the stages', async () => {
   const f = fixture({ log: false, phases: ['checking_engine', 'loading'] });
   try {
@@ -213,6 +241,43 @@ test('a load the person stops clears the stage and the time left too', async () 
 test('the card says a failed load once: the step falls back to the kind, the error stays in its notice', async () => {
   const models = readFileSync(new URL('../src/components/NativeModels.tsx', import.meta.url), 'utf8');
   assert.match(models, /: job\.error \? '' : job\.summary/, 'no stage and an error: not the error again as the step');
+});
+
+test('a preparation that fails keeps its error, never the download step it stopped in', async () => {
+  const f = fixture({ installMode: 'fail' });
+  try {
+    await f.native.refresh(true);
+    const job = await finish(f.native, f.native.operation('install', { model: 'iq3_s', family: 'qwen' }).id);
+    assert.equal(job.state, 'error');
+    assert.match(job.error, /did not finish/);
+    assert.equal(job.result.install.step, undefined, 'no "Downloading your model…" beside the error');
+    assert.equal(job.result.install.label, undefined);
+    assert.equal(job.result.install.download, undefined, 'and no percentage, GB or time left to count');
+    assert.equal(job.result.install.parts, undefined, 'nor the file rows still marked as downloading');
+  } finally { await f.native.close(); f.cleanup(); }
+});
+
+test('a preparation the person stops clears the download step too', async () => {
+  const f = fixture({ installMode: 'slow' });
+  try {
+    await f.native.refresh(true);
+    const id = f.native.operation('install', { model: 'iq3_s', family: 'qwen' }).id;
+    await until(() => jobOf(f, id)?.result?.install?.step === '5/9', 'the download step');
+    await f.native.cancel(id);
+    const job = jobOf(f, id);
+    assert.equal(job.state, 'cancelled');
+    assert.match(job.summary, /Completed downloads are kept/);
+    assert.equal(job.result.install.step, undefined);
+    assert.equal(job.result.install.download, undefined);
+    assert.equal(job.result.install.parts, undefined);
+    // the preparation checks job.state every 1.5 s and then saves its job: let that poll pass before the folder goes
+    await new Promise(r => setTimeout(r, 2200));
+  } finally { await f.native.close(); f.cleanup(); }
+});
+
+test('the card shows no download line beside a stopped preparation', async () => {
+  const models = readFileSync(new URL('../src/components/NativeModels.tsx', import.meta.url), 'utf8');
+  assert.match(models, /job\.error \|\| job\.state === 'cancelled'/, 'a failed or stopped preparation: no step and no figures');
 });
 
 test('the speed test after a load is reported in the progress, and its failure never fails the load', async () => {

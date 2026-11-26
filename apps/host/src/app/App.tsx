@@ -4,7 +4,7 @@ import { useNative } from '../lib/native';
 import { Component, Suspense, useDeferredValue, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useSurfaceFocus } from '../lib/focus';
 import { closeSettings, useLocation } from '../lib/router';
-import { bootOnce, bootstrap, setNavOpen, setFocus, useStore, } from '../lib/store';
+import { bootOnce, bootstrap, setNavOpen, setFocus, setSettingsSection, useStore, } from '../lib/store';
 import { Sidebar } from './Sidebar';
 import { CommandPalette } from './CommandPalette';
 import { ShortcutsDialog } from './Shortcuts';
@@ -13,13 +13,13 @@ import { MOD, handleAppShortcut, runCommand } from '../lib/commands';
 import { useMedia } from '../lib/responsive';
 import { Btn, Dialog, IconBtn, Toasts } from '../components/ui';
 import { Brand } from '../components/Brand';
+import { Workbench } from '../components/Workbench';
 import { ChatScreen } from '../screens/Chat';
 import { lazyScreen, useLoadedModule } from '../lib/lazy-screen';
 // The start screen is Chat. Every other screen loads the first time it is opened (7.1), so the first start reads and runs less code.
 const loadSetup = () => import('../screens/Setup');
 const loadSettings = () => import('../screens/Settings');
 const ModelRunScreen = lazyScreen(() => import('../screens/ModelRun'), (m) => m.ModelRunScreen);
-const ServingScreen = lazyScreen(() => import('../screens/Serving'), (m) => m.ServingScreen);
 const MonitorScreen = lazyScreen(() => import('../screens/Monitor'), (m) => m.MonitorScreen);
 const TasksScreen = lazyScreen(() => import('../screens/Tasks'), (m) => m.TasksScreen);
 const SkillsScreen = lazyScreen(() => import('../screens/Skills'), (m) => m.SkillsScreen);
@@ -57,6 +57,11 @@ function AppShell() {
     useSurfaceFocus(setupShown, setupRef);
     const settingsWanted = location.query.get('settings') === '1';
     const settingsCode = useLoadedModule(loadSettings, settingsWanted);
+    // A retired route opens the Settings section that holds it (router.ts's RETIRED): #/serving is Settings → Server.
+    const settingsSection = location.settingsSection;
+    useEffect(() => {
+        if (settingsSection) setSettingsSection(settingsSection as Parameters<typeof setSettingsSection>[0]);
+    }, [settingsSection]);
     const routeShown = useDeferredValue(location.route);
     return (<div className="app" data-rail={compact ? !navOpen : rail} data-layout={mobile ? 'mobile' : compact ? 'compact' : 'desktop'} data-nav-open={navOpen || undefined} data-focus={focus && location.route === 'chat' || undefined}>
       <Sidebar containerRef={navRef}/>
@@ -72,6 +77,7 @@ function AppShell() {
         {tr(focus && location.route === 'chat' ? <FocusBar /> : null)}
         {tr(!ready ? <BootSkeleton /> : <Suspense fallback={<BootSkeleton />}><RouteView route={routeShown}/></Suspense>)}
       </main>
+      <Workbench />
       <CommandPalette open={paletteOpen}/>
       <Dialog open={settingsWanted && !!settingsCode} title={tr("Settings")} className="settings-dialog" onClose={closeSettings}>{settingsCode ? <settingsCode.SettingsScreen /> : null}</Dialog>
       <ShortcutsDialog />
@@ -172,8 +178,6 @@ function RouteView({ route }: {
         case 'models':
         case 'tuning':
             return <ModelRunScreen />;
-        case 'serving':
-            return <ServingScreen />;
         case 'monitor':
             return <MonitorScreen />;
         case 'tasks':

@@ -16,6 +16,7 @@ import { chromium } from 'playwright-core';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { envVar } from '../server/env-compat.mjs';
+import { anchors, skipOnboarding } from './ui-anchors.mjs';
 
 const BASE = envVar('URL');
 if (!BASE) { console.error('NOSTROMA_URL is required'); process.exit(2); }
@@ -34,7 +35,7 @@ const problems = [];
 page.on('pageerror', e => problems.push(`pageerror: ${e.message}`));
 page.on('console', m => { if (m.type() === 'error') problems.push(`console: ${m.text().slice(0, 200)}`); });
 const shot = async name => { await page.waitForTimeout(400); await page.screenshot({ path: join(SHOTS, `${name}.png`) }); console.log(`shot ${name}.png`); };
-const send = async text => { await page.locator('textarea').first().fill(text); await page.getByRole('button', { name: 'Send' }).click(); };
+const send = async text => { await page.locator(anchors.composer.textarea).fill(text); await page.getByRole('button', { name: 'Send' }).click(); };
 const idle = async (ms = 900000) => page.waitForFunction(() => document.documentElement.dataset.streaming !== 'true', null, { timeout: ms });
 const started = async () => page.waitForFunction(() => document.documentElement.dataset.streaming === 'true', null, { timeout: 30000 });
 const text = () => page.evaluate(() => document.querySelector('.chat')?.innerText ?? document.body.innerText);
@@ -44,7 +45,7 @@ async function approveUntilIdle(label) {
   let asked = 0; const seen = new Set();
   for (;;) {
     const streaming = await page.evaluate(() => document.documentElement.dataset.streaming === 'true');
-    const cards = page.locator('.toolcard[data-state="proposed"]');
+    const cards = page.locator(anchors.tools.proposed);
     const n = await cards.count();
     for (let i = 0; i < n; i++) {
       const card = cards.nth(i);
@@ -61,8 +62,7 @@ async function approveUntilIdle(label) {
 try {
   await page.goto(`${BASE}/#/chat`);
   await page.waitForTimeout(2000);
-  const skip = page.getByText('Go straight to the app');
-  if (await skip.count()) { await skip.click(); await page.waitForTimeout(600); }
+  await skipOnboarding(page, { settle: 600 });
   await page.getByRole('button', { name: 'New chat' }).first().click();
   await page.waitForTimeout(600);
   await page.getByRole('button', { name: /Choose model/ }).first().click();
@@ -72,16 +72,16 @@ try {
 
   // 1. the menu
   if (!SKIP.has('menu')) {
-    await page.locator('textarea').first().fill('/');
+    await page.locator(anchors.composer.textarea).fill('/');
     await page.waitForSelector('.slashmenu', { timeout: 5000 });
     const menu = await page.locator('.slashmenu').innerText();
     await shot('01-slash-menu');
     check(/\/time-skip/.test(menu) && /Try a change on a copy/.test(menu), '/time-skip is listed with its plain description');
     check(/\/goal/.test(menu) && /keep working until it is done/.test(menu), '/goal is listed with its plain description');
     check(/\/loop/.test(menu) && /every few minutes/.test(menu), '/loop is listed with its plain description');
-    await page.locator('textarea').first().fill('/lo');
+    await page.locator(anchors.composer.textarea).fill('/lo');
     await shot('01b-slash-menu-filtered');
-    await page.locator('textarea').first().fill('');
+    await page.locator(anchors.composer.textarea).fill('');
   }
 
   // 2. /loop

@@ -30,6 +30,10 @@ export interface TuneStatus {
   last_active?: TunePreset | null;
 }
 
+/** A saved tuning is applied at the next start only when its identity still matches; a hard change leaves it saved but unused. */
+export const tuningInUse = (status: Pick<TuneStatus, 'active' | 'state'> | null | undefined) =>
+  !!status?.active && status.state !== 'hard';
+
 export interface TuneProgress { stage: string; text: string | null; minutesLeft: number | null; runsDone: number; runsPlanned: number; elapsedS: number; step: string; /** each measurement so far, as decode tokens per second */ speeds?: { label: string; tok_s: number }[] }
 
 export interface TuneResult {

@@ -13,6 +13,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { startScriptedWorker } from '../tests/helpers/scripted-worker.mjs';
+import { anchors, skipOnboarding } from './ui-anchors.mjs';
 
 const HOST_DIR = resolve(import.meta.dirname, '..');
 const SHOTS = resolve(process.argv[2] ?? 'approval-shots');
@@ -48,8 +49,7 @@ for (const scheme of ['light', 'dark']) {
   const problems = []; page.on('pageerror', e => problems.push(e.message));
   await page.goto(`${base}/#/chat`);
   await page.waitForTimeout(2000);
-  const skip = page.getByText('Go straight to the app');
-  if (await skip.count()) { await skip.click(); await page.waitForTimeout(600); }
+  await skipOnboarding(page, { settle: 600 });
   await page.getByRole('button', { name: 'New chat' }).first().click();
   await page.waitForTimeout(600);
   await page.getByRole('button', { name: /Choose model/ }).first().click();
@@ -57,7 +57,7 @@ for (const scheme of ['light', 'dark']) {
   let n = 0;
   for (const c of CASES) {
     n += 1;
-    await page.locator('textarea').first().fill(`SCRIPT:call ${c.tool} ${JSON.stringify(c.call)}`);
+    await page.locator(anchors.composer.textarea).fill(`SCRIPT:call ${c.tool} ${JSON.stringify(c.call)}`);
     await page.getByRole('button', { name: 'Send' }).click();
     const card = page.locator('.askcard').first();
     await card.waitFor({ timeout: 120000 });

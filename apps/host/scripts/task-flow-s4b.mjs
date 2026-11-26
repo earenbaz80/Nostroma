@@ -6,6 +6,7 @@ import { chromium } from 'playwright-core';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { envVar } from '../server/env-compat.mjs';
+import { anchors, skipOnboarding } from './ui-anchors.mjs';
 const BASE = envVar('URL'); if (!BASE) { console.error('NOSTROMA_URL required'); process.exit(2); }
 const SHOTS = resolve(process.env.SHOTS ?? 'task-shots'); mkdirSync(SHOTS, { recursive: true });
 const CHROME = process.env.CHROME ?? ['C:/Program Files/Google/Chrome/Application/chrome.exe', '/usr/bin/google-chrome'].find(existsSync);
@@ -15,7 +16,7 @@ const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
 const shot = async name => { await page.screenshot({ path: join(SHOTS, `${name}.png`) }); console.log(`shot ${name}.png`); };
 try {
   await page.goto(`${BASE}/#/tasks`); await page.waitForTimeout(2500);
-  const skip = page.getByText('Go straight to the app'); if (await skip.count()) { await skip.click(); await page.waitForTimeout(500); }
+  await skipOnboarding(page, { settle: 500 });
   const due = new Date(Date.now() + 2 * 60_000);
   const at = `${String(due.getHours()).padStart(2, '0')}:${String(due.getMinutes()).padStart(2, '0')}`;
   const created = await (await fetch(`${BASE}/api/tasks`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title: process.env.TITLE ?? 'Open my downloads folder', prompt: process.env.PROMPT ?? 'Open my Downloads folder and tell me how many items are in it.', frequency: 'daily', at, weekday: 1, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, mode: process.env.MODE ?? 'bypass', enabled: true }) })).json();
@@ -27,7 +28,7 @@ try {
     const t = (await (await fetch(`${BASE}/api/tasks`)).json()).tasks.find(x => x.id === created.id);
     if (t.status === 'running' && !globalThis.sawRunning) { globalThis.sawRunning = true; console.log(`running after ${Math.round((Date.now() - t0) / 1000)} s`); await shot('02-task-running'); }
     if (['done', 'error', 'cancelled'].includes(t.status)) final = t;
-    if (await page.locator('.st-toast').count() && !globalThis.sawToast) { globalThis.sawToast = true; await shot('03-toast'); }
+    if (await page.locator(anchors.toast.item).count() && !globalThis.sawToast) { globalThis.sawToast = true; await shot('03-toast'); }
   }
   check(!!final && final.status === 'done', `the task ran by itself and finished (${final?.status}, ${final?.error ?? ''})`);
   console.log('result:', String(final?.output ?? '').replace(/\s+/g, ' ').slice(0, 400));

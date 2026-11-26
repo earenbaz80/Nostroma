@@ -1,0 +1,157 @@
+/* --------------------------------------------------------------------- Nono ---
+   Two narrow rectangular eyes that sit on the composer's top border, with no
+   frame around them: each eye is its own pupil, so looking is the eye travelling
+   inside the place it holds, up and down and to either side, towards the pointer
+   (and the conversation while typing) or to a new corner when nothing asks. The
+   pair leans with the look, the whole thing can be dragged, and expressions are
+   `scale`, `rotate` and `translate`, never a box the transcript would have to
+   re-layout. The blink is a transition driven by the component (it does not run
+   when motion is reduced). */
+
+.nono {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 26px;
+  z-index: 3;
+  display: flex;
+  align-items: flex-end;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.nono__face {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border: 0;
+  border-radius: var(--st-r-sm);
+  background: transparent;
+  cursor: grab;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.nono__face:active { cursor: grabbing; }
+
+.nono__face:focus-visible {
+  outline: 2px solid var(--st-focus);
+  outline-offset: 3px;
+}
+
+/* The pair is the expression: it leans as a whole, because there are no pupils
+   to move. The tilt and the rise come from the gaze (pointer or chat). */
+.nono__eyes {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  rotate: var(--nono-tilt, 0deg);
+  translate: 0 var(--nono-rise, 0px);
+  transition:
+    rotate var(--st-t-control) var(--st-ease),
+    translate var(--st-t-control) var(--st-ease),
+    gap var(--st-t-control) var(--st-ease);
+}
+
+.nono__eye {
+  /* Narrower than tall: a slit rather than a bar, so the pair reads as eyes at
+     the small size the composer leaves them. */
+  width: 8px;
+  height: 24px;
+  border-radius: 2px;
+  /* White is the default. A hairline dark rim keeps the white readable on the
+     light theme's cream, where white on white would all but disappear; on the
+     dark theme it only darkens the very edge. */
+  background: var(--nono-eye, var(--st-white));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--st-ink) 18%, transparent);
+  scale: 1 1;
+  /* The look: the component writes a length for each axis, and the eye travels
+     there. The reach is a little over half its own width and a quarter of its
+     height, so a look is unmistakable at this size. A short transition rather
+     than a jump, so a pointer crossing the window is followed instead of snapped
+     at, and a glance has a little travel of its own. */
+  translate: var(--nono-look-x, 0px) var(--nono-look-y, 0px);
+  /* A blink carries its own length (set by the component); everything else on
+     the eyes keeps the interface's micro timing. */
+  transition:
+    scale var(--nono-blink, var(--st-t-micro)) var(--st-ease),
+    translate var(--st-t-control) var(--st-ease),
+    rotate var(--st-t-micro) var(--st-ease),
+    background var(--st-t-control) var(--st-ease);
+}
+
+/* Curious: the pair leans (from the gaze) and the eyes disagree a little, one
+   taller than the other, the way attention looks before it settles. */
+.nono[data-mood='curious'] .nono__eyes { gap: 9px; }
+.nono[data-mood='curious'] .nono__eye:first-child { scale: 1 1.1; }
+.nono[data-mood='curious'] .nono__eye:last-child { scale: 1 .88; }
+
+/* A reply is streaming: the lids come down, one more than the other. */
+.nono[data-mood='thinking'] .nono__eye:first-child { scale: 1 .55; }
+.nono[data-mood='thinking'] .nono__eye:last-child { scale: 1 .4; }
+
+/* The pointer is on it, or the tip is open: a squint that reads as a smile. */
+.nono[data-mood='happy'] .nono__eye { scale: 1 .62; }
+
+/* The last reply failed: the eyes go red and tilt, the one expression that is
+   not made of the accent colour. */
+.nono[data-mood='oops'] .nono__eye { background: var(--st-danger); }
+.nono[data-mood='oops'] .nono__eye:first-child { rotate: -8deg; }
+.nono[data-mood='oops'] .nono__eye:last-child { rotate: 8deg; }
+
+.nono[data-blink] .nono__eye { scale: 1 .08; }
+
+/* A click is answered with a wink: one eye, not both. */
+.nono[data-wink] .nono__eye:last-child { scale: 1 .1; }
+
+.nono__tip {
+  position: absolute;
+  inset-block-end: calc(100% + 10px);
+  inset-inline-end: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 264px;
+  padding: 10px 10px 10px 12px;
+  border: 1px solid var(--st-line);
+  border-radius: var(--st-r-md);
+  background: var(--st-surface);
+  color: var(--st-ink);
+  font-size: 11px;
+  line-height: 1.55;
+  pointer-events: auto;
+}
+
+.nono__tip > span { min-width: 0; flex: 1; }
+
+.nono__close {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--st-ink-muted);
+  cursor: pointer;
+}
+
+.nono__close:hover { background: var(--st-surface-2); color: var(--st-ink); }
+
+/* Reading mode exists to remove everything but the conversation, and a phone's
+   composer needs the corner. */
+.app[data-focus='true'] .nono { display: none; }
+
+@media (max-width: 640px) {
+  .nono { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nono__eyes,
+  .nono__eye { transition: none; }
+}
+
+[data-motion='reduced'] .nono__eyes,
+[data-motion='reduced'] .nono__eye { transition: none; }

@@ -6,6 +6,8 @@ import { CodePreviewBtn } from './CodePreviewBtn';
 import { codePreview } from '../lib/code-preview';
 import type { PreviewArtifact } from '../lib/artifacts';
 import { SyntaxCode } from './SyntaxCode';
+import { Icon } from './ui';
+import { isShellBlock, openInSandbox, opensInSandbox, runInTerminal } from '../lib/workbench-bridge';
 import { MathView } from './MathView';
 import { displayBlock, hasMath, splitMath } from '../lib/math';
 import { imagePlan } from '../lib/markdown-images';
@@ -88,7 +90,9 @@ export function Markdown({ text, onOpenLink, previewId, onPreview, onClosePrevie
             i++;
             const code = body.join('\n');
             const preview = previewId && onPreview ? codePreview(previewId, language, code) : null;
-            nodes.push(<div className="st-code" key={key}><div className="st-code__head"><span>{language || tr('code')}</span><span className="st-code__actions">{tr(preview && onPreview ? <CodePreviewBtn artifact={preview} onPreview={onPreview} onClose={onClosePreview}/> : null)}<CopyBtn text={code} label="Code" title="Copy code"/></span></div><SyntaxCode text={code} language={language}/></div>);
+            const runs = isShellBlock(language) && code.trim() !== '';
+            const sandbox = opensInSandbox(language) && code.trim() !== '';
+            nodes.push(<div className="st-code" key={key}><div className="st-code__head"><span>{language || tr('code')}</span><span className="st-code__actions">{tr(preview && onPreview ? <CodePreviewBtn artifact={preview} onPreview={onPreview} onClose={onClosePreview}/> : null)}{tr(sandbox ? <button type="button" className="st-code__sandbox" title={tr('Open in the sandbox')} aria-label={tr('Open in the sandbox')} onClick={() => openInSandbox(code, language)}><Icon name="panel" size={12}/>{tr('Sandbox')}</button> : null)}{tr(runs ? <button type="button" className="st-code__run" title={tr('Run in the workbench terminal')} aria-label={tr('Run in the workbench terminal')} onClick={() => runInTerminal(code)}><Icon name="play" size={12}/>{tr('Run')}</button> : null)}<CopyBtn text={code} label="Code" title="Copy code"/></span></div><SyntaxCode text={code} language={language}/></div>);
             continue;
         }
         const block = displayBlock(lines, i);

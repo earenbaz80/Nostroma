@@ -1,11 +1,15 @@
 import {localeTag} from '../lib/i18n';
 import { tr } from '../lib/i18n';
 import { UsageDashboard } from '../components/UsageDashboard';
+import { LoopDots } from '../components/LoopDots';
 import { FloatingMenu } from '../components/FloatingMenu';
 import { lazyScreen } from '../lib/lazy-screen';
 import { measureFrame } from '../lib/overlay-place';
 import { timeSkipPrompt, timeSkipTabId, type TimeSkipRun } from '../lib/time-skip';
 import { ChatToolbar } from '../components/ChatToolbar';
+import { Nono } from '../components/Nono';
+import { GeneralAudit } from '../components/GeneralAudit';
+import { ChatModelPicker } from '../components/ChatModelPicker';
 import { ChatTelemetry } from '../components/TelemetryPopover';
 import { ArtifactCard } from '../components/ArtifactCard';
 import { ChatMedia } from '../components/ChatMedia';
@@ -20,6 +24,7 @@ import { DEFAULT_PREVIEW_FRACTION, PREVIEW_SPLIT_KEY, previewWidth } from '../li
 import { ComposerControls } from '../components/ComposerControls';
 import { ChatPhotos } from '../components/ChatPhotos';
 import { useChatPhotos, removeChatPhoto } from '../lib/chat-photos';
+import { useChatFolder } from '../lib/chat-folder';
 import { useNative } from '../lib/native';
 import { COMPACT_FILES_FROM, mainResult, previewOf } from '../lib/deliverables';
 import { noModelNotice } from '../lib/no-model';
@@ -27,7 +32,6 @@ import { ReasoningBlock } from '../components/ReasoningBlock';
 import { StatusLine } from '../components/StatusLine';
 import { GoalBar } from '../components/GoalBar';
 import { PlanCard, PlanPanel, QueuedMessages } from '../components/PlanCard';
-import { FolderChip } from '../components/FolderChip';
 import { DropZone, DROP_EVENT, pastedFiles } from '../components/DropZone';
 import { ActivityLine, DraftLines, EditedFiles, FileCard, FilesSummary, SkillsUsed } from '../components/Deliverables';
 import { queueMessage, usePlan, usePlanQuiet } from '../lib/plan';
@@ -45,6 +49,7 @@ import { Markdown } from '../components/Markdown';
 import { Btn, Icon, IconBtn, ErrorNotice, type IconName } from '../components/ui';
 import { composerCap, scrollBehavior } from '../lib/responsive';
 import { relTime, cx, duration, tokens, tps } from '../lib/format';
+import { outgoingMessage } from '../lib/chat-options';
 import { addQuote, clearQuotes, removeQuote, createSubagentExample, parkMessage, takeParked, pushToast, setPreviewTabClosed, branchFrom, continueLast, markRead, retryLast, selectSession, rewindTo, sendMessage, stopStreaming, useStore, } from '../lib/store';
 import { CopyBtn, CopyMenuItem, MenuCloseContext } from '../components/CopyBtn';
 import { KEYS_UP, PILL_DISTANCE, distanceFromBottom, followAfterScroll, wheelLeavesBottom } from '../lib/follow-scroll';
@@ -69,6 +74,17 @@ export function ChatScreen() {
         const wanted = location.param ?? activeId;
         return sessions.find((s) => s.id === wanted) ?? sessions[0] ?? null;
     }, [sessions, activeId, location.param]);
+    /* The project the audit is for: the folder this chat was given, or the
+       workspace in front of the person when the chat has none of its own. A
+       chat saved without a workspace carries '' rather than nothing, and an
+       empty string is not a folder: the chain used to stop there and the audit
+       ran with no project at all. The folder the file tree is showing is the
+       last resort, so a project is always there while a workspace is open. */
+    const chatFolder = useChatFolder(session?.id);
+    const activeFolder = useStore(s => s.workspaces.find(w => w.id === s.activeWorkspace)?.path ?? null);
+    const treeFolder = useStore(s => s.workspacePath);
+    const auditProject = [chatFolder?.path, activeFolder, session?.workspace, treeFolder]
+        .find((path): path is string => typeof path === 'string' && path.trim() !== '') ?? null;
     /* A conversation you are watching is read by definition — including while a
        reply streams into it. Without this, switching away from a session that
        answered you would mark it unread. */
@@ -145,6 +161,7 @@ export function ChatScreen() {
         return () => ro.disconnect();
     }, [session?.id]);
     const [expanded, setExpanded] = useState(false);
+    const [auditOpen, setAuditOpen] = useState(false);
     useEffect(() => { setExpanded(false); }, [session?.id]);
     useEffect(() => {
         if (!expanded)
@@ -314,6 +331,9 @@ export function ChatScreen() {
         const inner = el?.querySelector('.chat__inner');
         if (!el || !inner)
             return undefined;
+        /* An empty conversation is the start screen, not a transcript: pinning it
+           to the bottom cut off the machine strip that sits above the verbs. */
+        const empty = !session || session.messages.length === 0;
         const ro = new ResizeObserver(() => {
             if (pinned.current && readerHasSelection(el)) {
                 // Words are selected: the view stays where they are (#3818); the way back to the newest message is offered.
@@ -321,7 +341,7 @@ export function ChatScreen() {
                 setAwayFromBottom(distanceFromBottom(el) > PILL_DISTANCE);
             }
             if (pinned.current)
-                el.scrollTop = el.scrollHeight;
+                el.scrollTop = empty ? 0 : el.scrollHeight;
         });
         ro.observe(inner);
         // The scroller itself shrinks when a question appears above the message box (the approval dock): keep the end in view then too.
@@ -479,9 +499,14 @@ export function ChatScreen() {
         }
         updateDraft('');
         if (session) clearQuotes(session.id);
-        void sendMessage(session ? quotedMessage(quotes, text) : text);
+        const outgoing = session ? quotedMessage(quotes, text) : text;
+        void sendMessage(outgoingMessage(text, outgoing, session?.preferences?.mission === true));
     }
     function onComposerKey(_e: React.KeyboardEvent) { }
+    /* The start screen's first and third verbs: one brings the caret to the
+       composer, the other also writes the command that starts a mission. */
+    const focusComposer = () => textarea.current?.focus();
+    const startMission = () => { updateDraft('/goal '); focusComposer(); };
     if (!session) {
         return (<>
         <ChatToolbar previewWidth={paneWidth} extraTabs={extraTabs} session={session} items={previews} onCloseTab={closeTab} selected={setupVisible ? null : selectedPreview} onSelect={selectPreview} onClose={() => { setSelectedPreview(null); setExpanded(false); }} inline={inlinePreview} expanded={expanded} onExpand={() => setExpanded(v => !v)}/>
@@ -491,14 +516,18 @@ export function ChatScreen() {
             {tr(awayFromBottom ? (<button type="button" className="jumplatest" data-finished={justFinished || undefined} aria-label={tr("Scroll to the latest message")} title={tr("Scroll to the latest message")} onClick={() => scrollToLatest()}>
                 <Icon name="chevron" size={18}/></button>) : null)}
             <div className="chat__inner">
-              <UsageDashboard loaded={!!loaded}/>
+              <UsageDashboard loaded={!!loaded} onAsk={focusComposer} onMission={startMission}/>
             </div>
           </div>
-          <Composer draft={draft} setDraft={updateDraft} loaded={!!loaded} streaming={streaming} onSubmit={submit} onKey={onComposerKey} session={session} onPreview={openPreview} textareaRef={textarea}/>
+          <div className="chatfoot">
+            <Nono streaming={streaming}/>
+            <Composer draft={draft} setDraft={updateDraft} loaded={!!loaded} streaming={streaming} onSubmit={submit} onKey={onComposerKey} session={session} onPreview={openPreview} textareaRef={textarea} onAudit={() => setAuditOpen(true)}/>
+          </div>
          </DropZone>
         <ArtifactPanel items={previews} onCloseTab={closeTab} selected={setupVisible ? null : selectedPreview} onSelect={selectPreview} onClose={() => setSelectedPreview(null)} inline={inlinePreview}/>
          {tr(resizeHandle)}
         </div>
+        <GeneralAudit open={auditOpen} onClose={() => setAuditOpen(false)} project={null}/>
       </>);
     }
     return (<>
@@ -533,19 +562,23 @@ export function ChatScreen() {
 
             <div className="chat__inner">
               {tr(session.messages.length === 0 ? (session.statsAvailable === false ? <p className="small muted">{tr("Editing from an earlier message. Update the prompt below.")}</p> :
-            <UsageDashboard loaded={!!loaded}/>) : (session.messages.map((m, i) => (<Message key={m.id} message={m} isLast={i === session.messages.length - 1} onEditPrompt={messageHandlers.onEditPrompt} onPreview={messageHandlers.onPreview} onClosePreview={messageHandlers.onClosePreview} onOpenTimeSkip={messageHandlers.onOpenTimeSkip} timeSkipDone={!!allTimeSkipRuns.find(r => r.id === m.timeSkipId)?.completedAt} timeSkipReal={!!allTimeSkipRuns.find(r => r.id === m.timeSkipId)?.job} timeSkipRun={allTimeSkipRuns.find(r => r.id === m.timeSkipId)} onOpenLink={messageHandlers.onOpenLink}/>))))}
+            <UsageDashboard loaded={!!loaded} onAsk={focusComposer} onMission={startMission}/>) : (session.messages.map((m, i) => (<Message key={m.id} message={m} isLast={i === session.messages.length - 1} onEditPrompt={messageHandlers.onEditPrompt} onPreview={messageHandlers.onPreview} onClosePreview={messageHandlers.onClosePreview} onOpenTimeSkip={messageHandlers.onOpenTimeSkip} timeSkipDone={!!allTimeSkipRuns.find(r => r.id === m.timeSkipId)?.completedAt} timeSkipReal={!!allTimeSkipRuns.find(r => r.id === m.timeSkipId)?.job} timeSkipRun={allTimeSkipRuns.find(r => r.id === m.timeSkipId)} onOpenLink={messageHandlers.onOpenLink}/>))))}
               <QueuedMessages chatId={session.id}/>
             </div>
           </div>
           <div className="jumplatest-row">{tr(awayFromBottom ? (<button type="button" className="jumplatest" data-finished={justFinished || undefined} aria-label={tr("Scroll to the latest message")} title={tr("Scroll to the latest message")} onClick={() => scrollToLatest()}>
                 <Icon name="chevron" size={18}/></button>) : null)}</div>
-          <Composer draft={draft} setDraft={updateDraft} loaded={!!loaded} streaming={streaming} onSubmit={submit} onKey={onComposerKey} session={session} onPreview={openPreview} textareaRef={textarea}/>
+          <div className="chatfoot">
+            <Nono streaming={streaming} problem={!!session?.messages.at(-1)?.error}/>
+            <Composer draft={draft} setDraft={updateDraft} loaded={!!loaded} streaming={streaming} onSubmit={submit} onKey={onComposerKey} session={session} onPreview={openPreview} textareaRef={textarea} onAudit={() => setAuditOpen(true)}/>
+          </div>
         </DropZone>
         {tr(!setupVisible && selectedRun && session ? <Suspense fallback={null}><TimeSkipPanel key={selectedRun.id} run={selectedRun} sessionId={session.id} inline={inlinePreview} expanded={expanded} onCompare={setExpanded} onPreview={openPreview} onClose={() => { setSelectedPreview(null); setExpanded(false); }}/></Suspense> : null)}
         {tr(!setupVisible && planShown ? <PlanPanel chatId={session?.id}/> : null)}
         <ArtifactPanel items={previews} onCloseTab={closeTab} selected={setupVisible || planShown ? null : selectedPreview} onSelect={selectPreview} onClose={() => setSelectedPreview(null)} inline={inlinePreview}/>
         {tr(resizeHandle)}
       </div>
+      <GeneralAudit open={auditOpen} onClose={() => setAuditOpen(false)} project={auditProject}/>
     </>);
 }
 interface SlashCommand {
@@ -602,7 +635,8 @@ const NO_QUOTES: Quote[] = [];
 function quotedMessage(quotes: readonly Quote[], text: string): string {
     return quotes.length && !text.startsWith('/') ? composeQuoted(quotes.map(q => q.text), text) : text;
 }
-function Composer({ draft, setDraft, loaded, streaming, onSubmit, onKey, session, onPreview, textareaRef, }: {
+function Composer({ draft, setDraft, loaded, streaming, onSubmit, onKey, session, onPreview, textareaRef, onAudit, }: {
+    onAudit: () => void;
     draft: string;
     setDraft: (v: string) => void;
     loaded: boolean;
@@ -615,6 +649,7 @@ function Composer({ draft, setDraft, loaded, streaming, onSubmit, onKey, session
 }) {
     const clearDraft = useCallback(() => setDraft(''), [setDraft]);
     const photos = useChatPhotos(session?.id), native = useNative();
+    const projectFolder = useChatFolder(session?.id);
     const canChat = loaded || native?.instances.some(i => i.status === 'ready');
     const whileBusy = useStore(s => s.whileBusy), parkedList = useStore(s => (session ? s.parked[session.id] : undefined)) ?? NO_PARKED;
     const quoteList = useStore(s => (session ? s.quotes[session.id] : undefined)) ?? NO_QUOTES;
@@ -648,7 +683,6 @@ function Composer({ draft, setDraft, loaded, streaming, onSubmit, onKey, session
         <div className="composer__inner">
           <ApprovalDock sessionId={session?.id}/>
           {tr(fileError ? <ErrorNotice message={fileError} action={tr("Dismiss")} onRetry={() => setFileError('')}/> : null)}
-          <FolderChip chatId={session?.id} disabled={streaming}/>
           <GoalBar chatId={session?.id}/>
           {tr(quoteList.length ? <div className="quotes">{tr(quoteList.map(q => <div className="quote" key={q.id}><button type="button" className="quote__body" title={tr("Go to the quoted message")} onClick={() => document.querySelector(`[data-message-id="${CSS.escape(q.messageId)}"]`)?.scrollIntoView({ block: 'center', behavior: scrollBehavior() })}><span className="xs muted">{tr(q.role === 'user' ? "Quoting you" : "Quoting the assistant")}</span><span className="quote__text">{q.text}</span></button><IconBtn name="x" size={14} title={tr("Remove this quote")} onClick={() => removeQuote(session!.id, q.id)}/></div>))}</div> : null)}
           {tr(parkedList.length ? <div className="parked" role="status">{tr(parkedList.map((text, i) => <div className="parked__item" key={`${i}-${text}`}><span className="xs muted">{tr("Waiting to send")}</span><span className="parked__text" title={text}>{text}</span><IconBtn name="x" size={14} title={tr("Take back")} onClick={() => { const back = takeParked(session!.id, i); if (back !== undefined && !draft.trim()) setDraft(back); }}/></div>))}</div> : null)}
@@ -700,11 +734,20 @@ function Composer({ draft, setDraft, loaded, streaming, onSubmit, onKey, session
         }}/>
           <div className="st-composer__bar">
             <ComposerControls draft={draft} onDraft={setDraft} session={session} onPreview={onPreview} streaming={streaming} onSlash={() => { setSlashDismissed(false); setSlashOpen(true); requestAnimationFrame(() => textareaRef.current?.focus()); }} onError={setFileError} onAttach={(name, text) => { setDraft(`${draft}${draft ? '\n\n' : ''}Attached ${name}\n\n${text}`); requestAnimationFrame(() => textareaRef.current?.focus()); }}/>
+            <ChatModelPicker/>
             {tr(streaming ? (<Btn variant="secondary" size="sm" icon="stop" onClick={stopStreaming}>{tr("Stop")}</Btn>) : (<Btn variant="primary" size="sm" icon="send" disabled={(!draft.trim() && !photos.length) || draft.trim() === '/' || (!canChat && timeSkipPrompt(draft) === null)} onClick={onSubmit}>{tr("Send")}</Btn>))}
           </div>
         </div>
         {tr(streaming && draft.trim() && whileBusy !== 'wait' ? <p className="xs muted composer__busy-hint" role="status">{tr(whileBusy === 'queue' ? "Enter sends it when the answer is done." : "Enter stops the answer here and sends it now.")}</p> : null)}
-        <ChatTelemetry session={session}/>
+        {tr(!streaming && draft.trim() && session?.preferences?.mission === true ? <p className="xs muted composer__busy-hint" role="status">{tr('Mission: this message starts a goal that keeps working until it is done.')}</p> : null)}
+        {projectFolder ? <p className="composer__folder" title={projectFolder.path}><Icon name="folder" size={12}/><span>{projectFolder.exists ? projectFolder.name : tr('{0} · not found', [projectFolder.name])}</span></p> : null}
+        {/* The readings row carries the audit at its right end: what the audit
+            looks at is what these numbers describe, so it belongs beside them
+            rather than on a line of its own under the composer. */}
+        {tr(<div className="composer__foot">
+          <ChatTelemetry session={session}/>
+          <button type="button" className="chat-audit" onClick={onAudit}><Icon name="shield" size={13}/>{tr("General audit")}</button>
+        </div>)}
         </div>
       </div>
       {/* Outside the composer's glass on purpose: a material sampling another
@@ -751,7 +794,7 @@ function MessageView({ message: m, isLast, onEditPrompt, onPreview, onClosePrevi
           <time dateTime={m.at} title={tr(new Date(m.at).toLocaleString(localeTag()))}>{tr(sentTime)}</time>
           <span className="st-msg__actions">
             <CopyBtn text={m.content} label="Message" title="Copy message"/>
-            <IconBtn name="refresh" title={tr("Rewind to here")} disabled={streaming} onClick={() => {
+            <IconBtn name="refresh" title={tr("Rewind to here")} className="st-msg__rewind" disabled={streaming} onClick={() => {
                 const prompt = rewindTo(m.id);
                 if (prompt !== null)
                     onEditPrompt(prompt);
@@ -774,9 +817,7 @@ function MessageView({ message: m, isLast, onEditPrompt, onPreview, onClosePrevi
         {tr(m.error ? (<ErrorNotice message={m.error} detail={m.errorDetail} {...contextRecovery(m.errorCode)}/>) : null)}
         {tr(grouped && !planCard && !m.timeSkipId ? m.blocks!.map((b, i) => b.kind === 'group' ? <ActivityLine key={b.id} group={b} sessionId={activeSession ?? ''} onPreview={onPreview}/> : <Markdown key={i} text={b.text} onOpenLink={onOpenLink} imageSession={activeSession} previewId={`${m.id}-b${i}`} onPreview={onPreview} onClosePreview={onClosePreview}/>) : null)}
         {tr(m.content && !planCard && !grouped ? (<Markdown text={m.timeSkipId && !timeSkipReal ? hostLive ? tr('This was a sample run made while the app could not reach its host.') : timeSkipDone ? tr('The result is ready. Switch between Original and Updated, or compare them side by side. This example uses sample outputs and simulated checks.') : tr('Revising the saved draft. Follow the result in the sidebar. This example uses sample outputs and simulated checks.') : m.content} onOpenLink={onOpenLink} imageSession={activeSession} previewId={m.id} onPreview={onPreview} onClosePreview={onClosePreview}/>) : !m.error && m.streaming && !liveStatus ? (<span className="typing" aria-label={tr("Generating")}>
-            <i />
-            <i />
-            <i />
+            <LoopDots />
           </span>) : null)}
         {/* a file or command the model is writing right now: its name, growing size and the last lines of it (live data from the host, see ToolDraft) */}
         {tr(m.streaming && m.drafts?.length && !planCard ? <DraftLines drafts={m.drafts} sessionId={activeSession ?? ''} onPreview={onPreview}/> : null)}
@@ -834,11 +875,11 @@ function ToolCard({ tool: t }: {
     const scope = SCOPE[t.scope];
     const pending = t.state === 'proposed';
     if (!pending && t.state !== 'running')
-        return <details className="disclosure tool-summary"><summary><Icon name="chevron" size={14}/>{tr(t.verb ?? t.name)}{t.target ? <><span>·</span><span className="tool-summary__target" title={t.target}>{t.target}</span></> : null}<span>·</span><Icon name={t.state === 'denied' || t.state === 'error' ? 'x' : 'check'} size={14}/>{tr(t.state === 'denied' ? 'Denied' : t.state === 'error' ? 'Failed' : t.live && t.state === 'done' && t.approved ? 'Approved' : 'Done')}</summary><div><code>{t.preview}</code><p className="small muted">{tr(t.result ?? t.effect)}</p></div></details>;
+        return <details className="disclosure tool-summary" data-tool={t.name} data-tool-card="summary" data-state={t.state}><summary><Icon name="chevron" size={14}/>{tr(t.verb ?? t.name)}{t.target ? <><span>·</span><span className="tool-summary__target" title={t.target}>{t.target}</span></> : null}<span>·</span><Icon name={t.state === 'denied' || t.state === 'error' ? 'x' : 'check'} size={14}/>{tr(t.state === 'denied' ? 'Denied' : t.state === 'error' ? 'Failed' : t.live && t.state === 'done' && t.approved ? 'Approved' : 'Done')}</summary><div><code>{t.preview}</code><p className="small muted">{tr(t.result ?? t.effect)}</p></div></details>;
     /* The question and its two buttons are in the dock above the message box (ApprovalDock), so a long reply cannot push them out of view (#4725). */
     if (pending)
         return <p className="approval-wait small muted" role="status"><Icon name="clock" size={14}/>{tr("Waiting for your answer below")}</p>;
-    return <section className="toolcard toolcard--compact" data-state={t.state} aria-label={t.name}>
+    return <section className="toolcard toolcard--compact" data-state={t.state} data-tool={t.name} data-tool-card="live" aria-label={t.name}>
     <details className="toolcard__disclosure">
       <summary><Icon name={t.scope === 'shell' ? 'bolt' : 'tool'} size={17}/><span className="toolcard__title">{tr(t.verb ?? t.name)}</span><span className="toolcard__scope xs muted">{tr(scope.label)}</span><Icon name="chevron" className="toolcard__chevron" size={15}/></summary>
       <div className="toolcard__body"><code className="toolcard__preview">{t.preview}</code><p className="small muted">{tr(t.effect)}</p>{tr(t.result ? <p className="small">{t.result}</p> : null)}</div>

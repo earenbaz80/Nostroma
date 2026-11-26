@@ -192,7 +192,8 @@ export function createAgentTools({ read, write, dataDir, browser = () => ({ foun
       const s = state();
       if (s.custom.length >= MAX_CUSTOM) throw new Error(`You can have up to ${MAX_CUSTOM} tools of your own.`);
       const t = validateCustom(body, s.custom);
-      s.custom.push({ id: idFor(t.name, s.custom), enabled: true, ...t });
+      // A caller can add a server for the discoverer without turning it on. Everything else keeps the old default.
+      s.custom.push({ id: idFor(t.name, s.custom), enabled: body?.enabled !== false, ...t });
       save(s);
       return view();
     },

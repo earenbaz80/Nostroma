@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
@@ -37,6 +38,22 @@ test('a Settings bookmark opens over chat; closing restores only the background 
   assert.equal(browserWindow.location.hash, '#/monitor');
 });
 
+
+test('a retired Serving bookmark opens Settings on the Server section, not Chat', () => {
+  const retired = router.parseLocation('#/serving');
+  assert.equal(retired.route, 'chat');
+  assert.equal(retired.query.get('settings'), '1');
+  assert.equal(retired.settingsSection, 'Server');
+  // Only the retired route names a section: an ordinary page opens Settings where the person left it.
+  assert.equal(router.parseLocation('#/monitor').settingsSection, undefined);
+  assert.equal(router.parseLocation('#/chat/chat-a?settings=1').settingsSection, undefined);
+});
+
+test('the app applies the section a retired route names when Settings opens', () => {
+  const app = readFileSync(new URL('../src/app/App.tsx', import.meta.url), 'utf8');
+  assert.match(app, /const settingsSection = location\.settingsSection;/);
+  assert.match(app, /if \(settingsSection\) setSettingsSection\(settingsSection as Parameters<typeof setSettingsSection>\[0\]\);/);
+});
 
 test('Settings opens and closes immediately without snapshotting the background page', () => {
   browserWindow.location.hash = '#/chat/a';

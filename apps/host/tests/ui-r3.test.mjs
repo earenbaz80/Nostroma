@@ -77,7 +77,7 @@ test('7 and 8: Model files has no explanatory sentence and holds "Other local mo
 });
 
 test('12: with no subagents the dropdown is one row, "No subagents recorded" and the X, with no icon and no explanation', () => {
-  const bar = read('src/components/ChatToolbar.tsx');
+  const bar = read('src/components/SubagentsButton.tsx');
   assert.match(bar, /title=\{tr\(session\?\.agents\?\.length \? "Subagents" : "No subagents recorded"\)\}/, 'the empty state is the title');
   assert.ok(!/subagents-empty|Subagents that run in this conversation/.test(bar), 'no icon, no explanatory text');
   assert.ok(!/subagents-empty/.test(read('src/styles/annotation-fixes.css')), 'no dead rule');

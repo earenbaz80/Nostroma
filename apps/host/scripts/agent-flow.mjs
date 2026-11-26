@@ -24,6 +24,7 @@ import { chromium } from 'playwright-core';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { envVar } from '../server/env-compat.mjs';
+import { anchors, skipOnboarding } from './ui-anchors.mjs';
 
 const BASE = envVar('URL');
 if (!BASE) { console.error('NOSTROMA_URL is required'); process.exit(2); }
@@ -50,7 +51,7 @@ page.on('pageerror', e => problems.push(`pageerror: ${e.message}`));
 page.on('console', m => { if (m.type() === 'error') problems.push(`console: ${m.text().slice(0, 200)}`); });
 
 const send = async text => {
-  const box = page.locator('textarea').first();
+  const box = page.locator(anchors.composer.textarea);
   await box.fill(text);
   await page.getByRole('button', { name: 'Send' }).click();
 };
@@ -59,8 +60,7 @@ const idle = async (ms = 120000) => page.waitForFunction(() => document.document
 try {
   await page.goto(`${BASE}/#/chat`);
   await page.waitForTimeout(2000);
-  const skip = page.getByText('Go straight to the app');
-  if (await skip.count()) { await skip.click(); await page.waitForTimeout(600); }
+  await skipOnboarding(page, { settle: 600 });
   await page.getByRole('button', { name: 'New chat' }).first().click();
   await page.waitForTimeout(600);
   await page.getByRole('button', { name: /Choose model/ }).first().click();
@@ -72,7 +72,7 @@ try {
 
   // 2. a tool call that needs approval
   await send(PROMPT_TOOL);
-  await page.locator('.toolcard[data-state="proposed"]').first().waitFor({ timeout: 120000 });
+  await page.locator(anchors.tools.proposed).first().waitFor({ timeout: 120000 });
   await page.waitForTimeout(300);
   await shot(page, '02-approval-card');
   check(await page.getByRole('button', { name: 'Approve' }).count() === 1, 'an Approve button is on the card');
@@ -81,8 +81,8 @@ try {
   await idle();
   await page.waitForTimeout(500);
   await shot(page, '03-after-approve');
-  check(await page.locator('.tool-summary').count() >= 1, 'the tool finished and collapsed into its summary');
-  check(await page.locator('.toolcard').count() === 0, 'no card is left waiting');
+  check(await page.locator(anchors.tools.summary).count() >= 1, 'the tool finished and collapsed into its summary');
+  check(await page.locator(anchors.tools.live).count() === 0, 'no card is left waiting');
 
   // 3. Stop mid-stream
   const baseline = await page.evaluate(() => document.body.innerText.length);
@@ -102,19 +102,19 @@ try {
   check(await page.getByRole('button', { name: 'Send' }).count() === 1, 'the composer is free again');
 
   // 4. reload, reopen, continue
-  const toolsBefore = await page.locator('.tool-summary').count();
+  const toolsBefore = await page.locator(anchors.tools.summary).count();
   await page.reload();
   await page.waitForTimeout(2000);
   await page.locator('a.navsession').first().click();
   await page.waitForTimeout(800);
   await shot(page, '06-reopened');
-  check(await page.locator('.tool-summary').count() === toolsBefore && toolsBefore >= 1, `reopening shows the same ${toolsBefore} finished tool card(s) and no waiting card`);
+  check(await page.locator(anchors.tools.summary).count() === toolsBefore && toolsBefore >= 1, `reopening shows the same ${toolsBefore} finished tool card(s) and no waiting card`);
   await send(PROMPT_AFTER);
   await idle();
   await page.waitForTimeout(500);
   await shot(page, '07-after-reopen');
-  check(await page.locator('.toolcard').count() === 0, 'no tool is waiting after the reopened turn');
-  if (process.env.EXPECT_AFTER) check(await page.getByText(new RegExp(process.env.EXPECT_AFTER)).count() >= 1, `the reopened chat answered (${process.env.EXPECT_AFTER})`);
+  check(await page.locator(anchors.tools.live).count() === 0, 'no tool is waiting after the reopened turn');
+  if (process.env.EXPECT_AFTER) check(await page.locator('.st-bubble', { hasText: new RegExp(process.env.EXPECT_AFTER) }).count() >= 1, `the reopened chat answered (${process.env.EXPECT_AFTER})`);
   // 5. the model choice belongs to the chat: a new chat starts on the local model again
   await page.getByRole('button', { name: 'New chat' }).first().click();
   await page.waitForTimeout(600);
@@ -136,7 +136,7 @@ try {
     await page.getByRole('menuitemradio', { name: new RegExp(MODEL) }).first().click();
     check(await page.getByRole('button', { name: 'Send' }).count() === 1, 'the second chat can send while the first is mid-turn');
     await send(process.env.PROMPT_B ?? 'SCRIPT:echo the other chat');
-    await page.getByText(process.env.EXPECT_B ?? 'the other chat').first().waitFor({ timeout: 60000 });
+    await page.locator('.st-bubble', { hasText: process.env.EXPECT_B ?? 'the other chat' }).first().waitFor({ timeout: 60000 });
     const stillRunning = await page.evaluate(() => document.documentElement.dataset.streaming);
     await shot(page, '09-two-chats-second-done');
     check(stillRunning === 'true', 'the first chat is still running when the second one has answered');
@@ -144,7 +144,7 @@ try {
     await page.locator('a.navsession').first().click();
     await page.waitForTimeout(500);
     await shot(page, '10-two-chats-first-done');
-    check(await page.getByText(/w149/).count() >= 1, 'the first chat finished its own stream');
+    check(await page.locator('.st-bubble', { hasText: /w149/ }).count() >= 1, 'the first chat finished its own stream');
   }
   check(problems.length === 0, `no page errors (${problems.join(' | ') || 'none'})`);
 } catch (error) {

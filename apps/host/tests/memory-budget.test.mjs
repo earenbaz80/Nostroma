@@ -1,9 +1,12 @@
 /** One accounting for the fit card, the request slots and the reserve (shared/memory-budget.mjs). */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { defaultReserves, estimateSlots, fitsAlongside, heldMemoryGb, memoryBudget, sessionGb, sessionGib } from '../shared/memory-budget.mjs';
 import { slotGb } from '../server/native-parallel.mjs';
 
+const root = resolve(import.meta.dirname, '..');
 const model = { experts_gb: 77, memory_gb: 78 };
 const hardware = { ram_gb: 64, vram_gb: 12 };
 
@@ -64,3 +67,12 @@ test('the slot estimate uses the same session cost and the same policy', () => {
   assert.deepEqual(estimateSlots({ context: 32768, kv: 'int8', cards: [{ index: 0, vram_gb: 32 }], requested: 4 }).slots, 4);
 });
 
+test('the Models page shows weights, context, slots, drafter, pictures, reserve and spill', () => {
+  const page = readFileSync(resolve(root, 'src/components/NativeModels.tsx'), 'utf8');
+  assert.match(page, /memoryBudget\(\{ model: selectedSize/);
+  // The context row counts the KV cache and the request state, so it says so: the warning and the format line show the cache alone.
+  for (const label of ['Model files', 'Context and state', 'Concurrent requests', 'Drafting', 'Read pictures', 'Room for other apps', 'SSD'])
+    assert.match(page, new RegExp(`tr\\("${label}"\\)`), label);
+  assert.match(page, /budget\.spillGb\.toFixed\(1\)/);
+  assert.match(page, /budget\.reserveGb\.toFixed\(1\)/);
+});

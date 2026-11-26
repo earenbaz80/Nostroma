@@ -6,19 +6,23 @@ import { DictationControl } from './DictationControl';
 import { Btn, Dialog, Icon, ErrorNotice } from './ui';
 import { MOD } from '../lib/commands';
 import { pushToast, setChatPreferences, useStore } from '../lib/store';
+import { chooseChatFolder, folderOf, setChatFolder, useChatFolder } from '../lib/chat-folder';
+import { plainFailureText } from '../lib/plain-errors';
 import { artifactFromUrl, type PreviewArtifact } from '../lib/artifacts';
 import type { ChatMode, Session } from '../lib/types';
 import { attachChatPhoto } from '../lib/chat-photos';
 import { uploadChatFile, FILE_ACCEPT } from '../lib/chat-attach-file';
 import { useNative } from '../lib/native';
 import { pictureStatus } from '../lib/pictures';
+import { ChatSkills } from './ChatSkills';
 const modes: {
-    value: ChatMode;
+    value: ChatMode | 'mission';
     label: string;
     hint: string;
 }[] = [
-    { value: 'manual', label: 'Manual', hint: 'Ask before making changes' },
+    { value: 'manual', label: 'Build', hint: 'Makes changes and runs commands, asking before each one' },
     { value: 'plan', label: 'Plan', hint: 'Create a plan before making changes' },
+    { value: 'mission', label: 'Mission', hint: 'Full access without asking, and the message starts a goal that keeps working until it is done' },
     { value: 'bypass', label: 'Bypass permissions', hint: 'Skip permission prompts' },
 ];
 const efforts = ['Off', 'Low', 'Medium', 'High', 'Max'];
@@ -45,6 +49,9 @@ export function ComposerControls({ session, onPreview, onAttach, onError, onSlas
     const remote = useStore(s => s.remoteModel), providers = useStore(s => s.providers);
     const apiModel = providers?.connections.find(c => c.id === remote?.connectionId)?.models.find(m => m.id === remote?.modelId);
     const [menu, setMenu] = useState(false), [preferences, setPreferences] = useState<'mode' | 'thinking' | null>(null), [reading, setReading] = useState(false);
+    const chatId = session?.id;
+    const projectFolder = useChatFolder(chatId);
+    const [folderBusy, setFolderBusy] = useState(false);
 
     // The mode menu prints 1–3 beside its rows. They were decoration: make those
     // keys pick the mode while the menu is open, and leave modified keys to the app.
@@ -58,8 +65,7 @@ export function ComposerControls({ session, onPreview, onAttach, onError, onSlas
             if (!option)
                 return;
             event.preventDefault();
-            setChatPreferences(session?.id, { mode: option.value });
-            setPreferences(null);
+            chooseMode(option.value);
         };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
@@ -73,7 +79,28 @@ export function ComposerControls({ session, onPreview, onAttach, onError, onSlas
     // A model on an API takes a reasoning effort when its provider says it can think (OpenRouter's model list); otherwise the provider decides.
     const apiOnlyDefault = !!apiModel && apiModel.thinks !== true;
     const pictures = pictureStatus(native, remoteModel, providers);
-    const mode = modes.find(m => m.value === session?.preferences?.mode) ?? modes[0];
+    const mission = session?.preferences?.mission === true;
+    const mode = mission ? modes.find(m => m.value === 'mission')! : modes.find(m => m.value === session?.preferences?.mode) ?? modes[0];
+    /* Mission is Bypass plus a goal: the turn cannot ask, so the message is sent
+       as /goal and the assistant keeps going until it is done. */
+    function chooseMode(value: ChatMode | 'mission') {
+        setChatPreferences(session?.id, value === 'mission' ? { mode: 'bypass', mission: true } : { mode: value, mission: false });
+        setPreferences(null);
+    }
+    /* The chat's project folder lives in the add menu: the chip above the
+       composer is gone, so this is the one place that sets and clears it. */
+    async function changeFolder(action: () => Promise<unknown>) {
+        setFolderBusy(true);
+        try {
+            await action();
+        }
+        catch (e) {
+            pushToast('error', tr("The folder was not changed"), plainFailureText(e instanceof Error ? e.message : String(e)).message);
+        }
+        finally {
+            setFolderBusy(false);
+        }
+    }
     const effort = efforts.includes(session?.preferences?.thinking ?? '') ? session!.preferences!.thinking! : 'Medium';
     const budget = session?.preferences?.thinkingBudget ?? 0;
     const shortcut = MOD === '⌘' ? '⌘⇧A' : 'Ctrl+Shift+A';
@@ -173,8 +200,7 @@ export function ComposerControls({ session, onPreview, onAttach, onError, onSlas
             const i = Number(e.key) - 1;
             if (i >= 0 && i < modes.length && !e.metaKey && !e.ctrlKey && !e.altKey) {
                 e.preventDefault();
-                setChatPreferences(session?.id, { mode: modes[i].value });
-                setPreferences(null);
+                chooseMode(modes[i].value);
             }
         };
         window.addEventListener('keydown', key);
@@ -189,15 +215,29 @@ export function ComposerControls({ session, onPreview, onAttach, onError, onSlas
     <button ref={trigger} className="composer-add" aria-label={tr("Add or open")} title={tr("Add or open")} disabled={reading || streaming} aria-haspopup="menu" aria-expanded={menu} onClick={() => { setPreferences(null); setMenu(v => !v); }}><Icon name="plus" size={22}/></button>
     <DictationControl draft={draft} onDraft={onDraft} sessionId={session?.id} disabled={streaming}/>
     <button ref={modeTrigger} className="composer-choice composer-mode" aria-label={tr("Mode: {0}", [tr(mode.label)])} aria-haspopup="menu" aria-expanded={preferences === 'mode'} onClick={() => { setMenu(false); setPreferences(v => v === 'mode' ? null : 'mode'); }}><span>{tr(mode.label)}</span><Icon name="chevron" size={13}/></button>
+    <ChatSkills/>
     <span className="spacer"/>
     <button ref={thinkingTrigger} className="composer-choice composer-effort" disabled={apiOnlyDefault} title={tr(apiOnlyDefault ? "Reasoning uses the API provider’s defaults." : undefined)} aria-label={tr("Reasoning effort: {0}", [apiOnlyDefault ? tr('Provider default') : effort])} aria-haspopup="menu" aria-expanded={preferences === 'thinking'} onClick={() => { setMenu(false); setPreferences(v => v === 'thinking' ? null : 'thinking'); }}><Icon name="thinking" size={16}/><span>{tr(apiOnlyDefault ? 'Default' : effort)}</span><Icon name="chevron" size={13}/></button>
-    {tr(menu ? <FloatingMenu anchor={trigger.current} title={tr("Add or open")} width={292} onClose={() => setMenu(false)}>
+    {tr(menu ? <FloatingMenu anchor={trigger.current} title={tr("Add or open")} width={320} onClose={() => setMenu(false)}>
       <button role="menuitem" className="menu__item" onClick={() => { setMenu(false); files.current?.click(); }}><Icon name="attach"/><span>{tr("Add files or photos")}</span><kbd className="menu-shortcut">{tr(shortcut)}</kbd></button>
-      <button role="menuitem" className="menu__item" onClick={() => { setMenu(false); folder.current?.click(); }}><Icon name="folder-plus"/>{tr("Add folder")}</button>
+      {chatId ? <>
+        <button role="menuitem" className="menu__item composer-mode-option" title={projectFolder?.path} disabled={folderBusy || streaming} onClick={() => { if (!chatId) return; setMenu(false); void changeFolder(async () => {
+          const result = await chooseChatFolder(chatId);
+          if (result === 'chosen') pushToast('success', tr('Project folder set'), folderOf(chatId)?.name);
+        }); }}>
+          <Icon name="folder"/>
+          <span><strong>{tr(projectFolder ? 'Change project folder…' : 'Set project folder…')}</strong><small>{projectFolder ? (projectFolder.exists ? projectFolder.name : tr('{0} · not found', [projectFolder.name])) : tr('The assistant works only inside this folder')}</small></span>
+        </button>
+        {projectFolder ? <button role="menuitem" className="menu__item" disabled={folderBusy || streaming} onClick={() => { if (!chatId) return; setMenu(false); void changeFolder(async () => {
+          await setChatFolder(chatId, null);
+          pushToast('success', tr('Using the default folder'));
+        }); }}><Icon name="refresh"/><span>{tr('Use the default folder')}</span></button> : null}
+      </> : null}
+      <button role="menuitem" className="menu__item" onClick={() => { setMenu(false); folder.current?.click(); }}><Icon name="folder-plus"/>{tr("Add files from a folder…")}</button>
       <button role="menuitem" className="menu__item" onClick={() => { setMenu(false); onSlash(); }}><span className="slash-command-icon" aria-hidden="true">/</span>{tr("Slash commands")}</button>
     </FloatingMenu> : null)}
     {tr(preferences ? <FloatingMenu anchor={preferences === 'mode' ? modeTrigger.current : thinkingTrigger.current} title={tr(preferences === 'mode' ? 'Mode' : 'Reasoning effort')} width={preferences === 'mode' ? 330 : 280} onClose={() => setPreferences(null)}>
-      {tr(preferences === 'mode' ? <>{tr(modes.map((option, index) => <button key={option.value} role="menuitemradio" aria-checked={mode.value === option.value} className="menu__item composer-mode-option" onClick={() => { setChatPreferences(session?.id, { mode: option.value }); setPreferences(null); }}><span><strong>{tr(option.label)}</strong><small>{tr(option.hint)}</small></span>{tr(mode.value === option.value ? <Icon name="check" size={16}/> : null)}<kbd className="menu-shortcut">{tr(index + 1)}</kbd></button>))}</> : <><div className="reasoning-menu-model"><Icon name={apiModel ? 'link' : modelFamilyIcon(loaded?.family ?? nativeModel?.label)} size={18}/><strong>{tr(apiModel?.name ?? (nativeModel && nativeModel.status === 'ready' ? nativeModel.label : null) ?? loaded?.family ?? 'No model loaded')}</strong></div><p className="composer-menu-heading">{tr("Reasoning effort")}</p>{tr(efforts.map(option => <button key={option} role="menuitemradio" aria-checked={effort === option} className="menu__item" onClick={() => { setChatPreferences(session?.id, { thinking: option }); setPreferences(null); }}>{tr(option)}<span className="spacer"/>{tr(effort === option ? <Icon name="check" size={16}/> : null)}</button>))}{tr(apiModel ? null : <><p className="composer-menu-heading">{tr("Thinking budget")}</p>{tr(THINKING_BUDGETS.map(([value, label]) => <button key={value} role="menuitemradio" aria-checked={budget === value} disabled={effort === 'Off'} className="menu__item" onClick={() => { setChatPreferences(session?.id, { thinkingBudget: value }); setPreferences(null); }}>{tr(label)}<span className="spacer"/>{tr(budget === value ? <Icon name="check" size={16}/> : null)}</button>))}</>)}</>)}
+      {tr(preferences === 'mode' ? <>{tr(modes.map((option, index) => <button key={option.value} role="menuitemradio" aria-checked={mode.value === option.value} className="menu__item composer-mode-option" onClick={() => chooseMode(option.value)}><span><strong>{tr(option.label)}</strong><small>{tr(option.hint)}</small></span>{tr(mode.value === option.value ? <Icon name="check" size={16}/> : null)}<kbd className="menu-shortcut">{tr(index + 1)}</kbd></button>))}</> : <><div className="reasoning-menu-model"><Icon name={apiModel ? 'link' : modelFamilyIcon(loaded?.family ?? nativeModel?.label)} size={18}/><strong>{tr(apiModel?.name ?? (nativeModel && nativeModel.status === 'ready' ? nativeModel.label : null) ?? loaded?.family ?? 'No model loaded')}</strong></div><p className="composer-menu-heading">{tr("Reasoning effort")}</p>{tr(efforts.map(option => <button key={option} role="menuitemradio" aria-checked={effort === option} className="menu__item" onClick={() => { setChatPreferences(session?.id, { thinking: option }); setPreferences(null); }}>{tr(option)}<span className="spacer"/>{tr(effort === option ? <Icon name="check" size={16}/> : null)}</button>))}{tr(apiModel ? null : <><p className="composer-menu-heading">{tr("Thinking budget")}</p>{tr(THINKING_BUDGETS.map(([value, label]) => <button key={value} role="menuitemradio" aria-checked={budget === value} disabled={effort === 'Off'} className="menu__item" onClick={() => { setChatPreferences(session?.id, { thinkingBudget: value }); setPreferences(null); }}>{tr(label)}<span className="spacer"/>{tr(budget === value ? <Icon name="check" size={16}/> : null)}</button>))}</>)}</>)}
     </FloatingMenu> : null)}
 
     <Dialog open={urlOpen} title={tr("Open a website")} onClose={() => setUrlOpen(false)} actions={<><Btn onClick={() => setUrlOpen(false)}>{tr("Cancel")}</Btn><Btn variant="primary" disabled={!url.trim()} onClick={() => {

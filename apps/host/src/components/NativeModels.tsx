@@ -5,6 +5,7 @@ import { VersionPicker } from './VersionPicker';
 import { FamilySwitch } from './FamilySwitch';
 import { PcComputer } from './PcComputer';
 import { cardRoomGb, contextCacheGb, fitOn, memoryNeeded, versionFit, type ContextFit } from '../lib/native-fit';
+import { DEFAULT_SLOTS, defaultReserves, estimateSlots, memoryBudget } from '../../shared/memory-budget.mjs';
 import { DEFAULT_KV, DEFAULT_PROFILE } from '../../shared/app-defaults.mjs';
 import { contextIsTight, defaultContext, DEFAULT_CONTEXT, openingContext } from '../lib/default-context';
 import { GpuRoles } from './GpuRoles';
@@ -146,6 +147,15 @@ export function NativeModels({ onOtherModels, onReady, onImport, onConnectEngine
     const nowDrafter = draftingChoices ? resolveDrafter(drafting, selectedSize?.sourceFamily ?? selectedFamily?.family, native?.capabilities?.dflash2, splitCards) : 'mtp';
     // DFlash2 with the converted pack (the selector as Q4_0 rows) takes 175 MiB less graphics memory: the fit says the true number (Control's `selq4`, nostroma_control/drafting.py vram_gb).
     const fitDrafter = nowDrafter === 'dflash2' && native?.capabilities?.dflash2Selq4 === true ? 'dflash2_selq4' : nowDrafter;
+    // The whole memory budget on this page: the same accounting the host uses (shared/memory-budget.mjs), with the
+    // request slots the host would choose, the drafter in use, the picture reader and the reserve of the profile.
+    const budgetCards = roleCards.length > 1 ? roleCards.filter(c => cardsGpus.includes(c.index)) : pcGpu ? [pcGpu] : [];
+    const budgetVision = selectedSize?.images && !noReader ? vision : 'no';
+    const budgetSlots = loadedSelected?.parallel ?? installed?.parallel
+        ?? estimateSlots({ context, kv, family: selectedSize?.context_fit ? 'q36' : 'flash', cards: budgetCards.length ? [{ ...budgetCards[0], vram_gb: labelHardware.vram_gb }] : [], requested: DEFAULT_SLOTS, mtp: nowDrafter !== 'off' }).slots;
+    const budgetGpuReader = budgetVision === 'gpu' || (budgetVision === 'yes' && Math.max(0, ...budgetCards.map(c => c.vram_gb)) >= 24);
+    const budgetReserve = installed?.reserveMib ?? defaultReserves({ gpu: budgetCards.map(c => c.index), vision: budgetVision !== 'no' ? { gpu: budgetGpuReader } : undefined }, { gpus: budgetCards }, 0)[resourceProfile];
+    const budget = selectedSize && pcRam ? memoryBudget({ model: selectedSize, hardware: { ...labelHardware, cards: budgetCards }, cards: budgetCards, context, kv, slots: budgetSlots, drafter: fitDrafter, vision: budgetVision, reserveMib: labelHardware.vram_gb > 0 ? budgetReserve : 0, profile: resourceProfile, contextFit: selectedSize.context_fit }) : null;
     const draftingWords: Record<string, string> = { auto: 'Auto (recommended)', mtp: 'MTP', dflash2: 'DFlash2', off: 'Off' };
     const values = useMemo(() => ({ family: selectedSize?.sourceFamily, model: selectedSize?.model, context, vision: selectedSize?.images ? vision : 'no', kv, low_ram: lowRam, resourceProfile, ...(cardsGpus.length > 1 ? { gpus: cardsGpus.join(',') } : cardsGpus.length === 1 ? { gpu: cardsGpus[0] } : {}), loadAfter: true, multiple: expert && multiple, ...(measureSpeed ? { warmup: true } : {}) }), [selectedSize?.sourceFamily, selectedSize?.model, context, vision, kv, lowRam, resourceProfile, cardsGpus.join(','), expert, multiple, measureSpeed]);
     const downloadValues = { ...values, ...(draftingChoices ? { drafting } : {}), vision: selectedSize?.images && vision !== 'no' ? 'yes' : 'no', loadVision: selectedSize?.images ? vision : 'no', ...(noReader ? { visionUnavailable: true } : {}), ...(contextPicked ? { contextChosen: true } : {}) };
@@ -231,9 +241,25 @@ export function NativeModels({ onOtherModels, onReady, onImport, onConnectEngine
             return;
         }
         setDrafterGb(planned?.drafting?.needed ? Number(planned.drafting.gb) || null : null);
+        /* The plan says which loaded model a Prepare would stop, what that frees in memory, what deleting older
+           downloaded models would free on disk, and how long the install takes. Nothing stops or is deleted until the
+           person presses Download & load again. */
+        if (planned?.eviction?.refusal) {
+            setError(planned.eviction.refusal);
+            return;
+        }
+        if (planned?.eviction?.question || planned?.plan?.older_models?.length) {
+            setPlan(planned);
+            return;
+        }
         const result = await nativeAction<NativeJob>('operations', { kind: 'install', args: downloadValues });
         setJobId(result.id);
     } }); }
+    async function installPlanned() { if (!plan)
+        return; setPlan(null); await perform(async () => {
+        const result = await nativeAction<NativeJob>('operations', { kind: 'install', args: downloadValues });
+        setJobId(result.id);
+    }); }
     /* Unload / Use in chat: a refusal (a chat is still using the model) is said here, beside the button, not far below the page. */
     async function loadedAction(path: string) { setLoadedError(''); setPending(true); try {
         await nativeAction(path);
@@ -258,12 +284,22 @@ export function NativeModels({ onOtherModels, onReady, onImport, onConnectEngine
         return; presetPending.current = true; setFamily(f.family); setSize(f.sizes.find(s => s.model === v.model && (s.sourceFamily === v.family || f.family === v.family))?.id ?? ''); setContext(v.context ?? 32768); setVision(v.vision ?? 'no'); setKv(v.kv ?? 'int8'); setLowRam(v.low_ram ?? 'auto'); }}/><Btn icon="models" size="sm" variant="ghost" onClick={() => setManage(true)}>{tr("Manage models")}</Btn></span></div>
       <div className="native-version"><VersionPicker pick={native?.catalog?.recommendation} versions={selectedFamily?.sizes ?? []} details={expert} selectedId={selectedSize.id} hardware={labelHardware} cache={{ context, kv, drafter: fitDrafter }} downloaded={readyIds} onSelect={id => { const f = families.find(f => f.sizes.some(s => s.id === id)); if (f) { setFamily(f.family); setSize(id); setError(''); } }} onOwnGguf={() => (onImport ?? onOtherModels)()}/></div>
       {tr(fitState === 'ssd' ? <p className="small muted native-spill-note"><Icon name="disk" size={16}/>{tr("may run slower")}</p> : null)}
+      {tr(budget ? <div className="memory-budget" role="group" aria-label={tr("Memory")}>
+        <div className="memory-summary"><strong>{budget.totalGb.toFixed(1)} GB</strong><span>{budget.totalGb.toFixed(1)} / {(Number(labelHardware.ram_gb) + Number(labelHardware.vram_gb)).toFixed(1)} GB</span></div>
+        <div className="row row--between small"><span className="muted">{tr("Model files")}</span><span>{budget.weightsGb.toFixed(1)} GB</span></div>
+        <div className="row row--between small"><span className="muted">{tr("Context and state")}</span><span>{budget.contextGb.toFixed(1)} GB</span></div>
+        <div className="row row--between small"><span className="muted">{tr("Concurrent requests")}</span><span>{budget.slots} × {budget.contextPerSlotGb.toFixed(1)} GB</span></div>
+        <div className="row row--between small"><span className="muted">{tr("Drafting")}</span><span>{fitDrafter === 'off' ? tr("Off") : fitDrafter === 'dflash2_selq4' ? 'DFlash2' : fitDrafter.toUpperCase()} · {budget.drafterGb.toFixed(1)} GB</span></div>
+        <div className="row row--between small"><span className="muted">{tr("Read pictures")}</span><span>{budget.visionWhere === 'off' ? tr("Off") : budget.visionWhere === 'gpu' ? `GPU · ${budget.visionGb.toFixed(1)} GB` : `CPU · ${budget.visionRamGb.toFixed(1)} GB`}</span></div>
+        <div className="row row--between small"><span className="muted">{tr("Room for other apps")}</span><span>{budget.reserveGb.toFixed(1)} GB</span></div>
+        <div className="row row--between small"><span className="muted">{tr("SSD")}</span><span>{budget.spillGb.toFixed(1)} GB</span></div>
+      </div> : null)}
       <div className="native-choice__row">
        <div className="native-choice__col"><span className="native-choice__label">{tr("Conversation context")}</span><Select ariaLabel={tr("Conversation context")} value={String(context)} options={contextChoices(contextList, context).map(n => ({ value: String(n), label: n % 1024 === 0 ? `${n / 1024}K` : `${n.toLocaleString()} tokens` }))} onChange={n => { setContextPicked(true); setContext(Number(n)); }}/></div>
        {tr(draftingChoices ? <div className="native-choice__col"><span className="native-choice__label">{tr("Drafting")}</span><Select ariaLabel={tr("Drafting")} value={drafting} disabled={!!active} options={draftingChoices.map(v => ({ value: v, label: tr(draftingWords[v]) }))} onChange={v => setDrafting(String(v))}/></div> : null)}
        <div className="native-choice__col"><span className="native-choice__label">{tr("Computer use")}</span><div className="native-resource-choice"><button aria-pressed={resourceProfile === 'work'} data-selected={resourceProfile === 'work'} onClick={() => setResourceProfile('work')}><Icon name="computer" size={20}/><span><strong>{tr("Leave room for my work")}</strong><small>{tr("Keeps 5-8 GB of memory free for other programs.")}</small></span>{tr(resourceProfile === 'work' ? <Icon name="check" size={15}/> : null)}</button><button aria-pressed={resourceProfile === 'performance'} data-selected={resourceProfile === 'performance'} onClick={() => setResourceProfile('performance')}><Icon name="bolt" size={20}/><span><strong>{tr("Full performance")}</strong><small>{tr("Give Nostroma priority")}</small></span>{tr(resourceProfile === 'performance' ? <Icon name="check" size={15}/> : null)}</button></div></div>
       </div>
-      {tr(contextIsTight(fitHardware.vram_gb, context, kv, selectedSize?.context_fit) ? <p className="small muted native-spill-note"><Icon name="warning" size={16}/>{tr("This much context takes about {0} GB of graphics memory and leaves little room for the model on this card. Nostroma will try it; if it does not start, choose a shorter context.", [contextCacheGb(context, kv, selectedSize?.context_fit).toFixed(1)])}</p> : null)}
+      {tr(contextIsTight(fitHardware.vram_gb, context, kv, selectedSize?.context_fit) ? <p className="small muted native-spill-note"><Icon name="warning" size={16}/>{tr("The KV cache for this much context takes about {0} GB of graphics memory and leaves little room for the model on this card. Nostroma will try it; if it does not start, choose a shorter context.", [contextCacheGb(context, kv, selectedSize?.context_fit).toFixed(1)])}</p> : null)}
       {tr(loadedSelected?.metrics?.engine?.drafting_note ? <p className="small muted native-spill-note">{tr(String(loadedSelected.metrics.engine.drafting_note))}</p> : null)}
       {roleCards.length > 1 ? <GpuRoles cards={roleCards} roles={effectiveRoles} custom={customRoles} recommendedRoles={recommended.roles} vendor={engineVendor} disabled={!!active} onChange={changeRoles} onBack={() => setRoles(null)} memoryGb={selectedSize ? memoryNeeded(selectedSize) || null : null} ramGb={pcRam} spillGb={selectedSize ? fitOn(selectedSize, fitHardware).spillGb : 0} usedBy={i => usedBy([i])}/> : null}
       {tr(roleCards.length > 1 && (native?.hardware?.gpus ?? []).length > roleCards.length ? <p className="small muted native-cards__note">{tr('Not used: {0} (another make of graphics card than this engine drives).', [(native?.hardware?.gpus ?? []).filter(g => !roleCards.some(r => r.index === g.index && r.vendor === g.vendor)).map(g => g.name).join(', ')])}</p> : null)}
@@ -274,14 +310,15 @@ export function NativeModels({ onOtherModels, onReady, onImport, onConnectEngine
      <EngineUpdateDialog open={false} onClose={() => {}}/>
      {tr(active ? <NativeProgress job={active} label={jobLabel(active)}/> : null)}
      {tr(active && drafterGb ? <p className="small muted native-spill-note"><Icon name="info" size={16}/>{tr(nowDrafter === 'mtp' ? (splitCards && drafting === 'auto' ? "Auto uses the all-cards split engine with the MTP draft layer: about {0} GB to download, once." : "Choosing MTP downloads its drafter: about {0} GB, once.") : "Choosing DFlash2 downloads its drafter: about {0} GB, once.", [drafterGb])}</p> : null)}
-     {tr(job?.state === 'error' ? <ErrorNotice message={job.error ?? job.summary} action={tr("Retry")} onRetry={() => void load()}/> : null)}
+     {tr(job?.state === 'error' ? <div className="stack" data-load-error><ErrorNotice message={job.error ?? job.summary} action={tr("Retry")} onRetry={() => void load()}/><PreflightFigures preflight={job.progress?.preflight as PreflightProgress | undefined}/></div> : null)}
      {tr(plan?.plan?.disk_short ? <ErrorNotice message={plan.plan.disk_short}/> : null)}
+     {tr((plan?.eviction?.question || plan?.plan?.older_models?.length) && !plan?.plan?.disk_short ? <section className="st-card native-plan-note" role="status">{tr(plan?.eviction?.question ? <p>{tr(plan.eviction.question)}</p> : null)}{tr(plan?.plan?.older_models?.length ? <p>{tr(plan.plan.space_warning)}</p> : null)}{tr(plan?.plan?.takes ? <p className="small muted">{tr(plan.plan.takes)}</p> : null)}<div className="row"><Btn variant="primary" disabled={pending || !!active} onClick={() => void installPlanned()}>{tr('Download & load')}</Btn><Btn disabled={pending || !!active} onClick={() => { setPlan(null); setManage(true); }}>{tr('Manage models')}</Btn><Btn disabled={pending || !!active} onClick={() => setPlan(null)}>{tr('Cancel')}</Btn></div></section> : null)}
      {tr(error ? <ErrorNotice message={error}/> : null)}
      {selectedSize && installed?.ready ? <NativeTuneBadge model={selectedSize.id} resourceProfile={resourceProfile} vision={selectedSize.images ? vision : 'no'}/> : null}
      <div className="native-model-actions">{tr(!loadedSelected && !listPending && !installed?.ready && selectedSize?.download_gb && !active ? <span className="native-download-size small muted">{tr("{0} download", [sizeGb(selectedSize.download_gb)])}</span> : null)}{tr(loadedSelected ? <><Btn disabled={pending || !!active} onClick={() => void perform(() => nativeAction(`instances/${loadedSelected.id}/unload`))}>{tr("Unload")}</Btn>{tr(onReady ? <Btn variant="primary" onClick={onReady}>{tr("Start chatting")}</Btn> : <span className="native-ready">{tr("Ready")}</span>)}</> : onReady && native?.instances.some(i => i.status === 'ready') ? <Btn variant="primary" onClick={onReady}>{tr("Start chatting")}</Btn> : <><Btn icon="gauge" disabled={listPending || !installed?.ready || !native?.available || !!active || !selectedSize || selectedSize.needsNewerEngine} onClick={() => setTuneOpen(true)}>{tr("Tune model")}</Btn><Btn variant="primary" icon="models" disabled={pending || listPending || !native?.available || !!active || !selectedSize || !!selectedSize.needsNewerEngine} onClick={() => void load()}>{tr(pending || listPending ? 'Checking…' : installed?.ready ? 'Load model' : 'Download & load')}</Btn></>)}</div>
     </section>
     {tr(expert && IMAGE_GENERATION_VISIBLE ? <><details className="native-generation"><summary>{tr("Image generation ")}<span className="muted">{tr("Optional")}</span></summary><RunImageModel library={imageLibrary} disabled={pending || !!active} onChange={() => { }}/></details></> : null)}
-    {tr(expert ? <section id="native-expert-settings" ref={expertSection} className="st-card native-execution"><h2 className="h4">{tr("Expert settings")}</h2>{tr(tunedNow ? <p className="small muted native-tuned-note">{tr("Showing the values of your tuning '{0}'.", [tunedNow.name])}</p> : null)}<label className="native-toggle"><span><strong>{tr("Run multiple models")}</strong><small>{tr("Loading another model keeps the others loaded.")}</small></span><button className="st-toggle" role="switch" aria-label={tr("Run multiple models")} aria-checked={multiple} onClick={() => setMultiple(v => !v)}/></label><label className="native-toggle"><span><strong>{tr("Run speed test")}</strong><small>{tr("Warm-up takes a few seconds.")}</small></span><button className="st-toggle" role="switch" aria-label={tr("Run speed test")} aria-checked={measureSpeed} onClick={() => setMeasureSpeed(v => !v)}/></label>{tr(cardsGpus.length > 1 ? <label className="input-field"><span>{tr("Layer split")}</span><input className="st-input" value={split} placeholder={tr("auto or 16,32")} onChange={e => setSplit(e.target.value)}/></label> : null)}<div className="native-field-grid"><label className="input-field"><span>{tr("Context memory")}</span><Select ariaLabel={tr("Native KV format")} value={kv} options={KV_CHOICES.map(c => ({ value: c.value, label: `${c.label} · ${kvMemoryGb(context, c.value, selectedSize?.context_fit)} GB`, title: c.hint }))} onChange={setKv}/>{tr(KV_CHOICES.find(c => c.value === kv)?.hint ? <small className="muted native-kv-hint">{tr(KV_CHOICES.find(c => c.value === kv)!.hint)}</small> : null)}<small className="muted native-kv-hint">{tr("About {0} GB of conversation memory at this context", [kvMemoryGb(context, kv, selectedSize?.context_fit)])}</small></label><label className="input-field"><span>{tr("Low-RAM mode")}</span><Select ariaLabel={tr("Native low RAM mode")} value={lowRam} options={['auto', 'resident', 'mmap'].map(v => ({ value: v, label: v === 'auto' ? 'Automatic' : v === 'resident' ? 'Keep experts in RAM' : 'Read experts from disk' }))} onChange={setLowRam}/></label></div>{tr(installed ? <><NativeSettingsFile model={installed.model}/><NativeSettings model={installed.model}/></> : <p className="small muted">{tr("More engine parameters become available after preparing this version.")}</p>)}</section> : null)}
+    {tr(expert ? <section id="native-expert-settings" ref={expertSection} className="st-card native-execution"><h2 className="h4">{tr("Expert settings")}</h2>{tr(tunedNow ? <p className="small muted native-tuned-note">{tr("Showing the values of your tuning '{0}'.", [tunedNow.name])}</p> : null)}<label className="native-toggle"><span><strong>{tr("Run multiple models")}</strong><small>{tr("Loading another model keeps the others loaded.")}</small></span><button className="st-toggle" role="switch" aria-label={tr("Run multiple models")} aria-checked={multiple} onClick={() => setMultiple(v => !v)}/></label><label className="native-toggle"><span><strong>{tr("Run speed test")}</strong><small>{tr("Warm-up takes a few seconds.")}</small></span><button className="st-toggle" role="switch" aria-label={tr("Run speed test")} aria-checked={measureSpeed} onClick={() => setMeasureSpeed(v => !v)}/></label>{tr(cardsGpus.length > 1 ? <label className="input-field"><span>{tr("Layer split")}</span><input className="st-input" value={split} placeholder={tr("auto or 16,32")} onChange={e => setSplit(e.target.value)}/></label> : null)}<div className="native-field-grid"><label className="input-field"><span>{tr("Context memory")}</span><Select ariaLabel={tr("Native KV format")} value={kv} options={KV_CHOICES.map(c => ({ value: c.value, label: `${c.label} · ${kvMemoryGb(context, c.value, selectedSize?.context_fit)} GB`, title: c.hint }))} onChange={setKv}/>{tr(KV_CHOICES.find(c => c.value === kv)?.hint ? <small className="muted native-kv-hint">{tr(KV_CHOICES.find(c => c.value === kv)!.hint)}</small> : null)}<small className="muted native-kv-hint">{tr("About {0} GB of KV cache at this context", [kvMemoryGb(context, kv, selectedSize?.context_fit)])}</small></label><label className="input-field"><span>{tr("Low-RAM mode")}</span><Select ariaLabel={tr("Native low RAM mode")} value={lowRam} options={['auto', 'resident', 'mmap'].map(v => ({ value: v, label: v === 'auto' ? 'Automatic' : v === 'resident' ? 'Keep experts in RAM' : 'Read experts from disk' }))} onChange={setLowRam}/></label></div>{tr(installed ? <><NativeSettingsFile model={installed.model}/><NativeSettings model={installed.model}/></> : <p className="small muted">{tr("More engine parameters become available after preparing this version.")}</p>)}</section> : null)}
    </div>
    <aside className="stack stack--lg"><PcComputer gpuName={pcGpu?.name} ramGb={pcRam} vramGb={pcVram} vramAllGb={pcGpus.reduce((n, g) => n + g.vram_gb, 0) || undefined} loaded={loadedModels} selectedLoaded={!!selectedSize && loadedModels.some(m => m.id === selectedSize.id)} inUse={keptModels.length ? { ramGb: Math.round(keptRam), vramGb: Math.round(keptVramOn(chosenCards)) } : null} fit={selectedSize ? fitOn(selectedSize, labelHardware, true, { context, kv }) : null}/><section className="st-card"><h2 className="h4">{tr("Model files")}</h2><code className="native-path">{installed?.dataFolder ?? native?.downloadDirectory ?? native?.installed?.data_folder ?? 'Choose an installation'}</code><div className="model-files__actions"><Btn size="sm" variant="ghost" onClick={() => { setSettingsSection('Storage'); go('settings'); }}>{tr("Storage settings")}</Btn><Btn size="sm" variant="ghost" onClick={onOtherModels} className="other-models">{tr("Other local models\u2026")}</Btn></div></section></aside>
   </div>
@@ -315,18 +352,51 @@ const KV_CHOICES = [
     { value: 'q4_0', label: 'Q4', hint: 'Q4 uses about half the memory of INT8, but is less precise on very long documents.' },
     { value: 'k8v4', label: 'K8 / V4', hint: 'K8 / V4 uses about a quarter less memory than INT8 and is more precise than Q4. Prompts are 2 to 5% slower.' },
 ];
-/** The conversation memory a format takes at a context, in GB: native-fit's own rule (setup.py's figures), so the page and the install agree. */
+/** The KV cache a format takes at a context, in GB: native-fit's own rule (setup.py's figures), so the page and the install agree. The budget's "Context and state" row adds the request state. */
 const kvMemoryGb = (context: number, kv: string, fit?: ContextFit | null) => Math.round(contextCacheGb(context, kv, fit) * 10) / 10;
 /**
  * What a running job is doing, and nothing else: one line with the step, one small line with the numbers when there are any, a thin bar, and Stop as a
  * plain word. A soft ring breathes beside the step (transform and opacity only; still under reduced motion). The bar fills with the real percent, or
  * glides while no percent is known.
  */
+type PreflightProgress = {
+    vram?: { usedGb?: number; totalGb?: number; ok?: boolean };
+    ram?: { usedGb?: number; totalGb?: number; ok?: boolean };
+    disk?: { freeGb?: number; ok?: boolean } | null;
+    spillGb?: number;
+    warnings?: string[];
+};
+
+/**
+ * The figures the host saves with a load. They are shown while it runs, and
+ * again beside the error when it fails: the reason a start did not fit (RAM,
+ * graphics memory) has to stay readable after the job has stopped.
+ */
+export function PreflightFigures({ preflight }: {
+    preflight?: PreflightProgress;
+}) {
+    const gb = (n: unknown) => Number.isFinite(Number(n)) ? `${Number(n).toFixed(1)} GB` : '—';
+    const rows = preflight ? [
+        { label: tr('Graphics memory'), value: `${gb(preflight.vram?.usedGb)} / ${gb(preflight.vram?.totalGb)}`, ok: preflight.vram?.ok },
+        { label: tr('RAM'), value: `${gb(preflight.ram?.usedGb)} / ${gb(preflight.ram?.totalGb)}`, ok: preflight.ram?.ok },
+        ...(preflight.disk ? [{ label: tr('Disk use'), value: tr('{0} free', [gb(preflight.disk.freeGb)]), ok: preflight.disk.ok }] : []),
+        ...(Number(preflight.spillGb) > 0 ? [{ label: tr('SSD'), value: gb(preflight.spillGb), ok: true }] : []),
+    ] : [];
+    const warnings = Array.isArray(preflight?.warnings) ? preflight.warnings : [];
+    if (!rows.length && !warnings.length) return null;
+    return <>
+        {rows.length ? <dl className="native-progress__preflight" data-preflight>{rows.map(row => <div key={row.label}><dt>{row.label}</dt><dd data-ok={row.ok === false ? 'false' : row.ok === true ? 'true' : undefined}>{row.value}</dd></div>)}</dl> : null}
+        {warnings.map((warning, index) => <p key={index} className="native-progress__warning">{tr(String(warning))}</p>)}
+    </>;
+}
+
 export function NativeProgress({ job, label }: {
     job: NativeJob;
     label?: string;
 }) {
-    const download = installProgress(job.result?.install), detailsText = [job.details, job.result?.install?.engine?.details].filter(Boolean).join('\n');
+    /* A preparation that failed or was stopped has no step and no figures left (the host clears them): the card says the kind and the error or the stop, never the download that was under way. */
+    const stopped = job.error || job.state === 'cancelled';
+    const download = stopped ? undefined : installProgress(job.result?.install), detailsText = [job.details, job.result?.install?.engine?.details].filter(Boolean).join('\n');
     const downloadEta = useDownloadEta(download, job.id);
     const progress = job.progress ?? {}, stage = typeof progress.stage === 'string' ? progress.stage : '';
     const loading = !!stage;
@@ -343,7 +413,7 @@ export function NativeProgress({ job, label }: {
     const running = job.state === 'running', stoppable = ['install', 'load', 'pictures', 'autotune', 'recheck'].includes(job.kind);
     const kindTitle = job.kind === 'install' ? (label ? tr('Preparing {0}', [label]) : 'Preparing your model') : job.kind === 'load' ? 'Loading model' : job.kind === 'pictures' ? 'Downloading the picture files' : job.kind === 'autotune' || job.kind === 'recheck' ? 'Tuning your model' : 'Engine operation';
     /* A failed job has no stage left (the host clears it), and its error is said once, in the notice below: the step falls back to the kind. */
-    const step = stage ? loadStageText(stage) : job.kind === 'install' ? (job.result?.install?.label ?? (download && /^5\//.test(job.result?.install?.step ?? '') ? stageText(installStage(job.result?.install)) : installStepLabel(job.result?.install?.step))) : job.error ? '' : job.summary;
+    const step = stage ? loadStageText(stage) : job.kind === 'install' ? (stopped ? '' : (job.result?.install?.label ?? (download && /^5\//.test(job.result?.install?.step ?? '') ? stageText(installStage(job.result?.install)) : installStepLabel(job.result?.install?.step)))) : job.error ? '' : job.summary;
     const loadPercent = Number(progress.percent), percent = loading ? (Number.isFinite(loadPercent) ? Math.max(0, Math.min(100, loadPercent)) : null) : download && Number.isFinite(download.percent) ? Math.max(0, Math.min(100, Number(download.percent))) : null;
     const eta = loading ? loadEtaText(progress) : downloadEta;
     const warmup = progress.warmup as { ms?: number; tokensOut?: number; outputTps?: number | null; error?: string } | undefined;
@@ -351,15 +421,7 @@ export function NativeProgress({ job, label }: {
     const numbers = loading
         ? [percent !== null ? `${Math.round(percent)}%` : '', eta || (running && stage !== 'ready' ? tr('Estimating time…') : ''), warmupText].filter(Boolean).join(' · ')
         : [percent !== null ? `${Math.round(percent)}%` : '', download && Number.isFinite(download.done_gb) && Number.isFinite(download.total_gb) ? `${download.done_gb!.toFixed(1)} / ${download.total_gb!.toFixed(1)} GB` : '', downloadEta].filter(Boolean).join(' · ');
-    const preflight = progress.preflight as { vram?: { usedGb?: number; totalGb?: number; ok?: boolean }; ram?: { usedGb?: number; totalGb?: number; ok?: boolean }; disk?: { freeGb?: number; ok?: boolean } | null; spillGb?: number; warnings?: string[] } | undefined;
-    const gb = (n: unknown) => Number.isFinite(Number(n)) ? `${Number(n).toFixed(1)} GB` : '—';
-    const preflightRows = preflight ? [
-        { label: tr('Graphics memory'), value: `${gb(preflight.vram?.usedGb)} / ${gb(preflight.vram?.totalGb)}`, ok: preflight.vram?.ok },
-        { label: tr('RAM'), value: `${gb(preflight.ram?.usedGb)} / ${gb(preflight.ram?.totalGb)}`, ok: preflight.ram?.ok },
-        ...(preflight.disk ? [{ label: tr('Disk use'), value: tr('{0} free', [gb(preflight.disk.freeGb)]), ok: preflight.disk.ok }] : []),
-        ...(Number(preflight.spillGb) > 0 ? [{ label: tr('SSD'), value: gb(preflight.spillGb), ok: true }] : []),
-    ] : [];
-    const warnings = Array.isArray(preflight?.warnings) ? preflight!.warnings! : [];
+    const preflight = progress.preflight as PreflightProgress | undefined;
     const words = tr(step || kindTitle);
     return <section className="st-card native-progress" aria-live="polite" data-state={job.state} data-stage={stage || undefined}>
         <div className="native-progress__row">
@@ -368,8 +430,7 @@ export function NativeProgress({ job, label }: {
             {stoppable && running ? <button type="button" className="native-progress__stop" disabled={stopping} onClick={() => void stop()}>{tr(stopping ? 'Stopping…' : 'Stop')}</button> : null}
         </div>
         {running ? <div className="native-progress__bar" role="progressbar" aria-label={words} aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent ?? undefined} data-indeterminate={percent === null || undefined}><i style={percent !== null ? { transform: `scaleX(${percent / 100})` } : undefined}/></div> : null}
-        {preflightRows.length ? <dl className="native-progress__preflight">{preflightRows.map(row => <div key={row.label}><dt>{row.label}</dt><dd data-ok={row.ok === false ? 'false' : row.ok === true ? 'true' : undefined}>{row.value}</dd></div>)}</dl> : null}
-        {warnings.map((warning, index) => <p key={index} className="native-progress__warning">{tr(String(warning))}</p>)}
+        <PreflightFigures preflight={preflight}/>
         <DownloadParts parts={job.result?.install?.parts}/>
         {detailsText ? <details><summary className="small">{tr("Details")}</summary><pre className="small muted error-detail-text">{detailsText}</pre></details> : null}
         {error ? <ErrorNotice message={error}/> : null}

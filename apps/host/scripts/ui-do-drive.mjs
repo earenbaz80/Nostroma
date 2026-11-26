@@ -16,6 +16,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { startScriptedWorker } from '../tests/helpers/scripted-worker.mjs';
+import { anchors, skipOnboarding } from './ui-anchors.mjs';
 
 const HOST_DIR = resolve(import.meta.dirname, '..');
 const SHOTS = resolve(process.argv[2] ?? 'ui-shots');
@@ -32,7 +33,7 @@ const home = mkdtempSync(join(tmpdir(), 'nostroma-ui-do-'));
 const ws = join(home, 'workspace'); mkdirSync(ws, { recursive: true });
 const port = await freePort();
 const env = { ...process.env, NOSTROMA_HOME: home, NOSTROMA_PORT: String(port), NOSTROMA_WORKSPACE: ws, NOSTROMA_REAL_ENGINE: '0', NOSTROMA_COMPONENTS_DIR: join(home, 'components'), NOSTROMA_SETTINGS_FILE: join(home, 'app-settings.json'), LOCALAPPDATA: join(home, 'Local'), APPDATA: join(home, 'Roaming'), XDG_DATA_HOME: join(home, 'xdg-data'), XDG_CONFIG_HOME: join(home, 'xdg-config'), XDG_STATE_HOME: join(home, 'xdg-state') };
-delete (env.NOSTROMA_HARNESS_DIR ?? env.NOSTROMA_HARNESS_DIR);
+delete (env.NOSTROMA_HARNESS_DIR);
 const child = spawn(process.execPath, [join(HOST_DIR, 'server', 'index.mjs')], { cwd: HOST_DIR, env, stdio: 'ignore', windowsHide: true });
 export const base = `http://127.0.0.1:${port}`;
 for (let i = 0; i < 100; i++) { try { if ((await fetch(`${base}/api/health`)).ok) break; } catch { /* starting */ } await sleep(200); }
@@ -70,8 +71,7 @@ export async function open(scheme, width, height, sessions, { hash = '#/chat', p
   if (before) await before(page);
   await page.goto(`${origin}/${hash}`);
   await page.waitForTimeout(1800);
-  const skip = page.getByText('Go straight to the app');
-  if (!keepSetup && await skip.count()) { await skip.click(); await page.waitForTimeout(600); }
+  if (!keepSetup) await skipOnboarding(page, { timeout: 1200, settle: 600 });
   return page;
 }
 export const shot = (page, name) => page.screenshot({ path: join(SHOTS, `${name}.png`) });
@@ -89,13 +89,13 @@ cases.approval = async () => {
     const tag = `${scheme}-${sizeName}`;
     const sessions = [chat('s1', 'Long reply', [user('u1', 'Please write notes.txt'), reply('a1', longReply, { tools: [askTool('t1')] })])];
     const page = await open(scheme, w, h, sessions);
-    const dock = page.locator('.approvaldock');
+    const dock = page.locator(anchors.approval.dock);
     await dock.waitFor({ timeout: 15000 });
     const view = page.viewportSize();
     const inView = async sel => { const b = await page.locator(sel).first().boundingBox(); return !!b && b.y >= 0 && b.y + b.height <= view.height + 1 && b.x >= 0 && b.x + b.width <= view.width + 1; };
     check(await page.locator('.askcard').count() === 1, `${tag}: one Approve/Deny card on the page`);
     check(await page.getByRole('button', { name: 'Approve' }).count() === 1 && await page.getByRole('button', { name: 'Deny' }).count() === 1, `${tag}: one Approve and one Deny`);
-    check(await inView('.approvaldock'), `${tag}: the card is inside the window at the end of the reply`);
+    check(await inView(anchors.approval.dock), `${tag}: the card is inside the window at the end of the reply`);
     const scroller = page.locator('.main__body.chat');
     const atEnd = () => scroller.evaluate(el => el.scrollHeight - el.scrollTop - el.clientHeight);
     check(await atEnd() < 4, `${tag}: the reply is still scrolled to its end`, String(await atEnd()));
@@ -103,7 +103,7 @@ cases.approval = async () => {
     await shot(page, `4725-${tag}-end`);
     await scroller.evaluate(el => { el.scrollTop = 0; });
     await page.waitForTimeout(300);
-    check(await inView('.approvaldock'), `${tag}: the card stays in the window when the reader is at the top`);
+    check(await inView(anchors.approval.dock), `${tag}: the card stays in the window when the reader is at the top`);
     const composerTop = await page.locator('.composer .st-composer').boundingBox();
     const dockBox = await dock.boundingBox();
     check(dockBox.y + dockBox.height <= composerTop.y, `${tag}: the card sits above the message box`);
@@ -111,7 +111,7 @@ cases.approval = async () => {
     await shot(page, `4725-${tag}-top`);
     await page.getByRole('button', { name: 'Approve' }).click();
     await page.waitForTimeout(500);
-    check(await page.locator('.approvaldock').count() === 0, `${tag}: the card goes away after Approve`);
+    check(await page.locator(anchors.approval.dock).count() === 0, `${tag}: the card goes away after Approve`);
     check(await page.locator('.approval-wait').count() === 0, `${tag}: and so does the waiting line`);
     check(page.problems.length === 0, `${tag}: no page error`, page.problems.join('; '));
     await page.context().close();
@@ -119,12 +119,13 @@ cases.approval = async () => {
   // Two waiting at once, one in each card style; Deny works from the dock.
   const sessions = [chat('s1', 'Two waiting', [user('u1', 'Do two things'), reply('a1', longReply.slice(0, 1500), { tools: [askTool('t1'), plainTool('t2')] })])];
   const page = await open('light', 1280, 860, sessions);
-  await page.locator('.approvaldock').waitFor({ timeout: 15000 });
-  check(await page.locator('.approvaldock > section').count() === 2, 'two waiting: both cards are in the dock');
+  await page.locator(anchors.approval.dock).waitFor({ timeout: 15000 });
+  const dockCount = async () => Number(await page.locator(anchors.approval.dock).getAttribute('data-count') ?? 0);
+  check(await dockCount() === 2, 'two waiting: both cards are in the dock');
   await shot(page, '4725-two-waiting');
   await page.getByRole('button', { name: 'Deny' }).first().click();
   await page.waitForTimeout(400);
-  check(await page.locator('.approvaldock > section').count() === 1, 'two waiting: Deny on the first leaves the second');
+  check(await dockCount() === 1, 'two waiting: Deny on the first leaves the second');
   await page.context().close();
 };
 
@@ -185,13 +186,13 @@ cases.copy = async () => {
     await b.click();
     await page.waitForTimeout(400);
     check(await b.evaluate(el => !el.hasAttribute('data-copied')), 'refused clipboard: the button does not claim success');
-    check(/Couldn.t copy/.test(await page.locator('.st-toast').first().innerText()), 'refused clipboard: a toast says it did not work');
+    check(/Couldn.t copy/.test(await page.locator(anchors.toast.item).first().innerText()), 'refused clipboard: a toast says it did not work');
     await page.context().close();
   }
   // The Serving screen: the address and the request template.
   for (const scheme of ['light', 'dark']) {
     const page = await open(scheme, 1280, 860, [chat('s1', 'Serving', [user('u1', 'Hi'), reply('a1', 'Hello there.')])], { hash: '#/serving' });
-    const c = page.getByRole('button', { name: 'Copy API base URL' });
+    const c = page.locator(anchors.serving.copyApiBaseUrl);
     await c.waitFor({ timeout: 15000 });
     await c.click();
     await page.waitForTimeout(250);
@@ -371,9 +372,9 @@ cases.serving = async () => {
           return route.fulfill({ response: r, json: { ...j, localUrl: 'http://127.0.0.1:8079/v1', baseUrl: 'http://100.76.61.73:8080/v1', sharing: { active: true, url: 'http://100.76.61.73:8080/v1' } } });
         });
       } });
-      await page.getByText('API base URL', { exact: false }).first().waitFor({ timeout: 15000 });
+      await page.locator(anchors.serving.apiBaseUrl).waitFor({ timeout: 15000 });
       await page.waitForTimeout(800);
-      const text = await page.locator('.serving-overview').innerText();
+      const text = await page.locator(anchors.serving.overview).innerText();
       if (sharing) {
         check(/API base URL on this computer/.test(text) && text.includes('http://127.0.0.1:8079/v1'), `${tag}: sharing on: the app's own address is shown`);
         check(/Address for other devices/.test(text) && text.includes('http://100.76.61.73:8080/v1'), `${tag}: sharing on: and the address for other devices`);
@@ -382,7 +383,7 @@ cases.serving = async () => {
         await t.click(); await page.waitForTimeout(250);
         check((await page.evaluate(() => navigator.clipboard.readText())) === 'http://100.76.61.73:8080/v1', `${tag}: sharing on: the copy button gives the network address`);
         check((await page.evaluate(() => document.documentElement.scrollWidth)) <= w, `${tag}: sharing on: no sideways scroll`);
-        await page.locator('.serving-overview').scrollIntoViewIfNeeded();
+        await page.locator(anchors.serving.overview).scrollIntoViewIfNeeded();
         await shot(page, `4798-${tag}-sharing`);
       } else {
         check(!/Address for other devices/.test(text) && await page.locator('.serving-two-addresses').count() === 0, `${tag}: sharing off: one address, no extra line`);
@@ -513,29 +514,30 @@ cases.helper = async () => {
       await p.route('**/api/chat/helper', async r => { posts.push(r.request().postDataJSON()); if (refuse) return r.fulfill({ status: 409, json: { error: 'This helper cannot take a message any more. Ask the assistant in the chat to start a new one.' } }); return r.fulfill({ json: { ok: true, messageId: 'm1' } }); });
     } });
     await page.getByRole('button', { name: /Subagents/ }).first().click();
-    const rows = page.locator('.subagent-row');
-    await rows.first().waitFor({ timeout: 15000 });
+    const finished = page.locator(anchors.subagents.row('child-1'));
+    const failed = page.locator(anchors.subagents.row('child-2'));
+    await finished.waitFor({ timeout: 15000 });
     // The finished helper: queue.
-    await rows.nth(0).getByRole('button', { name: 'Message this helper' }).click();
-    const input = rows.nth(0).getByRole('textbox', { name: 'Message to Check the tests' });
+    await finished.getByRole('button', { name: 'Message this helper' }).click();
+    const input = finished.getByRole('textbox', { name: 'Message to Check the tests' });
     await input.fill('use ISO dates in the file you just wrote');
     await shot(page, `4749-${tag}-writing`);
     await input.press('Enter');
-    await rows.nth(0).getByRole('status').waitFor({ timeout: 5000 });
+    await finished.getByRole('status').waitFor({ timeout: 5000 });
     check(JSON.stringify(posts[0]) === JSON.stringify({ sessionId: 's1', helperId: 'child-1', message: 'use ISO dates in the file you just wrote', delivery: 'queue' }), `${tag}: a finished helper gets the message as a new turn (queue)`, JSON.stringify(posts[0]));
-    check(/Sent to Check the tests\./.test(await rows.nth(0).innerText()) && await input.inputValue() === '', `${tag}: the row says it was sent and the box is empty again`);
+    check(/Sent to Check the tests\./.test(await finished.innerText()) && await input.inputValue() === '', `${tag}: the row says it was sent and the box is empty again`);
     // A second helper (a failed one is listed too).
-    await rows.nth(1).getByRole('button', { name: 'Message this helper' }).click();
-    await rows.nth(1).getByRole('textbox').fill('also add the date');
-    await rows.nth(1).getByRole('button', { name: 'Send' }).click();
-    await rows.nth(1).getByRole('status').waitFor({ timeout: 5000 });
+    await failed.getByRole('button', { name: 'Message this helper' }).click();
+    await failed.getByRole('textbox').fill('also add the date');
+    await failed.getByRole('button', { name: 'Send' }).click();
+    await failed.getByRole('status').waitFor({ timeout: 5000 });
     check(posts[1]?.delivery === 'queue' && posts[1]?.helperId === 'child-2', `${tag}: the message goes to the helper that was chosen`, JSON.stringify(posts[1]));
     // A refusal says so in plain words.
     refuse = true;
-    await rows.nth(0).getByRole('textbox').fill('one more thing');
-    await rows.nth(0).getByRole('button', { name: 'Send' }).click();
-    await rows.nth(0).getByRole('alert').waitFor({ timeout: 5000 });
-    check(/cannot take a message any more/.test(await rows.nth(0).getByRole('alert').innerText()), `${tag}: a refused message says why in plain words`);
+    await finished.getByRole('textbox').fill('one more thing');
+    await finished.getByRole('button', { name: 'Send' }).click();
+    await finished.getByRole('alert').waitFor({ timeout: 5000 });
+    check(/cannot take a message any more/.test(await finished.getByRole('alert').innerText()), `${tag}: a refused message says why in plain words`);
     check((await page.evaluate(() => document.documentElement.scrollWidth)) <= w, `${tag}: no sideways scroll`);
     await shot(page, `4749-${tag}-sent`);
     check(page.problems.length === 0, `${tag}: no page error`, page.problems.join('; '));
@@ -546,7 +548,7 @@ cases.helper = async () => {
 /* ------------------------------------------------------------------------------------------------------------------- #4783 */
 cases.busy = async () => {
   const fresh = (scheme, w, h, whileBusy) => open(scheme, w, h, [chat('s1', 'Busy', [])], { prefs: whileBusy ? { whileBusy } : {} });
-  const send = async (page, text) => { await page.locator('textarea').first().fill(text); await page.keyboard.press('Enter'); };
+  const send = async (page, text) => { await page.locator(anchors.composer.textarea).fill(text); await page.keyboard.press('Enter'); };
   const lastReply = page => page.locator('.st-msg--assistant .st-bubble').last();
   for (const scheme of ['light', 'dark']) {
     const w = 1280, h = 860, tag = scheme;
@@ -554,19 +556,20 @@ cases.busy = async () => {
     let page = await fresh(scheme, w, h, null);
     await send(page, 'SCRIPT:slow 80');
     await page.locator('.st-msg--assistant').first().waitFor({ timeout: 15000 });
-    await page.locator('textarea').first().fill('my second message');
+    await page.locator(anchors.composer.textarea).fill('my second message');
     await page.keyboard.press('Enter');
     await page.waitForTimeout(600);
-    check(await page.locator('textarea').first().inputValue() === 'my second message', `${tag}: Wait: the message stays in the box`);
+    check(await page.locator(anchors.composer.textarea).inputValue() === 'my second message', `${tag}: Wait: the message stays in the box`);
     check(await page.locator('.parked').count() === 0, `${tag}: Wait: nothing is parked`);
-    await page.getByText('The assistant is still answering').first().waitFor({ timeout: 4000 }).catch(() => {});
-    check(await page.getByText('The assistant is still answering').count() > 0, `${tag}: Wait: a note says the assistant is still answering`);
+    const stillAnswering = page.locator(anchors.toast.item).filter({ hasText: 'The assistant is still answering' });
+    await stillAnswering.first().waitFor({ timeout: 4000 }).catch(() => {});
+    check(await stillAnswering.count() > 0, `${tag}: Wait: a note says the assistant is still answering`);
     await page.context().close();
     // Send after: it waits (shown), and goes when the answer is done, after the whole first answer.
     page = await fresh(scheme, w, h, 'queue');
     await send(page, 'SCRIPT:slow 80');
     await page.locator('.st-msg--assistant').first().waitFor({ timeout: 15000 });
-    await page.locator('textarea').first().fill('SCRIPT:echo the second answer');
+    await page.locator(anchors.composer.textarea).fill('SCRIPT:echo the second answer');
     check(/Enter sends it when the answer is done/.test(await page.locator('.composer__busy-hint').innerText()), `${tag}: Send after: the hint says what Enter will do`);
     await page.keyboard.press('Enter');
     await page.locator('.parked').waitFor({ timeout: 3000 });
@@ -583,7 +586,7 @@ cases.busy = async () => {
     await send(page, 'SCRIPT:slow 600');
     await page.locator('.st-msg--assistant').first().waitFor({ timeout: 15000 });
     await page.waitForTimeout(800);
-    await page.locator('textarea').first().fill('SCRIPT:echo interrupted and answered');
+    await page.locator(anchors.composer.textarea).fill('SCRIPT:echo interrupted and answered');
     check(/Enter stops the answer here and sends it now/.test(await page.locator('.composer__busy-hint').innerText()), `${tag}: Interrupt: the hint says what Enter will do`);
     await page.keyboard.press('Enter');
     const t0 = Date.now();
@@ -632,7 +635,7 @@ cases.quote = async () => {
     await page.locator('.quote__body').first().click();
     await page.waitForTimeout(400);
     // Send an answer: the model gets the fixed form, the transcript shows the quote apart from the reply.
-    await page.locator('textarea').first().fill('SCRIPT:echo thanks for the quote');
+    await page.locator(anchors.composer.textarea).fill('SCRIPT:echo thanks for the quote');
     await page.keyboard.press('Enter');
     await page.locator('.sent-quote').first().waitFor({ timeout: 15000 });
     await page.waitForTimeout(300);
@@ -660,13 +663,13 @@ cases.ask = async () => {
     const tag = `${scheme}-${sizeName}`;
     const before = (await asked()).length;
     const page = await open(scheme, w, h, [chat('s1', 'Ask', [])], { origin: t.origin });
-    await page.locator('textarea').first().fill('Build me a page');
+    await page.locator(anchors.composer.textarea).fill('Build me a page');
     await page.keyboard.press('Enter');
     const card = page.locator('.askq');
     await card.waitFor({ timeout: 15000 });
     const text = await card.innerText();
     check(/Which colour should the page be\?/.test(text) && /Which extras do you want\?/.test(text) && /Warm and strong/.test(text) && /It sets the whole theme/.test(text), `${tag}: the question, its detail and the option descriptions are shown`);
-    check(await page.locator('.askcard').count() === 1 && await page.locator('.approvaldock').count() === 1, `${tag}: it is one card in the dock above the box`);
+    check(await page.locator('.askcard').count() === 1 && await page.locator(anchors.approval.dock).count() === 1, `${tag}: it is one card in the dock above the box`);
     const send = page.getByRole('button', { name: 'Send answer' });
     check(await send.isDisabled(), `${tag}: Send answer waits until every question has an answer`);
     await page.getByRole('radio', { name: /Red/ }).click();
@@ -681,7 +684,7 @@ cases.ask = async () => {
     check(sb.y >= 0 && sb.y + sb.height <= h && /Send answer/.test(top), `${tag}: the answer buttons are in view and reachable without scrolling the card`, JSON.stringify(sb));
     await shot(page, `4244-${tag}`);
     check((await page.evaluate(() => document.documentElement.scrollWidth)) <= w, `${tag}: no sideways scroll`);
-    const box = await page.locator('.approvaldock').boundingBox();
+    const box = await page.locator(anchors.approval.dock).boundingBox();
     check(!!box && box.y >= 0 && box.y + box.height <= h + 1, `${tag}: the dock with the card is inside the window`, JSON.stringify(box));
     await send.click();
     await page.waitForFunction(() => document.querySelectorAll('.askq').length === 0, null, { timeout: 8000 });
@@ -689,7 +692,7 @@ cases.ask = async () => {
     check(JSON.stringify(got.at(-1)) === JSON.stringify({ sessionId: 's1', callId: 'call-ask-1', answers: [{ id: 'q1', selected: ['Blue'] }, { id: 'q2', selected: ['Dark mode', 'Animations'] }] }), `${tag}: the answer goes to the host as chosen`, JSON.stringify(got.at(-1)));
     check(await page.locator('.askq').count() === 0, `${tag}: the card goes away, and the turn ends`);
     // The person's own words, and a skip.
-    await page.locator('textarea').first().fill('Again');
+    await page.locator(anchors.composer.textarea).fill('Again');
     await page.keyboard.press('Enter');
     await card.waitFor({ timeout: 15000 });
     await page.getByRole('textbox', { name: 'Type your own answer' }).first().fill('Green, like the logo');
@@ -698,7 +701,7 @@ cases.ask = async () => {
     await page.waitForFunction(() => document.querySelectorAll('.askq').length === 0, null, { timeout: 8000 });
     const own = (await asked()).slice(before).at(-1);
     check(JSON.stringify(own?.answers) === JSON.stringify([{ id: 'q1', selected: [], custom: 'Green, like the logo' }, { id: 'q2', selected: ['Animations'] }]), `${tag}: the person's own words are sent as such`, JSON.stringify(own));
-    await page.locator('textarea').first().fill('Once more');
+    await page.locator(anchors.composer.textarea).fill('Once more');
     await page.keyboard.press('Enter');
     await card.waitFor({ timeout: 15000 });
     await page.getByRole('button', { name: 'Skip' }).click();
@@ -711,7 +714,7 @@ cases.ask = async () => {
   {
     const before = (await asked()).length;
     const page = await open('light', 1280, 860, [chat('s1', 'Loop', [])], { origin: t.origin });
-    await page.locator('textarea').first().fill('/loop 10m Build me a page stop after 1 answer');
+    await page.locator(anchors.composer.textarea).fill('/loop 10m Build me a page stop after 1 answer');
     await page.keyboard.press('Enter');
     await page.waitForFunction(async () => (await (await fetch('/__fixture/asked')).json()).length > 0, null, { timeout: 15000 }).catch(() => {});
     const got = (await asked()).slice(before).at(-1);
@@ -725,13 +728,21 @@ cases.ask = async () => {
 /* ------------------------------------------------------------------------------------------------------------------- #3818 (a probe, no fix) */
 cases.select = async () => {
   const paras = Array.from({ length: 40 }, (_, i) => `Paragraph ${i + 1}. This is a sentence of a long answer that goes on for a while so that the reply overflows the window.`).join('\n\n');
+  // The words of the reply, not the sidebar's: the drag starts and ends in a paragraph of the message bubble.
   const pick = async (page, fromText, toText) => {
-    const a = await page.getByText(fromText, { exact: false }).first().boundingBox(), b = await page.getByText(toText, { exact: false }).first().boundingBox();
+    const a = await page.locator('.st-bubble').getByText(fromText).first().boundingBox(), b = await page.locator('.st-bubble').getByText(toText).first().boundingBox();
     await page.mouse.move(a.x + 2, a.y + a.height / 2);
     await page.mouse.down();
     await page.mouse.move(b.x + b.width - 4, b.y + b.height / 2, { steps: 12 });
     await page.mouse.up();
-    return page.evaluate(() => window.getSelection().toString());
+    // Only a selection that lives in a message bubble counts.
+    return page.evaluate(() => {
+      const s = window.getSelection();
+      if (!s || !s.rangeCount) return '';
+      const node = s.getRangeAt(0).commonAncestorContainer;
+      const el = node instanceof Element ? node : node.parentElement;
+      return el?.closest('.st-bubble') ? s.toString() : '';
+    });
   };
   const page = await open('light', 1280, 860, [chat('s1', 'Select', [user('u1', 'Write a lot'), reply('a1', paras)])]);
   await page.locator('.st-bubble p').first().waitFor({ timeout: 15000 });
@@ -746,7 +757,7 @@ cases.select = async () => {
   // While a reply streams: select a passage of the older reply, and see whether the selection and the view stay.
   const page2 = await open('light', 1280, 860, [chat('s1', 'Select', [user('u1', 'Write a lot'), reply('a1', paras)])]);
   await page2.locator('.st-bubble p').first().waitFor({ timeout: 15000 });
-  await page2.locator('textarea').first().fill('SCRIPT:slow 400');
+  await page2.locator(anchors.composer.textarea).fill('SCRIPT:slow 400');
   await page2.keyboard.press('Enter');
   await page2.waitForTimeout(1500);
   const v2 = await page2.evaluate(() => [...document.querySelector('.st-msg--assistant').querySelectorAll('.st-bubble p')].filter(p => { const r = p.getBoundingClientRect(); return r.top > 100 && r.bottom < innerHeight - 220; }).map(p => p.textContent.slice(0, 12)));
@@ -759,7 +770,13 @@ cases.select = async () => {
     }, [v2[0], v2.at(-1)]);
     const top0 = await page2.locator('.main__body.chat').evaluate(el => el.scrollTop);
     await page2.waitForTimeout(3000);
-    const sel1 = await page2.evaluate(() => window.getSelection().toString());
+    const sel1 = await page2.evaluate(() => {
+      const s = window.getSelection();
+      if (!s || !s.rangeCount) return '';
+      const node = s.getRangeAt(0).commonAncestorContainer;
+      const el = node instanceof Element ? node : node.parentElement;
+      return el?.closest('.st-bubble') ? s.toString() : '';
+    });
     const top1 = await page2.locator('.main__body.chat').evaluate(el => el.scrollTop);
     console.log(`INFO streaming: selection ${sel0.length} -> ${sel1.length} characters, scrollTop ${Math.round(top0)} -> ${Math.round(top1)}`);
     console.log(`INFO before: ${JSON.stringify(sel0.slice(0, 40))} ... ${JSON.stringify(sel0.slice(-40))}

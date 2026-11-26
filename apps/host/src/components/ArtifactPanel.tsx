@@ -12,6 +12,8 @@ import { artifactFilename, artifactIcon, safePreviewUrl, type PreviewArtifact } 
 import { scrollBehavior } from '../lib/responsive';
 import { previewVersion } from '../lib/preview-merge';
 import { HTML_PREVIEW_SANDBOX, htmlPreviewDocument, needsOutsideFiles } from '../lib/time-skip-compare';
+import { withSandboxConsole } from '../lib/sandbox-console';
+import { SandboxConsole, useSandboxLogs } from './SandboxConsole';
 const PdfPreview = lazy(() => import('./PdfPreview'));
 export function ArtifactPanel({ items, selected, onSelect, onClose, onCloseTab, inline }: {
     items: PreviewArtifact[];
@@ -28,6 +30,11 @@ export function ArtifactPanel({ items, selected, onSelect, onClose, onCloseTab, 
     const [toolbarHost, setToolbarHost] = useState<HTMLElement | null>(null);
     const [fileMenu, setFileMenu] = useState(false);
     const fileMenuRef = useRef<HTMLButtonElement>(null);
+    /* A website preview runs scripts with no same-origin right, so it reports its
+       console out through the same bridge the Workbench sandbox uses; without
+       the strip, a page that throws is a blank pane with no reason given. */
+    const frame = useRef<HTMLIFrameElement | null>(null);
+    const { messages, clear } = useSandboxLogs(frame, `${current?.id ?? ''}-${revision}-${version}`);
     useLayoutEffect(() => { setToolbarHost(inline && current ? document.getElementById('preview-file-actions') : null); }, [inline, current?.id]);
     // A different file starts in the reading view; the same file with new content keeps the person's view.
     useEffect(() => {
@@ -91,7 +98,7 @@ export function ArtifactPanel({ items, selected, onSelect, onClose, onCloseTab, 
     const content = <aside className="artifact-panel" aria-label={tr("{0} preview", [current.kind])}>
     {tr(!inline ? <ArtifactTabs onCloseTab={onCloseTab} items={items} selected={selected} onSelect={onSelect}/> : null)}
     <div key={current.id} id="artifact-content" role="tabpanel" aria-labelledby={`artifact-tab-${items.findIndex(a => a.id === selected)}`} className="artifact-content">
-      {tr(current.kind === 'website' ? <><iframe key={`${current.id}-${revision}-${version}`} title={current.title} src={current.content ? undefined : url ?? undefined} srcDoc={current.content === undefined ? undefined : htmlPreviewDocument(current.content)} sandbox={HTML_PREVIEW_SANDBOX} referrerPolicy="no-referrer"/>{/* The policy blocks every outside request, so a page that asks for one is missing it: say so, the way Time-skip does. */}{current.content !== undefined && needsOutsideFiles(current.content) ? <p className="artifact-browser-note">{tr("This page asks for files from the internet, which the preview does not load, so it may look incomplete.")}</p> : null}</> : current.kind === 'pdf' ? url ? <Suspense fallback={<p className="muted preview-placeholder">{tr("Opening PDF viewer\u2026")}</p>}><PdfPreview key={`${current.id}-${revision}-${version}`} url={url}/></Suspense> : <p>{tr("No PDF to display.")}</p> : current.kind === 'image' ? <div className="image-preview" data-size={imageSize === '1' ? 'actual' : 'fit'}>{tr(url ? <img key={`${current.id}-${revision}-${version}`} src={url} alt={current.title} onError={() => setError('Couldn’t load this image.')}/> : null)}{tr(error ? <p role="alert">{tr(error)}</p> : null)}</div> : loading ? <p className="muted preview-placeholder">{tr("Loading document\u2026")}</p> : error ? <p role="alert" className="inline-error preview-placeholder">{tr(error)}</p> : current.kind === 'code' ? <SyntaxCode text={text} filename={artifactFilename(current)} lineNumbers/> : current.kind === 'table' ? <TablePreview key={current.id} text={text}/> : mode === 'source' ? <SyntaxCode text={text} language="markdown" lineNumbers/> : <article className="document-markdown"><PreviewMarkdown text={text}/></article>)}
+      {tr(current.kind === 'website' ? <><iframe key={`${current.id}-${revision}-${version}`} ref={frame} title={current.title} src={current.content ? undefined : url ?? undefined} srcDoc={current.content === undefined ? undefined : withSandboxConsole(htmlPreviewDocument(current.content))} sandbox={HTML_PREVIEW_SANDBOX} referrerPolicy="no-referrer"/>{/* The policy blocks every outside request, so a page that asks for one is missing it: say so, the way Time-skip does. */}{current.content !== undefined && needsOutsideFiles(current.content) ? <p className="artifact-browser-note">{tr("This page asks for files from the internet, which the preview does not load, so it may look incomplete.")}</p> : null}{current.content === undefined ? null : <SandboxConsole messages={messages} onClear={clear} label={tr('Sandbox console')} />}</> : current.kind === 'pdf' ? url ? <Suspense fallback={<p className="muted preview-placeholder">{tr("Opening PDF viewer\u2026")}</p>}><PdfPreview key={`${current.id}-${revision}-${version}`} url={url}/></Suspense> : <p>{tr("No PDF to display.")}</p> : current.kind === 'image' ? <div className="image-preview" data-size={imageSize === '1' ? 'actual' : 'fit'}>{tr(url ? <img key={`${current.id}-${revision}-${version}`} src={url} alt={current.title} onError={() => setError('Couldn’t load this image.')}/> : null)}{tr(error ? <p role="alert">{tr(error)}</p> : null)}</div> : loading ? <p className="muted preview-placeholder">{tr("Loading document\u2026")}</p> : error ? <p role="alert" className="inline-error preview-placeholder">{tr(error)}</p> : current.kind === 'code' ? <SyntaxCode text={text} filename={artifactFilename(current)} lineNumbers/> : current.kind === 'table' ? <TablePreview key={current.id} text={text}/> : mode === 'source' ? <SyntaxCode text={text} language="markdown" lineNumbers/> : <article className="document-markdown"><PreviewMarkdown text={text}/></article>)}
     </div>
     {tr(viewControls ? <div className="artifact-view-controls">{tr(viewControls)}</div> : null)}
   </aside>;

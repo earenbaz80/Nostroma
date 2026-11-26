@@ -101,6 +101,87 @@ export function placeAnchored(o: PlaceOptions): Placement {
     };
 }
 
+export type BesideSide = 'left' | 'right';
+
+export interface BesideOptions {
+    anchor: Box;
+    /** The panel's natural size on screen. */
+    size: Size;
+    viewport: Size;
+    /** Visual pixels per CSS pixel of the panel (1.25 at "Interface size" 125%). */
+    scale: number;
+    /** The side to try first: a help button opens left, away from the row's controls. */
+    prefer?: BesideSide;
+    /** Air between the screen edge and the panel. */
+    margin?: number;
+    /** Air between the anchor and the panel. */
+    gap?: number;
+}
+
+export interface BesidePlacement {
+    /** CSS values for `position: fixed` (the element's own pixels). */
+    left: number;
+    maxWidth: number;
+    side: BesideSide;
+    /** The panel's horizontal extent on the screen (visual pixels): for checks. */
+    visual: { left: number; right: number };
+}
+
+/**
+ * A panel beside its anchor. It uses the preferred side when the panel fits there, otherwise the side where it fits, otherwise the side with more
+ * room, shortened to that room so it never covers the anchor. This is what keeps a help popover off the row's controls in a narrow window.
+ */
+export function placeBeside(o: BesideOptions): BesidePlacement {
+    const scale = sane(o.scale);
+    const m = o.margin ?? 12;
+    const gap = o.gap ?? 12;
+    const vw = Math.max(0, finite(o.viewport.width, 0));
+    const maxW = Math.max(0, vw - 2 * m);
+    const natural = Math.min(Math.max(0, finite(o.size.width, 0)), maxW);
+    const leftRoom = Math.max(0, o.anchor.left - m - gap);
+    const rightRoom = Math.max(0, vw - m - o.anchor.right - gap);
+    const prefer = o.prefer ?? 'left';
+    const fits = (side: BesideSide) => natural <= (side === 'left' ? leftRoom : rightRoom);
+    const other: BesideSide = prefer === 'left' ? 'right' : 'left';
+    const side = fits(prefer) ? prefer : fits(other) ? other : (rightRoom > leftRoom ? 'right' : 'left');
+    const room = side === 'left' ? leftRoom : rightRoom;
+    const width = Math.min(natural, room);
+    const left = side === 'left'
+        ? Math.min(vw - m - width, Math.max(m, o.anchor.left - gap - width))
+        : Math.min(vw - m - width, Math.max(m, o.anchor.right + gap));
+    return {
+        left: left / scale,
+        maxWidth: width / scale,
+        side,
+        visual: { left, right: left + width },
+    };
+}
+
+export interface PopoverPlaceOptions extends Omit<BesideOptions, 'prefer'> {
+    /** 'start' keeps the left edge on the anchor (the default); 'end' chooses the side with room. */
+    align?: 'start' | 'end';
+}
+
+/**
+ * A popover's horizontal placement. The default alignment is the old one: the panel's left edge meets the anchor's left edge and is pushed back inside
+ * the screen. `align: 'end'` uses `placeBeside`, so a help button clears the row's controls and the panel chooses a side that fits.
+ */
+export function placePopover(o: PopoverPlaceOptions): BesidePlacement {
+    if (o.align === 'end')
+        return placeBeside({ ...o, prefer: 'left' });
+    const scale = sane(o.scale);
+    const m = o.margin ?? 12;
+    const vw = Math.max(0, finite(o.viewport.width, 0));
+    const width = Math.min(Math.max(0, finite(o.size.width, 0)), Math.max(0, vw - 2 * m));
+    const left = Math.min(vw - m - width, Math.max(m, o.anchor.left));
+    return {
+        left: left / scale,
+        maxWidth: width / scale,
+        side: 'right',
+        visual: { left, right: left + width },
+    };
+}
+
 /** The scale and the window's size, both in the units `getBoundingClientRect()` uses on this engine. */
 export interface Frame { scale: number; viewport: Size }
 

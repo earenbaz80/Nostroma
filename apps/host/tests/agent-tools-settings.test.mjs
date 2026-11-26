@@ -76,9 +76,13 @@ test('Tools: the person\'s own tools are checked in plain words and saved with t
     v = tools.addCustom({ name: 'Check site', about: 'Check that the site answers.', kind: 'command', command: 'curl -I https://example.com' });
     v = tools.addCustom({ name: 'Issue tracker', about: 'Look up issues.', kind: 'server', address: 'https://issues.example/mcp' });
     assert.deepEqual(v.custom.map(t => [t.id, t.kind]), [['release_notes', 'instructions'], ['check_site', 'command'], ['issue_tracker', 'server']]);
+    // A recommended server is saved off: adding it never starts the program.
+    v = tools.addCustom({ name: 'Memory', about: 'Keeps notes between messages.', kind: 'server', address: 'npx', args: ['-y', 'memory'], enabled: false });
+    assert.equal(v.custom.find(t => t.name === 'Memory').enabled, false);
     assert.throws(() => tools.addCustom({ name: 'release notes', about: 'a', kind: 'instructions', instructions: 'y' }), /already have a tool/);
     const p = tools.profileView();
     assert.equal(p.hasInstructionTools && p.hasCommandTools, true);
+    assert.equal(p.servers.memory, undefined, 'a server saved off is not in the assistant profile');
     assert.deepEqual(p.servers, { 'custom-issue-tracker': { url: 'https://issues.example/mcp' } });
     const file = JSON.parse(readFileSync(tools.filePath, 'utf8'));
     assert.deepEqual(Object.keys(file.instructions), ['release_notes']); assert.deepEqual(Object.keys(file.commands), ['check_site']);
@@ -87,7 +91,7 @@ test('Tools: the person\'s own tools are checked in plain words and saved with t
     v = tools.editCustom('release_notes', { name: 'Release notes', about: 'Changed.', kind: 'instructions', instructions: 'New text.' });
     assert.equal(v.custom[0].about, 'Changed.');
     v = tools.removeCustom('issue_tracker');
-    assert.equal(v.custom.length, 2);
+    assert.equal(v.custom.length, 3);
     assert.throws(() => tools.removeCustom('nope'), /not in your list/);
   } finally { cleanup(dir); }
 });

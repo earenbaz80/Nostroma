@@ -28,20 +28,20 @@ test('new hosts create the default; custom folders and legacy weights remain in 
 });
 
 
-test('a data folder and model library from the Nostroma days move to their Nostroma names',t=>{
+test('the state folder and the model library use their Nostroma names',t=>{
  const root=realpathSync(mkdtempSync(join(tmpdir(),'nostroma-rename-')));t.after(()=>rmSync(root,{recursive:true,force:true}));
  const home=join(root,'home'),documents=join(root,'documents');
  mkdirSync(join(home,'.nostroma','data'),{recursive:true});writeFileSync(join(home,'.nostroma','data','state.json'),'{"version":1}');
  mkdirSync(join(documents,'Nostroma','Models'),{recursive:true});writeFileSync(join(documents,'Nostroma','Models','keep.gguf'),'GGUFfixture');
  const env={...process.env,HOME:home,USERPROFILE:home,NOSTROMA_DOCUMENTS_DIR:documents};
- delete env.NOSTROMA_HOME;delete env.NOSTROMA_HOME;delete env.NOSTROMA_MODELS_DIR;delete env.NOSTROMA_MODELS_DIR;
+ delete env.NOSTROMA_HOME;delete env.NOSTROMA_MODELS_DIR;
  const result=spawnSync(process.execPath,['--input-type=module','-e',`
   import assert from 'node:assert/strict';import {join} from 'node:path';import {existsSync,readFileSync} from 'node:fs';
   const store=await import('./server/store.mjs');
   assert.equal(store.HOME,join(process.env.HOME,'.nostroma'),'the state folder moved');
   assert.equal(readFileSync(join(store.HOME,'data','state.json'),'utf8'),'{"version":1}','settings survived');
-  assert.equal(existsSync(join(process.env.HOME,'.nostroma')),false,'nothing is left under the old name');
-  assert.equal(store.MODELS_DIR,join(process.env.NOSTROMA_DOCUMENTS_DIR,'Nostroma','Models'),'the library moved');
+  assert.equal(existsSync(join(process.env.HOME,'.nostroma')),true,'the state folder exists');
+  assert.equal(store.MODELS_DIR,join(process.env.NOSTROMA_DOCUMENTS_DIR,'Nostroma','Models'),'the library is used');
   assert.equal(readFileSync(join(store.MODELS_DIR,'keep.gguf'),'utf8'),'GGUFfixture','models survived');
  `],{cwd:fileURLToPath(new URL('..',import.meta.url)),env,encoding:'utf8',windowsHide:true});
  assert.equal(result.status,0,result.stderr);

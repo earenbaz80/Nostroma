@@ -177,14 +177,23 @@ test('preparing files never unloads a running model silently', () => {
   assert.match(decide, /installPlan\(\{instances:loaded,target:args\.model/, 'which loaded models may stop is decided before anything stops');
   assert.match(decide, /sharedWritePlan\(/, 'a file the preparation rewrites under a loaded engine stops it, whatever the memory says');
   assert.match(decide, /keeps:instance=>\{try\{return keepsLoaded/, 'a model the person asked to keep is never stopped');
-  assert.match(decide, /why:writing\.some\(one=>one\.id===instance\.id\)\?'files':'memory'/, 'the stop says whether it was the memory or a file');
+  assert.match(decide, /why:stopWhy\(instance,\{target:args\.model,writing\}\)/, 'the stop says whether it was the memory, a file or its own engine');
+  assert.match(source, /question:evictionQuestion\(costs\)/, 'the question is built from each model\u2019s own reason');
   assert.match(install, /if\(plan\.kept\.length&&\(!plan\.fits\|\|plan\.keptWriting\.length\)\)throw new Error\(keptRefusal/, 'a kept model the preparation would write under is refused, with a way forward');
   assert.match(install, /job\.summary=costs\.map\(stoppingSentence\)\.join\(' '\);emit\(\);\s*for\(const instance of plan\.evict\)\{await unload/, 'the stop is said in the present before the model leaves memory');
   assert.match(install, /for\(const instance of plan\.evict\)\{await unload[\s\S]*?evictionNote=costs\.map\(evictionSentence\)\.join\(' '\)/, 'the past is written only after the unloads returned');
   assert.doesNotMatch(install, /for\(const id of \[\.\.\.instances\.keys\(\)\]\)await unload\(id\)/, 'no silent unload');
 });
 
-
+test('an install plan says what older downloaded models would free before the download starts', () => {
+  const models = readSource(new URL('../src/components/NativeModels.tsx', import.meta.url), 'utf8');
+  assert.match(models, /planned\?\.plan\?\.older_models\?\.length/, 'the plan stops before starting the install');
+  assert.match(models, /planned\?\.eviction\?\.question/, 'a loaded model that would stop is named before the install');
+  assert.match(models, /plan\?\.eviction\?\.question/, 'and the page shows the memory freed and the reload time');
+  assert.match(models, /plan\.plan\.space_warning/, 'the page says how many GB deleting them would free');
+  assert.match(models, /plan\.plan\.takes/, 'and how long the install takes');
+  assert.match(models, /installPlanned/, 'a second press starts the install after the warning');
+});
 
 test('the draft layer download of setup step 6 is a stage of its own and counts in the one figure (#3257)', () => {
   lib.setTranslationLanguage('en');

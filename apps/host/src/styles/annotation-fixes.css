@@ -124,8 +124,11 @@ html[data-motion='reduced'] .tunnel-automatic .tunnel-stage__symbol .st-icon, ht
 .task-instructions.st-input { height: 150px; min-height: 150px; resize: none; }
 .task-schedule-summary strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .task-schedule-summary p { margin: 6px 0 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.task-editor-panel .task-schedule:has([aria-label='Day of week']) { grid-template-columns: repeat(3, minmax(0,1fr)); }
-.composer { background: var(--st-bg); backdrop-filter: none; -webkit-backdrop-filter: none; border-top-color: transparent; }
+.task-editor-panel .task-schedule[data-weekly] { grid-template-columns: repeat(3, minmax(0,1fr)); }
+/* No band across the column: the wall behind the chat stays visible and the box
+   you type into is the only surface that carries a background. */
+.composer { background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; border-top-color: transparent; }
+.composer .st-composer { background: var(--st-surface); }
 .composer::before, .composer::after { display: none; }
 .st-composer__bar, .chatsplit[data-preview='true'] .st-composer__bar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 .st-composer__bar > .spacer, .chatsplit[data-preview='true'] .st-composer__bar > .spacer { display: block; flex: 1; min-width: 0; }
@@ -139,6 +142,14 @@ html[data-motion='reduced'] .tunnel-automatic .tunnel-stage__symbol .st-icon, ht
 .menu-shortcut { margin-left: auto; flex: none; color: var(--st-ink-muted); font-family: inherit; font-size: 11px; white-space: nowrap; }
 .slash-command-icon { width: 20px; font-family: var(--st-font-mono); font-size: var(--st-fs-lg); font-weight: 500; line-height: 1; text-align: center; color: var(--st-icon); }
 .composer-menu-heading { margin: 6px 10px 8px; color: var(--st-ink-muted); font-size: var(--st-fs-xs); }
+/* The chat skills menu: the switch and its help are siblings, and the row grows
+   with its description instead of spilling out of the 36px menu item. */
+.composer-skill-row { display: flex; align-items: flex-start; gap: 4px; }
+.composer-skill-row > .menu__item { flex: 1 1 0; width: auto; min-width: 0; height: auto; min-height: 36px; align-items: flex-start; padding: 8px 10px; }
+.composer-skill-row > .help-button { flex: none; margin-top: 4px; }
+.composer-skill-toggle > span { min-width: 0; }
+.composer-skill-toggle strong { display: block; }
+.composer-skill-toggle small { display: block; line-height: 1.4; white-space: normal; }
 .composer-mode-option { align-items: flex-start; gap: 10px; padding-block: 10px; }
 .composer-mode-option > span { flex: 1; min-width: 0; }
 .composer-mode-option strong { display: block; font-weight: 500; }
@@ -178,10 +189,13 @@ html[data-motion='reduced'] .voice-wave span, html[data-motion='reduced'] .agent
 .serving-access-row dd { width: 100%; }
 .task-tree-row[data-leaving='true'] { pointer-events: none; overflow: hidden; animation: task-delete 240ms var(--st-ease-standard) forwards; }
 @keyframes task-delete { from { max-height: 54px; opacity: 1; } to { max-height: 0; min-height: 0; padding-block: 0; margin-block: 0; opacity: 0; transform: translateX(-8px); } }
-.chat-model-picker { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-family: inherit; appearance: none; background: transparent; transition: background 160ms ease; }
+.chat-model-picker { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-family: inherit; appearance: none; background: transparent; transition: background 160ms ease, var(--st-key-lift); }
 .chat-model-picker:hover, .chat-model-picker[aria-expanded='true'] { background: var(--st-surface-2); }
 .chat-model-picker > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chat-model-picker > .st-icon { flex: none; }
+/* Whether this chat answers on this computer or through an API, in one word: the
+   icon alone (a link for a remote model) made people open the menu to find out. */
+.chat-model-net { flex: none; padding: 1px 5px; border-radius: var(--st-r-pill); background: var(--st-surface-2); color: var(--st-ink-muted); font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 .model-picker-option { gap: 14px; height: auto; min-height: 54px; padding-block: 10px; }
 .model-picker-option > span:first-child { flex: 1; min-width: 0; }
 .model-picker-option strong { display: block; font-weight: 600; }
@@ -257,7 +271,7 @@ html[data-motion='reduced'] .task-tree-row[data-leaving] { opacity: 0; }
 .usage-card__toolbar button, .usage-show-more { border: 0; background: transparent; color: var(--st-ink-muted); font: inherit; padding: 7px 10px; border-radius: 9px; cursor: pointer; }
 .usage-card__toolbar button:hover, .usage-show-more:hover { color: var(--st-ink); background: var(--st-surface-2); }
 .usage-card__toolbar button[aria-selected='true'], .usage-card__toolbar button[aria-pressed='true'] { background: var(--st-surface-2); color: var(--st-ink); }
-.usage-card__toolbar > [aria-label='Usage period'] { margin-left: auto; }
+.usage-card__toolbar > .usage-period { margin-left: auto; }
 .usage-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0 0 16px; }
 .usage-stats > div { border-radius: 9px; background: var(--st-surface-2); padding: 12px; min-width: 0; }
 .usage-stats dt { color: var(--st-ink-muted); font-size: 13px; margin-bottom: 8px; }
@@ -302,7 +316,7 @@ html[data-motion='reduced'] .task-tree-row[data-leaving] { opacity: 0; }
 .usage-stats dd { line-height: 1.25; }
 .device-memory-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (max-width: 540px) { .device-memory-metrics { grid-template-columns: minmax(0, 1fr); } }
-.st-msg--user button[aria-label='Rewind to here'] .st-icon { transform: scaleX(-1); }
+.st-msg--user .st-msg__rewind .st-icon { transform: scaleX(-1); }
 
 /* Review of Models, Engine, Serving and document previews, 9 October 2026. */
 .model-page .model-hero { gap: 16px; padding: 18px 20px; border-radius: 16px; }

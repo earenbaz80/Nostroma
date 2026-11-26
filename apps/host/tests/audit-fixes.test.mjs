@@ -32,6 +32,14 @@ test('fit distinguishes unified and dedicated budgets and only recommends a fast
  assert.equal(versionFit(versions[0],discrete).zone,'fast');
  assert.equal(versionFit(versions[1],discrete).zone,'slower');
 });
+test('the model library has one fit verdict, from the fit label table',async()=>{
+ const models=await readFile(new URL('../src/screens/Models.tsx',import.meta.url),'utf8');
+ const ladder=await readFile(new URL('../src/components/VersionLadder.tsx',import.meta.url),'utf8');
+ assert.doesNotMatch(models,/planningLabel|fitLabel=/);
+ assert.match(models,/VERSION_FIT_LABEL\[fit\.zone\]/);
+ assert.doesNotMatch(ladder,/fitLabel/);
+ assert.match(ladder,/VERSION_FIT_LABEL\[fit\.zone\]/);
+});
 test('live usage, configured context and empty time-skip telemetry remain honest',()=>{
  const s={id:'s',tokensIn:100,tokensOut:20,statsAvailable:true,messages:[{role:'assistant',streaming:true,usageSource:'estimated',tokens:8,inputTokens:100,contextMax:128000,tps:12}]};
  const m=chatMetrics(s,null,32768);assert.equal(m.max,32768);assert.equal(m.total,228);assert.equal(m.streaming,true);assert.equal(m.estimated,true);

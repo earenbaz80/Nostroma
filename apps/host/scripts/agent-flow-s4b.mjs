@@ -17,6 +17,7 @@ import { chromium } from 'playwright-core';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { envVar } from '../server/env-compat.mjs';
+import { anchors, skipOnboarding } from './ui-anchors.mjs';
 
 const BASE = envVar('URL');
 if (!BASE) { console.error('NOSTROMA_URL is required'); process.exit(2); }
@@ -39,9 +40,9 @@ const problems = [];
 page.on('pageerror', e => problems.push(`pageerror: ${e.message}`));
 page.on('console', m => { if (m.type() === 'error') problems.push(`console: ${m.text().slice(0, 200)}`); });
 
-const send = async text => { await page.locator('textarea').first().fill(text); await page.getByRole('button', { name: 'Send' }).click(); };
+const send = async text => { await page.locator(anchors.composer.textarea).fill(text); await page.getByRole('button', { name: 'Send' }).click(); };
 const idle = async (ms = 600000) => page.waitForFunction(() => document.documentElement.dataset.streaming !== 'true', null, { timeout: ms });
-const agentsButton = () => page.locator('.chat-agents').first();
+const agentsButton = () => page.locator(anchors.chat.agents).first();
 const sandboxTalk = () => page.evaluate(() => /sandbox|Constrained|language mode|access denied/i.test(document.body.innerText));
 
 // the engine's own count of requests in flight, sampled once a second while a step runs
@@ -66,7 +67,7 @@ async function approveUntilIdle(label) {
   const seen = new Set();
   for (;;) {
     const streaming = await page.evaluate(() => document.documentElement.dataset.streaming === 'true');
-    const cards = page.locator('.toolcard[data-state="proposed"]');
+    const cards = page.locator(anchors.tools.proposed);
     const n = await cards.count();
     for (let i = 0; i < n; i++) {
       const card = cards.nth(i);
@@ -83,8 +84,7 @@ async function approveUntilIdle(label) {
 try {
   await page.goto(`${BASE}/#/chat`);
   await page.waitForTimeout(2000);
-  const skip = page.getByText('Go straight to the app');
-  if (await skip.count()) { await skip.click(); await page.waitForTimeout(600); }
+  await skipOnboarding(page, { settle: 600 });
   await page.getByRole('button', { name: 'New chat' }).first().click();
   await page.waitForTimeout(600);
   await page.getByRole('button', { name: /Choose model/ }).first().click();
@@ -96,7 +96,7 @@ try {
   startSampling();
   await send(PROMPT_HELPERS);
   await page.waitForFunction(() => document.documentElement.dataset.streaming === 'true');
-  await page.waitForFunction(() => /[12] subagents? running/.test(document.querySelector('.chat-agents')?.getAttribute('title') ?? ''), null, { timeout: 600000 }).catch(() => {});
+  await page.waitForFunction(sel => /[12] subagents? running/.test(document.querySelector(sel)?.getAttribute('title') ?? ''), anchors.chat.agents, { timeout: 600000 }).catch(() => {});
   await agentsButton().click().catch(() => {});
   await page.waitForTimeout(500);
   await shot(page, '01-helpers-popover');
@@ -115,7 +115,7 @@ try {
   if (process.env.METRICS) check(peak >= 2, `the engine ran at least 2 requests at the same time (peak ${peak})`);
   if (WORKDIR) check(existsSync(join(WORKDIR, 'hello.py')), 'hello.py was written after the approval');
   check(!(await sandboxTalk()), 'no sandbox or PowerShell error text anywhere in the chat');
-  check(await page.locator('.toolcard').count() === 0, 'no card is left waiting');
+  check(await page.locator(anchors.tools.live).count() === 0, 'no card is left waiting');
 
   // 2. one edit, one card
   await send(PROMPT_EDIT);
@@ -130,12 +130,13 @@ try {
   await send(PROMPT_WEB);
   await approveUntilIdle('05-web');
   await shot(page, '06-web-done');
-  check(await page.getByText(/web_fetch/).count() >= 1, 'a web_fetch card is in the chat');
+  // The tool card of the transcript, whichever shape it has (the card while it runs, the summary once it is done).
+  check(await page.locator(`.st-msg ${anchors.tools.named('web_fetch')}`).count() >= 1, 'a web_fetch card is in the chat');
 
   // 4. Stop during helpers
   await send(PROMPT_STOP);
   await page.waitForFunction(() => document.documentElement.dataset.streaming === 'true');
-  await page.waitForFunction(() => /[12] subagents? running/.test(document.querySelector('.chat-agents')?.getAttribute('title') ?? ''), null, { timeout: 600000 });
+  await page.waitForFunction(sel => /[12] subagents? running/.test(document.querySelector(sel)?.getAttribute('title') ?? ''), anchors.chat.agents, { timeout: 600000 });
   await page.waitForTimeout(3000);
   await shot(page, '07-stop-running');
   const stop = page.getByRole('button', { name: /^Stop/ }).first();

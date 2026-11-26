@@ -75,14 +75,19 @@ export interface Toast {
   action?: { label: string; run: () => void };
 }
 
+export type Theme = 'dark' | 'light' | 'system' | 'matrix' | 'solarized' | 'commander';
+export type ThemeSkin = Exclude<Theme, 'dark' | 'light' | 'system'>;
+
 export interface AppState {
   language: Language;
   fontFamily: string;
+  /** "default" for the app's own background, or the file name of a picture in wallpapers/. */
+  wallpaper: string;
   configDraft: string | null;
   navOpen: boolean;
   ready: boolean;
   connection: 'connecting' | 'live' | 'offline';
-  theme: 'dark' | 'light' | 'system';
+  theme: Theme;
   contrast: 'standard' | 'increased';
   rail: boolean;
   /** Distraction-free reading: chrome recedes, the transcript narrows. */
@@ -109,7 +114,7 @@ export interface AppState {
   shareTelemetry: boolean;
   paletteOpen: boolean;
   shortcutsOpen: boolean;
-  settingsSection: 'Appearance' | 'Models' | 'Tools' | 'Storage' | 'Engine' | 'About';
+  settingsSection: 'Appearance' | 'Models' | 'Tools' | 'GitHub' | 'Storage' | 'Engine' | 'Server' | 'About';
   hardware: Hardware | null;
   library: ModelLibrary | null;
   imageModels: ImageModelLibrary | null;
@@ -132,6 +137,8 @@ export interface AppState {
   setupOpen: boolean;
   sessions: Session[];
   activeSession: string | null;
+  /** The chats open as tabs in the header, newest first (a chat opens when it is chosen). */
+  tabs: string[];
   streaming: boolean;
   /** Messages the person sent while an answer was being written, waiting to go when it ends (Send after, Interrupt), by chat (#4783). */
   parked: Record<string, string[]>;
@@ -169,7 +176,8 @@ export interface Prefs {
   sizeDefaults?: number;
   language: Language;
   fontFamily: string;
-  theme: 'dark' | 'light' | 'system';
+  wallpaper: string;
+  theme: Theme;
   contrast: 'standard' | 'increased';
   rail: boolean;
   focus: boolean;
@@ -192,6 +200,7 @@ export interface Prefs {
 const PREFS_DEFAULTS: Prefs = {
   language: 'en',
   fontFamily: '',
+  wallpaper: 'default',
   theme: 'system',
   contrast: 'standard',
   rail: false,
@@ -211,6 +220,20 @@ const PREFS_DEFAULTS: Prefs = {
 
 function uid(prefix = 'id'): string {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
+}
+
+/** The chats left open as tabs, kept apart from the chat files: closing a tab is not deleting a chat. */
+const TABS_KEY = 'nostroma.tabs.v1';
+const TABS_MAX = 12;
+function readTabs(): string[] {
+  try {
+    if (typeof localStorage === 'undefined') return [];
+    const saved = JSON.parse(localStorage.getItem(TABS_KEY) ?? 'null');
+    return Array.isArray(saved) ? saved.filter((id): id is string => typeof id === 'string').slice(0, TABS_MAX) : [];
+  } catch { return []; }
+}
+function saveTabs(tabs: string[]) {
+  try { localStorage.setItem(TABS_KEY, JSON.stringify(tabs)); } catch { /* Private mode: the tabs last the session. */ }
 }
 
 /** localStorage, looked up at each call (it may not exist when this file is loaded outside a browser). */
@@ -265,6 +288,7 @@ function loadPrefs(): Prefs {
         ...parsed,
         language: validLanguage(parsed.language) ? parsed.language : 'en',
         fontFamily: typeof parsed.fontFamily === 'string' ? parsed.fontFamily.slice(0,128).replace(/[\x00-\x1f]/g,'') : '',
+        wallpaper: parsed.wallpaper === 'default' || (typeof parsed.wallpaper === 'string' && /^[^\\/:*?"<>|\x00-\x1f]{1,120}$/.test(parsed.wallpaper)) ? parsed.wallpaper : 'default',
         ...savedSizes(parsed, CONTENT_FS_MIN, CONTENT_FS_MAX),
         sizeDefaults: SIZE_DEFAULTS_VERSION,
         electricityPrice: Number.isFinite(Number(parsed.electricityPrice)) && Number(parsed.electricityPrice) > 0 && Number(parsed.electricityPrice) < 1000 ? Number(parsed.electricityPrice) : 0,
@@ -282,6 +306,17 @@ function loadPrefs(): Prefs {
   return { ...PREFS_DEFAULTS, language: detectLanguage(tags) ?? 'en' };
 }
 
+/** The base a theme paints on: skins always sit on the dark CRT. */
+export function themeScheme(theme: Theme, systemDark: boolean): 'light' | 'dark' {
+  if (theme === 'system') return systemDark ? 'dark' : 'light';
+  return theme === 'light' ? 'light' : 'dark';
+}
+
+/** The palette skin a theme asks for, or null for the amber base themes. */
+export function themeSkin(theme: Theme): ThemeSkin | null {
+  return theme === 'matrix' || theme === 'solarized' || theme === 'commander' ? theme : null;
+}
+
 const prefs = loadPrefs();
 // Use the saved language for the very first render, before host bootstrap (main.tsx waits for its strings before it draws).
 void setTranslationLanguage(prefs.language);
@@ -292,6 +327,7 @@ let lastApprovalNotice = '';
 let state: AppState = {
   language: prefs.language,
   fontFamily: prefs.fontFamily,
+  wallpaper: prefs.wallpaper,
   configDraft: (() => { try { return sessionStorage.getItem('nostroma.config-draft.v1'); } catch { return null; } })(),
   navOpen: false,
   ready: false,
@@ -338,6 +374,7 @@ let state: AppState = {
   sessions: loadSessions(),
   sessionSave: null,
   activeSession: null,
+  tabs: readTabs(),
   streaming: false,
   liveChats: 0,
   toasts: [],
@@ -388,6 +425,12 @@ export function setConfigDraft(configDraft: string | null) {
 
 export function setNavOpen(navOpen: boolean) { set({ navOpen }); }
 export function setSettingsSection(settingsSection: AppState['settingsSection']) { set({ settingsSection }); }
+
+/** Settings holds the server's page now, so every old "open Serving" goes through here: Settings, on that section. */
+export function openServerSettings() {
+    set({ settingsSection: 'Server' });
+    navigate('chat', undefined, { settings: '1' });
+}
 
 /** Choose the open chat's model: an API model, or null for the local one. Other chats keep theirs. */
 export function selectRemoteModel(remoteModel: RemoteModelSelection | null) {
@@ -444,22 +487,54 @@ export function useStore<T>(selector: (s: AppState) => T): T {
 
 /** Dismissal timers, held so a hovered toast can be paused rather than lost. */
 const toastTimers = new Map<string, ReturnType<typeof setTimeout>>();
+/** How long each toast stands once its clock runs, so one paused by a pointer resumes with its own window. */
+const toastWindows = new Map<string, number>();
+/** Notices a pointer or the keyboard is on: the stack cap leaves these alone, whatever arrives after them. */
+const heldToasts = new Set<string>();
 const TOAST_MS = 5200;
+/** About 200 words a minute, which is 17 characters a second: a long notice needs more than the 5.2 s a short one stands. */
+const TOAST_CHARS_PER_SECOND = 17;
 
-export function pushToast(tone: Toast['tone'], title: string, body?: string, action?: Toast['action']): string {
+/**
+ * How long a notice stands: the 5.2 s floor, or the time its own text takes to read when that is longer, so a long
+ * notice is not taken away mid-sentence. A notice that carries an action has no window at all: it waits for the reader.
+ */
+export function toastWindowMs(title: string, body?: string): number {
+  const characters = `${title ?? ''} ${body ?? ''}`.trim().length;
+  return Math.max(TOAST_MS, Math.round((characters / TOAST_CHARS_PER_SECOND) * 1000));
+}
+
+/**
+ * Shows a notice. It stands for `ms` milliseconds (as long as its text takes to read, at least five seconds, and never
+ * for one that carries an action: those wait for the reader). A notice that offers something to do can still pass its
+ * own window, and is then held and resumed by the same clock as every other notice, so pointing at it, focusing it or
+ * keeping a finger on it stops it going while it is being read.
+ */
+export function pushToast(tone: Toast['tone'], title: string, body?: string, action?: Toast['action'], ms = action ? 0 : toastWindowMs(title, body)): string {
   const id = uid('toast');
-  // Cap the stack: past three, the oldest collapses rather than pushing the
-  // rest off-screen. A toast nobody can read is not a notification.
+  // Cap the stack: past three, the oldest notice that nobody is reading and that carries no action collapses,
+  // rather than pushing the rest off-screen. A notice being read, or one whose action is the only way back
+  // (the unsaved chats), stays even if that makes the stack taller: dropping it is the cut this cap exists
+  // to avoid, and its id is remembered by its caller, so it would not come back.
   const next = [...state.toasts, { id, tone, title, body, ...(action ? { action } : {}) }];
-  const overflow = next.length > 3 ? next.slice(0, next.length - 3) : [];
-  for (const gone of overflow) {
-    const t = toastTimers.get(gone.id);
-    if (t) clearTimeout(t);
-    toastTimers.delete(gone.id);
+  let kept = next;
+  if (next.length > 3) {
+    const removable = next.filter((t) => !t.action && !heldToasts.has(t.id));
+    const drop = new Set(removable.slice(0, Math.min(next.length - 3, removable.length)).map((t) => t.id));
+    for (const gone of next) {
+      if (!drop.has(gone.id)) continue;
+      const t = toastTimers.get(gone.id);
+      if (t) clearTimeout(t);
+      toastTimers.delete(gone.id);
+      toastWindows.delete(gone.id);
+    }
+    kept = next.filter((t) => !drop.has(t.id));
   }
-  const kept = overflow.length ? next.slice(-3) : next;
   set({ toasts: kept });
-  if (!action) toastTimers.set(id, setTimeout(() => dismissToast(id), TOAST_MS));
+  if (ms > 0) {
+    toastWindows.set(id, ms);
+    toastTimers.set(id, setTimeout(() => dismissToast(id), ms));
+  }
   return id;
 }
 
@@ -470,21 +545,27 @@ export function pushToast(tone: Toast['tone'], title: string, body?: string, act
  * not enough to act on.
  */
 export function holdToast(id: string) {
+  heldToasts.add(id);
   const t = toastTimers.get(id);
   if (t) clearTimeout(t);
   toastTimers.delete(id);
 }
 
 export function releaseToast(id: string) {
+  heldToasts.delete(id);
   if (toastTimers.has(id)) return;
   if (!state.toasts.some((t) => t.id === id && !t.leaving)) return;
-  toastTimers.set(id, setTimeout(() => dismissToast(id), TOAST_MS));
+  const ms = toastWindows.get(id);
+  if (!ms) return; // a notice with no window of its own waits for the reader
+  toastTimers.set(id, setTimeout(() => dismissToast(id), ms));
 }
 
 export function dismissToast(id: string) {
+  heldToasts.delete(id);
   const t = toastTimers.get(id);
   if (t) clearTimeout(t);
   toastTimers.delete(id);
+  toastWindows.delete(id);
   set((s) => ({ toasts: s.toasts.map((x) => (x.id === id ? { ...x, leaving: true } : x)) }));
   setTimeout(() => set((s) => ({ toasts: s.toasts.filter((x) => x.id !== id) })), 340);
 }
@@ -502,8 +583,21 @@ function applyPrefs() {
   root.lang = state.language === 'zh' ? 'zh-CN' : state.language;
   if(state.fontFamily)root.style.setProperty('--st-font',`${JSON.stringify(state.fontFamily)},system-ui,-apple-system,"Segoe UI",sans-serif`);
   else root.style.removeProperty('--st-font');
-  root.dataset.theme = state.theme === 'system' ? matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light' : state.theme;
-  document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute('content', root.dataset.theme === 'dark' ? '#0e1113' : '#f9fafb');
+  if (state.wallpaper && state.wallpaper !== 'default') {
+    const host = (globalThis as { __NOSTROMA_HOST__?: string }).__NOSTROMA_HOST__ ?? '';
+    root.dataset.wallpaper = 'image';
+    root.style.setProperty('--st-wallpaper-image', `url(${JSON.stringify(`${host}/api/appearance/wallpapers/${encodeURIComponent(state.wallpaper)}`)})`);
+  } else {
+    delete root.dataset.wallpaper;
+    root.style.removeProperty('--st-wallpaper-image');
+  }
+  const scheme = themeScheme(state.theme, matchMedia('(prefers-color-scheme: dark)').matches);
+  const skin = themeSkin(state.theme);
+  root.dataset.theme = scheme;
+  if (skin) root.dataset.skin = skin;
+  else delete root.dataset.skin;
+  const themeColor = skin === 'matrix' ? '#000600' : skin === 'solarized' ? '#002b36' : skin === 'commander' ? '#0000aa' : scheme === 'dark' ? '#0e1113' : '#f9fafb';
+  document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute('content', themeColor);
   root.dataset.contrast = state.contrast;
   root.dataset.density = state.density;
   root.style.setProperty('--st-content-fs', `${state.contentFontSize}px`);
@@ -531,6 +625,7 @@ function savePrefs() {
     sizeDefaults: SIZE_DEFAULTS_VERSION,
     language: state.language,
     fontFamily: state.fontFamily,
+    wallpaper: state.wallpaper,
     theme: state.theme,
     contrast: state.contrast,
     rail: state.rail,
@@ -555,7 +650,7 @@ function savePrefs() {
   applyPrefs();
 }
 
-export function setTheme(theme: 'dark' | 'light' | 'system') {
+export function setTheme(theme: Theme) {
   set({ theme });
   savePrefs();
 }
@@ -584,6 +679,13 @@ async function announcePortNotice(){
 }
 export function setFontFamily(fontFamily:string){set({fontFamily:fontFamily.trim().slice(0,128).replace(/[\x00-\x1f]/g,'')});savePrefs();}
 
+/** "default" is the app's own background; any other value is a picture the host listed in wallpapers/. */
+export function setWallpaper(wallpaper: string) {
+  const clean = wallpaper === 'default' || /^[^\\/:*?"<>|\x00-\x1f]{1,120}$/.test(wallpaper) ? wallpaper : 'default';
+  set({ wallpaper: clean });
+  savePrefs();
+}
+
 export function setFocus(focus: boolean) {
   set({ focus });
   savePrefs();
@@ -609,6 +711,7 @@ export function toggleFocus() {
 export function resetAppearance() {
   set({
     fontFamily: PREFS_DEFAULTS.fontFamily,
+    wallpaper: PREFS_DEFAULTS.wallpaper,
     theme: PREFS_DEFAULTS.theme,
     contrast: PREFS_DEFAULTS.contrast,
     contentFontSize: PREFS_DEFAULTS.contentFontSize,
@@ -756,23 +859,118 @@ export async function pickWorkspace(): Promise<string | null> {
   return res.path ?? null;
 }
 
-export async function addWorkspace(path: string) {
+export async function addWorkspace(path: string): Promise<Workspace | null> {
   try {
     const ws = await api.post<Workspace>('/api/workspaces', { path });
     set({ workspaces: [...state.workspaces, ws] });
     pushToast('success', 'Workspace added', `Nostroma can now read files in ${ws.name}.`);
+    return ws;
   } catch (err) {
     pushToast('error', "Couldn't add that folder", err instanceof Error ? err.message : String(err));
+    return null;
+  }
+}
+
+/**
+ * Clones a GitHub repository into the projects folder and adds it as a
+ * workspace. The token, when one is saved, is read by the host; it never
+ * travels from here.
+ */
+export async function addGithubWorkspace(repo: string): Promise<Workspace | null> {
+  try {
+    const ws = await api.post<Workspace>('/api/workspaces/github', { repo });
+    if (!state.workspaces.some(w => w.id === ws.id)) set({ workspaces: [...state.workspaces, ws] });
+    pushToast('success', 'Repository added', `Nostroma cloned ${ws.repo ?? ws.name} and can now read its files.`);
+    return ws;
+  } catch (err) {
+    pushToast('error', "Couldn't clone that repository", err instanceof Error ? err.message : String(err));
+    return null;
+  }
+}
+
+/**
+ * Adds a folder and makes it the workspace the app works in.
+ *
+ * The start screen's "Open a folder" says the Workbench reads and runs inside
+ * that folder, so adding it to the sidebar is not enough: the files panel and
+ * the chats follow `activeWorkspace`, not the list.
+ */
+/** The same folder can come back with another separator or a trailing slash. */
+function sameFolder(a: string, b: string) {
+  const norm = (path: string) => path.replace(/\\/g, '/').replace(/\/+$/, '');
+  const left = norm(a), right = norm(b);
+  const windows = /^[a-z]:\//i.test(left) && /^[a-z]:\//i.test(right);
+  return windows ? left.toLowerCase() === right.toLowerCase() : left === right;
+}
+
+export async function addWorkspaceAndActivate(path: string): Promise<Workspace | null> {
+  /* A folder that is already in the list does not need another POST (the host
+     would refuse it); choosing it means working there, so it just becomes active. */
+  const known = state.workspaces.find((w) => sameFolder(w.path, path));
+  if (known) {
+    setActiveWorkspace(known.id);
+    return known;
+  }
+  const ws = await addWorkspace(path);
+  if (ws) setActiveWorkspace(ws.id);
+  return ws;
+}
+
+/**
+ * The display name, colour or archived flag of a workspace; its folder is
+ * unchanged. One call for the three because the host takes them on one route and
+ * the list keeps a single copy of each workspace.
+ */
+export async function updateWorkspace(id: string, patch: { name?: string; color?: string | null; archived?: boolean }): Promise<Workspace | null> {
+  try {
+    const ws = await api.patch<Workspace>(`/api/workspaces/${id}`, patch);
+    set({ workspaces: state.workspaces.map(w => (w.id === id ? ws : w)) });
+    return ws;
+  } catch (err) {
+    pushToast('error', "Couldn't change that workspace", err instanceof Error ? err.message : String(err));
+    return null;
   }
 }
 
 /** The name the sidebar shows for a workspace; its folder is unchanged. */
 export async function renameWorkspace(id: string, name: string) {
+  await updateWorkspace(id, { name });
+}
+
+/**
+ * The project's chats as one Markdown file on this computer: where it was written
+ * and how many chats went into it. Nothing is uploaded.
+ */
+export async function shareWorkspace(id: string): Promise<{ path: string; chats: number } | null> {
   try {
-    const ws = await api.patch<Workspace>(`/api/workspaces/${id}`, { name });
-    set({ workspaces: state.workspaces.map(w => (w.id === id ? { ...w, name: ws.name } : w)) });
+    return await api.post<{ path: string; chats: number }>(`/api/workspaces/${id}/share`, {});
   } catch (err) {
-    pushToast('error', "Couldn't rename that workspace", err instanceof Error ? err.message : String(err));
+    pushToast('error', "Couldn't export that project", err instanceof Error ? err.message : String(err));
+    return null;
+  }
+}
+
+export type WorkspaceGit = { repo: false } | { repo: true; branch: string | null; remote: string | null; changed: number | null; inited?: boolean };
+
+/** What git says about the workspace folder: whether it is a repository, its branch, its origin and the changed files. */
+export async function workspaceGit(id: string): Promise<WorkspaceGit | null> {
+  try {
+    return await api.get<WorkspaceGit>(`/api/workspaces/${id}/git`);
+  } catch (err) {
+    pushToast('error', "Couldn't read Git in that folder", err instanceof Error ? err.message : String(err));
+    return null;
+  }
+}
+
+/** Starts a repository in the folder when there is none, then points origin at the repository given. */
+export async function connectWorkspaceGit(id: string, remote: string): Promise<WorkspaceGit | null> {
+  try {
+    const git = await api.post<WorkspaceGit>(`/api/workspaces/${id}/git`, { remote });
+    pushToast('success', 'Connected to Git', git.repo && git.remote ? git.remote : undefined);
+    return git;
+  } catch (err) {
+    pushToast('error', "Couldn't connect that repository", err instanceof Error ? err.message : String(err));
+    return null;
   }
 }
 
@@ -1392,6 +1590,7 @@ export function newSession(): Session {
   const sessions = [session, ...state.sessions];
   persistSessions(sessions);
   set({ sessions, activeSession: session.id });
+  openTab(session.id);
   return session;
 }
 
@@ -1441,6 +1640,25 @@ export function continueTaskInNewChat(task: Task) {
   void sendMessage(taskHandoverMessage(task), { title: taskHandoverTitle(task), markdown: true });
 }
 
+/** A chat is open in the header from the moment it is chosen: newest first, and choosing one that is already open moves it to the front. */
+export function openTab(id: string) {
+  const tabs = [id, ...state.tabs.filter(x => x !== id)].slice(0, TABS_MAX);
+  if (tabs.length === state.tabs.length && tabs.every((x, i) => x === state.tabs[i])) return;
+  set({ tabs });
+  saveTabs(tabs);
+}
+
+/** Closes the tab only: the chat stays in its workspace, where it can be opened again. The next tab takes over when the closed one was in front. */
+export function closeTab(id: string) {
+  const tabs = state.tabs.filter(x => x !== id);
+  if (tabs.length === state.tabs.length) return;
+  set({ tabs });
+  saveTabs(tabs);
+  if (state.activeSession !== id) return;
+  const next = tabs[0];
+  if (next) { selectSession(next); go('chat', next); } else go('chat');
+}
+
 export function selectSession(id: string) {
   // A chat comes back in the workspace it was made in, so its next turn runs in the same folder (#3754).
   const workspace = workspaceIdForSession(state.workspaces, state.sessions.find(s => s.id === id));
@@ -1448,6 +1666,7 @@ export function selectSession(id: string) {
   set(change ? { activeSession: id, activeWorkspace: workspace } : { activeSession: id });
   if (change) void loadWorkspaceFiles();
   markRead(id);
+  openTab(id);
 }
 
 /** Records that a conversation has been looked at. */
@@ -1473,7 +1692,9 @@ export function isUnread(s: Session, activeSession: string | null): boolean {
 export function deleteSession(id: string) {
   const sessions = state.sessions.filter((s) => s.id !== id);
   persistSessions(sessions);
-  set({ sessions, activeSession: state.activeSession === id ? (sessions[0]?.id ?? null) : state.activeSession });
+  const tabs = state.tabs.filter(x => x !== id);
+  set({ sessions, tabs, activeSession: state.activeSession === id ? (sessions[0]?.id ?? null) : state.activeSession });
+  saveTabs(tabs);
 }
 
 export function renameSession(id: string, title: string) {
@@ -1777,6 +1998,14 @@ export async function sendOversized(mode: 'file' | 'preview') {
 export function startNewChat() {
   const session = newSession();
   go('chat', session.id);
+}
+
+/** A new chat that belongs to one workspace, even when another one was open. */
+export function startChatInWorkspace(id: string) {
+  setActiveWorkspace(id);
+  const session = newSession();
+  go('chat', session.id);
+  return session;
 }
 
 /**

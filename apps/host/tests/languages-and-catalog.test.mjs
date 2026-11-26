@@ -4,6 +4,8 @@ import {readFile} from 'node:fs/promises';
 import {build} from 'esbuild';
 const languages=['en','zh','ja','de','es','ru','pt','ko','fr'];
 const catalogs=Object.fromEntries(await Promise.all(languages.map(async language=>[language,JSON.parse(await readFile(`src/locales/${language}.json`,'utf8'))])));
+/** The fix set of each language, the second of the two files a language reads (src/locales/fix-<lang>.json). */
+const fixes=Object.fromEntries(await Promise.all(languages.map(async language=>[language,JSON.parse(await readFile(`src/locales/fix-${language}.json`,'utf8'))])));
 const english=catalogs.en;
 const slots=text=>[...text.matchAll(/\{\d+\}/g)].map(match=>match[0]).sort();
 const compiled=await build({stdin:{contents:"export * from './src/lib/i18n'; export * from './src/lib/native-catalog'; export * from './src/lib/session-title';",resolveDir:process.cwd()},bundle:true,write:false,platform:'node',format:'esm'});
@@ -19,6 +21,24 @@ test('every language covers every interface key and preserves interpolation slot
    assert.deepEqual(slots(translated),expected,`${language}:${id}`);
   }
  }
+});
+test('the two ids unified once never come back, and the two that survived stay in every language',()=>{
+ /* "Archive" and "Picture reader" were each carried by two ids (s1150/fx157 and s3273/fxpr1) and drifted apart; they are one id per text now. Rebuilding a
+    catalogue must not bring the second id back, or the same sentence starts drifting again in a set nobody looks at. */
+ let read=0;
+ for(const language of languages){
+  for(const [name,file] of [[`${language}.json`,catalogs[language]],[`fix-${language}.json`,fixes[language]]]){
+   read++;
+   for(const id of ['s1150','s3273'])assert.equal(Object.hasOwn(file,id),false,`${name}: ${id} is a second id for a text that already has one`);
+  }
+  for(const id of ['fx157','fxpr1']){
+   const text=fixes[language][id];
+   assert.equal(typeof text==='string'&&text.trim()!=='',true,`fix-${language}.json: ${id} is missing, so the unified text has no survivor`);
+  }
+ }
+ assert.equal(read,18,'nine languages, the interface set and the fix set: eighteen files');
+ assert.equal(fixes.en.fx157,'No model is loaded.','fx157 still carries that sentence');
+ assert.equal(fixes.en.fxpr1,'Picture reader','fxpr1 still carries that one');
 });
 test('language switching translates static and formatted UI without changing supplied names or commands',()=>{
  for(const language of languages){

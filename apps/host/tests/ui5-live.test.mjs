@@ -52,7 +52,7 @@ test('item 10 / GUI-FB2 item 7: the status line is a wrapping flex row with no f
 });
 
 test('items 15, 16, 17: counts on the Subagents title row, Privacy as plain text, a round arrow', async () => {
-  const bar = await read('components/ChatToolbar.tsx'), pop = await read('components/Popover.tsx'), privacy = await read('components/PrivacyNotes.tsx'), chat = await read('screens/Chat.tsx');
+  const bar = await read('components/SubagentsButton.tsx'), pop = await read('components/Popover.tsx'), privacy = await read('components/PrivacyNotes.tsx'), chat = await read('screens/Chat.tsx');
   assert.match(bar, /title=\{tr\(session\?\.agents\?\.length \? "Subagents" : "No subagents recorded"\)\} detail=\{/); assert.ok(!/subagents-overview-summary/.test(bar), 'no second line of counts');
   assert.match(pop, /telepop__detail/);
   assert.ok(!/Icon/.test(privacy), 'no icons in Privacy');

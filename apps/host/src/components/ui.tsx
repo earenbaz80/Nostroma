@@ -17,7 +17,7 @@ import { measureFrame, placeAnchored } from '../lib/overlay-place';
 /* -------------------------------------------------------------------- icon */
 export type IconName = 'pause' | 'play' | 'activity' | 'plus' | 'shield' | 'computer'
 // Authored for the shell: see docs/design-system-notes.md.
- | 'panel' | 'search' | 'sliders' | 'folder' | 'folder-plus' | 'file' | 'ellipsis' | 'pencil' | 'pin' | 'x' | 'attach' | 'bolt' | 'branch' | 'chat' | 'check' | 'chevron' | 'clock' | 'copy' | 'cpu' | 'disk' | 'download' | 'error' | 'experts' | 'gauge' | 'gpu' | 'image' | 'info' | 'expand' | 'contract' | 'layers' | 'models' | 'skills' | 'engine' | 'family-qwen' | 'model-file' | 'link' | 'memory' | 'mic' | 'moon' | 'new-chat' | 'refresh' | 'send' | 'settings' | 'stop' | 'sun' | 'thermometer' | 'thinking' | 'tool' | 'trash' | 'warning';
+ | 'panel' | 'search' | 'sliders' | 'folder' | 'folder-plus' | 'file' | 'ellipsis' | 'pencil' | 'pin' | 'x' | 'attach' | 'bolt' | 'branch' | 'chat' | 'check' | 'chevron' | 'clock' | 'copy' | 'cpu' | 'disk' | 'download' | 'error' | 'experts' | 'gauge' | 'gpu' | 'image' | 'info' | 'expand' | 'contract' | 'layers' | 'models' | 'skills' | 'engine' | 'family-qwen' | 'family-qwen-14' | 'model-file' | 'link' | 'memory' | 'mic' | 'moon' | 'new-chat' | 'refresh' | 'send' | 'settings' | 'stop' | 'sun' | 'thermometer' | 'thinking' | 'tool' | 'trash' | 'warning';
 export function Icon({ name, size, className, style, }: {
     name: IconName;
     size?: number;
@@ -50,7 +50,7 @@ export function Btn({ children, variant = 'secondary', size = 'md', icon, iconRi
       {tr(iconRight ? <Icon name={iconRight}/> : null)}
     </button>);
 }
-export function IconBtn({ name, title, onClick, disabled, active, size = 19, }: {
+export function IconBtn({ name, title, onClick, disabled, active, size = 19, className, }: {
     name: IconName;
     title: string;
     onClick?: () => void;
@@ -58,8 +58,10 @@ export function IconBtn({ name, title, onClick, disabled, active, size = 19, }: 
     /** Renders in the pressed state — used by the sidebar's search toggle. */
     active?: boolean;
     size?: number;
+    /** A stable hook for layout, so a translated label never has to be a selector. */
+    className?: string;
 }) {
-    return (<button type="button" className={cx('st-btn st-btn--icon', active && 'is-on')} aria-pressed={active} title={tr(title)} aria-label={tr(title)} onClick={onClick} disabled={disabled}>
+    return (<button type="button" className={cx('st-btn st-btn--icon', active && 'is-on', className)} aria-pressed={active} title={tr(title)} aria-label={tr(title)} onClick={onClick} disabled={disabled}>
       <Icon name={name} size={size}/>
     </button>);
 }
@@ -217,7 +219,7 @@ export function Field({ label, hint, impact, children, wide, }: {
  * `aria-activedescendant` tracking the highlighted option, and the popup renders
  * through a portal so it can never end up nested inside another glass surface.
  */
-export function Select<T extends string>({ value, valueSuffix, options, onChange, ariaLabel, disabled = false, menuSize = 'standard', menuMinWidth, menuWidth, menuClassName, optionIcon, singleLine = false, translateLabels = true, }: {
+export function Select<T extends string>({ value, valueSuffix, options, onChange, ariaLabel, disabled = false, menuSize = 'standard', menuMinWidth, menuWidth, menuClassName, optionIcon, singleLine = false, translateLabels = true, onOpen, }: {
     value: T;
     valueSuffix?: ReactNode;
     /** Keep custom names and font families verbatim. */
@@ -239,6 +241,8 @@ export function Select<T extends string>({ value, valueSuffix, options, onChange
     menuClassName?: string;
     optionIcon?: (value: T) => IconName;
     singleLine?: boolean;
+    /** Called every time the menu opens: a list read from a folder a person can change (wallpapers/) is read again there. */
+    onOpen?: () => void;
 }) {
     const field = useContext(FieldContext);
     const listId = useId();
@@ -285,7 +289,8 @@ export function Select<T extends string>({ value, valueSuffix, options, onChange
         setPlaced(next);
         setCursor(Math.max(0, options.findIndex((o) => o.value === value)));
         setOpen(true);
-    }, [options, value, placeList]);
+        onOpen?.();
+    }, [options, value, placeList, onOpen]);
     // Once the list is on the screen its real height is known: place it again with that.
     useLayoutEffect(() => {
         if (!open)
@@ -383,7 +388,7 @@ export function Select<T extends string>({ value, valueSuffix, options, onChange
       </button>
       {tr(open && placed
             ? createPortal(<div ref={popupRef} id={listId} className={cx('select__pop', menuSize === 'comfortable' && 'select__pop--comfortable', singleLine && 'select__pop--single-line', menuClassName)} role="listbox" aria-label={tr(ariaLabel)} style={{ left: placed.left, top: placed.top, width: placed.width, maxHeight: placed.maxHeight, zIndex: triggerRef.current?.closest('[role="dialog"]') ? 'var(--layer-dialog-popover)' : 'var(--layer-popover)' }}>
-              {tr(options.map((o, i) => (<div key={o.value} id={`${listId}-${i}`} role="option" aria-selected={o.value === value} aria-disabled={o.disabled || undefined} tabIndex={-1} className="select__opt" data-active={i === cursor || undefined} onMouseEnter={() => setCursor(i)} onMouseDown={(e) => e.preventDefault()} onClick={() => {
+              {tr(options.map((o, i) => (<div key={o.value} id={`${listId}-${i}`} role="option" data-value={o.value} aria-selected={o.value === value} aria-disabled={o.disabled || undefined} tabIndex={-1} className="select__opt" data-active={i === cursor || undefined} onMouseEnter={() => setCursor(i)} onMouseDown={(e) => e.preventDefault()} onClick={() => {
                         if (o.disabled)
                             return;
                         onChange(o.value);
@@ -472,11 +477,12 @@ export function ActionError() {
 /* ------------------------------------------------------------------ toasts */
 export function Toasts() {
     const toasts = useStore((s) => s.toasts);
-    if (!toasts.length)
-        return null;
     const iconFor = { success: 'check', info: 'info', warn: 'warning', error: 'error' } as const;
-    return (<div className="st-toasts" aria-live="polite">
-      {tr(toasts.map((t) => (<div key={t.id} className="st-toast st-toast--toned" data-tone={t.tone} data-leaving={t.leaving || undefined} onMouseEnter={() => holdToast(t.id)} onMouseLeave={() => releaseToast(t.id)} onFocusCapture={() => holdToast(t.id)} onBlurCapture={() => releaseToast(t.id)}>
+    /* The live region lives in the page before a notice lands, and stays there with nothing in it: several screen readers
+       do not announce a region that is inserted together with its text, so the undo would appear on screen and say nothing.
+       `aria-relevant="additions"` keeps a notice leaving from being read as a change of the text already announced. */
+    return (<div className="st-toasts" aria-live="polite" aria-relevant="additions" aria-atomic="false">
+      {tr(toasts.map((t) => (<div key={t.id} className="st-toast st-toast--toned" data-tone={t.tone} data-leaving={t.leaving || undefined} onMouseEnter={() => holdToast(t.id)} onMouseLeave={() => releaseToast(t.id)} onFocusCapture={() => holdToast(t.id)} onBlurCapture={() => releaseToast(t.id)} onTouchStart={() => holdToast(t.id)} onTouchEnd={() => releaseToast(t.id)}>
           <span className="st-toast__icon">
             <Icon name={iconFor[t.tone]} size={20}/>
           </span>

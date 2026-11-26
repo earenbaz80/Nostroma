@@ -1,7 +1,7 @@
 /** What a Prepare does with loaded models (server/native-eviction.mjs, P0-3). */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { aboutText, evictionPlan, evictionQuestion, evictionSentence, installPlan, keptRefusal, keepsLoaded, openFiles, sharedWritePlan, stoppingSentence } from '../server/native-eviction.mjs';
+import { aboutText, evictionPlan, evictionQuestion, evictionSentence, installPlan, keptRefusal, keepsLoaded, openFiles, sharedWritePlan, stopWhy, stoppingSentence } from '../server/native-eviction.mjs';
 
 test('a model is kept only when the person set the explicit mark, never from the idle unload', () => {
   assert.equal(keepsLoaded({ keep_loaded: true }), true, 'the mark the settings row writes');
@@ -43,6 +43,36 @@ test('the question before a Prepare stops a loaded model names it, the memory fr
     'Preparing this model needs the memory of Qwen iq2_xs. Stopping it frees its memory. Continue?',
     'a config the app cannot read still asks, without inventing a figure');
   assert.equal(evictionQuestion([]), null, 'nothing loaded: no question');
+});
+
+test('a model prepared again stops to replace its own engine, never because of a lack of memory', () => {
+  const loaded = { id: 'a', model: 'iq2_xs', label: 'Qwen iq2_xs' };
+  assert.equal(stopWhy(loaded, { target: 'iq2_xs', writing: [loaded] }), 'again',
+    'the same model: its engine is what the preparation replaces, whatever the memory says');
+  assert.equal(stopWhy(loaded, { target: 'iq3_s', writing: [loaded] }), 'files', 'another model that rewrites a file it has open');
+  assert.equal(stopWhy(loaded, { target: 'iq3_s' }), 'memory');
+  const again = evictionQuestion([{ label: 'Qwen iq2_xs', gb: 46.52, seconds: 225, why: 'again' }]);
+  assert.equal(again,
+    'Preparing this model replaces the engine of Qwen iq2_xs. Stopping it frees 46.5 GB of memory, and loading it again takes about 4 minutes. Continue?');
+  assert.doesNotMatch(again, /memory of/, 'the same model stops for its own files, not for a lack of memory');
+});
+
+test('each model stopped says its own reason: a file it has open is never said to lack memory', () => {
+  assert.equal(evictionQuestion([
+    { label: 'Qwen iq2_xs', gb: 46.52, seconds: 225, why: 'files' },
+    { label: 'Qwen iq3_s', gb: 61.48, seconds: 300, why: 'memory' }]),
+    'Preparing this model rewrites a file Qwen iq2_xs has open, and needs the memory of Qwen iq3_s. Stopping them frees 108.0 GB of memory, and loading them again takes about 5 minutes. Continue?',
+    'a mixed stop names both reasons, in the order that reads');
+  const mixed = evictionQuestion([
+    { label: 'Qwen iq2_xs', gb: 3, seconds: 30, why: 'files' },
+    { label: 'Qwen iq3_s', gb: 4, seconds: 60 }], 'memory');
+  assert.match(mixed, /rewrites a file Qwen iq2_xs has open, and needs the memory of Qwen iq3_s/, 'a cost without a reason takes the one passed');
+  assert.doesNotMatch(mixed, /memory of Qwen iq2_xs/, 'the file-stopped model is never said to lack memory');
+  assert.equal(evictionQuestion([
+    { label: 'Qwen iq2_xs', gb: 3, seconds: 30, why: 'again' },
+    { label: 'Qwen iq3_s', gb: 4, seconds: 60, why: 'memory' }]),
+    'Preparing this model replaces the engine of Qwen iq2_xs, and needs the memory of Qwen iq3_s. Stopping them frees 7.0 GB of memory, and loading them again takes about a minute. Continue?',
+    'a reinstall beside another model names the replaced engine first');
 });
 
 test('the words of a stop carry the memory freed and the time to load it again', () => {

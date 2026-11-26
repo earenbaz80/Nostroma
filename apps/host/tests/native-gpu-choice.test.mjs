@@ -3,11 +3,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { build, transform } from 'esbuild';
+import { build } from 'esbuild';
+import { loadTs } from './helpers/load-ts.mjs';
 import { nativeFixture, finishJob } from './helpers/native-fixture.mjs';
 
-const fit = await transform(await readFile(new URL('../src/lib/native-fit.ts', import.meta.url), 'utf8'), { loader: 'ts', format: 'esm' });
-const { runCards } = await import(`data:text/javascript;base64,${Buffer.from(fit.code).toString('base64')}`);
+const { runCards } = await loadTs(new URL('../src/lib/native-fit.ts', import.meta.url));
 const native = await build({ entryPoints: ['src/lib/native.ts'], bundle: true, platform: 'node', format: 'esm', write: false, alias: { react: fileURLToPath(new URL('./helpers/react-stub.mjs', import.meta.url)) }, logLevel: 'silent' });
 
 const card = (index, name, vram, extra = {}) => ({ index, name, vram_gb: vram, usable: true, ...extra });

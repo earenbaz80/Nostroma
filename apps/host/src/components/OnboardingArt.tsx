@@ -1,10 +1,9 @@
 import { tr } from '../lib/i18n';
 import { useEffect, useRef, useState } from 'react';
-import { Brand } from './Brand';
 import { Icon } from './ui';
 /** Vector artwork stays sharp, interactive and honours reduced motion. */
-export function OnboardingArt({ kind = 'welcome', progress = 0, counter }: {
-    kind?: 'welcome' | 'download' | 'tune';
+export function OnboardingArt({ kind, progress = 0, counter }: {
+    kind: 'download' | 'tune';
     progress?: number;
     counter?: {
         value: number | undefined;
@@ -15,12 +14,7 @@ export function OnboardingArt({ kind = 'welcome', progress = 0, counter }: {
     return <div className={`onboard-art onboard-art--${kind}`} aria-hidden={kind !== 'download'}>
   <div aria-hidden="true" className="onboard-orbit onboard-orbit--one"/><div className="onboard-orbit onboard-orbit--two"/>
   <div className="onboard-art-grid"/>
-  {tr(kind === 'welcome' ? <>
-   <div className="onboard-float onboard-float--chat"><Icon name="chat" size={19}/><span>{tr("A little help.")}<br /><strong>{tr("A lot more possible.")}</strong></span></div>
-   <div className="onboard-float onboard-float--file"><Icon name="file" size={20}/><span>{tr("your-next-idea.md")}<small>{tr("Right here, on your computer")}</small></span></div>
-   <div className="onboard-local-machine"><div className="onboard-machine-screen"><Brand variant="mark" height={36} decorative/><div className="onboard-machine-line"/><div className="onboard-machine-line short"/><div className="onboard-machine-answer"><i /><i /><i /></div></div><div className="onboard-machine-base"/><span className="onboard-local-badge"><span />{tr(" Local AI. Yours.")}</span></div>
-   <div className="onboard-float onboard-float--spark"><Icon name="bolt" size={20}/></div>
-  </> : kind === 'download' ? <>
+  {tr(kind === 'download' ? <>
    <div aria-hidden="true" className="onboard-data-packet packet-one"><Icon name="file" size={18}/></div><div aria-hidden="true" className="onboard-data-packet packet-two"><Icon name="image" size={18}/></div><div aria-hidden="true" className="onboard-data-packet packet-three"><Icon name="file" size={18}/></div>
    <div aria-hidden="true" className="onboard-download-core"><div className="onboard-download-ring" style={{ '--download-progress': `${Math.min(100, Math.max(0, progress))}%` } as React.CSSProperties}><Icon name="models" size={40}/></div><div className="onboard-download-stack"><i /><i /><i /></div></div>
    {tr(counter ? <DownloadCounter key={counter.key} value={counter.value} label={tr(counter.label)}/> : null)}

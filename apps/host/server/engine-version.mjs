@@ -27,9 +27,12 @@ export function markEngine(catalog, engine) {
   return { ...catalog, families: catalog.families.map(f => ({ ...f, sizes: (f.sizes ?? []).map(s => ({ ...s, needsNewerEngine: engineTooOld(version, s.engine_min, source) })) })) };
 }
 
-/** The plain sentence for a refused install or load, or null when the engine is new enough. */
-export function engineRefusal(catalog, modelId, engine) {
-  const size = catalog?.families?.flatMap(f => f.sizes ?? []).find(s => s.id === modelId);
+/** The plain sentence for a refused install or load, or null when the engine is new enough. A load names the size by its id
+ *  (`iq3_s`); an install names it by its model name (`IQ3_S`), so both are looked for. Two families can share a model name
+ *  (Qwen's and Swift's IQ3_S), and the same name is not the same files: a family given by the caller is the only one searched. */
+export function engineRefusal(catalog, modelId, engine, family = null) {
+  const families = (catalog?.families ?? []).filter(f => !family || f.family === family);
+  const size = (families.length ? families : catalog?.families ?? []).flatMap(f => f.sizes ?? []).find(s => s.id === modelId || s.model === modelId);
   if (!size?.needsNewerEngine) return null;
   return `This model needs a newer engine: ${size.model} needs engine ${size.engine_min} or newer, and this one is ${engine?.version}. Update the engine in Settings, then try again.`;
 }

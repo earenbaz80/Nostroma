@@ -6,6 +6,7 @@ import { chromium } from 'playwright-core';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { envVar } from '../server/env-compat.mjs';
+import { anchors, skipOnboarding } from './ui-anchors.mjs';
 const BASE = envVar('URL'); if (!BASE) { console.error('NOSTROMA_URL required'); process.exit(2); }
 const SHOTS = resolve(process.env.SHOTS ?? 'mode-shots'); mkdirSync(SHOTS, { recursive: true });
 const MODEL = process.env.MODEL ?? 'Cloud model';
@@ -18,19 +19,19 @@ const shot = async name => { await page.screenshot({ path: join(SHOTS, `${name}.
 const idle = async (ms = 600000) => page.waitForFunction(() => document.documentElement.dataset.streaming !== 'true', null, { timeout: ms });
 try {
   await page.goto(`${BASE}/#/chat`); await page.waitForTimeout(2000);
-  const skip = page.getByText('Go straight to the app'); if (await skip.count()) { await skip.click(); await page.waitForTimeout(500); }
+  await skipOnboarding(page, { settle: 500 });
   for (const [mode, label] of [['manual', 'Manual'], ['plan', 'Plan'], ['bypass', 'Bypass permissions']]) {
     await page.getByRole('button', { name: 'New chat' }).first().click(); await page.waitForTimeout(600);
     await page.getByRole('button', { name: /Choose model/ }).first().click(); await page.waitForTimeout(300);
     await page.getByRole('menuitemradio', { name: new RegExp(MODEL) }).first().click(); await page.waitForTimeout(300);
     await page.getByRole('button', { name: /^Mode:/ }).first().click(); await page.waitForTimeout(300);
     await page.getByRole('menuitemradio', { name: new RegExp(`^${label}`) }).first().click(); await page.waitForTimeout(300);
-    await page.locator('textarea').first().fill(PROMPT);
+    await page.locator(anchors.composer.textarea).fill(PROMPT);
     await page.getByRole('button', { name: 'Send' }).click();
     let asked = 0, sawCard = false;
     for (;;) {
       const streaming = await page.evaluate(() => document.documentElement.dataset.streaming === 'true');
-      const card = page.locator('.toolcard[data-state="proposed"]');
+      const card = page.locator(anchors.tools.proposed);
       if (await card.count()) {
         if (!sawCard) { sawCard = true; await page.waitForTimeout(300); await shot(`${mode}-1-one-card-asks`); }
         asked++; await card.first().getByRole('button', { name: 'Approve' }).click().catch(() => {});

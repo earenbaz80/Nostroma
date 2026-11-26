@@ -15,6 +15,7 @@ import { chromium } from 'playwright-core';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { envVar } from '../server/env-compat.mjs';
+import { anchors, skipOnboarding } from './ui-anchors.mjs';
 
 const BASE = envVar('URL');
 if (!BASE) { console.error('NOSTROMA_URL is required'); process.exit(2); }
@@ -32,7 +33,7 @@ const problems = [];
 page.on('pageerror', e => problems.push(`pageerror: ${e.message}`));
 page.on('console', m => { if (m.type() === 'error') problems.push(`console: ${m.text().slice(0, 200)}`); });
 const shot = async name => { await page.waitForTimeout(500); await page.screenshot({ path: join(SHOTS, `${name}.png`) }); console.log(`shot ${name}.png`); };
-const send = async text => { await page.locator('textarea').first().fill(text); await page.getByRole('button', { name: 'Send' }).click(); };
+const send = async text => { await page.locator(anchors.composer.textarea).fill(text); await page.getByRole('button', { name: 'Send' }).click(); };
 const idle = async (ms = 900000) => page.waitForFunction(() => document.documentElement.dataset.streaming !== 'true', null, { timeout: ms });
 const started = async () => page.waitForFunction(() => document.documentElement.dataset.streaming === 'true', null, { timeout: 30000 });
 const chatText = () => page.evaluate(() => document.querySelector('.chat')?.innerText ?? document.body.innerText);
@@ -41,7 +42,7 @@ async function approveUntilIdle(label) {
   let asked = 0; const seen = new Set(); const reasons = [];
   for (;;) {
     const streaming = await page.evaluate(() => document.documentElement.dataset.streaming === 'true');
-    const cards = page.locator('.toolcard[data-state="proposed"]');
+    const cards = page.locator(anchors.tools.proposed);
     const n = await cards.count();
     for (let i = 0; i < n; i++) {
       const card = cards.nth(i);
@@ -74,8 +75,7 @@ async function newChat() {
 
 try {
   await page.goto(`${BASE}/`);
-  const skip = page.getByText('Go straight to the app');
-  await skip.waitFor({ timeout: 8000 }).then(() => skip.click()).catch(() => {});
+  await skipOnboarding(page, { timeout: 8000 });
 
   // 1. the screen, and two tools of my own
   if (!SKIP.has('own')) {
@@ -84,18 +84,18 @@ try {
     const names = await page.locator('.settings-tools .field__label, .settings-tools [class*="field__label"]').allInnerTexts();
     check(['Run commands', 'Search the web', 'Open web pages', 'Goals'].every(n => names.some(x => x.includes(n))), 'the groups are listed in plain words');
     await page.getByRole('button', { name: 'Add a tool' }).click();
-    await page.getByRole('dialog').getByLabel('Name').fill('House style');
-    await page.getByRole('dialog').getByLabel('What it does').fill('Our house style for every answer.');
-    await page.getByRole('dialog').getByLabel('Instructions').fill('End your answer with the single word FINISHED on a line of its own.');
+    await page.locator(`${anchors.tools.field('name')} input`).fill('House style');
+    await page.locator(`${anchors.tools.field('about')} input`).fill('Our house style for every answer.');
+    await page.locator(`${anchors.tools.field('instructions')} textarea`).fill('End your answer with the single word FINISHED on a line of its own.');
     await shot('02-add-instructions');
     await page.getByRole('button', { name: 'Save tool' }).click();
     await page.waitForTimeout(800);
     await page.getByRole('button', { name: 'Add a tool' }).click();
-    await page.getByRole('dialog').getByLabel('Name').fill('Say hello');
-    await page.getByRole('dialog').getByLabel('What it does').fill('Prints a greeting from this computer.');
-    await page.getByRole('dialog').getByLabel('How it works').click();
-    await page.getByRole('option', { name: 'Run a command' }).click();
-    await page.getByRole('dialog').getByLabel('Command to run').fill('echo hello from my own tool');
+    await page.locator(`${anchors.tools.field('name')} input`).fill('Say hello');
+    await page.locator(`${anchors.tools.field('about')} input`).fill('Prints a greeting from this computer.');
+    await page.locator(`${anchors.tools.field('kind')} button`).click();
+    await page.locator('[role="option"][data-value="command"]').click();
+    await page.locator(`${anchors.tools.field('command')} input`).fill('echo hello from my own tool');
     await shot('03-add-command');
     await page.getByRole('button', { name: 'Save tool' }).click();
     await page.waitForTimeout(800);

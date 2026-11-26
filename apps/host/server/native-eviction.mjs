@@ -106,22 +106,41 @@ export function aboutText(seconds) {
 }
 
 /**
+ * Why a loaded model stops in a Prepare: it is the model being prepared again (its own engine is replaced), the
+ * preparation rewrites a file its engine has open, or the new model needs the memory. The same model prepared again
+ * comes first: replacing its engine is what stops it, not a lack of room.
+ */
+export function stopWhy(instance, { target = null, writing = [] } = {}) {
+  if (!instance) return 'memory';
+  if (target !== null && target !== undefined && instance.model === target) return 'again';
+  return writing.some(one => one && one.id === instance.id) ? 'files' : 'memory';
+}
+
+/**
  * The question asked before a Prepare stops loaded models: their names, the memory the stop frees and how long
  * loading them again takes. Null when there is nothing to stop (and nothing to ask).
+ *
+ * Each model says why it stops (`why`: 'memory', 'files' or 'again', stopWhy above) and the opening names every reason
+ * the stop really is, so a model stopped because its own files are rewritten is never said to lack memory. `why` is the
+ * reason for a model that does not carry one.
  */
 export function evictionQuestion(models = [], why = 'memory') {
   const list = models.filter(model => model && model.label);
   if (!list.length) return null;
+  const reason = model => ['memory', 'files', 'again'].includes(model.why) ? model.why : why;
   const many = list.length > 1;
   const them = many ? 'them' : 'it';
   const gb = list.reduce((total, model) => total + (Number(model.gb) > 0 ? Number(model.gb) : 0), 0);
   const seconds = Math.max(0, ...list.map(model => Number(model.seconds)).filter(Number.isFinite));
   const freed = gb > 0 ? `${gb.toFixed(1)} GB of memory` : `${many ? 'their' : 'its'} memory`;
   const time = aboutText(seconds);
-  const opening = why === 'files'
-    ? `Preparing this model rewrites a file ${listWords(list.map(model => model.label))} ${many ? 'have' : 'has'} open. `
-    : `Preparing this model needs the memory of ${listWords(list.map(model => model.label))}. `;
-  return opening
+  const named = kind => list.filter(model => reason(model) === kind).map(model => model.label);
+  const again = named('again'), files = named('files'), memory = named('memory');
+  const clauses = [];
+  if (again.length) clauses.push(`replaces the engine of ${listWords(again)}`);
+  if (files.length) clauses.push(`rewrites a file ${listWords(files)} ${files.length > 1 ? 'have' : 'has'} open`);
+  if (memory.length) clauses.push(`needs the memory of ${listWords(memory)}`);
+  return `Preparing this model ${clauses.join(', and ')}. `
     + `Stopping ${them} frees ${freed}${time ? `, and loading ${them} again takes about ${time}` : ''}. Continue?`;
 }
 

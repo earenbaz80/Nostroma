@@ -2,6 +2,8 @@
 export { chromium } from 'playwright-core';
 import { chromium as browserType } from 'playwright-core';
 import { envVar } from '../server/env-compat.mjs';
+import { anchors, skipOnboarding } from './ui-anchors.mjs';
+export { anchors, skipOnboarding };
 export const BASE = envVar('UI_BASE') ?? 'http://127.0.0.1:18791';
 export const CHROME = process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 export async function api(path, method = 'GET', body) {
@@ -20,8 +22,6 @@ export async function open({ theme = 'light', width = 1400, height = 900 } = {})
   const page = await context.newPage();
   await page.goto(BASE + '/');
   await page.waitForTimeout(1500);
-  const skip = page.getByText('Go straight to the app');
-  await skip.waitFor({ timeout: 10000 }).catch(() => {});
-  if (await skip.count()) { await skip.click(); await page.waitForTimeout(800); }
+  await skipOnboarding(page);
   return { browser, context, page };
 }

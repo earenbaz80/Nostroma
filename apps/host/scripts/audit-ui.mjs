@@ -4,10 +4,16 @@
  *
  *   node scripts/audit-ui.mjs
  *
- * Static checks over the app's own stylesheet and the synced kit copy. Everything
- * it asserts is a rule from src/styles/app.css's header comment or
+ * Static checks over every stylesheet in src/styles and the synced kit copy.
+ * Everything it asserts is a rule from src/styles/app.css's header comment or
  * docs/interaction-guidelines.md, so a failure means one of those documents and
  * the code disagree.
+ *
+ * Every sheet is scanned, not only the two that were scanned first: a rule
+ * appended in a later file ships just the same, and workbench.css added 9–10 px
+ * labels that no check ever saw. The sheets that predate the audit carry a
+ * recorded ceiling below, which may only shrink; anything else is held at zero,
+ * so a new file or a new rule is enforced from its first line.
  *
  * Exits non-zero when anything fails, so it can gate a release.
  */
@@ -19,10 +25,33 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const STYLE_DIR = join(ROOT, 'src/styles');
 const KIT_COPY = join(ROOT, 'src/styles/kit');
 
-/** The app's own stylesheets, in cascade order: the last one wins. */
-const APP_SHEETS = ['app.css', 'liquid.css']
-  .map((name) => ({ name, css: existsSync(join(STYLE_DIR, name)) ? readFileSync(join(STYLE_DIR, name), 'utf8') : null }))
-  .filter((sheet) => sheet.css !== null);
+/**
+ * Every stylesheet in src/styles, read from the folder rather than listed, so a
+ * new sheet is scanned the day it lands. `app.css` first because it declares the
+ * tokens and the header these rules come from; the rest follow in name order.
+ */
+const APP_SHEETS = readdirSync(STYLE_DIR)
+  .filter((name) => name.endsWith('.css'))
+  .sort((a, b) => (a === 'app.css' ? -1 : b === 'app.css' ? 1 : a.localeCompare(b)))
+  .map((name) => ({ name, css: readFileSync(join(STYLE_DIR, name), 'utf8') }));
+
+/**
+ * The sheets that predate this audit, and how many design-system failures each
+ * one already has. They are debt, not permission: the number is a ceiling that
+ * may only fall, and a sheet that is not listed here is held at zero. When you
+ * bring a sheet's count down, lower its ceiling in the same change; when it
+ * reaches zero, remove the entry so the sheet becomes strict.
+ */
+const LEGACY_BUDGET = {
+  'annotation-fixes.css': 57,
+  'board.css': 1,
+  'gpu-roles.css': 2,
+  'model-run.css': 42,
+  'monitor.css': 4,
+  'nostroma-crt.css': 5,
+  'onboarding.css': 75,
+  'time-skip.css': 14,
+};
 
 const KIT_SCALES = {
   radius: new Set(['8px', '14px', '20px', '24px', '9999px', '999px', '50%', '6px', '10px', '12px', '15px', '16px', '2px', '1.5px', 'inherit', '0']),
@@ -105,6 +134,7 @@ const ELEVATION_ALLOWED = new Set([
   '.jumplatest',
   '.quote-selection', // the Quote button that floats beside selected words (#4785)
   '.st-btn--primary', // the accent fill's own lift
+  '.workbench', // the dock floats over the conversation; as a drawer it is the whole layer
   '.st-slider::-webkit-slider-thumb', // a control affordance: the thumb needs to read against its track
   '.st-toggle::after', // same: the knob needs to read against its track
   '.family-switch button[aria-selected="true"]', // a selected segmented control, like .st-tab
@@ -135,7 +165,7 @@ const AMBIENT_SELECTORS = new Set(['body']);
 
 const failures = [];
 const notes = [];
-const fail = (file, line, message) => failures.push(`${file}:${line}  ${message}`);
+const fail = (file, line, message) => failures.push({ file, line, message });
 
 /* ------------------------------------------------------------ app sheets -- */
 
@@ -190,6 +220,14 @@ function scanStylesheet(file, css) {
     }
     if (prop === 'font-size' && !value.startsWith('var(') && !value.includes('clamp') && !KIT_SCALES.fontSize.has(value)) {
       fail(file, n, `off-scale font-size "${value}" in ${selectorForLine}`);
+    }
+    /* The `font` shorthand hides a size from the check above: workbench.css's
+       label rules wrote `font: 600 9px/1 …`, and the audit never saw them. */
+    if (prop === 'font' && !value.includes('var(') && !/inherit|initial|unset/.test(value)) {
+      const size = value.match(/(?:^|\s)(\d+(?:\.\d+)?(?:px|rem|em))(?=\/|\s|$)/)?.[1];
+      if (size && !KIT_SCALES.fontSize.has(size)) {
+        fail(file, n, `off-scale font-size "${size}" in ${selectorForLine} (font shorthand)`);
+      }
     }
     if (prop === 'box-shadow' && !KIT_SCALES.shadow.some((re) => re.test(value))) {
       fail(file, n, `shadow is not a kit token: "${value}" in ${selectorForLine}`);
@@ -257,8 +295,8 @@ function scanStylesheet(file, css) {
 
 for (const sheet of APP_SHEETS) scanStylesheet(sheet.name, sheet.css);
 
-const css = APP_SHEETS.find((sheet) => sheet.name === 'app.css')?.css ?? '';
 const allAppCss = APP_SHEETS.map((sheet) => sheet.css).join('\n');
+const css = allAppCss;
 
 /* ------------------------------------------------- kit sync + motion scale -- */
 
@@ -399,7 +437,7 @@ notes.push(`kit copy: in sync with ../ui`);
 /* ------------------------------------------------------------------ report -- */
 
 const keyframes = (css.match(/@keyframes/g) ?? []).length;
-notes.push(`keyframes: ${keyframes} (was 23 before consolidation)`);
+notes.push(`keyframes: ${keyframes} across ${APP_SHEETS.length} sheets`);
 notes.push(`materials: ${BLUR_ALLOWED.size} approved surfaces, all token-gated`);
 notes.push(`elevation: ${ELEVATION_ALLOWED.size} floating surfaces, ${(css.match(/var\(--st-sh-(card|bar|pop)\)/g) ?? []).length} shadow uses`);
 notes.push(`capsules: ${CAPSULE_CONTROLS.length}/${CAPSULE_CONTROLS.length} controls, surfaces untouched`);
@@ -407,9 +445,27 @@ notes.push(`icons: ${referenced.size} referenced, all present in a ${symbols.siz
 notes.push(`dropdowns: no native <select> in src/`);
 notes.push(`classes: every class a component uses is defined in a stylesheet`);
 
-if (failures.length) {
-  console.log(`ui audit: ${failures.length} failure(s)\n`);
-  for (const f of failures) console.log(`  ${f}`);
+/* Only the failures above a sheet's recorded ceiling are reported: the first
+   `budget` of them are the debt the sheet already had, and the rest are what
+   this change — or a new one — added. */
+const bySheet = new Map();
+for (const f of failures) {
+  if (!bySheet.has(f.file)) bySheet.set(f.file, []);
+  bySheet.get(f.file).push(f);
+}
+const enforced = [];
+const debt = [];
+for (const [file, list] of bySheet) {
+  const budget = LEGACY_BUDGET[file] ?? 0;
+  if (budget) debt.push(`${file} ${list.length}/${budget}`);
+  enforced.push(...list.slice(budget));
+}
+if (debt.length) notes.push(`recorded debt: ${debt.join(', ')} — the ceiling may only come down`);
+notes.push(`sheets: ${APP_SHEETS.length} scanned, ${Object.keys(LEGACY_BUDGET).length} with a recorded ceiling`);
+
+if (enforced.length) {
+  console.log(`ui audit: ${enforced.length} new failure(s)\n`);
+  for (const f of enforced) console.log(`  ${f.file}:${f.line}  ${f.message}`);
   console.log();
   for (const n of notes) console.log(`  · ${n}`);
   process.exit(1);

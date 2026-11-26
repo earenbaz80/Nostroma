@@ -1,10 +1,8 @@
 import {USER_KEY,flagValue} from './native-user-args.mjs';
+import {defaultReserves,ENGINE_DEFAULT_RESERVE_MIB} from '../shared/memory-budget.mjs';
+export {defaultReserves};
 import {parseEngineVersion} from './engine-version.mjs';
 
-/** The engine's own default reserve, and the one setup writes for pictures read on the GPU: neither is a choice of the person. */
-const ENGINE_DEFAULT_RESERVE_MIB=700;
-/** A card that drives no display needs little beside the engine; the engine keeps the last few hundred MiB for allocations it makes after the cache. */
-const COMPUTE_ONLY_RESERVE_MIB=512;
 
 const wholeMib=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v))&&Number(v)>=0?Math.trunc(Number(v)):null;
 
@@ -21,32 +19,6 @@ function candidateReserve(config,values={},legacyDefaults=new Set()){
  return keyOk?key:argOk?arg:null;
 }
 
-/** What the app keeps free when the person asked for nothing: [work, performance]. A card that drives a display (or is not known to be headless) gets no
- *  less than 1536 MiB on a card of 16 GB or less, 1024 above, 2048 with pictures (the engine warns below ~1-1.5 GiB of free VRAM: the driver then pages GPU memory to
- *  system RAM and decoding falls to a few tokens a second, #2065); "work" also keeps a fifth of the card. A card the probe says drives no display keeps 512 MiB
- *  (700 with pictures) on either profile. */
-export function defaultReserves(config,hardware,baselineReserve=0){
- const placement=Array.isArray(config.gpu)?config.gpu:[config.gpu??0];
- const placed=(hardware?.gpus??[]).filter(g=>placement.includes(g.index)),gpuMemory=placed.map(g=>g.vram_gb).filter(n=>Number.isFinite(n)&&n>0);
- const headless=placed.length>0&&placed.every(computeOnly);   // no display on the card (the desktop is on an integrated GPU): no desktop to keep room for
- /* Only a picture reader that runs on the GPU needs VRAM of its own: the CPU reader (vision.gpu false) took the same 2048 floor and cost a 12 GB card a quarter of its expert cache (0.2.3 tuning, notes-023-tune.md). */
- const pictures=config.vision?(typeof config.vision==='object'?Boolean(config.vision.gpu):true):false;
- const floor=headless?(pictures?ENGINE_DEFAULT_RESERVE_MIB:COMPUTE_ONLY_RESERVE_MIB):gpuMemory.length&&Math.min(...gpuMemory)>16?1024:1536;
- const safety=headless?floor:Math.max(pictures?2048:floor,baselineReserve);
- /* A card that shares the PC's memory (Strix Halo, other APUs) has no memory of its own to keep a fifth of: that fifth is RAM, and "Leave 20% for my work" already keeps it
-  *  through the RAM budget. A fifth of the shared pool here held back 16 GB of expert cache for nothing (#3510); the display floor stays. */
- const shared=placed.length>0&&placed.some(g=>g.uma===true||g.unified===true);
- /* A chip that shares the PC's memory has no memory of its own for the driver to page out of (#2065 is a display card's): the reserve is the one setup wrote into
-  *  the run config (Windows Strix Halo: 700, nostroma_control/setup_config.py UMA_WIN_RESERVE_MIB, pictures on or off), on both profiles, so the app's Load starts the
-  *  engine as `nostroma launch` does (QAGUI-STRIX 11-09: the Load made it 1024, 2048 with pictures). A config with none of setup's (an old one): the one setup would
-  *  write for this chip, which Control's hardware report carries (setup_reserve_mib, one-card runs only, as setup's rule); without that (Linux, an older Control)
-  *  the floor below, as before (with no reserve at all a Windows engine applies its own 2560 MiB floor, which hung UD-Q4_K_XL on Strix Halo: G16). */
- if(shared){const own=baselineReserve>0?baselineReserve:placement.length===1&&placed.length===1&&wholeMib(placed[0].setup_reserve_mib)>0?wholeMib(placed[0].setup_reserve_mib):null;if(own!==null)return {work:own,performance:own};}
- /* "work" keeps a fifth of the card, but on a card of 16 GB or less no more than 1536 MiB: a fifth of 12 GB (2457) cost 20% of the speed against 1536, which already leaves 1.1 GiB of VRAM free after the load (RTX 5070, Gyro-S 64K, 5 pairs; notes-023-tune.md). */
- const fifth=gpuMemory.length?Math.floor(Math.min(...gpuMemory)*1024*.2):0,cap=gpuMemory.length&&Math.min(...gpuMemory)<=16?1536:Infinity;
- return {work:gpuMemory.length&&!headless&&!shared?Math.max(safety,Math.min(fifth,cap)):safety,performance:safety};
-}
-
 /** The reserve the person asked for (null: nothing) and the default for each profile. A 0.2.0-beta file has the key and the same number in "args" with no note that the
  *  app wrote them: a number that is one of the app's two defaults is the app's, any other is the person's. */
 export function reserveChoice(config,hardware,values={},baselineReserve=0){
@@ -55,9 +27,6 @@ export function reserveChoice(config,hardware,values={},baselineReserve=0){
  return {asked,defaults};
 }
 export const explicitReserve=(config,values={},hardware=null)=>reserveChoice(config,hardware,values).asked;
-
-/** True when the probe says this card drives no display: only compute runs on it. Unknown counts as a display card. */
-const computeOnly=g=>g?.drives_display===false;
 
 /** Headroom is a worker/memory budget, not a hard utilisation throttle. */
 export function resourceSettings(config,hardware,profile,model={},values={}){
@@ -158,10 +127,10 @@ export function saferStart(config,hardware,model,failure){
  const ram=Number(hardware?.ram_gb)||0,arena=Number(model?.arenaGb)||0;
  // Windows lets a program lock only about half the RAM for the graphics card; the engine pins the model's experts up to that.
  // When it ran out of locked memory, pin less of them: they stay in RAM, a little slower to reach.
- if(/pinned-memory-exhausted|mapped staging/i.test(text)&&!(env.NOSTROMA_ARENA_PIN_GIB ?? env.NOSTROMA_ARENA_PIN_GIB)){
+ if(/pinned-memory-exhausted|mapped staging/i.test(text)&&!(env.NOSTROMA_ARENA_PIN_GIB)){
   const hint=Number((text.match(/NOSTROMA_ARENA_PIN_GIB=(\d+)/)??[])[1]);
   const gib=hint>0?hint:ram>0?Math.max(4,Math.floor(ram/2)-8):16;
-  env.NOSTROMA_ARENA_PIN_GIB=env.NOSTROMA_ARENA_PIN_GIB=String(gib);
+  env.NOSTROMA_ARENA_PIN_GIB=String(gib);
   return {config:{...config,env},words:`Windows would not lock as much memory as the model asked for, so Nostroma started again and locks ${gib} GB of the model instead of all of it. Replies may start a little slower.`,detail:`NOSTROMA_ARENA_PIN_GIB=${gib}`};
  }
  if(['--resident-experts','--mmap-experts'].some(f=>args.includes(f)))return null;

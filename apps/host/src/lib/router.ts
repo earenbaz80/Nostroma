@@ -6,7 +6,6 @@ export const ROUTES = [
   'chat',
   'models',
   'tuning',
-  'serving',
   'monitor',
   'tasks',
   'skills',
@@ -19,22 +18,33 @@ export interface Location {
   route: Route;
   param: string | null;
   query: URLSearchParams;
+  /** The Settings section a retired route opens, when that route opens Settings at all. */
+  settingsSection?: string;
 }
+
+/** Screens that are gone but old bookmarks and links still reach, and the screen that holds each one now. */
+const RETIRED: Record<string, { route: Route; settingsSection?: string }> = {
+  // Serving moved into Settings → Server; the old bookmark used to land in Chat without saying so.
+  serving: { route: 'chat', settingsSection: 'Server' },
+};
 
 export function parseLocation(hash: string): Location {
   const raw = hash.replace(/^#\/?/, '');
   const [pathPart, queryPart] = raw.split('?');
   const segments = pathPart.split('/').filter(Boolean);
   const first = segments[0] as Route | undefined;
+  const retired = first ? RETIRED[first] : undefined;
   // Chat is the landing screen; an unknown or retired route (a stale #/launch
-  // bookmark) falls back to it rather than rendering nothing.
-  const route: Route = first && (ROUTES as readonly string[]).includes(first) ? first : 'chat';
+  // bookmark) falls back to it rather than rendering nothing. A retired route
+  // with a home opens it: Settings, on the section that holds what it named.
+  const route: Route = retired ? retired.route : first && (ROUTES as readonly string[]).includes(first) ? first : 'chat';
   const query = new URLSearchParams(queryPart ?? '');
-  if (route === 'settings') query.set('settings', '1');
+  if (route === 'settings' || retired) query.set('settings', '1');
   return {
     route: route === 'settings' ? 'chat' : route,
     param: segments[1] ?? null,
     query,
+    ...(retired?.settingsSection ? { settingsSection: retired.settingsSection } : {}),
   };
 }
 
@@ -63,7 +73,7 @@ export function useLocation(): Location {
 function normalise(loc: Location): void {
   const raw = window.location.hash.replace(/^#\/?/, '');
   const first = raw.split('?')[0].split('/').filter(Boolean)[0];
-  if (first === 'settings') {
+  if (first === 'settings' || (first && RETIRED[first])) {
     window.history.replaceState(null, '', locationHref(loc));
   } else if (first && !(ROUTES as readonly string[]).includes(first)) {
     window.history.replaceState(null, '', `#/${loc.route}`);

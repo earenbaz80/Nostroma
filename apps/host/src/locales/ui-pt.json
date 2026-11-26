@@ -39,5 +39,11 @@
  "ui38": "Digite a sua própria resposta",
  "ui39": "Enviar resposta",
  "ui40": "Perguntas para você",
- "ui41": "Permite que o assistente pare e faça uma pergunta, com respostas para escolher, quando precisa da sua decisão."
+ "ui41": "Permite que o assistente pare e faça uma pergunta, com respostas para escolher, quando precisa da sua decisão.",
+ "ui42": "Lendo os pesos do modelo…",
+ "ui43": "Lendo os especialistas na memória…",
+ "ui44": "Preenchendo o cache de especialistas da GPU…",
+ "ui45": "Aguardando o servidor…",
+ "ui46": "O teste de velocidade não terminou.",
+ "ui47": "Estimando o tempo…"
 }

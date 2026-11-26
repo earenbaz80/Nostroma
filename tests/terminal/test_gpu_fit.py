@@ -114,8 +114,8 @@ class GpuFitRule(unittest.TestCase):
         self.assertIn("read from the SSD", r2["options"][0]["words"])
 
     def test_the_constants_equal_the_apps(self):
-        text = (ROOT / "apps" / "host" / "src" / "lib" / "native-fit.ts").read_text(encoding="utf-8")
-        m = re.search(r"const DENSE_GB = (\d+), SYSTEM_ROOM_GB = (\d+), DENSE_EXTRA_GB = (\d+)", text)
+        text = (ROOT / "apps" / "host" / "shared" / "memory-budget.mjs").read_text(encoding="utf-8")
+        m = re.search(r"export const DENSE_GB = (\d+);\s*export const SYSTEM_ROOM_GB = (\d+);\s*export const DENSE_EXTRA_GB = (\d+);", text)
         self.assertIsNotNone(m)
         self.assertEqual((G.DENSE_GB, G.SYSTEM_ROOM_GB, G.DENSE_EXTRA_GB), tuple(float(x) for x in m.groups()))
 

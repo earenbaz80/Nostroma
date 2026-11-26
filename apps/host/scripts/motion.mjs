@@ -22,6 +22,7 @@ import { existsSync, mkdirSync, rmSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { requireChromium } from './browser.mjs';
+import { envVar } from '../server/env-compat.mjs';
 
 const run = promisify(execFile);
 const BASE = envVar('URL') ?? 'http://localhost:5199';
@@ -103,7 +104,6 @@ async function contactSheet(name, frames) {
   const out = join(ROOT, `motion-${name}.png`);
   const script = `
 import sys
-import { envVar } from '../server/env-compat.mjs';
 from PIL import Image
 paths, out = sys.argv[1:-1], sys.argv[-1]
 ims = [Image.open(p) for p in paths]

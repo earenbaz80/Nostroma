@@ -31,12 +31,77 @@ async function request<T>(method: string, path: string, body?: unknown, signal?:
   return data as T;
 }
 
+/**
+ * POST a request whose answer arrives as newline-delimited JSON events, so a
+ * long command can be followed while it runs instead of waited on. Returns when
+ * the stream closes; a failed request throws the same ApiError as the rest.
+ */
+export async function postStream(
+  path: string,
+  body: unknown,
+  onEvent: (event: Record<string, unknown>) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: 'POST',
+    signal,
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    let data: unknown;
+    try { data = text ? JSON.parse(text) : undefined; } catch { data = undefined; }
+    const message =
+      (data as { error?: string } | undefined)?.error ?? `Request failed (${res.status} ${res.statusText})`;
+    throw new ApiError(message, res.status, data);
+  }
+  if (!res.body) throw new ApiError('The answer could not be read.', res.status, undefined);
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  /* A chunk can end mid-line, so only complete lines are read as events. */
+  const take = (text: string) => {
+    buffer += text;
+    let end = buffer.indexOf('\n');
+    while (end !== -1) {
+      const line = buffer.slice(0, end).trim();
+      buffer = buffer.slice(end + 1);
+      if (line) onEvent(JSON.parse(line) as Record<string, unknown>);
+      end = buffer.indexOf('\n');
+    }
+  };
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    take(decoder.decode(value, { stream: true }));
+  }
+  take(decoder.decode());
+  const last = buffer.trim();
+  if (last) onEvent(JSON.parse(last) as Record<string, unknown>);
+}
+
 export const api = {
   get: <T>(path: string, signal?: AbortSignal) => request<T>('GET', path, undefined, signal),
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
   patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
   del: <T>(path: string) => request<T>('DELETE', path),
+  /** Raw bytes, for a picture the host keeps in a folder (the wallpaper chooser). */
+  upload: async <T>(path: string, body: Blob, name: string): Promise<T> => {
+    const res = await fetch(`${BASE}${path}?name=${encodeURIComponent(name)}`, {
+      method: 'POST',
+      headers: { 'content-type': body.type || 'application/octet-stream' },
+      body,
+    });
+    const text = await res.text();
+    const data = text ? (JSON.parse(text) as unknown) : undefined;
+    if (!res.ok) {
+      const message = (data as { error?: string } | undefined)?.error ?? `Request failed (${res.status} ${res.statusText})`;
+      throw new ApiError(message, res.status, data);
+    }
+    return data as T;
+  },
 };
 
 export interface StreamEvent {

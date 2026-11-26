@@ -9,19 +9,12 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { transform } from 'esbuild';
+import { loadTs } from './helpers/load-ts.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const repo = resolve(root, '../..');
-const load = async (f, deps = {}) => {
-  let src = readFileSync(resolve(root, f), 'utf8');
-  for (const [from, to] of Object.entries(deps)) src = src.replace(from, to);
-  const { code } = await transform(src, { loader: 'ts', format: 'esm' });
-  return import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
-};
-const fit = await load('src/lib/native-fit.ts');
-const fitUrl = `data:text/javascript;base64,${Buffer.from((await transform(readFileSync(resolve(root, 'src/lib/native-fit.ts'), 'utf8'), { loader: 'ts', format: 'esm' })).code).toString('base64')}`;
-const ctx = await load('src/lib/default-context.ts', { "'./native-fit'": `'${fitUrl}'` });
+const fit = await loadTs(new URL('../src/lib/native-fit.ts', import.meta.url));
+const ctx = await loadTs(new URL('../src/lib/default-context.ts', import.meta.url));
 
 const SIZES = ['UD-Q4_K_XL', 'UD-Q6_K_XL', 'Q8_0'];
 const CARDS = [8, 10, 11.94, 12, 15.93, 16, 23.99, 32];

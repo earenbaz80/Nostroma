@@ -23,16 +23,17 @@ add("SSD streaming · will run slower",
     "SSD 流式读取 · 运行会更慢", "SSD ストリーミング · 動作は遅くなります", "SSD-Streaming · läuft langsamer", "Streaming desde el SSD · irá más lento", "Потоковая подгрузка с SSD · будет работать медленнее",
     "Streaming do SSD · vai rodar mais devagar", "SSD 스트리밍 · 더 느리게 실행됩니다", "Streaming depuis le SSD · plus lent")
 
-# 6: the warning under the conversation context when a long context leaves little graphics memory for the model (nothing is refused or lowered)
-add("This much context takes about {0} GB of graphics memory and leaves little room for the model on this card. Nostroma will try it; if it does not start, choose a shorter context.",
-    "这么长的上下文大约占用 {0} GB 显存，留给模型的空间很少。Nostroma 会尝试运行；如果无法启动，请选择更短的上下文。",
-    "このコンテキストはグラフィックスメモリーを約 {0} GB 使い、このカードではモデルに残る余裕がわずかです。Nostroma は試しますが、起動しない場合はより短いコンテキストを選んでください。",
-    "So viel Kontext belegt etwa {0} GB Grafikspeicher und lässt auf dieser Karte wenig Platz für das Modell. Nostroma versucht es; startet es nicht, wähle einen kürzeren Kontext.",
-    "Este contexto ocupa unos {0} GB de memoria gráfica y deja poco espacio para el modelo en esta tarjeta. Nostroma lo intentará; si no arranca, elige un contexto más corto.",
-    "Такой контекст занимает около {0} ГБ видеопамяти и оставляет модели мало места на этой карте. Nostroma попробует запустить; если не получится, выберите контекст короче.",
-    "Esse contexto ocupa cerca de {0} GB de memória gráfica e deixa pouco espaço para o modelo nesta placa. O Nostroma vai tentar; se não iniciar, escolha um contexto menor.",
-    "이 정도의 컨텍스트는 그래픽 메모리를 약 {0} GB 사용하며 이 카드에서는 모델이 쓸 공간이 거의 남지 않습니다. Nostroma가 시도하지만 시작되지 않으면 더 짧은 컨텍스트를 선택하세요.",
-    "Ce contexte occupe environ {0} Go de mémoire graphique et laisse peu de place au modèle sur cette carte. Nostroma va essayer ; s'il ne démarre pas, choisissez un contexte plus court.")
+# 6: the warning under the conversation context when a long context leaves little graphics memory for the model (nothing is refused or lowered);
+# the figure is the KV cache, so the sentence names it and the budget row beside it says "Context and state"
+add("The KV cache for this much context takes about {0} GB of graphics memory and leaves little room for the model on this card. Nostroma will try it; if it does not start, choose a shorter context.",
+    "这么长的上下文的 KV 缓存大约占用 {0} GB 显存，留给模型的空间很少。Nostroma 会尝试运行；如果无法启动，请选择更短的上下文。",
+    "このコンテキストの KV キャッシュはグラフィックスメモリーを約 {0} GB 使い、このカードではモデルに残る余裕がわずかです。Nostroma は試します。起動しない場合は、より短いコンテキストを選んでください。",
+    "Der KV-Cache für diesen Kontext belegt etwa {0} GB Grafikspeicher und lässt auf dieser Karte wenig Platz für das Modell. Nostroma versucht es; startet es nicht, wähle einen kürzeren Kontext.",
+    "La caché KV para este contexto ocupa unos {0} GB de memoria gráfica y deja poco espacio para el modelo en esta tarjeta. Nostroma lo intentará; si no arranca, elige un contexto más corto.",
+    "KV-кэш для такого контекста занимает около {0} ГБ видеопамяти и оставляет модели мало места на этой карте. Nostroma попробует; если не запустится, выберите контекст короче.",
+    "A cache KV para esse contexto ocupa cerca de {0} GB de memória gráfica e deixa pouco espaço para o modelo nesta placa. O Nostroma vai tentar; se não iniciar, escolha um contexto mais curto.",
+    "이 정도의 컨텍스트에 필요한 KV 캐시는 그래픽 메모리를 약 {0} GB 사용하며 이 카드에서는 모델이 쓸 공간이 거의 남지 않습니다. Nostroma가 시도합니다. 시작되지 않으면 더 짧은 컨텍스트를 선택하세요.",
+    "Le cache KV pour ce contexte occupe environ {0} Go de mémoire graphique et laisse peu de place au modèle sur cette carte. Nostroma va essayer ; s’il ne démarre pas, choisissez un contexte plus court.")
 
 # 9: a chat that is working while the person is elsewhere (the ring on its row, and the model chip's line)
 add("Working · {0}",

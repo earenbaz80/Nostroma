@@ -8,12 +8,24 @@ import { installDropGuard } from './components/DropZone';
 import { startRecovery } from './lib/recovery';
 import { translationsReady } from './lib/i18n';
 import { loadHighlighter } from './components/SyntaxCode';
+import { applyColumnWidth, NAV_COLUMN, storedColumnWidth, WORKBENCH_COLUMN } from './lib/column-width';
+import { startTextScroll } from './lib/text-scroll';
 
 const el = document.getElementById('root');
 if (!el) throw new Error('#root missing');
 
 installDropGuard();
 startRecovery();
+// Labels the layout had to cut can be scrolled sideways to read the rest.
+startTextScroll();
+
+// The dragged column widths go into the grid before the first paint. Published
+// afterwards (from the panel's effect) they would be a change to
+// grid-template-columns, and the transition that animates the grid would hold
+// the old track until it got a frame — which a document loaded behind another
+// window never gets. See lib/column-width.
+applyColumnWidth(WORKBENCH_COLUMN, storedColumnWidth(WORKBENCH_COLUMN));
+applyColumnWidth(NAV_COLUMN, storedColumnWidth(NAV_COLUMN));
 
 // The saved language's strings are fetched while the rest of the code loads; the first screen is drawn once they are in (English needs no wait).
 // Code colouring (the Prism grammars, 130 kB) is not needed to show the first screen: it is fetched a few seconds later, when the browser is idle,
@@ -51,3 +63,8 @@ import './styles/liquid.css';
 
 // Nostroma's skin: amber-phosphor palette and square corners, over everything.
 import './styles/nostroma-crt.css';
+
+// The right-side local tools dock, last so its layout rules see every screen.
+import './styles/workbench.css';
+import './styles/nono.css';
+import './styles/start.css';

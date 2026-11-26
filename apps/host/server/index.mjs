@@ -12,6 +12,7 @@ import { createLocalShare } from './local-share.mjs';
 import { createTaskService, validateTask } from './tasks.mjs';
 import { createAgentTaskRunner } from './agent/task-run.mjs';
 import { migrateSetup } from './setup.mjs';
+import { auditLine, auditValue } from './audit-details.mjs';
 import { skillEdit } from './skill-edits.mjs';
 import { materializeSkills, parseSkillFile, skillSlug, writeCreatedSkill } from './skill-files.mjs';
 import { systemFonts } from './fonts.mjs';
@@ -21,6 +22,7 @@ import { mcpSkippedNotices } from './agent/profile.mjs';
 import { createAgentTools } from './agent/tools-settings.mjs';
 import { withPlainStatus } from './agent/status.mjs';
 import { findBrowser, findPlaywrightMcp } from './agent/browser-probe.mjs';
+import { parseRepo, cloneArgs, tokenEnv, cloneFailure } from './github-repo.mjs';
 /**
  * Nostroma engine host.
  *
@@ -32,7 +34,7 @@ import { findBrowser, findPlaywrightMcp } from './agent/browser-probe.mjs';
  */
 import http from 'node:http';
 import { homedir, hostname as machineName } from 'node:os';
-import { statfsSync, cpSync, createReadStream, createWriteStream, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { statfsSync, cpSync, createReadStream, createWriteStream, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
 import { spawn } from 'node:child_process';
 import { execFile } from 'node:child_process';
@@ -86,13 +88,16 @@ import { apiPath } from './api-paths.mjs';
 import { findFreePort, listenProblem } from './ports.mjs';
 import { validateChatImages } from './chat-images.mjs';
 import { createTimeSkip, measureFolder, timeskipRevisionMessage, imageTypeOf } from './timeskip.mjs';
-import { aliasOldNames, childEnv, envVar } from './env-compat.mjs';
-
-// The names moved to NOSTROMA_*; anything started with the older NOSTROMA_* names keeps working, and children get both.
-aliasOldNames();
+import { childEnv, envVar } from './env-compat.mjs';
+import { createTerminal } from './terminal.mjs';
+import { WALLPAPER_MAX_BYTES, listWallpapers, saveWallpaper, wallpaperFile, wallpaperType } from './wallpapers.mjs';
+import { wallpaperFolder } from './wallpaper-folder.mjs';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 const ROOT = resolve(HERE, '..');
+/** Pictures a person can put behind the app: `wallpapers/` in a source checkout, `<NOSTROMA_HOME>/wallpapers` in the
+ *  packaged app, whose install folder is not the person's to write in (server/wallpaper-folder.mjs). */
+const WALLPAPERS = wallpaperFolder({ packaged: envVar('PACKAGED') === '1', checkout: resolve(ROOT, '..', '..', 'wallpapers'), home: store.HOME });
 const argv = process.argv.slice(2);
 const distFlag = argv.indexOf('--dist');
 // `NOSTROMA_DIST` exists for carriers that load this module directly rather than starting it as its
@@ -107,6 +112,8 @@ const DIST = envVar('DIST')
     : join(ROOT, 'dist');
 const PORT = Number(envVar('PORT') ?? 8791);
 const HOST = envVar('BIND') ?? '127.0.0.1';
+/** The Workbench terminal is for the person at this computer, not for a browser on the network. */
+const isLocalRequest = req => ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(String(req.socket?.remoteAddress ?? ''));
 /* DNS rebinding, with the rules of serve/server.py (host_names_for + host_allowed): a page of another site whose name its DNS points
    at 127.0.0.1 arrives here as the same origin and could call /api/* (chats, files, engine control). Its requests carry that site's
    name in Host, so the app answers to an IP, localhost, *.localhost (hostAllowed) and the names below. */
@@ -130,16 +137,14 @@ const HOST_NAMES = hostNamesForApp(HOST);
 /* The folder chats work in when nothing else is chosen. It is never the app's own folder (the host is started inside its install
    directory, so `process.cwd()` was "host" in the sidebar and the agent could read and write the app): the person's own
    Documents\Nostroma\Workspace (the models folder is next to it, not in it), created on first use, unless NOSTROMA_WORKSPACE
-   names one. A workspace from the Nostroma days moves once, so the chats' files are where the person left them. */
+   names one. */
 const namedWorkspace = () => process.env.NOSTROMA_WORKSPACE ?? envVar('WORKSPACE');
 function defaultWorkspace() {
   if (namedWorkspace()) return resolve(namedWorkspace());
   const user = process.env.USERPROFILE ?? process.env.HOME ?? homedir();
   for (const base of [join(user, 'Documents'), user]) {
     const dir = join(base, 'Nostroma', 'Workspace');
-    const previous = join(base, 'Nostroma', 'Workspace');
     try {
-      if (!existsSync(dir) && existsSync(previous)) { mkdirSync(join(base, 'Nostroma'), { recursive: true }); renameSync(previous, dir); }
       mkdirSync(dir, { recursive: true }); return dir;
     } catch { /* try the next place */ }
   }
@@ -147,6 +152,8 @@ function defaultWorkspace() {
 }
 const WORKSPACE = defaultWorkspace();
 const WORKSPACE_NAME = namedWorkspace() ? basename(WORKSPACE) : 'Nostroma';
+/** Where a repository cloned from GitHub lands: a sibling of the default workspace. */
+const PROJECTS_DIR = join(dirname(WORKSPACE), 'Projects');
 /** True for the app's own install/source folder or anything inside it. */
 const insideApp = path => { const rel = relative(ROOT, resolve(path)); return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel)); };
 
@@ -527,6 +534,7 @@ try { uploads.sweep(); } catch { /* best effort */ }
 const chatFolders = createChatFolders({ file: join(store.DATA_DIR, 'chat-folders.json') });
 /** Where a chat's files are: its chosen folder, else the folder its agent worked in, else the default workspace (chat-files.mjs). One source for every file route. */
 const chatRoot = chatId => chatRootOf({ chosen: chatFolders.get(chatId), used: agent.workingFolder?.(chatId), fallback: workspaces[0]?.path ?? WORKSPACE });
+const terminal = createTerminal({ defaultCwd: WORKSPACE });
 
 function saveWorkspaces() {
   try {
@@ -537,7 +545,121 @@ function saveWorkspaces() {
   }
 }
 
+/* Sharing a project is a file on this computer: its chats as Markdown, written
+   into the profile so the path can be copied and sent however the person already
+   sends things. Nothing leaves the machine, and no server is asked for anything. */
+function chatsOfWorkspace(ws) {
+  const norm = value => String(value ?? '').replace(/\\/g, '/').replace(/\/+$/, '');
+  const paths = [ws.path, ...(ws.aliases ?? [])].map(norm);
+  const same = value => paths.some(p => (/^[a-z]:\//i.test(p) ? p.toLowerCase() === norm(value).toLowerCase() : p === norm(value)));
+  const out = [];
+  let names = [];
+  try { names = readdirSync(chatStore.root); } catch { return out; }
+  for (const name of names) {
+    if (!name.endsWith('.json') || name === 'index.json') continue;
+    let session;
+    try { session = JSON.parse(readFileSync(join(chatStore.root, name), 'utf8'))?.session; } catch { continue; }
+    if (!session || !same(session.workspace)) continue;
+    out.push(session);
+  }
+  return out.sort((a, b) => String(a.createdAt ?? '').localeCompare(String(b.createdAt ?? '')));
+}
+
+function projectMarkdown(ws, sessions) {
+  const lines = [`# ${ws.name}`, '', `\`${ws.path}\``, '', `${sessions.length} chats, ${new Date().toISOString()}`, ''];
+  for (const session of sessions) {
+    lines.push(`## ${session.title || 'Chat'}`, '', `_${session.createdAt ?? ''}_`, '');
+    for (const message of session.messages ?? []) {
+      const text = typeof message.content === 'string' ? message.content
+        : Array.isArray(message.content) ? message.content.map(part => part?.text ?? '').join('\n') : '';
+      if (!String(text).trim()) continue;
+      const who = message.role === 'user' ? 'You' : message.role === 'assistant' ? 'Nostroma' : message.role;
+      lines.push(`**${who}**`, '', String(text).trim(), '');
+    }
+  }
+  return lines.join('\n');
+}
+
+/** git, asked one question at a time; a missing or failing git answers `ok: false` rather than throwing. */
+function askGit(cwd, args) {
+  return new Promise(done => {
+    const child = spawn('git', args, { cwd, windowsHide: true, env: { ...process.env, GIT_TERMINAL_PROMPT: '0' } });
+    let out = '', err = '';
+    child.stdout.on('data', chunk => { out += chunk; });
+    child.stderr.on('data', chunk => { err += chunk; });
+    child.on('error', () => done({ ok: false, out: '', err: '' }));
+    child.on('close', code => done({ ok: code === 0, out: out.trim(), err: err.trim() }));
+  });
+}
+
+/* ----------------------------------------------------------------- GitHub ---
+   A personal token is the whole of the GitHub access: it is what lets a clone
+   read a private repository. It stays in the host's state file, on this
+   computer, and no route sends it back out. */
+const githubStatus = () => ({ connected: !!store.get().github?.token, login: store.get().github?.login ?? '' });
+
+/** One shallow clone into Projects. The token reaches git through the environment, never the arguments. */
+function cloneRepository(repo, token) {
+  const target = join(PROJECTS_DIR, repo.name);
+  return new Promise((done, fail) => {
+    const child = spawn('git', cloneArgs(repo, target), {
+      windowsHide: true,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: '0', ...tokenEnv(token) },
+    });
+    let tail = '';
+    const stop = setTimeout(() => { child.kill(); fail(Object.assign(new Error('timeout'), { timeout: true })); }, 15 * 60 * 1000);
+    child.stderr.on('data', chunk => { tail = (tail + chunk).slice(-4000); });
+    child.on('error', cause => { clearTimeout(stop); fail(cause); });
+    child.on('close', code => {
+      clearTimeout(stop);
+      if (code === 0) done(tail);
+      else fail(Object.assign(new Error('clone failed'), { stderr: tail }));
+    });
+  });
+}
+
 const SKIP_DIRS = new Set(['node_modules', '.git', '.npm-cache', '.nostroma', '.shots', 'dist', '.vite', '__pycache__', '.cache']);
+
+/**
+ * The page the Live view should run: `index.html` at the root of the folder when
+ * there is one, otherwise the newest HTML page in it. A workspace with no page
+ * says so with a null path instead of inventing one.
+ */
+function previewSource(root = WORKSPACE) {
+  const pages = [];
+  const walk = (dir, prefix = '', depth = 0) => {
+    if (depth > 3 || pages.length > 200) return;
+    let names = [];
+    try {
+      names = readdirSync(dir);
+    } catch {
+      return;
+    }
+    for (const name of names.slice(0, 120)) {
+      if (SKIP_DIRS.has(name) || name.startsWith('.DS')) continue;
+      const full = join(dir, name);
+      let st;
+      try {
+        st = statSync(full);
+      } catch {
+        continue;
+      }
+      const rel = prefix ? `${prefix}/${name}` : name;
+      if (st.isDirectory()) {
+        walk(full, rel, depth + 1);
+        continue;
+      }
+      // A page too large to show is not a page to follow: the file route would
+      // refuse it, and the preview would sit blank with no reason.
+      if (!/\.html?$/i.test(name) || st.size > 200 * 1024) continue;
+      pages.push({ path: rel, mtimeMs: Math.round(st.mtimeMs), sizeKb: st.size / 1024, main: rel.toLowerCase() === 'index.html' });
+    }
+  };
+  walk(root);
+  pages.sort((a, b) => Number(b.main) - Number(a.main) || b.mtimeMs - a.mtimeMs);
+  const best = pages[0];
+  return best ? { path: best.path, mtimeMs: best.mtimeMs, sizeKb: best.sizeKb } : { path: null };
+}
 
 function workspaceListing(root = WORKSPACE) {
   const entries = [];
@@ -1013,6 +1135,22 @@ const server = http.createServer(async (req, res) => {
 
 async function api(req, res, path, method, url) {
   if(path==='/api/fonts'&&method==='GET')return json(res,200,await systemFonts());
+  // --- the background pictures in wallpapers/ (Settings > Appearance) -------------------------------
+  if(path==='/api/appearance/wallpapers'&&method==='GET')return json(res,200,{wallpapers:listWallpapers(WALLPAPERS)});
+  if(path==='/api/appearance/wallpapers'&&method==='POST'){
+    try{return json(res,201,saveWallpaper(WALLPAPERS,{body:await readRaw(req,WALLPAPER_MAX_BYTES+1),contentType:String(req.headers['content-type']??''),name:url.searchParams.get('name')??''}));}
+    catch(e){return error(res,/too big/i.test(e.message)?413:400,e.message);}
+  }
+  const wallpaperMatch=/^\/api\/appearance\/wallpapers\/([^/]+)$/.exec(path);
+  if(wallpaperMatch&&method==='GET'){
+    let name;try{name=decodeURIComponent(wallpaperMatch[1]);}catch{return error(res,400,'That background name is not readable.');}
+    const file=wallpaperFile(WALLPAPERS,name);
+    if(!file||!existsSync(file))return error(res,404,'No such background.');
+    const size=statSync(file).size;
+    res.writeHead(200,{'content-type':wallpaperType(file),'content-length':size,'cache-control':'no-cache','x-content-type-options':'nosniff'});
+    createReadStream(file).pipe(res);
+    return undefined;
+  }
   // --- chats: one file each in the data folder -----------------------------
   // Not held back by a model folder move: saving a chat has nothing to do with the models. A page must name itself (x-nostroma-client), which
   // a web page from another site cannot do without the browser asking the host first.
@@ -1349,6 +1487,134 @@ async function api(req, res, path, method, url) {
       engine: supervisor.status(),
       clients: hub.size,
     });
+  }
+
+  /* A general audit: the handful of things that, when they are wrong, explain
+     most trouble, each answered with what was found. It only looks: nothing is
+     installed, repaired or changed, and nothing leaves this computer. */
+  if (path === '/api/audit' && method === 'GET') {
+    const checks = [];
+    /* Every sentence is a key the page translates; paths, versions and counts
+       are values, so no translation has to carry one (server/audit-details.mjs). */
+    const add = (id, status, line) => checks.push({ id, status, ...line });
+
+    /* The folder in front of the person comes first: the audit is opened from a
+       chat in one project, and that project's own trouble is what most often
+       explains what is going on. With no project (the start screen) the two rows
+       are simply not there. */
+    const project = url.searchParams.get('project')?.trim();
+    if (project) {
+      let folder = null;
+      try { folder = statSync(project); } catch { folder = null; }
+      if (!folder) add('project', 'fail', auditLine('This project folder was not found: {0}', [project]));
+      else if (!folder.isDirectory()) add('project', 'fail', auditLine('{0} is a file, not a folder.', [project]));
+      else {
+        add('project', 'ok', auditValue(project));
+        const top = await askGit(project, ['rev-parse', '--show-toplevel']);
+        if (!top.ok) add('project-git', 'unknown', auditLine('git keeps no versions of this folder: it is not a repository.'));
+        else {
+          const branch = await askGit(project, ['rev-parse', '--abbrev-ref', 'HEAD']);
+          const status = await askGit(project, ['status', '--porcelain']);
+          const changed = status.ok ? status.out.split('\n').filter(Boolean).length : 0;
+          /* With changes to save, the row offers the one action that fixes it;
+             the audit never writes anything by itself. */
+          add('project-git', changed ? 'warn' : 'ok', changed
+            ? { ...auditLine('{0} files changed in this project and not saved in a commit.', [changed]), action: 'commit' }
+            : auditLine('{0} · nothing to commit', [branch.out || 'HEAD']));
+        }
+      }
+    }
+
+    try {
+      const probe = join(store.DATA_DIR, `.audit-${process.pid}.tmp`);
+      writeFileSync(probe, 'ok');
+      rmSync(probe, { force: true });
+      add('data', 'ok', auditValue(store.DATA_DIR));
+    } catch (e) {
+      add('data', 'fail', auditLine('The profile folder {0} cannot be written: {1}', [store.DATA_DIR, e.message]));
+    }
+
+    for (const [id, dir] of [['space-data', store.DATA_DIR], ['space-models', store.MODELS_DIR]]) {
+      try {
+        const st = statfsSync(dir);
+        const free = (Number(st.bavail) * Number(st.bsize)) / 1024 ** 3;
+        add(id, free >= 10 ? 'ok' : free >= 2 ? 'warn' : 'fail', auditLine('{0} GiB free in {1}', [free.toFixed(1), dir]));
+      } catch (e) {
+        add(id, 'unknown', auditLine('The free space could not be read: {0}', [e.message]));
+      }
+    }
+
+    const engine = control ? await control.engine().catch(() => null) : null;
+    if (!engine) add('engine', 'unknown', auditLine('This build does not manage the engine from here.'));
+    else if (!engine.usable) {
+      /* The host's words, not Control's notice: the notice mixes paths, versions and
+         advice in one English string, and the page cannot translate that. The reason
+         stays in the API (`notice`) and in Settings > Engine. */
+      const where = typeof engine.components_dir === 'string' ? engine.components_dir : '';
+      add('engine', 'fail', {
+        ...(where
+          ? auditLine('No usable engine was found in {0}. Use Update engine in Settings, or `nostroma update` in the Terminal.', [where])
+          : auditLine('No usable engine was found. Use Update engine in Settings, or `nostroma update` in the Terminal.')),
+        action: 'engine',
+      });
+    }
+    else add('engine', 'ok', auditValue([engine.version, engine.backend, engine.path].filter(Boolean).join(' · ')));
+
+    try {
+      const library = models.library();
+      const variant = library?.variants?.find(v => v.id === library.loaded);
+      add('model', variant ? 'ok' : 'warn', variant ? auditValue([variant.name, variant.quant].filter(Boolean).join(' · ')) : auditLine('No model is loaded.'));
+    } catch (e) {
+      add('model', 'unknown', auditLine('The models could not be read: {0}', [e.message]));
+    }
+
+    const missing = workspaces.filter(w => !existsSync(w.path));
+    add('workspaces', missing.length ? 'warn' : 'ok', missing.length
+      ? auditLine('{0} folders were not found: {1}', [missing.length, missing.map(w => w.name).join(', ')])
+      : auditLine('{0} projects', [workspaces.length]));
+
+    const chats = chatStore.list();
+    add('chats', chats.damaged.length ? 'warn' : 'ok', chats.damaged.length
+      ? auditLine('{0} chats, {1} unreadable', [chats.chats.length, chats.damaged.length])
+      : auditLine('{0} chats', [chats.chats.length]));
+
+    const git = await askGit(process.cwd(), ['--version']);
+    add('git', git.ok ? 'ok' : 'warn', git.ok ? auditValue(git.out) : auditLine('git is not installed: cloning and linking a repository need it.'));
+
+    const gpus = hardware.cachedHardware()?.gpus ?? [];
+    add('gpus', gpus.length ? 'ok' : 'warn', gpus.length
+      ? auditValue(gpus.map(g => [g.name, g.vramGb ? `${g.vramGb} GiB` : null].filter(Boolean).join(' ')).join(' · '))
+      : auditLine('No graphics card was found.'));
+
+    const counts = { ok: 0, warn: 0, fail: 0, unknown: 0 };
+    for (const check of checks) counts[check.status] += 1;
+    return json(res, 200, { at: new Date().toISOString(), counts, checks });
+  }
+
+  /* The action the audit's project row offers: saving what is not committed.
+     Only a press runs it, it works in the folder named in the request and
+     nowhere else, and it stages only that folder's own files. */
+  if (path === '/api/audit/commit' && method === 'POST') {
+    if (!req.headers['x-nostroma-client']) return error(res, 403, 'Not allowed.');
+    const body = await readBody(req).catch(() => ({}));
+    const folder = typeof body.project === 'string' ? body.project.trim() : '';
+    const message = typeof body.message === 'string' ? body.message.trim().slice(0, 400) : '';
+    if (!folder || !message) return error(res, 400, 'A folder and a commit message are needed.');
+    let target = null;
+    try { target = statSync(folder); } catch { target = null; }
+    if (!target || !target.isDirectory()) return error(res, 404, 'This project folder was not found.');
+    const top = await askGit(folder, ['rev-parse', '--show-toplevel']);
+    if (!top.ok) return error(res, 409, 'git keeps no versions of this folder: it is not a repository.');
+    /* Only the repository's own top folder: `git add -A` run in a subfolder
+       would take in everything above it, which is not what this button
+       promises. The audit names the top folder instead. */
+    if (!top.out || resolve(top.out) !== resolve(folder)) return error(res, 409, `This folder is part of the repository at ${top.out}; save from that folder instead.`);
+    const staged = await askGit(folder, ['add', '-A']);
+    if (!staged.ok) return error(res, 500, staged.err || 'git could not take the changes.');
+    const commit = await askGit(folder, ['commit', '-m', message]);
+    if (!commit.ok) return error(res, 409, commit.err || commit.out || 'git did not make the commit.');
+    const short = await askGit(folder, ['rev-parse', '--short', 'HEAD']);
+    return json(res, 200, { commit: short.ok ? short.out : '' });
   }
 
   // --- Nostroma Control: what the installed app runs on, and what it will not do ---------------------
@@ -1742,12 +2008,65 @@ async function api(req, res, path, method, url) {
     return json(res, 200, skillState);
   }
 
+  /* The Workbench terminal: one real shell command at a time, only from this computer. */
+  if ((path === '/api/terminal' || path === '/api/terminal/run' || path === '/api/terminal/stop') && !isLocalRequest(req)) {
+    return error(res, 403, 'The terminal only runs on this computer.');
+  }
+  if (path === '/api/terminal' && method === 'GET') {
+    return json(res, 200, { cwd: terminal.cwd(url.searchParams.get('sessionId')) });
+  }
+  if (path === '/api/terminal/run' && method === 'POST') {
+    const body = await readBody(req);
+    /* The output is newline-delimited JSON so the panel can show a build while it
+       runs: one `out` or `err` event per chunk, then a single `done`. */
+    res.writeHead(200, {
+      'content-type': 'application/x-ndjson; charset=utf-8',
+      'cache-control': 'no-store',
+      'x-accel-buffering': 'no',
+    });
+    let open = true;
+    const send = event => {
+      if (!open) return;
+      try { res.write(`${JSON.stringify(event)}\n`); } catch { open = false; }
+    };
+    /* A closed panel or a lost connection must not leave a build running. */
+    res.on('close', () => {
+      open = false;
+      if (!res.writableEnded) terminal.stop(body?.sessionId);
+    });
+    try {
+      const result = await terminal.run({
+        ...body,
+        onOutput: (text, stream) => send({ type: stream === 'err' ? 'err' : 'out', text }),
+      });
+      send({ type: 'done', ...result });
+    } catch (error) {
+      send({ type: 'done', ok: false, output: `The command could not run: ${error?.message ?? error}`, exitCode: null });
+    } finally {
+      open = false;
+      try { res.end(); } catch { /* the connection is already gone */ }
+    }
+    return;
+  }
+  if (path === '/api/terminal/stop' && method === 'POST') {
+    const body = await readBody(req);
+    return json(res, 200, terminal.stop(body?.sessionId));
+  }
+
   if (path === '/api/workspace') {
     const root = url.searchParams.get('root');
     const found = root ? workspaces.find((w) => w.id === root) : null;
     // A stale id from a saved session falls back to the primary root rather than
     // erroring, so a removed folder cannot break the app.
     return json(res, 200, workspaceListing(found?.path ?? WORKSPACE));
+  }
+
+  // The page the Live view follows while this project is being worked on. Only
+  // its name and its stamp are read: the page itself is fetched by the file
+  // route, and only when the stamp says it changed.
+  if (path === '/api/workspace/source') {
+    const found = workspaces.find((w) => w.id === url.searchParams.get('root'));
+    return json(res, 200, previewSource(found?.path ?? WORKSPACE));
   }
 
   // --- workspaces ---------------------------------------------------------
@@ -1757,9 +2076,13 @@ async function api(req, res, path, method, url) {
     const rootId = url.searchParams.get('root');
     const rel = url.searchParams.get('path') ?? '';
     const root = (rootId ? workspaces.find((w) => w.id === rootId)?.path : null) ?? WORKSPACE;
-    const target = resolve(root, rel);
-    // A relative path may not escape its workspace.
-    if (target !== resolve(root) && !target.startsWith(resolve(root) + '/')) {
+    const base = resolve(root);
+    const target = resolve(base, rel);
+    // A relative path may not escape its workspace. Compared through `relative`
+    // rather than a trailing '/': resolve() returns backslashes on Windows, so
+    // the suffix test rejected every file there, the valid ones included.
+    const inside = relative(base, target);
+    if (inside === '..' || inside.startsWith(`..${sep}`) || isAbsolute(inside)) {
       return error(res, 400, 'That file is outside the workspace.');
     }
     let st;
@@ -1875,17 +2198,33 @@ async function api(req, res, path, method, url) {
     return json(res, 200, ws);
   }
 
-  /* A workspace's name is only what the sidebar shows; its folder stays. */
+  /* A workspace's name, colour and archived flag are only what the sidebar
+     shows; its folder stays where it is. Each one is optional, so the same route
+     renames, paints and archives without the others moving. */
   if (path.startsWith('/api/workspaces/') && method === 'PATCH') {
     const id = path.split('/')[3];
     const body = await readBody(req);
-    const name = String(body.name ?? '').trim().slice(0, 80);
-    if (!name) return error(res, 400, 'Type a name for this workspace.');
     const at = workspaces.findIndex(w => w.id === id);
     if (at < 0) return error(res, 404, 'That workspace is not in your list.');
-    workspaces = workspaces.map((w, i) => (i === at ? { ...w, name } : w));
+    const next = { ...workspaces[at] };
+    if ('name' in body) {
+      const name = String(body.name ?? '').trim().slice(0, 80);
+      if (!name) return error(res, 400, 'Type a name for this workspace.');
+      next.name = name;
+    }
+    if ('color' in body) {
+      const color = body.color == null ? '' : String(body.color).trim();
+      if (!color) delete next.color;
+      else if (!/^#[0-9a-f]{6}$/i.test(color)) return error(res, 400, 'Choose one of the colours from the list.');
+      else next.color = color.toLowerCase();
+    }
+    if ('archived' in body) {
+      if (body.archived === true) next.archived = true;
+      else delete next.archived;
+    }
+    workspaces = workspaces.map((w, i) => (i === at ? next : w));
     saveWorkspaces();
-    return json(res, 200, workspaces[at]);
+    return json(res, 200, next);
   }
 
   if (path.startsWith('/api/workspaces/') && method === 'DELETE') {
@@ -1896,6 +2235,55 @@ async function api(req, res, path, method, url) {
     workspaces = workspaces.filter((w) => w.id !== id);
     saveWorkspaces();
     return json(res, 200, { ok: true });
+  }
+
+  /* The project's chats as one Markdown file, in the profile's exports folder. */
+  if (/^\/api\/workspaces\/[^/]+\/share$/.test(path) && method === 'POST') {
+    const ws = workspaces.find(w => w.id === path.split('/')[3]);
+    if (!ws) return error(res, 404, 'That workspace is not in your list.');
+    const sessions = chatsOfWorkspace(ws);
+    const folder = join(store.DATA_DIR, 'exports');
+    try { mkdirSync(folder, { recursive: true }); } catch { /* it is already there */ }
+    const base = `${String(ws.name).replace(/[^\p{L}\p{N}._-]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'project'}-${new Date().toISOString().slice(0, 10)}`;
+    let file = join(folder, `${base}.md`);
+    for (let n = 2; existsSync(file); n++) file = join(folder, `${base}-${n}.md`);
+    try { writeFileSync(file, projectMarkdown(ws, sessions), 'utf8'); }
+    catch (e) { return error(res, 500, `The export could not be written: ${e.message}`); }
+    return json(res, 200, { path: file, chats: sessions.length });
+  }
+
+  /* What git says about the workspace folder, and linking it to a repository:
+     git init when there is none, then origin. The files are never committed. */
+  if (/^\/api\/workspaces\/[^/]+\/git$/.test(path) && (method === 'GET' || method === 'POST')) {
+    const ws = workspaces.find(w => w.id === path.split('/')[3]);
+    if (!ws) return error(res, 404, 'That workspace is not in your list.');
+    const inside = await askGit(ws.path, ['rev-parse', '--is-inside-work-tree']);
+    const isRepo = inside.ok && inside.out === 'true';
+    if (method === 'GET') {
+      if (!isRepo) return json(res, 200, { repo: false });
+      const branch = await askGit(ws.path, ['rev-parse', '--abbrev-ref', 'HEAD']);
+      const remote = await askGit(ws.path, ['remote', 'get-url', 'origin']);
+      const changes = await askGit(ws.path, ['status', '--porcelain']);
+      return json(res, 200, {
+        repo: true,
+        branch: branch.ok ? branch.out : null,
+        remote: remote.ok ? remote.out : null,
+        changed: changes.ok ? changes.out.split('\n').filter(Boolean).length : null,
+      });
+    }
+    const typed = String((await readBody(req)).remote ?? '').trim();
+    const repo = /^[^@\s]+@[^:\s]+:/.test(typed) || /^[a-z][a-z0-9+.-]*:\/\//i.test(typed) ? { url: typed } : parseRepo(typed);
+    if (!repo?.url) return error(res, 400, 'Type the repository, as owner/name or its address.');
+    let inited = false;
+    if (!isRepo) {
+      const init = await askGit(ws.path, ['init']);
+      if (!init.ok) return error(res, 400, 'git could not start a repository in that folder.');
+      inited = true;
+    }
+    const existing = await askGit(ws.path, ['remote', 'get-url', 'origin']);
+    const wrote = await askGit(ws.path, existing.ok ? ['remote', 'set-url', 'origin', repo.url] : ['remote', 'add', 'origin', repo.url]);
+    if (!wrote.ok) return error(res, 400, 'git could not use that address as origin.');
+    return json(res, 200, { repo: true, inited, branch: null, remote: repo.url, changed: null });
   }
 
   // A native folder chooser. Asking someone who finds computers daunting to type
@@ -1940,6 +2328,60 @@ async function api(req, res, path, method, url) {
     } catch (e) {
       return error(res, 400, e.message);
     }
+  }
+
+  /* --- GitHub -------------------------------------------------------------
+     The token is checked against github.com once, when it is saved, so a bad
+     one is refused there instead of surfacing later as a failed clone. */
+  if (path === '/api/github' && method === 'GET') return json(res, 200, githubStatus());
+
+  if (path === '/api/github' && method === 'POST') {
+    const token = String((await readBody(req)).token ?? '').trim();
+    if (!token) return error(res, 400, 'Paste a GitHub token first.');
+    let login = '';
+    try {
+      const answer = await fetch('https://api.github.com/user', {
+        headers: { authorization: `Bearer ${token}`, accept: 'application/vnd.github+json', 'user-agent': 'nostroma' },
+        signal: AbortSignal.timeout(20000),
+      });
+      if (answer.status === 401) return error(res, 400, 'GitHub did not accept that token.');
+      if (!answer.ok) return error(res, 400, `GitHub answered ${answer.status} instead of the account details.`);
+      login = String((await answer.json()).login ?? '');
+    } catch {
+      return error(res, 400, 'Nostroma could not reach github.com. Check your connection and try again.');
+    }
+    store.update({ github: { token, login } });
+    return json(res, 200, githubStatus());
+  }
+
+  if (path === '/api/github' && method === 'DELETE') {
+    store.update({ github: null });
+    return json(res, 200, githubStatus());
+  }
+
+  /* A repository becomes a workspace where it was cloned, with its own folder. */
+  if (path === '/api/workspaces/github' && method === 'POST') {
+    const repo = parseRepo((await readBody(req)).repo);
+    if (!repo) return error(res, 400, 'Type a repository as owner/name, or paste its github.com address.');
+    const target = join(PROJECTS_DIR, repo.name);
+    const known = workspaces.find(w => w.path === target);
+    if (known) return json(res, 200, known);
+    if (existsSync(target)) return error(res, 400, `A folder called "${repo.name}" is already in ${PROJECTS_DIR}.`);
+    const token = store.get().github?.token ?? '';
+    try { mkdirSync(PROJECTS_DIR, { recursive: true }); } catch { /* the clone says what failed */ }
+    try {
+      await cloneRepository(repo, token);
+    } catch (e) {
+      try { rmSync(target, { recursive: true, force: true }); } catch { /* a partial clone is best-effort removed */ }
+      if (e?.code === 'ENOENT') return error(res, 400, 'Git is not installed on this computer.');
+      if (e?.timeout) return error(res, 400, 'The clone took too long and was stopped.');
+      if (e?.stderr) return error(res, 400, cloneFailure(e.stderr, { hasToken: !!token }));
+      return error(res, 400, e?.message ?? 'The repository could not be cloned.');
+    }
+    const ws = { id: `ws_${Math.random().toString(36).slice(2, 8)}`, name: repo.name, path: target, repo: `${repo.owner}/${repo.repo}` };
+    workspaces = [...workspaces, ws];
+    saveWorkspaces();
+    return json(res, 200, ws);
   }
 
   // --- agent --------------------------------------------------------------

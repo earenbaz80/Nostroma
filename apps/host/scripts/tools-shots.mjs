@@ -8,6 +8,7 @@ import { chromium } from 'playwright-core';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { envVar } from '../server/env-compat.mjs';
+import { anchors, skipOnboarding } from './ui-anchors.mjs';
 
 const BASE = envVar('URL');
 if (!BASE) { console.error('NOSTROMA_URL is required'); process.exit(2); }
@@ -55,8 +56,7 @@ const open = async state => {
     page.on('console', m => { if (m.type() === 'error') console.log('console', m.text().slice(0, 300)); });
     await page.route('**/api/agent/tools**', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(STATES[current]) }));
     await page.goto(`${BASE}/`);
-    const skip = page.getByText('Go straight to the app');
-    await skip.waitFor({ timeout: 8000 }).then(() => skip.click()).catch(() => {});
+    await skipOnboarding(page, { timeout: 8000 });
     await page.goto(`${BASE}/#/settings`);
     await page.waitForSelector('#settings-tab-Tools', { timeout: 20000 });
     await page.locator('#settings-tab-Tools').evaluate(el => el.click());
@@ -75,8 +75,8 @@ await open('key'); await page.getByRole('heading', { name: 'Web search' }).evalu
 await open('nobrowser'); await page.getByRole('heading', { name: 'Web browser' }).evaluate(el => el.scrollIntoView({ block: 'start' })); await shot('05-no-browser-found');
 await open('fresh');
 await page.getByRole('button', { name: 'Add a tool' }).click(); await shot('06-add-tool-instructions');
-await page.getByRole('dialog').getByLabel('How it works').click();
-await page.getByRole('option', { name: 'Run a command' }).click(); await shot('07-add-tool-command');
-await page.getByRole('dialog').getByLabel('How it works').click();
-await page.getByRole('option', { name: 'Connect a tool server (MCP)' }).click(); await shot('08-add-tool-server');
+await page.locator(`${anchors.tools.field('kind')} button`).click();
+await page.locator('[role="option"][data-value="command"]').click(); await shot('07-add-tool-command');
+await page.locator(`${anchors.tools.field('kind')} button`).click();
+await page.locator('[role="option"][data-value="server"]').click(); await shot('08-add-tool-server');
 await browser.close();

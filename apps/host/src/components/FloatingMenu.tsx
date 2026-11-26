@@ -2,6 +2,7 @@ import { tr } from '../lib/i18n';
 import { useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { measureFrame, placeAnchored } from '../lib/overlay-place';
+const MENU_ITEMS = '[role="menuitem"]:not(:disabled), [role="menuitemradio"]:not(:disabled), [role="menuitemcheckbox"]:not(:disabled)';
 export function FloatingMenu({ anchor, title, onClose, children, width = 232 }: {
     anchor: HTMLElement | null;
     title: string;
@@ -23,16 +24,19 @@ export function FloatingMenu({ anchor, title, onClose, children, width = 232 }: 
             setPlaced({ left: p.left, top: p.top, maxWidth: p.maxWidth, maxHeight: p.maxHeight });
         };
         place();
-        ref.current?.querySelector<HTMLElement>('[role="menuitem"]:not(:disabled), [role="menuitemradio"]:not(:disabled)')?.focus();
-        const outside = (e: PointerEvent) => { if (!ref.current?.contains(e.target as Node) && !anchor?.contains(e.target as Node))
-            onClose(); };
+        (ref.current?.querySelector<HTMLElement>(MENU_ITEMS) ?? ref.current)?.focus();
+        const outside = (e: PointerEvent) => {
+            const target = e.target as Node;
+            if (!ref.current?.contains(target) && !anchor?.contains(target) && !(target instanceof Element && target.closest('.anchored-popover')))
+                onClose();
+        };
         document.addEventListener('pointerdown', outside);
         window.addEventListener('resize', place);
         return () => { document.removeEventListener('pointerdown', outside); window.removeEventListener('resize', place); if (anchor?.isConnected)
             anchor.focus({ preventScroll: true }); };
     }, [anchor, width]);
-    return createPortal(<div className="menu" role="menu" aria-label={tr(title)} ref={ref} style={{ ...placed, zIndex: anchor?.closest('[role="dialog"]') ? 'var(--layer-dialog-popover)' : 'var(--layer-popover)', width, maxWidth: placed.maxWidth ?? 'calc(100dvw - 24px)', maxHeight: placed.maxHeight ?? 'calc(100dvh - 24px)', overflowY: 'auto' }} onKeyDown={e => {
-            const nodes = Array.from(ref.current?.querySelectorAll<HTMLElement>('[role="menuitem"]:not(:disabled), [role="menuitemradio"]:not(:disabled)') ?? []);
+    return createPortal(<div className="menu" role="menu" aria-label={tr(title)} ref={ref} tabIndex={-1} style={{ ...placed, zIndex: anchor?.closest('[role="dialog"]') ? 'var(--layer-dialog-popover)' : 'var(--layer-popover)', width, maxWidth: placed.maxWidth ?? 'calc(100dvw - 24px)', maxHeight: placed.maxHeight ?? 'calc(100dvh - 24px)', overflowY: 'auto' }} onKeyDown={e => {
+            const nodes = Array.from(ref.current?.querySelectorAll<HTMLElement>(MENU_ITEMS) ?? []);
             const at = nodes.indexOf(document.activeElement as HTMLElement);
             if (['Escape', 'Tab'].includes(e.key)) {
                 e.preventDefault();

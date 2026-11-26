@@ -1,15 +1,17 @@
 import {localeTag} from '../lib/i18n';
 import { tr } from '../lib/i18n';
 import { useMemo, useState } from 'react';
-import { Btn, Icon } from './ui';
-import { Brand } from './Brand';
+import { Btn } from './ui';
+import { StartScreen } from './StartScreen';
 import { useNative } from '../lib/native';
 import { go, useStore } from '../lib/store';
 import { tokens } from '../lib/format';
 import { calendarDays, usageDashboard, type UsagePeriod } from '../lib/usage-dashboard';
 const colors = ['#4d82d8', '#6998e6', '#8aaeea', '#a6c1ee', '#c4d7f4', '#dce7f8'];
-export function UsageDashboard({ loaded }: {
+export function UsageDashboard({ loaded, onAsk, onMission }: {
     loaded: boolean;
+    onAsk: () => void;
+    onMission: () => void;
 }) {
     const native = useNative(), remoteModel = useStore(s => s.remoteModel);
     const canChat = loaded || !!remoteModel || !!native?.instances.some(i => i.id === native.defaultId && i.status === 'ready');
@@ -49,9 +51,9 @@ export function UsageDashboard({ loaded }: {
     const peak = usage.peakHour === null ? '—' : new Date(2026, 0, 1, usage.peakHour).toLocaleTimeString(localeTag(), { hour: 'numeric', minute: '2-digit' });
     const firstChat = !sessions.some(s => !s.showcase && s.messages.some(m => m.role === 'user' && !m.example && !m.timeSkipId));
     if (firstChat && canChat)
-        return <section className="first-chat-start" aria-label={tr("Start your first chat")}><span className="first-chat-mark"><Brand variant="mark" height={38} decorative/><span className="first-chat-status"><Icon name="check" size={11}/></span></span><h2>{tr("Hello, I\u2019m Nostroma.")}</h2><p>{tr("Say hello, or jump straight in.")}</p></section>;
+        return <StartScreen onAsk={onAsk} onMission={onMission}/>;
     return <section className="usage-home" aria-label={tr("Usage dashboard")}>
-    <h2>{tr("What do we start with?")}</h2>
+    <StartScreen onAsk={onAsk} onMission={onMission}/>
     <div className="usage-card">
       <div className="usage-card__toolbar"><div role="tablist" aria-label={tr("Usage view")}>{tr((['overview', 'models'] as const).map(v => <button key={v} role="tab" id={`usage-tab-${v}`} aria-controls="usage-content" aria-selected={tab === v} tabIndex={tab === v ? 0 : -1} onKeyDown={e => {
                 if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) {
@@ -60,7 +62,7 @@ export function UsageDashboard({ loaded }: {
                     setTab(next);
                     document.getElementById(`usage-tab-${next}`)?.focus();
                 }
-            }} onClick={() => setTab(v)}>{tr(v === 'overview' ? 'Overview' : 'Models')}</button>))}</div><div role="group" aria-label={tr("Usage period")}>{tr((['all', '30d', '7d'] as const).map(v => <button key={v} aria-pressed={period === v} onClick={() => setPeriod(v)}>{tr(v === 'all' ? 'All' : v)}</button>))}</div></div>
+            }} onClick={() => setTab(v)}>{tr(v === 'overview' ? 'Overview' : 'Models')}</button>))}</div><div className="usage-period" role="group" aria-label={tr("Usage period")}>{tr((['all', '30d', '7d'] as const).map(v => <button key={v} aria-pressed={period === v} onClick={() => setPeriod(v)}>{tr(v === 'all' ? 'All' : v)}</button>))}</div></div>
       <div id="usage-content" role="tabpanel" aria-labelledby={`usage-tab-${tab}`}>
         {tr(tab === 'overview' ? <><dl className="usage-stats">{tr([{ label: 'Sessions', value: usage.sessions.toLocaleString(localeTag()) }, { label: 'Messages', value: usage.messages.toLocaleString(localeTag()) }, { label: 'Total tokens', value: tokens(usage.total) }, { label: 'Active days', value: usage.activeDays.toLocaleString(localeTag()) }, { label: 'Peak hour', value: peak }, { label: 'Favorite model', value: label(usage.favorite) }].map(stat => <div key={stat.label}><dt>{tr(stat.label)}</dt><dd title={tr(stat.value)}>{tr(stat.value)}</dd></div>))}</dl>
           <div className="usage-heatmap" style={{ gridTemplateColumns: `repeat(${heatDays.length / 7},minmax(0,1fr))` }} role="img" aria-label={tr("Daily message activity. {0} active days in this period.", [usage.activeDays])}>{tr(heatDays.map((date, i) => { const n = usage.days.get(date)?.messages ?? 0; return <span key={date || `pad-${i}`} aria-hidden="true" data-level={!n ? 0 : Math.min(4, Math.ceil(n / maxMessages * 4))} data-empty={!date || undefined} title={tr(date ? date < chartDays[0] && period !== 'all' ? `${dateLabel(date)}: outside selected period` : `${dateLabel(date)}: ${n} messages` : undefined)}/>; }))}</div>

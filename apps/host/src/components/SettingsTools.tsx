@@ -9,6 +9,9 @@ import { useEffect, useState } from 'react';
 import { api } from '../lib/client';
 import { pushToast } from '../lib/store';
 import { Btn, Dialog, ErrorNotice, Field, Icon, Select } from './ui';
+import { Help } from './Help';
+import { DISCOVER_SERVERS } from '../lib/discover-catalog';
+import type { DiscoverServer } from '../lib/discover-catalog';
 
 export interface ToolGroup {
   id: string;
@@ -58,6 +61,11 @@ const KIND_CHOICES = [
   { value: 'server', label: 'Connect a tool server (MCP)' },
 ];
 const KIND_NAMES: Record<CustomTool['kind'], string> = { instructions: 'Instructions', command: 'Command', server: 'Tool server' };
+const KIND_EXPLANATIONS: Record<CustomTool['kind'], string> = {
+  instructions: 'It is a saved instruction. It does not run a program or change files.',
+  command: 'It runs a command on this computer. The assistant can pass text in NOSTROMA_INPUT and reads what the command prints.',
+  server: 'It is an MCP server: a separate program or web service that provides tools.',
+};
 
 interface Draft {
   id?: string;
@@ -79,6 +87,7 @@ export function SettingsTools({ preview }: { preview?: ToolsState }) {
   const [formError, setFormError] = useState('');
   const [remove, setRemove] = useState<CustomTool | null>(null);
   const [busy, setBusy] = useState(false);
+  const [discoverBusy, setDiscoverBusy] = useState<string | null>(null);
 
   async function load() {
     try { setState(await api.get<ToolsState>('/api/agent/tools')); setError(''); }
@@ -97,6 +106,17 @@ export function SettingsTools({ preview }: { preview?: ToolsState }) {
     setState(s => s && { ...s, groups: s.groups.map(g => g.id === id ? { ...g, enabled: on } : g) });
     void save({ groups: { [id]: on } });
   };
+
+  async function addServer(entry: DiscoverServer) {
+    if (preview) return;
+    setDiscoverBusy(entry.id);
+    setError('');
+    try {
+      setState(await api.post<ToolsState>('/api/agent/tools/custom', { name: entry.name, about: entry.description, kind: 'server', address: entry.command, args: entry.args, enabled: false }));
+      pushToast('success', tr('Server added'), tr('It is off until you turn it on in Your own tools.'));
+    } catch (e) { setError(e instanceof Error ? e.message : 'The tool could not be added.'); }
+    finally { setDiscoverBusy(null); }
+  }
 
   async function submit() {
     if (!draft) return;
@@ -124,7 +144,17 @@ export function SettingsTools({ preview }: { preview?: ToolsState }) {
       <h2 className="h4" style={{ marginBottom: 10 }}>{tr(area.title)}</h2>
       <div className="st-card st-card--flush">
         {state.groups.filter(g => g.area === area.id).map(g => <Field key={g.id} label={tr(g.name)} hint={tr(g.about)}>
-          <button className="st-toggle" role="switch" aria-checked={g.enabled} aria-label={tr(g.name)} disabled={busy} onClick={() => toggle(g.id, !g.enabled)} />
+          <div className="row">
+            <Help title="About these tools" name={tr(g.name)}>
+              <div className="help-copy">
+                <p>{tr("This group gives the assistant a set of related abilities in a chat. It does nothing until you turn the group on.")}</p>
+                <p><strong>{tr("What it does")}</strong><br/>{tr(g.about)}</p>
+                <p><strong>{tr("How to use it")}</strong><br/>{tr("The assistant uses it when it fits the task. Use the switch to turn it on or off.")}</p>
+                {g.asks ? <p className="xs muted">{tr("In Manual mode it asks before it changes anything.")}</p> : null}
+              </div>
+            </Help>
+            <button className="st-toggle" role="switch" aria-checked={g.enabled} aria-label={tr(g.name)} disabled={busy} onClick={() => toggle(g.id, !g.enabled)} />
+          </div>
         </Field>)}
       </div>
     </section>)}
@@ -159,10 +189,45 @@ export function SettingsTools({ preview }: { preview?: ToolsState }) {
     <section className="settings-section">
       <h2 className="h4" style={{ marginBottom: 10 }}>{tr('Your own tools')}</h2>
       <p className="small muted" style={{ marginBottom: 10 }}>{tr('Teach the assistant something new: give it instructions to follow, a command to run, or connect a tool server. Commands and servers ask first in Manual mode.')}</p>
+      <div style={{ marginTop: 16 }}>
+        <h3 className="h4" style={{ marginBottom: 6 }}>{tr('Recommended MCP servers')}</h3>
+        <p className="small muted" style={{ marginBottom: 10 }}>{tr('A short list we checked. Nothing starts until you turn it on.')}</p>
+        <div className="st-card st-card--flush">
+          {DISCOVER_SERVERS.map(entry => {
+            const added = state.custom.some(t => t.name.toLowerCase() === entry.name.toLowerCase());
+            return <Field key={entry.id} label={entry.name} hint={<>{tr(entry.description)}<br/><code className="xs">{entry.command} {entry.args.join(' ')}</code> <span className="muted">· {tr('Requires {0}', [tr(entry.requires)])}</span>{entry.note ? <><br/><span className="xs muted">{tr(entry.note)}</span></> : null}</>}>
+              <div className="row">
+                <Help title="About this MCP server" name={entry.name}>
+                  <div className="help-copy">
+                    <p>{tr("An MCP server is a separate program or web service that gives the assistant tools.")}</p>
+                    <p><strong>{tr("What it does")}</strong><br/>{tr(entry.description)}</p>
+                    <p><strong>{tr("How to use it")}</strong><br/>{tr("Add this server first, then turn it on and enable Tools in a chat. It stays off until you do.")}</p>
+                    <p className="xs muted">{tr("In Manual mode it asks before it changes anything.")}</p>
+                    <p className="xs muted">{tr("Requires {0}", [tr(entry.requires)])}</p>
+                    <p className="xs muted"><code>{entry.command} {entry.args.join(' ')}</code></p>
+                    {entry.note ? <p className="xs muted">{tr(entry.note)}</p> : null}
+                  </div>
+                </Help>
+                {added ? <span className="small muted">{tr('Added')}</span> : <Btn size="sm" disabled={busy || discoverBusy !== null || !!preview} onClick={() => void addServer(entry)}>{tr('Add')}</Btn>}
+              </div>
+            </Field>;
+          })}
+        </div>
+      </div>
       {state.custom.length ? <div className="st-card st-card--flush">
         {state.custom.map(t => <Field key={t.id} label={tr(t.name)} hint={<>{tr(t.about)} <span className="muted">· {tr(KIND_NAMES[t.kind])}</span></>}>
           <div className="row">
-            <Btn size="sm" disabled={busy} onClick={() => { setFormError(''); setDraft({ id: t.id, name: t.name, about: t.about, kind: t.kind, instructions: t.instructions ?? '', command: t.command ?? '', address: t.address ?? '', args: (t.args ?? []).join('\n') }); }}>{tr('Edit')}</Btn>
+            <Help title="About this tool" name={t.name}>
+              <div className="help-copy">
+                <p>{tr("A tool gives the assistant one ability in a chat. It does nothing until you turn it on.")}</p>
+                <p><strong>{tr("What it does")}</strong><br/>{tr(t.about)}</p>
+                <p><strong>{tr("How it works")}</strong><br/>{tr(KIND_EXPLANATIONS[t.kind])}</p>
+                <p><strong>{tr("How to use it")}</strong><br/>{tr("The assistant uses it when it fits the task. Use the switch to turn it on or off.")}</p>
+                {t.kind !== 'instructions' ? <p className="xs muted">{tr("In Manual mode it asks before it changes anything.")}</p> : null}
+                {t.kind === 'command' && t.command ? <p className="xs muted"><code>{t.command}</code></p> : null}
+                {t.kind === 'server' && t.address ? <p className="xs muted"><code>{t.address}{(t.args ?? []).length ? ` ${(t.args ?? []).join(' ')}` : ''}</code></p> : null}
+              </div>
+            </Help><Btn size="sm" disabled={busy} onClick={() => { setFormError(''); setDraft({ id: t.id, name: t.name, about: t.about, kind: t.kind, instructions: t.instructions ?? '', command: t.command ?? '', address: t.address ?? '', args: (t.args ?? []).join('\n') }); }}>{tr('Edit')}</Btn>
             <Btn size="sm" disabled={busy} onClick={() => setRemove(t)}>{tr('Remove')}</Btn>
             <button className="st-toggle" role="switch" aria-checked={t.enabled} aria-label={tr(t.name)} disabled={busy} onClick={() => void save({ custom: { [t.id]: !t.enabled } })} />
           </div>
@@ -173,17 +238,17 @@ export function SettingsTools({ preview }: { preview?: ToolsState }) {
 
     <Dialog open={draft !== null} title={tr(draft?.id ? 'Edit tool' : 'Add a tool')} compact onClose={() => setDraft(null)} actions={<><Btn onClick={() => setDraft(null)}>{tr('Cancel')}</Btn><Btn variant="primary" disabled={busy} onClick={() => void submit()}>{tr('Save tool')}</Btn></>}>
       {draft ? <div className="stack">
-        <label className="input-field"><span>{tr('Name')}</span><input className="st-input" aria-label={tr('Name')} value={draft.name} placeholder={tr('For example: Release notes')} spellCheck={false} onChange={e => setDraft({ ...draft, name: e.target.value })} /></label>
-        <label className="input-field"><span>{tr('What it does')}</span><input className="st-input" aria-label={tr('What it does')} value={draft.about} placeholder={tr('One sentence. The assistant reads it to decide when to use the tool.')} onChange={e => setDraft({ ...draft, about: e.target.value })} /></label>
-        <div className="input-field"><span>{tr('How it works')}</span><Select ariaLabel={tr('How it works')} value={draft.kind} options={KIND_CHOICES} onChange={value => setDraft({ ...draft, kind: value as Draft['kind'] })} /></div>
-        {draft.kind === 'instructions' ? <label className="input-field"><span>{tr('Instructions')}</span><textarea className="st-input" rows={6} aria-label={tr('Instructions')} value={draft.instructions} placeholder={tr('Write what the assistant should do when it uses this tool.')} onChange={e => setDraft({ ...draft, instructions: e.target.value })} /></label> : null}
+        <label className="input-field" data-tool-field="name"><span>{tr('Name')}</span><input className="st-input" aria-label={tr('Name')} value={draft.name} placeholder={tr('For example: Release notes')} spellCheck={false} onChange={e => setDraft({ ...draft, name: e.target.value })} /></label>
+        <label className="input-field" data-tool-field="about"><span>{tr('What it does')}</span><input className="st-input" aria-label={tr('What it does')} value={draft.about} placeholder={tr('One sentence. The assistant reads it to decide when to use the tool.')} onChange={e => setDraft({ ...draft, about: e.target.value })} /></label>
+        <div className="input-field" data-tool-field="kind"><span>{tr('How it works')}</span><Select ariaLabel={tr('How it works')} value={draft.kind} options={KIND_CHOICES} onChange={value => setDraft({ ...draft, kind: value as Draft['kind'] })} /></div>
+        {draft.kind === 'instructions' ? <label className="input-field" data-tool-field="instructions"><span>{tr('Instructions')}</span><textarea className="st-input" rows={6} aria-label={tr('Instructions')} value={draft.instructions} placeholder={tr('Write what the assistant should do when it uses this tool.')} onChange={e => setDraft({ ...draft, instructions: e.target.value })} /></label> : null}
         {draft.kind === 'command' ? <>
-          <label className="input-field"><span>{tr('Command to run')}</span><input className="st-input" aria-label={tr('Command to run')} value={draft.command} placeholder={tr('For example: curl -I https://example.com')} spellCheck={false} onChange={e => setDraft({ ...draft, command: e.target.value })} /></label>
+          <label className="input-field" data-tool-field="command"><span>{tr('Command to run')}</span><input className="st-input" aria-label={tr('Command to run')} value={draft.command} placeholder={tr('For example: curl -I https://example.com')} spellCheck={false} onChange={e => setDraft({ ...draft, command: e.target.value })} /></label>
           <p className="small muted">{tr('The assistant can pass text to the command. The command reads it from the NOSTROMA_INPUT setting. Its printed output goes back to the assistant.')}</p>
         </> : null}
         {draft.kind === 'server' ? <>
-          <label className="input-field"><span>{tr('Web address or program')}</span><input className="st-input" aria-label={tr('Web address or program')} value={draft.address} placeholder={tr('https://… or the program that starts the server')} spellCheck={false} onChange={e => setDraft({ ...draft, address: e.target.value })} /></label>
-          <label className="input-field"><span>{tr('Extra settings for the program ')}<span className="muted">{tr('(optional, one per line)')}</span></span><textarea className="st-input" rows={3} aria-label={tr('Extra settings for the program')} value={draft.args} spellCheck={false} onChange={e => setDraft({ ...draft, args: e.target.value })} /></label>
+          <label className="input-field" data-tool-field="address"><span>{tr('Web address or program')}</span><input className="st-input" aria-label={tr('Web address or program')} value={draft.address} placeholder={tr('https://… or the program that starts the server')} spellCheck={false} onChange={e => setDraft({ ...draft, address: e.target.value })} /></label>
+          <label className="input-field" data-tool-field="args"><span>{tr('Extra settings for the program ')}<span className="muted">{tr('(optional, one per line)')}</span></span><textarea className="st-input" rows={3} aria-label={tr('Extra settings for the program')} value={draft.args} spellCheck={false} onChange={e => setDraft({ ...draft, args: e.target.value })} /></label>
         </> : null}
         {formError ? <p className="small" role="alert" style={{ color: 'var(--danger, #b3261e)' }}>{tr(formError)}</p> : null}
       </div> : null}

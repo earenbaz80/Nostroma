@@ -39,5 +39,11 @@
  "ui38": "Type your own answer",
  "ui39": "Send answer",
  "ui40": "Questions for you",
- "ui41": "Lets the assistant stop and ask you a question, with answers to pick from, when it needs your decision."
+ "ui41": "Lets the assistant stop and ask you a question, with answers to pick from, when it needs your decision.",
+ "ui42": "Reading the model's weights…",
+ "ui43": "Reading the experts into memory…",
+ "ui44": "Filling the GPU's expert cache…",
+ "ui45": "Waiting for the server…",
+ "ui46": "The speed test did not finish.",
+ "ui47": "Estimating time…"
 }

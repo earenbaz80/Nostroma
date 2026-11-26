@@ -452,8 +452,14 @@ export interface Workspace {
   id: string;
   name: string;
   path: string;
+  /** owner/name, when the workspace is a repository cloned from GitHub. */
+  repo?: string;
   /** Earlier folders whose chats belong here (the first workspace moved off the app's own folder). */
   aliases?: string[];
+  /** A colour the person picked, as #rrggbb, so two folders are told apart at a glance. */
+  color?: string;
+  /** Kept out of the list unless the archived ones are asked for. The folder is untouched. */
+  archived?: boolean;
 }
 
 export interface SessionAgent {
@@ -499,7 +505,7 @@ export interface Session {
   previewOpen?: string;
   closedPreviews?: string[];
   showcaseAgentStates?: boolean;
-  preferences?: { access?: 'read' | 'write' | 'full'; thinking?: string; thinkingBudget?: number; mode?: ChatMode; useTools?:boolean; /** false: plain conversation, no tools of any kind. */ agent?: boolean; /** This chat's API model; absent or null means the local model. */ remoteModel?: RemoteModelSelection | null };
+  preferences?: { access?: 'read' | 'write' | 'full'; thinking?: string; thinkingBudget?: number; mode?: ChatMode; /** Mission: the message is sent as /goal, so the assistant keeps working until it is done. Permissions are Bypass. */ mission?: boolean; useTools?:boolean; /** false: plain conversation, no tools of any kind. */ agent?: boolean; /** This chat's API model; absent or null means the local model. */ remoteModel?: RemoteModelSelection | null };
   /** A branch does not have retained per-turn input usage. */
   statsAvailable?: boolean;
   id: string;

@@ -3,9 +3,9 @@ import { bindingFor, bindingEqual, eventBinding, type Binding } from './shortcut
 import type { IconName } from '../components/ui';
 import type { Route } from './router';
 import {
-  exportConversation, getState, go, newSession, pushToast,
+  exportConversation, getState, go, newSession, openServerSettings, pushToast,
   selectSession,
-  restartEngine, setFocus, setNavOpen, setPalette, setShortcuts, setTheme,
+  restartEngine, setFocus, setNavOpen, setPalette, setShortcuts, setTheme, themeScheme,
   toggleFocus, toggleRail, unloadModel,
 } from './store';
 import { recentChats } from './recent-chats';
@@ -32,7 +32,6 @@ interface AppCommand {
 export const DESTINATIONS: { route: Route; label: string; icon: IconName; keywords: string; key: string; slash?: string }[] = [
   { route: 'chat', label: 'Chat', icon: 'chat', keywords: 'conversation prompt ask', key: '1' },
   { route: 'monitor', label: 'Monitor', icon: 'activity', keywords: 'stats performance speed hardware', key: '2', slash: 'monitor' },
-  { route: 'serving', label: 'Serving', icon: 'link', keywords: 'api server endpoint openai anthropic port', key: '3', slash: 'serve' },
   { route: 'models', label: 'Models', icon: 'models', keywords: 'download weights gguf choose tune engine parameters context sampling', key: '4', slash: 'model' },
   { route: 'tasks', label: 'Tasks', icon: 'clock', keywords: 'schedule recurring loop automation', key: '6', slash: 'tasks' },
   { route: 'skills', label: 'Skills', icon: 'skills', keywords: 'instructions prompts abilities', key: '7', slash: 'skills' },
@@ -51,13 +50,14 @@ export const APP_COMMANDS: AppCommand[] = [
   { id: 'monitor', label: 'Open Monitor', group: 'Engine', key: 'm', shift: true, icon: 'activity', palette: false, run: () => go('monitor') },
   { id: 'focus', label: 'Focus on the conversation', group: 'Session', key: 'f', shift: true, icon: 'chat', run: () => { go('chat', getState().activeSession ?? undefined); toggleFocus(); } },
   { id: 'export', label: 'Export conversation', hint: 'Download the active conversation as Markdown', keywords: 'save download markdown', group: 'Session', icon: 'download', slash: ['export'], available: () => getState().sessions.some(s => s.id === getState().activeSession && s.messages.length > 0), unavailable: 'Open a conversation with messages first.', run: () => exportConversation() },
+  { id: 'server', label: 'Server', keywords: 'api endpoint openai anthropic port key sharing tunnel serve', group: 'Navigation', icon: 'link', key: '3', alt: true, slash: ['serve'], run: () => openServerSettings() },
   { id: 'setup', label: 'Run setup', hint: 'Check computer, pick a version and load', keywords: 'wizard onboarding install resume', group: 'Engine', icon: 'bolt', slash: ['setup'], run: () => go('setup') },
 ];
 
 /** All model version changes happen on the Model screen. */
 export function getCommands(): AppCommand[] {
   const state = getState();
-  const dark = state.theme === 'dark' || (state.theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+  const dark = themeScheme(state.theme, matchMedia('(prefers-color-scheme: dark)').matches) === 'dark';
   const commands: AppCommand[] = [
     ...APP_COMMANDS,
     ...Array.from({ length: 6 }, (_, index) => ({ id: `chat:slot:${index + 1}`, label: `Chat ${index + 1}`, icon: 'chat' as const, group: 'Chat' as const, key: String(index + 1), hint: recentChats(state.sessions, state.activeSession)[index]?.title, available: () => !!recentChats(getState().sessions, getState().activeSession)[index], unavailable: 'No saved chat in this position.', run: () => { const session = recentChats(getState().sessions, getState().activeSession)[index]; if (session) { selectSession(session.id); go('chat', session.id); } } })),

@@ -12,9 +12,12 @@
       try {
         const saved = JSON.parse(localStorage.getItem('nostroma.prefs.v2') || localStorage.getItem('nostroma.prefs.v1') || '{}');
         const choice = saved.theme ?? 'system';
-        const theme = choice === 'dark' || (choice === 'system' && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+        const skin = choice === 'matrix' || choice === 'solarized' || choice === 'commander' ? choice : '';
+        const theme = choice === 'light' || (choice === 'system' && !matchMedia('(prefers-color-scheme: dark)').matches) ? 'light' : 'dark';
         document.documentElement.dataset.theme = theme;
-        document.querySelector('meta[name="theme-color"]').content = theme === 'dark' ? '#0e1113' : '#f9fafb';
+        if (skin) document.documentElement.dataset.skin = skin;
+        else delete document.documentElement.dataset.skin;
+        document.querySelector('meta[name="theme-color"]').content = skin === 'matrix' ? '#000600' : skin === 'solarized' ? '#002b36' : skin === 'commander' ? '#0000aa' : theme === 'dark' ? '#0e1113' : '#f9fafb';
       } catch { document.documentElement.dataset.theme = 'light'; }
     </script>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />

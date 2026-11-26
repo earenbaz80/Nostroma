@@ -10,7 +10,7 @@ import { transform } from 'esbuild';
 
 const root = resolve(import.meta.dirname, '..');
 const { code } = await transform(readFileSync(resolve(root, 'src/lib/overlay-place.ts'), 'utf8'), { loader: 'ts', format: 'esm' });
-const { placeAnchored, measureScale, measureFrame, sane } = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
+const { placeAnchored, placeBeside, placePopover, measureScale, measureFrame, sane } = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
 
 const VIEWPORTS = [[1920, 1080], [1536, 864], [1280, 720], [1024, 700], [900, 600], [640, 480], [360, 640]];
 const SCALES = [0.9, 1, 1.1, 1.25, 1.5, 1.75, 2];   // the "Interface size" choices (store.ts)
@@ -88,6 +88,67 @@ test('left aligned with the anchor, pushed back inside when it would run off the
   assert.equal(p.visual.right, 1000 - 12);
   const q = placeAnchored({ anchor: box(300, 100, 80, 30), size: { width: 232, height: 100 }, viewport: { width: 1000, height: 700 }, scale: 1 });
   assert.equal(q.left, 300);
+});
+
+test('a help popover chooses a side that fits and never covers the Skills or Tools row controls', () => {
+  const size = { width: 390, height: 320 };
+  // Skills: the help button is at the right end of a row, before Edit and the switch. The left side has room at 640 px.
+  const skills = placeBeside({ anchor: box(520, 240, 28, 28), size, viewport: { width: 640, height: 600 }, scale: 1, prefer: 'left' });
+  assert.equal(skills.side, 'left');
+  assert.ok(skills.visual.right <= 520 - 12, JSON.stringify(skills.visual));
+  assert.ok(skills.visual.left >= 12, JSON.stringify(skills.visual));
+  // Tools: the same row in a 420 px window. A 390 px panel fits on neither side, so it takes the larger side's room and stops before the button.
+  const tools = placeBeside({ anchor: box(340, 240, 28, 28), size, viewport: { width: 420, height: 600 }, scale: 1, prefer: 'left' });
+  assert.equal(tools.side, 'left');
+  assert.equal(tools.visual.right, 340 - 12);
+  assert.equal(tools.visual.left, 12);
+  assert.ok(tools.visual.right - tools.visual.left < 390, 'the panel is shortened to the room it has');
+  // The chat's skill menu puts help near the left: left does not fit, right does, so it crosses to the right of the button.
+  const menu = placeBeside({ anchor: box(36, 240, 28, 28), size, viewport: { width: 420, height: 600 }, scale: 1, prefer: 'left' });
+  assert.equal(menu.side, 'right');
+  assert.ok(menu.visual.left >= 36 + 28 + 12, JSON.stringify(menu.visual));
+  assert.ok(menu.visual.right <= 420 - 12, JSON.stringify(menu.visual));
+  // The CSS values are the visual ones divided by the interface scale.
+  const scaled = placeBeside({ anchor: box(340 * 1.25, 240 * 1.25, 28 * 1.25, 28 * 1.25), size: { width: 390 * 1.25, height: 320 * 1.25 }, viewport: { width: 420, height: 600 }, scale: 1.25, prefer: 'left' });
+  assert.ok(Math.abs(scaled.left * 1.25 - scaled.visual.left) < 1e-6);
+  assert.ok(Math.abs(scaled.maxWidth * 1.25 - (scaled.visual.right - scaled.visual.left)) < 1e-6);
+});
+
+test('the default Popover alignment stays left-aligned with its anchor (ChatToolbar and Telemetry)', () => {
+  const size = { width: 360, height: 240 };
+  const roomy = placePopover({ anchor: box(300, 100, 80, 30), size, viewport: { width: 1000, height: 700 }, scale: 1 });
+  assert.equal(roomy.visual.left, 300, 'the left edge meets the anchor, not its right edge');
+  assert.equal(roomy.visual.right, 660);
+  const edge = placePopover({ anchor: box(900, 100, 80, 30), size, viewport: { width: 1000, height: 700 }, scale: 1 });
+  assert.equal(edge.visual.right, 1000 - 12, 'pushed back inside the right edge, as before');
+  assert.equal(edge.visual.left, 1000 - 12 - 360);
+  // 'end' is the only mode that chooses a side; a narrow help row still stops before its controls.
+  const help = placePopover({ anchor: box(340, 240, 28, 28), size: { width: 390, height: 320 }, viewport: { width: 420, height: 600 }, scale: 1, align: 'end' });
+  assert.equal(help.side, 'left');
+  assert.equal(help.visual.right, 340 - 12);
+});
+
+test('the close label keeps the translated title and the language template (Subagents and Telemetry)', () => {
+  const read = f => readFileSync(resolve(root, 'src', f), 'utf8');
+  const popover = read('components/Popover.tsx');
+  assert.match(popover, /tr\("Close \{0\}", \[tr\(title\)\]\)/);
+  assert.doesNotMatch(popover, /toLowerCase\(\)/, 'German nouns keep their capital letter');
+  const de = JSON.parse(readFileSync(resolve(root, 'src/locales/de.json'), 'utf8'));
+  assert.equal(de.s0305.replace('{0}', de.s1773), 'Unteragenten schließen');
+  const subagents = read('components/SubagentsButton.tsx');
+  assert.match(subagents, /<Popover[^>]*title=\{tr\(session\?\.agents\?\.length/);
+  assert.doesNotMatch(subagents, /<Popover[^>]*align=/);
+  const telemetry = read('components/TelemetryPopover.tsx');
+  assert.match(telemetry, /<Popover[^>]*title=\{tr\(title\)\}/);
+  assert.doesNotMatch(telemetry, /<Popover[^>]*align=/);
+});
+
+test('Skills and Tools both use the help popover that chooses its side', () => {
+  const read = f => readFileSync(resolve(root, 'src', f), 'utf8');
+  assert.match(read('components/Popover.tsx'), /placePopover\(/);
+  assert.match(read('components/Help.tsx'), /align="end"/);
+  assert.match(read('screens/Skills.tsx'), /<SkillHelp/);
+  assert.match(read('components/SettingsTools.tsx'), /<Help title="About these tools"/);
 });
 
 test('a tooltip beside a sidebar row opens to the right, top aligned, and is kept inside', () => {

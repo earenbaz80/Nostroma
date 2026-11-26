@@ -2,7 +2,7 @@ import { tr } from '../lib/i18n';
 /** The approved three-bar mark, and the name set in the app's own face beside it. */
 import { useEffect, useState, type CSSProperties } from 'react';
 import { useMedia } from '../lib/responsive';
-import { useStore } from '../lib/store';
+import { themeScheme, useStore } from '../lib/store';
 export function Brand({ variant, height, decorative = false, className = '', }: {
     variant: 'mark' | 'lockup';
     height: number;
@@ -11,7 +11,7 @@ export function Brand({ variant, height, decorative = false, className = '', }: 
 }) {
     const preference = useStore(s => s.theme);
     const systemDark = useMedia('(prefers-color-scheme: dark)');
-    const theme = preference === 'system' ? (systemDark ? 'dark' : 'light') : preference;
+    const theme = themeScheme(preference, systemDark);
     /* The mark is artwork, and it is the N of the name: the word beside it starts at "ostroma",
        the same word the lockup SVGs draw (prepare-brand-lockups.py, WORD). The wordmark is text in
        the app's own face, so it follows the app instead of letters baked into a picture. */

@@ -5,7 +5,7 @@ import { TuneRunView, TuneOutcomeCard } from './TuneRunView';
 import { failureDetails, readOutcome } from '../lib/tune-outcome';
 import { go } from '../lib/store';
 import { nativeAction, useNative, type NativeJob } from '../lib/native';
-import { TUNE_BLOCK_TEXT, answerNotice, tunePresetAction, tuneStartBlock, tuneStatus, tuneUndo, type TuneProgress, type TunePreset, type TuneResult, type TuneStatus } from '../lib/native-tune';
+import { TUNE_BLOCK_TEXT, answerNotice, tunePresetAction, tuneStartBlock, tuneStatus, tuneUndo, tuningInUse, type TuneProgress, type TunePreset, type TuneResult, type TuneStatus } from '../lib/native-tune';
 
 type Phase = 'idle' | 'running' | 'result';
 
@@ -58,7 +58,7 @@ export function NativeTune({ open, onClose, model, resourceProfile, vision, visi
     const progress = job?.progress as TuneProgress | undefined;
     const result = job?.state === 'done' ? (job.result as TuneResult | null) : null;
     const ratio = progress && progress.runsPlanned ? Math.min(0.96, progress.runsDone / progress.runsPlanned) : 0;
-    const active = status?.active ?? null;
+    const active = status?.active ?? null, inUse = tuningInUse(status);
     const block = tuneStartBlock({ busy, otherRunning: !!other, status, error });
     // The one sentence beside a greyed-out Start tuning, in the footer so it is never below the fold of a scrolling body (the same line serves Tune again and Check again).
     const why = block === 'other' || block === 'loading' || block === 'unreadable' ? <p className="small muted tune-why" role="status">{tr(TUNE_BLOCK_TEXT[block])}</p> : null;
@@ -84,9 +84,9 @@ export function NativeTune({ open, onClose, model, resourceProfile, vision, visi
         const stale = active && status?.state && status.state !== 'fresh';
         body = <div className="stack">
             {error ? <p className="small inline-error" role="alert">{error}</p> : null}
-            {block === 'loading' ? <p className="small muted">{tr("Checking for saved tunings\u2026")}</p> : active ? <div><p className="strong">{tr("Saved tuning in use: {0}", [active.name])}</p>
-                {active.gain_pct ? <p className="small muted">{tr("+{0}% faster answers", [Math.round(active.gain_pct)])}</p> : null}
-                {notice(active.answers?.class, active.answers?.default_repeatable)}
+            {block === 'loading' ? <p className="small muted">{tr("Checking for saved tunings\u2026")}</p> : active ? <div><p className="strong">{inUse ? tr("Saved tuning in use: {0}", [active.name]) : active.name}</p>
+                {inUse && active.gain_pct ? <p className="small muted">{tr("+{0}% faster answers", [Math.round(active.gain_pct)])}</p> : null}
+                {inUse ? notice(active.answers?.class, active.answers?.default_repeatable) : null}
                 {stale ? <p className="small">{status?.state === 'hard' ? tr("This PC changed since it was tuned, so these settings are not used until you tune again.") : tr("This PC or the engine changed since it was tuned. A short check takes about 2 minutes.")}</p> : null}</div>
                 : status ? <p className="small muted">{tr("No saved tuning for these choices yet.")}</p> : null}
             <p className="small muted">{tr("Nostroma tries different settings on this PC and keeps the ones that make answers faster. Your model is unloaded while this runs, and the computer will be busy.")}</p>
@@ -95,7 +95,7 @@ export function NativeTune({ open, onClose, model, resourceProfile, vision, visi
             <label className="check-label"><input type="checkbox" checked={allowSmall} onChange={e => setAllowSmall(e.target.checked)}/>{tr("Allow settings that change answers very slightly (same quality)")}</label>
             {status && status.presets.length ? <section className="stack"><h2 className="h4">{tr("Saved tunings")}</h2>
                 {status.presets.map(p => <div className="row row--between" key={p.id}>
-                    <span>{p.name}{p.active ? <small> {'·'} {tr("In use")}</small> : null}</span>
+                    <span>{p.name}{p.active ? <small> {'·'} {tr(inUse ? 'In use' : 'Not used')}</small> : null}</span>
                     <span className="row">{!p.active ? <Btn size="sm" variant="ghost" disabled={busy} onClick={() => void act(() => tunePresetAction(p.id, 'apply'))}>{tr("Use")}</Btn> : null}
                         <Btn size="sm" variant="ghost" disabled={busy} onClick={() => { setRenaming(p); setName(p.name); }}>{tr("Rename")}</Btn>
                         <Btn size="sm" variant="ghost" disabled={busy} onClick={() => void act(() => tunePresetAction(p.id, 'delete'))}>{tr("Delete")}</Btn></span></div>)}

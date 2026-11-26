@@ -194,8 +194,8 @@ test('a new install fetches only the drafter it will use; the fit and the slot e
   assert.equal(split.slots, 1, 'a layer split runs DFlash2 alone, one request at a time (owner 11-02)');
   assert.match(split.note, /one request at a time/);
   assert.ok(chooseParallel({ ...two, drafter: 'mtp' }).slots > 1, 'the MTP on a layer split keeps the slots Nostroma fills in');
-  const fit = read('../src/lib/native-fit.ts');
-  assert.match(fit, /DRAFTER_VRAM_GB: Record<string, number> = \{ mtp: MTP_VRAM_GB, dflash2: DFLASH2_VRAM_GB, dflash2_selq4: DFLASH2_SELQ4_VRAM_GB, off: 0 \}/);
+  const shared = read('../shared/memory-budget.mjs');
+  assert.match(shared, /DRAFTER_VRAM_GB = \{ mtp: MTP_VRAM_GB, dflash2: DFLASH2_VRAM_GB, dflash2_selq4: DFLASH2_SELQ4_VRAM_GB, off: 0 \}/);
 });
 
 test('a failed MTP download says one short line, not the installer text, and the Load goes on', () => {
@@ -215,12 +215,12 @@ test('the drafter memory figures in the app are the ones nostroma_control/drafti
   assert.equal(parallel.DFLASH2_VRAM_GB, gb(table.dflash2));
   assert.equal(parallel.DFLASH2_SELQ4_VRAM_GB, gb(table.dflash2_selq4));
   assert.deepEqual([table.dflash2, table.dflash2_selq4, table.mtp], [890, 715, 1082]);
-  const fit = read('../src/lib/native-fit.ts');
-  const num = name => Number(fit.match(new RegExp(`export const ${name} = ([0-9.]+);`))[1]);
+  const shared = read('../shared/memory-budget.mjs');
+  const num = name => Number(shared.match(new RegExp(`export const ${name} = ([0-9.]+);`))[1]);
   assert.equal(num('MTP_VRAM_GB'), gb(table.mtp));
   assert.equal(num('DFLASH2_VRAM_GB'), gb(table.dflash2));
   assert.equal(num('DFLASH2_SELQ4_VRAM_GB'), gb(table.dflash2_selq4));
-  assert.match(fit, /DRAFTER_VRAM_GB: Record<string, number> = \{ mtp: MTP_VRAM_GB, dflash2: DFLASH2_VRAM_GB, dflash2_selq4: DFLASH2_SELQ4_VRAM_GB, off: 0 \}/);
+  assert.match(shared, /DRAFTER_VRAM_GB = \{ mtp: MTP_VRAM_GB, dflash2: DFLASH2_VRAM_GB, dflash2_selq4: DFLASH2_SELQ4_VRAM_GB, off: 0 \}/);
   // Control's word reaches the page, and the page hands the fit the drafter it really loads
   const control = read('../server/native-control.mjs');
   assert.match(control, /dflash2Selq4=p\.serves===true&&p\.selq4===true/);

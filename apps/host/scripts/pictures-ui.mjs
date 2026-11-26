@@ -3,6 +3,7 @@
 import { deflateSync } from 'node:zlib';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { ensureMock, open, api } from './ui-drive.mjs';
+import { anchors } from './ui-anchors.mjs';
 
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -22,18 +23,18 @@ const ok = (name, cond, detail = '') => { if (!cond) failed = true; console.log(
 
 const connection = await ensureMock();
 const { browser, page } = await open();
-await page.locator('.chat-model-picker').first().click();
-await page.locator('.model-picker-api').first().click();
+await page.locator(anchors.chat.modelPicker).first().click();
+await page.locator(anchors.chat.modelPickerApi).first().click();
 await page.waitForTimeout(500);
 const photos = () => page.locator('.composer .chat-photos img').count();
-const textarea = page.locator('.composer textarea');
+const textarea = page.locator(anchors.composer.textarea);
 
 // 1. paste from the clipboard (a screenshot arrives as image.png)
 await textarea.focus();
-await page.evaluate(b64 => {
+await page.locator(anchors.composer.textarea).evaluate((el, b64) => {
   const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
   const data = new DataTransfer(); data.items.add(new File([bytes], 'image.png', { type: 'image/png' }));
-  document.querySelector('.composer textarea').dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }));
+  el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }));
 }, b64);
 await page.waitForTimeout(700);
 ok('paste: the picture is attached', await photos() === 1, `${await photos()} picture(s)`);
@@ -42,7 +43,7 @@ await page.screenshot({ path: `${OUT}/1-paste.png` });
 
 // 2. the "+" menu
 const chooser = page.waitForEvent('filechooser');
-await page.locator('.composer-add').click();
+await page.locator(anchors.composer.add).click();
 await page.getByText('Add files or photos').click();
 (await chooser).setFiles(file);
 await page.waitForTimeout(700);
@@ -84,12 +85,12 @@ const saved = (await api('/api/model-providers')).body.connections.find(c => c.i
 ok('off switch: saved as off', saved.vision === false && saved.reads === false, JSON.stringify({ vision: saved.vision, reads: saved.reads }));
 await page.keyboard.press('Escape');
 await page.waitForTimeout(500);
-await page.locator('.composer-add').click().catch(() => {});
+await page.locator(anchors.composer.add).click().catch(() => {});
 await page.keyboard.press('Escape');
-await page.evaluate(b64 => {
+await page.locator(anchors.composer.textarea).evaluate((el, b64) => {
   const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
   const data = new DataTransfer(); data.items.add(new File([bytes], 'image.png', { type: 'image/png' }));
-  document.querySelector('.composer textarea').dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }));
+  el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }));
 }, b64);
 await page.waitForTimeout(700);
 const message = await page.locator('.composer .verror, .composer [role=alert]').first().innerText().catch(() => '');

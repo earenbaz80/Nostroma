@@ -8,6 +8,7 @@ import { existsSync, mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { requireChromium } from './browser.mjs';
+import { anchors } from './ui-anchors.mjs';
 import { envVar } from '../server/env-compat.mjs';
 
 const executablePath = requireChromium();
@@ -69,13 +70,13 @@ if (flow === 'expert') {
   await page.waitForTimeout(900);
   /* The mode control is `.st-tab`, not `.seg__btn` — the flow kept the older
      class and had been failing on a selector that no longer existed. */
-  await page.click('.st-tab:has-text("Expert")');
+  await page.getByRole('tab', { name: 'Expert' }).click();
   await page.waitForTimeout(900);
   await shot('30-tuning-expert');
   await page.fill('input[placeholder="Search parameters"]', 'cache');
   await page.waitForTimeout(600);
   await shot('31-tuning-expert-search');
-  await page.click('.st-tab:has-text("Raw")');
+  await page.getByRole('tab', { name: 'Raw' }).click();
   await page.waitForTimeout(600);
   await shot('32-tuning-raw');
 }
@@ -83,7 +84,7 @@ if (flow === 'expert') {
 if (flow === 'expert-light') {
   await page.goto(`${BASE}/#/tuning`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(1200);
-  await page.click('.st-tab:has-text("Expert")');
+  await page.getByRole('tab', { name: 'Expert' }).click();
   await page.waitForTimeout(800);
   await shot('98-expert-light');
 }
@@ -110,7 +111,7 @@ if (flow === 'setup') {
   await next().click();
   await page.waitForTimeout(900);
   await shot('41-setup-2-model');
-  await page.getByText('Qwen · Q2_K', { exact: true }).first().click();
+  await page.locator(anchors.model.versionCards, { hasText: 'Qwen · Q2_K' }).first().click();
   await page.waitForTimeout(400);
   await next().click();
   await page.waitForTimeout(800);
@@ -391,7 +392,7 @@ if (flow === 'focusmode') {
   await page.keyboard.press('Enter').catch(() => {});
   await page.waitForTimeout(4000);
 
-  const read = () => page.evaluate(() => {
+  const read = () => page.evaluate((ta) => {
     const g = (sel) => {
       const el = document.querySelector(sel);
       if (!el) return null;
@@ -408,12 +409,12 @@ if (flow === 'focusmode') {
       hints: (() => { const e = document.querySelector('.composer__hints'); return e ? getComputedStyle(e).display : 'absent'; })(),
       icons: [...document.querySelectorAll('.st-composer__bar .st-btn--icon')].filter((x) => getComputedStyle(x).display !== 'none').length,
       telemetry: (() => { const e = document.querySelector('.telemetry'); return e ? getComputedStyle(e).display : 'absent'; })(),
-      canType: !!document.querySelector('.composer textarea'),
+      canType: !!document.querySelector(ta),
       barKeys: [...document.querySelectorAll('.focusbar__keys > span')].map((s) => s.textContent.replace(/\s+/g, ' ').trim()),
       exitLabel: document.querySelector('.focusbar button:last-of-type')?.textContent.trim() ?? '',
       exitTitle: document.querySelector('.focusbar button:last-of-type')?.getAttribute('title'),
     };
-  });
+  }, anchors.composer.textarea);
 
   const normal = await read();
   console.log('normal      : composer', normal.composer + 'px, reading area', normal.reading + 'px, alignment', normal.alignL);
@@ -504,7 +505,7 @@ if (flow === 'archive') {
   await page.waitForTimeout(500);
   console.log('menu          :', JSON.stringify(await page.evaluate(() =>
     [...document.querySelectorAll('.menu__item')].map((i) => i.textContent.trim()))));
-  await page.click('.menu__item:has-text("Archive")');
+  await page.getByRole('menuitem', { name: 'Archive' }).click();
   await page.waitForTimeout(700);
   console.log('after archive :', JSON.stringify(await rows()), '<- leaves the list, nothing deleted');
 
@@ -590,7 +591,7 @@ if (flow === 'dismissal') {
   for (const [name, open] of [
     ['palette', async () => { await blur(); await tall.keyboard.press('Meta+k'); }],
     ['shortcuts', async () => { await blur(); await tall.keyboard.press('?'); }],
-    ['telepop', async () => { await tall.click('.telemetry__chip >> nth=0'); }],
+    ['telepop', async () => { await tall.click(anchors.telemetry.chip('speed')); }],
   ]) {
     const out = [];
     for (const [how, act] of [
@@ -849,7 +850,7 @@ if (flow === 'whythisone') {
 if (flow === 'paramgroups') {
   await page.goto(`${BASE}/#/tuning`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(1700);
-  await page.click('.st-tab:has-text("Expert")');
+  await page.getByRole('tab', { name: 'Expert' }).click();
   await page.waitForTimeout(900);
   const out = await page.evaluate(() => ({
     headings: [...document.querySelectorAll('.paramgroup')].map((r) => r.textContent.replace(/\s+/g, ' ').trim()),
@@ -896,13 +897,13 @@ if (flow === 'servingsort') {
   });
   console.log('rows        :', await page.evaluate(() => document.querySelectorAll('tbody tr').length));
   console.log('default     :', await active(), '| first row', await first());
-  await page.click('th:has-text("Duration") button');
+  await page.getByRole('columnheader', { name: /^Duration/ }).getByRole('button').click();
   await page.waitForTimeout(450);
   console.log('by duration :', await active(), '| first row', await first());
-  await page.click('th:has-text("Duration") button');
+  await page.getByRole('columnheader', { name: /^Duration/ }).getByRole('button').click();
   await page.waitForTimeout(450);
   console.log('reversed    :', await active(), '| first row', await first(), '<- the order really changed');
-  await page.click('th:has-text("Client") button');
+  await page.getByRole('columnheader', { name: /^Client/ }).getByRole('button').click();
   await page.waitForTimeout(450);
   console.log('by client   :', await active());
   console.log('one column sorted at a time:', await page.evaluate(() =>
@@ -940,7 +941,7 @@ if (flow === 'overlayresize') {
   await wide.waitForTimeout(7000);
   await wide.keyboard.press('Enter').catch(() => {});
   await wide.waitForTimeout(3500);
-  await wide.click('.telemetry__chip >> nth=0');
+  await wide.click(anchors.telemetry.chip('speed'));
   await wide.waitForTimeout(500);
 
   const read = () => wide.evaluate(() => {
@@ -1658,11 +1659,12 @@ if (flow === 'telemetry') {
   await page.keyboard.press('Enter');
   await page.waitForTimeout(7000);
 
-  const chips = await page.locator('.telemetry__chip').count();
+  const chips = await page.locator(anchors.telemetry.all).count();
   console.log('telemetry chips:', chips);
   const titles = ['Session statistics', 'Token usage', 'Context'];
+  const keys = ['speed', 'tokens', 'context'];
   for (let i = 0; i < titles.length; i += 1) {
-    await page.locator('.telemetry__chip').nth(i).click();
+    await page.locator(anchors.telemetry.chip(keys[i])).click();
     await page.waitForTimeout(450);
     const head = await page.textContent('.telepop__head').catch(() => null);
     const rows = await page.locator('.telepop__row').count();
@@ -1675,7 +1677,7 @@ if (flow === 'telemetry') {
   }
   await page.click('button[title="Switch to dark"]');
   await page.waitForTimeout(500);
-  await page.locator('.telemetry__chip').nth(2).click();
+  await page.locator(anchors.telemetry.chip('context')).click();
   await page.waitForTimeout(450);
   await shot('143-telepop-dark');
   await page.keyboard.press('Escape');

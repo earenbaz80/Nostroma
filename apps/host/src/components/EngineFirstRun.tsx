@@ -1,5 +1,5 @@
 import { tr } from '../lib/i18n';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Brand } from './Brand';
 import { Bar, Btn, Icon } from './ui';
 import { api } from '../lib/client';
@@ -46,14 +46,6 @@ export function useEngineNeeded(): boolean | null {
     return needed;
 }
 
-function gpuLine(info: FirstRunInfo) {
-    // a processor's own tiny graphics (no memory of its own) is not "a card"
-    const first = info.gpus.find(g => (g.vramGb ?? 0) >= 1) ?? info.gpus[0];
-    if (!first) return '';
-    const vram = first.vramGb ? `, ${Math.round(first.vramGb)} GB` : '';
-    const driver = info.driver ? `, driver ${info.driver}` : '';
-    return `${first.name}${vram}${driver}`;
-}
 
 /**
  * The first-run card: the engine this PC needs, one button to download it, progress, and the offline way (choose a downloaded file).
@@ -129,52 +121,83 @@ export function EngineFirstRun({ onDone }: { onDone: () => void }) {
     const bytes = info?.offer?.bytes ?? 0;
     const doneMb = Math.round(mb(bytes) * percent / 100);
     const eta = useDownloadEta(running && bytes ? { done_gb: bytes * percent / 100 / 1e9, remaining_gb: bytes * (100 - percent) / 100 / 1e9 } : undefined, job?.id);
-    const cards = (info?.gpus ?? []).filter(g => (g.vramGb ?? 0) >= 1).length;
+    const cards = (info?.gpus ?? []).filter(g => (g.vramGb ?? 0) >= 1);
     const hidden = <input ref={file} type="file" accept=".gz,.tgz,.xz,.zip" hidden onChange={e => void chosen(e.target.files)}/>;
-    const pick = (label: string) => <button type="button" className="onboard-continue-anyway" disabled={busy || running} onClick={() => file.current?.click()}>{tr(label)}</button>;
+    const pick = (label: string) => <button type="button" className="firstrun__quiet" disabled={busy || running} onClick={() => file.current?.click()}>{tr(label)}</button>;
+    /* The engine is optional for looking around: every state that is not a
+       download in flight leaves a way into the app, so a missing engine (or a
+       github.com that will not answer) can never hold the interface. */
+    const escape = <button type="button" className="firstrun__quiet" disabled={busy || running} onClick={onDone}>{tr('Skip for now')}</button>;
 
-    let body;
+    const card = cards[0] ?? info?.gpus?.[0];
+    const engineFact = !info ? tr('Looking…')
+        : info.status === 'installed' ? tr('Installed')
+            : info.offer ? `${tr('One download')} · ${mb(info.offer.bytes + (info.control?.bytes ?? 0))} MB${info.control ? tr(WITH_CONTROL) : null}`
+                : tr('Not installed');
+    const sheet = [
+        { label: tr('Graphics card'), value: card?.name ?? tr('Not recognised') },
+        { label: tr('Memory'), value: card?.vramGb ? `${Math.round(card.vramGb)} GB` : '—' },
+        { label: tr('Driver'), value: info?.driver || '—' },
+        { label: tr('Engine'), value: engineFact },
+    ];
+
+    let lede = tr('Your own AI, with chats, files and tools, right here on this computer.');
+    let notice: ReactNode = null;
+    let actions: ReactNode = null;
     if (finished) {
-        body = <><div className="onboard-welcome-copy"><h1 tabIndex={-1} data-initial-focus>{tr("The engine is ready.")}</h1><p>{tr("Next: pick a model.")}</p></div>
-            <footer className="onboard-footer onboard-footer--welcome"><Btn variant="primary" onClick={onDone}>{tr("Continue")}<Icon name="chevron" size={16}/></Btn></footer></>;
+        lede = tr('Engine ready. Now choose your model.');
+        actions = <><Btn variant="primary" onClick={onDone}>{tr('Continue')}<Icon name="chevron" size={16}/></Btn></>;
     }
     else if (running) {
-        body = <><div className="onboard-welcome-copy"><h1 tabIndex={-1} data-initial-focus>{tr("Downloading the engine")}</h1>
-            <p>{bytes && job?.result?.install?.download ? `${doneMb} of ${mb(bytes)} MB${eta ? ' · ' + eta : ''}` : (jobSummary(job) || tr('Starting…'))}</p></div>
-            <div className="onboard-error" style={{ maxWidth: 520, margin: '0 auto', width: '100%' }}><Bar value={percent} label="Downloading the engine"/><p className="small muted" style={{ textAlign: 'center' }}>{tr("You can close Nostroma; it continues where it stopped.")}</p></div></>;
+        lede = bytes && job?.result?.install?.download ? tr('{0} of {1} MB{2}', [doneMb, mb(bytes), eta ? ` · ${eta}` : '']) : (jobSummary(job) || tr('Starting…'));
+        notice = <div className="firstrun__progress"><Bar value={percent} label={tr('Downloading the engine')}/><p className="small muted">{tr('You can close Nostroma; it continues where it stopped.')}</p></div>;
     }
     else if (!info) {
-        body = <div className="onboard-welcome-copy"><h1 tabIndex={-1} data-initial-focus>{tr("Welcome to Nostroma")}</h1><p role="status">{tr("Looking at your graphics card…")}</p></div>;
+        lede = tr('Looking at your graphics card…');
+    }
+    else if (info.status === 'offer' && info.offer) {
+        lede = tr('Nostroma needs one download to run models here: the engine built for this card.');
+        notice = <>
+            {info.freeBytes !== undefined && info.freeBytes < info.offer.bytes * 2.5 ? <p className="small inline-error">{tr('The engine needs about {0} GB of free space on this drive and only {1} GB is free. Free some space, then continue.', [Math.ceil(info.offer.bytes * 2.5 / 1e9), (info.freeBytes / 1e9).toFixed(1)])}</p> : null}
+            <p className="small muted">{tr('It comes from Nostroma’s own update server and is checked before it is used. Your models and chats are never touched by it.')}</p>
+            {cards.length > 1 ? <p className="small muted">{tr('{0} cards found. Nostroma uses the first one for the engine; change it later in Settings.', [cards.length])}</p> : null}
+        </>;
+        actions = <><Btn variant="primary" disabled={busy} onClick={() => void start()}>{tr(failed ? 'Continue' : 'Get the engine')}</Btn>{pick(tr("I already have the file…"))}{escape}</>;
+    }
+    else if (info.status === 'offline') {
+        /* No "could not reach github.com" line: the sheet already says the engine
+           is not installed, and the two ways forward (try again, choose a file)
+           are the buttons below it. */
+        actions = <><Btn variant="primary" disabled={busy} onClick={look}>{tr('Try again')}</Btn>{pick(tr('Choose a downloaded file…'))}{escape}</>;
+    }
+    else if (info.status === 'wrong-make') {
+        lede = info.message ?? tr('The engine installed here is for another make of graphics card.');
+        actions = <><Btn variant="primary" disabled={busy} onClick={look}>{tr('Try again')}</Btn>{pick(tr('Choose a downloaded file…'))}{escape}</>;
     }
     else {
-        const card = gpuLine(info);
-        const found = card ? <p>{tr("Nostroma found your graphics card:")}<br/><strong>{card}</strong>{cards > 1 ? <><br/><span className="small muted">{tr("{0} cards found. Nostroma uses the first one for the engine; change it later in Settings.", [cards])}</span></> : null}</p>
-            : <p>{tr("Nostroma did not recognise a supported graphics card.")}</p>;
-        let main, actions;
-        if (info.status === 'offer' && info.offer) {
-            main = <>{found}<p>{tr("To run models on it, Nostroma needs one download:")}<br/><strong>{tr("The engine for this card")}: {mb(info.offer.bytes + (info.control?.bytes ?? 0))} MB{info.control ? tr(WITH_CONTROL) : null}</strong></p>
-                {info.freeBytes !== undefined && info.freeBytes < info.offer.bytes * 2.5 ? <p className="small inline-error">{tr("The engine needs about {0} GB of free space on this drive and only {1} GB is free. Free some space, then continue.", [Math.ceil(info.offer.bytes * 2.5 / 1e9), (info.freeBytes / 1e9).toFixed(1)])}</p> : null}
-                <p className="small muted">{tr("It comes from Nostroma’s own update server and is checked before it is used. Your models and chats are never touched by it.")}</p></>;
-            actions = <><Btn variant="primary" disabled={busy} onClick={() => void start()}>{tr(failed ? 'Continue' : 'Download the engine')}</Btn>{pick("I already have the file…")}</>;
-        }
-        else if (info.status === 'offline') {
-            main = <>{found}<p>{tr("Nostroma could not reach github.com. Check your connection and try again, or download the engine file on another PC and choose it here.")}</p></>;
-            actions = <><Btn variant="primary" disabled={busy} onClick={look}>{tr("Try again")}</Btn>{pick("Choose a downloaded file…")}</>;
-        }
-        else if (info.status === 'wrong-make') {
-            main = <>{found}<p>{info.message ?? tr("The engine installed here is for another make of graphics card.")}</p></>;
-            actions = <><Btn variant="primary" disabled={busy} onClick={look}>{tr("Try again")}</Btn>{pick("Choose a downloaded file…")}</>;
-        }
-        else {
-            main = <>{found}<p>{tr("Nostroma can’t pick an engine for this PC from its update list.")}</p>{info.message ? <p className="small muted">{info.message}</p> : null}{(info.reasons ?? []).length ? <ul className="small muted" style={{ textAlign: 'left', display: 'inline-block' }}>{(info.reasons ?? []).map(r => <li key={r}>{r}</li>)}</ul> : null}</>;
-            actions = <><Btn variant="primary" disabled={busy} onClick={look}>{tr("Try again")}</Btn>{pick("Choose a downloaded file…")}<button type="button" className="onboard-continue-anyway" onClick={onDone}>{tr("Continue without an engine")}</button></>;
-        }
-        body = <><div className="onboard-welcome-copy"><h1 tabIndex={-1} data-initial-focus>{tr("Welcome to Nostroma")}</h1>{main}</div>
-            {failed ? <div className="onboard-error" style={{ maxWidth: 560, margin: '0 auto' }}><p role="alert" className="small inline-error">{job?.error ?? job?.summary}</p>
-                {job?.details ? <details className="error-detail"><summary className="small">{tr('Details')}</summary><pre className="small muted">{job.details}</pre></details> : null}
-                <p className="small muted">{percent >= 100 ? tr("The file was downloaded. Continue tries the install again.") : tr("The download stopped. Continue picks it up where it stopped.")}</p></div> : null}
-            {problem ? <div className="onboard-error" style={{ maxWidth: 560, margin: '0 auto' }}><p role="alert" className="small inline-error">{problem}</p></div> : null}
-            <footer className="onboard-footer onboard-footer--welcome">{actions}</footer></>;
+        lede = tr('Nostroma can’t pick an engine for this PC from its update list.');
+        notice = <>{info.message ? <p className="small muted">{info.message}</p> : null}{(info.reasons ?? []).length ? <ul className="small muted">{(info.reasons ?? []).map(r => <li key={r}>{r}</li>)}</ul> : null}</>;
+        actions = <><Btn variant="primary" disabled={busy} onClick={look}>{tr('Try again')}</Btn>{pick(tr('Choose a downloaded file…'))}{escape}</>;
     }
-    return <div className="setup guided-onboarding" data-step="engine">{hidden}<header className="onboard-header"><Brand variant="lockup" height={22}/><FirstRunLanguage/></header>{body}</div>;
+
+    return <div className="setup guided-onboarding firstrun" data-step="engine">{hidden}
+        <header className="onboard-header"><Brand variant="lockup" height={22}/><FirstRunLanguage/></header>
+        <div className="firstrun__body">
+            <div className="firstrun__intro">
+                <span className="firstrun__eyebrow"><span className="firstrun__dot" data-state={info?.status ?? 'looking'}/>{tr('This machine')}</span>
+                <h1 tabIndex={-1} data-initial-focus>{tr(finished ? 'The engine is ready.' : running ? 'Downloading the engine' : 'Welcome to Nostroma earthling')}</h1>
+                <p className="firstrun__lede" role={!info ? 'status' : undefined}>{lede}</p>
+                {!finished && !running ? <p className="firstrun__hint">{tr('You can add the engine later, in Settings > Engine.')}</p> : null}
+            </div>
+            <dl className="firstrun__sheet">
+                {sheet.map(row => <div key={row.label} className="firstrun__row"><dt>{row.label}</dt><dd>{row.value}</dd></div>)}
+            </dl>
+        </div>
+        {notice ? <div className="firstrun__notice">{notice}</div> : null}
+        {failed ? <div className="firstrun__notice"><p role="alert" className="small inline-error">{job?.error ?? job?.summary}</p>
+            {job?.details ? <details className="error-detail"><summary className="small">{tr('Details')}</summary><pre className="small muted">{job.details}</pre></details> : null}
+            <p className="small muted">{percent >= 100 ? tr('The file was downloaded. Continue tries the install again.') : tr('The download stopped. Continue picks it up where it stopped.')}</p></div> : null}
+        {problem ? <div className="firstrun__notice"><p role="alert" className="small inline-error">{problem}</p></div> : null}
+        {actions ? <footer className="firstrun__actions">{actions}</footer> : null}
+    </div>;
 }

@@ -30,6 +30,7 @@
     "resources": {
       "../../host/dist": "host/dist",
       "../../host/server": "host/server",
+      "../../host/shared": "host/shared",
       "../../host/package.json": "host/package.json",
       "resources/node": "node",
       "resources/control": "control",

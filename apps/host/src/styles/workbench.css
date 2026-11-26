@@ -1,0 +1,810 @@
+/* ============================================================================
+   Workbench — the right-side local tools dock
+   ----------------------------------------------------------------------------
+   Live sandbox, terminal, embedded browser and workspace explorer. The dock is
+   a third grid column on a desktop window and a fixed drawer on a narrow one;
+   it uses the CRT tokens and faces defined by nostroma-crt.css.
+   ========================================================================== */
+
+/* The third column is the dock's own width: --workbench-w is written by the drag
+   handle, and until someone drags it the responsive clamp decides.
+
+   No transition here, deliberately. `.app` animates grid-template-columns so the
+   rail widens smoothly, but this rule changes the track count (two to three).
+   Chrome cannot interpolate a list whose length differs, so it leaves the
+   transition pending, and a pending transition keeps the track it started from
+   until the document gets a frame — a window opened behind another one never
+   does. That is why a saved width (or the first drag) looked ignored until
+   `transition: none` was forced. The dock's column is dragged, not animated, so
+   with the dock on the rail snaps and the width lands where it was set. */
+@media (min-width: 1280px) {
+  .app:has(> .workbench) {
+    grid-template-columns: var(--st-nav-w) minmax(0, 1fr) var(--workbench-w, clamp(360px, 26vw, 460px));
+    transition: none;
+  }
+  .app[data-rail='true']:has(> .workbench) {
+    grid-template-columns: var(--st-nav-w-rail) minmax(0, 1fr) var(--workbench-w, clamp(360px, 26vw, 460px));
+  }
+}
+
+.workbench {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  color: var(--st-ink);
+  background: var(--st-surface);
+  border-left: 1px solid var(--st-line);
+  box-shadow: inset 0 0 28px rgba(255, 176, 0, .035);
+  font-family: var(--st-font-mono);
+}
+
+/* ------------------------------------------------------------ the drag edge */
+/* A strip on the dock's own left edge rather than a line between two columns:
+   the panel clips its children, so the handle lives inside it and the visible
+   hairline sits on the border itself. */
+.workbench__resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 6;
+  width: 10px;
+  cursor: col-resize;
+  touch-action: none;
+  outline: none;
+}
+.workbench__resize > span {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  background: transparent;
+  transition: background var(--st-t-micro) var(--st-ease);
+}
+.workbench__resize:hover > span,
+.workbench__resize:focus-visible > span,
+[data-workbench-resizing='true'] .workbench__resize > span {
+  background: var(--st-accent);
+  box-shadow: 0 0 0 1px var(--st-accent);
+}
+.workbench__resize:focus-visible { outline: 2px solid var(--st-focus); outline-offset: -2px; }
+/* * matches html too, so the whole window keeps the drag cursor. */
+[data-workbench-resizing='true'] * { cursor: col-resize !important; user-select: none !important; }
+[data-workbench-resizing='true'] .workbench iframe { pointer-events: none; }
+
+@media (max-width: 1279px) {
+  /* A drawer, not a column: its width is the window's, so there is no edge to
+     drag. */
+  .workbench {
+    position: fixed;
+    z-index: 40;
+    inset: 0 0 0 auto;
+    width: min(560px, 100vw);
+    border-left: 1px solid var(--st-accent);
+    box-shadow: var(--st-sh-pop);
+  }
+  .workbench__resize { display: none; }
+}
+
+/* ------------------------------------------------------------------ the head */
+.workbench__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+  min-height: var(--st-header-h);
+  padding: 0 12px 0 16px;
+  border-bottom: 1px solid var(--st-line);
+  background: var(--st-material-tint);
+}
+.workbench__heading {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+.workbench__title {
+  font-family: var(--st-display);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: .9;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+  color: var(--st-accent-text);
+  text-shadow: 0 0 14px color-mix(in srgb, var(--st-accent) 35%, transparent);
+}
+.workbench__sub {
+  color: var(--st-ink-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .16em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+/* ------------------------------------------------------------------- the tabs */
+.workbench__tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  flex: none;
+  border-bottom: 1px solid var(--st-line);
+  background: var(--st-surface-2);
+}
+.workbench__tabs button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  height: 47px;
+  padding: 0 4px;
+  border: 0;
+  border-right: 1px solid var(--st-line-soft);
+  background: transparent;
+  color: var(--st-ink-muted);
+  font: 600 11px/1 var(--st-font-mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.workbench__tabs button:last-child { border-right: 0; }
+.workbench__tabs button:hover { color: var(--st-ink); background: var(--st-surface); }
+.workbench__tabs button[data-active] {
+  color: var(--st-accent-text);
+  background: var(--st-accent-tint);
+  box-shadow: inset 0 -2px 0 var(--st-accent);
+}
+.workbench__tabs button:focus-visible { outline-offset: -3px; }
+
+/* ------------------------------------------------------------------ the body */
+.workbench__body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+.workbench__pane {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+.workbench__pane[hidden] { display: none; }
+
+.workbench__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  min-height: 38px;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--st-line-soft);
+  background: var(--st-surface);
+  color: var(--st-ink-muted);
+  font-size: 11px;
+}
+.workbench__file {
+  display: inline-flex;
+  /* The name takes the space the buttons leave, so a long path ends in an ellipsis
+     while the buttons keep their labels whole; only once the name is down to its
+     floor does a label start to give (see workbench__link below). */
+  flex: 1 0 0;
+  align-items: center;
+  gap: 6px;
+  /* The floor the name keeps when the dock is dragged to its minimum, so it is
+     never squeezed down to the icon: about eight characters beside the icon, and
+     past this point the button on the right gives up its width (see
+     workbench__link below, which keeps its own floor). */
+  min-width: 76px;
+  overflow: hidden;
+  white-space: nowrap;
+  letter-spacing: .02em;
+}
+.workbench__file > .st-icon { flex: none; }
+/* The label is its own box: an ellipsis needs inline text in a block, not a text
+   node inside a flex row, so a long page or folder name ends in "…" instead of
+   being cut mid-word against the buttons on the right. */
+.workbench__file-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The bar's buttons stay on one line. The primary one never shrinks; a secondary
+   one may, and its label is a box of its own (workbench__link-text), so a long
+   translation ends in an ellipsis when the dock is at its floor instead of
+   pushing the bar past the panel's edge. */
+.workbench__bar > .workbench__link {
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+}
+.workbench__bar > .workbench__run {
+  flex: none;
+  white-space: nowrap;
+}
+/* Both ends keep a readable stub: the name's floor is on .workbench__file, and a
+   long follow label stops shrinking here instead of collapsing to a handful of
+   letters while a long path takes the rest of the bar. */
+.workbench__bar > .live__follow { min-width: 96px; }
+.workbench__bar > .workbench__link > .st-icon,
+.workbench__bar > .workbench__run > .st-icon { flex: none; }
+.workbench__bar .workbench__link-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* A pixel of room after the word, so a label that fits is never cut by the
+   rounding of the bar's own fractional width. */
+.workbench__bar .workbench__link-text::after {
+  content: '';
+  display: inline-block;
+  width: 1px;
+}
+.workbench__run,
+.workbench__link,
+.workbench__icon,
+.workbench__send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--st-ink-muted);
+  font: 600 11px/1 var(--st-font-mono);
+  letter-spacing: .06em;
+  cursor: pointer;
+}
+.workbench__run {
+  min-height: 26px;
+  padding: 0 8px;
+  border-color: var(--st-accent);
+  background: var(--st-accent);
+  color: var(--st-accent-ink);
+  text-transform: uppercase;
+}
+.workbench__run:hover { background: var(--st-accent-hover); border-color: var(--st-accent-hover); }
+.workbench__link { min-height: 26px; padding: 0 5px; }
+.workbench__link:hover:not(:disabled) { color: var(--st-accent-text); border-color: var(--st-line); }
+.workbench__icon { width: 26px; height: 26px; padding: 0; border-color: var(--st-line); }
+.workbench__icon:hover:not(:disabled) { color: var(--st-accent-text); border-color: var(--st-accent); }
+.workbench__link:disabled,
+.workbench__icon:disabled,
+.workbench__send:disabled { opacity: .35; cursor: default; }
+.workbench__send {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-color: var(--st-line);
+  color: var(--st-accent-text);
+}
+.workbench__send:hover:not(:disabled) { border-color: var(--st-accent); background: var(--st-accent-tint); }
+/* The workspace chooser is the kit's Select, sized to the bar's 28px row. */
+.workbench__bar > .select__trigger {
+  width: auto;
+  min-width: 0;
+  max-width: 62%;
+  height: 28px;
+  min-height: 28px;
+  padding: 0 8px;
+  font-size: 11px;
+}
+.workbench__muted { margin: 12px; color: var(--st-ink-muted); font-size: 11px; line-height: 1.5; }
+.workbench__error {
+  margin: 10px;
+  padding: 8px 10px;
+  border-left: 2px solid var(--st-danger);
+  background: var(--st-danger-tint);
+  color: var(--st-danger-text);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.workbench__empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+  color: var(--st-ink-muted);
+}
+.workbench__empty strong {
+  color: var(--st-ink);
+  font-family: var(--st-display);
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: .08em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.workbench__empty p { max-width: 31ch; margin: 0; font-size: 11px; line-height: 1.55; }
+.workbench__empty--compact { padding: 14px; }
+.workbench__empty--compact strong { font-size: 18px; }
+.workbench__empty--compact p { font-size: 11px; }
+.workbench__empty .workbench__run { margin-top: 4px; }
+
+/* ------------------------------------------------------------------- sandbox */
+.sandbox__code {
+  flex: 0 0 43%;
+  width: 100%;
+  min-height: 110px;
+  padding: 12px;
+  resize: vertical;
+  border: 0;
+  border-bottom: 1px solid var(--st-line);
+  outline: 0;
+  background: var(--st-code-bg);
+  color: var(--st-code-ink);
+  font: 12px/1.55 var(--st-font-mono);
+  tab-size: 2;
+  caret-color: var(--st-accent);
+}
+.sandbox__output {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--st-code-bg);
+}
+.sandbox__output iframe {
+  display: block;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  background: var(--st-code-bg);
+}
+/* The console under the preview: without it a page that throws is a blank
+   frame with no reason given. */
+.sandbox__console {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  height: 124px;
+  border-top: 1px solid var(--st-line);
+  background: var(--st-code-bg);
+  color: var(--st-code-ink);
+  font: 11px/1.5 var(--st-font-mono);
+}
+.sandbox__console-bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 7px;
+  height: 26px;
+  padding: 0 6px 0 10px;
+  border-bottom: 1px solid var(--st-line);
+  color: var(--st-ink-muted);
+  font: 600 11px/1 var(--st-font-mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.sandbox__console-count {
+  padding: 0 5px;
+  border-radius: var(--st-r-pill);
+  background: var(--st-surface-2);
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+.sandbox__console-bar .workbench__link { min-height: 20px; padding: 0 6px; }
+.sandbox__console-lines {
+  flex: 1;
+  min-height: 0;
+  padding: 5px 10px 7px;
+  overflow: auto;
+}
+.sandbox__console-line {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+}
+.sandbox__console-line b {
+  flex: none;
+  width: 38px;
+  color: var(--st-ink-muted);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.6;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.sandbox__console-line span { min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.sandbox__console-line[data-level='warn'] span { color: var(--st-warn-text); }
+.sandbox__console-line[data-level='error'] span { color: var(--st-danger-text); }
+.sandbox__console-line[data-level='empty'] span { color: var(--st-ink-muted); opacity: .8; }
+
+/* ------------------------------------------------------------------ terminal */
+.terminal__output {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  background: var(--st-code-bg);
+  color: var(--st-code-ink);
+  font: 12px/1.55 var(--st-font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.terminal__welcome { color: var(--st-ink-muted); }
+.terminal__dim { color: var(--st-ink-muted); opacity: .72; }
+/* A build can run for minutes: the stop key sits in the bar while it does. */
+.terminal__stop {
+  color: var(--st-danger-text);
+  border-color: color-mix(in srgb, var(--st-danger) 42%, transparent);
+}
+.terminal__stop:hover:not(:disabled) {
+  color: var(--st-danger-text);
+  border-color: var(--st-danger);
+  background: var(--st-danger-tint);
+}
+/* ------------------------- the conversation's hand-offs into this dock ----- */
+/* A shell block in an answer can be run here, and a path in the output can be
+   opened here: the dock is part of the conversation's work, not a drawer beside
+   it. The run chip sits in the code block's own header row. */
+.st-code__run,
+.st-code__sandbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, var(--st-code-ink) 24%, transparent);
+  background: transparent;
+  color: var(--st-code-ink);
+  font: 600 11px/1 var(--st-font-mono);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.st-code__run:hover,
+.st-code__sandbox:hover { background: color-mix(in srgb, var(--st-code-ink) 12%, transparent); }
+
+.terminal__line { display: block; }
+.terminal__line--command { color: var(--st-accent-text); font-weight: 600; }
+.terminal__line--error { color: var(--st-danger-text); }
+.terminal__line--meta { color: var(--st-ink-muted); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+.terminal__prompt-mark { flex: none; color: var(--st-accent); font-weight: 700; }
+/* A file the output mentions: an inline link, not a key, so it must not lift. */
+.terminal__path {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--st-accent-text);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+button.terminal__path:not(:disabled):hover {
+  background: var(--st-accent-tint);
+  translate: 0 0;
+  filter: none;
+}
+button.terminal__path:focus-visible { outline: 1px solid var(--st-focus); outline-offset: 1px; }
+.terminal__form {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  padding: 7px 10px;
+  border-top: 1px solid var(--st-line);
+  background: var(--st-surface-2);
+}
+.terminal__input {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--st-ink);
+  font: 12px var(--st-font-mono);
+  caret-color: var(--st-accent);
+}
+.terminal__input::placeholder { color: var(--st-ink-muted); opacity: .8; }
+
+/* ------------------------------------------------------------------- browser */
+.browser__bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--st-line-soft);
+  background: var(--st-surface);
+}
+.browser__address {
+  flex: 1;
+  min-width: 0;
+  height: 29px;
+  padding: 0 8px;
+  border: 1px solid var(--st-line);
+  outline: 0;
+  background: var(--st-bg);
+  color: var(--st-ink);
+  font: 11px var(--st-font-mono);
+}
+.browser__address:focus { border-color: var(--st-accent); }
+.browser__body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  background: var(--st-code-bg);
+}
+.browser__body iframe {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--st-surface);
+}
+.browser__foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  padding: 5px 9px;
+  border-top: 1px solid var(--st-line-soft);
+  color: var(--st-ink-muted);
+  font-size: 11px;
+  line-height: 1.3;
+}
+.browser__back { transform: rotate(90deg); }
+.browser__forward { transform: rotate(-90deg); }
+
+/* --------------------------------------------------------------------- files */
+.files__crumbs {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex: none;
+  flex-wrap: wrap;
+  padding: 5px 9px;
+  border-bottom: 1px solid var(--st-line-soft);
+  color: var(--st-ink-muted);
+  font-size: 11px;
+}
+.files__crumbs button {
+  max-width: 18ch;
+  overflow: hidden;
+  padding: 2px 3px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.files__crumbs button:hover { color: var(--st-accent-text); }
+.files__slash { opacity: .45; }
+.files__split {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  grid-template-rows: minmax(92px, 42%) minmax(0, 1fr);
+}
+.files__list {
+  min-height: 0;
+  overflow: auto;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--st-line);
+}
+.files__row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--st-ink-soft);
+  font: 11px var(--st-font-mono);
+  text-align: left;
+  cursor: pointer;
+}
+.files__row:hover { background: var(--st-surface-2); color: var(--st-ink); }
+.files__row span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.files__row small { color: var(--st-ink-muted); font-size: 11px; }
+.files__row[data-selected] { background: var(--st-accent-tint); color: var(--st-accent-text); }
+.files__row--dir { color: var(--st-ink); font-weight: 600; }
+.files__chev { transform: rotate(-90deg); opacity: .5; }
+.files__viewer { min-height: 0; overflow: auto; padding: 9px; }
+.files__viewer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: var(--st-ink-muted);
+  font-size: 11px;
+}
+.files__viewer-head span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.files__text {
+  margin: 0;
+  padding: 10px;
+  background: var(--st-code-bg);
+  color: var(--st-code-ink);
+  font: 11px/1.55 var(--st-font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* --------------------------------------------------------- access points */
+.chat-toolbar__brand { flex: none; }
+.chat-toolbar__brand .brand__word { color: var(--st-accent-text); }
+.chat-workbench-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 9px;
+  border: 1px solid var(--st-line);
+  background: var(--st-surface);
+  color: var(--st-ink-muted);
+  font: 600 11px/1 var(--st-font-mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.chat-workbench-toggle:hover { border-color: var(--st-accent); color: var(--st-accent-text); }
+.nav-workbench {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+@media (max-width: 1100px) {
+  .chat-workbench-toggle { width: 30px; padding: 0; }
+  .chat-workbench-toggle span { display: none; }
+}
+/* Below 900px the lockup drops its word and keeps its mark: the N is the LED that
+   says the app is alive, and the title row has no space for "ostroma" beside the
+   controls. The mark is 22px fixed, so the row's own shrink rules (the h1
+   ellipsis and the flexible spacer) absorb it instead of overflowing. */
+@media (max-width: 900px) {
+  .chat-toolbar__brand { flex: none; }
+  .chat-toolbar__brand .brand__word { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workbench,
+  .workbench__tabs button,
+  .chat-workbench-toggle {
+    transition: none;
+  }
+}
+[data-motion='reduced'] .workbench,
+[data-motion='reduced'] .workbench__tabs button,
+[data-motion='reduced'] .chat-workbench-toggle {
+  transition: none;
+}
+
+/* ------------------------------------------------------------- the live view */
+/* Two panels, the page being worked on and what it renders, with the seam
+   between them draggable and each one foldable: a change is watched while the
+   conversation is still writing it. */
+.live-split {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+.live__panel {
+  display: flex;
+  flex: 0 0 var(--live-code, 43%);
+  flex-direction: column;
+  min-height: 0;
+}
+.live__panel--preview { flex: 1 1 auto; }
+.live-split[data-code-folded] .live__panel--code,
+.live-split[data-preview-folded] .live__panel--preview { flex: 0 0 auto; }
+.live__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  min-height: 30px;
+  padding: 0 6px 0 10px;
+  border-bottom: 1px solid var(--st-line-soft);
+  background: var(--st-surface-2);
+  color: var(--st-ink-muted);
+  font: 600 10px/1 var(--st-font-mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.live__title {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.live__fold {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: var(--st-r-sm);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.live__fold:hover { color: var(--st-ink); background: var(--st-surface); }
+.live__fold:focus-visible { outline: 2px solid var(--st-focus); outline-offset: -2px; }
+.live__fold .live__chev { rotate: 180deg; }
+.live__body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+/* The editor fills its panel now that the panel has a height of its own, and the
+   seam is the divider, so the textarea's own handle would be a second one. */
+.live__body .sandbox__code {
+  flex: 1 1 auto;
+  min-height: 0;
+  resize: none;
+  border-bottom: 0;
+}
+/* Following a project file: the page is read, not edited here — the conversation
+   is where it changes. */
+.live__source {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  background: var(--st-code-bg);
+  color: var(--st-code-ink);
+  font: 12px/1.55 var(--st-font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.live__handle {
+  position: relative;
+  flex: none;
+  height: 9px;
+  cursor: row-resize;
+  background: var(--st-line-soft);
+  touch-action: none;
+}
+.live__handle::after {
+  content: '';
+  position: absolute;
+  inset: 3px 42%;
+  border-radius: 2px;
+  background: var(--st-line);
+}
+.live__handle:hover::after,
+.live__handle:focus-visible::after { background: var(--st-accent); }
+.live__handle:focus-visible { outline: 2px solid var(--st-focus); outline-offset: -2px; }
+.live-split[data-code-folded] .live__handle,
+.live-split[data-preview-folded] .live__handle { display: none; }
+.live__follow[aria-pressed='true'] {
+  color: var(--st-accent-text);
+  border-color: var(--st-accent);
+}
