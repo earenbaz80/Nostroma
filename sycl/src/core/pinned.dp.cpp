@@ -42,10 +42,14 @@ namespace nostroma::core {
 namespace {
 
 constexpr uint64_t kSharedArenaHeaderBytes = 4096;
-constexpr char kSharedArenaMagic[16] = "NOSTROMA-ARENA-V1";
+// The shared arena header is the same bytes on every backend: src/core/pinned.cu declares an 18-byte magic, and
+// every field after it sits at the offset that follows.  [16] moved `version` from offset 20 to 16, so an arena
+// written by the CUDA engine was refused here as "incompatible or missing header" and one written here was
+// refused there.  The magic is compared with memcmp over the whole field, so it also cannot be shortened.
+constexpr char kSharedArenaMagic[18] = "NOSTROMA-ARENA-V1";
 
 struct SharedArenaHeader {
-    char magic[16];
+    char magic[18];
     uint32_t version;
     uint32_t header_bytes;
     uint64_t arena_bytes;
