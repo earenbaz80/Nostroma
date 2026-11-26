@@ -53,11 +53,6 @@ import shutil
 import struct
 import subprocess
 import sys
-
-if sys.version_info < (3, 10):      # the floor docs/MAC.md and docs/MCP_SERVER.md promise; refused here, before any import of ours
-    raise SystemExit(f"Nostroma needs Python 3.10 or newer; this is {sys.version_info.major}.{sys.version_info.minor}. "
-                     "On macOS, setup.sh downloads a pinned 3.12 for you.")
-
 import textwrap
 import threading
 import time
@@ -66,6 +61,12 @@ import urllib.parse
 import urllib.request
 import zipfile
 from pathlib import Path
+
+# The floor docs/MAC.md and docs/MCP_SERVER.md promise. Below the standard library imports and above the first import
+# of our own code: that is the last point where it can still fire on an interpreter too old to run the rest.
+if sys.version_info < (3, 10):
+    raise SystemExit(f"Nostroma needs Python 3.10 or newer; this is {sys.version_info.major}.{sys.version_info.minor}. "
+                     "On macOS, setup.sh downloads a pinned 3.12 for you.")
 
 from nostroma_control import acquisition
 from nostroma_control import tls
