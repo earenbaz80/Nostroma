@@ -54,7 +54,8 @@ if not "!HAVE!"=="!WANT!" if not "%NOSTROMA_ROCM_KEEP%"=="1" (
 for /f "delims=" %%R in ('"%ROCM_VENV%\Scripts\rocm-sdk.exe" path --root') do set "ROCM=%%R"
 if not exist "%ROCM%\lib\llvm\bin\clang++.exe" (echo ROCm has no compiler in "%ROCM%" & exit /b 1)
 set "ROCM_F=%ROCM:\=/%"
-set "BITCODE=%ROCM_F%/lib/llvm/amdgcn/bitcode"
+rem TheRock installs ROCm as a wheel tree, and its clang finds the device library by itself. HIP_PATH, ROCM_PATH
+rem and --rocm-path send it looking elsewhere (and a spaced path breaks the flag), so this script sets none of them.
 
 rem ---- 2. MSVC: the linker, the C runtime and the Windows SDK (ROCm's clang uses them)
 set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
@@ -63,8 +64,6 @@ if exist "%VSWHERE%" for /f "delims=" %%V in ('"%VSWHERE%" -latest -products * -
 if not defined VS (echo Visual Studio Build Tools with the C++ workload are needed & exit /b 1)
 call "%VS%\VC\Auxiliary\Build\vcvars64.bat" >nul || exit /b 1
 set "HIP_PLATFORM=amd"
-set "HIP_PATH=%ROCM%"
-set "ROCM_PATH=%ROCM%"
 set "PATH=%ROCM%\bin;%ROCM%\lib\llvm\bin;%PATH%"
 
 rem ---- 3. configure + build (NOSTROMA_PORTABLE: the CPU kernels for an AVX2 baseline, as in the NVIDIA zip)
@@ -76,7 +75,7 @@ if not exist "%BUILD_DIR%\build.ninja" (
     -DNOSTROMA_NATIVE_EXPERTS=ON -DNOSTROMA_PORTABLE=ON "-DCMAKE_HIP_ARCHITECTURES=%NOSTROMA_HIP_ARCHS%" ^
     "-DCMAKE_C_COMPILER=%ROCM_F%/lib/llvm/bin/clang.exe" "-DCMAKE_CXX_COMPILER=%ROCM_F%/lib/llvm/bin/clang++.exe" ^
     "-DCMAKE_HIP_COMPILER=%ROCM_F%/lib/llvm/bin/clang++.exe" "-DCMAKE_HIP_COMPILER_ROCM_ROOT=%ROCM_F%" ^
-    "-DCMAKE_PREFIX_PATH=%ROCM_F%" "-DCMAKE_HIP_FLAGS=--rocm-path=%ROCM_F% --rocm-device-lib-path=%BITCODE%" ^
+    "-DCMAKE_PREFIX_PATH=%ROCM_F%" ^
     -DNOSTROMA_MMQ=OFF %GGML% %NOSTROMA_CMAKE_EXTRA% || exit /b 1
 )
 if "%TESTS%"=="ON" (
@@ -106,10 +105,9 @@ if not "%NOSTROMA_NO_VISION%"=="1" (
   if not exist "%SRC%\build-vision-hip-win\build.ninja" (
     cmake -G Ninja -S "%SRC%\tools\vision" -B "%SRC%\build-vision-hip-win" -DCMAKE_BUILD_TYPE=Release !VLLAMA! ^
       -DNOSTROMA_VISION_HIP=ON "-DNOSTROMA_VISION_HIP_ARCHS=%NOSTROMA_VISION_HIP_ARCHS%" -DNOSTROMA_PORTABLE=ON ^
-      "-DCMAKE_CXX_FLAGS=--rocm-path=%ROCM_F% --rocm-device-lib-path=%BITCODE%" ^
       "-DCMAKE_C_COMPILER=%ROCM_F%/lib/llvm/bin/clang.exe" "-DCMAKE_CXX_COMPILER=%ROCM_F%/lib/llvm/bin/clang++.exe" ^
       "-DCMAKE_HIP_COMPILER=%ROCM_F%/lib/llvm/bin/clang++.exe" "-DCMAKE_HIP_COMPILER_ROCM_ROOT=%ROCM_F%" ^
-      "-DCMAKE_PREFIX_PATH=%ROCM_F%" "-DCMAKE_HIP_FLAGS=--rocm-path=%ROCM_F% --rocm-device-lib-path=%BITCODE%" || exit /b 1
+      "-DCMAKE_PREFIX_PATH=%ROCM_F%" || exit /b 1
   )
   cmake --build "%SRC%\build-vision-hip-win" --target nostroma-vision || exit /b 1
   set "VISION_ARGS=--vision-cpu %SRC%\build-vision-cpu-win\bin\nostroma-vision.exe --vision-hip %SRC%\build-vision-hip-win\bin\nostroma-vision-hip.exe"
