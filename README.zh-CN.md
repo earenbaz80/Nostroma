@@ -74,6 +74,11 @@ Nostroma 在你自己的电脑上运行一个大 Qwen 模型。一个模型家�
 
 安装应用、选择模型、开始聊天。安装包不含引擎：首次启动时应用会下载适合你显卡的引擎。 [安装帮助](docs/INSTALL.md#the-app)
 
+<p align="center">
+  <img src="docs/media/app-chat.png" width="900" alt="安装后的 Nostroma 应用：左侧是会话列表，中间是新会话及其最初的步骤，底部是消息输入框">
+  <br><sub>首次启动时的应用，尚未选择模型。</sub>
+</p>
+
 ### 终端应用
 
 更喜欢终端？安装 Nostroma，然后运行 **`nostroma launch`**。**`nostroma launch --plan`** 只打印它将做什么，不做任何更改。
