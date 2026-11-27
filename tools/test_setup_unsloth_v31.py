@@ -227,8 +227,9 @@ class Install(Base):
 
 
 class FitLabels(Base):
-    """0.2.13 (owner): the weight files without the lookup table against the RAM and the card's memory together: "fits" or "may run slower", in the size menu,
-    in --check and in the install's RAM warning.  The screenshot PC: a V100 32 GB with 31 GB of RAM (63 GB)."""
+    """0.2.13 (owner), with the plan's accounting since 25 November 2026 (nostroma_control/fit_label.py): the weight files without the lookup table, minus the
+    dense part, the system's room, the KV cache and the MTP drafter, against the RAM and the card's memory together: "fits" or "may run slower", in the size
+    menu, in --check and in the install's RAM warning.  The screenshot PC: a V100 32 GB with 31 GB of RAM (63 GB), where the files fit up to 47 GB."""
 
     def _line(self, out, model):
         return next(x for x in out.splitlines() if re.search(rf"\d\) {re.escape(model)} ", x))
@@ -236,15 +237,17 @@ class FitLabels(Base):
     def test_the_menu_labels_and_the_warning_follow_the_one_rule(self):
         code, out, _cfg = self.main(["--context", "8192"], ram=31.0, vram=32.0, version="0.1.57", m="UD-IQ1_M")
         self.assertEqual(code, 0, out)
-        for m in ("UD-IQ1_M", "UD-Q2_0", "UD-IQ2_XS", "UD-Q2_K_XL", "UD-IQ3_XXS", "UD-Q3_K_XL"):      # 39 to 61 GB of files (download minus the 28.8 GB table), 63 GB here
+        for m in ("UD-IQ1_M", "UD-Q2_0", "UD-IQ2_XS"):                         # 39, 42 and 47 GB of files (download minus the 28.8 GB table), 63 GB here
             self.assertTrue(self._line(out, m).endswith("   <- fits"), (m, self._line(out, m)))
+        for m in ("UD-Q2_K_XL", "UD-IQ3_XXS", "UD-Q3_K_XL"):                   # 51, 55 and 61 GB: the files hold, the plan does not
+            self.assertTrue(self._line(out, m).endswith("   <- may run slower"), (m, self._line(out, m)))
         for m in ("UD-IQ4_XS-v31", "UD-IQ4_XS", "UD-Q4_K_XL", "UD-Q5_K_XL", "UD-Q6_K_XL", "Q8_0"):         # UD-IQ4_XS-v31 is 64.9 GB
             self.assertTrue(self._line(out, m).endswith("   <- may run slower"), (m, self._line(out, m)))
         self.assertNotIn("<- needs 48 GB RAM", out)                          # the RAM-floor line is gone
         self.assertNotIn("single-digit tokens/s", out)                       # UD-IQ1_M fits: the install does not warn against it
         self.tmp.cleanup()
         self.setUp()
-        code, out, _cfg = self.main(["--context", "8192"], ram=31.0, vram=11.9, version="0.1.57", m="UD-IQ1_M")   # 43 GB: 39 GB of files fit, UD-IQ3_XXS (55) does not
+        code, out, _cfg = self.main(["--context", "8192"], ram=47.0, vram=12.0, version="0.1.57", m="UD-IQ1_M")   # 59 GB: 39 GB of files fit, UD-IQ3_XXS (55) does not
         self.assertEqual(code, 0, out)
         self.assertTrue(self._line(out, "UD-IQ1_M").endswith("   <- fits"))
         self.assertTrue(self._line(out, "UD-IQ3_XXS").endswith("   <- may run slower"))
@@ -257,8 +260,10 @@ class FitLabels(Base):
     def test_check_says_fits_or_may_run_slower(self):
         code, out, _cfg = self.main(["--check"], ram=31.0, vram=32.0, model=False, family=False)
         self.assertIn(code, (0, None), out)
-        for model in ("UD-IQ1_M", "UD-Q2_0", "UD-IQ2_XS", "UD-Q2_K_XL", "UD-IQ3_XXS", "UD-Q3_K_XL"):
+        for model in ("UD-IQ1_M", "UD-Q2_0", "UD-IQ2_XS"):
             self.assertRegex(out, rf"(?m){re.escape(model)}\s+needs ~\d+ GB of RAM \+ VRAM: fits$")
+        for model in ("UD-Q2_K_XL", "UD-IQ3_XXS", "UD-Q3_K_XL"):
+            self.assertRegex(out, rf"(?m){re.escape(model)}\s+needs ~\d+ GB of RAM \+ VRAM: may run slower$")
         self.assertRegex(out, r"(?m)UD-IQ4_XS-v31\s+needs ~65 GB of RAM \+ VRAM: may run slower$")
         for model in ("UD-IQ4_XS", "UD-Q4_K_XL", "UD-Q5_K_XL", "UD-Q6_K_XL", "Q8_0"):
             self.assertRegex(out, rf"(?m){re.escape(model)}\s+needs ~\d+ GB of RAM \+ VRAM: may run slower$")

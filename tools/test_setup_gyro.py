@@ -73,11 +73,13 @@ class GyroCatalog(unittest.TestCase):
 
     def test_mcp_table_verdict_counts_vram(self):
         s = M.Nostroma(ROOT)
-        fam = next(f for f in s.model_table(hardware(16.0, 16.0)) if f["family"] == "gyro")
+        fam = next(f for f in s.model_table(hardware(16.0, 32.0)) if f["family"] == "gyro")   # 48 GB in total: 16 of RAM, a 32 GB card
         by = {x["model"]: x for x in fam["sizes"]}
-        self.assertEqual(by["Gyro-S"]["on_this_pc"], "fits")
-        self.assertEqual(by["Gyro-M"]["on_this_pc"], "may run slower")           # 35 GB of VRAM + RAM together, this PC has 32
+        self.assertEqual(by["Gyro-S"]["on_this_pc"], "fits")                    # 27.6 GB of files, room left after the plan's dense part and the system's room
+        self.assertEqual(by["Gyro-M"]["on_this_pc"], "may run slower")          # 35 GB: the card is what decides, so the same RAM with a smaller card:
         self.assertTrue(by["Gyro-S"]["images"])
+        small = next(f for f in s.model_table(hardware(16.0, 16.0)) if f["family"] == "gyro")
+        self.assertEqual({x["model"]: x["on_this_pc"] for x in small["sizes"]}["Gyro-S"], "may run slower")
 
     def test_mcp_table_gives_ram_plus_vram_without_the_ngram_table(self):
         """The Models page shows what a version needs of RAM + VRAM together, the n-gram table (on the SSD) not counted."""

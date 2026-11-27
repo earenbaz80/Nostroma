@@ -58,7 +58,9 @@ test('short labels stay short in French (buttons, tabs, chips)', async () => {
 
 /**
  * Each string as the window draws it: the app's own stylesheet in Chromium, so the @font-face files and the --st-font
- * stack are the ones the product ships, at the 13px/600 a sidebar row, a menu item and a chip set a label in.
+ * stack are the ones the product ships, at the 13px/600 a sidebar row, a menu item and a chip set a label in.  Each
+ * language's text is loaded before it is measured: the face is split by unicode-range, so asking for 'A' leaves every
+ * non-Latin row in a fallback.
  */
 async function measureWidths(shown) {
   const root = resolve(import.meta.dirname, '..');
@@ -76,14 +78,20 @@ async function measureWidths(shown) {
     });
     await page.setContent(`<base href="http://nostroma.test/"><style>${css}</style>`);
     return await page.evaluate(async ({ shown }) => {
+      const FACE = '600 13px "IBM Plex Mono"';
       const stack = getComputedStyle(document.documentElement).getPropertyValue('--st-font').trim();
-      await document.fonts.load('600 13px "IBM Plex Mono"', 'A');
-      await document.fonts.ready;
       const ctx = document.createElement('canvas').getContext('2d');
       ctx.font = `600 13px ${stack}`;
       const widths = {};
-      for (const [lang, rows] of Object.entries(shown)) widths[lang] = rows.map((row) => ({ ...row, px: ctx.measureText(row.text).width }));
-      return { widths, loaded: document.fonts.check('600 13px "IBM Plex Mono"') };
+      for (const [lang, rows] of Object.entries(shown)) {
+        // The face ships one file per unicode-range (latin, latin-ext, cyrillic), and document.fonts.load fetches only
+        // the subsets the given text needs.  Loading 'A' fetched latin alone, so the Russian rows were measured in the
+        // fallback (203px); loading each language's own text fetches its subset and the same label measures 224px.
+        await document.fonts.load(FACE, rows.map((row) => row.text).join(' '));
+        await document.fonts.ready;
+        widths[lang] = rows.map((row) => ({ ...row, px: ctx.measureText(row.text).width }));
+      }
+      return { widths, loaded: document.fonts.check(FACE, 'A') };
     }, { shown });
   } finally {
     await browser.close();
@@ -97,13 +105,27 @@ test('a short label fits its box in every language, measured in the app\'s own f
   const english = await read('en');
   const ids = Object.keys(english).filter((id) => english[id].trim() && english[id].length <= 10 && !/\{\d+\}/.test(english[id]));
   const languages = ['en', 'de', 'fr', 'es', 'pt', 'ru', 'zh', 'ja', 'ko'];
-  // Recorded 25-11-2026 from the widest label each language ships — en "(optional)" 80, de "Aktuelle Geschwindigkeit"
-  // 192, fr "Objectif de l’installation" 208, es "Configuración sin procesar" 208, pt "De segunda a sexta-feira" 192,
-  // ru "Установлена последняя версия" 203, zh "两处都能使用。" 91, ja "セットアップを実行" 117, ko "둘 다 사용할 수
-  // 있습니다." 160 — plus about one character (8.32px in this face). Every one of them stays inside the 240px a 280px
-  // menu row leaves for its text beside the icon. A translation that needs more has to be shortened, or the ceiling
-  // raised here on purpose, after checking where that label is drawn.
-  const CEILING = { en: 88, de: 200, fr: 216, es: 216, pt: 200, ru: 211, zh: 99, ja: 125, ko: 168 };
+  // Measured 26-11-2026 with each language's own text loaded (document.fonts.load(font, text)), so the face is the one
+  // the app ships: en "(optional)" 80, de "Aktuelle Geschwindigkeit" 192, fr "Objectif de l’installation" 208, es
+  // "Configuración sin procesar" 208, pt "De segunda a sexta-feira" 192, ru "Установлена последняя версия" 224, zh
+  // "两处都能使用。" 91, ja "セットアップを実行" 117, ko "둘 다 사용할 수 있습니다." 160. Each Latin ceiling is its widest
+  // label plus one character (8.32px in this face); the CJK ceilings are set below, for the widest advance a glyph
+  // showed. Every one stays inside the 240px a 280px menu row leaves for its text beside the icon. A translation that
+  // needs more has to be shortened, or the ceiling raised here on purpose, after checking where that label is drawn.
+  //
+  // The CJK rows are not drawn in the app's face. public/fonts ships latin, latin-ext and cyrillic subsets of IBM Plex
+  // Mono and no CJK glyphs, so zh, ja and ko fall through to the fallback the machine picks and their widths are that
+  // fallback's, not IBM Plex Mono's. Loaded from each language's own text, the Cyrillic fix moved the Russian label from
+  // 203px to 224px, while zh stayed at 91px and ja at 117px: 7 and 9 glyphs at 13px, the font size. Korean moves with
+  // the face the machine picks: 160px through the app's stack, 139px through system-ui, because its syllables come out
+  // at 14px per glyph rather than 13px. 14px is the widest advance per glyph any of these measurements showed, so the
+  // three CJK ceilings are set for it rather than for the 13px face that happened to be measured: every character,
+  // spaces included, counted at 14px plus one glyph of margin. zh is 7 characters: 7*14+14 = 112. ja is 9: 9*14+14 =
+  // 140. ko is 15: 15*14+14 = 224. The old 125px ceiling cut ja as soon as its glyphs came out at 14px (9*14 = 126),
+  // with the catalog unchanged; these hold at 13px and at 14px, and still leave room inside the 240px a menu row has.
+  // A CJK fallback wider than 14px per glyph is outside what was measured and needs re-measuring here. The three
+  // ceilings catch a translation that grows; they do not certify the app face.
+  const CEILING = { en: 88, de: 200, fr: 216, es: 216, pt: 200, ru: 232, zh: 112, ja: 140, ko: 224 };
   const shown = {};
   for (const lang of languages) {
     setTranslationLanguage(lang);

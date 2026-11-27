@@ -38,6 +38,20 @@ class _NoGpu:
         return {}
 
 
+def _symlinks_work() -> bool:
+    """This machine can create a symbolic link: Windows needs Developer Mode or an elevated shell for it, and the tests
+    that link a run into place cannot say anything where the call itself fails first."""
+    with tempfile.TemporaryDirectory() as d:
+        try:
+            os.symlink(os.path.join(d, "target"), os.path.join(d, "link"))
+        except (OSError, NotImplementedError, AttributeError):
+            return False
+    return True
+
+
+SYMLINKS = unittest.skipUnless(_symlinks_work(), "this account cannot create a symbolic link (Windows: Developer Mode or an elevated shell)")
+
+
 class BenchTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -137,6 +151,7 @@ class BenchTests(unittest.TestCase):
             with benchmarking.benchmark_lease("local"):
                 self.assertEqual(benchmarking.benchmark_activity("local", output), "untracked")
 
+    @SYMLINKS
     def test_operator_cancel_stops_live_stream_and_saves_distinct_evidence(self):
         output = self.root / "operator-stopped"
         self.service.engine.delay = 0.15

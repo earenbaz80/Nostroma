@@ -34,6 +34,20 @@ commit = BUILDER_MODULE.commit
 verify = BUILDER_MODULE.verify
 
 
+def _symlinks_work() -> bool:
+    """This machine can create a symbolic link: Windows needs Developer Mode or an elevated shell for it, and this test
+    makes a linked bundle on purpose."""
+    with tempfile.TemporaryDirectory() as d:
+        try:
+            os.symlink(os.path.join(d, "target"), os.path.join(d, "link"))
+        except (OSError, NotImplementedError, AttributeError):
+            return False
+    return True
+
+
+SYMLINKS = unittest.skipUnless(_symlinks_work(), "this account cannot create a symbolic link (Windows: Developer Mode or an elevated shell)")
+
+
 class MonitorBundleTests(unittest.TestCase):
     @staticmethod
     def _candidate(source: Path, destination: Path) -> Path:
@@ -258,6 +272,7 @@ class MonitorBundleTests(unittest.TestCase):
             self.assertFalse(target.exists())
             self.assertFalse(list(root.glob(".nostroma-monitor-install-*")))
 
+    @SYMLINKS
     def test_bundle_verification_rejects_large_or_linked_input(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -21,7 +21,7 @@ LIMIT = longpath.PLAIN_LIMIT
 USER = "u" * 20
 COMPONENTS = PureWindowsPath(rf"C:\Users\{USER}\AppData\Local\Nostroma\components")      # what components_dir() gives on Windows
 LEGACY_STAGE = COMPONENTS / ".updates" / "staging" / ("0123456789ab")                    # what 0.2.1 used
-NEW_STAGE = COMPONENTS / updater.STAGE_DIR / "0123"
+NEW_STAGE = COMPONENTS / updater.STAGE_DIR / "01"
 WINDOWS = os.name == "nt"
 
 
@@ -49,7 +49,7 @@ class PathArithmetic(unittest.TestCase):
             n = len(str(COMPONENTS / "engine" / e["folder"] / longest(e)))
             self.assertLessEqual(n, LIMIT, f"{e['folder']}: installed path is {n} characters")
         for c in DATA["control"]:
-            for base in (COMPONENTS / "control" / c["version"], COMPONENTS / updater.STAGE_DIR / "c0123"):
+            for base in (COMPONENTS / "control" / c["version"], COMPONENTS / updater.STAGE_DIR / "c01"):
                 n = len(str(base / longest(c)))
                 self.assertLessEqual(n, LIMIT, f"control {c['version']}: path is {n} characters")
 
@@ -165,7 +165,7 @@ class StagingFolder(unittest.TestCase):
             stale.mkdir(parents=True)
             stage = updater.new_stage(root)
             self.assertEqual(stage.parent, root / updater.STAGE_DIR)
-            self.assertEqual(len(stage.name), 4)
+            self.assertEqual(len(stage.name), 2)
             self.assertFalse(old.exists() or stale.exists())
             self.assertTrue(updater.new_stage(root, "c").name.startswith("c"))
 
