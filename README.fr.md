@@ -74,6 +74,11 @@ Deux modèles, un seul moteur. Tous deux sont Qwen, et le premier est celui dont
 
 Installez l'app, choisissez un modèle, discutez. L'installateur n'embarque pas de moteur : au premier démarrage, l'app télécharge celui de votre carte graphique. [Aide pour l'installateur](docs/INSTALL.md#the-app)
 
+<p align="center">
+  <img src="docs/media/app-chat.png" width="900" alt="L'application Nostroma après l'installation : la liste des conversations à gauche, une nouvelle conversation avec ses premières étapes au centre, la zone de message en bas">
+  <br><sub>L'application au premier démarrage, avant de choisir un modèle.</sub>
+</p>
+
 ### Application Terminal
 
 Vous préférez un terminal ? Installez Nostroma, puis lancez **`nostroma launch`**. **`nostroma launch --plan`** affiche ce qu'il ferait et ne change rien.

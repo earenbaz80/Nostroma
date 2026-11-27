@@ -74,6 +74,11 @@ Dos modelos, un motor. Los dos son Qwen, y el primero es el de esta página.
 
 Instala la app, elige un modelo y empieza a chatear. El instalador no trae motor: en el primer arranque la app descarga el de tu tarjeta gráfica. [Ayuda con el instalador](docs/INSTALL.md#the-app)
 
+<p align="center">
+  <img src="docs/media/app-chat.png" width="900" alt="La app de Nostroma después de instalar: la lista de chats a la izquierda, una conversación nueva con sus primeros pasos en el medio y el cuadro de mensaje abajo">
+  <br><sub>La app en el primer arranque, antes de elegir un modelo.</sub>
+</p>
+
 ### Aplicación de Terminal
 
 ¿Prefieres una terminal? Instala Nostroma y ejecuta **`nostroma launch`**. **`nostroma launch --plan`** muestra lo que haría y no cambia nada.

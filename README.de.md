@@ -74,6 +74,11 @@ Zwei Modelle, eine Engine. Beide sind Qwen, und das erste ist das, um das es auf
 
 Installiere die App, wähle ein Modell und leg mit dem Chat los. Der Installer bringt keine Engine mit: beim ersten Start lädt die App die passende für deine Grafikkarte. [Hilfe zum Installer](docs/INSTALL.md#the-app)
 
+<p align="center">
+  <img src="docs/media/app-chat.png" width="900" alt="Die Nostroma-App nach der Installation: links die Chatliste, in der Mitte eine neue Unterhaltung mit ihren ersten Schritten, unten das Eingabefeld">
+  <br><sub>Die App beim ersten Start, bevor ein Modell gewählt ist.</sub>
+</p>
+
 ### Terminal-App
 
 Lieber ein Terminal? Installiere Nostroma und führe **`nostroma launch`** aus. **`nostroma launch --plan`** zeigt, was es tun würde, und ändert nichts.
