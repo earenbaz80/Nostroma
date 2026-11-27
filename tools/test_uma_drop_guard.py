@@ -38,7 +38,10 @@ class UmaDropGuard(unittest.TestCase):
 
     def test_call_and_line_inside_the_guard(self):
         first, last = guarded_span(self.lines)
-        for needle in ("drop_cached_pages(", "holds every expert, so the", "getenv(\"NOSTROMA_UMA_DROP_PAGES\")"):
+        # the engine reads the variable through its own env() (nostroma::env), never through std::getenv, so the call is
+        # `env("NOSTROMA_UMA_DROP_PAGES")`. That needle also matches a `std::getenv("NOSTROMA_UMA_DROP_PAGES")` if one
+        # ever comes back, because "getenv(\"" ends in "env(\"".
+        for needle in ("drop_cached_pages(", "holds every expert, so the", "env(\"NOSTROMA_UMA_DROP_PAGES\")"):
             at = [i for i, l in enumerate(self.lines) if needle in l]
             self.assertTrue(at, needle)
             for i in at:

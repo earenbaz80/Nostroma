@@ -23,6 +23,11 @@ import setup_mac as M  # noqa: E402
 
 def fake_run(values: dict, clt_rc=0):
     def run(cmd, **kw):
+        # Windows before 3.13: platform.machine() goes through win32_ver() and _syscmd_ver(), which runs `ver`
+        # through the shell. 3.13 rewrote win32_ver and no longer does. This test asks the Mac code, not the
+        # platform probe, so answer it instead of failing on a command nothing here wanted.
+        if cmd == "ver" or (isinstance(cmd, (list, tuple)) and list(cmd)[:3] == ["cmd", "/c", "ver"]):
+            return subprocess.CompletedProcess(cmd, 0, "Microsoft Windows [Version 10.0.19045.3086]", "")
         if cmd[0] == "sysctl":
             return subprocess.CompletedProcess(cmd, 0, values.get(cmd[2], ""), "")
         if cmd[0] == "sw_vers":
