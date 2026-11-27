@@ -264,15 +264,13 @@ def list_runs(profile: str, *, limit: int = 20) -> list[dict]:
         return []
     # Newest write first, and a tie on the file time broken by the start time and then the ID: Windows rounds a
     # record's mtime to its cached clock tick, so two runs written within one tick share it, and the ID alone is random.
-    # The records sharing the last kept file time are read too, so a tie at the limit is ordered, not cut at random.
+    # Records sharing the file time of the last kept one are read too, so a tie at the limit is ordered, not cut.
     entries = sorted(((path.lstat().st_mtime, path) for path in directory.glob("*.json") if ID.fullmatch(path.stem)),
                      key=lambda entry: entry[0], reverse=True)
-    selected = entries[:limit]
-    if selected:
-        cutoff = selected[-1][0]
-        selected += [entry for entry in entries[limit:] if entry[0] == cutoff]
     rows = []
-    for mtime, path in selected:
+    for mtime, path in entries:
+        if len(rows) >= limit and mtime != rows[-1][0][0]:
+            break
         try:
             record = _load_file(path, profile)
             rows.append(((mtime, record["started_at"], record["operation_id"]),
