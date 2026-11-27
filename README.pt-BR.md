@@ -102,11 +102,6 @@ Siga as instruções para baixar e iniciar um modelo. [Guia do Terminal](docs/TE
 
 </details>
 
-<p align="center">
-  <img src="docs/media/terminal-monitor.png" width="900" alt="Aplicativo de Terminal do Nostroma mostrando a atividade do modelo, a velocidade, a memória e as solicitações recentes">
-  <br><sub>Acompanhe seu modelo e seu hardware enquanto ele roda.</sub>
-</p>
-
 <a id="build-from-source"></a>
 
 [Compilar a partir do código-fonte](docs/SOURCE_INSTALL.md) · [Docker](docs/DOCKER.md) · [Guia de instalação completo](docs/INSTALL.md)

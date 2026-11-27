@@ -34,7 +34,6 @@ establish a current default model or universal performance.
 | Logo, light background | [nostroma-lockup-light.svg](../apps/host/public/brand/nostroma-lockup-light.svg) | Nostroma |
 | Logo, dark background | [nostroma-lockup-dark.svg](../apps/host/public/brand/nostroma-lockup-dark.svg) | Nostroma |
 | Desktop app | [app-chat.png](media/app-chat.png) | Chat, files and a live preview in one window. The capture shows a Gyro model; do not relabel it as an ISTA run. |
-| Terminal app | [terminal-monitor.png](media/terminal-monitor.png) | Model activity and hardware use. The capture shows a Gyro-S session; its live counters are not a standardized benchmark. |
 | Coding demo thumbnail | [pagoda-preview.webp](media/pagoda-preview.webp) | A voxel garden generated locally. |
 | Coding demo video | [Pagoda.mp4](https://github.com/earenbaz80/Nostroma/releases/download/v0.1.10/Pagoda.mp4) | Existing 49-second demo, documented with an RTX 5070, IQ3_S and 128K context. Keep it separate from the GUI and TUI screenshots. |
 | Engine explanation | [how-it-works.svg](media/how-it-works.svg), [guess-and-check.svg](media/guess-and-check.svg) | Illustrations of the documented Flash-Next engine path, not proof that every model uses the same path. |

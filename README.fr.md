@@ -102,11 +102,6 @@ Suivez les invites pour télécharger et démarrer un modèle. [Guide du Termina
 
 </details>
 
-<p align="center">
-  <img src="docs/media/terminal-monitor.png" width="900" alt="Application Terminal de Nostroma affichant l'activité du modèle, la vitesse, la mémoire et les requêtes récentes">
-  <br><sub>Suivez votre modèle et votre matériel pendant qu'il tourne.</sub>
-</p>
-
 <a id="build-from-source"></a>
 
 [Compiler depuis les sources](docs/SOURCE_INSTALL.md) · [Docker](docs/DOCKER.md) · [Guide d'installation complet](docs/INSTALL.md)

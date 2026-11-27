@@ -102,11 +102,6 @@ Folge den Anweisungen, um ein Modell herunterzuladen und zu starten. [Terminal-A
 
 </details>
 
-<p align="center">
-  <img src="docs/media/terminal-monitor.png" width="900" alt="Nostroma-Terminal-App mit Modellaktivität, Tempo, Speicher und letzten Anfragen">
-  <br><sub>Behalte Modell und Hardware im Blick, während es läuft.</sub>
-</p>
-
 <a id="build-from-source"></a>
 
 [Aus dem Quellcode bauen](docs/SOURCE_INSTALL.md) · [Docker](docs/DOCKER.md) · [Vollständige Installationsanleitung](docs/INSTALL.md)

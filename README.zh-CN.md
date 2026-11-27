@@ -102,11 +102,6 @@ nostroma launch
 
 </details>
 
-<p align="center">
-  <img src="docs/media/terminal-monitor.png" width="900" alt="Nostroma 终端应用，显示模型活动、速度、内存和最近的请求">
-  <br><sub>模型运行时，随时查看模型和硬件状态。</sub>
-</p>
-
 <a id="build-from-source"></a>
 
 [从源码构建](docs/SOURCE_INSTALL.md) · [Docker](docs/DOCKER.md) · [完整安装指南](docs/INSTALL.md)
