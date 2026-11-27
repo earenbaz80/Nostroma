@@ -74,6 +74,11 @@ Dwa modele, jeden silnik. Oba to Qwen, a pierwszy jest bohaterem tej strony.
 
 Zainstaluj aplikację, wybierz model i zacznij rozmawiać. Instalator nie zawiera silnika: przy pierwszym starcie aplikacja pobiera ten dla Twojej karty graficznej. [Pomoc z instalatorem](docs/INSTALL.md#the-app)
 
+<p align="center">
+  <img src="docs/media/app-chat.png" width="900" alt="Aplikacja Nostroma po instalacji: lista rozmów po lewej, nowa rozmowa z pierwszymi krokami pośrodku i pole wiadomości na dole">
+  <br><sub>Aplikacja przy pierwszym uruchomieniu, przed wybraniem modelu.</sub>
+</p>
+
 ### Aplikacja terminalowa
 
 Wolisz terminal? Zainstaluj Nostromę i uruchom **`nostroma launch`**. **`nostroma launch --plan`** pokazuje, co by zrobił, i niczego nie zmienia.
