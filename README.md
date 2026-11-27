@@ -103,11 +103,6 @@ Follow the prompts to download and start a model. [Terminal guide](docs/TERMINAL
 
 </details>
 
-<p align="center">
-  <img src="docs/media/terminal-monitor.png" width="900" alt="Nostroma terminal app showing model activity, speed, memory and recent requests">
-  <br><sub>Watch your model and hardware while it runs.</sub>
-</p>
-
 <a id="build-from-source"></a>
 
 [Build from source](docs/SOURCE_INSTALL.md) · [Docker](docs/DOCKER.md) · [Full install guide](docs/INSTALL.md)

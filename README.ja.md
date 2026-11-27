@@ -102,11 +102,6 @@ nostroma launch
 
 </details>
 
-<p align="center">
-  <img src="docs/media/terminal-monitor.png" width="900" alt="モデルの動作、速度、メモリ、最近のリクエストを表示する Nostroma ターミナルアプリ">
-  <br><sub>動作中のモデルとハードウェアの状態を確認できます。</sub>
-</p>
-
 <a id="build-from-source"></a>
 
 [ソースからビルド](docs/SOURCE_INSTALL.md) · [Docker](docs/DOCKER.md) · [インストールガイド（全文）](docs/INSTALL.md)
