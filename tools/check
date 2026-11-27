@@ -514,7 +514,19 @@ def table(results):
     return "\n".join(out)
 
 
+def safe_console():
+    """A Windows console is not UTF-8 before 3.15, and this script reprints other programs' logs: tail() decodes
+    them with errors="replace", so one bad byte becomes U+FFFD, which cp1252 cannot encode, and the report would
+    die with UnicodeEncodeError exactly when it has a failure to show."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")
+        except (AttributeError, ValueError):   # not a TextIOWrapper, or already closed
+            pass
+
+
 def main(argv=None):
+    safe_console()
     ap = argparse.ArgumentParser(description="Nostroma fast checks (see the top of this file)")
     ap.add_argument("--only", help="comma list of steps")
     ap.add_argument("--skip", help="comma list of steps to leave out")

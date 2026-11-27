@@ -515,7 +515,18 @@ def extract(gguf_path, out_dir) -> dict:
     return cfg
 
 
+def safe_console() -> None:
+    """Una consola de Windows no es UTF-8 antes de 3.15: el corpus tiene CJK, árabe y emoji, y `%r` los imprime
+    tal cual, así que un round-trip fallido mataba el informe con UnicodeEncodeError en vez de contarlo."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")
+        except (AttributeError, ValueError):   # no es un TextIOWrapper, o ya está cerrado
+            pass
+
+
 def main() -> int:
+    safe_console()
     import argparse
     ap = argparse.ArgumentParser()
     ap.add_argument("--gguf", required=True)

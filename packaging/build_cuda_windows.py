@@ -147,7 +147,20 @@ def run(cmd: list[str], env: dict) -> None:
         fail("failed: " + cmd[0] + " " + " ".join(cmd[1:3]))
 
 
+def safe_console() -> None:
+    """A Windows console is not UTF-8 before 3.15, so stdout encodes with cp1252 and fails on any other character.
+    This build prints the cmake command line and the paths it works in, which carry whatever the user's folder is
+    called: a name outside cp1252 ended the build with UnicodeEncodeError instead of building. stderr needs no
+    help (Python gives it errors="backslashreplace" by default), but the same guard there keeps both consistent."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")
+        except (AttributeError, ValueError):   # not a TextIOWrapper, or already closed
+            pass
+
+
 def main(argv: list[str]) -> int:
+    safe_console()
     if len(argv) != 1 or argv[0] not in VARIANTS:
         print(__doc__)
         return 2

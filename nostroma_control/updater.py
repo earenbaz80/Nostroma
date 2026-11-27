@@ -48,7 +48,7 @@ from nostroma_control.targets import host_platform
 from nostroma_control import atomic as _atomic_mod
 
 STATE_DIR = ".updates"
-STAGE_DIR = ".s"                 # staging is short on purpose: <components>\.s\<4 hex>\engine\<folder> (see longpath.py)
+STAGE_DIR = ".s"                 # staging is short on purpose: <components>\.s\<2 hex>\engine\<folder> (see longpath.py)
 SKEW_FREE_BYTES = 1.15
 
 
@@ -750,14 +750,17 @@ def _last_check(ctx: Context, report: dict, control_version: str | None = None) 
 
 
 def new_stage(root: Path, prefix: str = "") -> Path:
-    r"""A fresh, short staging folder: ``<components>\.s\<4 hex>``. Old leftovers (a crashed update; the update lock is held, so
-    nothing else uses them) are swept first, along with the longer folder older versions used."""
+    r"""A fresh, short staging folder: ``<components>\.s\<2 hex>``. Old leftovers (a crashed update; the update lock is held, so
+    nothing else uses them) are swept first, along with the longer folder older versions used. Two hex characters, not four: the
+    worst Windows package (tests/terminal/data/windows_package_paths.json, a 149-character hip file) sums 259 characters with
+    four and stops at the limit, and the `engine` level below the id cannot go (the test start runs the engine as
+    ``<components>\engine\<folder>``)."""
     base = root / STAGE_DIR
     for old in [base, updates_dir(root) / "staging"]:
         if old.exists():
             shutil.rmtree(longpath.long_path(old), ignore_errors=True)
     while True:
-        stage = base / (prefix + uuid.uuid4().hex[:4])
+        stage = base / (prefix + uuid.uuid4().hex[:2])
         if not stage.exists():
             return stage
 
