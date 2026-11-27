@@ -656,7 +656,11 @@ class CalibrationFlowTests(unittest.TestCase):
                              str(report_path), "--exclusive", "--output", "json"])
         self.assertEqual(code, 6)
         self.assertFalse(json.loads(output.getvalue())["ok"])
-        record = journal.load("local", journal.list_runs("local")[0]["operation_id"])
+        # By kind, not by position: the measure and the apply records can share one Windows clock tick, so the first
+        # entry in list_runs is not necessarily the apply that just failed.
+        applied = [row for row in journal.list_runs("local") if row["kind"] == "engine.calibrate.apply"]
+        self.assertEqual(len(applied), 1)
+        record = journal.load("local", applied[0]["operation_id"])
         self.assertEqual((record["kind"], record["state"]), ("engine.calibrate.apply", "failed"))
         self.assertNotIn("private engine trace", json.dumps(record))
 

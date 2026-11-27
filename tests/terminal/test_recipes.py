@@ -298,6 +298,38 @@ class RecipeTests(unittest.TestCase):
             self.assertTrue(journal.load("local", first["operation_id"])["completion_unverified"])
             self.assertEqual(journal.load("local", second["operation_id"])["state"], "running")
 
+    def test_list_runs_orders_two_records_written_in_one_clock_tick(self):
+        recipes.initialize("local")
+        revision = profiles.load("local")[1]
+        older = journal.begin("local", "check", "components.verify", "0" * 16, revision)
+        newer = journal.begin("local", "check", "components.verify", "0" * 16, revision)
+        directory = profiles.profile_dir() / ".ops" / "local" / ".runs"
+
+        def rewrite(record, started_at):
+            path = directory / f"{record['operation_id']}.json"
+            data = json.loads(path.read_text(encoding="utf-8"))
+            data["started_at"] = started_at
+            path.write_text(json.dumps(data, sort_keys=True, indent=2, ensure_ascii=False), encoding="utf-8")
+
+        def same_file_time():
+            # What a cached Windows clock does: both records land on one mtime tick.
+            stamp = (directory / f"{older['operation_id']}.json").stat().st_mtime_ns
+            for path in directory.glob("*.json"):
+                os.utime(path, ns=(stamp, stamp))
+
+        rewrite(older, 100.0)
+        rewrite(newer, 200.0)
+        same_file_time()
+        self.assertEqual([row["operation_id"] for row in journal.list_runs("local")],
+                         [newer["operation_id"], older["operation_id"]])
+        rewrite(older, 100.0)
+        rewrite(newer, 100.0)
+        same_file_time()
+        # Same file time and same start time: the ID decides, and it decides the same way on every call.
+        expected = sorted([older["operation_id"], newer["operation_id"]], reverse=True)
+        self.assertEqual([row["operation_id"] for row in journal.list_runs("local")], expected)
+        self.assertEqual([row["operation_id"] for row in journal.list_runs("local")], expected)
+
     def test_invalid_journal_event_is_reported_without_rendering_record_content(self):
         recipes.initialize("local")
         operation_id = self._cli("run", "check")[1]["operation"]["operation_id"]
