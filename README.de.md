@@ -5,13 +5,12 @@
   </picture>
 </p>
 
-<h3 align="center">Leistungsstarke KI auf deinem eigenen Computer.</h3>
-<p align="center">Chatten, programmieren und mit Bildern arbeiten, lokal.</p>
+<h3 align="center">Qwen3.8-Flash-Next auf einer Grafikkarte, die du schon hast.</h3>
+<p align="center">Ein Mixture-of-Experts-Modell, dessen Gewichte 37,6 GB brauchen — für die App und für deine Coding-Tools.</p>
 
 <p align="center">
-  <a href="#modelle">Modelle</a> · <a href="#installation"><b>Installation</b></a> ·
-  <a href="#hardware">Hardware</a> · <a href="#tools">Tools</a> ·
-  <a href="#hilfe">Hilfe</a>
+  <a href="#what-it-is">Was es ist</a> · <a href="#models">Modelle</a> · <a href="#install"><b>Installation</b></a> ·
+  <a href="#hardware">Hardware</a> · <a href="#after-it-starts">Nach dem Start</a> · <a href="#help">Hilfe</a>
 </p>
 
 <p align="center">
@@ -21,64 +20,63 @@
 
 <p align="center"><sub><a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.ja.md">日本語</a> · <b>Deutsch</b> · <a href="README.fr.md">Français</a> · <a href="README.es.md">Español</a> · <a href="README.pt-BR.md">Português</a> · <a href="README.pl.md">Polski</a></sub></p>
 
-**Kostenlos, Open Source und ganz in deiner Hand.** Nutze Nostroma auf dem Desktop oder mit deinen liebsten Coding-Tools. Kein Konto nötig.
+<a id="what-it-is"></a>
+
+## Was es ist
+
+Nostroma betreibt ein großes Qwen-Modell auf deinem eigenen Computer. Eine Modellfamilie, eine eigens dafür gebaute Engine und drei Wege, sie zu nutzen: die App, das Terminal und eine API. MIT-Lizenz, kein Konto, keine Abrechnung pro Token. Es antwortet auf `127.0.0.1`, solange du nicht mehr verlangst.
+
+| Teil | Was du bekommst |
+| --- | --- |
+| **Die App** | Ein Fenster mit dem Chat, deinen Dateien und einer Live-Vorschau nebeneinander. Ein Installer pro System, kein Terminal. |
+| **Das Terminal** | Der Befehl `nostroma`: er installiert ein Modell, stellt es bereit und überwacht es. Skripte und Agenten nutzen diesen Teil. |
+| **Die Engine** | CUDA-, HIP-, SYCL- und Metal-Builds der Modell-Engine und ein Server, der die OpenAI- und die Anthropic-API spricht. |
+
+Das Modell ist ein Mixture of Experts: an einem Token arbeiten nur wenige Experten. Die Engine hält die gerade genutzten Experten im Speicher und liest den Rest von der Platte, deshalb läuft eine Gewichtsmenge von 37,6 GB auf einer Karte. App und Server antworten von derselben Maschine.
+
+<a id="models"></a>
 
 ## Modelle
 
-Wir empfehlen **zuerst ISTA-DASLab**, danach **Unsloth** und andere Anbieter, soweit ein passendes Modell in deinen Speicher passt.
+Zwei Modelle, eine Engine. Beide sind Qwen, und das erste ist das, um das es auf dieser Seite geht.
 
-<details>
-<summary><img src="docs/media/models/qwen.svg" width="22" alt="" align="middle"> &nbsp;<b>Qwen3.8-Flash-Next</b></summary>
+<img src="docs/media/models/qwen.svg" width="22" alt="" align="middle"> &nbsp;**Qwen3.8-Flash-Next** ist das wichtigste. Die Zahlen sind die Gewichte in RAM plus VRAM; lass Speicher für das System und andere Programme frei.
+
+| Größe | RAM + VRAM | Tempo | Qualität |
+| --- | ---: | --- | --- |
+| Q2_0 | 37.6 GB | am schnellsten | gut |
+| IQ2_XS | 39.2 GB | schnell | besser |
+| IQ3_XXS | 47.0 GB | langsamer | sehr gut |
+| IQ3_S | 54.8 GB | am langsamsten | am besten; in den veröffentlichten Tests gleichauf mit dem vollen Modell |
+
+**Wer die Dateien veröffentlicht.** Zuerst ISTA-DASLab, dann Unsloth, dann die anderen. Bei wenig Speicher kann die Einrichtung eine andere Größe vorschlagen; lies den Plan, bevor du zustimmst.
 
 | Anbieter | Auswahl |
 | --- | --- |
-| **ISTA-DASLab · empfohlen** | Q2\_0, IQ2\_XS, IQ3\_XXS, IQ3\_S. [Coder: IQ1\_M](docs/MODELS.md#coder) zum Programmieren. |
-| **Unsloth** | UD-IQ4\_XS, UD-Q4\_K\_XL, UD-Q5\_K\_XL, UD-Q6\_K\_XL, Q8\_0 |
-| **Gyro · agentionai** | [Gyro-S, Gyro-M](https://huggingface.co/agentionai/Qwen3.8-Flash-Next-Gyro-GGUF). Geringerer Speicherbedarf, aber langsamer. |
+| **ISTA-DASLab · empfohlen** | Q2_0, IQ2_XS, IQ3_XXS, IQ3_S. [Coder: IQ1_M](docs/MODELS.md#coder), rund 32 GB, zum Programmieren. |
+| **Unsloth** | UD-IQ4_XS, UD-Q4_K_XL, UD-Q5_K_XL, UD-Q6_K_XL, Q8_0; 72 bis 136 GB, wenn alle Experten im RAM liegen. |
+| **Gyro · agentionai** | [Gyro-S, Gyro-M](https://huggingface.co/agentionai/Qwen3.8-Flash-Next-Gyro-GGUF). Braucht weniger Speicher und ist langsamer. |
 | **Weitere Optionen** | [Swift 1.5](docs/MODELS.md#swift-15), [NVFP4](docs/NVFP4.md), [OrcaRouter](docs/ORCA.md) |
 
-[Größen, Speicherbedarf und Kompatibilität vergleichen](docs/MODELS.md).
+[Größen, Speicherbedarf und Kompatibilität vergleichen](docs/MODELS.md) · [Nach Speicher wählen](docs/MODELS.md#pick-by-memory)
 
-</details>
+<img src="docs/media/models/qwen.svg" width="22" alt="" align="middle"> &nbsp;**Qwen3.6-35B-A3B** gibt es als UD-Q4_K_XL, UD-Q6_K_XL und Q8_0 von Unsloth, die dokumentierten Pakete für dieses Modell. [Modell-Leitfaden](docs/QWEN36.md).
 
-<details>
-<summary><img src="docs/media/models/qwen.svg" width="22" alt="" align="middle"> &nbsp;<b>Qwen3.6-35B-A3B</b></summary>
-
-**Unsloth:** UD-Q4_K_XL, UD-Q6_K_XL, Q8_0. Das sind die derzeit dokumentierten Pakete für dieses Modell.
-
-[Modellanleitung und Kompatibilität](docs/QWEN36.md).
-
-</details>
-
-<a id="the-other-sizes"></a>
-
-Unsicher, was passt? [Wähle ein Modell für deinen Computer](docs/MODELS.md#pick-by-memory).
+<a id="install"></a>
 
 ## Installation
-
-<a id="option-a-the-nostroma-app"></a>
 
 ### Desktop-App
 
 **[Nostroma für Windows oder Linux herunterladen →](https://github.com/earenbaz80/Nostroma/releases/latest)**
 
-Installiere die App, wähle ein Modell und leg mit dem Chat los. Es gibt einen Installer pro System. Beim ersten Start lädt die App die Engine für deine Grafikkarte herunter. [Hilfe zum Installer](docs/INSTALL.md#the-app).
+<sub>`Nostroma-0.2.16-windows-x64-setup.exe` · `Nostroma-0.2.16-linux-x86_64.AppImage`</sub>
 
-<sub>Dateien: `Nostroma-0.2.16-windows-x64-setup.exe` · `Nostroma-0.2.16-linux-x86_64.AppImage`</sub>
-
-<p align="center">
-  <img src="docs/media/app-chat.png" width="900" alt="Nostroma-Desktop-App mit Chat und Live-Codevorschau nebeneinander">
-  <br><sub>Chat, Dateien und Live-Vorschau in einem Fenster.</sub>
-</p>
-
-<a id="option-b-the-terminal-one-line"></a>
+Installiere die App, wähle ein Modell und leg mit dem Chat los. Der Installer bringt keine Engine mit: beim ersten Start lädt die App die passende für deine Grafikkarte. [Hilfe zum Installer](docs/INSTALL.md#the-app)
 
 ### Terminal-App
 
-Lieber im Terminal? Installiere Nostroma und starte dann **`nostroma launch`**.
-
-<details open>
-<summary><b>Installationsbefehle</b></summary>
+Lieber ein Terminal? Installiere Nostroma und führe **`nostroma launch`** aus. **`nostroma launch --plan`** zeigt, was es tun würde, und ändert nichts.
 
 **Linux**
 
@@ -86,63 +84,64 @@ Lieber im Terminal? Installiere Nostroma und starte dann **`nostroma launch`**.
 curl -fsSL --connect-timeout 15 --max-time 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.sh -o install.sh && sh install.sh
 ```
 
-**Windows PowerShell**
+**Windows PowerShell (danach ein neues Terminal öffnen)**
 
 ```powershell
 irm -TimeoutSec 120 https://github.com/earenbaz80/Nostroma/releases/latest/download/install.ps1 | iex
 ```
 
-Öffne unter Windows danach ein neues Terminal. Dann:
-
 ```sh
 nostroma launch
 ```
 
-Folge den Anweisungen, um ein Modell herunterzuladen und zu starten. [Terminal-Anleitung](docs/TERMINAL_LAUNCH.md).
-
-</details>
-
-<p align="center">
-  <img src="docs/media/terminal-monitor.png" width="900" alt="Nostroma-Terminal-App mit Modellaktivität, Tempo, Speicher und letzten Anfragen">
-  <br><sub>Behalte Modell und Hardware im Blick, während es läuft.</sub>
-</p>
-
-<a id="build-from-source"></a>
+Folge den Hinweisen, um ein Modell herunterzuladen und zu starten. Mit **`--yes --no-tui`** fragt es nichts, startet den Server, druckt die Adresse und kehrt zurück. [Terminal-Leitfaden](docs/TERMINAL_LAUNCH.md)
 
 [Aus dem Quellcode bauen](docs/SOURCE_INSTALL.md) · [Docker](docs/DOCKER.md) · [Vollständige Installationsanleitung](docs/INSTALL.md)
 
 <a id="what-you-need"></a>
+<a id="hardware"></a>
 
 ## Hardware
 
-| Unterstützte Hardware | Anleitung |
+Der Installer lädt die Engine für die Karte, die er findet. Jeder Leitfaden sagt, was dieser Backend braucht.
+
+| Unterstützte Hardware | Leitfaden |
 | --- | --- |
-| **NVIDIA GeForce RTX 20 / 30 / 40 / 50** | [NVIDIA-Setup](docs/INSTALL.md#what-you-need) |
-| **AMD Radeon RX 7700 / 7800 / 7900, RX 9060 / 9070, AI PRO R9700** | [AMD-Setup](docs/AMD_HIP.md) |
-| **AMD Radeon RX 6800 / 6900 · experimentell** | [RX-6000-Setup](docs/AMD_HIP.md#rdna2-gfx1030) |
-| **Intel Arc · Linux** | [Intel-Setup](docs/INTEL_ARC.md) |
-| **AMD Ryzen AI Max · Strix Halo** | [Strix-Halo-Setup](docs/STRIX_HALO.md) |
+| **NVIDIA GeForce RTX 20 / 30 / 40 / 50 Serie** | [NVIDIA-Setup](docs/INSTALL.md#what-you-need) |
+| **AMD Radeon RX 7700 / 7800 / 7900, RX 9060 / 9070, AI PRO R9700** | [AMD-Setup](docs/AMD_HIP.md) |
+| **AMD Radeon RX 6800 / 6900 · experimentell** | [RX-6000-Setup](docs/AMD_HIP.md#rdna2-gfx1030) |
+| **Intel Arc · Linux** | [Intel-Setup](docs/INTEL_ARC.md) |
+| **AMD Ryzen AI Max · Strix Halo** | [Strix-Halo-Setup](docs/STRIX_HALO.md) |
+| **NVIDIA DGX Spark · Linux** | [DGX-Spark-Setup](docs/DGX_SPARK_LINUX.md) |
+
+<a id="after-it-starts"></a>
+
+## Nach dem Start
+
+Der Server antwortet auf `http://127.0.0.1:8080/v1` mit der OpenAI- und der Anthropic-API; ein Programm, das du schon nutzt, kann mit beliebigem API-Schlüssel darauf zeigen.
+
+- **`nostroma launch --status`** sagt, was gerade dient.
+- **`nostroma launch --stop`** stoppt, was `launch` gestartet hat.
+- **`nostroma launch --show-key`** druckt den API-Schlüssel, wenn einer erzeugt wurde.
+- **`nostroma launch --vision on`** lässt das Modell Bilder lesen, auf der Grafikkarte oder auf der CPU.
 
 <a id="using-it"></a>
 
 ## Tools
 
-**Claude Code · Codex CLI · OpenCode · oh-my-pi · pi.dev · Hermes Agent · OpenClaw**, und weitere über die OpenAI- und Anthropic-kompatiblen APIs.
+**Claude Code · Codex CLI · OpenCode · oh-my-pi · pi.dev · Hermes Agent · OpenClaw** und jedes andere Programm, das die OpenAI- oder die Anthropic-API spricht.
 
-Führe **`nostroma connect`** aus, um die Einrichtung für dein Tool zu sehen. [Verbindungsanleitung](docs/TERMINAL_LAUNCH.md#connect-your-apps-nostroma-connect).
+Führe **`nostroma connect`** aus, um die Einrichtung für dein Tool zu sehen. **`nostroma connect <app> --check`** schickt einen Prompt und einen Tool-Aufruf so, wie diese App es tut. [Verbindungsleitfaden](docs/TERMINAL_LAUNCH.md#connect-your-apps-nostroma-connect)
 
-<a id="guides"></a>
-<a id="how-fast-is-it"></a>
 <a id="how-does-it-work"></a>
-<a id="something-went-wrong"></a>
+<a id="help"></a>
 
 ## Hilfe
 
-[Alle Anleitungen](docs) · [Fehlerbehebung](docs/TROUBLESHOOTING.md) · [Fehler melden](https://github.com/earenbaz80/Nostroma/issues/new/choose) ·
-[Benchmarks](docs/COMMUNITY_BENCHMARKS.md) · [So funktioniert es](docs/HOW_IT_WORKS.md) · [Mitmachen](CONTRIBUTING.md)
+**Etwas funktioniert nicht:** [Fehlerbehebung](docs/TROUBLESHOOTING.md) · [Fehler melden](https://github.com/earenbaz80/Nostroma/issues/new/choose)
 
-[MIT-Lizenz](LICENSE) · [Danksagung und Modelllizenzen](docs/HOW_IT_WORKS.md#credits) · [Datenschutz](docs/SAFETY.md)
+**Die Zahlen:** [gemessene Geschwindigkeit](docs/DETAILS.md#speed-measured) · [Community-Benchmarks](docs/COMMUNITY_BENCHMARKS.md) · [wie es funktioniert](docs/HOW_IT_WORKS.md)
 
-<a id="option-c-let-your-ai-set-it-up"></a>
+**Mitmachen:** [CONTRIBUTING.md](CONTRIBUTING.md) · [Danksagungen und Modelllizenzen](docs/HOW_IT_WORKS.md#credits) · [Datenschutz](docs/SAFETY.md) · [MIT-Lizenz](LICENSE)
 
-<sub>Für KI-Tools und automatische Leser: <a href="AGENTS.md">technische Referenz</a> · <a href="docs/AI_SETUP.md">Setup-Anleitung</a>.</sub>
+<sub>Alle Anleitungen: [docs](docs) · Für KI-Werkzeuge und automatisierte Leser: <a href="AGENTS.md">technische Referenz</a> · <a href="docs/AI_SETUP.md">Einrichtung</a>.</sub>
