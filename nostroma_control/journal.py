@@ -262,20 +262,30 @@ def list_runs(profile: str, *, limit: int = 20) -> list[dict]:
     directory = _directory(profile)
     if not directory.exists():
         return []
-    paths = sorted((path for path in directory.glob("*.json") if ID.fullmatch(path.stem)),
-                   key=lambda path: path.lstat().st_mtime, reverse=True)
-    items = []
-    for path in paths[:limit]:
+    # Newest write first, and a tie on the file time broken by the start time and then the ID: Windows rounds a
+    # record's mtime to its cached clock tick, so two runs written within one tick share it, and the ID alone is random.
+    # The records sharing the last kept file time are read too, so a tie at the limit is ordered, not cut at random.
+    entries = sorted(((path.lstat().st_mtime, path) for path in directory.glob("*.json") if ID.fullmatch(path.stem)),
+                     key=lambda entry: entry[0], reverse=True)
+    selected = entries[:limit]
+    if selected:
+        cutoff = selected[-1][0]
+        selected += [entry for entry in entries[limit:] if entry[0] == cutoff]
+    rows = []
+    for mtime, path in selected:
         try:
             record = _load_file(path, profile)
-            items.append({"operation_id": record["operation_id"], "recipe": record.get("recipe"),
+            rows.append(((mtime, record["started_at"], record["operation_id"]),
+                         {"operation_id": record["operation_id"], "recipe": record.get("recipe"),
                           "origin": "recipe" if record["schema_version"] == 1 else "direct",
                           "kind": record["kind"], "state": record["state"],
                           "started_at": record["started_at"], "finished_at": record.get("finished_at"),
-                          "completion_unverified": record["state"] == "running"})
+                          "completion_unverified": record["state"] == "running"}))
         except ProfileError as exc:
-            items.append({"operation_id": path.stem, "error": str(exc)})
-    return items
+            # A record that cannot be read has no start time; its name keeps the order stable.
+            rows.append(((mtime, float("-inf"), path.stem), {"operation_id": path.stem, "error": str(exc)}))
+    rows.sort(key=lambda row: row[0], reverse=True)
+    return [item for _, item in rows[:limit]]
 
 
 def _prune(directory: Path, profile: str) -> None:
